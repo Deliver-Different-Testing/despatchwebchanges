@@ -6,7 +6,6 @@
  */
 
 import {apiClient, downloadBlob} from './apiClient';
-import type {RequestOptions} from './apiClient';
 import type {
     IJobGroupDto,
     ISuggestion,
@@ -21,6 +20,7 @@ import {formatDateForApi} from '../utils/dateUtils';
 import {assertValidS3Key, assertValidDownloadFileName} from '../utils/fileValidation';
 import type {Dayjs} from 'dayjs';
 import dayjs from 'dayjs';
+import {RequestOptions} from "./requestOptions";
 
 // ── Job Detail Fetching ─────────────────────────────────────────────
 
@@ -51,6 +51,12 @@ export interface JobUpdateResponse {
     pending?: boolean;
     requestId?: number;
     message?: string;
+    /** Date edits report which jobs actually moved — the parent plus any cascaded children. */
+    updatedJobIds?: number[];
+    /** Children the cascade could not write; the parent's own edit still succeeded. */
+    failedJobIds?: number[];
+    /** The cascade threw as a whole. The parent was still updated. */
+    cascadeFailed?: boolean;
 }
 
 export function updateJobDetail(
@@ -58,7 +64,8 @@ export function updateJobDetail(
     field: string,
     value: unknown,
     isRecurring: boolean,
-    timezone?: string
+    timezone?: string,
+    options?: {cascadeToChildren?: boolean}
 ): Promise<JobUpdateResponse> {
     let processedValue = value;
     if (value instanceof Date || dayjs.isDayjs(value as Dayjs)) {
@@ -67,7 +74,58 @@ export function updateJobDetail(
 
     const url = isRecurring ? 'job/UpdateRecurringJob' : 'job/UpdateJob';
     return apiClient.post<JobUpdateResponse>(url, null, {
-        params: {jobId, field, value: processedValue, isRecurring},
+        params: {
+            jobId,
+            field,
+            value: processedValue,
+            isRecurring,
+            ...(options?.cascadeToChildren ? {cascadeToChildren: true} : {}),
+        },
+    });
+}
+
+// ── Date cascade ────────────────────────────────────────────────────
+
+export interface DateCascadeFamilyMember {
+    jobId: number;
+    jobNo: string | null;
+    date: string | null;
+    time: string | null;
+    amount: number | null;
+    ratedManually: boolean;
+    locked: boolean;
+    isPartnerJob: boolean;
+    /** False for locked/partner legs — listed in the dialog but never written to. */
+    cascadable: boolean;
+}
+
+export interface DateCascadeFamily {
+    relationshipTypeId: number | null;
+    members: DateCascadeFamilyMember[];
+}
+
+/**
+ * The linked jobs a date change on this job could move. Backed by the same predicate the
+ * write path uses, so the list the user approves is the list that actually gets written.
+ */
+export function getFamilyForDateChange(jobId: number): Promise<DateCascadeFamily> {
+    return apiClient.get<DateCascadeFamily>('job/GetFamilyForDateChange', {jobId});
+}
+
+/**
+ * Atomically save a recurring booking's route airports + saved flight number.
+ * The push-to-live flight auto-assign only picks up bookings with both airports
+ * set, so the "add flight" flow writes all three together via this dedicated
+ * endpoint rather than three UpdateRecurringJob calls.
+ */
+export function saveRecurringFlight(
+    jobId: number,
+    fromAirportId: number,
+    toAirportId: number,
+    flightNumber: string
+): Promise<void> {
+    return apiClient.post<void>('job/SaveRecurringFlight', null, {
+        params: {jobId, fromAirportId, toAirportId, flightNumber},
     });
 }
 
@@ -122,6 +180,26 @@ export function previewJobRate(jobId: number): Promise<JobRatePreview> {
     return apiClient.get<JobRatePreview>('job/RecalculateJobRate', {jobId});
 }
 
+export interface JobRateBatchPreview extends JobRatePreview {
+    jobId: number;
+    jobNo: string | null;
+    currentAmount: number;
+    isPrebook: boolean;
+    /** A hand-set price — never offer to overwrite it. */
+    ratedManually: boolean;
+    /** This job could not be rated; the rest of the batch is still valid. */
+    failed: boolean;
+}
+
+/**
+ * Previews rates for a whole family in one round-trip. Used after a date cascade so every
+ * resulting price change can be shown in a single dialog. Throws 403 when the user lacks the
+ * recalculate permission — callers swallow that and simply skip the price step.
+ */
+export function previewJobRates(jobIds: number[]): Promise<JobRateBatchPreview[]> {
+    return apiClient.get<JobRateBatchPreview[]>('job/RecalculateJobRates', {jobIds: jobIds.join(',')});
+}
+
 export function applyJobRate(jobId: number, isPrebook: boolean): Promise<void> {
     return apiClient.post('job/ApplyRecalculatedJobRate', null, {
         params: {jobId, isPrebook},
@@ -142,6 +220,24 @@ export function updateJobReadStatus(jobId: number, hasBeenRead: boolean): Promis
 
 export function sendPod(jobId: number, toEmail: string): Promise<unknown> {
     return apiClient.get('job/SendPOD', {jobId, toEmail});
+}
+
+export interface SendPodReportRequest {
+    jobId: number;
+    recipients: string[];
+    subject: string;
+    body: string;
+}
+
+/**
+ * Queues the POD report email. Rejects with an ApiError whose `message` is the server's own
+ * text, so callers can show the real reason instead of a generic retry prompt.
+ *
+ * The request renders the PDF inline (S3 photo fetches plus image conversion), so it is given
+ * a longer budget than the client default — the ingress allows 300s.
+ */
+export function sendPodReport(request: SendPodReportRequest): Promise<void> {
+    return apiClient.post('job/SendPodReport', request, {timeout: 180000});
 }
 
 // ── Photos ──────────────────────────────────────────────────────────
@@ -200,8 +296,8 @@ export function getUndeliverableList(options?: RequestOptions): Promise<ISuggest
 
 // ── Job Dispatch Operations ─────────────────────────────────────────
 
-export function restoreJobs(jobIds: number[]): Promise<void> {
-    return apiClient.post('job/RestoreJobs', {jobIds});
+export function restoreJobs(jobIds: number[], removeCapturedImages = false): Promise<void> {
+    return apiClient.post('job/RestoreJobs', {jobIds, removeCapturedImages});
 }
 
 export function allocateJob(courierId: number, jobIds: number[]): Promise<void> {
@@ -243,6 +339,24 @@ export function getPodReportUrl(jobId: number): string {
 
 export function getPodSpreadsheetUrl(jobId: number): string {
     return `/job/PodSpreadsheet?jobId=${jobId}`;
+}
+
+export function getOverlayDocumentUrl(jobId: number, documentType: string): string {
+    return `/job/OverlayDocument?jobId=${jobId}&documentType=${encodeURIComponent(documentType)}`;
+}
+
+// ── PDF Overlay Documents ───────────────────────────────────────────
+
+/** An overlay document offered in the job export menu (from the Configurator template catalogue). */
+export interface OverlayDocument {
+    documentType: string;
+    displayName: string;
+    /** True when a template resolves for this job's client; false renders the menu item disabled. */
+    available: boolean;
+}
+
+export function getJobOverlayDocuments(jobId: number): Promise<OverlayDocument[]> {
+    return apiClient.get<OverlayDocument[]>('/job/OverlayDocuments', {jobId});
 }
 
 // ── Autocomplete Search ─────────────────────────────────────────────

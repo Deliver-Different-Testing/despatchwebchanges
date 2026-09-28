@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
                 FullName = c.UcctFirstname + " " + c.UcctSurname,
                 Email = c.UcctEmail,
                 Internal = c.UcctClient != null && c.UcctClient.UcclInternal,
+                IsNetworkPartner = c.UcctClient != null && c.UcctClient.ClientTypeId == (int)ClientType.NetworkPartner,
                 StaffID = c.StaffId
             })
             .FirstOrDefaultAsync();

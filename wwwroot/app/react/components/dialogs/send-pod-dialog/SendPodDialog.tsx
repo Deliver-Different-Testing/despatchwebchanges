@@ -1,22 +1,25 @@
-import React, {useState} from 'react';
-import {alpha, useTheme} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
-import CheckIcon from '@mui/icons-material/Check';
-import SendIcon from '@mui/icons-material/Send';
-import DescriptionIcon from '@mui/icons-material/Description';
-import LockIcon from '@mui/icons-material/Lock';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
+import React, {useEffect, useState} from 'react';
+import {Alert, Badge, Box, Button, Checkbox, CloseButton, Divider, Group, Paper, Stack, Text, Textarea, TextInput} from '@mantine/core';
+import {Check, FileText, Paperclip, Send} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps, sectionLabelProps,
+} from '../shared/mantine';
+
+import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {draftPodEmail} from '../../../services/aiAssistantApi';
+
+/** The small uppercase field labels down the left of the email preview. */
+const previewLabelProps = {
+    fz: 'xs',
+    fw: 700,
+    tt: 'uppercase',
+    lts: '0.07em',
+    c: 'dimmed',
+    miw: 72,
+    style: {flexShrink: 0},
+} as const;
 
 export interface SendPodJobData {
     jobId: number;
@@ -43,6 +46,8 @@ interface SendPodDialogProps {
     onSend: (data: SendPodRequest) => void;
     sending: boolean;
     sent: boolean;
+    /** Server-supplied failure text, shown inline so the send can be corrected and retried. */
+    errorMessage?: string;
 }
 
 function buildSubject(jobData: SendPodJobData): string {
@@ -82,16 +87,31 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
     onSend,
     sending,
     sent,
+    errorMessage,
 }) => {
-    const theme = useTheme();
     const [recipients, setRecipients] = useState<string[]>([]);
     const [useBooking, setUseBooking] = useState(false);
     const [useTracking, setUseTracking] = useState(false);
     const [freeInput, setFreeInput] = useState('');
     const [freeError, setFreeError] = useState('');
 
-    const subject = buildSubject(jobData);
-    const body = buildBody(jobData);
+    const [subject, setSubject] = useState(() => buildSubject(jobData));
+    const [body, setBody] = useState(() => buildBody(jobData));
+    const {runDraft, isDrafting} = useAiDraft();
+
+    // Reset to the template whenever a different job is shown.
+    useEffect(() => {
+        setSubject(buildSubject(jobData));
+        setBody(buildBody(jobData));
+    }, [jobData]);
+
+    const handleDraft = async () => {
+        const result = await runDraft((signal) => draftPodEmail(jobData.jobId, {signal}));
+        if (result) {
+            setSubject(result.subject);
+            setBody(result.body);
+        }
+    };
 
     const bookingEmails = parseEmailField(jobData.bookingContactEmail);
     const trackingEmails = parseEmailField(jobData.trackingEmail);
@@ -182,452 +202,158 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    sx: {
-                        borderRadius: 3.5,
-                        overflow: 'hidden',
-                        maxHeight: 'calc(100vh - 48px)',
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <DialogTitle
-                sx={{
-                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                    p: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                }}
-            >
-                <Box sx={{display: 'flex', alignItems: 'center', gap: '14px'}}>
-                    <Box
-                        sx={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 2.5,
-                            background: alpha(theme.palette.primary.contrastText, 0.15),
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                        }}
-                    >
-                        <DescriptionIcon sx={{color: theme.palette.primary.contrastText, fontSize: 20}}/>
-                    </Box>
-                    <Box>
-                        <Typography
-                            sx={{
-                                color: theme.palette.primary.contrastText,
-                                fontWeight: 700,
-                                fontSize: 17,
-                                letterSpacing: '-0.2px',
-                            }}
-                        >
-                            Send Proof of Delivery
-                        </Typography>
-                        <Typography
-                            sx={{
-                                color: alpha(theme.palette.primary.contrastText, 0.65),
-                                fontSize: 13,
-                                mt: '2px',
-                            }}
-                        >
-                            Booking {jobData.jobNo} &middot; {jobData.clientName}
-                        </Typography>
-                    </Box>
-                </Box>
-                <IconButton
-                    onClick={handleClose}
-                    sx={{
-                        background: alpha(theme.palette.primary.contrastText, 0.15),
-                        color: alpha(theme.palette.primary.contrastText, 0.8),
-                        width: 34,
-                        height: 34,
-                        '&:hover': {background: alpha(theme.palette.primary.contrastText, 0.25)},
-                    }}
-                >
-                    <CloseIcon sx={{fontSize: 18}}/>
-                </IconButton>
-            </DialogTitle>
+        <DialogShell opened={open} onClose={handleClose}>
+            <DialogHeader
+                icon={<Icon lucide={FileText}/>}
+                title="Send Proof of Delivery"
+                subtitle={<>Booking {jobData.jobNo} &middot; {jobData.clientName}</>}
+                onClose={handleClose}
+            />
 
-            {/* Body */}
-            <DialogContent sx={{p: '20px 22px 8px', display: 'flex', flexDirection: 'column', gap: '4px'}}>
-                {/* Recipients section */}
-                <Box sx={{mb: '14px'}}>
-                    <Typography
-                        sx={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                            color: 'text.secondary',
-                            mb: 0,
-                        }}
-                    >
-                        Recipients
-                    </Typography>
+            <Stack p="lg" gap="lg" bg={dialogContentBg}>
+                {errorMessage && <Alert color="red" variant="light">{errorMessage}</Alert>}
 
-                    {showBookingCheckbox && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                p: '9px 12px',
-                                borderRadius: 2,
-                                cursor: 'pointer',
-                                userSelect: 'none',
-                                border: '1.5px solid',
-                                borderColor: 'grey.200',
-                                mb: '6px',
-                                background: 'grey.50',
-                            }}
-                            onClick={toggleBooking}
-                        >
+                {/* Recipients */}
+                <Box>
+                    <Text {...sectionLabelProps}>Recipients</Text>
+                    <Paper {...sectionPaperProps}>
+                        {showBookingCheckbox && (
                             <Checkbox
                                 checked={useBooking}
-                                size="small"
-                                sx={{
-                                    p: 0,
-                                    color: 'text.disabled',
-                                    '&.Mui-checked': {color: theme.palette.primary.main},
-                                }}
+                                onChange={toggleBooking}
+                                py="xs"
+                                label={
+                                    <Box>
+                                        <Text fw={500}>Booking {bookingEmails.length > 1 ? 'emails' : 'email'}</Text>
+                                        {bookingEmails.map((email) => (
+                                            <Text key={email} fz="xs" c="dimmed" ff="monospace">{email}</Text>
+                                        ))}
+                                    </Box>
+                                }
                             />
-                            <Box>
-                                <Typography sx={{fontSize: 14, fontWeight: 500, color: 'text.primary'}}>
-                                    Booking {bookingEmails.length > 1 ? 'emails' : 'email'}
-                                </Typography>
-                                {bookingEmails.map((email) => (
-                                    <Typography key={email} sx={{fontSize: 12, color: 'text.secondary', fontFamily: 'monospace'}}>
-                                        {email}
-                                    </Typography>
-                                ))}
-                            </Box>
-                        </Box>
-                    )}
+                        )}
 
-                    {showTrackingCheckbox && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                p: '9px 12px',
-                                borderRadius: 2,
-                                cursor: 'pointer',
-                                userSelect: 'none',
-                                border: '1.5px solid',
-                                borderColor: 'grey.200',
-                                mb: '6px',
-                                background: 'grey.50',
-                            }}
-                            onClick={toggleTracking}
-                        >
+                        {showTrackingCheckbox && (
                             <Checkbox
                                 checked={useTracking}
-                                size="small"
-                                sx={{
-                                    p: 0,
-                                    color: 'text.disabled',
-                                    '&.Mui-checked': {color: theme.palette.primary.main},
-                                }}
+                                onChange={toggleTracking}
+                                py="xs"
+                                label={
+                                    <Box>
+                                        <Text fw={500}>Tracking {uniqueTrackingEmails.length > 1 ? 'emails' : 'email'}</Text>
+                                        {uniqueTrackingEmails.map((email) => (
+                                            <Text key={email} fz="xs" c="dimmed" ff="monospace">{email}</Text>
+                                        ))}
+                                    </Box>
+                                }
                             />
-                            <Box>
-                                <Typography sx={{fontSize: 14, fontWeight: 500, color: 'text.primary'}}>
-                                    Tracking {uniqueTrackingEmails.length > 1 ? 'emails' : 'email'}
-                                </Typography>
-                                {uniqueTrackingEmails.map((email) => (
-                                    <Typography key={email} sx={{fontSize: 12, color: 'text.secondary', fontFamily: 'monospace'}}>
-                                        {email}
-                                    </Typography>
-                                ))}
-                            </Box>
-                        </Box>
-                    )}
+                        )}
 
-                    <Box sx={{borderTop: '1px solid', borderColor: 'grey.200', my: '10px'}}/>
+                        {(showBookingCheckbox || showTrackingCheckbox) && <Divider my="sm"/>}
 
-                    <Box sx={{display: 'flex', gap: '8px'}}>
-                        <TextField
-                            size="small"
-                            type="email"
-                            placeholder="Add another email address\u2026"
-                            value={freeInput}
-                            onChange={(e) => {
-                                setFreeInput(e.target.value);
-                                setFreeError('');
-                            }}
-                            onKeyDown={handleFreeKeyDown}
-                            error={!!freeError}
-                            sx={{
-                                flex: 1,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    background: 'grey.50',
-                                    fontSize: 14,
-                                },
-                            }}
-                        />
-                        <Button
-                            variant="outlined"
-                            onClick={addFreeEmail}
-                            sx={{
-                                borderRadius: 2,
-                                border: '1.5px solid',
-                                borderColor: 'grey.300',
-                                background: 'grey.100',
-                                color: 'text.primary',
-                                fontSize: 14,
-                                fontWeight: 600,
-                                textTransform: 'none',
-                                whiteSpace: 'nowrap',
-                                '&:hover': {background: 'grey.200', borderColor: 'grey.300'},
-                            }}
-                        >
-                            Add
-                        </Button>
-                    </Box>
-                    {freeError ? (
-                        <Typography sx={{fontSize: 12, color: 'error.main', mt: '5px'}}>
-                            {freeError}
-                        </Typography>
-                    ) : (
-                        <Typography sx={{fontSize: 12, color: 'text.disabled', mt: '5px'}}>
-                            Press Enter or comma to add multiple
-                        </Typography>
-                    )}
+                        <Group gap="xs" align="flex-start" wrap="nowrap">
+                            <TextInput
+                                style={{flex: 1}}
+                                type="email"
+                                placeholder="Add another email address&hellip;"
+                                value={freeInput}
+                                onChange={(e) => {
+                                    setFreeInput(e.currentTarget.value);
+                                    setFreeError('');
+                                }}
+                                onKeyDown={handleFreeKeyDown}
+                                error={!!freeError}
+                            />
+                            <Button variant="default" onClick={addFreeEmail} style={{whiteSpace: 'nowrap'}}>
+                                Add
+                            </Button>
+                        </Group>
+                        <Text fz="xs" mt={6} c={freeError ? 'red.6' : 'dimmed'}>
+                            {freeError || 'Press Enter or comma to add multiple'}
+                        </Text>
+                    </Paper>
                 </Box>
 
                 {/* Recipient chips */}
                 {recipients.length > 0 && (
-                    <Box sx={{mb: '14px'}}>
-                        <Typography
-                            sx={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.08em',
-                                color: 'text.secondary',
-                                mb: '6px',
-                            }}
-                        >
-                            Sending to ({recipients.length})
-                        </Typography>
-                        <Box sx={{display: 'flex', flexWrap: 'wrap', gap: '6px'}}>
+                    <Box>
+                        <Text {...sectionLabelProps}>Sending to ({recipients.length})</Text>
+                        <Group gap="xs">
                             {recipients.map((r) => (
-                                <Chip
+                                <Badge
                                     key={r}
-                                    label={r}
-                                    onDelete={() => removeRecipient(r)}
-                                    sx={{
-                                        background: alpha(theme.palette.primary.main, 0.08),
-                                        color: theme.palette.primary.dark,
-                                        border: `1.5px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                                        borderRadius: 5,
-                                        fontSize: 13,
-                                        fontWeight: 500,
-                                        '& .MuiChip-deleteIcon': {
-                                            color: theme.palette.primary.dark,
-                                            '&:hover': {color: theme.palette.primary.main},
-                                        },
-                                    }}
-                                />
+                                    size="sm"
+                                    variant="outline"
+                                    color="brand"
+                                    rightSection={
+                                        <CloseButton
+                                            size={14}
+                                            aria-label={`Remove ${r}`}
+                                            onClick={() => removeRecipient(r)}
+                                        />
+                                    }
+                                >
+                                    {r}
+                                </Badge>
                             ))}
-                        </Box>
+                        </Group>
                     </Box>
                 )}
 
                 {/* Email preview */}
-                <Box sx={{mb: '14px'}}>
-                    <Typography
-                        sx={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.08em',
-                            color: 'text.secondary',
-                            mb: '6px',
-                        }}
-                    >
-                        Email preview
-                    </Typography>
-
-                    <Box
-                        sx={{
-                            border: '1.5px solid',
-                            borderColor: 'grey.300',
-                            borderRadius: 2.5,
-                            background: 'grey.50',
-                            overflow: 'hidden',
-                            position: 'relative',
-                        }}
-                    >
+                <Box>
+                    <Group justify="space-between" align="center" mb="xs">
+                        <Text {...sectionLabelProps} mb={0}>Email preview</Text>
+                        <AiDraftButton onClick={handleDraft} isDrafting={isDrafting}/>
+                    </Group>
+                    <Paper {...sectionPaperProps} p={0} style={{overflow: 'hidden'}}>
                         {/* Subject */}
-                        <Box sx={{display: 'flex', alignItems: 'flex-start', gap: '12px', p: '10px 14px'}}>
-                            <Typography
-                                sx={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.07em',
-                                    color: 'text.disabled',
-                                    minWidth: 72,
-                                    pt: '1px',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                Subject
-                            </Typography>
-                            <Typography sx={{fontSize: 13, fontWeight: 600, color: 'text.primary', lineHeight: 1.45}}>
-                                {subject}
-                            </Typography>
-                        </Box>
-                        <Box sx={{borderTop: '1px solid', borderColor: 'grey.300', mx: '14px'}}/>
+                        <Group gap="sm" align="flex-start" wrap="nowrap" py={10} px={14}>
+                            <Text {...previewLabelProps}>Subject</Text>
+                            <Textarea
+                                variant="unstyled"
+                                autosize
+                                style={{flex: 1}}
+                                aria-label="Email subject"
+                                value={subject}
+                                onChange={(e) => setSubject(e.currentTarget.value)}
+                                styles={{input: {fontSize: 13, fontWeight: 600, lineHeight: 1.45, padding: 0, minHeight: 0}}}
+                            />
+                        </Group>
+                        <Divider/>
 
                         {/* Attachment */}
-                        <Box sx={{display: 'flex', alignItems: 'flex-start', gap: '12px', p: '10px 14px'}}>
-                            <Typography
-                                sx={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.07em',
-                                    color: 'text.disabled',
-                                    minWidth: 72,
-                                    pt: '1px',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                Attachment
-                            </Typography>
-                            <Box
-                                sx={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    background: 'background.paper',
-                                    border: '1.5px solid',
-                                    borderColor: 'grey.300',
-                                    borderRadius: 1.5,
-                                    p: '3px 9px',
-                                    fontSize: 12,
-                                    fontWeight: 500,
-                                    color: 'text.primary',
-                                }}
-                            >
-                                <AttachFileIcon sx={{fontSize: 13}}/>
-                                POD_{jobData.jobNo}.pdf
-                            </Box>
-                        </Box>
-                        <Box sx={{borderTop: '1px solid', borderColor: 'grey.300', mx: '14px'}}/>
+                        <Group gap="sm" align="center" wrap="nowrap" py={10} px={14}>
+                            <Text {...previewLabelProps}>Attachment</Text>
+                            <Badge size="sm" variant="outline" color="gray" leftSection={<Icon lucide={Paperclip} size={12}/>}>
+                                {`POD_${jobData.jobNo}.pdf`}
+                            </Badge>
+                        </Group>
+                        <Divider/>
 
                         {/* Body */}
-                        <Box
-                            sx={{
-                                p: '12px 14px 40px',
-                                fontSize: 13,
-                                color: 'text.primary',
-                                lineHeight: 1.7,
-                                whiteSpace: 'pre-wrap',
-                            }}
-                        >
-                            {body}
-                        </Box>
-
-                        {/* Lock badge */}
-                        <Box
-                            sx={{
-                                position: 'absolute',
-                                bottom: 10,
-                                right: 12,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                fontSize: 11,
-                                color: 'text.disabled',
-                                fontWeight: 600,
-                                letterSpacing: '0.04em',
-                            }}
-                        >
-                            <LockIcon sx={{fontSize: 11}}/>
-                            Read-only template
-                        </Box>
-                    </Box>
+                        <Textarea
+                            variant="unstyled"
+                            autosize
+                            minRows={4}
+                            aria-label="Email body"
+                            value={body}
+                            onChange={(e) => setBody(e.currentTarget.value)}
+                            styles={{input: {fontSize: 13, lineHeight: 1.7, paddingBlock: 12, paddingInline: 14}}}
+                        />
+                    </Paper>
                 </Box>
-            </DialogContent>
+            </Stack>
 
-            {/* Footer */}
-            <DialogActions
-                sx={{
-                    p: '14px 22px 18px',
-                    borderTop: '1px solid',
-                    borderColor: 'grey.200',
-                }}
-            >
-                <Button
-                    onClick={handleClose}
-                    sx={{
-                        borderRadius: 2,
-                        border: '1.5px solid',
-                        borderColor: 'grey.300',
-                        background: 'transparent',
-                        color: 'text.secondary',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        px: '18px',
-                    }}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSend}
-                    disabled={recipients.length === 0 || sending}
-                    sx={{
-                        borderRadius: 2,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                        color: theme.palette.primary.contrastText,
-                        fontSize: 14,
-                        fontWeight: 700,
-                        textTransform: 'none',
-                        px: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        '&:hover': {
-                            background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.dark} 100%)`,
-                        },
-                        '&.Mui-disabled': {
-                            background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                            color: theme.palette.primary.contrastText,
-                            opacity: 0.55,
-                        },
-                    }}
-                >
-                    {sent ? (
-                        <>
-                            <CheckIcon sx={{fontSize: 16}}/>
-                            Sent!
-                        </>
-                    ) : sending ? (
-                        'Sending\u2026'
-                    ) : (
-                        <>
-                            <SendIcon sx={{fontSize: 16}}/>
-                            Send POD PDF
-                        </>
-                    )}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={handleClose}
+                onConfirm={handleSend}
+                confirmLabel={sent ? 'Queued' : 'Send POD PDF'}
+                confirmIcon={sent ? <Icon lucide={Check}/> : <Icon lucide={Send}/>}
+                confirmDisabled={recipients.length === 0}
+                submitting={sending}
+            />
+        </DialogShell>
     );
 };
 

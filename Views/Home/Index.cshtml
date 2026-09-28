@@ -4,7 +4,6 @@
 <script>
      @{
          var contactId = ViewBag.ContactID;
-         var clientInternal = ViewBag.ClientInternal;
          var firstName = ViewBag.FirstName;
          var fullName = ViewBag.FullName;
          var dispatcher = ViewBag.DispatcherName;
@@ -12,7 +11,12 @@
      }
 
      var ContactID = '@contactId';
-     var ClientInternal = '@clientInternal';
+     var ClientInternal = @Json.Serialize(ViewBag.ClientInternal ?? false);
+     var IsNetworkPartner = @Json.Serialize(ViewBag.IsNetworkPartner ?? false);
+     // Dashboards DF Admin has exposed to this session. `null` means "not gated"
+     // — see IFeatureVisibilityService. Json.Serialize is required: a bare
+     // interpolation ships the array as a string.
+     var VisibleFeatures = @Json.Serialize(ViewBag.VisibleFeatures);
      var FirstName = '@firstName';
      var FullName = '@fullName';
      var Dispatcher = '@dispatcher';
@@ -22,7 +26,10 @@
 </script>
 <script>
     var serverConfig = {
-        isUSCustomer: @Json.Serialize(ViewBag.IsUsTenant)
+        isUSCustomer: @Json.Serialize(ViewBag.IsUsTenant),
+        // {lat, lng} for a network partner's own address, otherwise null. Maps
+        // that have no explicit centre open here — see getDefaultMapCenter.
+        npMapCenter: @Json.Serialize(ViewBag.NpMapCenter)
         };
     window.CurrencyCode = serverConfig.isUSCustomer ? 'USD' : 'NZD';
 </script>

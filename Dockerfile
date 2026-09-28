@@ -5,10 +5,11 @@ WORKDIR /App
 ARG GITLAB_NUGET_USERNAME
 ARG GITLAB_NUGET_TOKEN
 
-# Install Node.js and npm
-RUN apt-get update && apt-get install -y curl
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
-RUN apt-get install -y nodejs
+# Node.js 20 + npm — copied from the official image (no NodeSource CDN dependency)
+COPY --from=node:20-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:20-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+ && ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # Copy nuget.config, build props, and csproj for restore layer caching
 COPY nuget.config Directory.Build.props Directory.Packages.props ./
@@ -17,8 +18,13 @@ RUN GITLAB_NUGET_USERNAME=${GITLAB_NUGET_USERNAME} \
     GITLAB_NUGET_TOKEN=${GITLAB_NUGET_TOKEN} \
     dotnet restore DespatchWeb.csproj
 
+# Copy the npm manifests for install layer caching, mirroring the restore layer above.
+# `npm ci` installs exactly what the lockfile pins, and keeping it ahead of `COPY . ./`
+# means editing source doesn't rebuild node_modules.
+COPY package.json package-lock.json ./
+RUN npm ci
+
 COPY . ./
-RUN npm install
 RUN dotnet publish DespatchWeb.csproj -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 as base

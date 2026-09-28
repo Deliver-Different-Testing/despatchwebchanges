@@ -9,7 +9,10 @@ public static class AddressFormatter
     /// </summary>
     public static string FormatWithCityStateZip(Address address)
     {
-        if (address == null) return string.Empty;
+        if (address == null)
+        {
+            return string.Empty;
+        }
 
         var lines = new List<string>();
 
@@ -17,7 +20,10 @@ public static class AddressFormatter
         for (var i = 0; i < 5; i++)
         {
             var line = GetAddressLine(address, i);
-            if (!string.IsNullOrWhiteSpace(line)) lines.Add(line.Trim());
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                lines.Add(line.Trim());
+            }
         }
 
         // Try to combine city, state, zip
@@ -25,12 +31,19 @@ public static class AddressFormatter
         var state = GetAddressLine(address, 6)?.Trim();
         var zip = GetAddressLine(address, 7)?.Trim();
 
-        if (string.IsNullOrWhiteSpace(city)) return string.Join(", ", lines);
+        if (string.IsNullOrWhiteSpace(city))
+        {
+            return string.Join(", ", lines);
+        }
+
         var lastLine = city;
         if (!string.IsNullOrWhiteSpace(state))
         {
             lastLine += ", " + state;
-            if (!string.IsNullOrWhiteSpace(zip)) lastLine += " " + zip;
+            if (!string.IsNullOrWhiteSpace(zip))
+            {
+                lastLine += " " + zip;
+            }
         }
 
         lines.Add(lastLine);
@@ -75,7 +88,9 @@ public static class AddressFormatter
     public static string GetSafeAddress(string address, string defaultAddress)
     {
         if (string.IsNullOrEmpty(address))
+        {
             return defaultAddress;
+        }
 
         return address.Length > MaxAddressLength
             ? address[..MaxAddressLength]

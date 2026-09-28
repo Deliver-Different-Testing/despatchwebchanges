@@ -1,7 +1,7 @@
-/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {MantineTestProvider} from '../../../__testUtils__';
+import {createTestQueryClient} from '../../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverEmailsTab} from './DriverEmailsTab';
 import {DriverEmail, PaginatedResponse} from '../../../interfaces';
@@ -23,24 +23,14 @@ jest.mock('../../../services/driverManagementApi', () => ({
 const mockUseDriverEmails = useDriverEmails as jest.MockedFunction<typeof useDriverEmails>;
 const mockUseSendEmailToCouriers = useSendEmailToCouriers as jest.MockedFunction<typeof useSendEmailToCouriers>;
 
-const theme = createTheme();
-
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-            },
-        },
-    });
 
 const renderWithProviders = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <DriverEmailsTab showToast={showToast}/>
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>
     );
 };

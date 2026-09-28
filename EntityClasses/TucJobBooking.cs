@@ -356,7 +356,7 @@ public partial class TucJobBooking
     public int? UcbkFrequency { get; set; }
 
     /// <summary>
-    /// 0 = Don&apos;t Book (default), 1 = Deliver Next Day
+    /// 0 = Don&apos;t Book (default), 1 = Deliver Next Day, 2 = Book Anyway
     /// </summary>
     public int HolidayDeliveryOption { get; set; }
 
@@ -389,6 +389,36 @@ public partial class TucJobBooking
     public int? NpAgentId { get; set; }
 
     public int? RouteId { get; set; }
+
+    public int? AgentId { get; set; }
+
+    public decimal? RawBaseAmount { get; set; }
+
+    public byte RecurringMode { get; set; }
+
+    public int? LinehaulRunId { get; set; }
+
+    public bool IsLinehaulMaster { get; set; }
+
+    public int? PickupWindowMinutesBefore { get; set; }
+
+    public int? PickupWindowMinutesAfter { get; set; }
+
+    public int? DeliveryWindowMinutesBefore { get; set; }
+
+    public int? DeliveryWindowMinutesAfter { get; set; }
+
+    public DateTime? PickupWindowStart { get; set; }
+
+    public DateTime? PickupWindowEnd { get; set; }
+
+    public DateTime? DeliveryWindowStart { get; set; }
+
+    public DateTime? DeliveryWindowEnd { get; set; }
+
+    public string SavedFlightNumber { get; set; }
+
+    public bool ContentsUnknownAtPickup { get; set; }
 
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 

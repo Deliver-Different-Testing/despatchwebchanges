@@ -274,7 +274,7 @@ describe('jobApi integration', () => {
     });
 
     describe('quickCreateJob', () => {
-        it('creates a job and returns new job ID', async () => {
+        it('creates a job and returns the new job id and job number', async () => {
             const result = await jobApi.quickCreateJob({
                 clientId: 10,
                 deliverToContact: 'Jane Doe',
@@ -303,9 +303,11 @@ describe('jobApi integration', () => {
                 toLong: -118.2437,
                 speedId: 1,
                 vehicleId: 2,
+                weightKg: null,
+                weightLb: null,
             });
 
-            expect(result).toBe(12345);
+            expect(result).toEqual({ jobId: 12345, jobNumber: 'JOB-12345' });
         });
 
         it('sends CSRF header', async () => {
@@ -314,7 +316,7 @@ describe('jobApi integration', () => {
             server.use(
                 http.post('*/job/QuickCreateJob', async ({ request }) => {
                     capturedCsrfHeader = request.headers.get('X-Requested-With');
-                    return HttpResponse.json(1);
+                    return HttpResponse.json({ jobId: 1, jobNumber: 'JOB-1' });
                 })
             );
 

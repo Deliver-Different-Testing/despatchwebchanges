@@ -1,8 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
+import {Box, Card, Stack, Tabs} from '@mantine/core';
 import {useFleetOptions} from '../../hooks/useDriverManagementApi';
 import {DriverManagementPageProps} from '../../interfaces';
 import {DriverDetailsTab} from './components/DriverDetailsTab';
@@ -25,6 +22,16 @@ enum DriverManagementTabs {
 
 const TAB_KEY = `lastActiveTab-DriverManagement-${typeof ContactID !== 'undefined' ? ContactID : 0}`;
 
+/** Ordered to match DriverManagementTabs — the index is the stored value. */
+const TAB_LABELS = [
+    'Driver Details',
+    "Today's Active",
+    'Driver Compliance',
+    'After Hours Schedule',
+    'Driver Emails',
+    'Driver Earnings',
+];
+
 function getInitialTab(): number {
     try {
         const stored = localStorage.getItem(TAB_KEY);
@@ -41,7 +48,11 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
     const [selectedTab, setSelectedTab] = useState<number>(getInitialTab);
     const {data: fleetOptions = []} = useFleetOptions();
 
-    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    // Mantine's Tabs are keyed by string; the stored preference stays the numeric
+    // index it has always been, so an existing localStorage value still resolves.
+    const handleTabChange = (value: string | null) => {
+        if (value == null) return;
+        const newValue = Number(value);
         setSelectedTab(newValue);
         try { localStorage.setItem(TAB_KEY, newValue.toString()); } catch { /* ignore */ }
     };
@@ -57,36 +68,25 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
     }, [setRefreshCallback]);
 
     return (
-        <Box sx={{height: '100%', bgcolor: 'background.default'}}>
-        <Box sx={{
-            height: '100%', display: 'flex', flexDirection: 'column', gap: 2,
-            maxWidth: 1400, mx: 'auto', p: {xs: 2, md: 3},
-            '& .MuiCard-root': {
-                borderRadius: 3,
-                boxShadow: 1,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {boxShadow: 3},
-            },
-        }}>
+        /*
+         * The MUI original wrapped this in an `& .MuiCard-root` override that
+         * restyled every card in the subtree — a descendant selector reaching into
+         * children it did not own, which is why cards here looked unlike cards
+         * anywhere else. Each card carries its own chrome now.
+         */
+        <Stack gap={16} h="100%" p={8} bg="var(--mantine-color-body)">
             {/* Page Header */}
-            <Card sx={{flexShrink: 0, borderRadius: 1, overflow: 'hidden'}}>
-                <Tabs
-                    value={selectedTab}
-                    onChange={handleTabChange}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                    sx={{bgcolor: 'background.paper'}}
-                >
-                    <Tab label="Driver Details" />
-                    <Tab label="Today's Active" />
-                    <Tab label="Driver Compliance" />
-                    <Tab label="After Hours Schedule" />
-                    <Tab label="Driver Emails" />
-                    <Tab label="Driver Earnings" />
+            <Card withBorder p={0} radius="lg" style={{flexShrink: 0, overflow: 'hidden'}}>
+                <Tabs value={String(selectedTab)} onChange={handleTabChange}>
+                    <Tabs.List>
+                        {TAB_LABELS.map((label, index) => (
+                            <Tabs.Tab key={label} value={String(index)}>{label}</Tabs.Tab>
+                        ))}
+                    </Tabs.List>
                 </Tabs>
             </Card>
 
-            <Box sx={{flex: 1, overflow: 'auto'}}>
+            <Box style={{flex: 1, overflow: 'auto'}}>
                 {selectedTab === DriverManagementTabs.DriverDetails && (
                     <DriverDetailsTab showToast={showToast} />
                 )}
@@ -106,7 +106,6 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
                     <DriverEarningsTab showToast={showToast} />
                 )}
             </Box>
-        </Box>
-        </Box>
+        </Stack>
     );
 };

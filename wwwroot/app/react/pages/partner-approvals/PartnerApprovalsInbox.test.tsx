@@ -1,14 +1,14 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * PartnerApprovalsInbox Tests
  */
 
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
-import {renderWithProviders} from '../../__testUtils__';
-import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
+import { renderWithMantineProviders } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
+import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
 
 jest.mock('../../services/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {
@@ -52,8 +52,8 @@ describe('PartnerApprovalsInbox', () => {
 
     it('renders the inbox-zero empty state when no items are pending', async () => {
         mockApi.pendingForApproval.mockResolvedValueOnce([]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
-        await waitFor(() => expect(screen.getByText(/Inbox zero/i)).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
+        expect(await screen.findByText(/Inbox zero/i)).toBeInTheDocument();
         expect(screen.getByText(/No partner change requests are awaiting/i)).toBeInTheDocument();
     });
 
@@ -63,8 +63,8 @@ describe('PartnerApprovalsInbox', () => {
             makeItem({request: {...makeItem().request, id: 2}, clientName: 'Acme Logistics'}),
             makeItem({request: {...makeItem().request, id: 3}, clientName: 'Beta Couriers'}),
         ]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
-        await waitFor(() => expect(screen.getByText('Acme Logistics')).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
+        expect(await screen.findByText('Acme Logistics')).toBeInTheDocument();
         expect(screen.getByText('Beta Couriers')).toBeInTheDocument();
         expect(screen.getByText(/2 requests/)).toBeInTheDocument();
         expect(screen.getByText(/1 request$/)).toBeInTheDocument();
@@ -84,9 +84,9 @@ describe('PartnerApprovalsInbox', () => {
             clientName: 'Beta Couriers',
         });
         mockApi.pendingForApproval.mockResolvedValueOnce([fresh, overdue]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
 
-        await waitFor(() => expect(screen.getByText('Acme Logistics')).toBeInTheDocument());
+        expect(await screen.findByText('Acme Logistics')).toBeInTheDocument();
         const overdueChips = screen.getAllByText('Overdue');
         expect(overdueChips.length).toBeGreaterThan(0);
         // The customer with overdue items appears first in the DOM.
@@ -97,14 +97,14 @@ describe('PartnerApprovalsInbox', () => {
     });
 
     it('approve calls the API and refetches', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockApi.pendingForApproval
             .mockResolvedValueOnce([makeItem()])
             .mockResolvedValueOnce([]);
         mockApi.approve.mockResolvedValueOnce({success: true});
 
-        renderWithProviders(<PartnerApprovalsInbox/>);
-        await waitFor(() => expect(screen.getByRole('button', {name: /Approve/})).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
+        expect(await screen.findByRole('button', {name: /Approve/})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /Approve/}));
 
@@ -114,19 +114,20 @@ describe('PartnerApprovalsInbox', () => {
     });
 
     it('reject opens the inline reason input and submits with the reason', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockApi.pendingForApproval
             .mockResolvedValueOnce([makeItem()])
             .mockResolvedValueOnce([]);
         mockApi.reject.mockResolvedValueOnce({success: true});
 
-        renderWithProviders(<PartnerApprovalsInbox/>);
-        await waitFor(() => expect(screen.getByRole('button', {name: /^Reject$/})).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
+        expect(await screen.findByRole('button', {name: /^Reject$/})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /^Reject$/}));
         expect(screen.getByLabelText(/Reason for rejection/i)).toBeInTheDocument();
 
-        await user.type(screen.getByLabelText(/Reason for rejection/i), 'rate too low');
+        await user.click(screen.getByLabelText(/Reason for rejection/i));
+        await user.paste('rate too low');
         await user.click(screen.getByRole('button', {name: /Confirm reject/}));
 
         await waitFor(() => {
@@ -139,12 +140,12 @@ describe('PartnerApprovalsInbox', () => {
     });
 
     it('clicking the job number invokes onOpenJob', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onOpenJob = jest.fn();
         mockApi.pendingForApproval.mockResolvedValueOnce([makeItem()]);
 
-        renderWithProviders(<PartnerApprovalsInbox onOpenJob={onOpenJob}/>);
-        await waitFor(() => expect(screen.getByRole('button', {name: /J100/})).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsInbox onOpenJob={onOpenJob}/>);
+        expect(await screen.findByRole('button', {name: /J100/})).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /J100/}));
         expect(onOpenJob).toHaveBeenCalledWith(100, 'J100');
@@ -152,8 +153,8 @@ describe('PartnerApprovalsInbox', () => {
 
     it('shows "re-rates" chip on commercial-refresh requests', async () => {
         mockApi.pendingForApproval.mockResolvedValueOnce([makeItem()]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
-        await waitFor(() => expect(screen.getByText('re-rates')).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
+        expect(await screen.findByText('re-rates')).toBeInTheDocument();
     });
 
     it('renders address payload as a readable string instead of JSON', async () => {
@@ -167,9 +168,9 @@ describe('PartnerApprovalsInbox', () => {
             },
         });
         mockApi.pendingForApproval.mockResolvedValueOnce([addressItem]);
-        renderWithProviders(<PartnerApprovalsInbox/>);
+        renderWithMantineProviders(<PartnerApprovalsInbox/>);
 
-        await waitFor(() => expect(screen.getByText('Pickup Address')).toBeInTheDocument());
+        expect(await screen.findByText('Pickup Address')).toBeInTheDocument();
         expect(screen.getByText(/7 Lambton Quay, Wellington/)).toBeInTheDocument();
     });
 });

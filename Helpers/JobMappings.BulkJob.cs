@@ -12,6 +12,7 @@ public static partial class JobMappings
         AngularId = Guid.NewGuid(),
         ClientId = j.ClientId,
         Id = j.BulkJobId,
+        LinkedJobId = j.JobId,
         JobNo = j.JobNumber,
         Time = j.BookTime,
         ParentId = j.ParentId,
@@ -127,8 +128,13 @@ public static partial class JobMappings
         JobType = j.JobRelationshipTypeId ?? 0,
         JobTypeDescription = GetJobTypeDescription(j.JobRelationshipTypeId ?? 0),
 
-        // Job status and details
-        Done = j.Done,
+        // Job status and details.
+        // tblBulkJob.Done records that the row has been pushed to live dispatch, so it maps to
+        // Released. Delivery is the live job's to report — mapping Done straight across made a
+        // released bulk row render as delivered on every surface that reads Done.
+        Released = j.Done,
+        Done = j.Job != null && j.Job.UcjbJobDone,
+        CompletedTime = j.Job != null ? j.Job.UcjbComplTime : null,
         AlertLatePickup = j.Client != null ? j.Client.AlertLatePickUp : null,
         AlertLateDelivery = j.Client != null ? j.Client.AlertLateDelivery : null,
         Items = j.TblBulkJobItemChildJobs.Any()
@@ -193,6 +199,7 @@ public static partial class JobMappings
                 Depth = i.Depth,
                 Length = i.Length,
                 Weight = i.Weight,
+                Cubic = i.Cubic,
                 Barcode = i.Barcode
             }).ToList()
             : j.TblBulkJobItemJobs.Any(i => i.ChildJobId == null)
@@ -204,6 +211,7 @@ public static partial class JobMappings
                     Depth = i.Depth,
                     Length = i.Length,
                     Weight = i.Weight,
+                    Cubic = i.Cubic,
                     Barcode = i.Barcode
                 }).ToList()
                 : j.Parent != null
@@ -216,6 +224,7 @@ public static partial class JobMappings
                             Depth = i.Depth,
                             Length = i.Length,
                             Weight = i.Weight,
+                            Cubic = i.Cubic,
                             Barcode = i.Barcode
                         }).ToList()
                     : new List<ParcelDimensions>()

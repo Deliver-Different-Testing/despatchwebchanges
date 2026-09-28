@@ -6,9 +6,9 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {useQuery} from '@tanstack/react-query';
-import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
+import {Box, Progress} from '@mantine/core';
 import type {DispatchMapProps} from './DispatchMap.types';
 import {COURIER_REFRESH_INTERVAL_MS} from './DispatchMap.types';
 import {useHereMap} from './useHereMap';
@@ -33,6 +33,7 @@ export function DispatchMap({
     showAvailableCouriers = false,
     clearListId,
     onEnvelopeUpdate,
+    preferenceScope,
 }: DispatchMapProps) {
     // Refs for managers
     const jobMarkerManagerRef = useRef<JobMarkerManager | null>(null);
@@ -49,7 +50,7 @@ export function DispatchMap({
         toggleCouriersOnly,
         toggleUrgentArmyOnly,
         toggleCouriersLargeView,
-    } = useMapPreferences();
+    } = useMapPreferences(preferenceScope);
 
     // Handle map ready
     const handleMapReady = useCallback(
@@ -76,6 +77,33 @@ export function DispatchMap({
     useEffect(() => {
         mapInstanceRef.current = map;
     }, [map]);
+
+    // Mount a host element *inside* the HERE map container and portal the control
+    // rails into it, so they render within the map's own (isolated) stacking context.
+    // This is the documented best practice for custom map controls — placing them in
+    // the map's control layer rather than as an absolutely-positioned external sibling
+    // — and reliably keeps them above HERE's ~1001 info-bubble overlays instead of
+    // fighting sibling z-index ordering. The host is pointer-events:none so map
+    // gestures pass through; each control rail re-enables pointer events on itself.
+    const [controlsHost, setControlsHost] = useState<HTMLDivElement | null>(null);
+    useEffect(() => {
+        const container = mapContainerRef.current;
+        if (!isReady || !container) return undefined;
+
+        const host = document.createElement('div');
+        host.setAttribute('data-testid', 'dispatch-map-controls-host');
+        host.style.position = 'absolute';
+        host.style.inset = '0';
+        host.style.zIndex = '1002'; // above HERE's info-bubble / tooltip overlays (~1001)
+        host.style.pointerEvents = 'none';
+        container.appendChild(host);
+        setControlsHost(host);
+
+        return () => {
+            host.remove();
+            setControlsHost(null);
+        };
+    }, [isReady]);
 
     // Get map bounds for courier query
     const getMapBounds = useCallback(() => {
@@ -229,23 +257,48 @@ export function DispatchMap({
 
     return (
         <Box className={styles.dispatchMapComponent}>
-            {isLoading && <LinearProgress className={styles.loadingBar} />}
+            {isLoading && (
+                // Mantine has no indeterminate bar; an animated full-width track is
+                // the busy affordance, named for assistive tech. Positioning stays in
+                // the CSS module (.loadingBar) — it was already there.
+                <Progress
+                    value={100}
+                    animated
+                    size="xs"
+                    aria-label="Loading map data"
+                    className={styles.loadingBar}
+                />
+            )}
             <Box className={styles.dispatchMapContainer}>
-                <Box className={styles.mapWrapper}>
-                    <div ref={mapContainerRef} className={styles.mapContainer} />
-                </Box>
-                {isReady && (
-                    <>
-                        <MapZoomViewControls map={map} platform={platformInstance} defaultLayers={defaultLayers}/>
-                        <MapControlButtons
-                            controlState={controlState}
-                            onToggleAutoZoom={toggleAutoZoom}
-                            onToggleCouriersOnly={toggleCouriersOnly}
-                            onToggleUrgentArmyOnly={toggleUrgentArmyOnly}
-                            onToggleCouriersLargeView={toggleCouriersLargeView}
-                        />
-                    </>
-                )}
+                {/* HERE Maps renders info bubbles / tooltips inside this container at a
+                    high z-index (~1001). Isolate its stacking context so those overlays
+                    can never paint over the surrounding app chrome, and host the control
+                    rails inside it via a portal (see the controlsHost effect above) so
+                    they sit above HERE's overlays within the same context. position is
+                    relative so the portal host anchors to this element. */}
+                <Box
+                    ref={mapContainerRef}
+                    className={styles.mapContainer}
+                    data-testid="dispatch-map-wrapper"
+                    // Inline, not the CSS module: HERE's bubbles need this stacking
+                    // context and the test asserts it with toHaveStyle, which cannot
+                    // see CSS-module classes (mocked to {} in Jest).
+                    style={{isolation: 'isolate', position: 'relative'}}
+                />
+                {controlsHost &&
+                    createPortal(
+                        <>
+                            <MapZoomViewControls map={map} platform={platformInstance} defaultLayers={defaultLayers}/>
+                            <MapControlButtons
+                                controlState={controlState}
+                                onToggleAutoZoom={toggleAutoZoom}
+                                onToggleCouriersOnly={toggleCouriersOnly}
+                                onToggleUrgentArmyOnly={toggleUrgentArmyOnly}
+                                onToggleCouriersLargeView={toggleCouriersLargeView}
+                            />
+                        </>,
+                        controlsHost
+                    )}
             </Box>
         </Box>
     );

@@ -68,8 +68,11 @@ export const queryKeys = {
     couriers: {
         all: ['couriers'] as const,
         search: (searchText: string) => ['couriers', 'search', searchText] as const,
-        locations: (bounds: { minLng: number; minLat: number; maxLng: number; maxLat: number }) =>
-            ['couriers', 'locations', bounds] as const,
+        locations: (
+            bounds: {minLng: number; minLat: number; maxLng: number; maxLat: number},
+            fleetIds: number[],
+        ) => ['couriers', 'locations', bounds, fleetIds] as const,
+        fleetOptions: ['couriers', 'fleetOptions'] as const,
     },
     timeZones: {
         all: ['timeZones'] as const,
@@ -117,6 +120,8 @@ export const queryKeys = {
         }) => ['recurringJobs', 'list', query] as const,
         speeds: ['recurringJobs', 'speeds'] as const,
         routes: ['recurringJobs', 'routes'] as const,
+        deliveryJourney: (bookingId: number) =>
+            ['recurringJobs', 'deliveryJourney', bookingId] as const,
     },
     notes: {
         all: ['notes'] as const,
@@ -133,6 +138,10 @@ export const queryKeys = {
         job: (jobId: number, isPrebook: boolean, isArchived: boolean) =>
             ['priceBreakdowns', 'job', jobId, isPrebook, isArchived] as const,
     },
+    splitPriceBreakdown: {
+        all: ['splitPriceBreakdown'] as const,
+        job: (jobId: number) => ['splitPriceBreakdown', 'job', jobId] as const,
+    },
     tasks: {
         all: ['tasks'] as const,
         list: (filters: {
@@ -143,6 +152,7 @@ export const queryKeys = {
             endDate?: string;
             showCompleted?: boolean;
             jobId?: number;
+            limit?: number;
         }) => ['tasks', 'list', filters] as const,
         staff: ['tasks', 'staff'] as const,
         eventTypes: ['tasks', 'eventTypes'] as const,
@@ -162,12 +172,21 @@ export const queryKeys = {
         all: ['jobSearch'] as const,
         pod: (params: JobListSearchParams) => ['jobSearch', 'pod', params] as const,
         bulk: (params: JobListSearchParams) => ['jobSearch', 'bulk', params] as const,
+        scanDetail: (jobId: number, isBulkJob: boolean) =>
+            ['jobSearch', 'scanDetail', jobId, isBulkJob] as const,
     },
     dispatch: {
         all: ['dispatch'] as const,
         jobs: (params: JobListSearchParams) => ['dispatch', 'jobs', params] as const,
         clearList: (params: JobListSearchParams) => ['dispatch', 'clearList', params] as const,
         clearListEnvelope: (clearListId: number) => ['dispatch', 'clearListEnvelope', clearListId] as const,
+        currentWork: (params: JobListSearchParams) => ['dispatch', 'currentWork', params] as const,
+        currentWorkMap: (params: JobListSearchParams) => ['dispatch', 'currentWorkMap', params] as const,
+        pageViews: (pageId: number) => ['dispatch', 'pageViews', pageId] as const,
+        driverOverview: ['dispatch', 'driverOverview'] as const,
+        driverLocations: (viewIds: number[], startDate?: string, endDate?: string) =>
+            ['dispatch', 'driverLocations', viewIds, startDate, endDate] as const,
+        truckCourierStatus: (courierId: number) => ['dispatch', 'truckCourierStatus', courierId] as const,
     },
     nationwide: {
         all: ['nationwide'] as const,

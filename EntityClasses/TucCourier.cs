@@ -271,6 +271,22 @@ public partial class TucCourier
 
     public int? NpAgentId { get; set; }
 
+    public string PaymentMethod { get; set; }
+
+    public string MasterSubSettlementMode { get; set; }
+
+    public string PortalAccessToken { get; set; }
+
+    public DateTime? PortalTokenIssuedAt { get; set; }
+
+    public DateTime? PortalTokenLastUsedAt { get; set; }
+
+    public bool MobileVerified { get; set; }
+
+    public DateTime? MobileVerifiedDate { get; set; }
+
+    public bool MobileNeedsReview { get; set; }
+
     public virtual TucCourierFleet CourierFleet { get; set; }
 
     public virtual TblCourierGp CourierGps { get; set; }
@@ -286,6 +302,8 @@ public partial class TucCourier
     public virtual TucAgent NpAgent { get; set; }
 
     public virtual TblBulkRegion Region { get; set; }
+
+    public virtual ICollection<Route> Routes { get; set; } = new List<Route>();
 
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 

@@ -4,12 +4,14 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(OverviewController))]
 public class OverviewControllerTests
 {
     private readonly IJobQueryRepository _jobRepoMock = Substitute.For<IJobQueryRepository>();

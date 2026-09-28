@@ -194,6 +194,39 @@ describe('EditAddressDialogService', () => {
             });
         });
 
+        /**
+         * The island's stylesheet is only fetched if the loader lists it, and a missing
+         * one fails silently — the dialog just renders unstyled. It grew a CSS module
+         * once its tree moved to Mantine, so the pairing is pinned here.
+         */
+        it('loads the island stylesheet alongside the script when the manifest has one', async () => {
+            delete (window as any).ReactEditAddressDialog;
+            mockHttp.get.mockResolvedValue({
+                data: {
+                    'vendor-react.js': 'vendor-react.abc123.js',
+                    'editAddressDialogReact.js': 'editAddressDialogReact.xyz789.js',
+                    'editAddressDialogReact.css': 'editAddressDialogReact.css789.css',
+                },
+            });
+            mockOcLazyLoad.load.mockImplementation(async (arg: any) => {
+                if (typeof arg === 'object' && arg.name) {
+                    (window as any).ReactEditAddressDialog = {
+                        open: jest.fn().mockResolvedValue(null),
+                    };
+                }
+            });
+
+            await service.openEditAddressDialog(createMockAngularAddress() as any);
+
+            expect(mockOcLazyLoad.load).toHaveBeenCalledWith({
+                name: 'uDispatch.editAddressDialogReact',
+                files: [
+                    'dist/editAddressDialogReact.xyz789.js',
+                    'dist/editAddressDialogReact.css789.css',
+                ],
+            });
+        });
+
         it('should skip loading when ReactEditAddressDialog is already on window', async () => {
             await service.openEditAddressDialog(createMockAngularAddress() as any);
 
@@ -232,6 +265,7 @@ describe('EditAddressDialogService', () => {
                 false,            // default showContactInfo
                 false,            // isUsTenant
                 expect.any(Object), // toastService
+                undefined,        // addressType
             );
         });
 
@@ -253,6 +287,7 @@ describe('EditAddressDialogService', () => {
                 true,
                 false,
                 expect.any(Object),
+                undefined,
             );
         });
 
@@ -273,6 +308,7 @@ describe('EditAddressDialogService', () => {
                 false,
                 true,  // isUsTenant
                 expect.any(Object),
+                undefined,
             );
         });
 

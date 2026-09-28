@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Job API Service Tests
  */
@@ -174,13 +175,15 @@ describe('jobApi', () => {
                 toLong: -118.2437,
                 speedId: 1,
                 vehicleId: 2,
+                weightKg: null,
+                weightLb: null,
             };
-            mockApiClient.post.mockResolvedValueOnce(999);
+            mockApiClient.post.mockResolvedValueOnce({jobId: 999, jobNumber: 'JOB-999'});
 
             const result = await quickCreateJob(mockJob);
 
             expect(mockApiClient.post).toHaveBeenCalledWith('job/QuickCreateJob', mockJob);
-            expect(result).toBe(999);
+            expect(result).toEqual({jobId: 999, jobNumber: 'JOB-999'});
         });
     });
 

@@ -17,11 +17,18 @@ public static partial class JobMappings
         Time = j.UcjbTime,
         ParentId = j.ParentId,
         RootParentId = j.RootParentId,
+        JobRelationshipTypeId = j.JobRelationshipTypeId,
         Date = FormatDate(j.UcjbDate),
         Booked = j.UcjbDate.HasValue
             ? j.UcjbDate.Value.CombineWithTime(j.UcjbTime)
             : SqlMinDateTime,
-        DispatchTime = j.UcjbDispTime,
+        // See JobMappings.Core.cs for the rationale: combine DispDate + DispTime
+        // and treat NULL / sentinel-1900 DispDate as "not dispatched" so the UI
+        // shows '-' instead of "Jan/01 23:00".
+        DispatchTime = j.UcjbDispDate.HasValue && j.UcjbDispDate.Value.Year > 1900
+            ? j.UcjbDispDate.Value.CombineWithTime(j.UcjbDispTime)
+            : null,
+        DispatcherName = j.UcjbDisp != null ? FormatFullName(j.UcjbDisp) : null,
         CreatedDate = j.CreatedTimeUtc,
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,
@@ -136,7 +143,7 @@ public static partial class JobMappings
 
         // Job characteristics
         Weight = j.UcjbWeight,
-        CalculateDimsOncePerJob = j.DimensionsType == 1,
+        CalculateDimsOncePerJob = j.DimensionsType == 2,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
         JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),
@@ -152,7 +159,13 @@ public static partial class JobMappings
         Done = j.UcjbJobDone,
         Lp = j.UcjbLatePick,
         Ld = j.UcjbLateDel,
-        Items = j.TucJobItemsArchives.Count,
+        Items = j.TucJobItemsArchives.Any()
+            ? j.TucJobItemsArchives.Count
+            : j.TucJobItemsArchiveJobs.Count > 0
+                ? j.TucJobItemsArchiveJobs.Count
+                : j.Parent != null
+                    ? j.Parent.TucJobItemsArchiveJobs.Count(i => i.ChildJobId == null)
+                    : 0,
 
         PickupFrom = j.UcjbPickUpFrom,
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
@@ -259,7 +272,7 @@ public static partial class JobMappings
         DeliverToPrivateRes = j.TucJobItemsArchives.Any(i => i.PrivateRes == true)
             || j.TucJobItemsArchiveJobs.Any(i => i.PrivateRes == true),
 
-        // Parcel dimensions - child stop items first, fall back to own (simple/parent) items
+        // Parcel dimensions - 3-tier: stop child items → own items → parent items
         ParcelDimensions = j.TucJobItemsArchives.Any()
             ? j.TucJobItemsArchives.Select(i => new ParcelDimensions
                 {
@@ -269,6 +282,7 @@ public static partial class JobMappings
                     Depth = i.Depth,
                     Length = i.Length,
                     Weight = i.Weight,
+                    Cubic = i.Cubic,
                     Barcode = i.Barcode
                 }).ToList()
             : j.TucJobItemsArchiveJobs.Any(i => i.ChildJobId == null)
@@ -280,11 +294,25 @@ public static partial class JobMappings
                     Depth = i.Depth,
                     Length = i.Length,
                     Weight = i.Weight,
+                    Cubic = i.Cubic,
                     Barcode = i.Barcode
                 }).ToList()
-                : null,
+                : j.Parent != null
+                    ? j.Parent.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null)
+                        .Select(i => new ParcelDimensions
+                        {
+                            ItemId = i.ItemId,
+                            ItemName = i.Notes,
+                            Height = i.Height,
+                            Depth = i.Depth,
+                            Length = i.Length,
+                            Weight = i.Weight,
+                            Cubic = i.Cubic,
+                            Barcode = i.Barcode
+                        }).ToList()
+                    : new List<ParcelDimensions>(),
 
-        // Pallet info - child stop items first, fall back to own (simple/parent) items
+        // Pallet info - 3-tier: stop child items → own items → parent items
         PalletInfo = j.TucJobItemsArchives.Any()
             ? j.TucJobItemsArchives.Select(i => new PalletInfo
             {
@@ -295,6 +323,7 @@ public static partial class JobMappings
                 Length = i.Length ?? 0,
                 Depth = i.Depth ?? 0,
                 Height = i.Height ?? 0,
+                Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
                 Pu = i.Pu,
                 Do = i.Do,
                 DgClass = i.Dgclass,
@@ -310,12 +339,30 @@ public static partial class JobMappings
                     Length = i.Length ?? 0,
                     Depth = i.Depth ?? 0,
                     Height = i.Height ?? 0,
+                    Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
                     Pu = i.Pu,
                     Do = i.Do,
                     DgClass = i.Dgclass,
                     Notes = i.Notes
                 }).ToList()
-                : null,
+                : j.Parent != null
+                    ? j.Parent.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null)
+                        .Select(i => new PalletInfo
+                        {
+                            Id = i.JobId,
+                            Quantity = i.Items,
+                            ItemId = i.ItemId,
+                            Weight = i.Weight,
+                            Length = i.Length ?? 0,
+                            Depth = i.Depth ?? 0,
+                            Height = i.Height ?? 0,
+                            Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
+                            Pu = i.Pu,
+                            Do = i.Do,
+                            DgClass = i.Dgclass,
+                            Notes = i.Notes
+                        }).ToList()
+                    : null,
 
         CustomJobName = j.CustomJobName,
 
@@ -352,6 +399,7 @@ public static partial class JobMappings
             ClientId = j.UcjbClientId,
             Client = j.UcjbClientCode,
             ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
+            RefA = j.UcjbClientRefa,
 
             From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
             ToSuburbId = j.UcjbTo,

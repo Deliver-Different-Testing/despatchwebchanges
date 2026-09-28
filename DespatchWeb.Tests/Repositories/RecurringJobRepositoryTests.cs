@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -7,7 +7,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -17,17 +17,19 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class RecurringJobRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock =
+        Substitute.For<IClearListEnvelopeService>();
+
     private readonly FakeTenantClock _clock = new(TestDates.Now);
+    private readonly DespatchContext _context;
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly SqliteTestDatabase _db = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public RecurringJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
     }
 
     public async ValueTask DisposeAsync()
@@ -38,10 +40,10 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     }
 
     private RecurringJobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock
     );
 
     [Fact]
@@ -165,7 +167,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert - Both parent and child should be updated
         if (_context.TucJobBookings != null)
         {
-            var parentJob = await _context.TucJobBookings.FindAsync([parentJobId], TestContext.Current.CancellationToken);
+            var parentJob =
+                await _context.TucJobBookings.FindAsync([parentJobId], TestContext.Current.CancellationToken);
             var childJob = await _context.TucJobBookings.FindAsync([childJobId], TestContext.Current.CancellationToken);
 
             Assert.Equal(newClientId, parentJob!.UcbkClientId);
@@ -313,6 +316,95 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdateRecurringJobAsync_SavedFlightNumber_UpcasesAndStores()
+    {
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.SavedFlightNumber, "nz123");
+
+        _context.ChangeTracker.Clear();
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal("NZ123", updatedJob!.SavedFlightNumber);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_SavedFlightNumber_EmptyClearsToNull()
+    {
+        const int jobId = 100;
+        var booking = CreateJobBooking(jobId);
+        booking.SavedFlightNumber = "NZ123";
+        _context.TucJobBookings.Add(booking);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.SavedFlightNumber, "");
+
+        _context.ChangeTracker.Clear();
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Null(updatedJob!.SavedFlightNumber);
+    }
+
+    [Fact]
+    public async Task SaveRecurringFlightAsync_StampsAirportsAndUpcasedFlight()
+    {
+        // A recurring booking created without a route — the "add flight" flow
+        // supplies airports + flight together so push-to-live auto-assign (which
+        // needs both airports non-null) can match.
+        const int jobId = 100;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.SaveRecurringFlightAsync(jobId, fromAirportId: 150, toAirportId: 96, flightNumber: "nz 123");
+
+        _context.ChangeTracker.Clear();
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal(150, updatedJob!.FromAirportId);
+        Assert.Equal(96, updatedJob.ToAirportId);
+        Assert.Equal("NZ 123", updatedJob.SavedFlightNumber);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_BookedTime_UpdatesBothUcbkDateAndUcbkTime()
+    {
+        // Arrange — the Ready card reads UcbkDate.CombineWithTime(UcbkTime),
+        // so an edit that only writes UcbkDate leaves the time stale and the
+        // new time bleeds into the Created card (which renders raw UcbkDate).
+        const int jobId = 100;
+        var originalDate = new DateTime(2024, 3, 4, 0, 0, 0);
+        var originalTime = new DateTime(2024, 3, 4, 6, 0, 0);
+
+        _context.TucJobBookings.Add(CreateJobBookingWithDates(
+            id: jobId,
+            date: originalDate,
+            time: originalTime,
+            nextDue: null,
+            active: true,
+            oneOff: false));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var newDateTime = new DateTimeOffset(2024, 3, 3, 15, 20, 0, TimeSpan.Zero);
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.BookedTime, newDateTime.ToString("O"));
+
+        _context.ChangeTracker.Clear();
+
+        // Assert — both UcbkDate AND UcbkTime carry the new value; the stale
+        // 6am time from UcbkTime must not survive.
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal(newDateTime.DateTime, updatedJob!.UcbkDate);
+        Assert.Equal(newDateTime.DateTime, updatedJob.UcbkTime);
+        Assert.NotEqual(originalTime, updatedJob.UcbkTime);
+        Assert.Equal(15, updatedJob.UcbkTime!.Value.Hour);
+        Assert.Equal(20, updatedJob.UcbkTime!.Value.Minute);
+    }
+
+    [Fact]
     public async Task GetRecurringJobsListAsync_WithValidDates_AppliesTimezoneConversion()
     {
         // Arrange
@@ -320,8 +412,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
             id: 100,
@@ -353,8 +445,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Arrange - Job with null date/time will use SqlMinDateTime (1753-01-01) as fallback
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
             id: 100,
@@ -388,8 +480,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // when converted to DateTimeOffset with positive timezone offset (like NZ +12/+13)
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         // Add job with dates that would result in SqlMinDateTime fallback
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
@@ -405,12 +497,14 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
 
-        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ?? throw new InvalidOperationException());
+        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ??
+                                                    throw new InvalidOperationException());
         Assert.Null(exception);
         return;
 
         // Act & Assert - Should not throw ArgumentOutOfRangeException
-        async Task<PaginatedResponse<PrebookListViewModel>> Act() => await repository.GetRecurringJobsListAsync(request);
+        async Task<PaginatedResponse<PrebookListViewModel>> Act() =>
+            await repository.GetRecurringJobsListAsync(request);
     }
 
     [Fact]
@@ -422,8 +516,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var nextDue = new DateTime(2024, 6, 22, 9, 0, 0);
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
             id: 100,
@@ -458,8 +552,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.Add(CreateJobBookingWithDates(
             id: 100,
@@ -489,8 +583,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Arrange
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         // No jobs added
         var repository = CreateRepository();
@@ -512,8 +606,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var validTime = new DateTime(1900, 1, 1, 14, 30, 0);
         const string timezone = "New Zealand Standard Time";
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, validDate, validTime, validDate.AddDays(7), true, false),
@@ -525,7 +619,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
 
-        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ?? throw new InvalidOperationException());
+        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ??
+                                                    throw new InvalidOperationException());
         Assert.Null(exception);
 
         var result = await repository.GetRecurringJobsListAsync(request);
@@ -535,7 +630,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         return;
 
         // Act - Should not throw for mixed dates
-        async Task<PaginatedResponse<PrebookListViewModel>> Act() => await repository.GetRecurringJobsListAsync(request);
+        async Task<PaginatedResponse<PrebookListViewModel>> Act() =>
+            await repository.GetRecurringJobsListAsync(request);
     }
 
     [Fact]
@@ -613,7 +709,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Arrange
         var repository = CreateRepository();
 
-        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<JobGroupViewModel>>?)Act ?? throw new InvalidOperationException());
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<JobGroupViewModel>>?)Act ??
+                                                        throw new InvalidOperationException());
         return;
 
         // Act & Assert
@@ -728,7 +825,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Amount, newAmount.ToString(CultureInfo.InvariantCulture));
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.Amount,
+            newAmount.ToString(CultureInfo.InvariantCulture));
         _context.ChangeTracker.Clear();
 
         // Assert
@@ -753,6 +851,147 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         Assert.Equal(newCourierId, updatedJob!.CourierId);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("0")]
+    public async Task UpdateRecurringJobAsync_CourierId_EmptyOrZeroClearsToNull(string value)
+    {
+        const int jobId = 100;
+        var booking = CreateJobBooking(jobId);
+        booking.CourierId = 42;
+        _context.TucJobBookings.Add(booking);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, value);
+        _context.ChangeTracker.Clear();
+
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Null(updatedJob!.CourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_ClearIsSingleRowOnly()
+    {
+        // Unassign is symmetric with assign: it clears only the target booking
+        // row, never the child bookings of the recurring family.
+        const int parentId = 100;
+        const int childId = 101;
+        var parent = CreateJobBooking(parentId);
+        parent.CourierId = 42;
+        var child = CreateJobBooking(childId, bookingParentId: parentId);
+        child.CourierId = 42;
+        _context.TucJobBookings.AddRange(parent, child);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(parentId, JobProperty.CourierId, "");
+        _context.ChangeTracker.Clear();
+
+        var updatedParent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
+        var updatedChild = await _context.TucJobBookings.FindAsync([childId], TestContext.Current.CancellationToken);
+        Assert.Null(updatedParent!.CourierId);
+        Assert.Equal(42, updatedChild!.CourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_CascadesToFutureMaterialisedJobs()
+    {
+        // The create-ahead window spins tomorrow's occurrence into a standalone
+        // tucJob before the operator gets to it, so a template-only write never
+        // reaches it. Assigning the courier on the template must also re-drive
+        // the already-materialised future job. TenantToday = 2024-06-15.
+        const int jobId = 100;
+        const int newCourierId = 42;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        _context.TucJobs.Add(CreateMaterialisedJob(
+            ucjbId: 5000, bookingParentId: jobId, date: new DateTime(2024, 6, 16), courierId: 7));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, newCourierId.ToString());
+        _context.ChangeTracker.Clear();
+
+        var futureJob = await _context.TucJobs.FindAsync([5000], TestContext.Current.CancellationToken);
+        Assert.Equal(newCourierId, futureJob!.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_UnassignCascadesToFutureMaterialisedJobs()
+    {
+        // Unassign is symmetric with assign: clearing the template courier also
+        // clears it on future not-yet-actioned materialised jobs.
+        const int jobId = 100;
+        var booking = CreateJobBooking(jobId);
+        booking.CourierId = 42;
+        _context.TucJobBookings.Add(booking);
+        _context.TucJobs.Add(CreateMaterialisedJob(
+            ucjbId: 5000, bookingParentId: jobId, date: new DateTime(2024, 6, 16), courierId: 42));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, "");
+        _context.ChangeTracker.Clear();
+
+        var futureJob = await _context.TucJobs.FindAsync([5000], TestContext.Current.CancellationToken);
+        Assert.Null(futureJob!.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_CascadesToChildLegMaterialisedJobs()
+    {
+        // A multi-leg recurring job materialises one tucJob per leg, each tied
+        // back to its own booking template via BookingParentId. Re-driving the
+        // parent must reach every leg of the future occurrence, not just the
+        // pickup leg.
+        const int parentId = 100;
+        const int childId = 101;
+        const int newCourierId = 42;
+        _context.TucJobBookings.AddRange(
+            CreateJobBooking(parentId),
+            CreateJobBooking(childId, bookingParentId: parentId));
+        _context.TucJobs.AddRange(
+            CreateMaterialisedJob(5000, parentId, new DateTime(2024, 6, 16), courierId: 7),
+            CreateMaterialisedJob(5001, childId, new DateTime(2024, 6, 16), courierId: 7));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(parentId, JobProperty.CourierId, newCourierId.ToString());
+        _context.ChangeTracker.Clear();
+
+        var parentLeg = await _context.TucJobs.FindAsync([5000], TestContext.Current.CancellationToken);
+        var childLeg = await _context.TucJobs.FindAsync([5001], TestContext.Current.CancellationToken);
+        Assert.Equal(newCourierId, parentLeg!.UcjbCourierId);
+        Assert.Equal(newCourierId, childLeg!.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_CourierId_DoesNotTouchPastDoneOrVoidJobs()
+    {
+        // Only future, not-yet-actioned jobs are re-driven. A job that already
+        // ran (past date), one already completed, and a voided one all keep
+        // their original courier. TenantToday = 2024-06-15.
+        const int jobId = 100;
+        const int newCourierId = 42;
+        _context.TucJobBookings.Add(CreateJobBooking(jobId));
+        _context.TucJobs.AddRange(
+            CreateMaterialisedJob(6000, jobId, new DateTime(2024, 6, 14), courierId: 7), // past
+            CreateMaterialisedJob(6001, jobId, new DateTime(2024, 6, 16), courierId: 7, done: true), // done
+            CreateMaterialisedJob(6002, jobId, new DateTime(2024, 6, 16), courierId: 7, isVoid: true)); // void
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.CourierId, newCourierId.ToString());
+        _context.ChangeTracker.Clear();
+
+        var pastJob = await _context.TucJobs.FindAsync([6000], TestContext.Current.CancellationToken);
+        var doneJob = await _context.TucJobs.FindAsync([6001], TestContext.Current.CancellationToken);
+        var voidJob = await _context.TucJobs.FindAsync([6002], TestContext.Current.CancellationToken);
+        Assert.Equal(7, pastJob!.UcjbCourierId);
+        Assert.Equal(7, doneJob!.UcjbCourierId);
+        Assert.Equal(7, voidJob!.UcjbCourierId);
     }
 
     [Fact]
@@ -852,7 +1091,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert
         var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
         var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
-        var secondChild = await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
+        var secondChild =
+            await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
 
         Assert.Equal(newContact, parent!.PickupFromContact);
         Assert.Equal(newContact, firstChild!.PickupFromContact);
@@ -883,7 +1123,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert
         var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
         var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
-        var secondChild = await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
+        var secondChild =
+            await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
 
         Assert.Equal(newContact, parent!.DeliverToContact);
         Assert.Null(firstChild!.DeliverToContact); // First child should NOT be updated
@@ -1059,8 +1300,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false),
@@ -1068,6 +1309,14 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
             CreateJobBookingWithDates(102, TestDates.Now, null, null, false, false) // Inactive
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        // RecurringMode is configured with HasDefaultValue((byte)1) so EF treats
+        // the CLR-default 0 as the sentinel and omits the column from INSERTs,
+        // letting the DB default (=Active) take over. Re-stamp Inactive rows
+        // explicitly so the fixture matches what active=false intended.
+        await _context.TucJobBookings
+            .Where(j => j.UcbkId == 102)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.RecurringMode,
+                (byte)RecurringMode.Inactive), TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true };
@@ -1084,8 +1333,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSpeed(100, 1, true),
@@ -1102,7 +1351,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         Assert.Equal(2, result.Count);
-        Assert.All(result, j => Assert.True(j.Id == 100 || j.Id == 102));
+        Assert.All(result, j => Assert.True(j.Id is 100 or 102));
     }
 
     [Fact]
@@ -1110,8 +1359,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithCourier(100, 10, true),
@@ -1135,8 +1384,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithAddress(100, "123 Queen St", true),
@@ -1160,12 +1409,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false), // Recurring
-            CreateJobBookingWithDates(101, TestDates.Now, null, null, true, true)   // One-off
+            CreateJobBookingWithDates(101, TestDates.Now, null, null, true, true) // One-off
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
@@ -1189,8 +1438,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, new DateTime(2024, 1, 1), null, null, true, false),
@@ -1219,8 +1468,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSearchFields(100, clientCode: "ACME01", active: true),
@@ -1246,8 +1495,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSearchFields(100, pickupContact: "John Smith", active: true),
@@ -1273,8 +1522,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSearchFields(100, clientRefA: "PO-12345", active: true),
@@ -1300,8 +1549,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithSearchFields(100, connote: "CN-ABC-001", active: true),
@@ -1331,7 +1580,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var middleDate = new DateTime(2024, 6, 15, 14, 30, 0);
         var newestDate = new DateTime(2024, 12, 31, 23, 59, 0);
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
 
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TucJobBookings.Add(CreateJobBooking(jobBookingId));
@@ -1359,14 +1608,14 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "New Zealand Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         // Monday = 1, Tuesday = 2, Wednesday = 4
         _context.TucJobBookings.AddRange(
-            CreateJobBookingWithDays(100, 1, true),   // Monday only
-            CreateJobBookingWithDays(101, 3, true),   // Monday + Tuesday
-            CreateJobBookingWithDays(102, 4, true)    // Wednesday only
+            CreateJobBookingWithDays(100, 1, true), // Monday only
+            CreateJobBookingWithDays(101, 3, true), // Monday + Tuesday
+            CreateJobBookingWithDays(102, 4, true) // Wednesday only
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
@@ -1386,8 +1635,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         const string timezone = "Pacific Standard Time";
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns(timezone);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns(timezone);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         _context.TucJobBookings.AddRange(
             CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false),
@@ -1446,6 +1695,26 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UcbkJobNumber = $"JOB{id}"
     };
 
+    // A live tucJob materialised from a recurring booking template. Ties back
+    // to the template (parent or child leg) via BookingParentId — the same
+    // shape the create-ahead materialiser produces.
+    private static TucJob CreateMaterialisedJob(
+        int ucjbId,
+        int bookingParentId,
+        DateTime date,
+        int? courierId = null,
+        bool done = false,
+        bool isVoid = false) => new()
+    {
+        UcjbId = ucjbId,
+        BookingParentId = bookingParentId,
+        UcjbNumber = $"JOB{ucjbId}",
+        UcjbDate = date,
+        UcjbCourierId = courierId,
+        UcjbJobDone = done,
+        UcjbVoid = isVoid
+    };
+
     private static TucJobBooking CreateJobBookingWithDates(
         int id,
         DateTime? date,
@@ -1459,6 +1728,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UcbkTime = time,
         UcbkNextDue = nextDue,
         UcbkActive = active,
+        // BuildRecurringJobQuery filters by RecurringMode after Steve's 2026-06-09
+        // tri-state migration; mirror the production sync rule here so test fixtures
+        // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
+        // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
+        // per the compatibility rule, so Active is the safe default for active=true.
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = oneOff,
         UcbkJobNumber = $"JOB{id}",
         UcbkAttention = false
@@ -1498,6 +1773,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UcbkJobNumber = $"JOB{id}",
         UcbkSpeed = speed,
         UcbkActive = active,
+        // BuildRecurringJobQuery filters by RecurringMode after Steve's 2026-06-09
+        // tri-state migration; mirror the production sync rule here so test fixtures
+        // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
+        // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
+        // per the compatibility rule, so Active is the safe default for active=true.
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false
     };
@@ -1511,6 +1792,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UcbkJobNumber = $"JOB{id}",
         CourierId = courierId,
         UcbkActive = active,
+        // BuildRecurringJobQuery filters by RecurringMode after Steve's 2026-06-09
+        // tri-state migration; mirror the production sync rule here so test fixtures
+        // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
+        // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
+        // per the compatibility rule, so Active is the safe default for active=true.
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false
     };
@@ -1524,6 +1811,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UcbkJobNumber = $"JOB{id}",
         DeliveryAddressLine1 = addressLine1,
         UcbkActive = active,
+        // BuildRecurringJobQuery filters by RecurringMode after Steve's 2026-06-09
+        // tri-state migration; mirror the production sync rule here so test fixtures
+        // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
+        // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
+        // per the compatibility rule, so Active is the safe default for active=true.
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false
     };
@@ -1537,6 +1830,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UcbkJobNumber = $"JOB{id}",
         UcbkDaysInt = daysInt,
         UcbkActive = active,
+        // BuildRecurringJobQuery filters by RecurringMode after Steve's 2026-06-09
+        // tri-state migration; mirror the production sync rule here so test fixtures
+        // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
+        // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
+        // per the compatibility rule, so Active is the safe default for active=true.
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false
     };
@@ -1555,6 +1854,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UcbkId = id,
         UcbkJobNumber = $"JOB{id}",
         UcbkActive = active,
+        // BuildRecurringJobQuery filters by RecurringMode after Steve's 2026-06-09
+        // tri-state migration; mirror the production sync rule here so test fixtures
+        // that flag a row "inactive" via the legacy UcbkActive bool are also flagged
+        // RecurringMode = Inactive. Active and Manual both map to ucbkActive = 1
+        // per the compatibility rule, so Active is the safe default for active=true.
+        RecurringMode = active ? (byte)RecurringMode.Active : (byte)RecurringMode.Inactive,
         UcbkOneOff = false,
         UcbkAttention = false,
         UcbkClientCode = clientCode,
@@ -1596,4 +1901,517 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UpdatedDate = createdDate // Explicit to avoid SQLite getdate() issue
     };
 
+    // ------------------------------------------------------------------
+    // CreateAheadDays / RecurringInitialDays edit path
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RecurringInitialDays_WritesValueOnParent()
+    {
+        const int jobId = 800;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        await repo.UpdateRecurringJobAsync(jobId, JobProperty.RecurringInitialDays, "3");
+
+        _context.ChangeTracker.Clear();
+        var updated = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal(3, updated!.RecurringInitialDays);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RecurringInitialDays_RejectsValueAboveMax()
+    {
+        const int jobId = 801;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        // MaxRecurringInitialDays is 30. Anything over should be rejected before
+        // touching the database — a fat-finger from the operator (999) should
+        // not produce a 999-day backfill window.
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            repo.UpdateRecurringJobAsync(jobId, JobProperty.RecurringInitialDays, "999"));
+        Assert.Contains("between 0 and 30", ex.Message);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RecurringInitialDays_RejectsNegative()
+    {
+        const int jobId = 802;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+            repo.UpdateRecurringJobAsync(jobId, JobProperty.RecurringInitialDays, "-1"));
+        Assert.Contains("between 0 and 30", ex.Message);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobAsync_RecurringInitialDays_NoOpWhenUnchanged()
+    {
+        // Non-fortnightly + unchanged value must not fire the re-seed SP.
+        // SQLite doesn't know about UTL_stpJobBooking_RecomputeFirstDueOnEdit,
+        // so a failure to guard would surface as a SqliteException here.
+        const int jobId = 803;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 2, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        await repo.UpdateRecurringJobAsync(jobId, JobProperty.RecurringInitialDays, "2");
+
+        _context.ChangeTracker.Clear();
+        var updated = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal(2, updated!.RecurringInitialDays);
+    }
+
+    // ------------------------------------------------------------------
+    // PreviewCreateAheadBackfillAsync
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_ReturnsEmpty_WhenNewValueNotGreaterThanOld()
+    {
+        const int jobId = 810;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.PreviewCreateAheadBackfillAsync(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = jobId, OldValue = 3, NewValue = 3
+        });
+
+        Assert.Empty(result.Candidates);
+        Assert.Empty(result.AlreadyExistingDates);
+        Assert.Empty(result.SkippedDates);
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_RejectsValueAboveMax()
+    {
+        const int jobId = 811;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            repo.PreviewCreateAheadBackfillAsync(new PreviewCreateAheadBackfillRequest
+            {
+                JobId = jobId, OldValue = 0, NewValue = 999
+            }));
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_MonFriPattern_SkipsWeekendCandidates()
+    {
+        // TestDates.Now = 2024-06-15 (Saturday). Raising 0 -> 3 examines
+        // Sun 6/16, Mon 6/17, Tue 6/18. With a Mon-Fri pattern only Mon +
+        // Tue should be candidates; Sun is skipped by the day-pattern check.
+        const int jobId = 812;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(
+            jobId, currentValue: 0, frequency: 1, ucbkDays: "1111100"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.PreviewCreateAheadBackfillAsync(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = jobId, OldValue = 0, NewValue = 3
+        });
+
+        Assert.Equal(2, result.Candidates.Count);
+        Assert.Contains(result.Candidates, c => c.ServiceDate == new DateOnly(2024, 6, 17));
+        Assert.Contains(result.Candidates, c => c.ServiceDate == new DateOnly(2024, 6, 18));
+        Assert.Contains(result.SkippedDates, s => s.ServiceDate == new DateOnly(2024, 6, 16));
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_HonoursExistingLiveJobDupGuard()
+    {
+        const int jobId = 813;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(
+            jobId, currentValue: 0, frequency: 1, ucbkDays: "1111111"));
+        // Simulate a live tucJob already existing for 2024-06-17 in the
+        // window that would otherwise be a candidate — the preview should
+        // classify it as "already existing", not "candidate".
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = 90000,
+            BookingParentId = jobId,
+            UcjbNumber = "JOB-EXISTS",
+            UcjbDate = new DateTime(2024, 6, 17),
+            UcjbVoid = false
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.PreviewCreateAheadBackfillAsync(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = jobId, OldValue = 0, NewValue = 3
+        });
+
+        Assert.DoesNotContain(result.Candidates, c => c.ServiceDate == new DateOnly(2024, 6, 17));
+        Assert.Contains(result.AlreadyExistingDates, d => d == new DateOnly(2024, 6, 17));
+    }
+
+    // ------------------------------------------------------------------
+    // CreateCreateAheadBackfillAsync
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_ReturnsEmpty_WhenDatesEmpty()
+    {
+        const int jobId = 820;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.CreateCreateAheadBackfillAsync(new CreateCreateAheadBackfillRequest
+        {
+            JobId = jobId, Dates = []
+        });
+
+        Assert.Equal(0, result.JobsCreated);
+        Assert.Equal(0, result.DuplicatesSkipped);
+        Assert.Empty(result.CreatedDates);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_DupGuard_SkipsExistingLiveJobDate()
+    {
+        // ExecuteMaterialiseParentAsync mints a job number through
+        // Context.Procedures (unstubbed here, so it would fail against SQLite
+        // and land in Errors); the dup guard fires FIRST so if we prepopulate
+        // a live tucJob for the requested date the procs are never invoked and
+        // the test can complete cleanly, exercising the dup-guard branch that
+        // a double-click would hit in production.
+        const int jobId = 821;
+        _context.TucJobBookings.Add(CreateRecurringInitialDaysFixture(jobId, currentValue: 0, frequency: 1));
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = 91000,
+            BookingParentId = jobId,
+            UcjbNumber = "JOB-DUP",
+            UcjbDate = new DateTime(2024, 6, 17),
+            UcjbVoid = false
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        var result = await repo.CreateCreateAheadBackfillAsync(new CreateCreateAheadBackfillRequest
+        {
+            JobId = jobId, Dates = [new DateOnly(2024, 6, 17)]
+        });
+
+        Assert.Equal(0, result.JobsCreated);
+        Assert.Equal(1, result.DuplicatesSkipped);
+        Assert.Empty(result.CreatedDates);
+        Assert.Empty(result.Errors);
+    }
+
+    // ------------------------------------------------------------------
+    // ExecuteMaterialiseParentAsync (driven via CreateCreateAheadBackfillAsync,
+    // stored procs substituted through Context.Procedures)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task MaterialiseParent_UsesInsertJobAndChildren_WhenNoSchedule()
+    {
+        const int jobId = 830;
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        await procedures.Received(1).UTL_stpJobBooking_InsertJobAndChildrenAsync(
+            jobId, Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertScheduleAsync(null);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_UsesInsertSchedule_WhenScheduleIdSet()
+    {
+        const int jobId = 831;
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId, scheduleId: 7));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        await procedures.Received(1).UTL_stpJobBooking_InsertScheduleAsync(
+            jobId, Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertJobAndChildrenAsync(null);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_StampsParentForProc_AndRestoresAfter()
+    {
+        const int jobId = 832;
+        var insertDate = BackfillRequest(jobId).Dates[0].ToDateTime(TimeOnly.MinValue);
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        (DateTime? Date, int? InitialDays, string JobNumber)? stamped = null;
+        procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                using var ctx = _db.CreateContext();
+                var row = ctx.TucJobBookings.Single(b => b.UcbkId == jobId);
+                stamped = (row.UcbkDate, row.RecurringInitialDays, row.UcbkJobNumber);
+                return new List<UTL_stpJobBooking_InsertJobAndChildrenResult>();
+            });
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        Assert.True(stamped.HasValue);
+        Assert.Equal(insertDate, stamped.Value.Date);
+        Assert.Equal(0, stamped.Value.InitialDays);
+        Assert.Equal("JOB999", stamped.Value.JobNumber);
+
+        await using var verify = _db.CreateContext();
+        var restored = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(new DateTime(2024, 5, 1), restored.UcbkDate);
+        Assert.Equal(5, restored.RecurringInitialDays);
+        Assert.Equal($"JOB{jobId}", restored.UcbkJobNumber);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_StampsLegChildWithSuffix_LeavesOtherChildrenAlone()
+    {
+        const int parentId = 834;
+        const int legChildId = 835;
+        const int otherChildId = 836;
+        var parent = CreateMaterialiseParentFixture(parentId);
+        var legChild = CreateMaterialiseParentFixture(legChildId);
+        legChild.BookingParentId = parentId;
+        legChild.JobRelationshipTypeId = 13;
+        legChild.UcbkJobNumber = "JOB8351";
+        legChild.UcbkTime = null;
+        var otherChild = CreateMaterialiseParentFixture(otherChildId);
+        otherChild.BookingParentId = parentId;
+        otherChild.JobRelationshipTypeId = 5;
+        _context.TucJobBookings.AddRange(parent, legChild, otherChild);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        (string LegNumber, DateTime? LegTime, int? LegInitialDays, string OtherNumber, DateTime? OtherDate)? stamped = null;
+        procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                using var ctx = _db.CreateContext();
+                var leg = ctx.TucJobBookings.Single(b => b.UcbkId == legChildId);
+                var other = ctx.TucJobBookings.Single(b => b.UcbkId == otherChildId);
+                stamped = (leg.UcbkJobNumber, leg.UcbkTime, leg.RecurringInitialDays, other.UcbkJobNumber, other.UcbkDate);
+                return new List<UTL_stpJobBooking_InsertJobAndChildrenResult>();
+            });
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(parentId));
+
+        Assert.Empty(result.Errors);
+        Assert.True(stamped.HasValue);
+        // Leg child: minted number + trailing-digit suffix, parent's time, offset reset.
+        Assert.Equal("JOB9991", stamped.Value.LegNumber);
+        Assert.Equal(parent.UcbkTime, stamped.Value.LegTime);
+        Assert.Equal(0, stamped.Value.LegInitialDays);
+        // Non-13/20 child untouched while the proc ran.
+        Assert.Equal($"JOB{otherChildId}", stamped.Value.OtherNumber);
+        Assert.Equal(new DateTime(2024, 5, 1), stamped.Value.OtherDate);
+
+        await using var verify = _db.CreateContext();
+        var restoredLeg = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == legChildId, TestContext.Current.CancellationToken);
+        Assert.Equal("JOB8351", restoredLeg.UcbkJobNumber);
+        Assert.Equal(5, restoredLeg.RecurringInitialDays);
+        // Self-heal: the leg child's original NULL time keeps the parent's
+        // stamped time after a successful push.
+        Assert.Equal(parent.UcbkTime, restoredLeg.UcbkTime);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_NullParentTime_ReportsErrorWithoutCallingProcs()
+    {
+        const int jobId = 837;
+        var parent = CreateMaterialiseParentFixture(jobId);
+        parent.UcbkTime = null;
+        _context.TucJobBookings.Add(parent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("NULL ucbkTime", error.Message);
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJob_Insert_JobNumberAsync(null, null, null, cancellationToken: TestContext.Current.CancellationToken);
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertJobAndChildrenAsync(null, cancellationToken: TestContext.Current.CancellationToken);
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertScheduleAsync(null, cancellationToken: TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_ProcFailure_RestoresTemplatesExactly()
+    {
+        const int parentId = 838;
+        const int childId = 839;
+        var parent = CreateMaterialiseParentFixture(parentId);
+        var child = CreateMaterialiseParentFixture(childId);
+        child.BookingParentId = parentId;
+        child.JobRelationshipTypeId = 13;
+        child.UcbkJobNumber = "JOB8391";
+        child.UcbkTime = null;
+        _context.TucJobBookings.AddRange(parent, child);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+        procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<List<UTL_stpJobBooking_InsertJobAndChildrenResult>>(
+                new InvalidOperationException("materialise boom")));
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(parentId));
+
+        var error = Assert.Single(result.Errors);
+        Assert.Contains("materialise boom", error.Message);
+
+        await using var verify = _db.CreateContext();
+        var restoredParent = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == parentId, TestContext.Current.CancellationToken);
+        Assert.Equal(new DateTime(2024, 5, 1), restoredParent.UcbkDate);
+        Assert.Equal(5, restoredParent.RecurringInitialDays);
+        Assert.Equal($"JOB{parentId}", restoredParent.UcbkJobNumber);
+        var restoredChild = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == childId, TestContext.Current.CancellationToken);
+        Assert.Equal("JOB8391", restoredChild.UcbkJobNumber);
+        // Failure path restores exactly — including the original NULL time.
+        Assert.Null(restoredChild.UcbkTime);
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_MintsWithPrebooksStaffAndParentSpeed()
+    {
+        const int jobId = 840;
+        _context.TucStaffs.Add(new TucStaff
+        {
+            UcstId = 55, UcstFirstName = "Prebooks", UcstLastName = "Cron",
+            CreatedBy = "test", LastModifiedBy = "test"
+        });
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        await procedures.Received(1).UTL_stpJob_Insert_JobNumberAsync(
+            55, 3, Arg.Any<OutputParameter<string>>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task MaterialiseParent_MintsWithStaffZero_WhenPrebooksStaffMissing()
+    {
+        const int jobId = 841;
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Empty(result.Errors);
+        await procedures.Received(1).UTL_stpJob_Insert_JobNumberAsync(
+            0, 3, Arg.Any<OutputParameter<string>>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(13, "ABC1", "1")] // trailing digit, relType 13 only
+    [InlineData(20, "ABC1", "")]
+    [InlineData(13, "ABC", "")]
+    [InlineData(20, "JOBLHP", "LHP")]
+    [InlineData(13, "JOBDEL", "DEL")] // LHP/DEL/LH branches apply to both relTypes
+    [InlineData(20, "joblhp", "LHP")] // SQL collation is case-insensitive
+    [InlineData(20, "JOBLH2", "LH2")]
+    [InlineData(20, "LH", "LH")] // RIGHT(n,3) of a short string is the whole string
+    [InlineData(20, "AB", "")]
+    [InlineData(20, null, "")]
+    [InlineData(20, "", "")]
+    public void BuildChildJobNumberSuffix_MirrorsSqlCase(int relationshipTypeId, string jobNumber, string expected)
+    {
+        Assert.Equal(expected, RecurringJobRepository.BuildChildJobNumberSuffix(relationshipTypeId, jobNumber));
+    }
+
+    private IDespatchContextProcedures StubProcedures(string mintedJobNumber = "JOB999")
+    {
+        var procedures = Substitute.For<IDespatchContextProcedures>();
+        procedures.UTL_stpJob_Insert_JobNumberAsync(
+                Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<OutputParameter<string>>(),
+                Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(x =>
+            {
+                x.Arg<OutputParameter<string>>().SetValue(mintedJobNumber);
+                return 1;
+            });
+        _context.Procedures = procedures;
+        return procedures;
+    }
+
+    // Parent template ready for the materialise path: fixed date/time/speed so
+    // the stamp-and-restore assertions have known originals.
+    private TucJobBooking CreateMaterialiseParentFixture(int id, int? scheduleId = null)
+    {
+        var parent = CreateRecurringInitialDaysFixture(id, currentValue: 5, frequency: 1);
+        parent.UcbkDate = new DateTime(2024, 5, 1);
+        parent.UcbkTime = new DateTime(2024, 5, 1, 9, 30, 0);
+        parent.UcbkSpeed = 3;
+        parent.ScheduleId = scheduleId;
+        return parent;
+    }
+
+    private static CreateCreateAheadBackfillRequest BackfillRequest(int jobId) => new()
+    {
+        JobId = jobId,
+        Dates = [new DateOnly(2024, 6, 18)]
+    };
+
+    // Fixture helper: minimal recurring parent template that satisfies
+    // PreviewCreateAheadBackfillAsync's SELECT (metadata + client site).
+    // frequency=1 (weekly) avoids the fortnightly re-seed SP entirely.
+    private TucJobBooking CreateRecurringInitialDaysFixture(
+        int id,
+        int currentValue,
+        int frequency,
+        string ucbkDays = "1111111")
+    {
+        // Client row is needed so the LEFT JOIN in the preview SELECT
+        // resolves without returning null-only metadata.
+        if (!_context.TucClients.Local.Any(c => c.UcclId == 1)
+            && !_context.TucClients.Any(c => c.UcclId == 1))
+        {
+            _context.TucClients.Add(CreateClient(1, "TESTCLIENT"));
+        }
+
+        return new TucJobBooking
+        {
+            UcbkId = id,
+            UcbkClientId = 1,
+            UcbkClientCode = "TESTCLIENT",
+            UcbkJobNumber = $"JOB{id}",
+            RecurringInitialDays = currentValue,
+            UcbkFrequency = frequency,
+            UcbkDays = ucbkDays,
+            HolidayDeliveryOption = 2, // Book Anyway — bypasses the holiday guard
+            UcbkAttention = false,
+            RecurringMode = (byte)RecurringMode.Active
+        };
+    }
 }

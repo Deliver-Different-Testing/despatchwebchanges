@@ -1,36 +1,49 @@
 /**
  * React Toolbar Action Components
  *
- * Material Design 3 compliant toolbar action buttons and menus.
- * Consistent 40px touch targets with proper hover states.
+ * Toolbar action buttons and menus for the Ink-Blue app bar. Every button is a
+ * 34px circle with the shared cyan hover wash — see `toolbarIconStyles`.
  */
 
-import React, {useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import Badge from '@mui/material/Badge';
-import Box from '@mui/material/Box';
-import Checkbox from '@mui/material/Checkbox';
-import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import ClearAllIcon from '@mui/icons-material/ClearAll';
-import DeleteIcon from '@mui/icons-material/Delete';
-import GridViewIcon from '@mui/icons-material/GridView';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SaveIcon from '@mui/icons-material/Save';
-import SettingsIcon from '@mui/icons-material/Settings';
-import SmsIcon from '@mui/icons-material/Sms';
-import TuneIcon from '@mui/icons-material/Tune';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import type {SxProps, Theme} from '@mui/material/styles';
+import React from 'react';
+import {
+    ActionIcon,
+    Box,
+    Button,
+    Divider,
+    Group,
+    Indicator,
+    Loader,
+    Menu,
+    Popover,
+    Text,
+    Tooltip,
+    UnstyledButton,
+} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {
+    Check,
+    Columns3,
+    Download,
+    Eye,
+    EyeOff,
+    FilePen,
+    LayoutGrid,
+    ListX,
+    MessageSquare,
+    Plus,
+    RefreshCw,
+    RotateCcw,
+    Settings,
+    Trash2,
+} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import {
+    badgeOverflowStyle,
+    toolbarIconButtonClassName,
+    toolbarIconButtonStyle,
+} from './toolbarIconStyles';
+import classes from './LayoutsMenu.module.css';
 
 // Re-export DateFilterMenu
 export {DateFilterMenu} from '../date-filter-menu/DateFilterMenu';
@@ -40,13 +53,14 @@ export type {DateFilterData, DateFilterMenuProps, DateRangeOption} from '../date
 export {ActionsMenu} from './ActionsMenu';
 export type {ActionsMenuProps} from './ActionsMenu';
 
-// Shared icon button styles for consistent appearance across toolbar actions
-export const toolbarIconButtonSx: SxProps<Theme> = {
-    p: 1,
-    '&:hover': {
-        bgcolor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
-    },
-};
+// Re-exported so the existing import sites keep working now the tokens live in a leaf module.
+export {badgeOverflowStyle, toolbarIconButtonClassName, toolbarIconButtonStyle};
+
+/** Glyph size shared by the toolbar's icon buttons. */
+const TOOLBAR_ICON_SIZE = 18;
+
+/** Menu/popover row height and dropdown offset, matching the old MUI chrome. */
+const DROPDOWN_OFFSET = 4;
 
 // Messages Button
 export interface MessagesButtonProps {
@@ -58,23 +72,26 @@ export const MessagesButton: React.FC<MessagesButtonProps> = ({unreadCount, onCl
     const displayCount = unreadCount > 99 ? '99+' : unreadCount;
 
     return (
-        <Tooltip title="Messages">
-            <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
-                <Badge
-                    badgeContent={unreadCount > 0 ? displayCount : null}
-                    color="error"
-                    max={99}
-                    sx={{
-                        '& .MuiBadge-badge': {
-                            fontSize: '0.65rem',
-                            minWidth: 18,
-                            height: 18,
-                        },
-                    }}
+        <Tooltip label="Messages">
+            <ActionIcon
+                variant="subtle"
+                size="lg"
+                radius="xl"
+                onClick={onClick}
+                className={toolbarIconButtonClassName}
+                style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
+                aria-label="Messages"
+            >
+                <Indicator
+                    label={unreadCount > 0 ? displayCount : undefined}
+                    disabled={unreadCount === 0}
+                    color="red"
+                    size={18}
+                    offset={2}
                 >
-                    <SmsIcon sx={{fontSize: 22}}/>
-                </Badge>
-            </IconButton>
+                    <Icon lucide={MessageSquare} size={TOOLBAR_ICON_SIZE} />
+                </Indicator>
+            </ActionIcon>
         </Tooltip>
     );
 };
@@ -87,20 +104,25 @@ export interface RefreshButtonProps {
 
 export const RefreshButton: React.FC<RefreshButtonProps> = ({onClick, loading = false}) => {
     return (
-        <Tooltip title={loading ? 'Refreshing...' : 'Refresh'}>
+        <Tooltip label={loading ? 'Refreshing...' : 'Refresh'}>
+            {/* span wrapper so the tooltip still works while the button is disabled */}
             <span>
-                <IconButton
-                    color="inherit"
+                <ActionIcon
+                    variant="subtle"
+                    size="lg"
+                    radius="xl"
                     onClick={onClick}
                     disabled={loading}
-                    sx={toolbarIconButtonSx}
+                    className={toolbarIconButtonClassName}
+                    style={toolbarIconButtonStyle}
+                    aria-label="Refresh"
                 >
                     {loading ? (
-                        <CircularProgress size={22} color="inherit" thickness={3}/>
+                        <Loader size={TOOLBAR_ICON_SIZE} color="currentColor" role="progressbar" aria-label="Refreshing" />
                     ) : (
-                        <RefreshIcon sx={{fontSize: 22}}/>
+                        <Icon lucide={RefreshCw} size={TOOLBAR_ICON_SIZE} />
                     )}
-                </IconButton>
+                </ActionIcon>
             </span>
         </Tooltip>
     );
@@ -113,10 +135,18 @@ export interface SettingsButtonProps {
 
 export const SettingsButton: React.FC<SettingsButtonProps> = ({onClick}) => {
     return (
-        <Tooltip title="Settings">
-            <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
-                <SettingsIcon sx={{fontSize: 22}}/>
-            </IconButton>
+        <Tooltip label="Settings">
+            <ActionIcon
+                variant="subtle"
+                size="lg"
+                radius="xl"
+                onClick={onClick}
+                className={toolbarIconButtonClassName}
+                style={toolbarIconButtonStyle}
+                aria-label="Settings"
+            >
+                <Icon lucide={Settings} size={TOOLBAR_ICON_SIZE} />
+            </ActionIcon>
         </Tooltip>
     );
 };
@@ -136,105 +166,86 @@ export interface ViewsMenuProps {
 }
 
 export const ViewsMenu: React.FC<ViewsMenuProps> = ({
-                                                        views,
-                                                        loading = false,
-                                                        onToggleView,
-                                                        onClearAll,
-                                                    }) => {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
+    views,
+    loading = false,
+    onToggleView,
+    onClearAll,
+}) => {
     const selectedCount = views?.filter(v => v.selected).length || 0;
 
     return (
-        <>
-            <Tooltip title="Views">
-                <span>
-                    <IconButton color="inherit" onClick={handleClick} sx={toolbarIconButtonSx}>
+        <Menu position="bottom-end" offset={DROPDOWN_OFFSET} width={220} shadow="md">
+            <Menu.Target>
+                <Tooltip label="Views">
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        radius="xl"
+                        className={toolbarIconButtonClassName}
+                        style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
+                        aria-label="Views"
+                    >
+                        {/*
+                          * The Indicator carries no `c`: style props land on its root, which
+                          * wraps the glyph, so a colour there leaks onto the eye through
+                          * currentColor and puts it out of step with the rest of the bar. The
+                          * badge digits come from the theme's `autoContrast` against the pill.
+                          */}
                         {loading ? (
-                            <CircularProgress size={22} color="inherit" thickness={3}/>
+                            <Loader size={TOOLBAR_ICON_SIZE} color="currentColor" role="progressbar" aria-label="Loading views" />
                         ) : (
-                            <Badge
-                                badgeContent={selectedCount > 0 ? selectedCount : null}
-                                color="default"
-                                sx={{
-                                    '& .MuiBadge-badge': {
-                                        bgcolor: 'rgba(255,255,255,0.9)',
-                                        color: 'primary.main',
-                                        fontSize: '0.65rem',
-                                        minWidth: 16,
-                                        height: 16,
-                                    },
-                                }}
+                            <Indicator
+                                label={selectedCount > 0 ? selectedCount : undefined}
+                                disabled={selectedCount === 0}
+                                color="gray.0"
+                                size={16}
+                                offset={2}
                             >
-                                <ViewListIcon sx={{fontSize: 22}}/>
-                            </Badge>
+                                <Icon lucide={Eye} size={TOOLBAR_ICON_SIZE} />
+                            </Indicator>
                         )}
-                    </IconButton>
-                </span>
-            </Tooltip>
-            <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                slotProps={{
-                    paper: {
-                        elevation: 3,
-                        sx: {minWidth: 220, maxHeight: 400, mt: 0.5},
-                    }
-                }}
-            >
+                    </ActionIcon>
+                </Tooltip>
+            </Menu.Target>
+            <Menu.Dropdown mah={400} style={{overflowY: 'auto'}}>
                 {(!views || views.length === 0) ? (
-                    <Box sx={{p: 3, textAlign: 'center'}}>
-                        <VisibilityOffIcon sx={{fontSize: 40, color: 'text.disabled', mb: 1}}/>
-                        <Typography variant="body2" color="text.secondary">
-                            No views available
-                        </Typography>
+                    <Box p="lg" ta="center">
+                        <Icon lucide={EyeOff} size={40} color="var(--mantine-color-gray-5)" />
+                        <Text fz="sm" c="dimmed" mt="xs">No views available</Text>
                     </Box>
-                ) : ([
-                    <MenuItem key="clear-all" onClick={() => {
-                        onClearAll();
-                    }}>
-                        <ListItemIcon>
-                            <ClearAllIcon fontSize="small"/>
-                        </ListItemIcon>
-                        <ListItemText>Clear Selection</ListItemText>
-                    </MenuItem>,
-                    <Divider key="divider" sx={{my: 0.5}}/>,
-                    ...views.map((view) => (
-                        <MenuItem
-                            key={view.id}
-                            onClick={() => onToggleView(view)}
-                            sx={{py: 0.75}}
-                        >
-                            <Checkbox
+                ) : (
+                    <>
+                        {selectedCount > 0 && (
+                            <>
+                                <Group justify="space-between" align="center" px="sm" py={4} wrap="nowrap">
+                                    <Text fz="xs" c="dimmed">{selectedCount} selected</Text>
+                                    <Button
+                                        variant="subtle"
+                                        size="compact-xs"
+                                        leftSection={<Icon lucide={ListX} size={14} />}
+                                        onClick={onClearAll}
+                                        aria-label="Clear selected views"
+                                    >
+                                        Clear
+                                    </Button>
+                                </Group>
+                                <Menu.Divider />
+                            </>
+                        )}
+                        {views.map((view) => (
+                            <Menu.CheckboxItem
+                                key={view.id}
                                 checked={view.selected}
-                                size="small"
-                                sx={{p: 0, mr: 1.5}}
-                            />
-                            <ListItemText
-                                slotProps={{primary: {
-                                    variant: 'body2',
-                                    fontWeight: view.selected ? 500 : 400,
-                                }}}
+                                closeMenuOnClick={false}
+                                onChange={() => onToggleView(view)}
                             >
-                                {view.name}
-                            </ListItemText>
-                        </MenuItem>
-                    )),
-                ])}
-            </Menu>
-        </>
+                                <Text fz="sm" style={{fontWeight: view.selected ? 500 : 400}}>{view.name}</Text>
+                            </Menu.CheckboxItem>
+                        ))}
+                    </>
+                )}
+            </Menu.Dropdown>
+        </Menu>
     );
 };
 
@@ -249,25 +260,69 @@ export interface LayoutsMenuProps {
     onSaveLayout: () => void;
     onLoadLayout: (index: number) => void;
     onDeleteLayout: (index: number) => void;
+    /** Optional: rename a custom layout. When provided, a rename control appears on each custom row. */
+    onRenameLayout?: (index: number) => void;
+    /** Optional: copy the user's legacy (V1) layouts into this page's store. */
+    onImportLayouts?: () => void;
+    /** Optional: opens the panel-visibility and column-count settings. */
+    onCustomizePanels?: () => void;
+    /** Optional: restore the current layout to the shipped arrangement. */
+    onResetLayout?: () => void;
+    /** Optional: whether the "Edit columns" bar is currently shown. */
+    columnEditMode?: boolean;
+    /** Optional: toggle the "Edit columns" bar. When provided, an Edit/Done item is shown. */
+    onToggleColumnEditMode?: () => void;
 }
 
+const DEFAULT_LAYOUT_NAME = 'Default';
+
+/**
+ * A full-width row in the layouts popover, styled like a menu item. Forwards its
+ * ref so a `<Tooltip>` can explain a disabled row (Mantine positions against the
+ * child's DOM node).
+ */
+const PopoverRow = React.forwardRef<HTMLButtonElement, {
+    onClick: () => void;
+    disabled?: boolean;
+    icon?: React.ReactNode;
+    children: React.ReactNode;
+}>(({onClick, disabled = false, icon, children}, ref) => (
+    <UnstyledButton
+        ref={ref}
+        onClick={onClick}
+        disabled={disabled}
+        w="100%"
+        px="sm"
+        py={6}
+        style={{
+            borderRadius: 'var(--mantine-radius-sm)',
+            opacity: disabled ? 0.5 : 1,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+        }}
+    >
+        <Group gap={10} wrap="nowrap">
+            <Box w={20} style={{display: 'flex'}}>{icon}</Box>
+            <Text fz="sm">{children}</Text>
+        </Group>
+    </UnstyledButton>
+));
+PopoverRow.displayName = 'PopoverRow';
+
 export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
-                                                            layouts,
-                                                            currentLayoutName,
-                                                            onSaveLayout,
-                                                            onLoadLayout,
-                                                            onDeleteLayout,
-                                                        }) => {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
+    layouts,
+    currentLayoutName,
+    onSaveLayout,
+    onLoadLayout,
+    onDeleteLayout,
+    onRenameLayout,
+    onImportLayouts,
+    onCustomizePanels,
+    onResetLayout,
+    columnEditMode,
+    onToggleColumnEditMode,
+}) => {
+    // `close` keeps the `handleClose` name the save/cancel handlers already call.
+    const [opened, {close: handleClose, toggle}] = useDisclosure(false);
 
     const handleSave = () => {
         onSaveLayout();
@@ -280,95 +335,185 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
     };
 
     const handleDelete = (event: React.MouseEvent, index: number) => {
+        // Keep the row's load action from firing; the confirmation dialog
+        // owns the actual deletion.
         event.stopPropagation();
         onDeleteLayout(index);
     };
 
+    const handleRename = (event: React.MouseEvent, index: number) => {
+        // Keep the row's load action from firing; the rename dialog owns the change.
+        event.stopPropagation();
+        onRenameLayout?.(index);
+        handleClose();
+    };
+
+    const handleCustomize = () => {
+        onCustomizePanels?.();
+        handleClose();
+    };
+
+    const handleToggleColumnEditMode = () => {
+        onToggleColumnEditMode?.();
+        handleClose();
+    };
+
+    const handleResetLayout = () => {
+        onResetLayout?.();
+        handleClose();
+    };
+
+    const handleImportLayouts = () => {
+        onImportLayouts?.();
+        handleClose();
+    };
+
+    // The Default layout is read-only, so the editing entries are shown disabled with
+    // the reason rather than silently doing nothing. An absent name means Default too.
+    const isDefaultLayout = !currentLayoutName || currentLayoutName === DEFAULT_LAYOUT_NAME;
+    const editDisabledReason = 'The Default layout is read-only — save a layout of your own first';
+    const tooltip = currentLayoutName ? `Layouts · ${currentLayoutName}` : 'Layouts';
+
     return (
-        <>
-            <Tooltip title="Layouts">
-                <IconButton color="inherit" onClick={handleClick} sx={toolbarIconButtonSx}>
-                    <GridViewIcon sx={{fontSize: 22}}/>
-                </IconButton>
-            </Tooltip>
-            <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
-                slotProps={{
-                    paper: {
-                        elevation: 3,
-                        sx: {minWidth: 200, mt: 0.5},
-                    }
-                }}
-            >
-                <MenuItem onClick={handleSave}>
-                    <ListItemIcon>
-                        <SaveIcon fontSize="small"/>
-                    </ListItemIcon>
-                    <ListItemText>Add Layout</ListItemText>
-                </MenuItem>
-                {layouts.length > 0 && <Divider sx={{my: 0.5}}/>}
+        <Popover
+            opened={opened}
+            onDismiss={handleClose}
+            position="bottom-end"
+            offset={DROPDOWN_OFFSET}
+            width={240}
+            shadow="md"
+            radius="sm"
+        >
+            <Popover.Target>
+                <Tooltip label={tooltip}>
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        radius="xl"
+                        onClick={toggle}
+                        className={toolbarIconButtonClassName}
+                        style={toolbarIconButtonStyle}
+                        aria-label="Layouts"
+                    >
+                        <Icon lucide={LayoutGrid} size={TOOLBAR_ICON_SIZE} />
+                    </ActionIcon>
+                </Tooltip>
+            </Popover.Target>
+            <Popover.Dropdown p={4}>
+                <PopoverRow onClick={handleSave} icon={<Icon lucide={Plus} size={16} />}>
+                    Add layout
+                </PopoverRow>
+
+                {layouts.length > 0 && (
+                    <Text px="sm" pt={6} pb={2} fz="xs" fw={600} c="dimmed">
+                        Switch layout
+                    </Text>
+                )}
+
                 {layouts.map((layout, index) => {
                     const isActive = layout.name === currentLayoutName;
-                    const isDefault = layout.name === 'Default';
+                    const isDefault = layout.name === DEFAULT_LAYOUT_NAME;
                     return (
-                        <MenuItem
-                            key={index}
-                            onClick={() => handleLoad(index)}
-                            sx={(theme) => ({
-                                bgcolor: isActive ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
-                            })}
-                        >
-                            <ListItemIcon>
-                                {isDefault ? (
-                                    <TuneIcon fontSize="small" color={isActive ? 'primary' : 'inherit'}/>
-                                ) : (
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => handleDelete(e, index)}
-                                        sx={{
-                                            p: 0.25,
-                                            '&:hover': {
-                                                color: 'error.main',
-                                            },
-                                        }}
-                                    >
-                                        <DeleteIcon fontSize="small"/>
-                                    </IconButton>
-                                )}
-                            </ListItemIcon>
-                            <ListItemText
-                                slotProps={{primary: {
-                                    variant: 'body2',
-                                    fontWeight: isActive ? 600 : 400,
-                                    color: isActive ? 'primary.main' : 'text.primary',
-                                }}}
+                        <Group key={index} className={classes.row} gap={0} wrap="nowrap">
+                            <UnstyledButton
+                                onClick={() => handleLoad(index)}
+                                px="sm"
+                                py={6}
+                                style={{flex: 1, borderRadius: 'var(--mantine-radius-sm)'}}
                             >
-                                {layout.name}
-                            </ListItemText>
-                        </MenuItem>
+                                <Group gap={10} wrap="nowrap">
+                                    <Box w={20} style={{display: 'flex'}}>
+                                        {isActive ? <Icon lucide={Check} size={16} color="var(--mantine-color-brand-7)" /> : null}
+                                    </Box>
+                                    <Text
+                                        fz="sm"
+                                        c={isActive ? 'brand.7' : undefined}
+                                        style={{fontWeight: isActive ? 600 : 400}}
+                                    >
+                                        {layout.name}
+                                    </Text>
+                                </Group>
+                            </UnstyledButton>
+                            {!isDefault && (
+                                <Group gap={0} pr={4} wrap="nowrap">
+                                    {onRenameLayout && (
+                                        <Tooltip label="Rename layout">
+                                            <ActionIcon
+                                                className={classes.action}
+                                                variant="subtle"
+                                                color="gray"
+                                                size="sm"
+                                                aria-label={`Rename ${layout.name}`}
+                                                onClick={(e) => handleRename(e, index)}
+                                            >
+                                                <Icon lucide={FilePen} size={16} />
+                                            </ActionIcon>
+                                        </Tooltip>
+                                    )}
+                                    <Tooltip label="Delete layout">
+                                        <ActionIcon
+                                            className={classes.action}
+                                            variant="subtle"
+                                            color="red"
+                                            size="sm"
+                                            aria-label={`Delete ${layout.name}`}
+                                            onClick={(e) => handleDelete(e, index)}
+                                        >
+                                            <Icon lucide={Trash2} size={16} />
+                                        </ActionIcon>
+                                    </Tooltip>
+                                </Group>
+                            )}
+                        </Group>
                     );
                 })}
-            </Menu>
-        </>
-    );
-};
 
-// AI Assistant Button
-export interface AiAssistantButtonProps {
-    onClick: (event: React.MouseEvent) => void;
-}
+                {onToggleColumnEditMode && (
+                    <>
+                        <Divider my={4} />
+                        <Tooltip label={editDisabledReason} disabled={!isDefaultLayout} position="left">
+                            <PopoverRow
+                                onClick={handleToggleColumnEditMode}
+                                disabled={isDefaultLayout}
+                                icon={<Icon lucide={columnEditMode ? Check : Columns3} size={16} />}
+                            >
+                                {columnEditMode ? 'Done editing columns' : 'Edit columns'}
+                            </PopoverRow>
+                        </Tooltip>
+                    </>
+                )}
 
-export const AiAssistantButton: React.FC<AiAssistantButtonProps> = ({onClick}) => {
-    return (
-        <Tooltip title="AI Assistant (Beta)">
-            <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
-                <AutoAwesomeIcon sx={{fontSize: 22}}/>
-            </IconButton>
-        </Tooltip>
+                {onCustomizePanels && (
+                    <>
+                        <Divider my={4} />
+                        <Tooltip label={editDisabledReason} disabled={!isDefaultLayout} position="left">
+                            <PopoverRow
+                                onClick={handleCustomize}
+                                disabled={isDefaultLayout}
+                                icon={<Icon lucide={Eye} size={16} />}
+                            >
+                                Show/Hide Panels…
+                            </PopoverRow>
+                        </Tooltip>
+                    </>
+                )}
+
+                {onResetLayout && !isDefaultLayout && (
+                    <PopoverRow onClick={handleResetLayout} icon={<Icon lucide={RotateCcw} size={16} />}>
+                        Reset layout
+                    </PopoverRow>
+                )}
+
+                {onImportLayouts && (
+                    <>
+                        <Divider my={4} />
+                        <PopoverRow onClick={handleImportLayouts} icon={<Icon lucide={Download} size={16} />}>
+                            Import V1 layouts
+                        </PopoverRow>
+                    </>
+                )}
+            </Popover.Dropdown>
+        </Popover>
     );
 };
 
@@ -381,22 +526,27 @@ export interface ToolbarIconButtonProps {
 }
 
 export const ToolbarIconButton: React.FC<ToolbarIconButtonProps> = ({
-                                                                        icon,
-                                                                        tooltip,
-                                                                        onClick,
-                                                                        disabled = false,
-                                                                    }) => {
+    icon,
+    tooltip,
+    onClick,
+    disabled = false,
+}) => {
     return (
-        <Tooltip title={tooltip}>
+        <Tooltip label={tooltip}>
+            {/* span wrapper so the tooltip still works while the button is disabled */}
             <span>
-                <IconButton
-                    color="inherit"
+                <ActionIcon
+                    variant="subtle"
+                    size="lg"
+                    radius="xl"
                     onClick={onClick}
                     disabled={disabled}
-                    sx={toolbarIconButtonSx}
+                    className={toolbarIconButtonClassName}
+                    style={toolbarIconButtonStyle}
+                    aria-label={tooltip}
                 >
                     {icon}
-                </IconButton>
+                </ActionIcon>
             </span>
         </Tooltip>
     );

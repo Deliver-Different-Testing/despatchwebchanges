@@ -1,10 +1,15 @@
+using System.Globalization;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Ai;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace DespatchWeb.Services;
 
@@ -17,156 +22,269 @@ public sealed class AiSummarizationService(
     ITenantInfoService tenantInfo,
     IOptions<AnthropicSettings> settings) : IAiSummarizationService
 {
+    private const string EmitSummaryToolName = "emit_summary";
+    private const int MaxNotesInPrompt = 25;
+    private const int MaxEventsInPrompt = 25;
+
+    private static readonly JsonSerializerOptions ToolJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) }
+    };
+
+    /// <summary>
+    /// JSON Schema for the emit_summary tool. The four structured summaries
+    /// all return this shape; the prompt tells the model how to populate it
+    /// for the specific summary type.
+    /// </summary>
+    private const string EmitSummarySchema = """
+    {
+      "type": "object",
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Single-sentence headline rendered first and largest on the card."
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["Ok", "Info", "Caution", "Urgent", "Critical"],
+          "description": "Overall severity, which colours the whole card. Ok=healthy, Info=informational, Caution=worth knowing, Urgent=acting within the hour, Critical=immediate."
+        },
+        "keyFacts": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 25 },
+          "maxItems": 6,
+          "description": "At-a-glance chips rendered in a fixed-width row; one short value each, no label prefix."
+        },
+        "attention": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "headline": { "type": "string", "description": "The problem." },
+              "action":   { "type": "string", "description": "The next step, phrased as an instruction." },
+              "severity": { "type": "string", "enum": ["Ok", "Info", "Caution", "Urgent", "Critical"] }
+            },
+            "required": ["headline", "action", "severity"]
+          },
+          "description": "Items needing dispatcher action, most urgent first. Empty array if nothing needs attention."
+        },
+        "timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label":  { "type": "string", "description": "Milestone name." },
+              "detail": { "type": "string", "description": "Elapsed or remaining time relative to now (e.g. '4h ago', 'on time', 'overdue 2h'), never an absolute timestamp." },
+              "status": { "type": "string", "enum": ["Ok", "Pending", "Warning", "Late"], "description": "Ok=on plan, Pending=upcoming, Warning=at risk, Late=missed." }
+            },
+            "required": ["label", "detail", "status"]
+          },
+          "maxItems": 4,
+          "description": "Chronological milestones, oldest first. Empty array if not applicable."
+        },
+        "highlights": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 4,
+          "description": "Notable observations that did not warrant an attention item. Empty array if nothing is notable."
+        }
+      },
+      "required": ["verdict", "severity", "keyFacts", "attention", "timeline", "highlights"]
+    }
+    """;
+
     private string RegionContext => tenantInfo.IsUsTenant()
         ? "a US-based courier dispatch company"
         : "a New Zealand courier dispatch company";
 
+    private string CurrencyExample => tenantInfo.IsUsTenant() ? "$145" : "$145 NZD";
+
+    /// <summary>
+    /// Rules every structured briefing needs. Each briefing is its own independent
+    /// request, so a prompt that only says "rules: same as the job briefing" is
+    /// referring to text the model never sees — this block has to be concatenated in.
+    /// </summary>
+    private const string SharedBriefingRules =
+        """
+        Shared rules:
+        - The SIGNAL: lines in the user message are computed by the application and are the
+          source of truth for every count, deadline and elapsed time. Trust them over your
+          own reading of the raw data beneath them.
+        - Never state a fact the data does not contain, and never soften one it does.
+        - Omit anything whose data is missing rather than writing "Unknown" or "-".
+        - Phone numbers and emails arrive already redacted as [PHONE] and [EMAIL]. Leave
+          the placeholders exactly as they are.
+        - Every action is an imperative verb plus who or what it applies to, concrete
+          enough for the dispatcher to carry out without reopening the job.
+        """;
+
     private string SummarizationSystemPrompt =>
         $"""
          You are a logistics data summarizer for {RegionContext}.
-         Provide concise, actionable summaries. Write in clear, professional language suitable for busy dispatchers.
+         Your reader is a dispatcher skimming this between phone calls, so answer only
+         what the notes or events actually say and stop there.
 
-         Format rules:
-         - Use **bold** to highlight key information (job numbers, statuses, names)
-         - Use bullet points for multiple items
-         - Focus on: current status, key issues, timeline of important events, and pending actions
-         - Keep to 2-4 sentences unless bullet points are needed
+         - Use **bold** for job numbers, statuses and names.
+         - Use bullet points when there are genuinely several separate items.
+         - Cover current status, open issues, the order important things happened in,
+           and anything still outstanding.
+         """;
+
+    private string JobBriefingSystemPrompt =>
+        $"""
+         You are a logistics job briefing assistant for {RegionContext}.
+         Your audience is a busy dispatcher who has FIVE SECONDS to decide what to do
+         next on this job.
+
+         How to choose the content of each field:
+
+         VERDICT — Lead with the most urgent fact and a severity emoji (🚨 ⚠️ ✅).
+           Examples: "🚨 Overdue for delivery by 2h — courier assigned, no recent update",
+           "✅ On track — picked up 10m ago", "⚠️ No courier assigned and pickup due in 20m".
+
+         SEVERITY — Match the highest SIGNAL severity in the user message; never lower it.
+           Critical = deadline missed >1h or money/safety at risk.
+           Urgent   = deadline missed <1h or will be missed within the hour.
+           Caution  = problem worth knowing about, not yet urgent.
+           Info     = informational only.
+           Ok       = healthy / complete.
+
+         KEY FACTS — Pick the chips that matter most, in this order where the data exists:
+           Client • Speed • From→To • Charge • Courier • Ref.
+           Use "→" between origin and destination, and the local currency format
+           (e.g. {CurrencyExample}).
+
+         ATTENTION — Things the dispatcher must DO, most urgent first. Give each item a
+           headline carrying the concrete number, time or name, and an action they can
+           execute as written. Leave empty when nothing needs doing.
+
+         TIMELINE — Milestones oldest first, labelled with the actual milestone name from
+           the data ("Booked", "Dispatched", "Picked up", "Delivery"). Skip milestones that
+           have not happened and are not due soon.
+
+         HIGHLIGHTS — The most useful observations from the notes and events
+           (e.g. "Customer requested call before delivery", "Tail-lift unavailable at PU").
+           Skip when nothing is notable.
+
+         If the job is healthy or completed cleanly: verdict ≈ "✅ Delivered — no action
+         needed", severity = Ok, attention = [].
+
+         {SharedBriefingRules}
          """;
 
     private string TaskBriefingSystemPrompt =>
         $"""
-         You are a dispatch operations briefing assistant for {RegionContext}.
-         Summarize today's task dashboard for a dispatcher starting their shift.
-         Write in clear, professional language suitable for busy dispatchers.
+         You are a dispatch shift-briefing assistant for {RegionContext}.
+         Your audience: a dispatcher arriving for their shift. They want to know in FIVE
+         SECONDS how their queue looks.
 
-         Structure your response with these markdown sections:
-         - Start with a **Shift Summary** line (e.g. "**Shift Summary:** X open tasks, Y overdue")
-         - **Overdue** — list overdue items with **bold job numbers**, most urgent first
-         - **Due Today** — brief count or list of today's tasks
-         - **Upcoming** — brief note on future tasks
-         - **Suggested Priority** — 2-3 bullet points recommending what to tackle first
+         VERDICT — One sentence describing the SHIFT POSTURE.
+           Examples: "🚨 Heavy load: 12 open tasks, 5 overdue", "✅ Light morning: 3 tasks,
+           all due later".
 
-         Skip any section that has no relevant data. Keep each section concise.
-         """;
+         SEVERITY — Match the highest SIGNAL severity. Critical or Urgent only when
+           something is already overdue.
 
-    private string JobSummarySystemPrompt =>
-        $"""
-         You are a logistics job summarizer for {RegionContext}.
-         Produce a structured summary with the most important information first.
-         Write in clear, professional language suitable for busy dispatchers.
+         KEY FACTS — The queue counts, e.g. "12 open", "5 overdue", "4 due today".
 
-         Format your response using these markdown sections (skip any section with no relevant data):
+         ATTENTION — The three things to action first, ordered by urgency. Each headline
+           names the specific job ("Job J12345 — pickup overdue 45m").
 
-         **Status** — One line: current job status and courier assignment.
-         **Issues** — Bullet points for any problems, complaints, delays, or flags. Most urgent first.
-         **Actions** — Bullet points for open follow-ups or pending tasks that need attention.
-         **Timeline** — Brief chronological narrative of key milestones (booked, dispatched, picked up, delivered).
-         **Notes** — Any other notable staff comments or observations.
+         TIMELINE — Return an empty array; a queue has no single chronology.
 
-         Rules:
-         - Use **bold** for job numbers, courier names, statuses, and key details
-         - Keep each section concise (1-3 bullet points max)
-         - If the job is straightforward with no issues, keep the entire summary to 2-3 lines
+         HIGHLIGHTS — Patterns across the queue (e.g. "Most overdue are 3rd-party
+           deliveries", "Smith has 4 open tasks").
+
+         {SharedBriefingRules}
          """;
 
     private string OperationsSystemPrompt =>
         $"""
-         You are a dispatch operations analyst for {RegionContext}.
-         Interpret the overview statistics and flag anomalies.
-         Write in clear, professional language suitable for busy dispatchers.
+         You are a dispatch operations health analyst for {RegionContext}.
+         Audience: the ops lead. They want a one-line read on whether the fleet is healthy
+         right now.
 
-         Format rules:
-         - Start with a **one-line health summary** (e.g. "**Operations running normally** with X active jobs")
-         - Use **bold** for key metrics and numbers
-         - Compare active/inactive/completed counts, note if inactive jobs are unusually high
-         - If action is needed, add a **Recommended Actions** line with bold action items
-         - Include the current time context when assessing whether numbers are normal
-         - Keep it concise — 2-4 sentences plus action items if needed
+         VERDICT — One sentence on overall health ("✅ Operations running normally with N
+           active jobs", "⚠️ Inactive count unusually high").
+
+         SEVERITY — Critical only when something demands immediate intervention.
+
+         KEY FACTS — The headline counts: "X active", "Y inactive", "Z completed",
+           "Total N".
+
+         ATTENTION — Anomalies a human should decide about, each with the number that
+           makes it an anomaly and the action to take ("Audit the 35% of jobs sitting
+           inactive for stuck dispatches"). Empty when the numbers look normal.
+
+         TIMELINE — Return an empty array.
+
+         HIGHLIGHTS — How this compares with the typical pattern, and time-of-day context.
+
+         {SharedBriefingRules}
          """;
 
     private string ComplianceSystemPrompt =>
         $"""
-         You are a fleet compliance risk analyst for {RegionContext}.
-         Summarize the compliance status of the driver fleet.
-         Write in clear, professional language suitable for busy dispatchers.
+         You are a fleet compliance risk briefing assistant for {RegionContext}.
+         Audience: a fleet manager. They want to know which drivers to chase TODAY.
 
-         Format rules:
-         - Use severity labels: **CRITICAL** (expired), **URGENT** (expiring within 7 days), **WARNING** (expiring within 30 days)
-         - Use **bold** for driver names and compliance item types
-         - List items as bullet points grouped by severity, most critical first
-         - Flag any drivers with multiple expired items explicitly
-         - End with a **Recommended Actions** line summarizing what to do first
-         - Keep it concise — skip severity groups that have no items
+         VERDICT — Risk level plus the headline number ("🚨 12 drivers with expired
+           compliance items", "✅ Fleet compliant").
+
+         SEVERITY — Critical if anything is expired; Urgent if anything expires within
+           7 days; Caution if anything expires within 30 days; Ok otherwise.
+
+         KEY FACTS — "X expired", "Y expiring ≤7d", "Z expiring ≤30d".
+
+         ATTENTION — One item per at-risk record, most critical first, up to eight. Each
+           headline gives the driver name, the item type, and how long it has been expired
+           or how long until it expires. Each action is the control to apply
+           ("Suspend until renewed", "Email reminder", "Block dispatch").
+
+         TIMELINE — Return an empty array.
+
+         HIGHLIGHTS — Patterns ("3 drivers have multiple expired items", "All expiries are
+           in the same compliance category").
+
+         {SharedBriefingRules}
          """;
 
-    private string LateAlertSystemPrompt =>
-        $"""
-         You are a dispatch late-alert analyst for {RegionContext}.
-         Analyze a late-flagged job and provide a situation assessment.
-         Write in clear, professional language suitable for busy dispatchers.
-
-         Structure your response as:
-         - **Situation** — How late the job is and remaining SLA window, with key times in **bold**
-         - **Recommendation** — A decisive action: **Monitor**, **Contact Courier**, **Reassign**, or **Escalate**
-
-         Be brief (2-3 sentences total). Consider pickup/delivery times and minutes remaining.
-         """;
-
-    private string CourierSuggestionSystemPrompt =>
-        $"""
-         You are a courier assignment advisor for {RegionContext}.
-         Given a job's details and available couriers with their workload,
-         rank the top 3-5 best couriers for this job.
-         Write in clear, professional language suitable for busy dispatchers.
-
-         Format rules:
-         - Start with a **Top Pick** summary line (e.g. "**Top Pick:** **John Smith** — lowest workload, good vehicle match")
-         - Then a numbered list with **bold courier names** and brief reasoning for each
-         - Consider: current job count (prefer lower), vehicle type match, driver status, and availability
-         - Keep each entry to one sentence
-         """;
+    // ---------------------------------------------------------------------
+    //  Markdown summaries (notes / events) — unchanged contract
+    // ---------------------------------------------------------------------
 
     public async Task<AiSummaryResponse> SummarizeJobNotesAsync(int jobId, CancellationToken ct = default)
     {
         var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
 
         if (notes == null || notes.Count == 0)
+        {
             return new AiSummaryResponse
             {
                 Summary = "No notes found for this job.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("Summarize the following job notes:");
         sb.AppendLine();
-
-        foreach (var note in notes.OrderBy(n => n.CreatedDate))
-        {
-            var sanitized = AiDataSanitizer.Sanitize(note.NoteText);
-            sb.AppendLine(
-                $"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}) by {note.CreatedByName}: {sanitized}");
-        }
-
-        var messages = new List<AiMessage>
-        {
-            new() { Role = "user", Content = sb.ToString() }
-        };
+        AppendNotes(sb, notes);
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Drafting,
             SummarizationSystemPrompt,
-            messages,
-            settings.Value.MaxTokensPerSummary,
+            [new AiMessage { Role = "user", Content = sb.ToString() }],
+            settings.Value.Drafting.MaxTokens,
+            cacheResponse: true,
             ct: ct);
 
         return new AiSummaryResponse
         {
             Summary = response.TextContent ?? "Unable to generate summary.",
-            Usage = new AiUsageInfo
-            {
-                InputTokens = response.InputTokens,
-                OutputTokens = response.OutputTokens
-            }
+            Usage = AiUsageInfo.From(response)
         };
     }
 
@@ -176,178 +294,158 @@ public sealed class AiSummarizationService(
         var events = await taskRepository.GetAllTasksAsync(filters);
 
         if (events == null || events.Count == 0)
+        {
             return new AiSummaryResponse
             {
                 Summary = "No events found for this job.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("Summarize the following job event history:");
         sb.AppendLine();
-
-        foreach (var evt in events.OrderBy(e => e.DueDate))
-        {
-            var status = evt.Closed ? "CLOSED" : "OPEN";
-            var sanitized = AiDataSanitizer.Sanitize(evt.Description ?? evt.Title);
-            sb.AppendLine($"[{evt.DueDate:yyyy-MM-dd HH:mm}] {evt.EventType} - {sanitized} [{status}]");
-        }
-
-        var messages = new List<AiMessage>
-        {
-            new() { Role = "user", Content = sb.ToString() }
-        };
+        AppendEvents(sb, events);
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Drafting,
             SummarizationSystemPrompt,
-            messages,
-            settings.Value.MaxTokensPerSummary,
+            [new AiMessage { Role = "user", Content = sb.ToString() }],
+            settings.Value.Drafting.MaxTokens,
+            cacheResponse: true,
             ct: ct);
 
         return new AiSummaryResponse
         {
             Summary = response.TextContent ?? "Unable to generate summary.",
-            Usage = new AiUsageInfo
-            {
-                InputTokens = response.InputTokens,
-                OutputTokens = response.OutputTokens
-            }
+            Usage = AiUsageInfo.From(response)
         };
     }
 
-    public async Task<AiSummaryResponse> SummarizeTaskDashboardAsync(CancellationToken ct = default)
-    {
-        var filters = new TaskTableFiltersRequest { ShowCompleted = false };
-        var tasks = await taskRepository.GetAllTasksAsync(filters);
+    // ---------------------------------------------------------------------
+    //  Structured summaries
+    // ---------------------------------------------------------------------
 
-        if (tasks == null || tasks.Count == 0)
-            return new AiSummaryResponse
-            {
-                Summary = "No open tasks found. The task dashboard is clear.",
-                Usage = new AiUsageInfo()
-            };
-
-        var now = DateTimeOffset.UtcNow;
-        var sb = new StringBuilder();
-        sb.AppendLine($"Summarize the following task dashboard. Current time: {now:yyyy-MM-dd HH:mm} UTC.");
-        sb.AppendLine($"Total open tasks: {tasks.Count}");
-        sb.AppendLine();
-
-        var ordered = tasks.OrderBy(t => t.DueDate).ToList();
-        var overdueCount = 0;
-        var dueTodayCount = 0;
-        var upcomingCount = 0;
-        foreach (var task in ordered)
-        {
-            if (task.Closed) continue;
-            if (task.DueDate < now) overdueCount++;
-            else if (task.DueDate.Date == now.Date) dueTodayCount++;
-            else upcomingCount++;
-        }
-
-        sb.AppendLine($"Overdue: {overdueCount}, Due today: {dueTodayCount}, Upcoming: {upcomingCount}");
-        sb.AppendLine();
-
-        foreach (var task in ordered)
-        {
-            var status = task.Closed ? "CLOSED" : task.DueDate < now ? "OVERDUE" : "OPEN";
-            var sanitized = AiDataSanitizer.Sanitize(task.Description ?? task.Title);
-            var assignee = task.Assignee?.Text ?? "Unassigned";
-            sb.AppendLine(
-                $"[{task.DueDate:yyyy-MM-dd HH:mm}] Job #{task.JobNumber} - {task.EventType} - {sanitized} [{status}] Assigned: {assignee}");
-        }
-
-        return await SendSummarizationRequestAsync(TaskBriefingSystemPrompt, sb.ToString(), ct);
-    }
-
-    public async Task<AiSummaryResponse> SummarizeJobAsync(int jobId, CancellationToken ct = default)
+    public async Task<StructuredSummaryResponse> SummarizeJobAsync(int jobId, CancellationToken ct = default)
     {
         var job = await jobRepository.GetSingleJobById(jobId);
         var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
         var eventFilters = new TaskTableFiltersRequest { JobId = jobId, ShowCompleted = true };
         var events = await taskRepository.GetAllTasksAsync(eventFilters);
 
+        if (job == null)
+        {
+            return EmptyResponse("Job not found.", SummarySeverity.Info);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var signals = AiJobSignalCalculator.Compute(job, notes ?? [], events ?? [], now);
+
         var sb = new StringBuilder();
-        sb.AppendLine($"Create a combined chronological summary for Job #{job?.JobNo ?? jobId.ToString()}:");
+        sb.AppendLine($"Generate a job briefing for Job **{job.JobNo}**. Current time: {now:yyyy-MM-dd HH:mm} UTC.");
         sb.AppendLine();
 
-        if (job != null)
-        {
-            sb.AppendLine("--- Job Details ---");
-            sb.AppendLine($"Job Number: {job.JobNo}");
-            sb.AppendLine($"Status: {job.Status}");
-            sb.AppendLine($"Speed: {job.SpeedName}");
-            if (job.Booked.HasValue) sb.AppendLine($"Booked: {job.Booked:yyyy-MM-dd HH:mm}");
-            if (job.DispatchTime.HasValue) sb.AppendLine($"Dispatched: {job.DispatchTime:yyyy-MM-dd HH:mm}");
-            if (job.PuTime.HasValue) sb.AppendLine($"Picked up: {job.PuTime:yyyy-MM-dd HH:mm}");
-            if (job.CompletedTime.HasValue) sb.AppendLine($"Completed: {job.CompletedTime:yyyy-MM-dd HH:mm}");
-            sb.AppendLine($"From: {AiDataSanitizer.Sanitize(job.From ?? "")}");
-            sb.AppendLine($"To: {AiDataSanitizer.Sanitize(job.ToAddress ?? "")}");
-            if (!string.IsNullOrEmpty(job.Courier)) sb.AppendLine($"Courier: {job.Courier}");
-            sb.AppendLine();
-        }
+        AppendSignalLines(sb, signals);
+        AppendJobDetails(sb, job);
+        AppendNotes(sb, notes);
+        AppendEvents(sb, events);
 
-        if (notes is { Count: > 0 })
-        {
-            sb.AppendLine("--- Notes ---");
-            foreach (var note in notes.OrderBy(n => n.CreatedDate))
-            {
-                var sanitized = AiDataSanitizer.Sanitize(note.NoteText);
-                sb.AppendLine(
-                    $"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}) by {note.CreatedByName}: {sanitized}");
-            }
-
-            sb.AppendLine();
-        }
-
-        if (events is { Count: > 0 })
-        {
-            sb.AppendLine("--- Events ---");
-            foreach (var evt in events.OrderBy(e => e.DueDate))
-            {
-                var status = evt.Closed ? "CLOSED" : "OPEN";
-                var sanitized = AiDataSanitizer.Sanitize(evt.Description ?? evt.Title);
-                sb.AppendLine($"[{evt.DueDate:yyyy-MM-dd HH:mm}] {evt.EventType} - {sanitized} [{status}]");
-            }
-        }
-
-        if (job == null && (notes == null || notes.Count == 0) && (events == null || events.Count == 0))
-            return new AiSummaryResponse
-            {
-                Summary = "No data found for this job.",
-                Usage = new AiUsageInfo()
-            };
-
-        return await SendSummarizationRequestAsync(JobSummarySystemPrompt, sb.ToString(), ct);
+        var structured = await SendStructuredRequestAsync(JobBriefingSystemPrompt, sb.ToString(), ct);
+        return ClampSeverity(structured, signals.MaxSeverity);
     }
 
-    public async Task<AiSummaryResponse> SummarizeOperationsAsync(CancellationToken ct = default)
+    public async Task<StructuredSummaryResponse> SummarizeTaskDashboardAsync(CancellationToken ct = default)
+    {
+        var filters = new TaskTableFiltersRequest { ShowCompleted = false };
+        var tasks = await taskRepository.GetAllTasksAsync(filters);
+
+        var now = DateTimeOffset.UtcNow;
+
+        if (tasks == null || tasks.Count == 0)
+        {
+            return new StructuredSummaryResponse
+            {
+                Verdict = "✅ No open tasks — the queue is clear.",
+                Severity = SummarySeverity.Ok,
+                KeyFacts = ["0 open"],
+                Attention = [],
+                Timeline = [],
+                Highlights = []
+            };
+        }
+
+        var ordered = tasks.OrderBy(t => t.DueDate).ToList();
+        var overdue = ordered.Where(t => !t.Closed && t.DueDate < now).ToList();
+        var dueToday = ordered.Where(t => !t.Closed && t.DueDate >= now && t.DueDate.Date == now.Date).ToList();
+        var upcoming = ordered.Where(t => !t.Closed && t.DueDate.Date > now.Date).ToList();
+
+        var signals = new JobSignals
+        {
+            Items = BuildTaskDashboardSignals(overdue.Count, dueToday.Count, upcoming.Count, ordered.Count)
+        };
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Generate a task dashboard briefing. Current time: {now:yyyy-MM-dd HH:mm} UTC.");
+        sb.AppendLine($"Open tasks: {ordered.Count}. Overdue: {overdue.Count}. Due today: {dueToday.Count}. Upcoming: {upcoming.Count}.");
+        sb.AppendLine();
+
+        AppendSignalLines(sb, signals);
+
+        sb.AppendLine("--- Open tasks (oldest due first) ---");
+        foreach (var task in ordered.Take(40))
+        {
+            var status = task.DueDate < now ? "OVERDUE" : "OPEN";
+            var sanitized = AiDataSanitizer.Sanitize(task.Description ?? task.Title);
+            var assignee = task.Assignee?.Text ?? "Unassigned";
+            sb.AppendLine($"[{task.DueDate:yyyy-MM-dd HH:mm}] Job #{task.JobNumber} - {task.EventType} - {sanitized} [{status}] Assigned: {assignee}");
+        }
+        if (ordered.Count > 40)
+        {
+            sb.AppendLine($"... and {ordered.Count - 40} more tasks omitted.");
+        }
+
+        var structured = await SendStructuredRequestAsync(TaskBriefingSystemPrompt, sb.ToString(), ct);
+        return ClampSeverity(structured, signals.MaxSeverity);
+    }
+
+    public async Task<StructuredSummaryResponse> SummarizeOperationsAsync(CancellationToken ct = default)
     {
         var stats = await jobRepository.GetOverviewStatsAsync();
 
         var now = DateTimeOffset.UtcNow;
         var sb = new StringBuilder();
-        sb.AppendLine($"Analyze the following dispatch operations overview. Current time: {now:yyyy-MM-dd HH:mm} UTC.");
+        sb.AppendLine($"Generate an operations health briefing. Current time: {now:yyyy-MM-dd HH:mm} UTC.");
         sb.AppendLine();
-        sb.AppendLine($"Active jobs: {stats.Active}");
-        sb.AppendLine($"Inactive jobs: {stats.Inactive}");
+        sb.AppendLine($"Active jobs:    {stats.Active}");
+        sb.AppendLine($"Inactive jobs:  {stats.Inactive}");
         sb.AppendLine($"Completed jobs: {stats.Completed}");
-        sb.AppendLine($"Total: {stats.Active + stats.Inactive + stats.Completed}");
+        sb.AppendLine($"Total jobs:     {stats.Active + stats.Inactive + stats.Completed}");
 
-        return await SendSummarizationRequestAsync(OperationsSystemPrompt, sb.ToString(), ct);
+        var signals = new JobSignals { Items = BuildOperationsSignals(stats) };
+        sb.AppendLine();
+        AppendSignalLines(sb, signals);
+
+        var structured = await SendStructuredRequestAsync(OperationsSystemPrompt, sb.ToString(), ct);
+        return ClampSeverity(structured, signals.MaxSeverity);
     }
 
-    public async Task<AiSummaryResponse> SummarizeComplianceAsync(CancellationToken ct = default)
+    public async Task<StructuredSummaryResponse> SummarizeComplianceAsync(CancellationToken ct = default)
     {
         var request = new CourierComplianceFilterRequest();
         var items = await courierRepository.GetCourierComplianceForExportAsync(request);
 
         if (items is not { Count: > 0 })
-            return new AiSummaryResponse
+        {
+            return new StructuredSummaryResponse
             {
-                Summary = "No compliance records found.",
-                Usage = new AiUsageInfo()
+                Verdict = "✅ No compliance records found.",
+                Severity = SummarySeverity.Ok,
+                KeyFacts = ["0 records"],
+                Attention = [],
+                Timeline = [],
+                Highlights = []
             };
+        }
 
         var now = DateTimeOffset.UtcNow;
         var weekCutoff = now.AddDays(7);
@@ -355,165 +453,630 @@ public sealed class AiSummarizationService(
         var expired = new List<CourierComplianceViewModel>();
         var expiringWeek = new List<CourierComplianceViewModel>();
         var expiringMonth = new List<CourierComplianceViewModel>();
+
         foreach (var i in items)
         {
-            if (!i.ExpiryDate.HasValue) continue;
-            if (i.ExpiryDate.Value < now) expired.Add(i);
-            else if (i.ExpiryDate.Value < weekCutoff) expiringWeek.Add(i);
-            else if (i.ExpiryDate.Value < monthCutoff) expiringMonth.Add(i);
+            if (!i.ExpiryDate.HasValue)
+            {
+                continue;
+            }
+
+            if (i.ExpiryDate.Value < now)
+            {
+                expired.Add(i);
+            }
+            else if (i.ExpiryDate.Value < weekCutoff)
+            {
+                expiringWeek.Add(i);
+            }
+            else if (i.ExpiryDate.Value < monthCutoff)
+            {
+                expiringMonth.Add(i);
+            }
         }
 
+        var signals = new JobSignals
+        {
+            Items = BuildComplianceSignals(expired.Count, expiringWeek.Count, expiringMonth.Count)
+        };
+
         var sb = new StringBuilder();
-        sb.AppendLine($"Analyze the following driver compliance data. Current date: {now:yyyy-MM-dd}.");
-        sb.AppendLine($"Total records: {items.Count}");
-        sb.AppendLine(
-            $"Expired: {expired.Count}, Expiring within 7 days: {expiringWeek.Count}, Expiring within 30 days: {expiringMonth.Count}");
+        sb.AppendLine($"Generate a compliance risk briefing. Current date: {now:yyyy-MM-dd}.");
+        sb.AppendLine($"Total records: {items.Count}. Expired: {expired.Count}. ≤7d: {expiringWeek.Count}. ≤30d: {expiringMonth.Count}.");
         sb.AppendLine();
+
+        AppendSignalLines(sb, signals);
 
         if (expired.Count > 0)
         {
-            sb.AppendLine("EXPIRED items:");
+            sb.AppendLine("--- EXPIRED items ---");
             foreach (var item in expired.Take(20))
-                sb.AppendLine(
-                    $"  - {item.Name} ({item.Code}): {item.ComplianceType} expired {item.ExpiryDate:yyyy-MM-dd}");
-            if (expired.Count > 20) sb.AppendLine($"  ... and {expired.Count - 20} more");
+            {
+                sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expired {item.ExpiryDate:yyyy-MM-dd}");
+            }
+            if (expired.Count > 20)
+            {
+                sb.AppendLine($"  ... and {expired.Count - 20} more");
+            }
+
             sb.AppendLine();
         }
 
-        if (expiringWeek.Count <= 0)
-            return await SendSummarizationRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
-
-        sb.AppendLine("Expiring within 7 DAYS:");
-        foreach (var item in expiringWeek.Take(10))
-            sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expires {item.ExpiryDate:yyyy-MM-dd}");
-        if (expiringWeek.Count > 10) sb.AppendLine($"  ... and {expiringWeek.Count - 10} more");
-
-        return await SendSummarizationRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
-    }
-
-    public async Task<AiSummaryResponse> AnalyzeLateAlertAsync(int jobId, CancellationToken ct = default)
-    {
-        var lateInfo = await jobRepository.GetJobForLateCallAsync(jobId);
-
-        if (lateInfo == null)
-            return new AiSummaryResponse
-            {
-                Summary = "No late alert data found for this job.",
-                Usage = new AiUsageInfo()
-            };
-
-        var eventFilters = new TaskTableFiltersRequest { JobId = jobId, ShowCompleted = true };
-        var events = await taskRepository.GetAllTasksAsync(eventFilters);
-
-        var sb = new StringBuilder();
-        sb.AppendLine($"Analyze this late alert for Job #{jobId}:");
-        sb.AppendLine($"Job time: {lateInfo.JobTime:yyyy-MM-dd HH:mm}");
-        sb.AppendLine($"Booked speed: {lateInfo.BookedSpeed}");
-        sb.AppendLine($"Notified speed: {lateInfo.NotifiedSpeed}");
-        sb.AppendLine($"Minutes remaining: {lateInfo.MinutesRemaining}");
-        sb.AppendLine($"Pickup time allowed: {lateInfo.PickupTime} mins");
-        sb.AppendLine($"Delivery time allowed: {lateInfo.DeliveryTime} mins");
-        sb.AppendLine($"Late pickup alert threshold: {lateInfo.AlertLatePickup} mins");
-        sb.AppendLine($"Late delivery alert threshold: {lateInfo.AlertLateDelivery} mins");
-
-        if (events is not { Count: > 0 })
-            return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
-
-        sb.AppendLine();
-        sb.AppendLine("Recent events:");
-        foreach (var evt in events.OrderByDescending(e => e.DueDate).Take(5))
+        if (expiringWeek.Count > 0)
         {
-            var sanitized = AiDataSanitizer.Sanitize(evt.Description ?? evt.Title);
-            sb.AppendLine($"  [{evt.DueDate:HH:mm}] {evt.EventType} - {sanitized}");
-        }
-
-        return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
-    }
-
-    public async Task<AiCourierSuggestionResponse> SuggestCouriersAsync(int jobId, CancellationToken ct = default)
-    {
-        var job = await jobRepository.GetSingleJobById(jobId);
-        if (job == null)
-            return new AiCourierSuggestionResponse
+            sb.AppendLine("--- Expiring within 7 days ---");
+            foreach (var item in expiringWeek.Take(10))
             {
-                Summary = "Job not found.",
-                Usage = new AiUsageInfo()
-            };
+                sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expires {item.ExpiryDate:yyyy-MM-dd}");
+            }
+            if (expiringWeek.Count > 10)
+            {
+                sb.AppendLine($"  ... and {expiringWeek.Count - 10} more");
+            }
 
-        var potentialCouriers = await courierRepository.GetPotentialCouriersAsync(jobId);
-        var driverOverview = await courierRepository.GetDriverWorkOverviewAsync();
-
-        var sb = new StringBuilder();
-        sb.AppendLine($"Suggest the best couriers for Job #{job.JobNo}:");
-        sb.AppendLine($"Speed: {job.SpeedName}");
-        sb.AppendLine($"Pickup: {AiDataSanitizer.Sanitize(job.From ?? "")}");
-        sb.AppendLine($"Delivery: {AiDataSanitizer.Sanitize(job.ToAddress ?? "")}");
-        if (job.Weight.HasValue) sb.AppendLine($"Weight: {job.Weight}kg");
-        sb.AppendLine();
-
-        if (potentialCouriers is { Count: > 0 })
-        {
-            sb.AppendLine("Potential couriers (from system matching):");
-            foreach (var c in potentialCouriers.Take(10)) sb.AppendLine($"  - {c.FirstName} ({c.Code}): {c.Reason}");
             sb.AppendLine();
         }
 
-        if (driverOverview is { Count: > 0 })
+        if (expiringMonth.Count > 0)
         {
-            sb.AppendLine("Driver workload overview:");
-            foreach (var d in driverOverview.Take(15))
-                sb.AppendLine($"  - {d.Name}: {d.VehicleType}, {d.JobCount} active jobs, Status: {d.DriverStatusText}");
+            sb.AppendLine($"--- Expiring within 30 days: {expiringMonth.Count} item(s) ---");
         }
 
-        if (potentialCouriers.Count == 0 && driverOverview.Count == 0)
-            return new AiCourierSuggestionResponse
-            {
-                Summary = "No courier data available for suggestions.",
-                Usage = new AiUsageInfo()
-            };
-
-        var summaryResult = await SendSummarizationRequestAsync(CourierSuggestionSystemPrompt, sb.ToString(), ct);
-
-        var courierList = potentialCouriers
-            .Take(10)
-            .Select(c => new SuggestedCourier
-            {
-                CourierId = c.CourierId,
-                Code = c.Code,
-                FirstName = c.FirstName
-            })
-            .ToList();
-
-        return new AiCourierSuggestionResponse
-        {
-            Summary = summaryResult.Summary,
-            Usage = summaryResult.Usage,
-            Couriers = courierList
-        };
+        var structured = await SendStructuredRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
+        return ClampSeverity(structured, signals.MaxSeverity);
     }
 
-    private async Task<AiSummaryResponse> SendSummarizationRequestAsync(string systemPrompt, string userMessage,
+    // ---------------------------------------------------------------------
+    //  Helpers
+    // ---------------------------------------------------------------------
+
+    private async Task<StructuredSummaryResponse> SendStructuredRequestAsync(
+        string systemPrompt,
+        string userMessage,
         CancellationToken ct)
     {
-        var messages = new List<AiMessage>
+        var tools = new List<AiToolDefinition>
         {
-            new() { Role = "user", Content = userMessage }
+            new()
+            {
+                Name = EmitSummaryToolName,
+                Description =
+                    "Returns the dispatcher briefing card for the data in this request. The card renders as "
+                    + "a coloured headline (verdict + severity), a row of short fact chips, a list of items "
+                    + "needing action, a milestone timeline, and closing observations. This is the only way to "
+                    + "return a result; there is no prose channel. Populate every field, using an empty array "
+                    + "for any list that does not apply to this briefing type rather than omitting it. "
+                    + "Severity drives the card's colour and the dispatcher's triage order, so it must not sit "
+                    + "below the highest severity present in the request's SIGNAL lines.",
+                InputSchemaJson = EmitSummarySchema
+            }
         };
 
         var response = await aiClient.SendMessageAsync(
+            AiTaskClass.Judgment,
             systemPrompt,
-            messages,
-            settings.Value.MaxTokensPerSummary,
+            [new AiMessage { Role = "user", Content = userMessage }],
+            settings.Value.Judgment.MaxTokens,
+            tools,
+            forceToolName: EmitSummaryToolName,
+            enableCaching: true,
+            cacheResponse: true,
             ct: ct);
 
-        return new AiSummaryResponse
+        var usage = AiUsageInfo.From(response);
+
+        if (response.WasTruncated)
         {
-            Summary = response.TextContent ?? "Unable to generate summary.",
-            Usage = new AiUsageInfo
+            Log.Warning("AI summary hit the {MaxTokens}-token ceiling before finishing the tool call",
+                settings.Value.Judgment.MaxTokens);
+            return EmptyResponse("Summary was cut short — try again.", SummarySeverity.Info) with { Usage = usage };
+        }
+
+        if (response.WasRefused)
+        {
+            Log.Warning("AI summary declined by the model ({Category})", response.RefusalCategory ?? "unspecified");
+            return EmptyResponse("Unable to generate summary.", SummarySeverity.Info) with { Usage = usage };
+        }
+
+        var toolCall = response.ToolCalls.FirstOrDefault(t => t.ToolName == EmitSummaryToolName);
+        if (toolCall == null || string.IsNullOrWhiteSpace(toolCall.ArgumentsJson))
+        {
+            return EmptyResponse("Unable to generate summary.", SummarySeverity.Info) with { Usage = usage };
+        }
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<StructuredSummaryResponse>(
+                toolCall.ArgumentsJson, ToolJsonOptions);
+            if (parsed == null)
             {
-                InputTokens = response.InputTokens,
-                OutputTokens = response.OutputTokens
+                return EmptyResponse("Unable to parse AI summary.", SummarySeverity.Info) with { Usage = usage };
             }
+            return parsed with { Usage = usage };
+        }
+        catch (JsonException)
+        {
+            return EmptyResponse("Unable to parse AI summary.", SummarySeverity.Info) with { Usage = usage };
+        }
+    }
+
+    private static StructuredSummaryResponse EmptyResponse(string verdict, SummarySeverity severity) =>
+        new()
+        {
+            Verdict = verdict,
+            Severity = severity,
+            KeyFacts = [],
+            Attention = [],
+            Timeline = [],
+            Highlights = []
         };
+
+    private static StructuredSummaryResponse ClampSeverity(StructuredSummaryResponse response, SummarySeverity floor)
+    {
+        if (response.Severity >= floor)
+        {
+            return response;
+        }
+
+        return response with { Severity = floor };
+    }
+
+    private static void AppendSignalLines(StringBuilder sb, JobSignals signals)
+    {
+        if (signals.Items.Count == 0)
+        {
+            sb.AppendLine("SIGNAL [OK]: no problem signals detected");
+            sb.AppendLine();
+            return;
+        }
+        foreach (var line in signals.Lines)
+        {
+            sb.AppendLine(line);
+        }
+        sb.AppendLine();
+    }
+
+    private static void AppendNotes(StringBuilder sb, IReadOnlyList<TucNoteViewModel> notes)
+    {
+        if (notes is not { Count: > 0 })
+        {
+            return;
+        }
+
+        sb.AppendLine($"--- Notes ({notes.Count}{(notes.Count > MaxNotesInPrompt ? ", most recent first" : "")}) ---");
+        var ordered = notes.OrderByDescending(n => n.CreatedDate).Take(MaxNotesInPrompt).ToList();
+        foreach (var note in ordered.OrderBy(n => n.CreatedDate))
+        {
+            var sanitized = AiDataSanitizer.Sanitize(note.NoteText ?? string.Empty);
+            var important = note.IsImportant ? " IMPORTANT" : string.Empty;
+            sb.AppendLine($"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}{important}) by {note.CreatedByName}: {sanitized}");
+        }
+        if (notes.Count > MaxNotesInPrompt)
+        {
+            sb.AppendLine($"... ({notes.Count - MaxNotesInPrompt} older notes omitted)");
+        }
+        sb.AppendLine();
+    }
+
+    private static void AppendEvents(StringBuilder sb, IReadOnlyList<TaskViewModel> events)
+    {
+        if (events is not { Count: > 0 })
+        {
+            return;
+        }
+
+        sb.AppendLine($"--- Events / tasks ({events.Count}) ---");
+        var ordered = events.OrderByDescending(e => e.DueDate).Take(MaxEventsInPrompt).ToList();
+        foreach (var evt in ordered.OrderBy(e => e.DueDate))
+        {
+            var status = evt.Closed ? "CLOSED" : "OPEN";
+            var sanitized = AiDataSanitizer.Sanitize(evt.Description ?? evt.Title ?? string.Empty);
+            sb.AppendLine($"[{evt.DueDate:yyyy-MM-dd HH:mm}] {evt.EventType} - {sanitized} [{status}]");
+        }
+        if (events.Count > MaxEventsInPrompt)
+        {
+            sb.AppendLine($"... ({events.Count - MaxEventsInPrompt} older events omitted)");
+        }
+        sb.AppendLine();
+    }
+
+    private static void AppendJobDetails(StringBuilder sb, JobViewModel job)
+    {
+        sb.AppendLine("--- Job details ---");
+        sb.AppendLine($"Job No: {job.JobNo}");
+        sb.AppendLine($"Status: {job.Status ?? job.StatusName ?? "?"}");
+        if (!string.IsNullOrWhiteSpace(job.SpeedName))
+        {
+            sb.AppendLine($"Speed: {job.SpeedName}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.ClientName))
+        {
+            sb.AppendLine($"Client: {job.ClientName}");
+        }
+        else if (!string.IsNullOrWhiteSpace(job.Client))
+        {
+            sb.AppendLine($"Client: {job.Client}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.Courier))
+        {
+            sb.AppendLine($"Courier: {job.Courier}");
+        }
+        else if (!string.IsNullOrWhiteSpace(job.AssignedCourier?.Text))
+        {
+            sb.AppendLine($"Courier: {job.AssignedCourier.Text}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.PartnerTenantName))
+        {
+            sb.AppendLine($"Partner tenant: {job.PartnerTenantName}");
+        }
+
+        // Booleans of interest
+        var flags = new List<string>();
+        if (job.Done == true)
+        {
+            flags.Add("done");
+        }
+
+        if (job.Void == true)
+        {
+            flags.Add("void");
+        }
+
+        if (job.IsArchived)
+        {
+            flags.Add("archived");
+        }
+
+        if (job.Reprice == true)
+        {
+            flags.Add("reprice");
+        }
+
+        if (job.Locked == true)
+        {
+            flags.Add("locked");
+        }
+
+        if (job.Attention == true)
+        {
+            flags.Add("attention");
+        }
+
+        if (job.IsBulkJob)
+        {
+            flags.Add("bulk");
+        }
+
+        if (job.PreBook == true)
+        {
+            flags.Add("recurring");
+        }
+
+        if (job.IsPartnerJob)
+        {
+            flags.Add("partner");
+        }
+
+        if (job.Direct == true)
+        {
+            flags.Add("direct");
+        }
+
+        if (job.Truck == true)
+        {
+            flags.Add("truck");
+        }
+
+        if (job.Van)
+        {
+            flags.Add("van");
+        }
+
+        if (job.TailLiftPu)
+        {
+            flags.Add("tail-lift PU");
+        }
+
+        if (job.TailLiftDo)
+        {
+            flags.Add("tail-lift DO");
+        }
+
+        if (job.DeliverToPrivateRes)
+        {
+            flags.Add("private residence");
+        }
+
+        if (flags.Count > 0)
+        {
+            sb.AppendLine("Flags: " + string.Join(", ", flags));
+        }
+
+        // Addresses
+        var fromAddr = AiDataSanitizer.Sanitize(job.PickupAddress?.FullAddress ?? job.From ?? "");
+        var toAddr = AiDataSanitizer.Sanitize(job.DeliveryAddress?.FullAddress ?? job.ToAddress ?? "");
+        if (!string.IsNullOrWhiteSpace(fromAddr))
+        {
+            sb.AppendLine($"From: {fromAddr}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(toAddr))
+        {
+            sb.AppendLine($"To:   {toAddr}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.PickUpTimeZone?.Text))
+        {
+            sb.AppendLine($"Pickup TZ: {job.PickUpTimeZone.Text}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.DeliveryTimeZone?.Text))
+        {
+            sb.AppendLine($"Delivery TZ: {job.DeliveryTimeZone.Text}");
+        }
+
+        if (job.Distance > 0)
+        {
+            sb.AppendLine($"Distance: {job.Distance:N1}");
+        }
+
+        // Contacts (sanitised)
+        if (!string.IsNullOrWhiteSpace(job.FromContactName))
+        {
+            sb.AppendLine($"PU contact: {job.FromContactName}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.FromContactNumber))
+        {
+            sb.AppendLine($"PU phone: {AiDataSanitizer.Sanitize(job.FromContactNumber)}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.DeliverToContact))
+        {
+            sb.AppendLine($"DO contact: {job.DeliverToContact}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.ToContactPhone))
+        {
+            sb.AppendLine($"DO phone: {AiDataSanitizer.Sanitize(job.ToContactPhone)}");
+        }
+
+        // Schedule
+        if (job.Booked.HasValue)
+        {
+            sb.AppendLine($"Booked:        {job.Booked:yyyy-MM-dd HH:mm}");
+        }
+
+        if (job.CreatedDate.HasValue)
+        {
+            sb.AppendLine($"Created:       {job.CreatedDate:yyyy-MM-dd HH:mm}");
+        }
+
+        if (job.DispatchTime.HasValue)
+        {
+            sb.AppendLine($"Dispatched:    {job.DispatchTime:yyyy-MM-dd HH:mm}");
+        }
+
+        if (job.PuTime.HasValue)
+        {
+            sb.AppendLine($"PU scheduled:  {job.PuTime:yyyy-MM-dd HH:mm}");
+        }
+
+        if (job.PickupArrivalTime.HasValue)
+        {
+            sb.AppendLine($"PU arrived:    {job.PickupArrivalTime:yyyy-MM-dd HH:mm}");
+        }
+
+        if (job.DeliverByTime.HasValue)
+        {
+            sb.AppendLine($"Deliver by:    {job.DeliverByTime:yyyy-MM-dd HH:mm}");
+        }
+
+        if (job.DeliveryArrivalTime.HasValue)
+        {
+            sb.AppendLine($"DO arrived:    {job.DeliveryArrivalTime:yyyy-MM-dd HH:mm}");
+        }
+
+        if (job.CompletedTime.HasValue)
+        {
+            sb.AppendLine($"Completed:     {job.CompletedTime:yyyy-MM-dd HH:mm}");
+        }
+
+        if (job.FollowupTime.HasValue)
+        {
+            sb.AppendLine($"Follow-up:     {job.FollowupTime:yyyy-MM-dd HH:mm}");
+        }
+
+        // Parcel
+        if (job.Size?.Text is { Length: > 0 } size)
+        {
+            sb.AppendLine($"Size: {size}");
+        }
+
+        if (job.Weight is > 0)
+        {
+            sb.AppendLine($"Weight: {job.Weight}");
+        }
+
+        if (job.Items > 0)
+        {
+            sb.AppendLine($"Items: {job.Items}");
+        }
+
+        if (job.ParcelDimensions is { Count: > 0 } pd)
+        {
+            sb.AppendLine($"Parcel dimension rows: {pd.Count}");
+        }
+
+        if (job.DgClass is > 0)
+        {
+            sb.AppendLine($"DG class: {job.DgClass}");
+        }
+
+        if (job.DgDocumentation == true)
+        {
+            sb.AppendLine("DG documentation: yes");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.SigNotRequired))
+        {
+            sb.AppendLine($"Leave/sig: {job.SigNotRequired}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.Barcode))
+        {
+            sb.AppendLine($"Barcode: {job.Barcode}");
+        }
+
+        // Pallets
+        if (job.PalletInfo is { Count: > 0 } pallets)
+        {
+            var totalQty = pallets.Sum(p => p.Quantity);
+            var totalWeight = pallets.Sum(p => p.Weight);
+            sb.AppendLine($"Pallets: {pallets.Count} row(s), total qty {totalQty}, total weight {totalWeight.ToString("N1", CultureInfo.InvariantCulture)}");
+        }
+
+        // References / pricing
+        if (!string.IsNullOrWhiteSpace(job.RefA))
+        {
+            sb.AppendLine($"Ref A: {job.RefA}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.RefB))
+        {
+            sb.AppendLine($"Ref B: {job.RefB}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.OurRef))
+        {
+            sb.AppendLine($"Our Ref: {job.OurRef}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.ConNote))
+        {
+            sb.AppendLine($"Con Note: {job.ConNote}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.CustomJobName))
+        {
+            sb.AppendLine($"Custom name: {job.CustomJobName}");
+        }
+
+        if (job.Charge.HasValue)
+        {
+            sb.AppendLine($"Charge: {job.Charge.Value.ToString("N2", CultureInfo.InvariantCulture)}");
+        }
+
+        // Flight
+        if (job.IsFlightAssigned && job.AssignedFlight != null)
+        {
+            sb.AppendLine($"Flight: {job.AssignedFlight.FlightNumber}");
+            if (job.AssignedFlight.ExpectedDeparture.HasValue)
+            {
+                sb.AppendLine($"  expected departure: {job.AssignedFlight.ExpectedDeparture:yyyy-MM-dd HH:mm}");
+            }
+
+            if (job.AssignedFlight.ExpectedArrival.HasValue)
+            {
+                sb.AppendLine($"  expected arrival:   {job.AssignedFlight.ExpectedArrival:yyyy-MM-dd HH:mm}");
+            }
+
+            if (job.AssignedFlight.FlightSegments?.Count > 0)
+            {
+                sb.AppendLine($"  segments: {job.AssignedFlight.FlightSegments.Count}");
+            }
+        }
+
+        // Agent
+        if (job.IsAgentAssigned && job.AssignedAgent != null)
+        {
+            sb.AppendLine($"Agent: {job.AssignedAgent.AgentName}");
+        }
+
+        sb.AppendLine();
+    }
+
+    private static List<JobSignal> BuildTaskDashboardSignals(int overdue, int dueToday, int upcoming, int total)
+    {
+        var signals = new List<JobSignal>();
+        switch (overdue)
+        {
+            case 0 when dueToday == 0:
+                signals.Add(new JobSignal(SummarySeverity.Ok, $"{total} open task(s); none overdue or due today"));
+                return signals;
+            case > 0:
+            {
+                var severity = overdue >= 5 ? SummarySeverity.Critical
+                    : overdue >= 2 ? SummarySeverity.Urgent
+                    : SummarySeverity.Caution;
+                signals.Add(new JobSignal(severity, $"{overdue} task(s) overdue across all open jobs"));
+                break;
+            }
+        }
+
+        if (dueToday > 0)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Caution, $"{dueToday} task(s) due today"));
+        }
+        if (upcoming > 0)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Info, $"{upcoming} task(s) upcoming"));
+        }
+        return signals;
+    }
+
+    private static List<JobSignal> BuildOperationsSignals(OverviewStatsViewModel stats)
+    {
+        var signals = new List<JobSignal>();
+        var total = stats.Active + stats.Inactive + stats.Completed;
+        if (total == 0)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Info, "no jobs in the system right now"));
+            return signals;
+        }
+        if (stats.Active > 0 && stats.Inactive > stats.Active)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Urgent,
+                $"inactive ({stats.Inactive}) exceeds active ({stats.Active}) — investigate stuck jobs"));
+        }
+        else if (stats.Active > 0 && stats.Inactive * 2 > stats.Active)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Caution,
+                $"inactive ({stats.Inactive}) is more than half of active ({stats.Active})"));
+        }
+        else
+        {
+            signals.Add(new JobSignal(SummarySeverity.Ok,
+                $"{stats.Active} active, {stats.Inactive} inactive, {stats.Completed} completed"));
+        }
+        return signals;
+    }
+
+    private static List<JobSignal> BuildComplianceSignals(int expired, int week, int month)
+    {
+        var signals = new List<JobSignal>();
+        if (expired > 0)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Critical,
+                $"{expired} compliance item(s) EXPIRED — drivers should be blocked from dispatch"));
+        }
+        if (week > 0)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Urgent,
+                $"{week} compliance item(s) expire within 7 days"));
+        }
+        if (month > 0)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Caution,
+                $"{month} compliance item(s) expire within 30 days"));
+        }
+        if (signals.Count == 0)
+        {
+            signals.Add(new JobSignal(SummarySeverity.Ok, "no expiring or expired compliance items"));
+        }
+        return signals;
     }
 }

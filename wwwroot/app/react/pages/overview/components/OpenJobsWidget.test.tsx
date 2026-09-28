@@ -1,7 +1,6 @@
-/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {OpenJobsWidget} from './OpenJobsWidget';
 import type {IOpenJobResponse} from '../OverviewPage.interfaces';
 
@@ -10,14 +9,13 @@ jest.mock('../../../utils/dateUtils', () => ({
     formatMins: jest.fn((s: string) => s),
 }));
 
-const theme = createTheme();
 
 // ContactID is defined as 0 in setup.ts — the localStorage keys will use that
 const VIEW_MODE_KEY = 'openJobsViewMode_0';
 const LIMIT_KEY = 'openJobsTableViewLimit0';
 
 const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    render(<MantineTestProvider>{ui}</MantineTestProvider>);
 
 function createMockOpenJob(overrides: Partial<IOpenJobResponse> = {}): IOpenJobResponse {
     return {
@@ -55,7 +53,9 @@ describe('OpenJobsWidget', () => {
 
         it('renders view mode toggle', () => {
             renderWithTheme(<OpenJobsWidget openJobs={[]} isLoading={false} />);
-            expect(screen.getByRole('switch')).toBeInTheDocument();
+            // A SegmentedToggle: two radios, Cards selected by default.
+            expect(screen.getByRole('radio', {name: 'Cards'})).toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Table'})).not.toBeChecked();
         });
     });
 
@@ -111,8 +111,7 @@ describe('OpenJobsWidget', () => {
             renderWithTheme(<OpenJobsWidget openJobs={jobs} isLoading={false} />);
 
             // Toggle to table view
-            const toggle = screen.getByRole('switch');
-            fireEvent.click(toggle);
+            fireEvent.click(screen.getByRole('radio', {name: 'Table'}));
 
             // Table headers should appear
             expect(screen.getByText('Job Number')).toBeInTheDocument();
@@ -149,7 +148,7 @@ describe('OpenJobsWidget', () => {
             renderWithTheme(<OpenJobsWidget openJobs={[]} isLoading={false} />);
 
             // The collapse button is the IconButton in the toolbar
-            const collapseButton = screen.getByText('expand_less').closest('button')!;
+            const collapseButton = screen.getByRole('button', {name: 'Collapse open jobs'});
             fireEvent.click(collapseButton);
 
             // Verify state was persisted
@@ -162,8 +161,7 @@ describe('OpenJobsWidget', () => {
         it('saves view mode to localStorage', () => {
             renderWithTheme(<OpenJobsWidget openJobs={[]} isLoading={false} />);
 
-            const toggle = screen.getByRole('switch');
-            fireEvent.click(toggle);
+            fireEvent.click(screen.getByRole('radio', {name: 'Table'}));
 
             expect(localStorage.getItem(VIEW_MODE_KEY)).toBe('table');
         });

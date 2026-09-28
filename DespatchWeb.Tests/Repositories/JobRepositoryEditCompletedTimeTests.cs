@@ -1,9 +1,10 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Repositories;
@@ -22,10 +23,10 @@ namespace DespatchWeb.Tests.Repositories;
 public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
-    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     // Timezone records seeded in the database
@@ -36,7 +37,7 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 
     public JobRepositoryEditCompletedTimeTests()
     {
-        _contextFactoryMock = _db.CreateMoqFactoryMock();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         // Seed timezone records for entity-based tests
         using var context = _db.CreateContext();
@@ -46,21 +47,21 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         );
         context.SaveChanges();
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
 
         // Mock GetCurrentTimeFromTimeZone for specific timezones
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTimeFromTimeZone(
-                It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)))
+        _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(
+                Arg.Is<TimeZone>(tz => tz!.Name == PstTimezoneName))
             .Returns(new DateTime(2024, 6, 15, 9, 37, 0));
 
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTimeFromTimeZone(
-                It.Is<TimeZone>(tz => tz.Name == EstTimezoneName)))
+        _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(
+                Arg.Is<TimeZone>(tz => tz!.Name == EstTimezoneName))
             .Returns(new DateTime(2024, 6, 15, 12, 37, 0));
 
         // Null timezone falls back to tenant time
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTimeFromTimeZone(null!))
+        _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(null!)
             .Returns(TestDates.Now);
     }
 
@@ -73,12 +74,13 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
     private DespatchContext CreateContext() => _db.CreateContext();
 
     private JobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        Mock.Of<IJobApiClient>()
+        _clearListEnvelopeServiceMock,
+        _createJobServiceMock,
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
     );
 
     [Fact]
@@ -145,6 +147,93 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdateJobAsync_CompletedTime_EmptyValue_LiveJob_ClearsCompletedTime()
+    {
+        // Arrange — a completed live job with an existing POD time
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 10,
+                UcjbNumber = "JOB-010",
+                UcjbComplTime = new DateTime(2024, 6, 15, 9, 37, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act — an empty value clears the POD time
+        await repository.UpdateJobAsync(10, JobProperty.CompletedTime, string.Empty);
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 10,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(updatedJob.UcjbComplTime); // empty value should null the POD time
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_CompletedTime_EmptyValue_ArchivedJob_ClearsCompletedTime()
+    {
+        // Arrange — a completed archived job with an existing POD time
+        await using (var context = CreateContext())
+        {
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 11,
+                UcjbNumber = "JOB-011",
+                UcjbComplTime = new DateTime(2024, 6, 15, 12, 37, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act — clearing must also work on archived jobs
+        await repository.UpdateJobAsync(11, JobProperty.CompletedTime, string.Empty);
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 11,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Null(updatedArchive.UcjbComplTime); // empty value should null the archived POD time
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_CompletedTime_EmptyValue_ArchivedDoneJob_IsRefused()
+    {
+        // Arrange - an archived job that is marked done
+        await using (var context = CreateContext())
+        {
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 12,
+                UcjbNumber = "JOB-012",
+                UcjbJobDone = true,
+                UcjbStatus = (int)JobStatus.Completed,
+                UcjbComplTime = new DateTime(2024, 6, 15, 12, 37, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act / Assert - clearing the POD time would leave it done with nothing to show for it,
+        // and an archived job cannot be un-done to fix that
+        await Assert.ThrowsAsync<ArchivedJobCompletionException>(
+            () => repository.UpdateJobAsync(12, JobProperty.CompletedTime, string.Empty));
+
+        await using var verifyContext = CreateContext();
+        var untouched = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 12,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotNull(untouched.UcjbComplTime);
+    }
+
+    [Fact]
     public async Task UpdateJobAsync_Delivered_LiveJob_SetsCompletedTimeViaInfoService()
     {
         // Arrange — Delivered=true uses entity-based update with DeliverByTimeZone include
@@ -176,10 +265,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.Completed, updatedJob.UcjbStatus);
         Assert.Equal(new DateTime(2024, 6, 15, 9, 37, 0), updatedJob.UcjbComplTime); // CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)
 
-        _tenantInfoServiceMock.Verify(
-            x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)),
-            Times.Once,
-            "should call GetCurrentTimeFromTimeZone with the delivery timezone");
+        _tenantInfoServiceMock.Received(1)
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz!.Name == PstTimezoneName));
     }
 
     [Fact]
@@ -214,10 +301,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.Undeliverable, updatedJob.UcjbStatus);
         Assert.Equal(new DateTime(2024, 6, 15, 12, 37, 0), updatedJob.UcjbComplTime); // CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(EST)
 
-        _tenantInfoServiceMock.Verify(
-            x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == EstTimezoneName)),
-            Times.Once,
-            "should call GetCurrentTimeFromTimeZone with the delivery timezone");
+        _tenantInfoServiceMock.Received(1)
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz!.Name == EstTimezoneName));
     }
 
     [Fact]
@@ -250,10 +335,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.PickedUp, updatedJob.UcjbStatus);
         Assert.Equal(new DateTime(2024, 6, 15, 9, 37, 0), updatedJob.PickUpTime); // PickUpTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)
 
-        _tenantInfoServiceMock.Verify(
-            x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)),
-            Times.Once,
-            "should call GetCurrentTimeFromTimeZone with the pickup timezone");
+        _tenantInfoServiceMock.Received(1)
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz!.Name == PstTimezoneName));
     }
 
     [Fact]
@@ -287,10 +370,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal((int)JobStatus.PickedUp, updatedJob.UcjbStatus);
         Assert.Equal(TestDates.Now, updatedJob.PickUpTime); // with null pickup timezone, GetCurrentTimeFromTimeZone(null) should return tenant time
 
-        _tenantInfoServiceMock.Verify(
-            x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz == null)),
-            Times.Once,
-            "should call GetCurrentTimeFromTimeZone with null (no pickup timezone)");
+        _tenantInfoServiceMock.Received(1)
+            .GetCurrentTimeFromTimeZone(Arg.Is<TimeZone>(tz => tz == null));
     }
 
     [Fact]
@@ -323,5 +404,61 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal(newFollowup.DateTime, updatedJob.FollowupTime); // FollowupTime should store the wall-clock time from DateTimeOffset
         Assert.Equal(14, updatedJob.FollowupTime!.Value.Hour);
         Assert.Equal(30, updatedJob.FollowupTime!.Value.Minute);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_PodName_EmptyValue_ClearsName()
+    {
+        // Arrange — an active job that already has a POD name
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 10,
+                UcjbNumber = "JOB-010",
+                UcjbPodname = "Jane Doe"
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act — an empty value clears the POD name
+        await repository.UpdateJobAsync(10, JobProperty.PodName, "");
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 10,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(string.Empty, updatedJob.UcjbPodname);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_PodName_EmptyValue_ArchivedJob_ClearsName()
+    {
+        // Arrange — an archived job that already has a POD name
+        await using (var context = CreateContext())
+        {
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 11,
+                UcjbNumber = "JOB-011",
+                UcjbPodname = "John Smith"
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateJobAsync(11, JobProperty.PodName, "");
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 11,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(string.Empty, updatedArchive.UcjbPodname);
     }
 }

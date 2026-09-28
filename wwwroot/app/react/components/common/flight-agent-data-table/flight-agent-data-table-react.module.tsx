@@ -7,10 +7,7 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { FlightAgentDataTable } from './FlightAgentDataTable';
-import { getTheme } from '../../../theme/muiTheme';
 import { IAppConfig } from '../../../../interfaces/app-config.interface';
 import angular from 'angular';
 import {
@@ -22,6 +19,7 @@ import {
     AirportSuggestion,
     CurrentJob,
 } from './types';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 
 /**
  * AngularJS Component Controller for React FlightAgentDataTable
@@ -45,6 +43,7 @@ class FlightAgentDataTableReactController implements angular.IController {
     agentMessage?: string;
     activeAirlineOptions?: AirlineSuggestion[];
     selectedAirline?: AirlineSuggestion;
+    includeNearbyAirports?: boolean;
     outboundAirportOptions?: AirportSuggestion[];
     inboundAirportOptions?: AirportSuggestion[];
     selectedOutboundAirport?: AirportSuggestion;
@@ -67,6 +66,7 @@ class FlightAgentDataTableReactController implements angular.IController {
     // Callbacks
     onFlightSearchChange?: (params: { searchText: string }) => void;
     onFilterFlightsByAirline?: (params: { airline: AirlineSuggestion | null }) => void;
+    onToggleNearbyAirports?: (params: { value: boolean }) => void;
     onOutboundAirportChange?: (params: { airport: AirportSuggestion | null }) => void;
     onInboundAirportChange?: (params: { airport: AirportSuggestion | null }) => void;
     onAddFlightToJob?: (params: { flight: FlightOption }) => void;
@@ -108,9 +108,6 @@ class FlightAgentDataTableReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap AngularJS callbacks to match React expected signatures
         const handleFlightSearchChange = (searchText: string) => {
             if (this.onFlightSearchChange) {
@@ -122,6 +119,13 @@ class FlightAgentDataTableReactController implements angular.IController {
         const handleFilterFlightsByAirline = (airline: AirlineSuggestion | null) => {
             if (this.onFilterFlightsByAirline) {
                 this.onFilterFlightsByAirline({ airline });
+                this.$scope.$applyAsync();
+            }
+        };
+
+        const handleToggleNearbyAirports = (value: boolean) => {
+            if (this.onToggleNearbyAirports) {
+                this.onToggleNearbyAirports({ value });
                 this.$scope.$applyAsync();
             }
         };
@@ -234,6 +238,7 @@ class FlightAgentDataTableReactController implements angular.IController {
             agentMessage: this.agentMessage,
             activeAirlineOptions: this.activeAirlineOptions ?? [],
             selectedAirline: this.selectedAirline,
+            includeNearbyAirports: this.includeNearbyAirports ?? false,
             outboundAirportOptions: this.outboundAirportOptions ?? [],
             inboundAirportOptions: this.inboundAirportOptions ?? [],
             selectedOutboundAirport: this.selectedOutboundAirport,
@@ -250,6 +255,7 @@ class FlightAgentDataTableReactController implements angular.IController {
             showAgentList: this.showAgentList ?? false,
             onFlightSearchChange: handleFlightSearchChange,
             onFilterFlightsByAirline: handleFilterFlightsByAirline,
+            onToggleNearbyAirports: handleToggleNearbyAirports,
             onOutboundAirportChange: handleOutboundAirportChange,
             onInboundAirportChange: handleInboundAirportChange,
             onAddFlightToJob: handleAddFlightToJob,
@@ -265,12 +271,9 @@ class FlightAgentDataTableReactController implements angular.IController {
             isUsCustomer: this.isUsCustomer,
         };
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <FlightAgentDataTable {...props} />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+            <FlightAgentDataTable {...props} />
+        ));
     }
 }
 
@@ -293,6 +296,7 @@ export const FlightAgentDataTableReactComponent: angular.IComponentOptions = {
         agentMessage: '<',
         activeAirlineOptions: '<',
         selectedAirline: '<',
+        includeNearbyAirports: '<',
         outboundAirportOptions: '<',
         inboundAirportOptions: '<',
         selectedOutboundAirport: '<',
@@ -310,6 +314,7 @@ export const FlightAgentDataTableReactComponent: angular.IComponentOptions = {
         // Callback bindings (& - expression)
         onFlightSearchChange: '&',
         onFilterFlightsByAirline: '&',
+        onToggleNearbyAirports: '&',
         onOutboundAirportChange: '&',
         onInboundAirportChange: '&',
         onAddFlightToJob: '&',

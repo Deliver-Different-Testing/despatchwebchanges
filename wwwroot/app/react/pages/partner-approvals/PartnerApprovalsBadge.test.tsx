@@ -1,18 +1,19 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * PartnerApprovalsBadge Tests
  */
 
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {PartnerApprovalsBadge} from './PartnerApprovalsBadge';
-import {renderWithProviders} from '../../__testUtils__';
-import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
+import { renderWithMantineProviders } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
+import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
 
 jest.mock('../../services/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {
         pendingForApproval: jest.fn(),
+        hasActivePartners: jest.fn(),
         approve: jest.fn(),
         reject: jest.fn(),
     },
@@ -45,11 +46,13 @@ function makeItem(hoursOld: number, id: number): JobChangeRequestInboxItem {
 describe('PartnerApprovalsBadge', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Default: tenant has active partners. Individual tests override.
+        mockApi.hasActivePartners.mockResolvedValue(true);
     });
 
     it('shows no badge content when the inbox is empty', async () => {
         mockApi.pendingForApproval.mockResolvedValueOnce([]);
-        renderWithProviders(<PartnerApprovalsBadge/>);
+        renderWithMantineProviders(<PartnerApprovalsBadge/>);
         // The button is always rendered, but the Badge content is hidden when invisible.
         const button = await screen.findByRole('button', {name: /Open partner approvals/i});
         expect(button).toBeInTheDocument();
@@ -63,26 +66,53 @@ describe('PartnerApprovalsBadge', () => {
             makeItem(2, 2),
             makeItem(3, 3),
         ]);
-        renderWithProviders(<PartnerApprovalsBadge/>);
-        await waitFor(() => expect(screen.getByText('3')).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsBadge/>);
+        expect(await screen.findByText('3')).toBeInTheDocument();
     });
+
+    it.each([[true], [false]])(
+        'lets the count badge escape the round button instead of clipping it (toolbarVariant: %s)',
+        async (toolbarVariant) => {
+            // ActionIcon's root clips its children. That was invisible while the buttons
+            // were square, but the circular border now cuts through the Indicator sitting
+            // in the top-right corner.
+            mockApi.pendingForApproval.mockResolvedValueOnce([makeItem(1, 1)]);
+            renderWithMantineProviders(<PartnerApprovalsBadge toolbarVariant={toolbarVariant}/>);
+
+            const button = await screen.findByRole('button', {name: /Open partner approvals/i});
+            expect(button).toHaveStyle({overflow: 'visible'});
+        },
+    );
 
     it('caps the displayed count at 99+', async () => {
         const many = Array.from({length: 120}, (_, i) => makeItem(1, i + 1));
         mockApi.pendingForApproval.mockResolvedValueOnce(many);
-        renderWithProviders(<PartnerApprovalsBadge/>);
-        await waitFor(() => expect(screen.getByText(/99\+/)).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsBadge/>);
+        expect(await screen.findByText(/99\+/)).toBeInTheDocument();
     });
 
     it('clicking the badge opens the drawer with the inbox', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockApi.pendingForApproval.mockResolvedValue([makeItem(1, 1)]);
-        renderWithProviders(<PartnerApprovalsBadge/>);
-        await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
+        renderWithMantineProviders(<PartnerApprovalsBadge/>);
+        expect(await screen.findByText('1')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /Open partner approvals/i}));
 
         expect(await screen.findByText(/Partner Approvals/i)).toBeInTheDocument();
         expect(screen.getByText('Acme')).toBeInTheDocument();
+    });
+
+    it('renders nothing and skips the inbox poll when the tenant has no active partners', async () => {
+        mockApi.hasActivePartners.mockResolvedValue(false);
+        mockApi.pendingForApproval.mockResolvedValue([makeItem(1, 1)]);
+        renderWithMantineProviders(<PartnerApprovalsBadge/>);
+
+        await waitFor(() => {
+            expect(mockApi.hasActivePartners).toHaveBeenCalled();
+        });
+
+        expect(screen.queryByRole('button', {name: /Open partner approvals/i})).not.toBeInTheDocument();
+        expect(mockApi.pendingForApproval).not.toHaveBeenCalled();
     });
 });

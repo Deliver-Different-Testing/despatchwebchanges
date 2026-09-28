@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Job Detail API Service Tests
  *
@@ -16,6 +17,7 @@ import {
     updatePodDetails,
     updateJobReadStatus,
     sendPod,
+    sendPodReport,
     getJobDeliveryPhotos,
     getJobPickupPhotos,
     getInternalStatusList,
@@ -227,6 +229,24 @@ describe('jobDetailApi', () => {
             expect(mockApiClient.get).toHaveBeenCalledWith('job/SendPOD', {jobId: 123, toEmail: 'test@example.com'});
             expect(result).toEqual({success: true});
         });
+
+        it('sendPodReport POSTs the request with a budget longer than the 30s client default', async () => {
+            // Rendering the POD inline (S3 photos + image conversion) routinely outlives 30s.
+            mockApiClient.post.mockResolvedValueOnce(undefined);
+            const request = {jobId: 123, recipients: ['ops@acme.test'], subject: 'POD', body: 'Body'};
+
+            await sendPodReport(request);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/SendPodReport', request, {timeout: 180000});
+        });
+
+        it('sendPodReport surfaces the server error message rather than a generic failure', async () => {
+            mockApiClient.post.mockRejectedValueOnce(
+                createMockApiError({message: 'The POD report could not be queued for sending.'}));
+
+            await expect(sendPodReport({jobId: 123, recipients: [], subject: '', body: ''}))
+                .rejects.toMatchObject({message: 'The POD report could not be queued for sending.'});
+        });
     });
 
     // ── Photos ──────────────────────────────────────────────────────
@@ -296,12 +316,12 @@ describe('jobDetailApi', () => {
     // ── Job Dispatch + Package Operations ───────────────────────────
 
     describe('Job Dispatch Operations', () => {
-        it('restoreJobs posts jobIds in request body', async () => {
+        it('restoreJobs posts jobIds', async () => {
             mockApiClient.post.mockResolvedValueOnce(undefined);
 
             await restoreJobs([1, 2, 3]);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [1, 2, 3]});
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [1, 2, 3], removeCapturedImages: false});
         });
 
         it('allocateJob posts courierId and jobIds', async () => {

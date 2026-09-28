@@ -1,0 +1,188 @@
+/**
+ * Palette constants — the single source of truth for brand colours.
+ *
+ * This module has NO framework dependencies on purpose: both the MUI theme
+ * (`muiTheme.ts`, React) and the AngularJS Material theme (`materialTheme.ts`)
+ * import these same hex values, so the two theme systems can never drift.
+ * Keep it import-free so pulling it into the AngularJS bundle doesn't drag MUI
+ * along with it.
+ */
+
+// DFRNT primary palette — Cyan (#3bc7f4). Used by US tenants. Cyan is a light
+// hue, so anything filled with it needs DARK (Ink) text, not white.
+export const dfrntPrimaryPalette = {
+    50: '#e7f8fe',
+    100: '#d8f4fd',
+    200: '#b1e9fb',
+    300: '#82dcf8',
+    400: '#5bd1f5',
+    500: '#3bc7f4',  // Main color - DFRNT Cyan
+    600: '#1eb2e6',
+    700: '#1590c0',
+    800: '#0f6f96',
+    900: '#0a4d69',
+    A100: '#82dcf8',
+    A200: '#5bd1f5',
+    A400: '#3bc7f4',
+    A700: '#1eb2e6',
+};
+
+// Non-US "urgent" primary — warm amber/gold (#f4c430). US tenants use the cyan
+// dfrntPrimaryPalette above; non-US (NZ) tenants use this. Gold is a light hue, so
+// anything filled with it needs DARK (Ink) text, not white.
+export const urgentPrimaryPalette = {
+    50: '#fef9e7',
+    100: '#fcefc4',
+    200: '#fae49d',
+    300: '#f8d976',
+    400: '#f6d058',
+    500: '#f4c430',  // Main color - warm amber gold
+    600: '#e5b52a',
+    700: '#d4a324',
+    800: '#c3911e',
+    900: '#a87614',
+    A100: '#fff8e1',
+    A200: '#ffecb3',
+    A400: '#ffd54f',
+    A700: '#ffc107',
+};
+
+// Ink Blue (#0d0c2c) — the DFRNT shell / neutral-dark family. Backs the app bar,
+// side-nav header and any dark chrome. MUI-style 50→900 from the brand ink ramp.
+export const inkBluePalette = {
+    50: '#ecebf1',
+    100: '#cfced5',
+    200: '#a8a7b6',
+    300: '#83829a',
+    400: '#6e6d80',
+    500: '#4f4e66',
+    600: '#35334f',
+    700: '#211f40',
+    800: '#141233',
+    900: '#0d0c2c',  // Ink Blue - shell
+};
+
+// Ink-Blue shell tokens for US tenants (app bar + side-nav header). White-based
+// content on the dark scrim. Mirrors the Mantine `sidebarColors` in the DFRNT
+// brand theme.
+export const shellColors = {
+    appBar: inkBluePalette[900],   // #0d0c2c
+    panel: inkBluePalette[800],    // #141233 - one tier up for the drawer panel
+    border: 'rgba(255, 255, 255, 0.10)',
+    textPrimary: 'rgba(255, 255, 255, 0.95)',
+    textSecondary: 'rgba(255, 255, 255, 0.60)',
+    textMuted: 'rgba(255, 255, 255, 0.38)',
+    hoverBg: 'rgba(255, 255, 255, 0.08)',
+};
+
+// Gold shell tokens for non-US tenants. Same shape, but the content is Ink-based:
+// gold is a light hue, so white on it fails WCAG. The secondary/muted steps sit a
+// little stronger than their white counterparts because dark ink fades faster
+// against a bright fill than white does against navy.
+export const goldShellColors = {
+    appBar: urgentPrimaryPalette[500],  // #f4c430
+    panel: inkBluePalette[800],
+    border: 'rgba(13, 12, 44, 0.14)',
+    textPrimary: 'rgba(13, 12, 44, 0.95)',
+    textSecondary: 'rgba(13, 12, 44, 0.65)',
+    textMuted: 'rgba(13, 12, 44, 0.45)',
+    hoverBg: 'rgba(13, 12, 44, 0.08)',
+};
+
+/** The shell tokens for a tenant — Ink Blue on US, gold elsewhere. */
+export function getShellColors(isUsCustomer: boolean): typeof shellColors {
+    return isUsCustomer ? shellColors : goldShellColors;
+}
+
+// AI feature accent — the DFRNT grape/purple (#824ae0) signature used across AI
+// surfaces (draft buttons, summary cards, the BETA chip). A light/main/dark ramp so
+// callers can build hover/active states from tonal steps.
+export const aiColors = {
+    light: '#b088ec',
+    main: '#824ae0',
+    dark: '#6c3bbe',
+};
+
+// Accent for the "gross" pricing mode in the simple price editor. Purple has no
+// slot in the tenant palettes, so it lives here as a named semantic token.
+export const grossModeColor = '#9c27b0';
+
+// Accent palette - warm grays
+export const accentPalette = {
+    50: '#fafaf9',   // Warm white
+    100: '#f5f5f4',  // Very light warm gray
+    200: '#e7e5e4',  // Light warm gray
+    300: '#d6d3d1',  // Medium-light warm gray
+    400: '#a8a29e',  // Medium warm gray
+    500: '#78716c',  // Balanced warm gray - MAIN COLOR
+    600: '#57534e',  // Dark warm gray - TOOLBAR COLOR
+    700: '#44403c',  // Darker warm gray
+    800: '#292524',  // Very dark warm gray
+    900: '#1c1917',  // Deepest warm gray
+};
+
+/**
+ * Shared (non-primary) colours: the semantic statuses, the surface ladder, the
+ * text hierarchy and the divider.
+ *
+ * These live here rather than in `muiTheme.ts`, where they used to, because they
+ * are plain values with no framework in them — and `designTokens.ts` imports
+ * them. From there they reached four island bundles, each of which was shipping
+ * MUI's Fade, Grow and useMediaQuery in order to read six hex strings.
+ */
+export const sharedColors = {
+    success: {
+        main: '#13b964',   // DFRNT Green
+        light: '#5fd199',
+        dark: '#0b7d44',
+        lighter: '#e5f8ee',
+        contrast: '#FFFFFF',
+    },
+    warning: {
+        main: '#fe811a',   // DFRNT Orange
+        light: '#ffab63',
+        dark: '#b3560b',
+        lighter: '#fff3e6',
+        contrast: '#000000',
+    },
+    error: {
+        main: '#dc3246',   // DFRNT Red
+        light: '#e97b88',
+        dark: '#93212f',
+        lighter: '#fdeaec',
+        contrast: '#FFFFFF',
+    },
+    info: {
+        main: '#2a4eff',   // DFRNT Reflex Blue
+        light: '#7d92ff',
+        dark: '#1b31a8',
+        lighter: '#eaeeff',
+        contrast: '#FFFFFF',
+    },
+    // Surface colors - matching Angular Material
+    surface: {
+        default: '#f4f2f1',   // DFRNT Light Grey page background
+        paper: '#FFFFFF',
+        elevated: '#FFFFFF',
+        // MD3 tonal surface-container tiers (warm-neutral, derived from the
+        // accent ramp). These are the tonal depth cue that supplements shadows
+        // — menus/popovers sit on `container`, higher-emphasis chrome on the
+        // stronger tiers — so depth reads from surface colour, not just shadow.
+        containerLow: accentPalette[50],
+        container: accentPalette[100],
+        containerHigh: accentPalette[200],
+        containerHighest: accentPalette[300],
+    },
+    // Text hierarchy
+    text: {
+        // 0.6 (not MD2's 0.54) so secondary text — section labels, table
+        // heads, dialog subtitles — clears WCAG AA 4.5:1 on the #FAFAFA
+        // surface; 0.54 (#767676) came in at 4.35:1.
+        primary: 'rgba(0, 0, 0, 0.87)',
+        secondary: 'rgba(0, 0, 0, 0.6)',
+        disabled: 'rgba(0, 0, 0, 0.38)',
+        hint: 'rgba(0, 0, 0, 0.38)',
+    },
+    // Dividers
+    divider: 'rgba(0, 0, 0, 0.12)',
+};

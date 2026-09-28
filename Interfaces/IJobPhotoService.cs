@@ -13,7 +13,34 @@ public interface IJobPhotoService
     Task<AwsUploadResult> UploadJobPhotoOrSignatureAsync(int jobId, IFormFile file, JobPhotoType photoType,
         bool isPod = true, string podDescription = null);
 
-    Task<bool> DeleteJobPhotoOrSignatureAsync(int jobId, string key);
+    /// <summary>
+    /// Soft-deletes a single captured photo/signature by moving its S3 object under the
+    /// <c>RestoredArchive/</c> prefix (copy then delete original). The bytes are retained
+    /// (recoverable) but no longer returned by the photo getters.
+    /// </summary>
+    /// <param name="jobId">The job the file belongs to (for logging).</param>
+    /// <param name="key">The S3 key of the file to archive.</param>
+    Task<bool> ArchiveJobPhotoAsync(int jobId, string key);
+
+    /// <summary>
+    /// Soft-deletes all captured photos and signatures for a job (delivery photos, delivery
+    /// signatures, pickup photos and pickup scanned documents) by moving each S3 object under the
+    /// <c>RestoredArchive/</c> prefix. User-uploaded job attachments are not touched. The bytes are
+    /// retained (recoverable) but no longer returned by the photo getters.
+    /// </summary>
+    /// <param name="jobId">The job whose captured media should be archived.</param>
+    /// <param name="year">The completion year used to locate the S3 folders.</param>
+    /// <param name="month">The completion month used to locate the S3 folders.</param>
+    Task<AwsBatchOperationResult> ArchiveJobCapturedMediaAsync(int jobId, int year, int month);
+
+    /// <summary>
+    /// Counts the captured photos and signatures <see cref="ArchiveJobCapturedMediaAsync"/> would
+    /// archive for a job, without changing anything. Used to warn the operator before a restore.
+    /// </summary>
+    /// <param name="jobId">The job whose captured media should be counted.</param>
+    /// <param name="year">The completion year used to locate the S3 folders.</param>
+    /// <param name="month">The completion month used to locate the S3 folders.</param>
+    Task<int> CountJobCapturedMediaAsync(int jobId, int year, int month);
 
     // Job Attachment methods
     Task<IReadOnlyList<S3FileInfo>> GetAttachedFilesAsync(int jobId);

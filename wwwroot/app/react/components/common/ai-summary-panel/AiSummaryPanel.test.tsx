@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * AiSummaryPanel Component Tests
  * Optimised: read-only tests consolidated to reduce render count.
@@ -16,14 +15,13 @@
 
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantine} from '../../../__testUtils__';
 import {AiSummaryPanel} from './AiSummaryPanel';
-import type {AiSummaryResponse} from '../../../services/aiAssistantApi';
+import type {AiSummaryResponse} from '../../../interfaces/ai';
 
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+// AiSummaryPanel is still MUI but renders the Mantine <AutoMateLogo>, so it needs
+// Mantine outside and MUI inside — the island coexistence order.
+const renderWithTheme = renderWithMantine;
 
 // Helper to create a mock fetchSummary that resolves with a summary
 const createMockFetch = (summary = 'Test summary content', delay = 0) => {
@@ -50,16 +48,16 @@ describe('AiSummaryPanel', () => {
         it('renders collapsed by default with title and placeholder text', () => {
             const mockFetch = createMockFetch();
             renderWithTheme(
-                <AiSummaryPanel title="AI Summary" fetchSummary={mockFetch} />
+                <AiSummaryPanel title="Auto-mate Summary" fetchSummary={mockFetch} />
             );
 
-            expect(screen.getByText('AI Summary')).toBeInTheDocument();
+            expect(screen.getByText('Auto-mate Summary')).toBeInTheDocument();
             // Should not have fetched yet
             expect(mockFetch).not.toHaveBeenCalled();
 
             // MUI Collapse renders content in DOM even when collapsed (for animation),
             // so the placeholder text is present but visually hidden via Collapse.
-            const placeholder = screen.getByText('Click to generate an AI summary.');
+            const placeholder = screen.getByText('Click to generate an Auto-mate summary.');
             expect(placeholder).toBeInTheDocument();
         });
     });
@@ -68,11 +66,11 @@ describe('AiSummaryPanel', () => {
         it('fetches summary when expanded by clicking the header', async () => {
             const mockFetch = createMockFetch('Generated summary');
             renderWithTheme(
-                <AiSummaryPanel title="AI Summary" fetchSummary={mockFetch} />
+                <AiSummaryPanel title="Auto-mate Summary" fetchSummary={mockFetch} />
             );
 
             // Click to expand
-            fireEvent.click(screen.getByText('AI Summary'));
+            fireEvent.click(screen.getByText('Auto-mate Summary'));
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -127,9 +125,9 @@ describe('AiSummaryPanel', () => {
             );
 
             await waitFor(() => {
-                // MUI Skeleton components render with role="progressbar" or class MuiSkeleton
-                const skeletons = document.querySelectorAll('.MuiSkeleton-root');
-                expect(skeletons.length).toBeGreaterThanOrEqual(3);
+                // Mantine's Skeleton carries no role or stable hook, so each one
+                // names itself (same convention as jobListIndicators).
+                expect(screen.getAllByTestId('ai-summary-skeleton').length).toBeGreaterThanOrEqual(3);
             });
 
             expect(screen.getByLabelText('Stop generating')).toBeInTheDocument();
@@ -222,10 +220,11 @@ describe('AiSummaryPanel', () => {
                 />
             );
 
-            // querySelector is used here because MUI Card renders a plain <div> with no
-            // implicit ARIA role, and there is no text content unique to the card wrapper.
-            const card = container.querySelector('.MuiCard-root') as HTMLElement;
+            // The card is a plain <div> with no implicit role, so it names itself.
+            // Assert the accent actually lands — that is what this test is named for.
+            const card = screen.getByTestId('ai-summary-card');
             expect(card).toBeInTheDocument();
+            expect(card).toHaveStyle({borderLeft: '4px solid #ff5722'});
         });
     });
 

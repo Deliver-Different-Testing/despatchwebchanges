@@ -5,7 +5,7 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {
     Task,
     TaskApiResponse,
@@ -14,13 +14,15 @@ import {
     TaskDateRequest,
     TaskTimeRequest,
     TaskAssignStaffRequest,
+    TaskUnassignRequest,
     StaffSuggestion,
     EventTypeSuggestion,
     EventGroupViewModel,
 } from '../interfaces';
-import {formatDateForApi, parseDateFromApi, formatRelativeDateTime} from '../utils/dateUtils';
+import {formatDateForApi, parseDateFromApi, formatRelativeDateTime, getTenantTimezone} from '../utils/dateUtils';
 import {Dayjs} from 'dayjs';
 import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-history/TaskHistory.interfaces';
+import {RequestOptions} from "./requestOptions";
 
 /**
  * Transform API response to Task with Dayjs date
@@ -50,6 +52,7 @@ export async function getAllTasks(filters?: TaskFiltersRequest, options?: Reques
         if (filters.showCompleted !== undefined) params.showCompleted = filters.showCompleted;
         if (filters.courierId !== undefined) params.courierId = filters.courierId;
         if (filters.jobId !== undefined) params.jobId = filters.jobId;
+        if (filters.limit !== undefined) params.limit = filters.limit;
     }
 
     const response = await apiClient.get<TaskApiResponse[]>('task/GetAllTasks', params, options);
@@ -96,6 +99,14 @@ export async function reassignTaskToStaff(eventId: number, staffId: number): Pro
 }
 
 /**
+ * Unassign a task, clearing its assigned staff member
+ */
+export async function unassignTask(eventId: number): Promise<void> {
+    const data: TaskUnassignRequest = {eventId};
+    await apiClient.post('task/UnassignTask', data);
+}
+
+/**
  * Get list of active staff members
  */
 export async function getActiveStaff(options?: RequestOptions): Promise<StaffSuggestion[]> {
@@ -125,7 +136,14 @@ function transformDeliveryJourneyDTO(dto: DeliveryJourneyDto): DeliveryJourney {
  * Get delivery journey for a job
  */
 export async function getDeliveryJourney(jobId: number, options?: RequestOptions): Promise<DeliveryJourney[]> {
-    const response = await apiClient.get<DeliveryJourneyDto[]>('job/GetDeliveryJourney', {jobId}, options);
+    // Pass the tenant's wall-clock timezone so the server can convert the journey
+    // timestamps even when its own TimeZone claim is missing on this request — otherwise
+    // the timeline silently renders in UTC. The server prefers its claim when present.
+    const response = await apiClient.get<DeliveryJourneyDto[]>(
+        'job/GetDeliveryJourney',
+        {jobId, timeZone: getTenantTimezone()},
+        options,
+    );
     return (response || []).map(transformDeliveryJourneyDTO);
 }
 
@@ -149,6 +167,7 @@ export const tasksApi = {
     updateTaskDate,
     updateTaskTime,
     reassignTaskToStaff,
+    unassignTask,
     getActiveStaff,
     getEventTypes,
     getDeliveryJourney,

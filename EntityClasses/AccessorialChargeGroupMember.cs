@@ -19,6 +19,8 @@ public partial class AccessorialChargeGroupMember
 
     public string CreatedBy { get; set; }
 
+    public bool AlwaysApply { get; set; }
+
     public virtual AccessorialCharge AccessorialCharge { get; set; }
 
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }

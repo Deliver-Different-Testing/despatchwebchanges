@@ -1,14 +1,13 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * useJobApi Hooks Tests
  */
 
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useRelatedJobs, useClientSearch} from './useJobApi';
 import {jobApi} from '../services/jobApi';
 import {RelatedJobDto, Suggestion} from '../interfaces';
+import {createQueryWrapper} from '../__testUtils__';
 
 // Mock the jobApi
 jest.mock('../services/jobApi', () => ({
@@ -19,25 +18,6 @@ jest.mock('../services/jobApi', () => ({
 }));
 
 const mockJobApi = jobApi as jest.Mocked<typeof jobApi>;
-
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-                gcTime: 0,
-            },
-        },
-    });
-
-// Wrapper component for providing QueryClient
-const createWrapper = () => {
-    const queryClient = createTestQueryClient();
-    return ({children}: {children: React.ReactNode}) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-};
 
 describe('useRelatedJobs', () => {
     const mockRelatedJobs: RelatedJobDto[] = [
@@ -61,7 +41,7 @@ describe('useRelatedJobs', () => {
     it('should fetch related jobs for a valid job ID', async () => {
         mockJobApi.getRelatedJobsMultiSelectList.mockResolvedValueOnce(mockRelatedJobs);
 
-        const {result} = renderHook(() => useRelatedJobs(100, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useRelatedJobs(100, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -74,7 +54,7 @@ describe('useRelatedJobs', () => {
     it('should fetch related jobs for archived job', async () => {
         mockJobApi.getRelatedJobsMultiSelectList.mockResolvedValueOnce(mockRelatedJobs);
 
-        const {result} = renderHook(() => useRelatedJobs(200, true), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useRelatedJobs(200, true), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -84,7 +64,7 @@ describe('useRelatedJobs', () => {
     });
 
     it('should not fetch when jobId is 0', async () => {
-        renderHook(() => useRelatedJobs(0, false), {wrapper: createWrapper()});
+        renderHook(() => useRelatedJobs(0, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockJobApi.getRelatedJobsMultiSelectList).not.toHaveBeenCalled();
@@ -92,7 +72,7 @@ describe('useRelatedJobs', () => {
     });
 
     it('should not fetch when jobId is negative', async () => {
-        renderHook(() => useRelatedJobs(-1, false), {wrapper: createWrapper()});
+        renderHook(() => useRelatedJobs(-1, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockJobApi.getRelatedJobsMultiSelectList).not.toHaveBeenCalled();
@@ -100,7 +80,7 @@ describe('useRelatedJobs', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useRelatedJobs(100, false, {enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useRelatedJobs(100, false, {enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockJobApi.getRelatedJobsMultiSelectList).not.toHaveBeenCalled();
@@ -110,7 +90,7 @@ describe('useRelatedJobs', () => {
     it('should handle empty results', async () => {
         mockJobApi.getRelatedJobsMultiSelectList.mockResolvedValueOnce([]);
 
-        const {result} = renderHook(() => useRelatedJobs(100, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useRelatedJobs(100, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -123,7 +103,7 @@ describe('useRelatedJobs', () => {
         const error = new Error('Job not found');
         mockJobApi.getRelatedJobsMultiSelectList.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useRelatedJobs(999, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useRelatedJobs(999, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);
@@ -138,7 +118,7 @@ describe('useRelatedJobs', () => {
         const {result, rerender} = renderHook(
             ({jobId, isArchived}) => useRelatedJobs(jobId, isArchived),
             {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
                 initialProps: {jobId: 100, isArchived: false},
             }
         );
@@ -162,7 +142,7 @@ describe('useRelatedJobs', () => {
         const {result, rerender} = renderHook(
             ({jobId, isArchived}) => useRelatedJobs(jobId, isArchived),
             {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
                 initialProps: {jobId: 100, isArchived: false},
             }
         );
@@ -188,7 +168,7 @@ describe('useClientSearch', () => {
     it('should fetch clients when search text is 3+ characters', async () => {
         mockJobApi.searchActiveClients.mockResolvedValueOnce(mockClients);
 
-        const {result} = renderHook(() => useClientSearch('Acme'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useClientSearch('Acme'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -199,7 +179,7 @@ describe('useClientSearch', () => {
     });
 
     it('should not fetch when search text is less than 3 characters', async () => {
-        const {result} = renderHook(() => useClientSearch('Ab'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useClientSearch('Ab'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.fetchStatus).toBe('idle');
@@ -209,7 +189,7 @@ describe('useClientSearch', () => {
     });
 
     it('should not fetch when search text is empty', async () => {
-        renderHook(() => useClientSearch(''), {wrapper: createWrapper()});
+        renderHook(() => useClientSearch(''), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockJobApi.searchActiveClients).not.toHaveBeenCalled();
@@ -217,7 +197,7 @@ describe('useClientSearch', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useClientSearch('Acme', {enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useClientSearch('Acme', {enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockJobApi.searchActiveClients).not.toHaveBeenCalled();
@@ -230,7 +210,7 @@ describe('useClientSearch', () => {
         const {result, rerender} = renderHook(
             ({searchText}) => useClientSearch(searchText),
             {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
                 initialProps: {searchText: 'Acme'},
             }
         );

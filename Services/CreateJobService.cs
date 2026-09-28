@@ -60,18 +60,27 @@ public sealed class CreateJobService(
         {
             // Skip store-generated identity column
             if (property.IsPrimaryKey() && property.ValueGenerated != ValueGenerated.Never)
+            {
                 continue;
+            }
 
             // Skip shadow properties (no CLR backing member)
             if (property.PropertyInfo == null && property.FieldInfo == null)
+            {
                 continue;
+            }
 
             // Skip server-computed columns (always overwritten by the database)
             if (property.ValueGenerated == ValueGenerated.OnAddOrUpdate)
+            {
                 continue;
+            }
 
             var columnName = property.GetColumnName(storeObject);
-            if (columnName == null) continue;
+            if (columnName == null)
+            {
+                continue;
+            }
 
             var value = property.PropertyInfo?.GetValue(job)
                         ?? property.FieldInfo?.GetValue(job);
@@ -82,7 +91,10 @@ public sealed class CreateJobService(
             var sqlParam = new SqlParameter(paramName, value ?? DBNull.Value);
             if (property.GetTypeMapping() is RelationalTypeMapping relMapping
                 && string.Equals(relMapping.StoreType, "image", StringComparison.OrdinalIgnoreCase))
+            {
                 sqlParam.SqlDbType = SqlDbType.Image;
+            }
+
             parameters.Add(sqlParam);
         }
 
@@ -100,7 +112,7 @@ public sealed class CreateJobService(
         sql.Append(string.Join(", ", paramNames));
         sql.Append("); SET @identity = SCOPE_IDENTITY();");
 
-        await context.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray<object>(), ct);
+        await context.Database.ExecuteSqlRawAsync(sql.ToString(), [.. parameters], ct);
         return (int)identityParam.Value!;
     }
 
@@ -117,7 +129,9 @@ public sealed class CreateJobService(
 
         var validationError = await ValidateAsync(context, data, resolved, cancellationToken);
         if (validationError != null)
+        {
             return new CreateMinimalTucJobResponse { Success = false, Message = validationError };
+        }
 
         ParseRecurringBitmasks(data, resolved);
 
@@ -260,6 +274,7 @@ public sealed class CreateJobService(
         resolved.ProofOfDeliveryMobile = data.JobNotificationMobile;
 
         if (!string.IsNullOrWhiteSpace(data.JobNotificationType))
+        {
             resolved.ProofOfDeliveryType = data.JobNotificationType.ToUpperInvariant() switch
             {
                 "EMAIL" => 1,
@@ -267,6 +282,7 @@ public sealed class CreateJobService(
                 "BOTH" => 3,
                 _ => null
             };
+        }
 
         // Combined client + defaults + settings query (single roundtrip).
         // Uses LEFT JOIN for defaults and scalar subqueries for settings to avoid SQL APPLY.
@@ -349,7 +365,9 @@ public sealed class CreateJobService(
                     resolved.ReturnJob ??= initialData.DefaultRtnJob;
 
                     if (string.IsNullOrWhiteSpace(data.Type) && initialData.DefaultType.HasValue)
+                    {
                         resolved.TypeId = initialData.DefaultType.Value;
+                    }
                 }
 
                 // Apply settings (scalar subqueries)
@@ -406,12 +424,18 @@ public sealed class CreateJobService(
 
         // If we have a SpeedId but no JobTypeId resolved yet, use SpeedId directly as job type ID
         if (!resolved.JobTypeId.HasValue && resolved.SpeedId.HasValue && !resolved.IsBulkSchedule)
+        {
             resolved.JobTypeId = resolved.SpeedId;
+        }
     }
 
     private static int? ParseAddressType(string toAddressType)
     {
-        if (string.IsNullOrWhiteSpace(toAddressType)) return null;
+        if (string.IsNullOrWhiteSpace(toAddressType))
+        {
+            return null;
+        }
+
         return toAddressType.ToUpperInvariant() switch
         {
             "PRIVATE" or "RESIDENTIAL" => 1,
@@ -422,7 +446,11 @@ public sealed class CreateJobService(
 
     private static bool? ParseProofOfDelivery(CreateMinimalTucJobInputModel data)
     {
-        if (!string.IsNullOrWhiteSpace(data.JobNotificationType)) return true;
+        if (!string.IsNullOrWhiteSpace(data.JobNotificationType))
+        {
+            return true;
+        }
+
         return null; // Set by client defaults
     }
 
@@ -435,7 +463,10 @@ public sealed class CreateJobService(
         ResolvedJobData resolved,
         CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(data.BookedBy) || !resolved.ClientId.HasValue) return;
+        if (string.IsNullOrWhiteSpace(data.BookedBy) || !resolved.ClientId.HasValue)
+        {
+            return;
+        }
 
         // Find the contact by matching BookedBy to contact first/last name via TucClientContact table
         var contact = await context.TucClientContacts
@@ -444,14 +475,20 @@ public sealed class CreateJobService(
             .Select(c => new { c.UcctId })
             .FirstOrDefaultAsync(ct);
 
-        if (contact == null) return;
+        if (contact == null)
+        {
+            return;
+        }
 
         // Look up the client-contact defaults
         var clientContact = await context.TblClientContacts
             .Where(cc => cc.ClientId == resolved.ClientId && cc.ContactId == contact.UcctId)
             .FirstOrDefaultAsync(ct);
 
-        if (clientContact == null) return;
+        if (clientContact == null)
+        {
+            return;
+        }
 
         resolved.ContactId ??= clientContact.ContactId;
 
@@ -465,7 +502,9 @@ public sealed class CreateJobService(
                 .FirstOrDefaultAsync(ct);
 
             if (speedType != null)
+            {
                 resolved.JobTypeId = speedType.UcjtId;
+            }
         }
 
         if (clientContact.DefaultPod.HasValue && !resolved.ProofOfDelivery.HasValue)
@@ -475,10 +514,14 @@ public sealed class CreateJobService(
         }
 
         if (!string.IsNullOrWhiteSpace(clientContact.DefaultPodemail))
+        {
             resolved.ProofOfDeliveryEmail ??= clientContact.DefaultPodemail;
+        }
 
         if (!string.IsNullOrWhiteSpace(clientContact.DefaultPodphone))
+        {
             resolved.ProofOfDeliveryMobile ??= clientContact.DefaultPodphone;
+        }
     }
 
     /// <summary>
@@ -503,13 +546,19 @@ public sealed class CreateJobService(
         }
 
         if (!string.IsNullOrWhiteSpace(data.Reference))
+        {
             resolved.ClientReferenceA = data.Reference;
+        }
 
         if (!string.IsNullOrWhiteSpace(data.ReferenceB))
+        {
             resolved.ClientReferenceB = data.ReferenceB;
+        }
 
         if (data.PrivateRes.HasValue)
+        {
             resolved.DeliverToPrivateBusiness = data.PrivateRes.Value ? 1 : 0;
+        }
     }
 
     /// <summary>
@@ -524,49 +573,71 @@ public sealed class CreateJobService(
     {
         // Client validation
         if (resolved.ClientId is null or <= 0)
+        {
             return "Invalid Client ID.";
+        }
 
         // BookedBy validation
         if (string.IsNullOrWhiteSpace(data.BookedBy))
+        {
             return "Booked By is required.";
+        }
 
         // Speed validation
         if (resolved.SpeedId is null or <= 0)
+        {
             return "Invalid Speed.";
+        }
 
         // From address validation
         if (data.FromAddress == null || string.IsNullOrWhiteSpace(data.FromAddress.FullAddress))
+        {
             return "From Address is required.";
+        }
 
         // To address validation
         if (data.ToAddress == null || string.IsNullOrWhiteSpace(data.ToAddress.FullAddress))
+        {
             return "To Address is required.";
+        }
 
         // Weight validation
         if (resolved.Weight < 0)
+        {
             return "Weight cannot be negative.";
+        }
 
         // Quantity validation
         if (resolved.Quantity < 0)
+        {
             return "Quantity cannot be negative.";
+        }
 
         // Reference A validation (mandatory check)
         if (resolved.ReferenceAmandatory && string.IsNullOrWhiteSpace(resolved.ClientReferenceA))
+        {
             return !string.IsNullOrWhiteSpace(resolved.ReferenceAmessage)
                 ? resolved.ReferenceAmessage
                 : "Reference A is required.";
+        }
 
         // Reference B validation (mandatory check) — checked before defined list queries
         if (resolved.ReferenceBmandatory && string.IsNullOrWhiteSpace(resolved.ClientReferenceB))
+        {
             return !string.IsNullOrWhiteSpace(resolved.ReferenceBmessage)
                 ? resolved.ReferenceBmessage
                 : "Reference B is required.";
+        }
 
         // 2I: Combine reference A + B defined list validation into one query (saves 0-1 roundtrip)
         var needRefA = resolved.ReferenceAdefineList && !string.IsNullOrWhiteSpace(resolved.ClientReferenceA);
         var needRefB = resolved.ReferenceBdefineList && !string.IsNullOrWhiteSpace(resolved.ClientReferenceB);
 
-        if (!needRefA && !needRefB) return null; // Valid
+        if (!needRefA && !needRefB)
+        {
+            return null; // Valid
+        }
+
         var matchedGroups = await context.TblReferences
             .Where(r => r.ClientId == resolved.ClientId && (
                 (r.Grouping == "A" && r.Name == resolved.ClientReferenceA) ||
@@ -575,10 +646,14 @@ public sealed class CreateJobService(
 
         // Return errors in same order (A before B) for consistent behaviour
         if (needRefA && !matchedGroups.Contains("A"))
+        {
             return $"Reference A '{resolved.ClientReferenceA}' is not in the defined list.";
+        }
 
         if (needRefB && !matchedGroups.Contains("B"))
+        {
             return $"Reference B '{resolved.ClientReferenceB}' is not in the defined list.";
+        }
 
         return null; // Valid
     }
@@ -598,13 +673,18 @@ public sealed class CreateJobService(
     /// </summary>
     internal static int? ParseBitmask(string input, int maxBits)
     {
-        if (string.IsNullOrWhiteSpace(input)) return null;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return null;
+        }
 
         var bitmask = 0;
         for (var i = 0; i < input.Length && i < maxBits; i++)
         {
             if (input[i] == '1')
+            {
                 bitmask |= 1 << i;
+            }
         }
 
         return bitmask;

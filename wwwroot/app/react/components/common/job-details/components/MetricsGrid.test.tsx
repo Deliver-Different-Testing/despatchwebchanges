@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * MetricsGrid Component Tests
  */
@@ -7,13 +6,14 @@ import React from 'react';
 import {screen, fireEvent} from '@testing-library/react';
 import {MetricsGrid} from './MetricsGrid';
 import {createMockJob} from '../__testUtils__/mockJob';
-import {renderWithProviders} from '../../../../__testUtils__';
+import {renderWithMantineProviders} from '../../../../__testUtils__';
 import dayjs from 'dayjs';
 
 // MetricsGrid reads usePendingChangeForField (React Query), so tests need
-// both ThemeProvider AND QueryClientProvider — renderWithProviders bundles them.
+// both MantineProvider AND QueryClientProvider — renderWithMantineProviders
+// bundles them.
 function renderWithTheme(ui: React.ReactElement) {
-    return renderWithProviders(ui);
+    return renderWithMantineProviders(ui);
 }
 
 function createDefaultProps(overrides?: Record<string, any>) {
@@ -36,12 +36,12 @@ function createDefaultProps(overrides?: Record<string, any>) {
 }
 
 describe('MetricsGrid', () => {
-    it('renders all 12 metric card labels with values', () => {
+    it('renders all 11 metric card labels with values', () => {
         renderWithTheme(<MetricsGrid {...createDefaultProps()} />);
 
-        // Row 1
+        // Row 1 (Created removed - not editable + not informative)
         expect(screen.getByText('Pricing')).toBeInTheDocument();
-        expect(screen.getByText('Created')).toBeInTheDocument();
+        expect(screen.queryByText('Created')).not.toBeInTheDocument();
         expect(screen.getByText('Ready')).toBeInTheDocument();
         expect(screen.getByText('PU Arrival')).toBeInTheDocument();
         expect(screen.getByText('PU Time')).toBeInTheDocument();
@@ -77,10 +77,6 @@ describe('MetricsGrid', () => {
     it('shows toast for non-editable fields', () => {
         const showToast = jest.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({showToast})} />);
-
-        const createdButton = screen.getByText('Created').closest('button');
-        if (createdButton) fireEvent.click(createdButton);
-        expect(showToast).toHaveBeenCalledWith('Created Date is not editable', 'info');
 
         const dispatchButton = screen.getByText('Dispatched').closest('button');
         if (dispatchButton) fireEvent.click(dispatchButton);
@@ -120,22 +116,35 @@ describe('MetricsGrid', () => {
         expect(dashes.length).toBeGreaterThanOrEqual(5);
     });
 
-    it('disables metric cards when job is locked', () => {
+    it('keeps in-scope cards clickable when locked (they open read-only) but not out-of-scope cards', () => {
         const job = createMockJob({locked: true});
         const onPricingClick = jest.fn();
-        renderWithTheme(<MetricsGrid {...createDefaultProps({job, onPricingClick})} />);
+        const onEditDateAndTime = jest.fn();
+        renderWithTheme(<MetricsGrid {...createDefaultProps({job, onPricingClick, onEditDateAndTime})} />);
 
-        const pricingLabel = screen.getByText('Pricing');
-        const button = pricingLabel.closest('button');
-        expect(button).toBeNull();
+        // Pricing + date/time cards stay clickable so the dialog can open read-only.
+        const pricingButton = screen.getByText('Pricing').closest('button');
+        expect(pricingButton).not.toBeNull();
+        if (pricingButton) fireEvent.click(pricingButton);
+        expect(onPricingClick).toHaveBeenCalledTimes(1);
+
+        const puTimeButton = screen.getByText('PU Time').closest('button');
+        expect(puTimeButton).not.toBeNull();
+        if (puTimeButton) fireEvent.click(puTimeButton);
+        expect(onEditDateAndTime).toHaveBeenCalled();
+
+        // POD Name (free-text) and Client Name (autocomplete) are out of the
+        // read-only subset — they stay disabled/non-clickable while locked.
+        expect(screen.getByText('POD Name').closest('button')).toBeNull();
+        expect(screen.getByText('Client Name').closest('button')).toBeNull();
     });
 
     describe('dense mode', () => {
-        it('renders all 12 metric cards and click handlers work in dense mode', () => {
+        it('renders all 11 metric cards and click handlers work in dense mode', () => {
             const onPricingClick = jest.fn();
             renderWithTheme(<MetricsGrid {...createDefaultProps({dense: true, onPricingClick})} />);
             expect(screen.getByText('Pricing')).toBeInTheDocument();
-            expect(screen.getByText('Created')).toBeInTheDocument();
+            expect(screen.queryByText('Created')).not.toBeInTheDocument();
             expect(screen.getByText('Ready')).toBeInTheDocument();
             expect(screen.getByText('PU Arrival')).toBeInTheDocument();
             expect(screen.getByText('PU Time')).toBeInTheDocument();

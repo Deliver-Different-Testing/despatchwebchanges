@@ -1,24 +1,18 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * RecurringJobsTable Component Tests
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, screen} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {RecurringJobsTable, RecurringJobsTableProps} from './RecurringJobsTable';
 import {PrebookListModel} from '../../../interfaces';
 import dayjs from 'dayjs';
 
-const theme = createTheme();
 
 const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
+    return renderWithMantine(ui);
 };
 
 const createMockAddress = (line1: string, line2: string, full: string) => ({
@@ -126,9 +120,9 @@ describe('RecurringJobsTable', () => {
             expect(onRowClick).toHaveBeenCalledTimes(1);
             expect(onRowClick).toHaveBeenCalledWith(jobs[0]);
 
-            // Delete button click
-            const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-            fireEvent.click(deleteButton);
+            // Deactivate button click
+            const deactivateButton = screen.getByRole('button', {name: 'Deactivate'});
+            fireEvent.click(deactivateButton);
             expect(onDeleteClick).toHaveBeenCalledTimes(1);
             expect(onDeleteClick).toHaveBeenCalledWith(jobs[0]);
 
@@ -203,8 +197,13 @@ describe('RecurringJobsTable', () => {
                 <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={2} selectedJobId={1}/>
             );
 
+            // DataTable stamps data-selected rather than relying on a generated
+            // class, so the assertion checks the state reached the DOM and that the
+            // other row did not pick it up.
             const selectedRow = screen.getByText('Job Name 1').closest('tr');
-            expect(selectedRow).toHaveClass('Mui-selected');
+            const otherRow = screen.getByText('Job Name 2').closest('tr');
+            expect(selectedRow).toHaveAttribute('data-selected', 'true');
+            expect(otherRow).toHaveAttribute('data-selected', 'false');
         });
     });
 });

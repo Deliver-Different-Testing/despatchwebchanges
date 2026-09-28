@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -6,7 +6,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using DespatchWeb.Tests.Helpers;
+using DespatchWeb.Tests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +19,7 @@ namespace DespatchWeb.Tests.Services;
 /// Unit tests for SendToPartnerService - verifies HTTP error handling so failures surface
 /// a specific reason instead of bubbling exceptions to the controller's generic catch-all.
 /// </summary>
+[Collection(JwtEnvironmentCollection.Name)]
 public class SendToPartnerServiceTests : IDisposable
 {
     private readonly FakeHttpMessageHandler _httpHandler = new();
@@ -101,6 +102,18 @@ public class SendToPartnerServiceTests : IDisposable
             UpdatedAtUtc = DateTime.UtcNow
         });
 
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task SeedJobAsync(int jobId = 42)
+    {
+        await using var ctx = _db.CreateContext();
+        ctx.TucJobs.Add(new TucJob
+        {
+            UcjbId = jobId,
+            UcjbDate = DateTime.UtcNow,
+            UcjbStatus = 1
+        });
         await ctx.SaveChangesAsync();
     }
 
@@ -226,7 +239,7 @@ public class SendToPartnerServiceTests : IDisposable
 
         Assert.False(result.Success);
         Assert.Contains("…", result.Message);
-        Assert.True(result.Message.Length < longBody.Length,
+        Assert.True(result.Message?.Length < longBody.Length,
             "Long bodies should be truncated to keep the error message readable.");
     }
 
@@ -273,11 +286,14 @@ public class SendToPartnerServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SendAsync_Success_InsertsJobPartnerDispatchRow()
+    public async Task SendAsync_Success_StampsPartnerPairingIdOnTucJob()
     {
-        // After IM accepts the dispatch, DispatchWeb persists the job→pairing link
-        // so the job list can surface the partner name in the courier column.
+        // After IM accepts the dispatch, DispatchWeb stamps the pairing id onto
+        // the tucJob row. Symmetric with the inbound mirror path where IM populates
+        // TucJob.PartnerPairingId at ingest — JobChangeRequestService resolves the
+        // pairing directly off the column without a separate link table.
         await SeedPairingAsync();
+        await SeedJobAsync();
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent(new { success = true, trackingNumber = "TRK-1" })
@@ -287,16 +303,18 @@ public class SendToPartnerServiceTests : IDisposable
 
         Assert.True(result.Success);
         await using var verifyCtx = _db.CreateContext();
-        var link = await verifyCtx.JobPartnerDispatches
-            .FirstOrDefaultAsync(d => d.JobId == 42, TestContext.Current.CancellationToken);
-        Assert.NotNull(link);
-        Assert.Equal(7, link.PartnerPairingId);
+        var jobPairingId = await verifyCtx.TucJobs
+            .Where(j => j.UcjbId == 42)
+            .Select(j => j.PartnerPairingId)
+            .SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(7, jobPairingId);
     }
 
     [Fact]
-    public async Task SendAsync_PartnerFailure_DoesNotInsertDispatchRow()
+    public async Task SendAsync_PartnerFailure_DoesNotStampPartnerPairingId()
     {
-        // Partner rejected the handover — no local link row should be persisted.
+        // Partner rejected the handover — TucJob.PartnerPairingId stays null.
+        await SeedJobAsync();
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent(new { success = false, message = "Partner declined" })
@@ -306,9 +324,11 @@ public class SendToPartnerServiceTests : IDisposable
 
         Assert.False(result.Success);
         await using var verifyCtx = _db.CreateContext();
-        var linkCount = await verifyCtx.JobPartnerDispatches
-            .CountAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(0, linkCount);
+        var jobPairingId = await verifyCtx.TucJobs
+            .Where(j => j.UcjbId == 42)
+            .Select(j => j.PartnerPairingId)
+            .SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Null(jobPairingId);
     }
 
     [Fact]
@@ -319,6 +339,7 @@ public class SendToPartnerServiceTests : IDisposable
         // null because partner-dispatched jobs no longer carry a local courier.
         await SeedPairingAsync();
         _tenantInfoService.GetStaffId().Returns(7);
+        _tenantInfoService.GetStaffIdOrNull().Returns(7);
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent(new { success = true, trackingNumber = "TRK-J1" })
@@ -339,6 +360,32 @@ public class SendToPartnerServiceTests : IDisposable
         Assert.Equal(7, journey.StaffId);
         Assert.Equal("Staff", journey.UpdatedByType);
         Assert.Contains("TRK-J1", journey.Comments);
+    }
+
+    [Fact]
+    public async Task SendAsync_WithNoStaffContext_WritesJourneyEntryAsSystem()
+    {
+        // CK_JobDeliveryJourney_UserID_Required rejects UpdatedByType 'Staff' with a
+        // null StaffID, so an unattributed write must be recorded as 'System'.
+        // Previously this combination was written and silently swallowed by the
+        // best-effort try/catch, losing the audit row entirely.
+        await SeedPairingAsync();
+        _tenantInfoService.GetStaffIdOrNull().Returns((int?)null);
+        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent(new { success = true, trackingNumber = "TRK-J2" })
+        });
+
+        var result = await CreateService().SendAsync(SampleRequest());
+
+        Assert.True(result.Success);
+        await using var verifyCtx = _db.CreateContext();
+        var journey = await verifyCtx.JobDeliveryJourneys
+            .Where(j => j.JobId == 42)
+            .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
+        Assert.NotNull(journey);
+        Assert.Null(journey.StaffId);
+        Assert.Equal("System", journey.UpdatedByType);
     }
 
     [Fact]

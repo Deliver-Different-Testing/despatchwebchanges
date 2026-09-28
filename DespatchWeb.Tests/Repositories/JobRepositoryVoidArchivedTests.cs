@@ -40,7 +40,9 @@ public class JobRepositoryVoidArchivedTests
     {
         var job = allJobs.FirstOrDefault(j => j.Id == jobId);
         if (job == null)
+        {
             return [];
+        }
 
         List<int> relatedJobIds;
         if (job.ParentId.HasValue)
@@ -71,7 +73,9 @@ public class JobRepositoryVoidArchivedTests
     private static List<int> DetermineArchivedJobsToVoid(VoidJobRequest data, List<TestArchivedJob> allJobs)
     {
         if (data.SelectedJobIds is { Count: > 0 })
+        {
             return data.SelectedJobIds;
+        }
 
         return data.VoidSingleJobOnly
             ? GetArchivedJobWithChildren(data.JobId, allJobs)

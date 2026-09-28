@@ -1,32 +1,111 @@
-using System.Net;
 using System.Security.Claims;
-using System.Text.Json;
-using System.Web;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
-using DespatchWeb.Models.FlightStats;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
+/// <summary>
+/// FlightStatsService delegates every Cirium call to the Integration Manager gateway
+/// (<see cref="ICiriumApiClient"/>), which is mocked here. These tests assert the delegation,
+/// DTO→view-model mapping, the dispatch-minted webhook URL/token, and the input guards.
+/// </summary>
 public class FlightStatsServiceTests
 {
-    private readonly FakeHttpMessageHandler _httpHandler = new();
-    private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
-    private readonly INationwideJobRepository _nationwideJobRepositoryMock = Substitute.For<INationwideJobRepository>();
-    private FakeTenantClock _clock = new(TestDates.Now);
+    private readonly IHttpContextAccessor _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+    private readonly INationwideJobRepository _repository = Substitute.For<INationwideJobRepository>();
+    private readonly ICiriumApiClient _ciriumApiClient = Substitute.For<ICiriumApiClient>();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
-    private FlightStatsService CreateService()
+    private FlightStatsService CreateService() =>
+        new(_httpContextAccessor, _repository, _clock, _ciriumApiClient);
+
+    [Fact]
+    public async Task GetFlightsAsync_MapsDtoToViewModel_AndPassesTenantContext()
     {
-        var httpClient = new HttpClient(_httpHandler);
-        return new FlightStatsService(
-            httpClient,
-            _httpContextAccessorMock,
-            _nationwideJobRepositoryMock,
-            _clock);
+        CiriumFlightSearchRequestDto? captured = null;
+        _ciriumApiClient
+            .SearchFlightsAsync(Arg.Do<CiriumFlightSearchRequestDto>(r => captured = r), Arg.Any<CancellationToken>())
+            .Returns(new CiriumFlightSearchResponseDto
+            {
+                Flights =
+                [
+                    new CiriumFlightDto
+                    {
+                        Airline = "Air New Zealand",
+                        AirlineCode = "NZ",
+                        FlightNumber = "NZ123",
+                        IsCharter = true,
+                        ServiceTypeDescription = "Charter (Passenger)",
+                        IsMultiSegment = false,
+                        FlightSegments =
+                        [
+                            new CiriumFlightSegmentDto {SegmentOrder = 0, CarrierFsCode = "NZ", FlightNumber = "123"}
+                        ]
+                    }
+                ]
+            });
+
+        var service = CreateService();
+        var result = await service.GetFlightsAsync(
+            jobId: 5,
+            departureDateTime: TestDates.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2,
+            minimumLayoverMinutes: 90,
+            allowNearbyDepartures: true);
+
+        Assert.Single(result);
+        Assert.Equal("NZ123", result[0].FlightNumber);
+        Assert.True(result[0].IsCharter);
+        Assert.Equal("Charter (Passenger)", result[0].ServiceTypeDescription);
+        Assert.Single(result[0].FlightSegments);
+        Assert.Equal("NZ", result[0].FlightSegments[0].CarrierFsCode);
+
+        Assert.NotNull(captured);
+        Assert.Equal(_clock.TenantNow, captured!.TenantNow);
+        Assert.Equal(90, captured.MinimumLayoverMinutes);
+        Assert.True(captured.AllowNearbyDepartures);
+        Assert.Equal(1, captured.DepartureAirportId);
+        Assert.Equal(2, captured.ArrivalAirportId);
+    }
+
+    [Fact]
+    public async Task DeleteFlightRuleById_DelegatesToClient()
+    {
+        var service = CreateService();
+        await service.DeleteFlightRuleById("RULE-1");
+        await _ciriumApiClient.Received(1).DeleteAlertAsync("RULE-1", Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task DeleteFlightRuleById_NullOrEmptyWebhookId_DoesNotCallClient(string? webhookId)
+    {
+        var service = CreateService();
+        await service.DeleteFlightRuleById(webhookId);
+        await _ciriumApiClient.DidNotReceive().DeleteAlertAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task IsFlightRuleActiveAsync_DelegatesToClient()
+    {
+        _ciriumApiClient.IsAlertActiveAsync("RULE-1", Arg.Any<CancellationToken>()).Returns(true);
+        var service = CreateService();
+        Assert.True(await service.IsFlightRuleActiveAsync("RULE-1"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task IsFlightRuleActiveAsync_NullOrEmptyWebhookId_ReturnsFalseWithoutCallingClient(string? webhookId)
+    {
+        var service = CreateService();
+        Assert.False(await service.IsFlightRuleActiveAsync(webhookId));
+        await _ciriumApiClient.DidNotReceive().IsAlertActiveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -35,15 +114,9 @@ public class FlightStatsServiceTests
     public async Task CreateFlightRuleByDepartureAsync_NullOrEmptyFlightNumber_ThrowsArgumentException(
         string? flightNumber)
     {
-        // Arrange
         var service = CreateService();
-
-        // Assert
-        await Assert.ThrowsAnyAsync<ArgumentException>((Func<Task<string>>?)Act ?? throw new InvalidOperationException());
-        return;
-
-        // Act
-        async Task<string> Act() => await service.CreateFlightRuleByDepartureAsync(flightNumber, DateTimeOffset.Now, "AKL");
+        await Assert.ThrowsAnyAsync<ArgumentException>(() =>
+            service.CreateFlightRuleByDepartureAsync(flightNumber!, DateTimeOffset.Now, "AKL"));
     }
 
     [Theory]
@@ -52,866 +125,54 @@ public class FlightStatsServiceTests
     public async Task CreateFlightRuleByDepartureAsync_NullOrEmptyAirportCode_ThrowsArgumentException(
         string? airportCode)
     {
-        // Arrange
         var service = CreateService();
-
-        // Assert
-        await Assert.ThrowsAnyAsync<ArgumentException>((Func<Task<string>>?)Act ?? throw new InvalidOperationException());
-        return;
-
-        // Act
-        async Task<string> Act() => await service.CreateFlightRuleByDepartureAsync("NZ123", DateTimeOffset.Now, airportCode);
+        await Assert.ThrowsAnyAsync<ArgumentException>(() =>
+            service.CreateFlightRuleByDepartureAsync("NZ123", DateTimeOffset.Now, airportCode!));
     }
 
     [Fact]
     public async Task CreateFlightRuleByDepartureAsync_MissingConnectionClaim_ThrowsArgumentException()
     {
-        // Arrange
-        SetupHttpContextWithClaims((ClaimTypes.Name, "TestUser"));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "TestUser")]));
+        _httpContextAccessor.HttpContext.Returns(new DefaultHttpContext {User = principal});
         var service = CreateService();
 
-        // Assert
-        await Assert.ThrowsAnyAsync<ArgumentException>((Func<Task<string>>?)Act ?? throw new InvalidOperationException());
-        return;
-
-        // Act
-        async Task<string> Act() => await service.CreateFlightRuleByDepartureAsync("NZ123", DateTimeOffset.Now, "AKL");
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    public async Task DeleteFlightRuleById_NullOrEmptyWebhookId_ReturnsWithoutCalling(string? webhookId)
-    {
-        // Arrange
-        var service = CreateService();
-
-        // Act
-        await service.DeleteFlightRuleById(webhookId);
-
-        // Assert - verify no HTTP call was made
-        Assert.Empty(_httpHandler.Requests);
+        await Assert.ThrowsAnyAsync<ArgumentException>(() =>
+            service.CreateFlightRuleByDepartureAsync("NZ123", DateTimeOffset.Now, "AKL"));
     }
 
     [Fact]
-    public async Task DeleteFlightRuleById_ValidWebhookId_CallsFlightStatsApi()
+    public async Task CreateFlightRuleByDepartureAsync_PassesTokenAndNoUrl()
     {
-        // Arrange
-        SetupHttpResponse(new { success = true });
+        // IM owns the callback URL now — DespatchWeb sends only the deliverTo token.
+        Environment.SetEnvironmentVariable("JWTSecretKey", "0123456789abcdef0123456789abcdef");
+        Environment.SetEnvironmentVariable("ClaimsKey", Convert.ToBase64String(new byte[32]));
+        Environment.SetEnvironmentVariable("Issuer", "test-issuer");
+        Environment.SetEnvironmentVariable("Audience", "test-audience");
+
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([
+            new Claim("Connection", "conn-str"),
+            new Claim("CurrentTenantID", "42"),
+            new Claim("TimeZone", "New Zealand Standard Time"),
+            new Claim(ClaimTypes.Name, "tester")
+        ]));
+        _httpContextAccessor.HttpContext.Returns(new DefaultHttpContext {User = principal});
+        _repository.GetWebhookEventsAsStringAsync().Returns("all");
+
+        CiriumCreateAlertRequestDto? captured = null;
+        _ciriumApiClient
+            .CreateAlertAsync(Arg.Do<CiriumCreateAlertRequestDto>(r => captured = r), Arg.Any<CancellationToken>())
+            .Returns("RULE-9");
+
         var service = CreateService();
-
-        // Act
-        await service.DeleteFlightRuleById("webhook-123");
-
-        // Assert
-        Assert.Single(_httpHandler.Requests);
-        Assert.Contains("json/delete/webhook-123", _httpHandler.Requests[0].RequestUri!.ToString());
-    }
-
-    [Fact]
-    public async Task DeleteFlightRuleById_ApiError_ThrowsException()
-    {
-        // Arrange
-        SetupHttpError(HttpStatusCode.InternalServerError);
-        var service = CreateService();
-
-        // Assert
-        var ex = await Assert.ThrowsAsync<Exception>(Act);
-        Assert.Contains("Failed to disconnect alert", ex.Message);
-        return;
-
-        // Act
-        async Task Act() => await service.DeleteFlightRuleById("webhook-123");
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_NullDepartureAirport_ThrowsArgumentException()
-    {
-        // Arrange
-        SetupAirportMocks(departureAirportExists: false, arrivalAirportExists: true);
-        var service = CreateService();
-
-        // Assert
-        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<FlightViewModel>>>?)Act ?? throw new InvalidOperationException());
-        Assert.Contains("Departure airport", ex.Message);
-        Assert.Contains("999", ex.Message);
-        Assert.Contains("not found", ex.Message);
-        return;
-
-        // Act
-        async Task<IReadOnlyList<FlightViewModel>> Act() => await service.GetFlightsAsync(jobId: 1, departureDateTime: DateTimeOffset.Now, departureAirportId: 999, arrivalAirportId: 2);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_NullArrivalAirport_ThrowsArgumentException()
-    {
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: false);
-        var service = CreateService();
-
-        // Assert
-        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<FlightViewModel>>>?)Act ?? throw new InvalidOperationException());
-        Assert.Contains("Arrival airport", ex.Message);
-        Assert.Contains("999", ex.Message);
-        Assert.Contains("not found", ex.Message);
-        return;
-
-        // Act
-        async Task<IReadOnlyList<FlightViewModel>> Act() => await service.GetFlightsAsync(jobId: 1, departureDateTime: DateTimeOffset.Now, departureAirportId: 1, arrivalAirportId: 999);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_NoConnections_ReturnsEmptyList()
-    {
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ", "QF"]);
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        var response = new FlightConnectionsRoot { Connections = null };
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        var result = await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert
-        Assert.Empty(result);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_WithConnections_ReturnsMappedFlights()
-    {
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ", "QF"]);
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        var response = CreateFlightConnectionsResponse();
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        var result = await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert
-        Assert.NotEmpty(result);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_WithSpecificAirline_FiltersResults()
-    {
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ", "QF"]);
-        _nationwideJobRepositoryMock.GetAirlineCodeByIdAsync(5)
-            .Returns("NZ");
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        var response = CreateFlightConnectionsResponse();
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            airlineId: 5,
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert
-        Assert.Single(_httpHandler.Requests);
-        Assert.Contains("includeAirlines=NZ", _httpHandler.Requests[0].RequestUri!.ToString());
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_NoAirlineSpecified_UsesActiveAirlineCodes()
-    {
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ", "QF", "AA"]);
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        var response = CreateFlightConnectionsResponse();
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            airlineId: null, // No specific airline
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert - should include all active airline codes (comma is URL encoded as %2c or %2C)
-        Assert.Single(_httpHandler.Requests);
-        var url = _httpHandler.Requests[0].RequestUri!.ToString();
-        Assert.Contains("includeAirlines=NZ", url);
-        Assert.Contains("QF", url);
-        Assert.Contains("AA", url);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_NoAirlineSpecified_NoActiveAirlines_DoesNotIncludeAirlineFilter()
-    {
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns([]); // Empty list - no active airlines
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        var response = CreateFlightConnectionsResponse();
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            airlineId: null, // No specific airline
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert - should NOT include any airline filter in the URL
-        Assert.Single(_httpHandler.Requests);
-        Assert.DoesNotContain("includeAirlines", _httpHandler.Requests[0].RequestUri!.ToString());
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_DiagnoseAirlineFilter_OutputsActualUrl()
-    {
-        // This test captures the actual URL being generated to diagnose airline filtering issues
-
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-
-        // Simulate active airlines in database
-        var activeAirlines = new List<string> { "NZ", "QF", "AA" };
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(activeAirlines);
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        SetupHttpResponse(CreateFlightConnectionsResponse());
-        var service = CreateService();
-
-        // Act - Call WITHOUT specific airline (should use all active airlines)
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            airlineId: null,
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert & Diagnose
-        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
-        Assert.NotNull(capturedUrl);
-
-        // Output URL for diagnosis
-        TestContext.Current.TestOutputHelper?.WriteLine("=== CAPTURED URL (No airlineId specified) ===");
-        TestContext.Current.TestOutputHelper?.WriteLine(capturedUrl);
-        TestContext.Current.TestOutputHelper?.WriteLine("==============================================");
-
-        // Check if includeAirlines parameter exists
-        var containsAirlineFilter = capturedUrl.Contains("includeAirlines");
-        TestContext.Current.TestOutputHelper?.WriteLine($"Contains includeAirlines parameter: {containsAirlineFilter}");
-
-        if (containsAirlineFilter)
-        {
-            // Extract the includeAirlines value
-            var uri = new Uri(capturedUrl);
-            var queryParams = HttpUtility.ParseQueryString(uri.Query);
-            var airlinesValue = queryParams["includeAirlines"];
-            TestContext.Current.TestOutputHelper?.WriteLine($"includeAirlines value: '{airlinesValue}'");
-            TestContext.Current.TestOutputHelper?.WriteLine("Expected: 'NZ,QF,AA'");
-
-            // Verify the value
-            Assert.Equal("NZ,QF,AA", airlinesValue);
-        }
-        else
-        {
-            // This would be the bug - no airline filter being added!
-            Assert.Fail("BUG: includeAirlines parameter is missing from URL when active airlines exist!");
-        }
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_CompareWithAndWithoutAirlineId_OutputsBothUrls()
-    {
-        // Compare URLs generated with specific airline vs. all active airlines
-
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-
-        var activeAirlines = new List<string> { "NZ", "QF", "AA" };
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(activeAirlines);
-        _nationwideJobRepositoryMock.GetAirlineCodeByIdAsync(3)
-            .Returns("QF");
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        SetupHttpResponse(CreateFlightConnectionsResponse());
-        var service = CreateService();
-
-        // Act 1 - Call WITH specific airline
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            airlineId: 3, // Specific airline
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Act 2 - Call WITHOUT specific airline
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            airlineId: null, // All active airlines
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Output for comparison
-        TestContext.Current.TestOutputHelper?.WriteLine("=== URL COMPARISON ===");
-        TestContext.Current.TestOutputHelper?.WriteLine($"URL with airlineId=3: {_httpHandler.Requests[0].RequestUri}");
-        TestContext.Current.TestOutputHelper?.WriteLine($"URL with airlineId=null: {_httpHandler.Requests[1].RequestUri}");
-        TestContext.Current.TestOutputHelper?.WriteLine("======================");
-
-        // Parse and compare includeAirlines values
-        var uri1 = new Uri(_httpHandler.Requests[0].RequestUri!.ToString());
-        var uri2 = new Uri(_httpHandler.Requests[1].RequestUri!.ToString());
-        var params1 = HttpUtility.ParseQueryString(uri1.Query);
-        var params2 = HttpUtility.ParseQueryString(uri2.Query);
-
-        TestContext.Current.TestOutputHelper?.WriteLine(
-            $"With airlineId=3, includeAirlines='{params1["includeAirlines"]}'");
-        TestContext.Current.TestOutputHelper?.WriteLine(
-            $"With airlineId=null, includeAirlines='{params2["includeAirlines"]}'");
-
-        Assert.Equal("QF", params1["includeAirlines"]);
-        Assert.Equal("NZ,QF,AA", params2["includeAirlines"]);
-    }
-
-    private void SetupHttpContextWithClaims(params (string type, string value)[] claims)
-    {
-        var claimsList = claims.Select(c => new Claim(c.type, c.value)).ToList();
-        var identity = new ClaimsIdentity(claimsList, "TestAuth");
-        var principal = new ClaimsPrincipal(identity);
-        var httpContext = new DefaultHttpContext { User = principal };
-        _httpContextAccessorMock.HttpContext.Returns(httpContext);
-    }
-
-    private void SetupHttpResponse<T>(T responseObject)
-    {
-        var jsonResponse = JsonSerializer.Serialize(responseObject);
-        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(jsonResponse)
-        });
-    }
-
-    private void SetupHttpError(HttpStatusCode statusCode) =>
-        _httpHandler.SetResponse(new HttpResponseMessage(statusCode)
-        {
-            ReasonPhrase = "Error"
-        });
-
-    private void SetupAirportMocks(bool departureAirportExists, bool arrivalAirportExists)
-    {
-        var airports = new List<GetAirportsDto>();
-
-        if (departureAirportExists)
-            airports.Add(new GetAirportsDto
-            {
-                AirportId = 1,
-                AirportCode = "AKL",
-                FlightBufferMinutes = 60,
-                Timezone = "Pacific/Auckland"
-            });
-
-        if (arrivalAirportExists)
-            airports.Add(new GetAirportsDto
-            {
-                AirportId = 2,
-                AirportCode = "SYD",
-                FlightBufferMinutes = 60,
-                Timezone = "Australia/Sydney"
-            });
-
-        _nationwideJobRepositoryMock.GetAllActiveAirportsAsync()
-            .Returns(airports);
-    }
-
-    private static FlightConnectionsRoot CreateFlightConnectionsResponse() => new()
-    {
-        Connections =
-        [
-            new Connection
-            {
-                ScheduledFlight =
-                [
-                    new ScheduledFlight
-                    {
-                        CarrierFsCode = "NZ",
-                        FlightNumber = "123",
-                        DepartureTime = TestDates.Now.AddHours(3).ToString("O"),
-                        ArrivalTime = TestDates.Now.AddHours(6).ToString("O"),
-                        DepartureAirportFsCode = "AKL",
-                        ArrivalAirportFsCode = "SYD",
-                        FlightEquipmentIataCode = "787",
-                        ElapsedTime = 180,
-                        Stops = 0
-                    }
-                ],
-                ElapsedTime = 180,
-                Score = 95
-            }
-        ],
-        Appendix = new Appendix
-        {
-            Airlines = [new Airline { Fs = "NZ", Name = "Air New Zealand" }],
-            Airports =
-            [
-                new Airport
-                {
-                    Fs = "AKL", Name = "Auckland Airport", City = "Auckland",
-                    TimeZoneRegionName = "Pacific/Auckland"
-                },
-
-                new Airport
-                {
-                    Fs = "SYD", Name = "Sydney Airport", City = "Sydney",
-                    TimeZoneRegionName = "Australia/Sydney"
-                }
-            ],
-            Equipments = [new Equipment { Iata = "787", Name = "Boeing 787 Dreamliner", Jet = true }]
-        }
-    };
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    public async Task IsFlightRuleActiveAsync_NullOrEmptyWebhookId_ReturnsFalse(string? webhookId)
-    {
-        // Arrange
-        var service = CreateService();
-
-        // Act
-        var result = await service.IsFlightRuleActiveAsync(webhookId);
-
-        // Assert
-        Assert.False(result);
-        Assert.Empty(_httpHandler.Requests);
-    }
-
-    [Fact]
-    public async Task IsFlightRuleActiveAsync_ActiveRule_ReturnsTrue()
-    {
-        // Arrange
-        var response = new CreateAlertResponse
-        {
-            Rule = new Rule { Id = "12345" }
-        };
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        var result = await service.IsFlightRuleActiveAsync("12345");
-
-        // Assert
-        Assert.True(result);
-        Assert.Single(_httpHandler.Requests);
-        Assert.Contains("json/get/12345", _httpHandler.Requests[0].RequestUri!.ToString());
-    }
-
-    [Fact]
-    public async Task IsFlightRuleActiveAsync_ApiReturnsError_ReturnsFalse()
-    {
-        // Arrange
-        var response = new CreateAlertResponse
-        {
-            Error = new ApiError { ErrorId = "NOT_FOUND", ErrorMessage = "Rule not found" }
-        };
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        var result = await service.IsFlightRuleActiveAsync("99999");
-
-        // Assert
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task IsFlightRuleActiveAsync_HttpError_ReturnsFalse()
-    {
-        // Arrange
-        SetupHttpError(HttpStatusCode.NotFound);
-        var service = CreateService();
-
-        // Act
-        var result = await service.IsFlightRuleActiveAsync("12345");
-
-        // Assert
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task IsFlightRuleActiveAsync_NullRuleId_ReturnsFalse()
-    {
-        // Arrange - response with rule object but null id
-        var response = new CreateAlertResponse
-        {
-            Rule = new Rule { Id = null }
-        };
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        var result = await service.IsFlightRuleActiveAsync("12345");
-
-        // Assert
-        Assert.False(result);
-    }
-
-    [Theory]
-    [InlineData("AA1234", "AA", "1234")]
-    [InlineData("NZ123", "NZ", "123")]
-    [InlineData("BXR1984", "BXR", "1984")]
-    [InlineData("QF8", "QF", "8")]
-    public void SplitFlightCode_ValidFlightNumbers_SplitsCorrectly(string input, string expectedCarrier,
-        string expectedFlight)
-    {
-        var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
-        Assert.Equal(expectedCarrier, carrier);
-        Assert.Equal(expectedFlight, flight);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    public void SplitFlightCode_NullOrEmpty_ReturnsInputAndNull(string? input)
-    {
-        var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
-        Assert.Equal(input, carrier);
-        Assert.Null(flight);
-    }
-
-    [Theory]
-    [InlineData("NZ")]
-    [InlineData("BXR")]
-    [InlineData("ABCD")]
-    public void SplitFlightCode_AllAlpha_ReturnsFullStringAsCarrier(string input)
-    {
-        var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
-        Assert.Equal(input, carrier);
-        Assert.Null(flight);
-    }
-
-    [Theory]
-    [InlineData("1234")]
-    [InlineData("0")]
-    public void SplitFlightCode_StartsWithDigit_ReturnsFullStringAsCarrier(string input)
-    {
-        var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
-        Assert.Equal(input, carrier);
-        Assert.Null(flight);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_DoesNotIncludePayloadTypeParameter()
-    {
-        // Arrange
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ"]);
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert
-        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
-        Assert.NotNull(capturedUrl);
-        Assert.DoesNotContain("payloadType", capturedUrl);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_PartnerCarrierSegment_ShowsAirlineName()
-    {
-        // Arrange - A connecting flight where the second segment is operated by a partner carrier
-        // not in activeAirlineCodes (e.g., regional affiliate OO operating for AA)
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["AA"]); // Only AA is active, but OO operates a connecting leg
-        _clock = new FakeTenantClock(TestDates.Now);
-
-        var response = new FlightConnectionsRoot
-        {
-            Connections =
-            [
-                new Connection
-                {
-                    ScheduledFlight =
-                    [
-                        new ScheduledFlight
-                        {
-                            CarrierFsCode = "AA",
-                            FlightNumber = "100",
-                            DepartureTime = TestDates.Now.AddHours(3).ToString("O"),
-                            ArrivalTime = TestDates.Now.AddHours(5).ToString("O"),
-                            DepartureAirportFsCode = "AKL",
-                            ArrivalAirportFsCode = "SYD",
-                            FlightEquipmentIataCode = "737",
-                            ElapsedTime = 120,
-                            Stops = 0
-                        },
-                        new ScheduledFlight
-                        {
-                            CarrierFsCode = "OO", // Partner carrier not in activeAirlineCodes
-                            FlightNumber = "5432",
-                            DepartureTime = TestDates.Now.AddHours(6).ToString("O"),
-                            ArrivalTime = TestDates.Now.AddHours(8).ToString("O"),
-                            DepartureAirportFsCode = "SYD",
-                            ArrivalAirportFsCode = "SYD", // using SYD for simplicity
-                            FlightEquipmentIataCode = "E75",
-                            ElapsedTime = 120,
-                            Stops = 0
-                        }
-                    ],
-                    ElapsedTime = 300,
-                    Score = 80
-                }
-            ],
-            Appendix = new Appendix
-            {
-                Airlines =
-                [
-                    new Airline { Fs = "AA", Name = "American Airlines" },
-                    new Airline { Fs = "OO", Name = "SkyWest Airlines" }
-                ],
-                Airports =
-                [
-                    new Airport
-                    {
-                        Fs = "AKL", Name = "Auckland Airport", City = "Auckland",
-                        TimeZoneRegionName = "Pacific/Auckland"
-                    },
-                    new Airport
-                    {
-                        Fs = "SYD", Name = "Sydney Airport", City = "Sydney", TimeZoneRegionName = "Australia/Sydney"
-                    }
-                ],
-                Equipments =
-                [
-                    new Equipment { Iata = "737", Name = "Boeing 737", Jet = true },
-                    new Equipment { Iata = "E75", Name = "Embraer 175", Jet = true }
-                ]
-            }
-        };
-
-        SetupHttpResponse(response);
-        var service = CreateService();
-
-        // Act
-        var result = await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now.AddHours(2),
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert - The partner carrier segment should have its airline name resolved
-        Assert.NotEmpty(result);
-        var partnerSegment = result[0].FlightSegments.FirstOrDefault(s => s.CarrierFsCode == "OO");
-        Assert.NotNull(partnerSegment);
-        Assert.Equal("SkyWest Airlines", partnerSegment.AirlineName);
-    }
-
-    /// <summary>
-    /// Tests for Issue #1: Available flights ignores current date time so a lazy dispatcher
-    /// could assign a job to a flight that has already left.
-    ///
-    /// The CalculateFlightSearchStartTime method should ensure that when a requested departure
-    /// date/time is in the past, the current tenant time is used instead.
-    /// </summary>
-    [Fact]
-    public async Task GetFlightsAsync_WhenDepartureDateIsInPast_UsesCurrentTenantTimeInsteadOfPastDate()
-    {
-        // Arrange
-        var currentTenantTime = new DateTime(2024, 6, 15, 14, 0, 0); // 2:00 PM today
-        var pastDepartureDate = new DateTimeOffset(2024, 6, 15, 8, 0, 0, TimeSpan.Zero); // 8:00 AM (past)
-
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ"]);
-        _clock = new FakeTenantClock(currentTenantTime);
-
-        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: pastDepartureDate, // Requesting flights from 8:00 AM which has already passed
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert - URL should use current time (14:00) + buffer (60 min) = 15:00, NOT the pastime (08:00)
-        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
-        Assert.NotNull(capturedUrl);
-
-        // The URL should contain the time based on currentTenantTime + buffer, not the past departure time
-        // Expected: leaving_after/2024/6/15/15/0 (current time 14:00 + 60 min buffer)
-        // NOT: leaving_after/2024/6/15/8/0 (past departure time)
-        Assert.Contains("leaving_after/2024/6/15/15/0", capturedUrl);
-        Assert.DoesNotContain("leaving_after/2024/6/15/8", capturedUrl);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_WhenDepartureDateIsFuture_UsesDepartureDatePlusBuffer()
-    {
-        // Arrange
-        var currentTenantTime = new DateTime(2024, 6, 15, 8, 0, 0); // 8:00 AM
-        var futureDepartureDate = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero); // 2:00 PM (future)
-
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ"]);
-        _clock = new FakeTenantClock(currentTenantTime);
-
-        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: futureDepartureDate, // Requesting flights from 2:00 PM
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert - URL should use future departure time + buffer = 15:00
-        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
-        Assert.NotNull(capturedUrl);
-        Assert.Contains("leaving_after/2024/6/15/15/0", capturedUrl);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_WhenNoDepartureDateProvided_UsesCurrentTenantTimePlusBuffer()
-    {
-        // Arrange
-        var currentTenantTime = new DateTime(2024, 6, 15, 10, 30, 0); // 10:30 AM
-
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ"]);
-        _clock = new FakeTenantClock(currentTenantTime);
-
-        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: null, // No departure date specified
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert - URL should use current time (10:30) + buffer (60 min) = 11:30
-        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
-        Assert.NotNull(capturedUrl);
-        Assert.Contains("leaving_after/2024/6/15/11/30", capturedUrl);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_WhenDepartureDateIsExactlyCurrentTime_UsesCurrentTimePlusBuffer()
-    {
-        // Arrange - Edge case: departure time equals current time exactly
-        var currentTenantTime = new DateTime(2024, 6, 15, 12, 0, 0);
-        var departureDateSameAsCurrent = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
-
-        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["NZ"]);
-        _clock = new FakeTenantClock(currentTenantTime);
-
-        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: departureDateSameAsCurrent,
-            departureAirportId: 1,
-            arrivalAirportId: 2);
-
-        // Assert - Should use departure time (which equals current time) + buffer = 13:00
-        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
-        Assert.NotNull(capturedUrl);
-        Assert.Contains("leaving_after/2024/6/15/13/0", capturedUrl);
-    }
-
-    [Fact]
-    public async Task GetFlightsAsync_WithDifferentAirportBuffers_AppliesCorrectBuffer()
-    {
-        // Arrange - Airport with 90 minute buffer
-        var currentTenantTime = new DateTime(2024, 6, 15, 10, 0, 0);
-        var departureDate = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
-        const int customBufferMinutes = 90;
-
-        // Setup airport with custom buffer
-        _nationwideJobRepositoryMock.GetAllActiveAirportsAsync()
-            .Returns(
-            [
-                new GetAirportsDto
-                {
-                    AirportId = 1,
-                    AirportCode = "LAX",
-                    FlightBufferMinutes = customBufferMinutes, // 90 minutes
-                    Timezone = "America/Los_Angeles"
-                },
-                new GetAirportsDto
-                {
-                    AirportId = 2,
-                    AirportCode = "JFK",
-                    FlightBufferMinutes = 60,
-                    Timezone = "America/New_York"
-                }
-            ]);
-        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
-            .Returns(["AA"]);
-        _clock = new FakeTenantClock(currentTenantTime);
-
-        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
-        var service = CreateService();
-
-        // Act
-        await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: departureDate,
-            departureAirportId: 1, // LAX with 90 min buffer
-            arrivalAirportId: 2);
-
-        // Assert - Should use departure time (14:00) + 90 min buffer = 15:30
-        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
-        Assert.NotNull(capturedUrl);
-        Assert.Contains("leaving_after/2024/6/15/15/30", capturedUrl);
+        var ruleId = await service.CreateFlightRuleByDepartureAsync("NZ123", TestDates.Now, "AKL");
+
+        Assert.Equal("RULE-9", ruleId);
+        Assert.NotNull(captured);
+        Assert.Equal("NZ123", captured!.CompleteFlightNumber);
+        Assert.Equal("AKL", captured.DepartureAirportCode);
+        Assert.Null(captured.DeliverToUrl);
+        Assert.Equal("all", captured.Events);
+        Assert.False(string.IsNullOrEmpty(captured.DeliverToToken));
     }
 }

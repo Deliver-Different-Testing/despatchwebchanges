@@ -337,5 +337,26 @@ public partial class TblSetting
 
     public bool OpenforceIsUat { get; set; }
 
+    public bool OpenforceDefault { get; set; }
+
+    public bool TenantGeneratesContractorInvoice { get; set; }
+
+    public bool ConsolidateContractorsInQbo { get; set; }
+
+    public string ConsolidatedContractorSupplierRef { get; set; }
+
+    public bool ConsolidateFuel { get; set; }
+
+    public decimal PpdDefault { get; set; }
+
+    public bool OpenforceConsolidateCommission { get; set; }
+
+    /// <summary>
+    /// Tenant-wide default address field order for job list display, as JSON
+    /// (<c>{"fields":["streetNumber","streetName",...]}</c>). Set by a tenant
+    /// admin in the Configurator; null means no tenant default is configured.
+    /// </summary>
+    public string DispatchAddressFormatJson { get; set; }
+
     public virtual TucStaff InternetJobStaff { get; set; }
 }

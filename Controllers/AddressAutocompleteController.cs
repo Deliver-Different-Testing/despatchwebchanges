@@ -26,7 +26,9 @@ public class AddressAutocompleteController(IAddressLookupService addressLookup) 
     public async Task<IActionResult> GetLocationDetailsById(string addressId)
     {
         if (string.IsNullOrWhiteSpace(addressId))
+        {
             return BadRequest("addressId is required.");
+        }
 
         try
         {

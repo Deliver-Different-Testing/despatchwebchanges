@@ -1,0 +1,13 @@
+/*
+ * NoData's icon slot.
+ *
+ * This exists for the one thing a prop cannot express: sizing an icon element the
+ * *caller* supplied. `NoData` owns the empty state's icon scale, but the element
+ * arrives as a child — a Lucide/Tabler glyph from a converted call site, or a MUI
+ * icon from one that hasn't moved yet — so the size has to be applied through a
+ * descendant selector.
+ */
+.iconSlot > svg {
+    width: 48px;
+    height: 48px;
+}

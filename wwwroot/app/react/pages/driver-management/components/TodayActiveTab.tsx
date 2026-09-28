@@ -1,23 +1,20 @@
 import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import CarIcon from '@mui/icons-material/DirectionsCar';
-import DownloadIcon from '@mui/icons-material/Download';
-import PauseCircleIcon from '@mui/icons-material/PauseCircle';
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
+import {Badge, Group, Select, Stack} from '@mantine/core';
+import {Car, CircleDot, Clock, Download, PauseCircle, RefreshCw, Users} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
+import {
+    CRITERION_LABEL_GAP,
+    FILTER_CONTROL_HEIGHT,
+    GroupLabel,
+} from '../../../components/common/filter-fields';
 import {useTodayActiveDrivers} from '../../../hooks/useDriverManagementApi';
 import {FleetOption, PaginatedRequest, TodayActiveDriver, TodayActiveDriverFilter} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarIconButtonSx, getFleetChipSx} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, getFleetChipStyle} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
+import {dataTablePagingProps} from './dataTablePaging';
 
 interface TodayActiveTabProps {
     showToast: ShowToastFn;
@@ -32,14 +29,14 @@ const formatSessionTime = (totalMinutes: number): string => {
 };
 
 const columns: DataTableColumn<TodayActiveDriver>[] = [
-    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Chip label={row.code} size="small" color="primary" variant="outlined" />},
+    {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Badge size="sm" tt="none">{row.code}</Badge>},
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
-    {key: 'fleet', label: 'Fleet', sortable: true, render: (row) => <Chip label={row.fleet} size="small" variant="outlined" sx={getFleetChipSx(row.fleet)} />},
+    {key: 'fleet', label: 'Fleet', sortable: true, render: (row) => <Badge size="sm" tt="none" variant="outline" style={getFleetChipStyle(row.fleet)}>{row.fleet}</Badge>},
     {key: 'loginTime', label: 'Login Time', sortable: true, width: '110px', render: (row) => row.loginTime ? dayjs(row.loginTime).format('HH:mm') : ''},
     {key: 'logoutTime', label: 'Logout Time', sortable: true, width: '110px', render: (row) => row.logoutTime ? dayjs(row.logoutTime).format('HH:mm') : ''},
     {key: 'duration', label: 'Duration', sortable: true, width: '100px', render: (row) => row.duration},
     {key: 'deliveries', label: 'Deliveries', sortable: true, width: '100px', render: (row) => row.deliveries},
-    {key: 'status', label: 'Status', sortable: true, width: '100px', render: (row) => <Chip label={row.status} size="small" color={row.status === 'Active' ? 'success' : 'default'} />},
+    {key: 'status', label: 'Status', sortable: true, width: '100px', render: (row) => <Badge size="sm" tt="none" color={row.status === 'Active' ? 'green' : 'gray'}>{row.status}</Badge>},
 ];
 
 export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetOptions}) => {
@@ -65,6 +62,15 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
         setQuery(q => ({...q, orderBy: newSort.column, sortDescending: newSort.direction === 'desc', page: 1}));
     };
 
+    const activeFilterCount =
+        (filters.status !== 'all' ? 1 : 0)
+        + (filters.fleet ? 1 : 0);
+
+    const handleClearFilters = () => {
+        setFilters(f => ({...f, status: 'all', fleet: 0}));
+        setQuery(q => ({...q, page: 1}));
+    };
+
     const handleExport = async () => {
         try {
             await driverManagementApi.exportTodayActiveDriversCsv(query, filters);
@@ -74,46 +80,70 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
     };
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+        <Stack gap={16}>
             {/* Stats */}
-            <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
-                <StatCard value={stats.totalActiveDrivers} label="Currently Online" color="success.main" icon={<WifiTetheringIcon />} />
-                <StatCard value={stats.onBreak} label="On Break" color="warning.main" icon={<PauseCircleIcon />} />
-                <StatCard value={stats.totalDriversActiveToday} label="Total Today" color="info.main" icon={<PeopleAltIcon />} />
-                <StatCard value={stats.averageSession} label="Average Session" color="primary.main" icon={<ScheduleIcon />} />
-            </Box>
+            <Group gap={16}>
+                <StatCard value={stats.totalActiveDrivers} label="Currently Online" color="var(--mantine-color-green-6)" icon={<Icon lucide={CircleDot} size={28} color="var(--mantine-color-green-6)"/>} />
+                <StatCard value={stats.onBreak} label="On Break" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={PauseCircle} size={28} color="var(--mantine-color-yellow-6)"/>} />
+                <StatCard value={stats.totalDriversActiveToday} label="Total Today" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users} size={28} color="var(--mantine-color-cyan-6)"/>} />
+                <StatCard value={stats.averageSession} label="Average Session" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={Clock} size={28} color="var(--mantine-primary-color-filled)"/>} />
+            </Group>
 
             {/* Filters */}
             <FilterToolbar
+                activeFilterCount={activeFilterCount}
+                onClearAll={handleClearFilters}
                 actions={
                     <>
-                        <Tooltip title="Refresh">
-                            <IconButton size="small" sx={toolbarIconButtonSx} onClick={() => refetch()}>
-                                <RefreshIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Export CSV">
-                            <IconButton size="small" sx={toolbarIconButtonSx} onClick={handleExport}>
-                                <DownloadIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
+                        <HeaderActionIcon label="Refresh" onClick={() => refetch()}>
+                            <Icon lucide={RefreshCw} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                        </HeaderActionIcon>
+                        <HeaderActionIcon label="Export CSV" onClick={handleExport}>
+                            <Icon lucide={Download} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                        </HeaderActionIcon>
                     </>
                 }
             >
-                <TextField select label="Status" size="small" sx={{minWidth: 150}} value={filters.status}
-                    onChange={(e) => { setFilters(f => ({...f, status: e.target.value})); setQuery(q => ({...q, page: 1})); }}>
-                    <MenuItem value="all">All Statuses</MenuItem>
-                    <MenuItem value="expired">Expired</MenuItem>
-                    <MenuItem value="expiring">Expiring Soon</MenuItem>
-                    <MenuItem value="valid">Valid</MenuItem>
-                </TextField>
-                <TextField select label="Fleet" size="small" sx={{minWidth: 150}} value={filters.fleet}
-                    onChange={(e) => { setFilters(f => ({...f, fleet: Number(e.target.value)})); setQuery(q => ({...q, page: 1})); }}>
-                    <MenuItem value={0}>All Fleets</MenuItem>
-                    {fleetOptions.map(opt => (
-                        <MenuItem key={opt.id} value={opt.id}>{opt.text}</MenuItem>
-                    ))}
-                </TextField>
+                <Stack gap={CRITERION_LABEL_GAP}>
+                    <GroupLabel selected={filters.status !== 'all' ? 1 : 0}>Status</GroupLabel>
+                    <Select
+                        size="xs"
+                        aria-label="Status"
+                        miw={150}
+                        allowDeselect={false}
+                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
+                        value={filters.status}
+                        onChange={(value) => {
+                            setFilters(f => ({...f, status: value ?? 'all'}));
+                            setQuery(q => ({...q, page: 1}));
+                        }}
+                        data={[
+                            {value: 'all', label: 'All statuses'},
+                            {value: 'expired', label: 'Expired'},
+                            {value: 'expiring', label: 'Expiring soon'},
+                            {value: 'valid', label: 'Valid'},
+                        ]}
+                    />
+                </Stack>
+                <Stack gap={CRITERION_LABEL_GAP}>
+                    <GroupLabel selected={filters.fleet ? 1 : 0}>Fleet</GroupLabel>
+                    <Select
+                        size="xs"
+                        aria-label="Fleet"
+                        miw={150}
+                        allowDeselect={false}
+                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
+                        value={String(filters.fleet)}
+                        onChange={(value) => {
+                            setFilters(f => ({...f, fleet: Number(value ?? 0)}));
+                            setQuery(q => ({...q, page: 1}));
+                        }}
+                        data={[
+                            {value: '0', label: 'All fleets'},
+                            ...fleetOptions.map(opt => ({value: String(opt.id), label: opt.text})),
+                        ]}
+                    />
+                </Stack>
                 <SearchField
                     value={query.searchTerm ?? ''}
                     onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
@@ -130,14 +160,11 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
-                page={query.page || 1}
-                pageSize={query.pageSize}
-                onPageChange={(p) => setQuery(q => ({...q, page: p}))}
-                onPageSizeChange={(ps) => setQuery(q => ({...q, pageSize: ps, page: 1}))}
-                emptyIcon={<CarIcon />}
+                {...dataTablePagingProps(query, setQuery)}
+                emptyIcon={<Icon lucide={Car} size={40}/>}
                 emptyTitle="No Active Drivers"
                 emptyMessage="No active drivers match your criteria."
             />
-        </Box>
+        </Stack>
     );
 };

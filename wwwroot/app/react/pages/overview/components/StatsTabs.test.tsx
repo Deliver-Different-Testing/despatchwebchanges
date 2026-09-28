@@ -1,13 +1,11 @@
-/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {StatsTabs} from './StatsTabs';
 
-const theme = createTheme();
 
 const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    render(<MantineTestProvider>{ui}</MantineTestProvider>);
 
 describe('StatsTabs', () => {
     const defaultProps = {
@@ -45,9 +43,12 @@ describe('StatsTabs', () => {
     it('shows active indicator for the selected tab', () => {
         renderWithTheme(<StatsTabs {...defaultProps} activeTab={1} />);
 
-        // The active tab (Inactive, index 1) should have full opacity
-        const inactiveTab = screen.getByText('Inactive').closest('[class*="MuiBox"]');
-        expect(inactiveTab).toBeInTheDocument();
+        // The old assertion only proved a Box existed. data-active is what actually
+        // drives the indicator, so assert the selected tab carries it and the others
+        // do not.
+        expect(screen.getByText('Inactive').closest('[data-active]')).toHaveAttribute('data-active', 'true');
+        expect(screen.getByText('Active').closest('[data-active]')).toHaveAttribute('data-active', 'false');
+        expect(screen.getByText('Completed').closest('[data-active]')).toHaveAttribute('data-active', 'false');
     });
 
     it('renders with zero stats', () => {

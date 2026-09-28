@@ -1,35 +1,12 @@
 /**
- * React Void Job Confirmation Dialog
- *
- * A modern replacement for the AngularJS void-job-confirmation-dialog using MUI components.
- * Allows users to void a single job or multiple related jobs with a required reason.
+ * React Void Job Confirmation Dialog (DFRNT / Mantine)
  */
 
 import React, {useState, useMemo, useEffect, useCallback} from 'react';
-import {alpha} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Paper from '@mui/material/Paper';
-import Switch from '@mui/material/Switch';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningIcon from '@mui/icons-material/Warning';
+import {Alert, Badge, Box, Button, Checkbox, Group, Loader, Paper, Stack, Switch, Text, Textarea} from '@mantine/core';
+import {Info, Trash2, TriangleAlert} from 'lucide-react';
+import {Icon, UI_ICON_SIZE} from '../../common/icon/Icon';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
 import {RelatedJob, VoidJobDialogJob, VoidJobResult} from '../../../interfaces';
 import type {ShowToastFn} from '../../../services/toastService';
 
@@ -89,7 +66,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
         return `Void ${selectedCount} Job${selectedCount !== 1 ? 's' : ''}`;
     }, [voidSingleJobOnly, selectedCount]);
 
-    const handleReasonChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const handleReasonChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
         setVoidReasonText(event.target.value);
     };
 
@@ -111,10 +88,10 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
         }
     }, [relatedJobs.length, job, onLoadRelatedJobs, showToast]);
 
-    const toggleJobSelection = (jobId: number): void => {
-        setRelatedJobs(prev => prev.map(j =>
-            j.id === jobId ? {...j, selected: !j.selected} : j
-        ));
+    // Checkbox.Group reports the whole selection as string values, so every
+    // selection change — including Select/Deselect All — is the same setter.
+    const setSelectedJobIds = (ids: string[]): void => {
+        setRelatedJobs(prev => prev.map(j => ({...j, selected: ids.includes(String(j.id))})));
     };
 
     const selectAllJobs = (): void => {
@@ -144,19 +121,9 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
 
         try {
             if (job.isBulkJob) {
-                await onVoidBulkJob(
-                    job.id,
-                    voidSingleJobOnly,
-                    voidReasonText,
-                    jobIds
-                );
+                await onVoidBulkJob(job.id, voidSingleJobOnly, voidReasonText, jobIds);
             } else {
-                await onVoidJob(
-                    job.id,
-                    voidSingleJobOnly,
-                    voidReasonText,
-                    jobIds
-                );
+                await onVoidJob(job.id, voidSingleJobOnly, voidReasonText, jobIds);
             }
 
             const voidedCount = voidSingleJobOnly ? 1 : jobIds?.length ?? 1;
@@ -175,350 +142,157 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
     if (!job) return null;
 
     return (
-    <Dialog
-        open={open}
-        onClose={onClose}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{
-            paper: {
-                elevation: 24,
-                sx: {
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    minWidth: 480,
-                    maxWidth: 600,
-                },
-            },
-        }}
-    >
-        {/* Header */}
-        <Box
-            sx={(theme) => ({
-                background: `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`,
-                color: 'white',
-                px: 3,
-                py: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-            })}
-        >
-            <Box
-                sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 1.5,
-                    bgcolor: 'rgba(255,255,255,0.15)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <DeleteIcon sx={{fontSize: 24}} />
-            </Box>
-            <Box sx={{flex: 1}}>
-                <Typography variant="h6" fontWeight={600}>
-                    Void {job.jobNo}
-                </Typography>
-                <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                    Permanently cancel this job
-                </Typography>
-            </Box>
-            <IconButton
-                onClick={onClose}
-                disabled={isSubmitting}
-                sx={{
-                    color: 'white',
-                    '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                }}
-            >
-                <CloseIcon />
-            </IconButton>
-        </Box>
+        <DialogShell opened={open} onClose={onClose}>
+            <DialogHeader
+                variant="error"
+                icon={<Icon lucide={Trash2}/>}
+                title={`Void ${job.jobNo}`}
+                subtitle="Permanently cancel this job"
+                onClose={onClose}
+                closeDisabled={isSubmitting}
+            />
 
-        {/* Content */}
-        <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
-            {/* Warning Box */}
-            <Paper
-                elevation={0}
-                sx={(theme) => ({
-                    p: 2,
-                    mb: 3,
-                    borderRadius: 1,
-                    bgcolor: alpha(theme.palette.warning.main, 0.08),
-                    borderLeft: `4px solid ${theme.palette.warning.main}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                })}
-            >
-                <WarningIcon sx={(theme) => ({color: theme.palette.warning.dark, fontSize: 20})} />
-                <Typography variant="body2" color="text.primary">
+            <Stack p="lg" gap="md" bg={dialogContentBg}>
+                {/* Warning */}
+                <Alert variant="light" color="orange" icon={<Icon lucide={TriangleAlert}/>}>
                     You are about to void job <strong>#{job.jobNo}</strong>.
-                </Typography>
-            </Paper>
+                </Alert>
 
-            {/* Linked bulk job info */}
-            {!job.isBulkJob && (
-                <Paper
-                    elevation={0}
-                    sx={(theme) => ({
-                        p: 2,
-                        mb: 3,
-                        borderRadius: 1,
-                        bgcolor: alpha(theme.palette.info.main, 0.08),
-                        borderLeft: `4px solid ${theme.palette.info.main}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                    })}
-                >
-                    <InfoIcon sx={(theme) => ({color: theme.palette.info.dark, fontSize: 20})} />
-                    <Typography variant="body2" color="text.primary">
+                {/* Linked bulk job info */}
+                {!job.isBulkJob && (
+                    <Alert variant="light" color="cyan" icon={<Icon lucide={Info}/>}>
                         Any linked bulk jobs will also be voided.
-                    </Typography>
-                </Paper>
-            )}
+                    </Alert>
+                )}
 
-            {/* Reason Input */}
-            <Box sx={{mb: 3}}>
-                <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
+                {/* Reason */}
+                <Textarea
                     label="Reason for voiding (required)"
                     placeholder="Please provide a reason for voiding this job"
                     value={voidReasonText}
                     onChange={handleReasonChange}
                     disabled={isSubmitting}
-                    slotProps={{htmlInput: {maxLength: 500}}}
-                    helperText={`${voidReasonText.length}/500 characters`}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            bgcolor: 'white',
-                        },
-                    }}
+                    maxLength={500}
+                    autosize
+                    minRows={3}
+                    maxRows={6}
+                    description={`${voidReasonText.length}/500 characters`}
+                    inputWrapperOrder={['label', 'input', 'description', 'error']}
                 />
-            </Box>
 
-            {/* Void Scope Toggle */}
-            <Paper
-                elevation={0}
-                sx={(theme) => ({
-                    p: 2,
-                    borderRadius: 1,
-                    border: `1px solid ${theme.palette.divider}`,
-                    bgcolor: 'white',
-                })}
-            >
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={voidSingleJobOnly}
-                            onChange={(e) => handleToggleMultiVoid(e.target.checked)}
-                            disabled={isSubmitting}
-                            color="primary"
-                        />
-                    }
-                    label={
-                        <Typography variant="body2" fontWeight={500}>
-                            {voidSingleJobOnly ? 'Void this job only' : 'Void multiple related jobs'}
-                        </Typography>
-                    }
-                />
-                <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 0.5, ml: 6}}>
-                    {voidSingleJobOnly
-                        ? 'Only this specific job will be voided'
-                        : 'Select which related jobs to void'
-                    }
-                </Typography>
-            </Paper>
-
-            {/* Related Jobs Multi-Select */}
-            {!voidSingleJobOnly && (
-                <Paper
-                    elevation={0}
-                    sx={(theme) => ({
-                        mt: 2,
-                        borderRadius: 1,
-                        border: `1px solid ${theme.palette.divider}`,
-                        bgcolor: 'white',
-                        overflow: 'hidden',
-                    })}
-                >
-                    {/* Header */}
-                    <Box
-                        sx={(theme) => ({
-                            px: 2,
-                            py: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            borderBottom: `1px solid ${theme.palette.divider}`,
-                            bgcolor: theme.palette.grey[50],
-                        })}
-                    >
-                        <Typography variant="subtitle2" fontWeight={500}>
-                            Related Jobs
-                        </Typography>
-                        <Box sx={{display: 'flex', gap: 1}}>
-                            <Button
-                                size="small"
-                                onClick={selectAllJobs}
-                                disabled={isLoadingRelatedJobs || isSubmitting}
-                                sx={{textTransform: 'none', minWidth: 'auto', px: 1}}
-                            >
-                                Select All
-                            </Button>
-                            <Button
-                                size="small"
-                                onClick={deselectAllJobs}
-                                disabled={isLoadingRelatedJobs || isSubmitting}
-                                sx={{textTransform: 'none', minWidth: 'auto', px: 1}}
-                            >
-                                Deselect All
-                            </Button>
-                        </Box>
-                    </Box>
-
-                    {/* Loading State */}
-                    {isLoadingRelatedJobs && (
-                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, py: 3}}>
-                            <CircularProgress size={20} />
-                            <Typography variant="body2" color="text.secondary">
-                                Loading related jobs...
-                            </Typography>
-                        </Box>
-                    )}
-
-                    {/* Jobs List */}
-                    {!isLoadingRelatedJobs && (
-                        <>
-                            {relatedJobs.length === 0 ? (
-                                <Box sx={{py: 3, textAlign: 'center'}}>
-                                    <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                                        No related jobs found.
-                                    </Typography>
-                                </Box>
-                            ) : (
-                                <List sx={{maxHeight: 200, overflow: 'auto', py: 0}}>
-                                    {relatedJobs.map((relatedJob) => (
-                                        <ListItem
-                                            key={relatedJob.id}
-                                            disablePadding
-                                            sx={(theme) => ({
-                                                borderBottom: `1px solid ${theme.palette.divider}`,
-                                                '&:last-child': {borderBottom: 'none'},
-                                                ...(relatedJob.selected && {
-                                                    bgcolor: alpha(theme.palette.grey[600], 0.06),
-                                                    borderLeft: `3px solid ${theme.palette.grey[600]}`,
-                                                }),
-                                            })}
-                                        >
-                                            <ListItemButton
-                                                onClick={() => toggleJobSelection(relatedJob.id)}
-                                                disabled={isSubmitting}
-                                                dense
-                                            >
-                                                <ListItemIcon sx={{minWidth: 36}}>
-                                                    <Checkbox
-                                                        edge="start"
-                                                        checked={relatedJob.selected}
-                                                        tabIndex={-1}
-                                                        disableRipple
-                                                        size="small"
-                                                    />
-                                                </ListItemIcon>
-                                                <ListItemText
-                                                    primary={relatedJob.text}
-                                                    slotProps={{primary: {variant: 'body2'}}}
-                                                />
-                                                {relatedJob.id === job.id && (
-                                                    <Chip
-                                                        label="current"
-                                                        size="small"
-                                                        sx={{
-                                                            height: 20,
-                                                            fontSize: '0.7rem',
-                                                            bgcolor: 'grey.200',
-                                                        }}
-                                                    />
-                                                )}
-                                                {relatedJob.isBulkJob && (
-                                                    <Chip
-                                                        label="Bulk"
-                                                        size="small"
-                                                        color="info"
-                                                        sx={{ height: 20, fontSize: '0.7rem', ml: 0.5 }}
-                                                    />
-                                                )}
-                                                {relatedJob.isArchived && (
-                                                    <Chip
-                                                        label="Archived"
-                                                        size="small"
-                                                        color="warning"
-                                                        sx={{ height: 20, fontSize: '0.7rem', ml: 0.5 }}
-                                                    />
-                                                )}
-                                            </ListItemButton>
-                                        </ListItem>
-                                    ))}
-                                </List>
-                            )}
-
-                            {/* Summary */}
-                            {relatedJobs.length > 0 && (
-                                <Box
-                                    sx={(theme) => ({
-                                        px: 2,
-                                        py: 1,
-                                        borderTop: `1px solid ${theme.palette.divider}`,
-                                        bgcolor: theme.palette.grey[50],
-                                        textAlign: 'right',
-                                    })}
-                                >
-                                    <Typography variant="caption" color="text.secondary">
-                                        {selectedCount} of {relatedJobs.length} jobs selected
-                                    </Typography>
-                                </Box>
-                            )}
-                        </>
-                    )}
+                {/* Void scope toggle */}
+                <Paper {...sectionPaperProps}>
+                    <Switch
+                        checked={voidSingleJobOnly}
+                        onChange={(e) => handleToggleMultiVoid(e.currentTarget.checked)}
+                        disabled={isSubmitting}
+                        label={voidSingleJobOnly ? 'Void this job only' : 'Void multiple related jobs'}
+                        description={voidSingleJobOnly
+                            ? 'Only this specific job will be voided'
+                            : 'Select which related jobs to void'}
+                    />
                 </Paper>
-            )}
-        </DialogContent>
 
-        {/* Actions */}
-        <DialogActions
-            sx={(theme) => ({
-                px: 3,
-                py: 2,
-                bgcolor: 'white',
-                borderTop: `1px solid ${theme.palette.divider}`,
-                gap: 1,
-            })}
-        >
-            <Button
-                onClick={onClose}
-                variant="outlined"
-                disabled={isSubmitting}
-                sx={{minWidth: 100}}
-            >
-                Cancel
-            </Button>
-            <Button
-                onClick={handleConfirm}
-                variant="contained"
-                color="error"
-                disabled={isConfirmDisabled}
-                startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
-                sx={{minWidth: 120}}
-            >
-                {isSubmitting ? 'Voiding...' : confirmButtonText}
-            </Button>
-        </DialogActions>
-    </Dialog>
+                {/* Related jobs multi-select */}
+                {!voidSingleJobOnly && (
+                    <Paper withBorder radius="md" style={{overflow: 'hidden'}}>
+                        {/* Header */}
+                        <Group
+                            justify="space-between"
+                            px="md"
+                            py="sm"
+                            style={{borderBottom: '1px solid var(--mantine-color-gray-3)', backgroundColor: 'var(--mantine-color-gray-1)'}}
+                        >
+                            <Text fw={500} fz="sm">Related Jobs</Text>
+                            <Group gap="xs">
+                                <Button variant="subtle" size="compact-sm" onClick={selectAllJobs} disabled={isLoadingRelatedJobs || isSubmitting}>
+                                    Select All
+                                </Button>
+                                <Button variant="subtle" size="compact-sm" onClick={deselectAllJobs} disabled={isLoadingRelatedJobs || isSubmitting}>
+                                    Deselect All
+                                </Button>
+                            </Group>
+                        </Group>
+
+                        {/* Loading */}
+                        {isLoadingRelatedJobs && (
+                            <Group justify="center" gap="sm" py="lg">
+                                <Loader size={UI_ICON_SIZE}/>
+                                <Text fz="sm" c="dimmed">Loading related jobs...</Text>
+                            </Group>
+                        )}
+
+                        {/* Jobs list */}
+                        {!isLoadingRelatedJobs && (
+                            <>
+                                {relatedJobs.length === 0 ? (
+                                    <Box py="lg" ta="center">
+                                        <Text fz="sm" c="dimmed" fs="italic">No related jobs found.</Text>
+                                    </Box>
+                                ) : (
+                                    <Checkbox.Group value={selectedJobIds.map(String)} onChange={setSelectedJobIds}>
+                                        <Box mah={200} style={{overflowY: 'auto'}}>
+                                            {relatedJobs.map((relatedJob) => (
+                                                <Checkbox
+                                                    key={relatedJob.id}
+                                                    value={String(relatedJob.id)}
+                                                    disabled={isSubmitting}
+                                                    size="sm"
+                                                    px={12}
+                                                    py={8}
+                                                    styles={{labelWrapper: {flex: 1}}}
+                                                    style={{
+                                                        borderBottom: '1px solid var(--mantine-color-gray-3)',
+                                                        borderLeft: relatedJob.selected ? '3px solid var(--mantine-color-gray-6)' : '3px solid transparent',
+                                                        backgroundColor: relatedJob.selected ? 'var(--mantine-color-gray-1)' : undefined,
+                                                    }}
+                                                    label={
+                                                        <Group gap="xs" wrap="nowrap">
+                                                            <Text fz="sm" style={{flex: 1}}>{relatedJob.text}</Text>
+                                                            {relatedJob.id === job.id && (
+                                                                <Badge size="sm" variant="light" color="gray">current</Badge>
+                                                            )}
+                                                            {relatedJob.isBulkJob && (
+                                                                <Badge size="sm" variant="light" color="cyan">Bulk</Badge>
+                                                            )}
+                                                            {relatedJob.isArchived && (
+                                                                <Badge size="sm" variant="light" color="orange">Archived</Badge>
+                                                            )}
+                                                        </Group>
+                                                    }
+                                                />
+                                            ))}
+                                        </Box>
+                                    </Checkbox.Group>
+                                )}
+
+                                {/* Summary */}
+                                {relatedJobs.length > 0 && (
+                                    <Box
+                                        px="md"
+                                        py="xs"
+                                        ta="right"
+                                        style={{borderTop: '1px solid var(--mantine-color-gray-3)', backgroundColor: 'var(--mantine-color-gray-1)'}}
+                                    >
+                                        <Text fz="xs" c="dimmed">{selectedCount} of {relatedJobs.length} jobs selected</Text>
+                                    </Box>
+                                )}
+                            </>
+                        )}
+                    </Paper>
+                )}
+            </Stack>
+
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleConfirm}
+                confirmColor="red"
+                confirmIcon={<Icon lucide={Trash2}/>}
+                confirmLabel={isSubmitting ? 'Voiding...' : confirmButtonText}
+                confirmDisabled={isConfirmDisabled}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

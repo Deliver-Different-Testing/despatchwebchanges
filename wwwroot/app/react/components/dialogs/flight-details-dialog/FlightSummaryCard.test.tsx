@@ -1,20 +1,13 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for FlightSummaryCard component
  */
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import { FlightSummaryCard } from './FlightSummaryCard';
 import { FlightData, FlightSegmentData } from './types';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 function createSegment(overrides?: Partial<FlightSegmentData>): FlightSegmentData {
     return {

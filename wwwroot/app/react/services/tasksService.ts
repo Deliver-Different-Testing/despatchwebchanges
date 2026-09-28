@@ -45,6 +45,14 @@ function getContactId(): number {
 }
 
 /**
+ * The current logged-in user's staff id, as used by the "Mine" task filter.
+ * Same value the assignee chip compares against (task.assignee.id === this).
+ */
+export function getCurrentUserId(): number {
+    return getContactId();
+}
+
+/**
  * Check if localStorage is available
  */
 function isLocalStorageAvailable(): boolean {
@@ -67,7 +75,12 @@ interface PageFilterNames {
 }
 
 /**
- * Get filter storage key names for a specific app page
+ * Get filter storage key names for a specific app page.
+ *
+ * The staff and event-type keys must differ: they shared one key per page, so
+ * saving either filter silently wiped the other. `staff` keeps the original key
+ * so the more commonly used filter does not lose an operator's stored value;
+ * `eventType` moves to its own.
  */
 function getPageFilterNames(appPage: AppPage): PageFilterNames {
     const contactId = getContactId();
@@ -75,31 +88,31 @@ function getPageFilterNames(appPage: AppPage): PageFilterNames {
     const mapping: Record<AppPage, PageFilterNames> = {
         [AppPage.Dispatch]: {
             staff: `selectedSupportTypeDispatchFilter-${contactId}`,
-            eventType: `selectedSupportTypeDispatchFilter-${contactId}`,
+            eventType: `selectedSupportTypeDispatchEventTypeFilter-${contactId}`,
         },
         [AppPage.Domestic]: {
             staff: `selectedSupportTypeNWFilter-${contactId}`,
-            eventType: `selectedSupportTypeNWFilter-${contactId}`,
+            eventType: `selectedSupportTypeNWEventTypeFilter-${contactId}`,
         },
         [AppPage.Tasks]: {
             staff: `selectedSupportTypeTasksFilter-${contactId}`,
-            eventType: `selectedSupportTypeTasksFilter-${contactId}`,
+            eventType: `selectedSupportTypeTasksEventTypeFilter-${contactId}`,
         },
         [AppPage.JobSearch]: {
             staff: `selectedSupportTypeJobSearchFilter-${contactId}`,
-            eventType: `selectedSupportTypeJobSearchFilter-${contactId}`,
+            eventType: `selectedSupportTypeJobSearchEventTypeFilter-${contactId}`,
         },
         [AppPage.Recurring]: {
             staff: `selectedSupportTypeRecurringFilter-${contactId}`,
-            eventType: `selectedSupportTypeRecurringFilter-${contactId}`,
+            eventType: `selectedSupportTypeRecurringEventTypeFilter-${contactId}`,
         },
         [AppPage.Overview]: {
             staff: `selectedSupportTypeOverviewFilter-${contactId}`,
-            eventType: `selectedSupportTypeOverviewFilter-${contactId}`,
+            eventType: `selectedSupportTypeOverviewEventTypeFilter-${contactId}`,
         },
         [AppPage.MegaMap]: {
             staff: `selectedSupportTypeMegaMapFilter-${contactId}`,
-            eventType: `selectedSupportTypeMegaMapFilter-${contactId}`,
+            eventType: `selectedSupportTypeMegaMapEventTypeFilter-${contactId}`,
         },
         [AppPage.DriverManagement]: {
             staff: `selectedSupportType-${AppPage.DriverManagement}-Filter-${contactId}`,

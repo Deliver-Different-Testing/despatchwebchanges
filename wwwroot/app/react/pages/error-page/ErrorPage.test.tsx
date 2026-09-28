@@ -1,22 +1,13 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * ErrorPage Component Tests
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
+import {renderWithMantine} from '../../__testUtils__';
 import {ErrorPage} from './ErrorPage';
 
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+const renderWithTheme = renderWithMantine;
 
 describe('ErrorPage', () => {
     describe('Default rendering', () => {

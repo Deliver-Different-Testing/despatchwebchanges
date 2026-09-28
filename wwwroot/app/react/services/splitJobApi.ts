@@ -6,15 +6,20 @@
  */
 
 import {apiClient} from './apiClient';
-import {AddressViewModel} from '../interfaces';
+import {SplitJobRequest, SplitPricingPreview, SplitPricingPreviewRequest} from "../interfaces/splitJobs";
+
+
+/** How the proposed per-leg shares were derived. */
+export type SplitPricingBasis = 'RoadMiles' | 'StraightLine' | 'UserConfirmed' | 'LegRates' | 'EvenSplit';
 
 /**
- * Request model for splitting a job with a meeting point address.
+ * Proposes how the job's pricing would divide across the two legs of a split. Read-only — nothing
+ * is written until splitJob is called.
  */
-export interface SplitJobRequest {
-    jobId: number;
-    meetingPointAddress: AddressViewModel;
-    courierIdForLegB?: number | null;
+export async function previewSplitPricing(
+    request: SplitPricingPreviewRequest,
+): Promise<SplitPricingPreview> {
+    return apiClient.post<SplitPricingPreview>('job/PreviewSplitPricing', request);
 }
 
 /**
@@ -45,6 +50,7 @@ export async function unSplitJob(jobId: number): Promise<string> {
 
 export const splitJobApi = {
     splitJob,
+    previewSplitPricing,
     restoreSplitJobs,
     unSplitJob,
 };

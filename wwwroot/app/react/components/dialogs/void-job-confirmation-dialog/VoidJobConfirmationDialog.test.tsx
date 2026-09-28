@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * VoidJobConfirmationDialog Component Tests
  *
@@ -6,15 +5,15 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
+import { setupUser } from '../../../__testUtils__/setupUser';
+import {renderWithMantine} from '../../../__testUtils__';
 import {RelatedJob, VoidJobConfirmationDialog, VoidJobDialogJob} from './VoidJobConfirmationDialog';
 
-const theme = createTheme();
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
-const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+const renderWithTheme = (ui: React.ReactElement) => renderWithMantine(ui);
 
 const mockJob: VoidJobDialogJob = {
     id: 123,
@@ -80,23 +79,18 @@ describe('VoidJobConfirmationDialog', () => {
 
         // Close icon
         props.onClose.mockClear();
-        const closeIconButton = screen.getAllByRole('button').find(btn =>
-            btn.querySelector('[data-testid="CloseIcon"]')
-        );
-        if (closeIconButton) {
-            await userEvent.click(closeIconButton);
-            expect(props.onClose).toHaveBeenCalledTimes(1);
-        }
+        await userEvent.click(screen.getByRole('button', {name: 'Close dialog'}));
+        expect(props.onClose).toHaveBeenCalledTimes(1);
     });
 
     // ── Closed / null job (single render with rerender) ─────────────
     it('does not render when closed or job is null', () => {
         const props = createMockProps({open: false});
-        const {rerender, container} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        const {rerender} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-        rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...createMockProps({job: null})} /></ThemeProvider>);
-        expect(container.firstChild).toBeNull();
+        rerender(<VoidJobConfirmationDialog {...createMockProps({job: null})} />);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     // ── Single void + submitting state (single render) ──────────────
@@ -189,6 +183,28 @@ describe('VoidJobConfirmationDialog', () => {
         expect(await screen.findByText('1 of 3 jobs selected')).toBeInTheDocument();
     });
 
+    // ── Related-job rows are real, reachable checkboxes ─────────────
+    it('exposes each related job as a focusable checkbox that reports its own state', async () => {
+        renderWithTheme(<VoidJobConfirmationDialog {...createMockProps()} />);
+
+        await userEvent.click(screen.getByRole('switch'));
+        await screen.findByText('Related Jobs');
+
+        const mainJob = await screen.findByRole('checkbox', {name: /JOB-001 - Main Job/});
+        const pickup = screen.getByRole('checkbox', {name: /JOB-002 - Related Pickup/});
+
+        expect(mainJob).toBeChecked();
+        expect(pickup).not.toBeChecked();
+
+        // The checkbox itself must be operable — not a decorative glyph behind a button.
+        pickup.focus();
+        expect(pickup).toHaveFocus();
+        await userEvent.keyboard(' ');
+
+        expect(await screen.findByText('2 of 3 jobs selected')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox', {name: /JOB-002 - Related Pickup/})).toBeChecked();
+    });
+
     // ── Loading + empty related jobs (single render) ────────────────
     it('shows loading state then empty state for related jobs', async () => {
         let resolveLoad!: (value: RelatedJob[]) => void;
@@ -261,12 +277,10 @@ describe('VoidJobConfirmationDialog', () => {
         fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Test reason'}});
 
         await act(async () => {
-            rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...props}
-                                                                             open={false}/></ThemeProvider>);
+            rerender(<VoidJobConfirmationDialog {...props} open={false}/>);
         });
         await act(async () => {
-            rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...props}
-                                                                             open={true}/></ThemeProvider>);
+            rerender(<VoidJobConfirmationDialog {...props} open={true}/>);
         });
 
         expect(screen.getByLabelText(/Reason for voiding/)).toHaveValue('');

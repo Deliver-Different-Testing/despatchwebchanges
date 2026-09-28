@@ -8,6 +8,23 @@
 import {apiClient} from './apiClient';
 import {JobStatus} from '../../enums/job-status.enum';
 import InternalJobStatus from "../../enums/job-internal-status.enum";
+import type {EditAddressDialogViewModel} from '../interfaces';
+import type {RestorePodImpactRow} from './restorePodImpact';
+
+// ── Add Stop ─────────────────────────────────────────────────────────
+
+/**
+ * Add a pick-up or delivery stop to a job, creating a linked job. Mirrors
+ * V1 DispatchCoreService.addStopToJob (`POST job/AddStopToJob`). Returns the
+ * new (linked) job id.
+ */
+export async function addStopToJob(
+    jobId: number,
+    pickUpAddress?: EditAddressDialogViewModel,
+    deliveryAddress?: EditAddressDialogViewModel,
+): Promise<number> {
+    return apiClient.post<number>('job/AddStopToJob', {jobId, pickUpAddress, deliveryAddress});
+}
 
 // ── Read Status ──────────────────────────────────────────────────────
 
@@ -64,10 +81,57 @@ export async function reAllocateJobs(courierId: number, jobIds: number[]): Promi
     await apiClient.post('job/ReAllocate', {courierId, jobIds});
 }
 
+// ── Change paid courier (archived jobs) ──────────────────────────────
+
+export interface CourierChangeEligibility {
+    canChange: boolean;
+    /** Why the change is blocked; null when changeable. */
+    reason: 'invoiced' | 'settled' | 'notArchived' | null;
+    currentCourierId?: number;
+    currentCourierName?: string;
+}
+
+export async function getCourierChangeEligibility(jobId: number): Promise<CourierChangeEligibility> {
+    const result = await apiClient.get<CourierChangeEligibility>('job/CourierChangeEligibility', {jobId});
+    return result ?? {canChange: false, reason: 'notArchived'};
+}
+
+export async function changeArchivedJobCourier(jobId: number, courierId: number): Promise<void> {
+    await apiClient.post('job/ChangeArchivedJobCourier', {jobId, courierId});
+}
+
 // ── Restore ──────────────────────────────────────────────────────────
 
-export async function restoreJobs(jobIds: number[]): Promise<void> {
-    await apiClient.post('job/RestoreJobs', {jobIds});
+export async function restoreJobs(jobIds: number[], removeCapturedImages = false): Promise<void> {
+    await apiClient.post('job/RestoreJobs', {jobIds, removeCapturedImages});
+}
+
+/**
+ * Read-only: what a restore of these jobs would cost in proof of delivery — the POD name it would
+ * clear and how many captured photos/signatures are held against each job.
+ */
+export async function getRestorePodImpact(jobIds: number[]): Promise<RestorePodImpactRow[]> {
+    return await apiClient.post<RestorePodImpactRow[]>('job/GetRestorePodImpact', {jobIds}) ?? [];
+}
+
+export async function restoreSplitJobs(jobIds: number[]): Promise<void> {
+    await apiClient.post('job/RestoreSplitJobs', {jobIds});
+}
+
+export async function addRestoreEvent(jobId: number): Promise<void> {
+    await apiClient.post('job/AddRestoreEvent', null, {params: {jobId}});
+}
+
+// ── Lock / Unlock ────────────────────────────────────────────────────
+
+export async function setJobLocked(jobId: number, locked: boolean, isRecurring: boolean): Promise<void> {
+    await updateJobDetail(jobId, 'Locked', locked, isRecurring);
+}
+
+// ── Un-Split ─────────────────────────────────────────────────────────
+
+export async function unSplitJob(jobId: number): Promise<string> {
+    return apiClient.post<string>('job/UnSplitJob', null, {params: {jobId}});
 }
 
 // ── First Job ────────────────────────────────────────────────────────
@@ -78,8 +142,12 @@ export async function setFirstJob(jobId: number, courierId: number): Promise<voi
 
 // ── Bulk Job ─────────────────────────────────────────────────────────
 
-export async function releaseBulkJob(bulkJobId: number): Promise<void> {
-    await apiClient.post('job/ReleaseBulkJob', null, {params: {bulkJobId}});
+export interface ReleaseBulkJobResult {
+    jobNumbers: string[];
+}
+
+export async function releaseBulkJob(bulkJobId: number): Promise<ReleaseBulkJobResult> {
+    return apiClient.post<ReleaseBulkJobResult>('job/ReleaseBulkJob', null, {params: {bulkJobId}});
 }
 
 // ── Split Job ────────────────────────────────────────────────────────
@@ -152,11 +220,79 @@ export interface PartnerRateQuote {
 export interface PartnerRateForJobResponse {
     rateCardRate: number | null;
     liveQuotes: PartnerRateQuote[];
-    source: 'rate_card' | 'live_quote' | 'none';
+    /**
+     * Which rate-resolution strategy IM used:
+     *   'none'        — no mapping / not enough data; operator types from scratch
+     *   'rate_card'   — legacy pre-negotiated rate (currently dormant)
+     *   'live_quote'  — Mode 1 with a live partner quote (pick from liveQuotes)
+     *   'percentage'  — Mode 2; rate will be A.UcjbAmount × percentageOfClientCharge
+     *   'cost_plus'   — Mode 3; rate is partner-quoted, A.UcjbAmount is rewritten
+     *                   to cost × (1 + marginPercent)
+     */
+    source: 'rate_card' | 'live_quote' | 'none' | 'percentage' | 'cost_plus';
+    /** Mode 2: percentage IM will apply to UcjbAmount. */
+    percentageOfClientCharge?: number | null;
+    /** Mode 3: margin IM will apply on top of the partner quote. */
+    marginPercent?: number | null;
+    /** Mode 2: the rate IM will send to the partner (= UcjbAmount × pct). */
+    derivedRate?: number | null;
+    /** Mode 3: the UcjbAmount IM will stamp on A's local job (= cost × (1 + margin)). */
+    derivedRevenue?: number | null;
+    /** Optional human-readable hint or error explanation. */
+    message?: string | null;
+    /**
+     * Whether the partner can carry this route under the mapped service code.
+     * null = IM couldn't find out (partner unreachable). Only warn on an explicit false —
+     * a peer outage must not read as "the lane is closed".
+     */
+    serviceAvailable?: boolean | null;
+    /** Why serviceAvailable is false. */
+    serviceabilityMessage?: string | null;
+    /** What the partner CAN carry on this route. */
+    alternatives?: PartnerServiceabilityAlternative[];
+}
+
+export interface PartnerServiceabilityAlternative {
+    /** Local speed id, where the operator can switch the job to this service. */
+    jobTypeId: number | null;
+    partnerServiceCode: string;
+    serviceName: string;
+    totalCharge: number | null;
+    currency: string | null;
+    transitDays: number | null;
 }
 
 export async function getPartnerRateForJob(pairingId: number, jobId: number): Promise<PartnerRateForJobResponse> {
     return apiClient.post<PartnerRateForJobResponse>('job/GetPartnerRateForJob', {pairingId, jobId});
+}
+
+// ─── Mode 1 rate-acceptance gate (B side) ───────────────────────────────────
+
+export interface PartnerInboundJobAcceptanceState {
+    /** "Allowed" | "PendingAcceptance" | "Accepted" | "Rejected". */
+    status: 'Allowed' | 'PendingAcceptance' | 'Accepted' | 'Rejected';
+    proposedAgreedRate: number | null;
+    rejectionReason: string | null;
+    actionedAtUtc: string | null;
+    partnerJobGuid: string | null;
+}
+
+export interface PartnerInboundJobActionResponse {
+    success: boolean;
+    errorMessage: string | null;
+    newState: PartnerInboundJobAcceptanceState | null;
+}
+
+export async function getPartnerInboundRateAcceptance(jobId: number): Promise<PartnerInboundJobAcceptanceState> {
+    return apiClient.get<PartnerInboundJobAcceptanceState>(`job/GetPartnerInboundRateAcceptance/${jobId}`);
+}
+
+export async function acceptPartnerRate(jobId: number): Promise<PartnerInboundJobActionResponse> {
+    return apiClient.post<PartnerInboundJobActionResponse>('job/AcceptPartnerRate', {jobId});
+}
+
+export async function rejectPartnerRate(jobId: number, reason: string): Promise<PartnerInboundJobActionResponse> {
+    return apiClient.post<PartnerInboundJobActionResponse>('job/RejectPartnerRate', {jobId, reason});
 }
 
 // ── Aggregate Export ─────────────────────────────────────────────────
@@ -170,6 +306,11 @@ export const jobListApi = {
     allocateJobs,
     reAllocateJobs,
     restoreJobs,
+    getRestorePodImpact,
+    restoreSplitJobs,
+    addRestoreEvent,
+    setJobLocked,
+    unSplitJob,
     setFirstJob,
     releaseBulkJob,
     splitJob,

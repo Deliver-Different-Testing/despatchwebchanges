@@ -6,9 +6,14 @@
  */
 
 import '@testing-library/jest-dom';
+import {configure} from '@testing-library/react';
 
-// Increase default test timeout for CI environments (slow kubernetes pods)
-jest.setTimeout(15000);
+// waitFor/findBy default to a 1000ms timeout, which is too tight for react-query
+// state transitions on a loaded/GC-starved CI worker (a mocked-promise resolution
+// that settles in ~13ms locally can exceed 1s under load, flaking isSuccess/isError
+// assertions — see useAddressApi.test.tsx, 2026-07-03). Genuine hangs are still
+// bounded by jest.config.js testTimeout (30s).
+configure({asyncUtilTimeout: 5000});
 
 // DOM mocks — only run in jsdom environment (skipped for node-only tests)
 if (typeof window !== 'undefined') {
@@ -51,6 +56,13 @@ if (typeof window !== 'undefined') {
 
     // Mock scrollTo
     window.scrollTo = jest.fn();
+
+    // jsdom does not implement scrollIntoView, and Mantine's Combobox (Select,
+    // MultiSelect, Autocomplete, SearchSelect) calls it when it moves the active
+    // option — without this every dropdown interaction throws.
+    if (!Element.prototype.scrollIntoView) {
+        Element.prototype.scrollIntoView = jest.fn();
+    }
 }
 
 // Global variables declared in cshtml templates at runtime

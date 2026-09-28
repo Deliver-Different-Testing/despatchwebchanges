@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using DespatchWeb.Tests.Infrastructure;
 
 namespace DespatchWeb.Tests.Security;
 
@@ -6,6 +7,7 @@ namespace DespatchWeb.Tests.Security;
 /// Tests for JWT token creation security in AuthenticationExtensions.
 /// Tests validation of JWT secret key requirements.
 /// </summary>
+[Collection(JwtEnvironmentCollection.Name)]
 public class AuthenticationExtensionsTests : IDisposable
 {
     private readonly string? _originalJwtSecretKey;

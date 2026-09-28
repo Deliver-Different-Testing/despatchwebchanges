@@ -587,6 +587,20 @@ public partial class TblClient
 
     public int? NpAgentId { get; set; }
 
+    public string AccountingPaymentTermQboId { get; set; }
+
+    public int? AccountingPaymentTermXeroDay { get; set; }
+
+    public string AccountingPaymentTermXeroType { get; set; }
+
+    public bool ArReminderSuppressed { get; set; }
+
+    public bool ContentsUnknownAtPickup { get; set; }
+
+    public bool ContentsUnknownForBulkJobs { get; set; }
+
+    public bool RecalcRecurringFuel { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

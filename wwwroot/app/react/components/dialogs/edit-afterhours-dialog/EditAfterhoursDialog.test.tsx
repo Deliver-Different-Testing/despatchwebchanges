@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * EditAfterhoursDialog Component Tests
  *
@@ -6,10 +5,9 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import { setupUser } from '../../../__testUtils__/setupUser';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
+import {renderWithMantineProviders} from '../../../__testUtils__';
 import {EditAfterhoursDialog, EditAfterhoursDialogProps} from './EditAfterhoursDialog';
 import {AfterHoursCourierSchedule, CourierSuggestion, TimeZoneOption} from '../../../interfaces';
 import {useCourierSearch, useTimeZoneOptions} from '../../../hooks/useCourierApi';
@@ -22,20 +20,8 @@ jest.mock('../../../hooks/useCourierApi', () => ({
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
 const mockUseTimeZoneOptions = useTimeZoneOptions as jest.MockedFunction<typeof useTimeZoneOptions>;
 
-const theme = createTheme();
-
-const createTestQueryClient = () =>
-    new QueryClient({defaultOptions: {queries: {retry: false}}});
-
 function renderWithProviders(props: EditAfterhoursDialogProps) {
-    const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                <EditAfterhoursDialog {...props} />
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
+    return renderWithMantineProviders(<EditAfterhoursDialog {...props} />);
 }
 
 function createDefaultProps(overrides?: Partial<EditAfterhoursDialogProps>): EditAfterhoursDialogProps {
@@ -161,7 +147,7 @@ describe('EditAfterhoursDialog', () => {
         it('shows search results from hook', async () => {
             mockUseCourierSearch.mockReturnValue({data: sampleCouriers, isFetching: false, error: null} as any);
 
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithProviders(createDefaultProps());
 
             const searchInput = screen.getByLabelText('Search driver...');
@@ -239,7 +225,7 @@ describe('EditAfterhoursDialog', () => {
     // ── Dialog Actions ──────────────────────────────────────────────
     describe('Dialog Actions', () => {
         it('calls onClose when Cancel is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
             renderWithProviders(createDefaultProps({onClose}));
 
@@ -248,7 +234,7 @@ describe('EditAfterhoursDialog', () => {
         });
 
         it('calls onSave with schedule data preserving schedule ID', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onSave = jest.fn();
             renderWithProviders(createDefaultProps({schedule: existingSchedule, onSave, isUsTenant: false}));
 

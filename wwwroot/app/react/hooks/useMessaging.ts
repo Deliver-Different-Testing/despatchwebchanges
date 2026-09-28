@@ -89,10 +89,12 @@ export function useMessages(currentStaffId: number) {
 
         try {
             const data = await messagingApi.getMessages(otherPartyId, otherPartyType, currentStaffId);
-            // Sort messages by time
-            const sorted = [...data].sort((a, b) =>
-                new Date(a.messageTime).getTime() - new Date(b.messageTime).getTime()
-            );
+            // Sort by time, tie-breaking on messageId (received order) so a
+            // re-fetch can never re-shuffle messages that share a timestamp.
+            const sorted = [...data].sort((a, b) => {
+                const diff = new Date(a.messageTime).getTime() - new Date(b.messageTime).getTime();
+                return diff !== 0 ? diff : a.messageId - b.messageId;
+            });
             setMessages(sorted);
         } catch (err: unknown) {
             console.error('Failed to load messages:', err);
@@ -106,6 +108,12 @@ export function useMessages(currentStaffId: number) {
         setMessages(prev => [...prev, message]);
     }, []);
 
+    const updateMessage = useCallback((messageId: number, updates: Partial<ChatMessage>) => {
+        setMessages(prev => prev.map(m =>
+            m.messageId === messageId ? {...m, ...updates} : m
+        ));
+    }, []);
+
     const clearMessages = useCallback(() => {
         setMessages([]);
     }, []);
@@ -116,6 +124,7 @@ export function useMessages(currentStaffId: number) {
         error,
         loadMessages,
         addOptimisticMessage,
+        updateMessage,
         clearMessages,
     };
 }

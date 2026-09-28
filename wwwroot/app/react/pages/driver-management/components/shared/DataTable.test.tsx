@@ -1,10 +1,7 @@
-/** @jest-environment jest-environment-jsdom */
 import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {DataTable, DataTableColumn, SortState} from './DataTable';
-
-const theme = createTheme();
+import {fireEvent, screen, within} from '@testing-library/react';
+import {renderWithMantine} from '../../../../__testUtils__';
+import {DataTable, DataTableColumn, SortState} from '../../../../components/common/data-table';
 
 interface MockRow {
     id: number;
@@ -39,11 +36,7 @@ const defaultProps = {
 };
 
 const renderTable = (props = {}) =>
-    render(
-        <ThemeProvider theme={theme}>
-            <DataTable<MockRow> {...defaultProps} {...props} />
-        </ThemeProvider>
-    );
+    renderWithMantine(<DataTable<MockRow> {...defaultProps} {...props} />);
 
 describe('DataTable', () => {
     describe('Column headers', () => {
@@ -68,9 +61,13 @@ describe('DataTable', () => {
         it('should render row values', () => {
             renderTable();
 
-            expect(screen.getByText('100')).toBeInTheDocument();
-            expect(screen.getByText('200')).toBeInTheDocument();
-            expect(screen.getByText('300')).toBeInTheDocument();
+            // Scoped to the grid: the pager's rows-per-page Select keeps its
+            // options in the DOM while closed (Mantine renders and hides them),
+            // and one of them is "100" — the same as a row value here.
+            const table = within(screen.getByRole('table'));
+            expect(table.getByText('100')).toBeInTheDocument();
+            expect(table.getByText('200')).toBeInTheDocument();
+            expect(table.getByText('300')).toBeInTheDocument();
         });
     });
 
@@ -156,6 +153,27 @@ describe('DataTable', () => {
             renderTable();
 
             expect(screen.getByText('1–3 of 3')).toBeInTheDocument();
+        });
+    });
+
+    describe('Numeric column alignment', () => {
+        it('should render a right-aligned column with tabular figures so digits line up', () => {
+            renderTable({
+                columns: [
+                    ...mockColumns,
+                    {key: 'total', label: 'Total', align: 'right' as const, render: (row: MockRow) => `$${row.value}`},
+                ],
+            });
+
+            const cell = screen.getByText('$100');
+            expect(cell.closest('td')).toHaveStyle({fontVariantNumeric: 'tabular-nums'});
+        });
+
+        it('should not apply tabular figures to a left-aligned column', () => {
+            renderTable();
+
+            const cell = screen.getByText('Alice');
+            expect(cell.closest('td')).not.toHaveStyle({fontVariantNumeric: 'tabular-nums'});
         });
     });
 });

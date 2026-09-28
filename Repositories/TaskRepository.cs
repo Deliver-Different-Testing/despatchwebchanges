@@ -7,6 +7,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace DespatchWeb.Repositories;
 
@@ -17,9 +18,40 @@ public class TaskRepository(
 {
     private const int InternetUserStaffId = 33;
 
-    private static readonly HashSet<string> AutoResponseTypes = new(StringComparer.OrdinalIgnoreCase)
+    // tucEvent column lengths (EntityClasses/DespatchContext.cs). Values are clipped to fit before
+    // insert so an over-length string can't raise SQL Server error 8152 ("String or binary data
+    // would be truncated"), which surfaces to the user as a 500 when adding a task.
+    private const int DespatcherMaxLength = 15;
+    private const int ContactMaxLength = 30;
+    private const int NotesMaxLength = 1000;
+    private const int DescriptionMaxLength = 255;
+    private const int JobNumberMaxLength = 50;
+
+    private static readonly HashSet<string> AutoResponseTypes =
+        new(StringComparer.OrdinalIgnoreCase) { "Web", "Email", "Text" };
+
+    internal static readonly Expression<Func<TucEvent, TaskViewModel>> ProjectToTaskViewModel = e => new TaskViewModel
     {
-        "Web", "Email", "Text"
+        Id = e.UcevId,
+        Assignee = e.UcevStaffIdinNavigation != null
+            ? new Suggestion
+            {
+                Id = e.UcevStaffIdinNavigation.UcstId,
+                Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+            }
+            : null,
+        Description = e.UcevNotes,
+        JobId = e.UcevJobId ?? 0,
+        Closed = e.UcevClosed,
+        DueDate = e.UcevDueTime,
+        Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
+        EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
+        JobNumber = e.UcevJob.UcjbNumber,
+        CourierCode = e.UcevJob.UcjbCourier != null ? e.UcevJob.UcjbCourier.Code : null,
+        CourierName = e.UcevJob.UcjbCourier != null
+            ? e.UcevJob.UcjbCourier.UccrName + " " + e.UcevJob.UcjbCourier.UccrSurname
+            : null,
+        ClientCode = e.UcevJob.UcjbClientCode
     };
 
     public async Task<IReadOnlyList<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
@@ -27,46 +59,25 @@ public class TaskRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
         var today = filters?.Date ?? clock.TenantNow.AddDays(1);
 
-        // Include partner-task events ('PT') alongside customer-service ('CS')
-        // so the inter-tenant change-request workflow surfaces in the task dashboard.
-        var query = Context.TucEvents
-            .AsNoTracking()
-            .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
-                     || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
+        var query = ApplyTaskGroupFilter(Context.TucEvents);
 
-        if (filters != null) query = ApplyFilters(query, filters);
+        if (filters != null)
+        {
+            query = ApplyFilters(query, filters);
+        }
 
         query = ApplyOrdering(query, filters, today.DateTime);
 
         query = query.Take(filters?.Limit is > 0 ? filters.Limit.Value : 500);
 
         var tasks = await query
-            .Select(e => new TaskViewModel
-            {
-                Id = e.UcevId,
-                Assignee = e.UcevStaffIdinNavigation != null
-                    ? new Suggestion
-                    {
-                        Id = e.UcevStaffIdinNavigation.UcstId,
-                        Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
-                    }
-                    : null,
-                Description = e.UcevNotes,
-                JobId = e.UcevJobId ?? 0,
-                Closed = e.UcevClosed,
-                DueDate = e.UcevDueTime,
-                Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
-                EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
-                JobNumber = e.UcevJob.UcjbNumber,
-                CourierCode = e.UcevJob.UcjbCourier != null ? e.UcevJob.UcjbCourier.Code : null,
-                CourierName = e.UcevJob.UcjbCourier != null
-                    ? e.UcevJob.UcjbCourier.UccrName + " " + e.UcevJob.UcjbCourier.UccrSurname
-                    : null
-            })
+            .Select(ProjectToTaskViewModel)
             .ToListAsync();
 
         foreach (var task in tasks)
+        {
             task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
+        }
 
         return tasks;
     }
@@ -86,7 +97,9 @@ public class TaskRepository(
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
+                {
                     throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+                }
 
                 // Only create audit record if value actually changed
                 if (existingEvent.UcevClosed != closed)
@@ -131,7 +144,9 @@ public class TaskRepository(
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
+                {
                     throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+                }
 
                 if (existingEvent.UcevDueTime != dueTime.DateTime)
                 {
@@ -171,14 +186,26 @@ public class TaskRepository(
             {
                 var existingEvent = await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
-                    .Select(e => new { e.UcevStaffIdin })
+                    .Select(e => new
+                    {
+                        e.UcevStaffIdin,
+                        e.UcevJobId,
+                        OldStaffName = e.UcevStaffIdinNavigation != null
+                            ? e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+                            : null,
+                        TaskTitle = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : null
+                    })
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
+                {
                     throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+                }
 
                 if (existingEvent.UcevStaffIdin != staffId)
                 {
+                    var oldStaffName = existingEvent.OldStaffName?.Trim();
+
                     await Context.TucEvents
                         .Where(e => e.UcevId == eventId)
                         .ExecuteUpdateAsync(setters => setters
@@ -192,6 +219,108 @@ public class TaskRepository(
                         existingEvent.UcevStaffIdin?.ToString() ?? "null",
                         staffId.ToString()
                     );
+
+                    if (existingEvent.UcevJobId.HasValue)
+                    {
+                        var newStaffName = (await Context.TucStaffs
+                            .Where(s => s.UcstId == staffId)
+                            .Select(s => s.UcstFirstName + " " + s.UcstLastName)
+                            .FirstOrDefaultAsync())?.Trim();
+
+                        var comments = string.IsNullOrEmpty(oldStaffName)
+                            ? $"Task '{existingEvent.TaskTitle}' assigned to {newStaffName}"
+                            : $"Task '{existingEvent.TaskTitle}' reassigned from {oldStaffName} to {newStaffName}";
+
+                        var assignStaffId = infoService.GetStaffIdOrNull();
+                        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
+                        {
+                            JobId = existingEvent.UcevJobId.Value,
+                            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                            FieldName = "TaskAssignment",
+                            OldValue = oldStaffName,
+                            NewValue = newStaffName,
+                            StaffId = assignStaffId,
+                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(assignStaffId),
+                            UpdatedAt = DateTime.UtcNow,
+                            Comments = comments
+                        });
+                        await Context.SaveChangesAsync();
+                    }
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
+    }
+
+    public async Task UnassignEventAsync(int eventId)
+    {
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await Context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var existingEvent = await Context.TucEvents
+                    .Where(e => e.UcevId == eventId)
+                    .Select(e => new
+                    {
+                        e.UcevStaffIdin,
+                        e.UcevJobId,
+                        StaffName = e.UcevStaffIdinNavigation != null
+                            ? e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+                            : null,
+                        TaskTitle = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : null
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (existingEvent == null)
+                {
+                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+                }
+
+                if (existingEvent.UcevStaffIdin != null)
+                {
+                    var oldStaffId = existingEvent.UcevStaffIdin.Value;
+                    var oldStaffName = existingEvent.StaffName?.Trim();
+
+                    await Context.TucEvents
+                        .Where(e => e.UcevId == eventId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(e => e.UcevStaffIdin, (int?)null));
+
+                    await CreateEventAuditRecord(
+                        eventId,
+                        infoService.GetStaffId(),
+                        TucEventChangeType.Update,
+                        "UcevStaffIdin",
+                        oldStaffId.ToString(),
+                        "null"
+                    );
+
+                    if (existingEvent.UcevJobId.HasValue)
+                    {
+                        var unassignStaffId = infoService.GetStaffIdOrNull();
+                        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
+                        {
+                            JobId = existingEvent.UcevJobId.Value,
+                            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                            FieldName = "TaskAssignment",
+                            OldValue = oldStaffName,
+                            NewValue = null,
+                            StaffId = unassignStaffId,
+                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(unassignStaffId),
+                            UpdatedAt = DateTime.UtcNow,
+                            Comments = $"Task '{existingEvent.TaskTitle}' unassigned from {oldStaffName}"
+                        });
+                        await Context.SaveChangesAsync();
+                    }
                 }
 
                 await transaction.CommitAsync();
@@ -206,7 +335,6 @@ public class TaskRepository(
 
     public async Task<IReadOnlyList<Suggestion>> GetEventGroupsAsync() =>
         await Context.TucEventTypeGroups
-            .AsNoTracking()
             .Select(x => new Suggestion { Id = x.Id, Text = x.Name })
             .OrderBy(x => x.Text)
             .ToListAsync();
@@ -215,7 +343,6 @@ public class TaskRepository(
     {
         var now = clock.TenantNow;
         var eventGroups = await Context.TucEventTypeEventTypeGroups
-            .AsNoTracking()
             .Where(x => x.EventTypeGroupId == eventGroupId)
             .Select(x => new EventGroupViewModel
             {
@@ -269,14 +396,17 @@ public class TaskRepository(
         var dispatcherName = await dispatcherTask;
 
         ArgumentNullException.ThrowIfNull(job);
-        if (!job.UcjbClientId.HasValue) throw new ArgumentNullException(nameof(job));
+        if (!job.UcjbClientId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(job));
+        }
 
         // Batch create all events
         var events = eventGroupViewModels.Select(eventGroup => new TucEvent
         {
-            UcevJobNumber = job.UcjbNumber,
+            UcevJobNumber = job.UcjbNumber.Truncate(JobNumberMaxLength),
             UcevClientId = job.UcjbClientId ?? 0,
-            UcevContact = job.UcjbContact,
+            UcevContact = job.UcjbContact.Truncate(ContactMaxLength),
             UcevDate = currentDate,
             UcevTime = currentDate,
             UcevType = eventGroup.EventType.Id,
@@ -285,14 +415,14 @@ public class TaskRepository(
             UcevStaffIdin = eventGroup.AssignTo?.Id,
             UcevStaffIdout = null,
             UcevResponseTime = null,
-            UcevNotes = eventGroup.Notes,
+            UcevNotes = eventGroup.Notes.Truncate(NotesMaxLength),
             UcevPageCourier = false,
             UcevClosed = false,
             UcevOriginator = staffId,
-            UcevDescription = eventGroup.EventType.Text,
+            UcevDescription = eventGroup.EventType.Text.Truncate(DescriptionMaxLength),
             UcevCourierId = job.UcjbCourierId,
             UcevJobId = job.UcjbId,
-            UcevDespatcher = dispatcherName,
+            UcevDespatcher = dispatcherName.Truncate(DespatcherMaxLength),
             UcevJobType = job.UcjbSpeed,
             UcevDueTime = eventGroup.DueTime ?? currentDate
         }).ToList();
@@ -304,7 +434,6 @@ public class TaskRepository(
     public async Task<IReadOnlyList<Suggestion>> GetActiveStaffAsync()
     {
         var staff = await Context.TucStaffs
-            .AsNoTracking()
             .Where(s => s.UcstActive)
             .Select(s => new Suggestion
             {
@@ -346,6 +475,7 @@ public class TaskRepository(
         var job = await jobTask;
 
         ArgumentNullException.ThrowIfNull(job);
+        ArgumentNullException.ThrowIfNull(staffInfo);
 
         var currentDate = clock.TenantNow;
 
@@ -358,7 +488,9 @@ public class TaskRepository(
             type: eventType,
             lateTime: lateTime,
             etaTime: etaTime,
-            staffIdIn: staffInfo.Id,
+            // staffIdIn is the assignee, not an audit field: tasks are triaged by a dedicated
+            // person, so they must arrive unassigned. The creator is kept in originator/despatcher.
+            staffIdIn: null,
             staffIdOut: null,
             responseTime: null,
             notes: notes,
@@ -374,10 +506,10 @@ public class TaskRepository(
         );
     }
 
-    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
+    internal static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
         DateTime today)
     {
-        query = query
+        var overdueFirst = query
             .OrderByDescending(e =>
                 e.UcevDueTime.Date < today.Date ||
                 (e.UcevDueTime.Date == today.Date &&
@@ -385,7 +517,18 @@ public class TaskRepository(
                  !e.UcevClosed)
             );
 
-        if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy)) return query;
+        if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy))
+        {
+            // GetAllTasksAsync applies Take() straight after ordering. Sorting only by the
+            // overdue flag leaves every row within a group tied, so the database is free to
+            // return a different arbitrary page each call and a task can disappear between
+            // refreshes. UcevId makes the order total.
+            return overdueFirst
+                .ThenBy(e => e.UcevDueTime)
+                .ThenBy(e => e.UcevId);
+        }
+
+        query = overdueFirst;
 
         var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
@@ -401,8 +544,21 @@ public class TaskRepository(
         isDescending
             ? query.OrderByDescending(e => e.UcevDueTime.Date < today.Date)
                 .ThenByDescending(e => e.UcevDueTime)
+                .ThenBy(e => e.UcevId)
             : query.OrderByDescending(e => e.UcevDueTime.Date < today)
-                .ThenBy(e => e.UcevDueTime);
+                .ThenBy(e => e.UcevDueTime)
+                .ThenBy(e => e.UcevId);
+
+    /// <summary>
+    /// Restricts an event query to the groups that surface as actionable tasks in the task
+    /// dashboard. Must stay in sync with <see cref="JobRepository.EventTypeListAsync"/>, which is
+    /// the list of event types offered by the "Add Task" dialog — otherwise a task the user can
+    /// create is saved but never shown.
+    /// </summary>
+    internal static IQueryable<TucEvent> ApplyTaskGroupFilter(IQueryable<TucEvent> query) =>
+        query.Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
+                         || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.GE)
+                         || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
 
     internal static IQueryable<TucEvent> ApplyFilters(
         IQueryable<TucEvent> query,
@@ -433,30 +589,45 @@ public class TaskRepository(
         }
 
         if (filters.JobId.HasValue)
+        {
             query = query.Where(e => e.UcevJobId == filters.JobId.Value
                                      || e.UcevJob.ParentId == filters.JobId.Value
                                      || e.UcevJob.Parent.InverseParent.Any(j => j.UcjbId == filters.JobId.Value));
+        }
 
         if (filters.ShowCompleted is false)
+        {
             query = query.Where(e => e.UcevClosed == filters.ShowCompleted);
+        }
 
         // Filter by CourierId if provided
         if (filters.CourierId.HasValue)
+        {
             query = query.Where(e => e.UcevCourierId == filters.CourierId.Value);
+        }
 
         // Filter by EventTypeId if provided
         if (filters.EventTypeId.HasValue)
+        {
             query = query.Where(e => (int)e.UcevType == filters.EventTypeId);
+        }
 
         // Filter by staffId
         if (filters.StaffId.HasValue && filters.StaffId.Value != -1)
+        {
             query = query.Where(e => Equals((int)e.UcevStaffIdin, filters.StaffId.Value) || e.UcevStaffIdin == null);
+        }
 
         if (filters.StaffId is -1)
+        {
             query = query.Where(e => e.UcevStaffIdin == null);
+        }
 
         // Filter by SearchText if provided
-        if (string.IsNullOrWhiteSpace(filters.SearchText)) return query;
+        if (string.IsNullOrWhiteSpace(filters.SearchText))
+        {
+            return query;
+        }
 
         var searchPattern = $"%{filters.SearchText}%";
         query = query.Where(e =>
@@ -515,13 +686,11 @@ public class TaskRepository(
 
             var automaticResponse = false;
             if (jobContactInfo?.ContactJobType != null)
-                automaticResponse = type switch
-                {
-                    (int)EventType.LatePickUp => AutoResponseTypes.Contains(jobContactInfo.ContactJobType.PickupType),
-                    (int)EventType.LateDelivery => AutoResponseTypes.Contains(
-                        jobContactInfo.ContactJobType.DeliveryType),
-                    _ => false
-                };
+            {
+                automaticResponse = AutoResponseTypes.Contains(type == (int)EventType.LatePickUp
+                    ? jobContactInfo.ContactJobType.PickupType
+                    : jobContactInfo.ContactJobType.DeliveryType);
+            }
 
             // Set fields for automatic response
             if (automaticResponse)
@@ -537,9 +706,9 @@ public class TaskRepository(
         // Create and add the new event
         var newEvent = new TucEvent
         {
-            UcevJobNumber = jobNo,
+            UcevJobNumber = jobNo.Truncate(JobNumberMaxLength),
             UcevClientId = clientId,
-            UcevContact = contact,
+            UcevContact = contact.Truncate(ContactMaxLength),
             UcevDate = date.DateTime,
             UcevTime = time.DateTime,
             UcevType = type,
@@ -548,14 +717,14 @@ public class TaskRepository(
             UcevStaffIdin = staffIdIn,
             UcevStaffIdout = staffIdOut,
             UcevResponseTime = responseTime?.DateTime,
-            UcevNotes = notes,
+            UcevNotes = notes.Truncate(NotesMaxLength),
             UcevPageCourier = pageCourier,
             UcevClosed = closed,
             UcevOriginator = originator,
-            UcevDescription = description,
+            UcevDescription = description.Truncate(DescriptionMaxLength),
             UcevCourierId = courierId,
             UcevJobId = jobId,
-            UcevDespatcher = despatcher,
+            UcevDespatcher = despatcher.Truncate(DespatcherMaxLength),
             UcevJobType = jobType,
             UcevDueTime = dueTime?.DateTime ?? currentDate
         };

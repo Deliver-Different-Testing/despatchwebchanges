@@ -1,10 +1,10 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -16,17 +16,16 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private readonly MemoryCache _cache;
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly FakeTenantClock _clock = new(new DateTime(2024, 1, 15, 10, 0, 0));
 
     public CourierRepositorySortingTests()
     {
-        _contextFactoryMock = _db.CreateMoqFactoryMock();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
-        _tenantInfoServiceMock
-            .Setup(x => x.GetTenantTimeZone())
+        _tenantInfoServiceMock.GetTenantTimeZone()
             .Returns("New Zealand Standard Time");
 
         _cache = new MemoryCache(new MemoryCacheOptions());
@@ -40,10 +39,10 @@ public class CourierRepositorySortingTests : IAsyncDisposable
     }
 
     private CourierRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object,
+        _clearListEnvelopeServiceMock,
         _cache
     );
 

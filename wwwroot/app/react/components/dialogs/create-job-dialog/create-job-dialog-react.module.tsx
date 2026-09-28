@@ -7,87 +7,23 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {CreateJobDialog} from './CreateJobDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
-import type {ShowToastFn, ToastService} from '../../../services/toastService';
+import type {ToastService} from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-// State management for the dialog
-interface DialogState {
-    open: boolean;
-    isUsTenant: boolean;
-    toastService: ToastService | null;
-    resolve?: (value: number | null) => void;
-}
-
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    isUsTenant: false,
-    toastService: null,
-};
-
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSubmit = (newJobId: number) => {
-        dialogState.open = false;
-        dialogState.resolve?.(newJobId);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleShowToast: ShowToastFn = (message, type) => {
-        if (!dialogState.toastService) {
-            console.log(`[Toast ${type}]: ${message}`);
-            return;
-        }
-        dialogState.toastService.showToast(message, type);
-    };
-
-    const currentTheme = getTheme();
-
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <CreateJobDialog
-                    open={dialogState.open}
-                    isUsTenant={dialogState.isUsTenant}
-                    onClose={handleClose}
-                    onSubmit={handleSubmit}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-create-job-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+const host = createDialogHost<{isUsTenant: boolean}, number | null>({
+    containerId: 'react-create-job-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <CreateJobDialog
+            open={open}
+            isUsTenant={payload.isUsTenant}
+            onClose={() => close(null)}
+            onSubmit={close}
+            showToast={showToast}
+        />
+    ),
+});
 
 /**
  * Opens the create job dialog
@@ -100,17 +36,7 @@ export function openCreateJobDialog(
     isUsTenant: boolean = false,
     toastService?: ToastService
 ): Promise<number | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            isUsTenant,
-            toastService: toastService ?? null,
-            resolve,
-        };
-        renderDialog();
-    });
+    return host.open({isUsTenant}, toastService);
 }
 
 // Expose globally for AngularJS access

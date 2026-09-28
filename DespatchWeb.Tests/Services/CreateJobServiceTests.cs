@@ -55,7 +55,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(type: type);
 
-        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         // The service should handle all type values without throwing
     }
@@ -93,7 +93,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(bookedBy: "Test User");
 
-        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     private void SeedBaseData()
@@ -213,7 +213,12 @@ public class CreateJobServiceTests : IAsyncDisposable
     {
         using var cmd = _db.Connection.CreateCommand();
         cmd.CommandText =
-            $"INSERT INTO tblReference (ReferenceID, ClientID, Name, Grouping, ucrfID, ucrfClientID, ucrfName) VALUES ({referenceId}, {clientId}, '{name}', '{grouping}', {referenceId}, {clientId}, '{name}')";
+            "INSERT INTO tblReference (ReferenceID, ClientID, Name, Grouping, ucrfID, ucrfClientID, ucrfName) " +
+            "VALUES ($id, $clientId, $name, $grouping, $id, $clientId, $name)";
+        cmd.Parameters.AddWithValue("$id", referenceId);
+        cmd.Parameters.AddWithValue("$clientId", clientId);
+        cmd.Parameters.AddWithValue("$name", name);
+        cmd.Parameters.AddWithValue("$grouping", grouping);
         cmd.ExecuteNonQuery();
     }
 
@@ -257,7 +262,7 @@ public class CreateJobServiceTests : IAsyncDisposable
     /// <summary>
     /// Helper to retrieve the inserted job from the database after CreateJobAsync.
     /// </summary>
-    private async Task<TucJob> GetInsertedJobAsync(int? jobId)
+    private async Task<TucJob?> GetInsertedJobAsync(int? jobId)
     {
         Assert.NotNull(jobId);
         await using var ctx = _db.CreateContext();
@@ -297,7 +302,9 @@ public class CreateJobServiceTests : IAsyncDisposable
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         if (!result.Success)
+        {
             Assert.DoesNotContain("Invalid Client", result.Message);
+        }
     }
 
     [Fact]
@@ -308,7 +315,9 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
         if(!result.Success)
+        {
             Assert.DoesNotContain("Invalid SpeedId", result.Message);
+        }
     }
 
     [Fact]
@@ -450,7 +459,9 @@ public class CreateJobServiceTests : IAsyncDisposable
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         if (!result.Success)
+        {
             Assert.DoesNotContain("Reference A", result.Message);
+        }
     }
 
     [Fact]
@@ -503,7 +514,9 @@ public class CreateJobServiceTests : IAsyncDisposable
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         if (!result.Success)
+        {
             Assert.DoesNotContain("defined list", result.Message);
+        }
     }
 
     [Fact]

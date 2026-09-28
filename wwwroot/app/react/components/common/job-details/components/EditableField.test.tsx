@@ -1,18 +1,11 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * EditableField Component Tests
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {EditableField} from './EditableField';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('EditableField', () => {
     it('renders label and value', () => {
@@ -109,23 +102,37 @@ describe('EditableField', () => {
 
     describe('dense mode', () => {
         it('hides icons when dense, including clickable fields', () => {
-            const {container, unmount} = renderWithTheme(
+            const {unmount} = renderWithTheme(
                 <EditableField label="Speed" value="Standard" icon="speed" dense />
             );
-            expect(container.querySelector('.MuiListItemIcon-root')).toBeNull();
+            expect(screen.queryByTestId('field-icon')).not.toBeInTheDocument();
             unmount();
 
-            const {container: c2} = renderWithTheme(
+            renderWithTheme(
                 <EditableField label="Speed" value="Standard" icon="speed" dense onClick={jest.fn()} />
             );
-            expect(c2.querySelector('.MuiListItemIcon-root')).toBeNull();
+            expect(screen.queryByTestId('field-icon')).not.toBeInTheDocument();
         });
 
         it('shows icons when dense is false', () => {
-            const {container} = renderWithTheme(
+            renderWithTheme(
                 <EditableField label="Speed" value="Standard" icon="speed" dense={false} />
             );
-            expect(container.querySelector('.MuiListItemIcon-root')).not.toBeNull();
+            expect(screen.getByTestId('field-icon')).toBeInTheDocument();
+        });
+
+        it('renders the badge icon for the courier number field', () => {
+            renderWithTheme(
+                <EditableField label="Courier Number" value="ABC123" icon="badge" dense={false} />
+            );
+            expect(screen.getByTestId('field-icon')).toBeInTheDocument();
+        });
+
+        it('renders no gutter for an unmapped icon name', () => {
+            renderWithTheme(
+                <EditableField label="Speed" value="Standard" icon="not_a_glyph" dense={false} />
+            );
+            expect(screen.queryByTestId('field-icon')).not.toBeInTheDocument();
         });
 
         it('renders label and value but hides field when not visible', () => {

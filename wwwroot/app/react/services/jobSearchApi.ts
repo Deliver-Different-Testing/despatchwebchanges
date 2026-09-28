@@ -6,11 +6,12 @@
  * existing apiClient and transformDispatchJobDTO for DTO mapping.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {transformDispatchJobDTO} from '../../functions/dtoMappings';
 import {formatDateForApiWithTzs} from '../utils/dateUtils';
-import type {IJobSearchResultDto} from '../../interfaces/job.interface';
-import type {JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
+import type {IJobSearchResultDto, IDispatchJobDto} from '../../interfaces/job.interface';
+import type {DispatchJob, JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
+import {RequestOptions} from "./requestOptions";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ function transformResult(dto: IJobSearchResultDto): JobSearchResult {
         jobs: dto.jobs.map(transformDispatchJobDTO) as any,
         totalCount: dto.totalCount,
         hasMore: dto.hasMore,
+        statusCounts: dto.statusCounts ?? null,
     };
 }
 
@@ -73,6 +75,44 @@ export async function fetchBulkJobs(
     return transformResult(dto);
 }
 
+// ── Scan Detail ──────────────────────────────────────────────────────
+
+export interface ScanDetailRecord {
+    bulkScanId: number;
+    scanDateTime: string;
+    scanDetail: string;
+    courier: string;
+}
+
+export async function fetchScanDetail(
+    runDate: unknown,
+    jobId: number,
+    isBulkJob: boolean,
+    options?: RequestOptions,
+): Promise<ScanDetailRecord[]> {
+    return apiClient.get<ScanDetailRecord[]>('/Job/ScanJobDetail', {
+        runDate: formatDate(runDate),
+        jobId,
+        isBulkJob,
+    }, options);
+}
+
+// ── Bulk Job Detail (Job Search page) ────────────────────────────────
+
+/**
+ * Fetch the dispatch-shaped detail for a bulk job. Mirrors the V1
+ * JobSearchService.getDispatchBulkJobDetail so the selected bulk job carries
+ * the same fields (booked run date, lock/prebook flags, etc.) as a standard
+ * job fetched via dispatchExecutorApi.getDispatchJobDetail.
+ */
+export async function fetchDispatchBulkJobDetail(
+    bulkJobId: number,
+    options?: RequestOptions,
+): Promise<DispatchJob> {
+    const dto = await apiClient.get<IDispatchJobDto>('/Job/DispatchBulkJobDetail', {bulkJobId}, options);
+    return transformDispatchJobDTO(dto) as unknown as DispatchJob;
+}
+
 // ── Dispatch Jobs (Home page) ────────────────────────────────────────
 
 export async function fetchDispatchJobs(
@@ -115,6 +155,25 @@ export async function fetchClearListJobs(
         statusFilter: params.statusFilter,
         despatchViewIds: params.despatchViewIds,
         selectedClearListId: params.selectedClearListId,
+    }, options);
+
+    return transformResult(dto);
+}
+
+// ── Current Work (Home page) ─────────────────────────────────────────
+
+/**
+ * Fetch a courier's current work list. Mirrors the V1
+ * DispatchCoreService.getJobsCurrent (`job/GetCurrentWorkList`).
+ */
+export async function fetchCurrentWorkJobs(
+    params: JobListSearchParams,
+    options?: RequestOptions,
+): Promise<JobSearchResult> {
+    const dto = await apiClient.get<IJobSearchResultDto>('/job/GetCurrentWorkList', {
+        courierId: params.courierId,
+        startDate: formatDate(params.startDate),
+        endDate: formatDate(params.endDate),
     }, options);
 
     return transformResult(dto);

@@ -1,37 +1,31 @@
 /**
  * React Add Event Dialog
  *
- * A modern replacement for the AngularJS add-event-dialog using MUI components.
  * Allows users to add a task/event to a job with event type, date/time, and notes.
+ *
+ * **Wall-clock in, API string out.** `DateTimePicker` is string-valued
+ * (`YYYY-MM-DD HH:mm`), so the picker never builds an instant. The one place a
+ * zone is applied is unchanged: the field is seeded with `dayjs().tz(tz)` — "now,
+ * over there" — and submitted through `formatDateForApi(eventDate, tz)`.
  */
 
 import React, {useState, useMemo, useEffect, useCallback} from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import CloseIcon from '@mui/icons-material/Close';
-import EventIcon from '@mui/icons-material/Event';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import {Box, Group, Loader, Select, Stack, Textarea, TextInput} from '@mantine/core';
+import {DateTimePicker} from '@mantine/dates';
+import {CalendarClock} from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg} from '../shared/mantine';
+import {Icon} from '../../common/icon/Icon';
 import type { ShowToastFn } from '../../../services/toastService';
-import { formatDateForApi } from '../../../utils/dateUtils';
+import { formatDateForApi, getInputDateFormat } from '../../../utils/dateUtils';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+/** What the picker exchanges values in, and the tenant-ordered form it displays. */
+const PICKER_VALUE_FORMAT = 'YYYY-MM-DD HH:mm';
 
 export interface EventType {
     id: number;
@@ -112,22 +106,22 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
             setNotes('');
             setIsLoading(true);
             setIsSubmitting(false);
-            loadEventTypes();
+            void loadEventTypes();
         }
     }, [open, tz, loadEventTypes]);
 
-    const handleEventTypeChange = (event: { target: { value: number | '' } }): void => {
-        setSelectedEventTypeId(event.target.value);
-    };
+    // `Select` is string-valued; the event-type ids are numbers, so they round-trip
+    // through `String()`/`Number()` at the component boundary.
+    const eventTypeOptions = useMemo(
+        () => eventTypes.map(({id, text}) => ({value: String(id), label: text})),
+        [eventTypes],
+    );
 
-    const handleDateChange = (newDate: Dayjs | null): void => {
-        if (newDate && newDate.isValid()) {
-            setEventDate(newDate);
+    const handleDateChange = (value: string | null): void => {
+        const parsed = value ? dayjs(value) : null;
+        if (parsed?.isValid()) {
+            setEventDate(parsed);
         }
-    };
-
-    const handleNotesChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-        setNotes(event.target.value);
     };
 
     const isFormValid = useMemo(() => selectedEventTypeId !== '', [selectedEventTypeId]);
@@ -163,180 +157,71 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
     if (!job) return null;
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Dialog
-                open={open}
+        <DialogShell opened={open} onClose={onClose} label="Add Task">
+            <DialogHeader
+                icon={<Icon lucide={CalendarClock}/>}
+                title="Add Task"
+                subtitle="Create a new task for this job"
                 onClose={onClose}
-                maxWidth="sm"
-                fullWidth
-                slotProps={{
-                    paper: {
-                        elevation: 24,
-                        sx: {
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            minWidth: 480,
-                            maxWidth: 560,
-                        },
-                    },
-                }}
-            >
-                {/* Header */}
-                <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                        color: 'white',
-                        px: 3,
-                        py: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    })}
-                >
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 1.5,
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <EventIcon sx={{ fontSize: 24 }} />
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight={600}>
-                            Add Task
-                        </Typography>
-                        <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                            Create a new task for this job
-                        </Typography>
-                    </Box>
-                    <IconButton
-                        onClick={onClose}
-                        disabled={isSubmitting}
-                        sx={{
-                            color: 'white',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
+                closeDisabled={isSubmitting}
+            />
 
-                {/* Content */}
-                <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
-                    {isLoading ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
-                            <CircularProgress size={32} />
-                        </Box>
-                    ) : (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            {/* Job/Client Information */}
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                                <TextField
-                                    fullWidth
-                                    label="Job Number"
-                                    value={job.jobNo}
-                                    disabled
-                                    size="small"
-                                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
-                                />
-                                <TextField
-                                    fullWidth
-                                    label="Client"
-                                    value={job.client}
-                                    disabled
-                                    size="small"
-                                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
-                                />
-                            </Box>
+            <Box p="lg" bg={dialogContentBg}>
+                {isLoading ? (
+                    <Group justify="center" py="xl">
+                        <Loader size="md" aria-label="Loading task types"/>
+                    </Group>
+                ) : (
+                    <Stack gap="lg">
+                        <Group gap="md" grow align="flex-start">
+                            <TextInput label="Job Number" value={job.jobNo} disabled/>
+                            <TextInput label="Client" value={job.client} disabled/>
+                        </Group>
 
-                            {/* Task Type and Date */}
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                                <FormControl fullWidth size="small" required>
-                                    <InputLabel>Task Type</InputLabel>
-                                    <Select
-                                        value={selectedEventTypeId}
-                                        onChange={handleEventTypeChange}
-                                        label="Task Type"
-                                        disabled={isSubmitting}
-                                        sx={{ bgcolor: 'white' }}
-                                    >
-                                        {eventTypes.map((eventType) => (
-                                            <MenuItem key={eventType.id} value={eventType.id}>
-                                                {eventType.text}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-
-                                <DateTimePicker
-                                    label="Due Date & Time"
-                                    value={eventDate}
-                                    onChange={handleDateChange}
-                                    disabled={isSubmitting}
-                                    slotProps={{
-                                        textField: {
-                                            size: 'small',
-                                            fullWidth: true,
-                                            sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
-                                        },
-                                    }}
-                                />
-                            </Box>
-
-                            {/* Notes */}
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={3}
-                                label="Notes"
-                                placeholder="Add notes for this task..."
-                                value={notes}
-                                onChange={handleNotesChange}
+                        <Group gap="md" grow align="flex-start">
+                            <Select
+                                label="Task Type"
+                                required
+                                value={selectedEventTypeId === '' ? null : String(selectedEventTypeId)}
+                                onChange={(value) => setSelectedEventTypeId(value ? Number(value) : '')}
+                                data={eventTypeOptions}
                                 disabled={isSubmitting}
-                                slotProps={{htmlInput: {maxLength: 150}}}
-                                helperText={`${notes.length}/150 characters`}
-                                sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
                             />
-                        </Box>
-                    )}
-                </DialogContent>
+                            {/* 24-hour, tenant-ordered date — `TimePicker` rather than a native
+                                time input so the segments never fall back to the browser's AM/PM. */}
+                            <DateTimePicker
+                                label="Due Date & Time"
+                                value={eventDate.format(PICKER_VALUE_FORMAT)}
+                                onChange={handleDateChange}
+                                valueFormat={`${getInputDateFormat()} HH:mm`}
+                                timePickerProps={{format: '24h', withDropdown: true}}
+                                disabled={isSubmitting}
+                            />
+                        </Group>
 
-                {/* Actions */}
-                <DialogActions
-                    sx={(theme) => ({
-                        px: 3,
-                        py: 2,
-                        bgcolor: 'white',
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                        gap: 1,
-                    })}
-                >
-                    <Button
-                        onClick={onClose}
-                        variant="outlined"
-                        disabled={isSubmitting}
-                        sx={{ minWidth: 100 }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        variant="contained"
-                        color="primary"
-                        disabled={!isFormValid || isSubmitting || isLoading}
-                        startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : null}
-                        sx={{ minWidth: 100 }}
-                    >
-                        {isSubmitting ? 'Saving...' : 'Save'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </LocalizationProvider>
+                        <Textarea
+                            label="Notes"
+                            placeholder="Add notes for this task..."
+                            value={notes}
+                            onChange={(event) => setNotes(event.currentTarget.value)}
+                            disabled={isSubmitting}
+                            maxLength={150}
+                            rows={3}
+                            description={`${notes.length}/150 characters`}
+                            inputWrapperOrder={['label', 'input', 'description', 'error']}
+                        />
+                    </Stack>
+                )}
+            </Box>
+
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSubmit}
+                confirmLabel={isSubmitting ? 'Saving...' : 'Save'}
+                confirmDisabled={!isFormValid || isLoading}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

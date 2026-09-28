@@ -5,9 +5,10 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {CreateNoteRequest, JobNote, JobNoteDto, NoteHistoryDto, NoteHistoryEntry, NoteType, UpdateNoteRequest} from '../interfaces';
 import {parseDateFromApi} from '../utils/dateUtils';
+import {RequestOptions} from "./requestOptions";
 
 /**
  * Transform a JobNoteDto from API to JobNote with Dayjs dates
@@ -78,10 +79,13 @@ export async function updateBulkJobNote(note: UpdateNoteRequest): Promise<void> 
 }
 
 /**
- * Delete a note
+ * Delete a note. jobId disambiguates active vs archived notes server-side.
  */
-export async function deleteNote(noteId: number): Promise<void> {
-    await apiClient.delete(`note/DeleteNote?noteId=${noteId}`);
+export async function deleteNote(noteId: number, jobId?: number): Promise<void> {
+    const url = jobId != null
+        ? `note/DeleteNote?noteId=${noteId}&jobId=${jobId}`
+        : `note/DeleteNote?noteId=${noteId}`;
+    await apiClient.delete(url);
 }
 
 /**

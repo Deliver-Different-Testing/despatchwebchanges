@@ -8,32 +8,25 @@
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {formatCurrencyOrDash as formatCurrency} from '../../../utils/currencyUtils';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableFooter from '@mui/material/TableFooter';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
-import LockIcon from '@mui/icons-material/Lock';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SaveIcon from '@mui/icons-material/Save';
+import {
+    ActionIcon,
+    Alert,
+    Badge,
+    Box,
+    Button,
+    Checkbox,
+    Divider,
+    Group,
+    Loader,
+    Paper,
+    Stack,
+    Table,
+    Tabs,
+    Text,
+    TextInput,
+    NumberInput,
+} from '@mantine/core';
+import {Lock, ReceiptText, RefreshCw, Save, Trash2} from 'lucide-react';
 import {
     AccessorialChargeDto,
     AccessorialChargesDialogProps,
@@ -43,6 +36,12 @@ import {
     PortionJobInfo,
 } from './types';
 import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
+import {DialogShell, DialogHeader, dialogContentBg, dialogSize, headerOnColor, headerOverlayColor} from '../shared/mantine';
+import {Icon} from '../../common/icon/Icon';
+import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {analyzePricing} from '../../../services/aiAssistantApi';
+import type {PricingAnalysisResponse} from '../../../interfaces/ai';
 
 interface AppliedRowState {
     inputValue: string;
@@ -149,9 +148,7 @@ function renderLimits(charge: {
     return (
         <>
             {lines.map((line, i) => (
-                <Typography key={i} variant="caption" color="text.secondary" display="block">
-                    {line}
-                </Typography>
+                <Text key={i} size="xs" c="dimmed" display="block">{line}</Text>
             ))}
         </>
     );
@@ -175,6 +172,10 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     const [isLoadingApplied, setIsLoadingApplied] = useState(false);
     const [isAddingCharges, setIsAddingCharges] = useState(false);
     const [activePortionJobId, setActivePortionJobId] = useState<number | null>(null);
+
+    // Auto-Mate pricing analysis (anomaly + suggested charges).
+    const {runDraft: runSuggest, isDrafting: isSuggesting} = useAiDraft();
+    const [pricingResult, setPricingResult] = useState<PricingAnalysisResponse | null>(null);
 
     // ── Refs (instance fields) ────────────────────────────────────────────────
 
@@ -434,6 +435,10 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
         setIsLoadingApplied(false);
         setIsAddingCharges(false);
         setActivePortionJobId(portionJobId);
+        // Sync the ref immediately - getActiveJobId/getActiveGroupId read this ref, and it
+        // otherwise only updates on the next render (too late for a load call issued right
+        // after resetAndLoad, e.g. on mount or refresh, which would resolve the wrong job).
+        activePortionJobIdRef.current = portionJobId;
     }, []);
 
     // We need a ref to loadAll so the effect can call it after state resets
@@ -477,7 +482,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     useEffect(() => {
         if (pendingLoadRef.current) {
             pendingLoadRef.current = false;
-            loadAllRef.current();
+            void loadAllRef.current();
         }
     }, [activePortionJobId]);
 
@@ -550,9 +555,40 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     }, []);
 
     const handleRefresh = useCallback((): void => {
+        // Reload the same portion (or main job) that's already active, so
+        // activePortionJobId doesn't change - the pendingLoadRef/effect combo
+        // only fires on an actual state change, so we call the loader directly
+        // instead of relying on that side channel.
         resetAndLoad(activePortionJobIdRef.current);
-        pendingLoadRef.current = true;
+        void loadAllRef.current();
     }, [resetAndLoad]);
+
+    // Ask Auto-Mate for a re-rate anomaly + suggested charges, then pre-select the
+    // suggested charges in the Add table so the operator reviews and confirms via
+    // the existing "Add Selected Charges" flow (nothing is applied automatically).
+    const handleSuggestCharges = useCallback(async (): Promise<void> => {
+        const activeJobId = getActiveJobId();
+        const activeGroupId = getActiveGroupId();
+        if (!activeJobId || !activeGroupId) return;
+
+        const result = await runSuggest((signal) => analyzePricing(activeJobId, activeGroupId, {signal}));
+        if (!result) return;
+        setPricingResult(result);
+
+        const available = availableChargesRef.current;
+        const applyIds = new Set<number>();
+        const inputs: Record<number, string> = {};
+        for (const s of result.suggestions) {
+            const charge = available.find(c => c.accessorialChargeId === s.accessorialChargeId && !c.alreadyApplied);
+            if (!charge) continue;
+            applyIds.add(s.accessorialChargeId);
+            if (s.suggestedInputValue != null) inputs[s.accessorialChargeId] = String(s.suggestedInputValue);
+        }
+        if (applyIds.size > 0) {
+            setSelectedIds(prev => new Set([...prev, ...applyIds]));
+            setAvailableInputMap(prev => ({...prev, ...inputs}));
+        }
+    }, [getActiveJobId, getActiveGroupId, runSuggest]);
 
     // ── Applied row handlers ──────────────────────────────────────────────────
 
@@ -619,6 +655,8 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     }, [autoSavePercentageCharges]);
 
     const handleDeleteRow = useCallback(async (charge: JobAccessorialChargeDto): Promise<void> => {
+        if (charge.alwaysApply) return; // locked - always included on this rate
+
         setAppliedRowState(prev => ({
             ...prev,
             [charge.jobAccessorialChargeId]: { ...prev[charge.jobAccessorialChargeId], isDeleting: true },
@@ -757,220 +795,206 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <Dialog
-            open={open}
+        <DialogShell
+            opened={open}
             onClose={onClose}
-            maxWidth="lg"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: { borderRadius: 2, overflow: 'hidden', minWidth: 700 },
-                },
-            }}
+            size={dialogSize.lg}
+            label="Accessorial Charges"
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <ReceiptIcon sx={{ fontSize: 24 }} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
-                        Accessorial Charges
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                        Manage additional charges for this job
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={handleRefresh}
-                    disabled={isLoading || isAddingCharges}
-                    sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
-                    title="Refresh"
-                >
-                    <RefreshIcon />
-                </IconButton>
-                <IconButton
-                    onClick={onClose}
-                    sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
-                    title="Close"
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-
+            {/* Header — the refresh action sits alongside the standard close */}
+            <DialogHeader
+                icon={<Icon lucide={ReceiptText}/>}
+                title="Accessorial Charges"
+                subtitle="Manage additional charges for this job"
+                onClose={onClose}
+                actions={
+                    <ActionIcon
+                        variant="subtle"
+                        onClick={handleRefresh}
+                        disabled={isLoading || isAddingCharges}
+                        aria-label="Refresh"
+                        style={{color: headerOnColor()}}
+                    >
+                        <Icon lucide={RefreshCw}/>
+                    </ActionIcon>
+                }
+            />
             {/* Portion job tabs */}
             {portionJobs.length > 0 && (
-                <Box sx={{ display: 'flex', borderBottom: '2px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-                    {portionJobs.map((portion: PortionJobInfo) => (
-                        <Button
-                            key={portion.jobId}
-                            onClick={() => handlePortionTabClick(portion.jobId)}
-                            variant={activePortionJobId === portion.jobId ? 'contained' : 'outlined'}
-                            disabled={isLoadingAvailable || isLoadingApplied}
-                            sx={{
-                                borderRadius: 0,
-                                flex: 1,
-                                fontWeight: 600,
-                                borderTop: 'none',
-                                borderLeft: 'none',
-                                borderRight: 'none',
-                                borderBottom: 'none',
-                            }}
-                        >
-                            {portion.label}
-                        </Button>
-                    ))}
-                </Box>
+                <Tabs
+                    value={activePortionJobId === null ? null : String(activePortionJobId)}
+                    onChange={(value) => value && handlePortionTabClick(Number(value))}
+                    variant="default"
+                >
+                    <Tabs.List grow>
+                        {portionJobs.map((portion: PortionJobInfo) => (
+                            <Tabs.Tab
+                                key={portion.jobId}
+                                value={String(portion.jobId)}
+                                disabled={isLoadingAvailable || isLoadingApplied}
+                                fw={600}
+                            >
+                                {portion.label}
+                            </Tabs.Tab>
+                        ))}
+                    </Tabs.List>
+                </Tabs>
             )}
-
-            <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
                 {isLoading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                        <CircularProgress size={40} />
-                    </Box>
+                    <Group justify="center" py={64}>
+                        <Loader size={40} role="progressbar" aria-label="Loading charges"/>
+                    </Group>
                 ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <Stack gap="lg">
+                        {/* Auto-Mate pricing assist — hidden unless AI is enabled */}
+                        <Box>
+                            <Group gap="xs" wrap="nowrap" mb={pricingResult ? 'xs' : 0}>
+                                <AiDraftButton onClick={handleSuggestCharges} isDrafting={isSuggesting} label="Suggest charges" />
+                                <Text size="xs" c="dimmed">
+                                    Auto-Mate reviews this job&apos;s notes &amp; flags and checks the price.
+                                </Text>
+                            </Group>
+                            {pricingResult?.anomaly?.isOutlier && (
+                                <Alert color="orange" mb="xs">
+                                    Charged {formatCurrency(pricingResult.anomaly.storedCharge)} but a re-rate gives{' '}
+                                    {formatCurrency(pricingResult.anomaly.recomputedRate)} ({pricingResult.anomaly.deltaPercent > 0 ? '+' : ''}
+                                    {pricingResult.anomaly.deltaPercent}%) — review before invoicing.
+                                </Alert>
+                            )}
+                            {pricingResult && pricingResult.suggestions.length > 0 && (
+                                <Alert color="reflex">
+                                    Suggested {pricingResult.suggestions.length} charge(s), pre-selected below for review:{' '}
+                                    {pricingResult.suggestions.map(s => s.name).join(', ')}
+                                </Alert>
+                            )}
+                            {pricingResult && pricingResult.suggestions.length === 0 && !pricingResult.anomaly?.isOutlier && (
+                                <Alert color="green">No additional charges or pricing issues detected.</Alert>
+                            )}
+                        </Box>
+
                         {/* Section 1 — Applied Charges */}
                         <Box>
-                            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                                Applied Charges
-                            </Typography>
-                            <TableContainer component={Paper} elevation={1}>
-                                <Table size="small">
-                                    <TableHead>
-                                        <TableRow sx={{ bgcolor: 'grey.100' }}>
-                                            <TableCell><Typography fontWeight={600}>Service</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Stage</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Input / Units</Typography></TableCell>
-                                            <TableCell align="right"><Typography fontWeight={600}>Amount</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Notes</Typography></TableCell>
-                                            <TableCell align="center"><Typography fontWeight={600}>Actions</Typography></TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
+                            <Text fw={600} mb="xs">Applied Charges</Text>
+                            <Paper withBorder radius="md" style={{overflow: 'hidden'}}>
+                                <Table>
+                                    <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-1)'}}>
+                                        <Table.Tr>
+                                            <Table.Th>Service</Table.Th>
+                                            <Table.Th>Stage</Table.Th>
+                                            <Table.Th>Input / Units</Table.Th>
+                                            <Table.Th ta="right">Amount</Table.Th>
+                                            <Table.Th>Notes</Table.Th>
+                                            <Table.Th ta="center">Actions</Table.Th>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
                                         {appliedCharges.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={6}>
+                                            <Table.Tr>
+                                                <Table.Td colSpan={6}>
                                                     <Box
-                                                        sx={{
-                                                            bgcolor: 'grey.100',
-                                                            borderRadius: 1,
-                                                            p: 2,
-                                                            textAlign: 'center',
+                                                        p="md"
+                                                        ta="center"
+                                                        style={{
+                                                            backgroundColor: 'var(--mantine-color-gray-1)',
+                                                            borderRadius: 'var(--mantine-radius-sm)',
                                                         }}
                                                     >
-                                                        <Typography
-                                                            variant="body2"
-                                                            color="text.secondary"
-                                                            fontStyle="italic"
-                                                        >
+                                                        <Text size="sm" c="dimmed" fs="italic">
                                                             No charges have been applied to this job.
-                                                        </Typography>
+                                                        </Text>
                                                     </Box>
-                                                </TableCell>
-                                            </TableRow>
+                                                </Table.Td>
+                                            </Table.Tr>
                                         ) : (
                                             [...appliedCharges].sort((a, b) => a.name.localeCompare(b.name)).map(charge => {
                                                 const row = appliedRowState[charge.jobAccessorialChargeId];
                                                 if (!row) return null;
                                                 const needsInput = charge.chargeType !== 'flat';
                                                 return (
-                                                    <TableRow
+                                                    <Table.Tr
                                                         key={charge.jobAccessorialChargeId}
-                                                        sx={{
-                                                            bgcolor: row.isDirty
-                                                                ? 'rgba(255, 244, 229, 0.8)'
-                                                                : 'inherit',
-                                                        }}
+                                                        style={row.isDirty
+                                                            ? {backgroundColor: 'var(--mantine-color-orange-0)'}
+                                                            : undefined}
                                                     >
-                                                        <TableCell>
-                                                            <Typography variant="body2">{charge.name}</Typography>
-                                                            <Typography variant="caption" color="text.secondary">
+                                                        <Table.Td>
+                                                            <Group gap={4} wrap="nowrap">
+                                                                <Text size="sm">{charge.name}</Text>
+                                                                {charge.alwaysApply && (
+                                                                    <Badge
+                                                                        size="xs"
+                                                                        color="gray"
+                                                                        title="Always included on this rate - cannot be removed"
+                                                                    >
+                                                                        ALWAYS
+                                                                    </Badge>
+                                                                )}
+                                                            </Group>
+                                                            <Text size="xs" c="dimmed">
                                                                 {formatChargeType(charge.chargeType)}
-                                                            </Typography>
-                                                        </TableCell>
-                                                        <TableCell>
+                                                            </Text>
+                                                        </Table.Td>
+                                                        <Table.Td>
                                                             {charge.addedAtStage ? (
-                                                                <Chip
-                                                                    label={charge.addedAtStage.replace('_', ' ').toUpperCase()}
-                                                                    size="small"
+                                                                <Badge
+                                                                    size="sm"
                                                                     color={stageColor(charge.addedAtStage)}
-                                                                    sx={{ fontSize: '0.625rem', fontWeight: 600, letterSpacing: '0.08em' }}
-                                                                />
-                                                            ) : '\u2014'}
-                                                        </TableCell>
-                                                        <TableCell>
+                                                                    style={{letterSpacing: '0.08em'}}
+                                                                >
+                                                                    {charge.addedAtStage.replace('_', ' ').toUpperCase()}
+                                                                </Badge>
+                                                            ) : '—'}
+                                                        </Table.Td>
+                                                        <Table.Td>
                                                             {needsInput ? (
                                                                 <Box>
-                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                        <TextField
-                                                                            size="small"
-                                                                            type="number"
+                                                                    <Group gap="xs" wrap="nowrap">
+                                                                        <NumberInput
+                                                                            size="xs"
+                                                                            aria-label={`${charge.name} input value`}
                                                                             value={row.inputValue}
-                                                                            onChange={e =>
+                                                                            onChange={value =>
                                                                                 setRowField(
                                                                                     charge.jobAccessorialChargeId,
                                                                                     'inputValue',
-                                                                                    e.target.value
+                                                                                    String(value ?? '')
                                                                                 )
                                                                             }
                                                                             onBlur={() => handleAppliedInputBlur(charge.jobAccessorialChargeId, charge.minimumQuantity)}
-                                                                            sx={{ width: 90 }}
+                                                                            w={90}
                                                                             disabled={row.isSaving || row.isDeleting || isAutoPopulated(charge)}
-                                                                            slotProps={charge.minimumQuantity != null ? {htmlInput: {min: charge.minimumQuantity}} : undefined}
+                                                                            min={charge.minimumQuantity ?? undefined}
                                                                         />
                                                                         {charge.unitTypeName && (
-                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                            <Group gap={4} wrap="nowrap">
                                                                                 {isAutoPopulated(charge) && (
-                                                                                    <LockIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
+                                                                                    <Box c="dimmed" style={{display: 'flex'}}>
+                                                                                        <Icon lucide={Lock} size={12}/>
+                                                                                    </Box>
                                                                                 )}
-                                                                                <Typography variant="body2" color="text.secondary">
-                                                                                    {charge.unitTypeName}
-                                                                                </Typography>
-                                                                            </Box>
+                                                                                <Text size="sm" c="dimmed">{charge.unitTypeName}</Text>
+                                                                            </Group>
                                                                         )}
                                                                         {(charge.chargeType === 'hourly' || charge.chargeType === 'per_unit') && charge.ratePerUnit != null && (
-                                                                            <Typography variant="body2" color="text.secondary">
-                                                                                {'\u00D7'} {formatCurrency(charge.ratePerUnit)}
-                                                                            </Typography>
+                                                                            <Text size="sm" c="dimmed">
+                                                                                {'×'} {formatCurrency(charge.ratePerUnit)}
+                                                                            </Text>
                                                                         )}
                                                                         {charge.chargeType === 'percentage' && charge.percentageRate != null && (
-                                                                            <Typography variant="body2" color="text.secondary">
-                                                                                {'\u00D7'} {charge.percentageRate}%
-                                                                            </Typography>
+                                                                            <Text size="sm" c="dimmed">
+                                                                                {'×'} {charge.percentageRate}%
+                                                                            </Text>
                                                                         )}
-                                                                    </Box>
+                                                                    </Group>
                                                                     {renderLimits(charge)}
                                                                 </Box>
                                                             ) : (
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    Flat fee
-                                                                </Typography>
+                                                                <Text size="sm" c="dimmed">Flat fee</Text>
                                                             )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                        </Table.Td>
+                                                        <Table.Td>
+                                                            <Text size="sm" mb={4}>
                                                                 {formatCurrency(
                                                                     row.overrideAmount !== ''
                                                                         ? parseFloat(row.overrideAmount)
@@ -978,288 +1002,273 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                         ? recalculate(charge, row)
                                                                         : (charge.overrideAmount ?? charge.calculatedAmount ?? undefined)
                                                                 )}
-                                                            </Typography>
-                                                            <TextField
-                                                                size="small"
+                                                            </Text>
+                                                            <NumberInput
+                                                                size="xs"
                                                                 label="Override"
-                                                                type="number"
                                                                 value={row.overrideAmount}
-                                                                onChange={e => setRowField(charge.jobAccessorialChargeId, 'overrideAmount', e.target.value)}
-                                                                sx={{ width: 110 }}
+                                                                onChange={value => setRowField(charge.jobAccessorialChargeId, 'overrideAmount', String(value ?? ''))}
+                                                                w={110}
                                                                 disabled={row.isSaving || row.isDeleting}
                                                                 placeholder="Optional"
                                                             />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <TextField
-                                                                size="small"
+                                                        </Table.Td>
+                                                        <Table.Td>
+                                                            <TextInput
+                                                                size="xs"
                                                                 placeholder="Notes"
+                                                                aria-label={`${charge.name} notes`}
                                                                 value={row.notes}
                                                                 onChange={e =>
                                                                     setRowField(
                                                                         charge.jobAccessorialChargeId,
                                                                         'notes',
-                                                                        e.target.value
+                                                                        e.currentTarget.value
                                                                     )
                                                                 }
-                                                                sx={{ minWidth: 140 }}
+                                                                miw={140}
                                                                 disabled={row.isSaving || row.isDeleting}
                                                             />
-                                                        </TableCell>
-                                                        <TableCell align="center">
-                                                            <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                                                        </Table.Td>
+                                                        <Table.Td>
+                                                            <Group gap={4} justify="center" wrap="nowrap">
                                                                 {row.isDirty && (
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        color="success"
+                                                                    <ActionIcon
+                                                                        size="sm"
+                                                                        variant="subtle"
+                                                                        color="green"
                                                                         onClick={() => handleSaveRow(charge)}
                                                                         disabled={row.isSaving || row.isDeleting}
-                                                                        title="Save"
+                                                                        loading={row.isSaving}
+                                                                        aria-label="Save"
                                                                     >
-                                                                        {row.isSaving ? (
-                                                                            <CircularProgress size={16} />
-                                                                        ) : (
-                                                                            <SaveIcon fontSize="small" />
-                                                                        )}
-                                                                    </IconButton>
+                                                                        <Icon lucide={Save} size={16}/>
+                                                                    </ActionIcon>
                                                                 )}
-                                                                <IconButton
-                                                                    size="small"
-                                                                    color="error"
+                                                                <ActionIcon
+                                                                    size="sm"
+                                                                    variant="subtle"
+                                                                    color="red"
                                                                     onClick={() => handleDeleteRow(charge)}
-                                                                    disabled={row.isSaving || row.isDeleting}
-                                                                    title="Remove"
+                                                                    disabled={row.isSaving || row.isDeleting || charge.alwaysApply}
+                                                                    loading={row.isDeleting}
+                                                                    aria-label={charge.alwaysApply ? 'Always included on this rate - cannot be removed' : 'Remove'}
                                                                 >
-                                                                    {row.isDeleting ? (
-                                                                        <CircularProgress size={16} />
-                                                                    ) : (
-                                                                        <DeleteIcon fontSize="small" />
-                                                                    )}
-                                                                </IconButton>
-                                                            </Box>
-                                                        </TableCell>
-                                                    </TableRow>
+                                                                    <Icon lucide={Trash2} size={16}/>
+                                                                </ActionIcon>
+                                                            </Group>
+                                                        </Table.Td>
+                                                    </Table.Tr>
                                                 );
                                             })
                                         )}
-                                    </TableBody>
+                                    </Table.Tbody>
                                     {appliedCharges.length > 0 && (
-                                        <TableFooter>
-                                            <TableRow sx={{ bgcolor: 'grey.50' }}>
-                                                <TableCell colSpan={4} />
-                                                <TableCell>
-                                                    <Typography variant="body2" color="text.secondary">Total</Typography>
-                                                    <Typography variant="body2" fontWeight={700}>
+                                        <Table.Tfoot style={{backgroundColor: 'var(--mantine-color-gray-0)'}}>
+                                            <Table.Tr>
+                                                <Table.Td colSpan={4} />
+                                                <Table.Td>
+                                                    <Text size="sm" c="dimmed">Total</Text>
+                                                    <Text size="sm" fw={700}>
                                                         {formatCurrency(
                                                             appliedCharges.reduce((sum, c) =>
                                                                 sum + (c.overrideAmount ?? c.calculatedAmount ?? 0), 0)
                                                         )}
-                                                    </Typography>
-                                                </TableCell>
-                                                <TableCell colSpan={2} />
-                                            </TableRow>
-                                        </TableFooter>
+                                                    </Text>
+                                                </Table.Td>
+                                                <Table.Td colSpan={2} />
+                                            </Table.Tr>
+                                        </Table.Tfoot>
                                     )}
                                 </Table>
-                            </TableContainer>
+                            </Paper>
                         </Box>
 
                         <Divider />
 
                         {/* Section 2 — Add Charges */}
                         <Box>
-                            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                                Add Charges
-                            </Typography>
-                            <TableContainer component={Paper} elevation={1}>
-                                <Table size="small">
-                                    <TableHead>
-                                        <TableRow sx={{ bgcolor: 'grey.100' }}>
-                                            <TableCell padding="checkbox" />
-                                            <TableCell><Typography fontWeight={600}>Service</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Description</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Calculation</Typography></TableCell>
-                                            <TableCell align="right"><Typography fontWeight={600}>Amount</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Notes</Typography></TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
+                            <Text fw={600} mb="xs">Add Charges</Text>
+                            <Paper withBorder radius="md" style={{overflow: 'hidden'}}>
+                                <Table highlightOnHover>
+                                    <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-1)'}}>
+                                        <Table.Tr>
+                                            <Table.Th w={48} />
+                                            <Table.Th>Service</Table.Th>
+                                            <Table.Th>Description</Table.Th>
+                                            <Table.Th>Calculation</Table.Th>
+                                            <Table.Th ta="right">Amount</Table.Th>
+                                            <Table.Th>Notes</Table.Th>
+                                        </Table.Tr>
+                                    </Table.Thead>
+                                    <Table.Tbody>
                                         {availableCharges.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={6}>
+                                            <Table.Tr>
+                                                <Table.Td colSpan={6}>
                                                     <Box
-                                                        sx={{
-                                                            bgcolor: 'grey.100',
-                                                            borderRadius: 1,
-                                                            p: 2,
-                                                            textAlign: 'center',
+                                                        p="md"
+                                                        ta="center"
+                                                        style={{
+                                                            backgroundColor: 'var(--mantine-color-gray-1)',
+                                                            borderRadius: 'var(--mantine-radius-sm)',
                                                         }}
                                                     >
-                                                        <Typography
-                                                            variant="body2"
-                                                            color="text.secondary"
-                                                            fontStyle="italic"
-                                                        >
+                                                        <Text size="sm" c="dimmed" fs="italic">
                                                             No charges available for this group.
-                                                        </Typography>
+                                                        </Text>
                                                     </Box>
-                                                </TableCell>
-                                            </TableRow>
-
+                                                </Table.Td>
+                                            </Table.Tr>
                                         ) : (
                                             [...availableCharges].filter(c => !c.alreadyApplied).sort((a, b) => a.name.localeCompare(b.name)).map(charge => {
                                                 const isSelected = selectedIds.has(charge.accessorialChargeId);
                                                 return (
-                                                    <TableRow
+                                                    <Table.Tr
                                                         key={charge.accessorialChargeId}
-                                                        hover
                                                         onClick={() => handleToggleAvailable(charge.accessorialChargeId)}
-                                                        sx={{
+                                                        style={{
                                                             cursor: 'pointer',
-                                                            bgcolor: isSelected ? 'rgba(76, 175, 80, 0.08)' : 'inherit',
+                                                            backgroundColor: isSelected
+                                                                ? 'var(--mantine-color-green-0)'
+                                                                : undefined,
                                                         }}
                                                     >
-                                                        <TableCell padding="checkbox">
+                                                        <Table.Td>
                                                             <Checkbox
                                                                 checked={isSelected}
                                                                 disabled={isAddingCharges}
+                                                                aria-label={`Select ${charge.name}`}
                                                                 onChange={() =>
                                                                     handleToggleAvailable(charge.accessorialChargeId)
                                                                 }
                                                                 onClick={e => e.stopPropagation()}
                                                             />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Typography variant="body2" fontWeight={isSelected ? 600 : 400}>
+                                                        </Table.Td>
+                                                        <Table.Td>
+                                                            <Text size="sm" fw={isSelected ? 600 : 400}>
                                                                 {charge.name}
-                                                            </Typography>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                {charge.description}
-                                                            </Typography>
-                                                        </TableCell>
-                                                        <TableCell onClick={e => e.stopPropagation()}>
+                                                            </Text>
+                                                        </Table.Td>
+                                                        <Table.Td>
+                                                            <Text size="sm" c="dimmed">{charge.description}</Text>
+                                                        </Table.Td>
+                                                        <Table.Td onClick={e => e.stopPropagation()}>
                                                             {charge.chargeType === 'flat' ? (
-                                                                <Typography variant="body2" color="text.secondary">
-                                                                    Flat fee
-                                                                </Typography>
+                                                                <Text size="sm" c="dimmed">Flat fee</Text>
                                                             ) : (
                                                                 <Box>
-                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                        <TextField
-                                                                            size="small"
-                                                                            type="number"
+                                                                    <Group gap="xs" wrap="nowrap">
+                                                                        <NumberInput
+                                                                            size="xs"
+                                                                            aria-label={`${charge.name} input value`}
                                                                             value={availableInputMap[charge.accessorialChargeId] ?? ''}
-                                                                            onChange={e => handleAvailableInputChange(charge.accessorialChargeId, e.target.value)}
+                                                                            onChange={value => handleAvailableInputChange(charge.accessorialChargeId, String(value ?? ''))}
                                                                             onBlur={() => handleAvailableInputBlur(charge.accessorialChargeId)}
-                                                                            sx={{ width: 90 }}
+                                                                            w={90}
                                                                             disabled={!isSelected || isAddingCharges || isAutoPopulated(charge)}
-                                                                            slotProps={charge.minimumQuantity != null ? {htmlInput: {min: charge.minimumQuantity}} : undefined}
-                                                                            error={isSelected && missingInputIds.has(charge.accessorialChargeId)}
-                                                                            helperText={isSelected && missingInputIds.has(charge.accessorialChargeId) ? 'Required' : undefined}
+                                                                            min={charge.minimumQuantity ?? undefined}
+                                                                            error={isSelected && missingInputIds.has(charge.accessorialChargeId) ? 'Required' : undefined}
                                                                         />
                                                                         {charge.unitTypeName && (
-                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                            <Group gap={4} wrap="nowrap">
                                                                                 {isAutoPopulated(charge) && (
-                                                                                    <LockIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
+                                                                                    <Box c="dimmed" style={{display: 'flex'}}>
+                                                                                        <Icon lucide={Lock} size={12}/>
+                                                                                    </Box>
                                                                                 )}
-                                                                                <Typography variant="body2" color="text.secondary">
-                                                                                    {charge.unitTypeName}
-                                                                                </Typography>
-                                                                            </Box>
+                                                                                <Text size="sm" c="dimmed">{charge.unitTypeName}</Text>
+                                                                            </Group>
                                                                         )}
                                                                         {(charge.chargeType === 'hourly' || charge.chargeType === 'per_unit') && charge.ratePerUnit != null && (
-                                                                            <Typography variant="body2" color="text.secondary">
-                                                                                {'\u00D7'} {formatCurrency(charge.ratePerUnit)}
-                                                                            </Typography>
+                                                                            <Text size="sm" c="dimmed">
+                                                                                {'×'} {formatCurrency(charge.ratePerUnit)}
+                                                                            </Text>
                                                                         )}
                                                                         {charge.chargeType === 'percentage' && charge.percentageRate != null && (
-                                                                            <Typography variant="body2" color="text.secondary">
-                                                                                {'\u00D7'} {charge.percentageRate}%
-                                                                            </Typography>
+                                                                            <Text size="sm" c="dimmed">
+                                                                                {'×'} {charge.percentageRate}%
+                                                                            </Text>
                                                                         )}
-                                                                    </Box>
+                                                                    </Group>
                                                                     {renderLimits(charge)}
                                                                     {(() => {
                                                                         const note = getPercentageCalculationNote(charge);
                                                                         return note ? (
-                                                                            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, fontStyle: 'italic' }}>
+                                                                            <Text size="xs" c="dimmed" display="block" mt={4} fs="italic">
                                                                                 {note}
-                                                                            </Typography>
+                                                                            </Text>
                                                                         ) : null;
                                                                     })()}
                                                                 </Box>
                                                             )}
-                                                        </TableCell>
-                                                        <TableCell align="right">
+                                                        </Table.Td>
+                                                        <Table.Td ta="right">
                                                             {(() => {
                                                                 const raw = availableInputMap[charge.accessorialChargeId];
                                                                 const inputVal = raw !== undefined && raw !== '' ? parseFloat(raw) : NaN;
                                                                 if (charge.chargeType === 'flat') return formatCurrency(charge.baseRate);
-                                                                if (isNaN(inputVal)) return '\u2014';
+                                                                if (isNaN(inputVal)) return '—';
                                                                 return formatCurrency(
                                                                     calculateAmount(charge, inputVal)
                                                                 );
                                                             })()}
-                                                        </TableCell>
-                                                        <TableCell onClick={e => e.stopPropagation()}>
-                                                            <TextField
-                                                                size="small"
+                                                        </Table.Td>
+                                                        <Table.Td onClick={e => e.stopPropagation()}>
+                                                            <TextInput
+                                                                size="xs"
                                                                 placeholder="Notes"
+                                                                aria-label={`${charge.name} notes`}
                                                                 value={availableNotesMap[charge.accessorialChargeId] ?? ''}
                                                                 onChange={e =>
                                                                     handleAvailableNoteChange(
                                                                         charge.accessorialChargeId,
-                                                                        e.target.value
+                                                                        e.currentTarget.value
                                                                     )
                                                                 }
-                                                                sx={{ minWidth: 120 }}
+                                                                miw={120}
                                                                 disabled={!isSelected || isAddingCharges}
                                                             />
-                                                        </TableCell>
-                                                    </TableRow>
+                                                        </Table.Td>
+                                                    </Table.Tr>
                                                 );
                                             })
                                         )}
-                                    </TableBody>
+                                    </Table.Tbody>
                                 </Table>
-                            </TableContainer>
+                            </Paper>
                         </Box>
-                    </Box>
+                    </Stack>
                 )}
-            </DialogContent>
-
+            </Box>
             {/* Actions */}
             {!isLoading && (
-                <DialogActions
-                    sx={(theme) => ({
-                        px: 3,
-                        py: 2,
-                        bgcolor: 'white',
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                        gap: 1,
-                    })}
+                <Group
+                    justify="flex-end"
+                    gap="sm"
+                    px="lg"
+                    py="md"
+                    style={{
+                        backgroundColor: 'var(--mantine-color-white)',
+                        borderTop: '1px solid var(--mantine-color-gray-3)',
+                    }}
                 >
-                    <Button onClick={onClose} variant="outlined">
+                    <Button onClick={onClose} variant="default">
                         Close
                     </Button>
                     {selectedIds.size > 0 && (
                         <Button
                             onClick={handleAddSelected}
-                            variant="contained"
-                            color="primary"
                             disabled={isAddingCharges}
-                            startIcon={isAddingCharges ? <CircularProgress size={16} color="inherit" /> : null}
+                            loading={isAddingCharges}
                         >
                             {isAddingCharges
                                 ? 'Adding...'
                                 : `Add Selected Charges${selectedTotal > 0 ? ` (${formatCurrency(selectedTotal)})` : ''}`}
                         </Button>
                     )}
-                </DialogActions>
+                </Group>
             )}
-        </Dialog>
+        </DialogShell>
     );
 };
 

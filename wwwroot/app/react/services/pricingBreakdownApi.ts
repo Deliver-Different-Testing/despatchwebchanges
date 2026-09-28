@@ -5,34 +5,15 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
+import {RequestOptions} from "./requestOptions";
+import {
+    CreatePriceBreakdownRequest,
+    DeletePriceBreakdownRequest,
+    PriceBreakdown,
+    SuggestedFuelCharge
+} from "../interfaces/priceBreakdown";
 
-export interface PriceBreakdown {
-    chargeId: number;
-    name: string;
-    amount: number;
-    jobId?: number;
-    prebookJobId?: number;
-    costAmount?: number;
-    childJobId?: number;
-    isArchived?: boolean;
-}
-
-export interface CreatePriceBreakdownRequest {
-    name: string;
-    amount: number;
-    costAmount?: number;
-    jobId?: number;
-    prebookJobId?: number;
-    childJobId?: number;
-    isArchived?: boolean;
-}
-
-export interface DeletePriceBreakdownRequest {
-    chargeId: number;
-    jobId: number;
-    isArchived?: boolean;
-}
 
 /**
  * Get price breakdowns for a job
@@ -72,11 +53,30 @@ export async function deletePriceBreakdown(request: DeletePriceBreakdownRequest)
     await apiClient.post('job/DeletePriceComponent', request);
 }
 
+/**
+ * Get a suggested fuel surcharge (revenue + driver cost) for a manually-added charge amount,
+ * using the job's actual fuel rate and vehicle size driver fuel percentage.
+ */
+export async function getSuggestedFuelCharge(
+    jobId: number,
+    chargeAmount: number,
+    isPrebook: boolean,
+    isArchived?: boolean
+): Promise<SuggestedFuelCharge> {
+    return apiClient.get<SuggestedFuelCharge>('job/GetSuggestedFuelCharge', {
+        jobId,
+        chargeAmount,
+        isPrebook,
+        isArchived,
+    });
+}
+
 export const pricingBreakdownApi = {
     getPriceBreakdowns,
     addPriceBreakdown,
     updatePriceBreakdown,
     deletePriceBreakdown,
+    getSuggestedFuelCharge,
 };
 
 export default pricingBreakdownApi;

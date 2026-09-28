@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
 using DespatchWeb.Models;
 
@@ -7,7 +8,7 @@ namespace DespatchWeb.Helpers;
 
 public static partial class JobMappings
 {
-    public static readonly Expression<Func<TucJobBooking, JobViewModel>> JobRecurringMapping = j =>
+    public static Expression<Func<TucJobBooking, JobViewModel>> JobRecurringMapping(bool isUsCustomer) => j =>
         new JobRecurringViewModel
         {
             AngularId = Guid.NewGuid(),
@@ -85,6 +86,7 @@ public static partial class JobMappings
 
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId,
+            SavedFlightNumber = j.SavedFlightNumber,
 
             AssignedFlight = null,
 
@@ -117,7 +119,15 @@ public static partial class JobMappings
             Weight = j.UcbkWeight,
             Speed = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
             SpeedName = j.UcbkSpeedNavigation != null ? j.UcbkSpeedNavigation.UcjtName : null,
-            CalculateDimsOncePerJob = j.DimensionsType == 1,
+
+            // Flight card — same speed-grouping rule live jobs use (JobMappings.Core.cs).
+            IsFlightJob = j.UcbkSpeedNavigation != null
+                          && j.UcbkSpeedNavigation.GroupingId ==
+                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+            IsAgentJob = j.UcbkSpeedNavigation != null
+                         && j.UcbkSpeedNavigation.GroupingId !=
+                         (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
+            CalculateDimsOncePerJob = j.DimensionsType == 2,
             ToAddress = j.UcbkToAddr,
             JobType = j.UcbkType,
             JobTypeDescription = GetJobTypeDescription(j.UcbkType ?? 0),
@@ -171,7 +181,8 @@ public static partial class JobMappings
                             ItemName = p.Notes,
                             Height = p.Height,
                             Depth = p.Depth,
-                            Length = p.Length
+                            Length = p.Length,
+                            Cubic = p.Cubic
                         })
                         .ToList()
                     : j.BookingParent.TucJobBookingItemBookings.Select(p => new ParcelDimensions
@@ -180,7 +191,8 @@ public static partial class JobMappings
                             ItemName = p.Notes,
                             Height = p.Height,
                             Depth = p.Depth,
-                            Length = p.Length
+                            Length = p.Length,
+                            Cubic = p.Cubic
                         })
                         .ToList(),
 
@@ -209,6 +221,11 @@ public static partial class JobMappings
             DaysOfWeek = j.UcbkDaysInt,
             Frequency = j.UcbkFrequency ?? 0,
             HolidayDeliveryOption = j.HolidayDeliveryOption,
+            // Create-ahead offset (days). Pass-through of
+            // tucJobBooking.RecurringInitialDays so the "Create bookings X
+            // days ahead" input in RecurringJobFields pre-populates with
+            // the current value on load.
+            RecurringInitialDays = j.RecurringInitialDays,
             // Recurring Route assignment. Drives the Route dropdown in
             // the React detail panel's JobDetailHeader so the current
             // selection pre-populates rather than reading "No route".
@@ -269,6 +286,11 @@ public static partial class JobMappings
             },
             CustomJobName = j.CustomJobName,
             RouteId = j.RouteId,
-            RouteName = j.Route != null ? j.Route.Name : null
+            RouteName = j.Route != null ? j.Route.Name : null,
+            RecurringMode = (RecurringMode)j.RecurringMode,
+            RawBaseAmount = j.RawBaseAmount,
+            FuelSurchargeAmount = j.FuelSurchargeAmount,
+            UcbkAmount = j.UcbkAmount,
+            IsChild = j.BookingParentId.HasValue && j.BookingParentId.Value != j.UcbkId
         };
 }

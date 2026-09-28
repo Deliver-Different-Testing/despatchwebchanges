@@ -102,6 +102,33 @@ describe('AutoCompleteDialogService', () => {
             });
         });
 
+        /**
+         * The island's stylesheet is only fetched if the loader lists it, and a missing
+         * one fails silently — the dialog just renders unstyled. This island emits the
+         * largest CSS module of any dialog, so the pairing is pinned here.
+         */
+        it('loads the island stylesheet alongside the script when the manifest has one', async () => {
+            mockHttp.get.mockResolvedValue({
+                data: {
+                    'vendor-react.js': 'vendor-react.v1.js',
+                    'autoCompleteDialogReact.js': 'autoCompleteDialogReact.ac2.js',
+                    'autoCompleteDialogReact.css': 'autoCompleteDialogReact.ac3.css',
+                },
+            });
+
+            await service.showAutocompleteDialog(
+                mockEvent, '/api/search', 'Search...', 'name', 'Find Item', undefined
+            ).catch(() => {});
+
+            expect(mockOcLazyLoad.load).toHaveBeenCalledWith({
+                name: 'uDispatch.autoCompleteDialogReact',
+                files: [
+                    'dist/autoCompleteDialogReact.ac2.js',
+                    'dist/autoCompleteDialogReact.ac3.css',
+                ],
+            });
+        });
+
         it('should skip vendor-react loading if window.React already exists', async () => {
             (window as any).React = {};
 
@@ -113,6 +140,33 @@ describe('AutoCompleteDialogService', () => {
             expect(mockOcLazyLoad.load).toHaveBeenCalledWith({
                 name: 'uDispatch.autoCompleteDialogReact',
                 files: ['dist/autoCompleteDialogReact.ac2.js'],
+            });
+        });
+
+        /**
+         * The island's stylesheet is only fetched if the loader lists it, and a missing
+         * one fails silently — the dialog just renders unstyled. This island emits the
+         * largest CSS module of any dialog, so the pairing is pinned here.
+         */
+        it('loads the island stylesheet alongside the script when the manifest has one', async () => {
+            mockHttp.get.mockResolvedValue({
+                data: {
+                    'vendor-react.js': 'vendor-react.v1.js',
+                    'autoCompleteDialogReact.js': 'autoCompleteDialogReact.ac2.js',
+                    'autoCompleteDialogReact.css': 'autoCompleteDialogReact.ac3.css',
+                },
+            });
+
+            await service.showAutocompleteDialog(
+                mockEvent, '/api/search', 'Search...', 'name', 'Find Item', undefined
+            ).catch(() => {});
+
+            expect(mockOcLazyLoad.load).toHaveBeenCalledWith({
+                name: 'uDispatch.autoCompleteDialogReact',
+                files: [
+                    'dist/autoCompleteDialogReact.ac2.js',
+                    'dist/autoCompleteDialogReact.ac3.css',
+                ],
             });
         });
 

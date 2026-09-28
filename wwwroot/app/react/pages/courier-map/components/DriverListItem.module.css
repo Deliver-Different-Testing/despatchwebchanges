@@ -1,0 +1,41 @@
+/*
+ * DriverListItem — the only rules here are ones props cannot express: a hover on
+ * the row that repaints a *descendant* (the locate arrow), plus that arrow's
+ * resting state, which has to live next to its hover rule. An inline resting
+ * value would outrank the class and make the hover unreachable.
+ *
+ * The row's status colour is dynamic, so it arrives as two custom properties set
+ * inline: --status-color (the keyline) and --status-tint (the hover wash).
+ */
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 12px;
+    margin-inline: var(--mantine-spacing-xs);
+    border-left: 3px solid var(--status-color);
+    border-radius: 0 10px 10px 0;
+    text-align: left;
+    transition: background-color 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.row:hover {
+    background-color: var(--status-tint);
+}
+
+.locateIcon {
+    margin-left: auto;
+    flex-shrink: 0;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 180ms cubic-bezier(0.2, 0, 0, 1),
+                transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.row:hover .locateIcon,
+.row:focus-visible .locateIcon {
+    opacity: 1;
+    transform: translateX(0);
+}

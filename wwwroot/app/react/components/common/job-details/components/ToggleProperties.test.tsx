@@ -1,19 +1,12 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * ToggleProperties Component Tests
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {ToggleProperties} from './ToggleProperties';
 import {createMockJob} from '../__testUtils__/mockJob';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 function createDefaultProps(overrides?: Record<string, any>) {
     return {
@@ -104,6 +97,31 @@ describe('ToggleProperties', () => {
         // Truck, Direct, Van, Reprice, Done, Void should all be disabled
         checkboxes.forEach(cb => {
             expect(cb).toBeDisabled();
+        });
+    });
+
+    it('disables Done only for an archived job that is already done', () => {
+        const cases = [
+            {overrides: {isArchived: true, done: true}, expectDisabled: true},
+            {overrides: {isArchived: true, done: false}, expectDisabled: false},
+            {overrides: {isArchived: false, done: true}, expectDisabled: false},
+        ];
+
+        cases.forEach(({overrides, expectDisabled}) => {
+            const {unmount} = renderWithTheme(
+                <ToggleProperties {...createDefaultProps({job: createMockJob(overrides)})} />
+            );
+
+            const done = screen.getByLabelText('Done');
+            if (expectDisabled) {
+                expect(done).toBeDisabled();
+            } else {
+                expect(done).not.toBeDisabled();
+            }
+            // Only completion is protected — the rest of an archived job's properties still edit
+            expect(screen.getByLabelText('Void')).not.toBeDisabled();
+
+            unmount();
         });
     });
 

@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import {rejectWithoutCsrf} from './requestGuards';
 
 // Mock data
 export const mockDispatchJobDetail = {
@@ -20,9 +21,8 @@ export const mockDispatchJobDetail = {
 export const eventHandlers = [
     // Add event to a job
     http.post('*/job/addEvent', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -39,9 +39,8 @@ export const eventHandlers = [
 
     // Log Exsalerate activity (query params, null body)
     http.post('*/job/ExsalerateActivity', ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const url = new URL(request.url);
         const eventName = url.searchParams.get('eventName');

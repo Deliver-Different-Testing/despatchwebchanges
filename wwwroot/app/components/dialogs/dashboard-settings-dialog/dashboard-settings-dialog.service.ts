@@ -4,7 +4,7 @@ import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
-import {isAiEnabled, isAiServerEnabled} from "../../../functions/aiSettings";
+import {getNationwideBetaEnabled} from "../../../react/pages/nationwide/lib/betaPreference";
 import angular from 'angular';
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
@@ -36,6 +36,18 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
 
             const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
 
+            // The island's stylesheet has to be listed alongside its script: an emitted
+            // CSS module is only fetched if it appears here, and a missing one fails
+            // silently — the dialog just renders unstyled. Mirrors routes.ts's
+            // `islandFiles`.
+            const islandFiles = (entry: string) => {
+                const files = [getAssetPath(`${entry}.js`)];
+                if (manifest[`${entry}.css`]) {
+                    files.push(getAssetPath(`${entry}.css`));
+                }
+                return files;
+            };
+
             // Load vendor-react first (if not already loaded)
             if (!(window as any).React) {
                 await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
@@ -44,7 +56,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             // Load the dashboard settings dialog React module
             await this.$ocLazyLoad.load({
                 name: 'uDispatch.dashboardSettingsDialogReact',
-                files: [getAssetPath('dashboardSettingsDialogReact.js')]
+                files: islandFiles('dashboardSettingsDialogReact')
             });
         } catch (error) {
             console.error('[DashboardSettingsDialogService] Failed to load React dialog:', error);
@@ -56,8 +68,8 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openSettingsDialog(_$event: MouseEvent, appPage: AppPage, currentLayoutName: string,
-                             boxes: Record<string, IBox>, selectedRefreshInterval?: ISuggestion,
+    async openSettingsDialog(_$event: MouseEvent, appPage: AppPage,
+                             selectedRefreshInterval?: ISuggestion,
                              selectedDriverLocationRefreshInterval?: ISuggestion): Promise<ISettingsDialogResult | undefined> {
         let title: string;
         switch (appPage) {
@@ -74,19 +86,13 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 title = "Dashboard Settings";
         }
 
-        const isValidPage = appPage === AppPage.Dispatch
-            || appPage === AppPage.Domestic
-            || appPage === AppPage.JobSearch;
-        const canShowDashboards = isValidPage && !isDefaultLayout(currentLayoutName);
-
-        console.log('DashboardSettingsDialog: Opening with layout', currentLayoutName, 'isDefault:', isDefaultLayout(currentLayoutName), 'canShowDashboards:', canShowDashboards);
-
+        // Panel visibility is not here: it lives in its own Customize Panels
+        // dialog, reached from the Layouts menu.
         const config: IDashboardSettingsConfig = {
             title,
             showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
             showDriverLocationRefresh: appPage === AppPage.Dispatch,
-            showDashboards: canShowDashboards,
-            showAiToggle: isAiServerEnabled()
+            showNationwideBetaToggle: appPage === AppPage.Domestic,
         };
 
         if (!selectedRefreshInterval) {
@@ -108,10 +114,10 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             // Open the React dialog
             const result = await window.ReactDashboardSettingsDialog.open(
                 config,
-                boxes,
                 selectedRefreshInterval,
                 selectedDriverLocationRefreshInterval,
-                isAiEnabled()
+                undefined, // selectedTaskRefreshInterval — V1 dispatch has no separate Tasks cadence
+                appPage === AppPage.Domestic ? getNationwideBetaEnabled() : undefined,
             );
 
             console.debug('DashboardSettingsDialogService: Dialog closed!');
@@ -124,6 +130,37 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             }
 
             console.error('DashboardSettingsDialogService: Error in openSettingsDialog', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Opens the dedicated Customize Panels dialog (panel visibility). Reachable
+     * from the Layouts menu. Ships in the same bundle as the settings dialog.
+     */
+    async openCustomizePanelsDialog(
+        currentLayoutName: string,
+        boxes: Record<string, IBox>,
+    ): Promise<Record<string, IBox> | undefined> {
+        await this.loadReactDashboardSettingsDialog();
+
+        if (!window.ReactCustomizePanelsDialog) {
+            throw new Error('React customize panels dialog not loaded');
+        }
+
+        try {
+            const result = await window.ReactCustomizePanelsDialog.open(
+                boxes,
+                currentLayoutName,
+                !isDefaultLayout(currentLayoutName),
+            );
+            return result ?? undefined;
+        } catch (error) {
+            if (!error) {
+                console.debug('User closed customize panels dialog');
+                return;
+            }
+            console.error('DashboardSettingsDialogService: Error in openCustomizePanelsDialog', error);
             throw error;
         }
     }

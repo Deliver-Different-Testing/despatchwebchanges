@@ -4,8 +4,9 @@
  * Axios-based API service for job-related operations.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
-import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest, CreateJobRequest, Suggestion} from '../interfaces';
+import {apiClient} from './apiClient';
+import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest, CreateJobRequest, QuickCreateJobResult, Suggestion} from '../interfaces';
+import {RequestOptions} from "./requestOptions";
 
 /**
  * Get related jobs for multi-select void operation
@@ -40,8 +41,8 @@ export async function voidBulkJob(request: VoidBulkJobRequest): Promise<void> {
 /**
  * Quick create a new job
  */
-export async function quickCreateJob(job: CreateJobRequest): Promise<number> {
-    return apiClient.post<number>('job/QuickCreateJob', job);
+export async function quickCreateJob(job: CreateJobRequest): Promise<QuickCreateJobResult> {
+    return apiClient.post<QuickCreateJobResult>('job/QuickCreateJob', job);
 }
 
 /**

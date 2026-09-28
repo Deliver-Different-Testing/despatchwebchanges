@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -43,6 +44,48 @@ public partial class JobRepository
         return jobDetails;
     }
 
+    /// <inheritdoc />
+    public async Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(DespatchContext context, int jobId)
+    {
+        var jobDetails = await context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(JobMappings.JobRatingUsMapping())
+            .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(jobDetails);
+
+        // Precompute the airport-match flags on the SAME connection. Without this, the
+        // downstream rating path (CallRatingProcedureAsync) re-reads the job row via the
+        // repository's own connection — which self-blocks against an open transaction that
+        // holds locks on the (still-uncommitted) row, e.g. during a split re-rate.
+        var isFromAirport = await context.DoesAddressMatchAirportAsync(jobId, true);
+        var isToAirport = await context.DoesAddressMatchAirportAsync(jobId, false);
+
+        return jobDetails with
+        {
+            PrecomputedIsFromAddressAirport = isFromAirport,
+            PrecomputedIsToAddressAirport = isToAirport
+        };
+    }
+
+    /// <inheritdoc />
+    public async Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(
+        DespatchContext context, int jobId, bool isArchived)
+    {
+        var jobDetails = isArchived
+            ? await context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobMappings.JobRatingNzArchiveMapping())
+                .FirstOrDefaultAsync()
+            : await context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(JobMappings.JobRatingNzMapping())
+                .FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(jobDetails);
+        return jobDetails;
+    }
+
     /// <summary>
     /// Retrieves prebook job details required for US tenant rating calculations.
     /// </summary>
@@ -77,6 +120,18 @@ public partial class JobRepository
     /// </summary>
     public async Task RateJobUsAsync(RateJobUsDto dto)
     {
+        var isRatedManually = dto.IsPrebook
+            ? await Context.TucJobBookings.Where(j => j.UcbkId == dto.JobId)
+                .Select(j => j.RatedManually).FirstOrDefaultAsync()
+            : await Context.TucJobs.Where(j => j.UcjbId == dto.JobId)
+                .Select(j => j.RatedManually).FirstOrDefaultAsync();
+
+        if (isRatedManually)
+        {
+            Log.Information("Job {Job} is manually rated. Skipping automatic rate update", dto.JobId);
+            return;
+        }
+
         var (rate, description) = await CallRatingProcedureAsync(dto);
 
         if (dto.PreviousRate == rate)
@@ -108,19 +163,69 @@ public partial class JobRepository
                 pricingBreakdown: description,
                 returnValue: returnValue
             );
+
+            // DD_InsertPricingBreakdown deletes and re-inserts every non-accessorial row for this
+            // job, so a split parent's PricingBreakdownAllocation rows cascade away with the old
+            // items and must be reseeded against the new ones — otherwise every leg's header keeps
+            // showing figures derived from the pre-re-rate breakdown.
+            if (await IsLiveSplitParentAsync(effectiveJobId, isArchived: false))
+            {
+                await PricingBreakdownAllocation.RewriteAllocationsForParentAsync(Context, effectiveJobId);
+            }
         }
 
         var printableRate = rate ?? 0;
-        await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
+        await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true,
+            noteType: NoteType.PricingUpdate);
+    }
+
+    /// <inheritdoc cref="IJobCommandRepository.SetJobRatedManuallyAsync" />
+    public async Task SetJobRatedManuallyAsync(int jobId, bool isBooking, bool ratedManually)
+    {
+        if (isBooking)
+        {
+            await Context.TucJobBookings
+                .Where(j => j.UcbkId == jobId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.RatedManually, ratedManually));
+            return;
+        }
+
+        var rowsChanged = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.RatedManually, ratedManually));
+
+        if (rowsChanged == 0)
+        {
+            await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(j => j.RatedManually, ratedManually));
+        }
     }
 
     /// <summary>
     /// Updates the rate amount for an NZ urgent job in the appropriate table based on job type.
     /// </summary>
-    public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType, string? pricingBreakdown = null)
+    public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType, string pricingBreakdown = null)
     {
         try
         {
+            var isRatedManually = jobType switch
+            {
+                JobType.Active => await Context.TucJobs.Where(j => j.UcjbId == jobId)
+                    .Select(j => j.RatedManually).FirstOrDefaultAsync(),
+                JobType.Recurring => await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                    .Select(j => j.RatedManually).FirstOrDefaultAsync(),
+                JobType.Archived => await Context.TucJobArchives.Where(j => j.UcjbId == jobId)
+                    .Select(j => j.RatedManually).FirstOrDefaultAsync(),
+                _ => false
+            };
+
+            if (isRatedManually)
+            {
+                Log.Information("Job {JobId} is manually rated. Skipping automatic rate update", jobId);
+                return;
+            }
+
             var previousRate = jobType switch
             {
                 JobType.Active => await Context.TucJobs.Where(j => j.UcjbId == jobId)
@@ -132,7 +237,7 @@ public partial class JobRepository
                 _ => null
             };
 
-            if (previousRate.HasValue && previousRate.Value == rate)
+            if (previousRate == rate)
             {
                 Log.Information("Price is unchanged. Not updating job {JobId}", jobId);
                 return;
@@ -149,7 +254,10 @@ public partial class JobRepository
                 _ => 0
             };
 
-            if (rowsUpdated == 0) throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            if (rowsUpdated == 0)
+            {
+                throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            }
 
             if (!string.IsNullOrEmpty(pricingBreakdown))
             {
@@ -217,7 +325,11 @@ public partial class JobRepository
                         {
                             // API format is "ChargeName=Amount" — extract name before the '='
                             var chargeName = line.Contains('=') ? line[..line.IndexOf('=')].Trim() : line.Trim();
-                            if (!childJobLookup.TryGetValue(chargeName, out var childJobId)) return line;
+                            if (!childJobLookup.TryGetValue(chargeName, out var childJobId))
+                            {
+                                return line;
+                            }
+
                             return line.Count(c => c == '~') switch
                             {
                                 0 => $"{line}~0~{childJobId}",
@@ -241,7 +353,8 @@ public partial class JobRepository
             var noteText = previousRate.HasValue
                 ? $"Rate updated to {rate} from {previousRate.Value}"
                 : $"Rate updated to {rate}";
-            await SaveNoteAsync(jobId, noteText, true, JobType.Recurring == jobType);
+            await SaveNoteAsync(jobId, noteText, true, JobType.Recurring == jobType,
+                NoteType.PricingUpdate);
         }
         catch (Exception e)
         {
@@ -289,6 +402,8 @@ public partial class JobRepository
             isToAirport = await Context.DoesAddressMatchAirportAsync(dto.JobId, false);
         }
 
+        var cubicList = await GetCubicListAsync(dto.JobId);
+
         await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
             clientID: dto.ClientId,
             speedID: dto.Speed,
@@ -312,14 +427,16 @@ public partial class JobRepository
             vehicleSizeID: dto.Size,
             dangerousGoods: dto.DangerousGoods,
             dryIceWeight: dto.DryIceWeight,
-            waitTime: dto.WaitTime,
+            pickupWaitTime: dto.PickupWaitTime,
+            deliveryWaitTime: dto.DeliveryWaitTime,
             fromAgentId: dto.FromAgentId,
             fromAirportId: dto.FromAirportId,
             toAgentId: dto.ToAgentId,
             toAirportId: dto.ToAirportId,
             isFromAddressAirport: isFromAirport,
             isToAddressAirport: isToAirport,
-            dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0,
+            dimensionsType: dto.CalculateDimsOncePerJob ? 2 : 0,
+            cubicList: cubicList,
             description: description,
             rate: rate,
             returnValue: returnValue

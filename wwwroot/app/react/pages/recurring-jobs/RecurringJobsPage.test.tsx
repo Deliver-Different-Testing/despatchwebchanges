@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * RecurringJobsPage Component Tests
  *
@@ -6,9 +5,9 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {act, fireEvent, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
+import {renderWithMantine} from '../../__testUtils__';
+import {QueryClient} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../interfaces';
 import dayjs from 'dayjs';
@@ -27,6 +26,14 @@ jest.mock('../../hooks/useRecurringJobsApi', () => ({
     useRecurringJobsList: jest.fn(),
     useSpeedList: jest.fn(),
     useRouteList: jest.fn(),
+    useRecurringJobDeliveryJourney: jest.fn(() => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: jest.fn(),
+        isFetching: false,
+    })),
 }));
 
 jest.mock('../../hooks/useCourierApi', () => ({
@@ -36,22 +43,28 @@ jest.mock('../../hooks/useCourierApi', () => ({
 // Mock the API
 jest.mock('../../services/recurringJobsApi', () => ({
     recurringJobsApi: {
-        voidPrebookJob: jest.fn(),
         exportToCsv: jest.fn(),
     },
+}));
+
+// Deactivate routes through updateJobDetail (same path the context-menu
+// "Deactivate" already uses) — mock it so we can assert the call.
+jest.mock('../../services/jobListApi', () => ({
+    updateJobDetail: jest.fn(),
 }));
 
 import {useRecurringJobsList, useRouteList, useSpeedList} from '../../hooks/useRecurringJobsApi';
 import {useCourierSearch} from '../../hooks/useCourierApi';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
+import {updateJobDetail} from '../../services/jobListApi';
 
 const mockUseRecurringJobsList = useRecurringJobsList as jest.MockedFunction<typeof useRecurringJobsList>;
 const mockUseSpeedList = useSpeedList as jest.MockedFunction<typeof useSpeedList>;
 const mockUseRouteList = useRouteList as jest.MockedFunction<typeof useRouteList>;
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
 const mockRecurringJobsApi = recurringJobsApi as jest.Mocked<typeof recurringJobsApi>;
+const mockUpdateJobDetail = updateJobDetail as jest.MockedFunction<typeof updateJobDetail>;
 
-const theme = createTheme();
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -64,13 +77,7 @@ const createTestQueryClient = () =>
 
 const renderWithProviders = (props: RecurringJobsPageProps) => {
     const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                <RecurringJobsPage {...props} />
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
+    return renderWithMantine(<RecurringJobsPage {...props} />, {queryClient});
 };
 
 const createMockAddress = (line1: string, full: string) => ({
@@ -145,7 +152,7 @@ describe('RecurringJobsPage', () => {
             error: null,
         } as any);
 
-        mockRecurringJobsApi.voidPrebookJob.mockResolvedValue(undefined);
+        mockUpdateJobDetail.mockResolvedValue(undefined);
         mockRecurringJobsApi.exportToCsv.mockResolvedValue(undefined);
     });
 
@@ -175,14 +182,11 @@ describe('RecurringJobsPage', () => {
         expect(setRefreshCallback).toHaveBeenCalledWith(expect.any(Function));
 
         // Speed filter
-        const speedLabels = screen.getAllByText('Speed');
-        const formControl = speedLabels[0].closest('.MuiFormControl-root');
-        expect(formControl).toBeInTheDocument();
-        const selectButton = formControl?.querySelector('[role="combobox"]');
-        expect(selectButton).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Speed'})).toBeInTheDocument();
 
-        // Refresh button
-        const refreshIcon = screen.getByTestId('RefreshIcon');
+        // Refresh button — the recurring log panel also renders one, so
+        // grab the first which is the toolbar's.
+        const refreshIcon = screen.getAllByRole('button', {name: 'Refresh'})[0];
         const refreshButton = refreshIcon.closest('button');
         expect(refreshButton).toBeInTheDocument();
         fireEvent.click(refreshButton!);
@@ -191,7 +195,7 @@ describe('RecurringJobsPage', () => {
         });
 
         // Export button
-        const exportIcon = screen.getByTestId('FileDownloadIcon');
+        const exportIcon = screen.getByRole('button', {name: 'Export to CSV'});
         const exportButton = exportIcon.closest('button');
         expect(exportButton).toBeInTheDocument();
         fireEvent.click(exportButton!);
@@ -205,6 +209,29 @@ describe('RecurringJobsPage', () => {
         await waitFor(() => {
             expect(showToast).toHaveBeenCalledWith('Recurring jobs exported successfully', 'success');
         });
+    });
+
+    // ── Refresh feedback ────────────────────────────────────────────
+    // A background refetch keeps `isLoading` false (placeholderData:
+    // keepPreviousData) and only flips `isFetching`. The toolbar refresh
+    // button must reflect that fetch so the click doesn't read as a no-op.
+    it('shows the refresh button spinning while a background refetch is in flight', () => {
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse([createMockJob(1)]),
+            isLoading: false,
+            isFetching: true,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
+
+        renderWithProviders(createDefaultProps());
+
+        // The toolbar refresh icon is swapped for a spinner (the only
+        // progressbar in this render — the journey panel keeps its own
+        // static refresh icon) and its button is disabled.
+        const progressBars = screen.getAllByRole('progressbar');
+        expect(progressBars).toHaveLength(1);
+        expect(progressBars[0].closest('button')).toBeDisabled();
     });
 
     // ── Loading state ───────────────────────────────────────────────
@@ -245,34 +272,11 @@ describe('RecurringJobsPage', () => {
         expect(screen.getByText(/Job Details - Job #1/)).toBeInTheDocument();
     });
 
-    // ── Void job: open dialog + close with No (single render) ───────
-    it('opens void confirmation dialog and closes with No', async () => {
-        const jobs = [createMockJob(1)];
-        mockUseRecurringJobsList.mockReturnValue({
-            data: createMockResponse(jobs),
-            isLoading: false,
-            error: null,
-            refetch: jest.fn(),
-        } as any);
-
-        renderWithProviders(createDefaultProps());
-
-        const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-        fireEvent.click(deleteButton);
-
-        expect(screen.getByText('Inactivate Recurring Job')).toBeInTheDocument();
-        expect(screen.getByText(/this will inactivate this recurring job/i)).toBeInTheDocument();
-
-        // Close with No
-        fireEvent.click(screen.getByText('No'));
-
-        await waitFor(() => {
-            expect(screen.queryByText('Inactivate Recurring Job')).not.toBeInTheDocument();
-        });
-    });
-
-    // ── Void job: confirm with Yes ──────────────────────────────────
-    it('calls API and shows toast when void is confirmed', async () => {
+    // ── Deactivate: dialog open / cancel / confirm (single render) ──
+    // Confirm routes through updateJobDetail with JobProperty.RecurringMode
+    // = Inactive (0) — the same path the right-click context-menu
+    // "Deactivate" uses.
+    it('opens deactivate dialog, cancels with No, then on Yes calls updateJobDetail', async () => {
         const showToast = jest.fn();
         const refetch = jest.fn();
         const jobs = [createMockJob(1)];
@@ -285,22 +289,26 @@ describe('RecurringJobsPage', () => {
 
         renderWithProviders(createDefaultProps({showToast}));
 
-        const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-        fireEvent.click(deleteButton);
+        // Open dialog
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
+        expect(screen.getByText('Deactivate Recurring Job')).toBeInTheDocument();
+        expect(screen.getByText(/this will deactivate this recurring job/i)).toBeInTheDocument();
 
+        // Cancel with No → dialog closes
+        fireEvent.click(screen.getByText('No'));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(mockUpdateJobDetail).not.toHaveBeenCalled();
+
+        // Re-open and confirm with Yes
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
         fireEvent.click(screen.getByText('Yes'));
 
+        // Toast fires only after updateJobDetail resolves, so a single
+        // waitFor on the toast covers both — no double-poll needed.
         await waitFor(() => {
-            expect(mockRecurringJobsApi.voidPrebookJob).toHaveBeenCalledWith(1);
+            expect(showToast).toHaveBeenCalledWith('Mode changed to Inactive.', 'success');
         });
-
-        await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith(
-                'The recurring job has been successfully inactivated.',
-                'success'
-            );
-        });
-
+        expect(mockUpdateJobDetail).toHaveBeenCalledWith(1, 'RecurringMode', '0', true);
         expect(refetch).toHaveBeenCalled();
     });
 
@@ -413,9 +421,13 @@ describe('RecurringJobsPage', () => {
         expect(screen.getByText('Job Details')).toBeInTheDocument();
     });
 
-    // ── Job Details card header consistency ──────────────────────────
-    it('renders Job Details header with same style as other card headers on the page', () => {
-        const jobs = [createMockJob(1)];
+    // ── Panel header consistency ─────────────────────────────────────
+    // All panels now route their header through the shared gradient
+    // PanelHeader instead of the old dense Toolbar. Assert by visible header
+    // text (per the query-by-text rule) — every title rendering confirms each
+    // panel mounted a PanelHeader, and the "(n)" count proves the count prop.
+    it('renders all panel headers (Filters / Recurring Jobs (n) / Job Details) via PanelHeader', () => {
+        const jobs = [createMockJob(1), createMockJob(2)];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
             isLoading: false,
@@ -423,25 +435,11 @@ describe('RecurringJobsPage', () => {
             refetch: jest.fn(),
         } as any);
 
-        const {container} = renderWithProviders(createDefaultProps());
+        renderWithProviders(createDefaultProps());
 
-        // Collect all dense toolbar elements
-        const toolbars = container.querySelectorAll('[class*="MuiToolbar-dense"]');
-        expect(toolbars.length).toBeGreaterThanOrEqual(3); // Filters + Recurring Jobs + Job Details
-
-        const jobDetailsToolbar = Array.from(toolbars).find(tb =>
-            tb.textContent?.includes('Job Details')
-        );
-        const filtersToolbar = Array.from(toolbars).find(tb =>
-            tb.textContent?.includes('Filters')
-        );
-
-        expect(jobDetailsToolbar).toBeInTheDocument();
-        expect(filtersToolbar).toBeInTheDocument();
-
-        // Both should use the same dense toolbar variant
-        expect(jobDetailsToolbar!.className).toContain('MuiToolbar-dense');
-        expect(filtersToolbar!.className).toContain('MuiToolbar-dense');
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+        expect(screen.getByText('Recurring Jobs (2)')).toBeInTheDocument();
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
     });
 
     // ── No onJobSelect prop (bridge removed) ────────────────────────

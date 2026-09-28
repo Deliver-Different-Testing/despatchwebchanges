@@ -1,35 +1,77 @@
 /**
  * Inter-Courier Charge Dialog (React)
  *
- * Replaces the AngularJS inter-courier-charge-dialog.
- * Allows dispatchers to create paired inter-courier charge jobs.
+ * An inter-courier charge is a double entry: the backend writes one phantom job
+ * against the from-courier for a negative amount and one against the to-courier
+ * for the positive (see `JobRepository.BuildIccJobPair`). The dialog showed six
+ * flat fields and none of that, so a from/to mix-up was invisible until two
+ * uncorrectable jobs existed. The ledger strip below the form now shows exactly
+ * what will be recorded, before it is.
  */
 
-import React, {useState, useCallback, useEffect, useRef} from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import CloseIcon from '@mui/icons-material/Close';
-import PaymentsIcon from '@mui/icons-material/Payments';
-import SearchOffIcon from '@mui/icons-material/SearchOff';
-import CheckIcon from '@mui/icons-material/Check';
+import React, {useState, useCallback, useEffect, useId, useMemo} from 'react';
+import {Anchor, Badge, Box, Divider, Group, Paper, Stack, Text, TextInput, NumberInput} from '@mantine/core';
+import {Banknote, Plus} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {SearchSelect} from '../../common/search-select/SearchSelect';
+import {
+    DialogShell,
+    DialogHeader,
+    DialogFooter,
+    dialogContentBg,
+    sectionLabelProps,
+    sectionPaperProps,
+} from '../shared/mantine';
 import {searchActiveCouriers} from '../../../services/courierApi';
 import {searchActiveClients} from '../../../services/jobApi';
 import {createInterCourierCharge} from '../../../services/dispatchExecutorApi';
+import {formatCurrency} from '../../../utils/currencyUtils';
 import type {Suggestion} from '../../../interfaces/job';
 import type {ShowToastFn} from '../../../services/toastService';
 
-const MIN_SEARCH_LENGTH = 2;
-const ZONES_MULTIPLIER = 7;
-const DEBOUNCE_MS = 300;
+/** What one zone is worth. The amount defaults to zones x this. */
+const ZONE_RATE = 7;
+
+/** `tucJob.UcjbClientRefa` is nvarchar(20); the backend truncates silently past it. */
+const REFERENCE_MAX = 20;
+
+/** The true minus sign — reads as "minus", and lines up with the plus. */
+const MINUS = '−';
+
+/** Nothing to show yet — the same em dash `formatCurrencyOrDash` uses. */
+const EM_DASH = '—';
+
+const suggestionKey = (option: Suggestion) => option.id;
+const suggestionLabel = (option: Suggestion) => option.text;
+
+/** Money in a ledger column: same width per digit, so the two rows align. */
+const ledgerFigureStyle: React.CSSProperties = {fontVariantNumeric: 'tabular-nums'};
+
+/**
+ * One side of the entry. The sign and the eyebrow carry the direction; the colour
+ * only reinforces it, so the row still reads without it.
+ */
+const LedgerRow: React.FC<{
+    eyebrow: string;
+    courier: Suggestion | null;
+    amount: number | null;
+    sign: '+' | typeof MINUS;
+    color: string;
+}> = ({eyebrow, courier, amount, sign, color}) => (
+    <Group justify="space-between" wrap="nowrap" gap="sm" px="md" py={10}>
+        <Group gap="sm" wrap="nowrap" miw={0}>
+            <Text fz={10} fw={700} tt="uppercase" lts={0.8} c="dimmed" w={64} style={{flexShrink: 0}}>
+                {eyebrow}
+            </Text>
+            <Text fz="sm" truncate c={courier ? undefined : 'dimmed'}>
+                {courier ? courier.text : EM_DASH}
+            </Text>
+        </Group>
+        <Text fz="sm" fw={600} c={amount === null ? 'dimmed' : color} style={ledgerFigureStyle}>
+            {amount === null ? EM_DASH : `${sign}${formatCurrency(amount)}`}
+        </Text>
+    </Group>
+);
 
 export interface InterCourierChargeDialogProps {
     open: boolean;
@@ -37,371 +79,278 @@ export interface InterCourierChargeDialogProps {
     showToast: ShowToastFn;
 }
 
-interface AutocompleteFieldState {
-    options: Suggestion[];
-    loading: boolean;
-    inputValue: string;
-    selected: Suggestion | null;
-}
-
-const initialFieldState: AutocompleteFieldState = {
-    options: [],
-    loading: false,
-    inputValue: '',
-    selected: null,
-};
-
-function useDebouncedSearch(
-    inputValue: string,
-    searchFn: (term: string, options?: {signal?: AbortSignal}) => Promise<Suggestion[]>,
-    setField: React.Dispatch<React.SetStateAction<AutocompleteFieldState>>,
-    abortRef: React.RefObject<AbortController | null>,
-) {
-    useEffect(() => {
-        if (!inputValue || inputValue.length < MIN_SEARCH_LENGTH) {
-            setField(prev => ({...prev, options: [], loading: false}));
-            return;
-        }
-
-        const timer = setTimeout(async () => {
-            abortRef.current?.abort();
-            const controller = new AbortController();
-            abortRef.current = controller;
-
-            setField(prev => ({...prev, loading: true}));
-            try {
-                const results = await searchFn(inputValue, {signal: controller.signal});
-                if (!controller.signal.aborted) {
-                    setField(prev => ({...prev, options: results, loading: false}));
-                }
-            } catch (error: any) {
-                if (error?.name !== 'AbortError' && !controller.signal.aborted) {
-                    setField(prev => ({...prev, options: [], loading: false}));
-                }
-            }
-        }, DEBOUNCE_MS);
-
-        return () => clearTimeout(timer);
-    }, [inputValue, searchFn, setField, abortRef]);
-}
-
 export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> = ({
     open,
     onClose,
     showToast,
 }) => {
-    const [fromCourier, setFromCourier] = useState<AutocompleteFieldState>(initialFieldState);
-    const [toCourier, setToCourier] = useState<AutocompleteFieldState>(initialFieldState);
-    const [client, setClient] = useState<AutocompleteFieldState>(initialFieldState);
+    const [fromCourier, setFromCourier] = useState<Suggestion | null>(null);
+    const [toCourier, setToCourier] = useState<Suggestion | null>(null);
+    const [client, setClient] = useState<Suggestion | null>(null);
     const [reference, setReference] = useState('');
     const [zones, setZones] = useState<string>('');
     const [amount, setAmount] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [submitAttempt, setSubmitAttempt] = useState(0);
 
-    // Abort controllers for in-flight searches
-    const fromCourierAbort = useRef<AbortController | null>(null);
-    const toCourierAbort = useRef<AbortController | null>(null);
-    const clientAbort = useRef<AbortController | null>(null);
-
-    // Reset state when dialog opens
+    // Reset state when dialogue opens
     useEffect(() => {
         if (open) {
-            setFromCourier(initialFieldState);
-            setToCourier(initialFieldState);
-            setClient(initialFieldState);
+            setFromCourier(null);
+            setToCourier(null);
+            setClient(null);
             setReference('');
             setZones('');
             setAmount('');
             setIsSubmitting(false);
             setSubmitted(false);
+            setSubmitAttempt(0);
         }
     }, [open]);
-
-    useDebouncedSearch(fromCourier.inputValue, searchActiveCouriers, setFromCourier, fromCourierAbort);
-    useDebouncedSearch(toCourier.inputValue, searchActiveCouriers, setToCourier, toCourierAbort);
-    useDebouncedSearch(client.inputValue, searchActiveClients, setClient, clientAbort);
 
     const handleZonesChange = useCallback((value: string) => {
         setZones(value);
         const parsed = parseFloat(value);
         if (!isNaN(parsed)) {
-            setAmount(String(parsed * ZONES_MULTIPLIER));
+            setAmount(String(parsed * ZONE_RATE));
         } else {
             setAmount('0');
         }
     }, []);
 
-    const isFormValid = fromCourier.selected && toCourier.selected && client.selected
+    const parsedZones = parseFloat(zones);
+    const parsedAmount = parseFloat(amount);
+
+    /** The amount the zone rate would give, or null while zones is unusable. */
+    const zoneRateAmount = Number.isFinite(parsedZones) ? parsedZones * ZONE_RATE : null;
+
+    /* The amount is seeded from zones but stays editable, and the two used to
+       drift with nothing on screen to say so. */
+    const isOverridden = zoneRateAmount !== null
+        && Number.isFinite(parsedAmount)
+        && parsedAmount !== zoneRateAmount;
+
+    const sameCourier = Boolean(fromCourier && toCourier && fromCourier.id === toCourier.id);
+
+    const fromCourierError = submitted && !fromCourier ? 'Choose the courier being charged.' : undefined;
+    const toCourierError = sameCourier
+        ? "Pick a different courier. A charge can't go to and from the same one."
+        : submitted && !toCourier ? 'Choose the courier being credited.' : undefined;
+    const clientError = submitted && !client ? 'Choose the client to bill.' : undefined;
+    const referenceError = submitted && reference.trim() === ''
+        ? 'Enter a reference for this charge.' : undefined;
+    const zonesError = submitted && zones === '' ? 'Enter the number of zones.'
+        : submitted && parsedZones < 0 ? 'Zones cannot be negative.'
+            : undefined;
+    const amountError = submitted && amount === '' ? 'Enter an amount.'
+        : submitted && parsedAmount < 0 ? 'Amount cannot be negative.'
+            : undefined;
+
+    const isFormValid = Boolean(fromCourier && toCourier && client)
+        && !sameCourier
         && reference.trim() !== '' && zones !== '' && amount !== ''
-        && !isNaN(parseFloat(zones)) && !isNaN(parseFloat(amount))
-        && parseFloat(zones) >= 0 && parseFloat(amount) >= 0;
+        && Number.isFinite(parsedZones) && Number.isFinite(parsedAmount)
+        && parsedZones >= 0 && parsedAmount >= 0;
+
+    /** What the ledger will record. A real zero shows as one; only a blank field is unknown. */
+    const ledgerAmount = Number.isFinite(parsedAmount) ? parsedAmount : null;
+
+    /* Mantine flags every errored control with aria-invalid, so the first gap can
+       be found without threading a ref through each field. */
+    useEffect(() => {
+        if (submitAttempt === 0) return;
+        document
+            .querySelector<HTMLElement>('[role="dialog"] [aria-invalid="true"]')
+            ?.focus();
+    }, [submitAttempt]);
+
+    const resetAmountToZoneRate = useCallback(() => {
+        if (zoneRateAmount !== null) setAmount(String(zoneRateAmount));
+    }, [zoneRateAmount]);
 
     const handleSubmit = useCallback(async () => {
         setSubmitted(true);
 
         if (!isFormValid) {
-            showToast('Please complete all the required fields', 'warning');
+            setSubmitAttempt(attempt => attempt + 1);
             return;
         }
 
         setIsSubmitting(true);
         try {
             await createInterCourierCharge({
-                fromCourierId: fromCourier.selected!.id,
-                toCourierId: toCourier.selected!.id,
-                clientId: client.selected!.id,
+                fromCourierId: fromCourier!.id,
+                toCourierId: toCourier!.id,
+                clientId: client!.id,
                 reference: reference.trim(),
                 amount: parseFloat(amount),
             });
 
-            showToast('Inter-Courier Charge saved successfully', 'success');
+            showToast('Charge added', 'success');
             onClose();
         } catch (error) {
-            showToast('An error occurred while saving the charge', 'error');
+            showToast("Couldn't add the charge. Try again.", 'error');
             console.error(error);
         } finally {
             setIsSubmitting(false);
         }
-    }, [isFormValid, fromCourier.selected, toCourier.selected, client.selected, reference, amount, showToast, onClose]);
+    }, [isFormValid, fromCourier, toCourier, client, reference, amount, showToast, onClose]);
 
     const handleClose = useCallback(() => {
         if (!isSubmitting) onClose();
     }, [isSubmitting, onClose]);
 
-    const renderAutocomplete = (
-        label: string,
-        placeholder: string,
-        field: AutocompleteFieldState,
-        setField: React.Dispatch<React.SetStateAction<AutocompleteFieldState>>,
-        autoFocus?: boolean,
-    ) => {
-        const hasError = submitted && !field.selected;
+    const zoneRateHint = useMemo(() => `${formatCurrency(ZONE_RATE)} a zone`, []);
 
-        return (
-            <Autocomplete
-                fullWidth
-                size="small"
-                autoHighlight
-                options={field.options}
-                loading={field.loading}
-                value={field.selected}
-                inputValue={field.inputValue}
-                getOptionLabel={(option) => option.text}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                onInputChange={(_, newValue) => {
-                    setField(prev => ({...prev, inputValue: newValue}));
-                }}
-                onChange={(_, newValue) => {
-                    setField(prev => ({...prev, selected: newValue}));
-                }}
-                noOptionsText={
-                    field.inputValue.length >= MIN_SEARCH_LENGTH ? (
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, py: 1}}>
-                            <SearchOffIcon color="action" />
-                            <Typography color="text.secondary">
-                                No matches for &ldquo;{field.inputValue}&rdquo;
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <Typography color="text.secondary">
-                            Type at least {MIN_SEARCH_LENGTH} characters to search
-                        </Typography>
-                    )
-                }
-                renderInput={({InputProps: autoInputProps, ...params}) => (
-                    <TextField
-                        {...params}
-                        autoFocus={autoFocus}
-                        label={label}
-                        placeholder={placeholder}
-                        variant="outlined"
-                        size="small"
-                        required
-                        error={hasError}
-                        helperText={hasError ? 'This field is required.' : undefined}
-                        slotProps={{
-                            input: {
-                                ...autoInputProps,
-                                endAdornment: (
-                                    <>
-                                        {field.loading ? <CircularProgress color="inherit" size={20} /> : null}
-                                        {autoInputProps.endAdornment}
-                                    </>
-                                ),
-                            },
-                        }}
-                    />
-                )}
-                renderOption={(props, option) => (
-                    <Box
-                        component="li"
-                        {...props}
-                        key={option.id}
-                        sx={{display: 'flex', alignItems: 'center', gap: 1}}
-                    >
-                        <Typography>{option.text}</Typography>
-                    </Box>
-                )}
-            />
-        );
-    };
+    /* The two rows are one named group, so the visible label doubles as the
+       ledger's accessible name rather than being repeated in an aria-label. */
+    const ledgerLabelId = useId();
 
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <PaymentsIcon sx={{fontSize: 28}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h5" fontWeight={600}>
-                        Inter-Courier Charge
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Create a charge transfer between couriers
-                    </Typography>
-                </Box>
-                <IconButton
-                    aria-label="Close dialog"
-                    onClick={handleClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-
-            {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
-                <Paper
-                    elevation={0}
-                    sx={(theme) => ({
-                        p: 3,
-                        borderRadius: 2,
-                        border: `1px solid ${theme.palette.divider}`,
-                        bgcolor: 'background.paper',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 2.5,
-                    })}
-                >
-                    {renderAutocomplete('From Courier', 'Search Courier...', fromCourier, setFromCourier, true)}
-                    {renderAutocomplete('To Courier', 'Search Courier...', toCourier, setToCourier)}
-                    {renderAutocomplete('Client', 'Search Client...', client, setClient)}
-
-                    <TextField
-                        label="Reference"
-                        placeholder="Enter reference"
-                        variant="outlined"
-                        size="small"
-                        fullWidth
-                        required
-                        value={reference}
-                        onChange={(e) => setReference(e.target.value)}
-                        error={submitted && reference.trim() === ''}
-                        helperText={submitted && reference.trim() === '' ? 'This field is required.' : undefined}
-                    />
-
-                    <Box sx={{display: 'flex', gap: 2}}>
-                        <TextField
-                            label="Zones"
-                            variant="outlined"
-                            size="small"
-                            type="number"
-                            required
-                            value={zones}
-                            onChange={(e) => handleZonesChange(e.target.value)}
-                            error={submitted && (zones === '' || isNaN(parseFloat(zones)) || parseFloat(zones) < 0)}
-                            helperText={
-                                submitted && zones === '' ? 'This field is required.'
-                                    : submitted && parseFloat(zones) < 0 ? 'Value must be zero or greater.'
-                                        : undefined
-                            }
-                            slotProps={{htmlInput: {min: 0}}}
-                            sx={{flex: '0 0 40%'}}
-                        />
-                        <TextField
-                            label="Amount"
-                            variant="outlined"
-                            size="small"
-                            type="number"
-                            required
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            error={submitted && (amount === '' || isNaN(parseFloat(amount)) || parseFloat(amount) < 0)}
-                            helperText={
-                                submitted && amount === '' ? 'This field is required.'
-                                    : submitted && parseFloat(amount) < 0 ? 'Value must be zero or greater.'
-                                        : undefined
-                            }
-                            slotProps={{htmlInput: {min: 0, step: 0.01}}}
-                            sx={{flex: 1}}
-                        />
+        <DialogShell opened={open} onClose={handleClose} label="Inter-Courier Charge">
+            <DialogHeader
+                icon={<Icon lucide={Banknote} />}
+                title="Inter-Courier Charge"
+                subtitle="Charge one courier and credit another"
+                onClose={handleClose}
+                closeDisabled={isSubmitting}
+            />
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                <Stack gap="lg">
+                    <Box>
+                        <Text {...sectionLabelProps}>Couriers</Text>
+                        <Paper {...sectionPaperProps}>
+                            <Stack gap="md">
+                                <SearchSelect<Suggestion>
+                                    label="From Courier"
+                                    placeholder="Search Courier..."
+                                    value={fromCourier}
+                                    onChange={setFromCourier}
+                                    search={searchActiveCouriers}
+                                    getOptionKey={suggestionKey}
+                                    getOptionLabel={suggestionLabel}
+                                    error={fromCourierError}
+                                    withAsterisk
+                                    autoFocus
+                                />
+                                <SearchSelect<Suggestion>
+                                    label="To Courier"
+                                    placeholder="Search Courier..."
+                                    value={toCourier}
+                                    onChange={setToCourier}
+                                    search={searchActiveCouriers}
+                                    getOptionKey={suggestionKey}
+                                    getOptionLabel={suggestionLabel}
+                                    error={toCourierError}
+                                    withAsterisk
+                                />
+                            </Stack>
+                        </Paper>
                     </Box>
-                </Paper>
-            </DialogContent>
 
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'background.paper',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={handleClose} variant="outlined" disabled={isSubmitting} sx={{minWidth: 100}}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    disabled={isSubmitting}
-                    startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <CheckIcon />}
-                    sx={{minWidth: 140}}
-                >
-                    Add Charge
-                </Button>
-            </DialogActions>
-        </Dialog>
+                    <Box>
+                        <Text {...sectionLabelProps}>Charge</Text>
+                        <Paper {...sectionPaperProps}>
+                            <Stack gap="md">
+                                <SearchSelect<Suggestion>
+                                    label="Client"
+                                    placeholder="Search Client..."
+                                    value={client}
+                                    onChange={setClient}
+                                    search={searchActiveClients}
+                                    getOptionKey={suggestionKey}
+                                    getOptionLabel={suggestionLabel}
+                                    error={clientError}
+                                    withAsterisk
+                                />
+                                <TextInput
+                                    label="Reference"
+                                    placeholder="Enter reference"
+                                    withAsterisk
+                                    maxLength={REFERENCE_MAX}
+                                    value={reference}
+                                    onChange={(e) => setReference(e.currentTarget.value)}
+                                    error={referenceError}
+                                />
+                                <Group gap="md" align="flex-start" grow>
+                                    <NumberInput
+                                        label="Zones"
+                                        description={zoneRateHint}
+                                        /* Hint under the input, not under the label, so Zones and
+                                           Amount start at the same line. */
+                                        inputWrapperOrder={['label', 'input', 'description', 'error']}
+                                        withAsterisk
+                                        min={0}
+                                        value={zones}
+                                        onChange={(value) => handleZonesChange(String(value ?? ''))}
+                                        error={zonesError}
+                                    />
+                                    <Box>
+                                        <NumberInput
+                                            label="Amount"
+                                            withAsterisk
+                                            min={0}
+                                            step={0.01}
+                                            value={amount}
+                                            onChange={(value) => setAmount(String(value ?? ''))}
+                                            error={amountError}
+                                        />
+                                        {isOverridden && (
+                                            <Group gap={8} mt={6} wrap="nowrap">
+                                                <Badge size="xs" variant="light" color="orange">Overridden</Badge>
+                                                <Anchor
+                                                    component="button"
+                                                    type="button"
+                                                    fz="xs"
+                                                    onClick={resetAmountToZoneRate}
+                                                >
+                                                    Reset to {formatCurrency(zoneRateAmount!)}
+                                                </Anchor>
+                                            </Group>
+                                        )}
+                                    </Box>
+                                </Group>
+                            </Stack>
+                        </Paper>
+                    </Box>
+
+                    <Box>
+                        <Text {...sectionLabelProps} id={ledgerLabelId}>What gets recorded</Text>
+                        <Paper
+                            withBorder
+                            radius="md"
+                            bg="var(--mantine-color-white)"
+                            role="group"
+                            aria-labelledby={ledgerLabelId}
+                        >
+                            <LedgerRow
+                                eyebrow="Charged"
+                                courier={fromCourier}
+                                amount={ledgerAmount}
+                                sign={MINUS}
+                                color="red.7"
+                            />
+                            <Divider/>
+                            <LedgerRow
+                                eyebrow="Credited"
+                                courier={toCourier}
+                                amount={ledgerAmount}
+                                sign="+"
+                                color="green.7"
+                            />
+                        </Paper>
+                    </Box>
+                </Stack>
+            </Box>
+            <DialogFooter
+                onCancel={handleClose}
+                onConfirm={handleSubmit}
+                confirmLabel="Add Charge"
+                confirmIcon={<Icon lucide={Plus} size={16} />}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

@@ -12,7 +12,7 @@ import type {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type angular from 'angular';
 
 // Page module mount configs
-import type {MountRecurringJobsConfig, MountDriverManagementConfig, MountJobListConfig, DispatchJob, JobListSearchParams} from '../app/react/interfaces';
+import type {MountRecurringJobsConfig, MountDriverManagementConfig, MountJobListConfig, MountSettingsConfig, DispatchJob, JobListSearchParams} from '../app/react/interfaces';
 import type {MountJobDetailsConfig} from '../app/react/components/common/job-details/JobDetails.types';
 import type {MountOverviewConfig} from '../app/react/pages/overview/OverviewPage.interfaces';
 import type {MountTaskDashboardConfig} from '../app/react/pages/task-dashboard/TaskDashboardPage.interfaces';
@@ -24,10 +24,13 @@ import type {ToastService} from '../app/react/services/toastService';
 
 // Dialog option/result types from dedicated types.ts files
 import type {FlightViewModel, AgentSuggestion, FlightAgentDialogResult} from '../app/react/components/dialogs/flight-agent-confirmation-dialog/types';
+import type {
+    OpenDispatchDialogOptions,
+    DispatchDialogOutcome,
+} from '../app/react/components/dialogs/dispatch-dialog/dispatch-dialog-react.module';
 import type {EditDateTimeDialogOptions, EditDateTimeDialogResult} from '../app/react/components/dialogs/edit-date-time-dialog/types';
 import type {OpenBulkPriceUploadDialogOptions} from '../app/react/components/dialogs/bulk-price-upload-dialog/types';
 import type {OpenAccessorialChargesDialogOptions} from '../app/react/components/dialogs/accessorial-charges-dialog/types';
-import type {OpenAdditionalServicesDialogOptions} from '../app/react/components/dialogs/additional-services-dialog/types';
 import type {EditParcelDimensionsDialogOptions, EditParcelDimensionsDialogResult} from '../app/react/components/dialogs/edit-parcel-dimensions-dialog/types';
 import type {OpenMessagingDialogOptions} from '../app/react/components/dialogs/messaging-dialog/types';
 import type {SelectDialogOptions, SelectDialogResult} from '../app/react/components/dialogs/select-dialog/types';
@@ -43,12 +46,17 @@ import type {SendPodJobData} from '../app/react/components/dialogs/send-pod-dial
 import type {PodPhoto} from '../app/react/components/common/pod-photo-viewer/pod-photo-viewer.types';
 import type {Suggestion} from '../app/react/components/dialogs/auto-complete-dialog/AutoCompleteDialog';
 import type {DashboardSettingsConfig, DashboardBox, RefreshOption, DashboardSettingsResult} from '../app/react/components/dialogs/dashboard-settings-dialog/DashboardSettingsDialog';
+import type {CourierDisplayMode} from '../app/react/interfaces/courierDisplayMode';
 import type {DateRange} from '../app/react/components/dialogs/date-range-dialog/DateRangeDialog';
 import type {PriceBreakdown} from '../app/react/components/dialogs/price-breakdown-dialog/PriceBreakdownDialog';
+import type {SplitPriceBreakdown, UpdateSplitPricingBreakdownRequest} from '../app/react/interfaces/splitJobs';
 import type {IFlightViewModel} from '../app/components/Nationwide/nationwide.interfaces';
 
 // App shell types
 import type {ToolbarActionsConfig} from '../app/react/components/common/app-shell/app-shell-react.module';
+
+// Shared enums
+import type {AddressType} from '../app/enums/address-type.enum';
 
 
 /** Typed interface for a React page module with specific config */
@@ -65,11 +73,19 @@ declare global {
         FullName?: string;
         ContactID?: number;
         ClientInternal?: boolean;
+        IsNetworkPartner?: boolean;
+        /**
+         * Dashboard feature keys DF Admin has exposed to this session, or null
+         * when the session is not gated at all. See IFeatureVisibilityService.
+         */
+        VisibleFeatures?: string[] | null;
         TimeZone?: string;
         CurrencyCode?: string;
         serverConfig?: {
             isProduction: boolean;
             isUSCustomer: boolean;
+            /** The signed-in network partner's geocoded address, when there is one. */
+            npMapCenter?: {lat: number; lng: number} | null;
         };
 
         // ── React library globals (set by vendor-react bundle) ──────────
@@ -87,6 +103,12 @@ declare global {
         useQueryClient?: typeof import('@tanstack/react-query').useQueryClient;
         ReactQueryClient?: QueryClient;
 
+        // ── Mantine globals (set by vendor-react bundle) ─────────────────
+        MantineCore?: typeof import('@mantine/core');
+        MantineHooks?: typeof import('@mantine/hooks');
+        MantineDates?: typeof import('@mantine/dates');
+        MantineNotifications?: typeof import('@mantine/notifications');
+
         // ── Utility library globals (set by vendor-core bundle) ──────────
         dayjs?: typeof import('dayjs').default;
         windowsIana?: typeof import('windows-iana');
@@ -98,7 +120,8 @@ declare global {
         // ── Lazy-loaded React page modules ───────────────────────────────
         ReactAppShell?: {
             mount: (containerId: string, config: {
-                title: string;
+                title?: string;
+                breadcrumbs?: Array<{label: string; href?: string}>;
                 firstName: string;
                 fullName: string;
                 isUsCustomer: boolean;
@@ -111,6 +134,7 @@ declare global {
             update: (updates: Record<string, unknown>) => void;
             updateState: (state: string) => void;
             updateTitle: (title: string) => void;
+            updateBreadcrumbs: (breadcrumbs: Array<{label: string; href?: string}>) => void;
             setToolbarActions: (actions: ToolbarActionsConfig | null) => void;
             updateToolbarAction: <K extends Exclude<keyof ToolbarActionsConfig, 'customContent'>>(
                 actionKey: K,
@@ -122,6 +146,7 @@ declare global {
         ReactOverview?: ReactPageModule<MountOverviewConfig>;
         ReactTaskDashboard?: ReactPageModule<MountTaskDashboardConfig>;
         ReactDriverManagement?: ReactPageModule<MountDriverManagementConfig>;
+        ReactSettings?: ReactPageModule<MountSettingsConfig>;
         ReactCourierMap?: ReactPageModule<MountCourierMapConfig>;
         ReactErrorPage?: ReactPageModule<MountErrorPageConfig>;
         ReactJobDetails?: ReactPageModule<MountJobDetailsConfig>;
@@ -172,6 +197,10 @@ declare global {
         ReactVoidJobConfirmationDialog?: {
             open: (job: VoidJobDialogJob, toastService?: ToastService) => Promise<VoidJobResult | null>;
         };
+        /** Universal dispatch dialog (Courier / Agent / NP / DFRNT Partner), opened from AngularJS. */
+        ReactDispatchDialog?: {
+            open: (options: OpenDispatchDialogOptions) => Promise<DispatchDialogOutcome | null>;
+        };
         ReactFlightAgentConfirmationDialog?: {
             openFlightDialog: (options: {
                 jobId: number;
@@ -213,9 +242,6 @@ declare global {
         };
         ReactAccessorialChargesDialog?: {
             open: (options: OpenAccessorialChargesDialogOptions) => Promise<boolean>;
-        };
-        ReactAdditionalServicesDialog?: {
-            open: (options: OpenAdditionalServicesDialogOptions) => Promise<boolean>;
         };
         ReactAddEventDialog?: {
             open: (options: {
@@ -268,11 +294,19 @@ declare global {
         ReactDashboardSettingsDialog?: {
             open: (
                 config: DashboardSettingsConfig,
-                boxes: Record<string, DashboardBox>,
                 selectedRefreshInterval?: RefreshOption,
                 selectedDriverLocationRefreshInterval?: RefreshOption,
-                aiEnabled?: boolean
+                selectedTaskRefreshInterval?: RefreshOption,
+                nationwideBetaEnabled?: boolean,
+                selectedCourierDisplayMode?: CourierDisplayMode
             ) => Promise<DashboardSettingsResult | null>;
+        };
+        ReactCustomizePanelsDialog?: {
+            open: (
+                boxes: Record<string, DashboardBox>,
+                title?: string,
+                layoutEditable?: boolean
+            ) => Promise<Record<string, DashboardBox> | null>;
         };
         ReactDateRangeDialog?: {
             open: (initialRange?: { start?: Date; end?: Date }) => Promise<DateRange | null>;
@@ -284,7 +318,9 @@ declare global {
                 submitLabel?: string,
                 showContactInfo?: boolean,
                 isUsTenant?: boolean,
-                toastService?: ToastService
+                toastService?: ToastService,
+                addressType?: AddressType,
+                readOnly?: boolean
             ) => Promise<EditAddressDialogViewModel | null>;
         };
         ReactEditAfterhoursDialog?: {
@@ -321,12 +357,17 @@ declare global {
                 jobId: number,
                 isPrebook: boolean,
                 isArchived: boolean,
+                isUsCustomer?: boolean,
+                readOnly?: boolean,
+                managedElsewhere?: {parentJobNumber: string; onNavigateToParent: () => void},
                 apiService?: {
                     addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
                     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
                     deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
+                    getSuggestedFuelCharge: (jobId: number, chargeAmount: number, isPrebook: boolean, isArchived: boolean) => Promise<{ fuelChargeAmount: number; fuelCostAmount: number }>;
                 }
             ) => Promise<number | null>;
+            setToastService: (service: ToastService) => void;
         };
         ReactSelectDialog?: {
             showSelectDialog: (options: SelectDialogOptions) => Promise<SelectDialogResult | null>;
@@ -336,23 +377,29 @@ declare global {
             open: (options: SimplePriceEditDialogOptions) => Promise<PriceEditResult | null>;
             setToastService: (service: ToastService) => void;
         };
+        ReactSplitPricingBreakdownDialog?: {
+            open: (
+                breakdown: SplitPriceBreakdown,
+                options?: {readOnly?: boolean; highlightLegId?: number},
+                apiService?: {
+                    save: (request: UpdateSplitPricingBreakdownRequest) => Promise<void>;
+                    addItem: (jobId: number, name: string, revenue: number) => Promise<SplitPriceBreakdown>;
+                    deleteItem: (jobId: number, pricingBreakdownId: number) => Promise<SplitPriceBreakdown>;
+                }
+            ) => Promise<null>;
+            setToastService: (service: ToastService) => void;
+        };
         ReactSwapPodsDialog?: {
             open: (jobNo: string, toastService?: ToastService) => Promise<boolean | null>;
+        };
+        ReactRestoreConfirmDialog?: {
+            open: (request: {jobId: number; done?: boolean}) => Promise<
+                {action: 'restore'; removeCapturedImages: boolean} | {action: 'swapPod'} | null
+            >;
         };
 
         // ── Lazy-loaded React utility modules ────────────────────────────
         ReactAiAssistant?: {
-            open: (options?: { toastService?: ToastService }) => Promise<void>;
-            summarizeNotes: (jobId: number) => Promise<{ summary: string }>;
-            summarizeJob: (jobId: number) => Promise<{ summary: string }>;
-            analyzeLateAlert: (jobId: number) => Promise<{ summary: string }>;
-            suggestCouriers: (jobId: number) => Promise<unknown>;
-            showCourierSuggestions: (
-                jobId: number,
-                jobNo: string,
-                onAssign: (courierId: number) => Promise<void>,
-                onRefresh?: () => void
-            ) => Promise<void>;
             renderSummaryPanel: (container: HTMLElement, jobId: number) => void;
             renderOperationsInsightsPanel: (container: HTMLElement) => void;
             unmountSummaryPanel: (container: HTMLElement) => void;
@@ -367,10 +414,13 @@ declare global {
     const FirstName: string;
     const ContactID: number;
     const ClientInternal: boolean;
+    const IsNetworkPartner: boolean;
+    const VisibleFeatures: string[] | null;
     const TimeZone: string;
     const serverConfig: {
         isProduction: boolean;
         isUSCustomer: boolean;
+        npMapCenter?: {lat: number; lng: number} | null;
     };
 }
 

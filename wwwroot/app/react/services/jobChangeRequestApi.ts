@@ -5,69 +5,13 @@
  * Mirrors the eventApi pattern — thin axios calls, all routes return JSON.
  */
 
+import {
+    CreateJobChangeRequestPayload,
+    DecisionPayload,
+    JobChangeRequestDto, JobChangeRequestInboxItem,
+    JobChangeRequestResult
+} from "../interfaces/jobChangeRequest";
 import {apiClient} from './apiClient';
-
-export interface JobChangeRequestDto {
-    id: number;
-    jobId: number;
-    partnerJobGuid?: string;
-    pairingId?: number;
-    sourceRequestUuid: string;
-    tucEventId?: number;
-    origin: string;
-    requestingPartyType: string;
-    approvalPartyType: string;
-    fieldName: string;
-    currentValue?: string;
-    requestedValue?: string;
-    reason?: string;
-    status: string;
-    approvalMode: string;
-    ruleCode?: string;
-    requiresCommercialRefresh: boolean;
-    oldCommercialAmount?: number;
-    newCommercialAmount?: number;
-    requestedAt: string;
-    respondedAt?: string;
-    appliedAt?: string;
-    rowVersion?: string;
-}
-
-export interface JobChangeRequestResult {
-    success: boolean;
-    message?: string;
-    request?: JobChangeRequestDto;
-    /**
-     * Populated when the local row was saved but the IM enqueue/forward step
-     * failed. The local state is consistent; the cross-tenant relay needs a
-     * retry. The UI surfaces this as a non-blocking warning.
-     */
-    peerForwardWarning?: string;
-}
-
-export interface CreateJobChangeRequestPayload {
-    jobId: number;
-    fieldName: string;
-    currentValue?: string;
-    requestedValue?: string;
-    reason?: string;
-}
-
-export interface DecisionPayload {
-    requestId: number;
-    rowVersion?: string;
-    reason?: string;
-}
-
-/**
- * Approver-inbox row — Pending request the local tenant must review,
- * enriched with job context for the queue display.
- */
-export interface JobChangeRequestInboxItem {
-    request: JobChangeRequestDto;
-    jobNo: string;
-    clientName?: string;
-}
 
 export class JobChangeRequestApiService {
     create(payload: CreateJobChangeRequestPayload): Promise<JobChangeRequestResult> {
@@ -92,6 +36,12 @@ export class JobChangeRequestApiService {
 
     pendingForApproval(limit = 200): Promise<JobChangeRequestInboxItem[]> {
         return apiClient.get<JobChangeRequestInboxItem[]>('JobChangeRequest/PendingForApproval', {limit});
+    }
+
+    async hasActivePartners(): Promise<boolean> {
+        const result = await apiClient.get<{hasActivePartners: boolean}>(
+            'JobChangeRequest/HasActivePartners');
+        return result.hasActivePartners;
     }
 }
 

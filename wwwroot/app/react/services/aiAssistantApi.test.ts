@@ -1,22 +1,27 @@
+/** @jest-environment node */
 /**
- * AI Assistant API Service Tests
+ * AI Summary API Service Tests
  *
- * Tests the AI assistant API functions including:
- * - suggestCouriers (returns structured AiCourierSuggestionResponse)
- * - summarizeJobNotes, summarizeJob, analyzeLateAlert
+ * Tests the AI summarization API functions: summarizeJobNotes (markdown),
+ * summarizeJob, summarizeTaskDashboard, summarizeOperations,
+ * summarizeCompliance (structured).
  */
 
 import {
-    suggestCouriers,
     summarizeJobNotes,
     summarizeJob,
-    analyzeLateAlert,
     summarizeOperations,
     summarizeCompliance,
     summarizeTaskDashboard,
+    draftCourierMessage,
+    draftEmail,
+    draftPodEmail,
+    draftNote,
+    extractBlockers,
+    analyzePricing,
+    triageChangeRequest,
 } from './aiAssistantApi';
-import { apiClient } from './apiClient';
-import { createMockApiError } from '../__testUtils__';
+import {apiClient} from './apiClient';
 
 jest.mock('./apiClient', () => ({
     apiClient: {
@@ -28,71 +33,26 @@ jest.mock('./apiClient', () => ({
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
+const structuredResponse = {
+    verdict: '✅ On track',
+    severity: 'Ok' as const,
+    keyFacts: [],
+    attention: [],
+    timeline: [],
+    highlights: [],
+    usage: {inputTokens: 100, outputTokens: 20},
+};
+
 describe('aiAssistantApi', () => {
-    describe('suggestCouriers', () => {
-        const mockResponse = {
-            summary: '1. **Jane** — lowest workload\n2. **John** — closest driver',
-            usage: { inputTokens: 250, outputTokens: 40 },
-            couriers: [
-                { courierId: 10, code: 'C10', firstName: 'John' },
-                { courierId: 11, code: 'C11', firstName: 'Jane' },
-            ],
-        };
-
-        it('should call correct endpoint with jobId', async () => {
-            mockApiClient.post.mockResolvedValueOnce(mockResponse);
-
-            await suggestCouriers(42);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith(
-                '/Ai/SuggestCouriers',
-                null,
-                { params: { jobId: 42 } }
-            );
-        });
-
-        it('should return summary, usage, and couriers list', async () => {
-            mockApiClient.post.mockResolvedValueOnce(mockResponse);
-
-            const result = await suggestCouriers(1);
-
-            expect(result.summary).toContain('Jane');
-            expect(result.usage.inputTokens).toBe(250);
-            expect(result.couriers).toHaveLength(2);
-            expect(result.couriers[0]).toEqual({
-                courierId: 10,
-                code: 'C10',
-                firstName: 'John',
-            });
-        });
-
-        it('should return empty couriers when none available', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'No courier data available for suggestions.',
-                usage: { inputTokens: 0, outputTokens: 0 },
-                couriers: [],
-            });
-
-            const result = await suggestCouriers(1);
-
-            expect(result.summary).toBe('No courier data available for suggestions.');
-            expect(result.couriers).toEqual([]);
-        });
-
-        it.each([
-            ['404 Not Found', createMockApiError({ status: 404, message: 'Job not found' })],
-            ['500 Server Error', createMockApiError({ status: 500, message: 'Server error' })],
-        ])('should propagate %s errors', async (_, error) => {
-            mockApiClient.post.mockRejectedValueOnce(error);
-            await expect(suggestCouriers(1)).rejects.toEqual(error);
-        });
+    beforeEach(() => {
+        jest.clearAllMocks();
     });
 
-    describe('summarizeJobNotes', () => {
-        it('should call correct endpoint with jobId', async () => {
+    describe('summarizeJobNotes (markdown)', () => {
+        it('calls correct endpoint with jobId', async () => {
             mockApiClient.post.mockResolvedValueOnce({
                 summary: 'Test summary',
-                usage: { inputTokens: 100, outputTokens: 20 },
+                usage: {inputTokens: 100, outputTokens: 20},
             });
 
             await summarizeJobNotes(42);
@@ -100,97 +60,173 @@ describe('aiAssistantApi', () => {
             expect(mockApiClient.post).toHaveBeenCalledWith(
                 '/Ai/SummarizeJobNotes',
                 null,
-                { params: { jobId: 42 } }
+                {params: {jobId: 42}}
             );
         });
     });
 
-    describe('summarizeJob', () => {
-        it('should call correct endpoint with jobId', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Job summary',
-                usage: { inputTokens: 100, outputTokens: 20 },
-            });
+    describe('summarizeJob (structured)', () => {
+        it('calls correct endpoint with jobId', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
 
             await summarizeJob(99);
 
             expect(mockApiClient.post).toHaveBeenCalledWith(
                 '/Ai/SummarizeJob',
                 null,
-                { params: { jobId: 99 } }
+                {params: {jobId: 99}}
             );
         });
 
-        it('should pass abort signal via options', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Summary',
-                usage: { inputTokens: 50, outputTokens: 10 },
-            });
+        it('passes abort signal via options', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
             const controller = new AbortController();
 
-            await summarizeJob(1, { signal: controller.signal });
+            await summarizeJob(1, {signal: controller.signal});
 
             expect(mockApiClient.post).toHaveBeenCalledWith(
                 '/Ai/SummarizeJob',
                 null,
-                expect.objectContaining({ signal: controller.signal })
+                expect.objectContaining({signal: controller.signal})
             );
         });
     });
 
-    describe('analyzeLateAlert', () => {
-        it('should call correct endpoint with jobId', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Late analysis',
-                usage: { inputTokens: 80, outputTokens: 15 },
-            });
-
-            await analyzeLateAlert(7);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith(
-                '/Ai/AnalyzeLateAlert',
-                null,
-                { params: { jobId: 7 } }
-            );
-        });
-    });
-
-    describe('summarizeTaskDashboard', () => {
-        it('should call correct endpoint with no params', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Dashboard summary',
-                usage: { inputTokens: 200, outputTokens: 40 },
-            });
+    describe('summarizeTaskDashboard (structured)', () => {
+        it('calls correct endpoint', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
 
             await summarizeTaskDashboard();
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/SummarizeTaskDashboard');
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeTaskDashboard',
+                null,
+                undefined
+            );
+        });
+
+        it('passes abort signal', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
+            const controller = new AbortController();
+
+            await summarizeTaskDashboard({signal: controller.signal});
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeTaskDashboard',
+                null,
+                expect.objectContaining({signal: controller.signal})
+            );
         });
     });
 
-    describe('summarizeOperations', () => {
-        it('should call correct endpoint', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Operations insight',
-                usage: { inputTokens: 100, outputTokens: 25 },
-            });
+    describe('summarizeOperations (structured)', () => {
+        it('calls correct endpoint', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
 
             await summarizeOperations();
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/SummarizeOperations');
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeOperations',
+                null,
+                undefined
+            );
         });
     });
 
-    describe('summarizeCompliance', () => {
-        it('should call correct endpoint', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Compliance summary',
-                usage: { inputTokens: 150, outputTokens: 20 },
-            });
+    describe('summarizeCompliance (structured)', () => {
+        it('calls correct endpoint', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
 
             await summarizeCompliance();
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/SummarizeCompliance');
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeCompliance',
+                null,
+                undefined
+            );
+        });
+    });
+
+    describe('drafting', () => {
+        const draftResponse = {draft: 'polished text', usage: {inputTokens: 50, outputTokens: 10}};
+        const emailDraftResponse = {subject: 'S', body: 'B', usage: {inputTokens: 60, outputTokens: 20}};
+
+        it('draftCourierMessage posts the request body', async () => {
+            mockApiClient.post.mockResolvedValueOnce(draftResponse);
+            const request = {recipientName: 'Dave', recipientType: 0, messageType: 2, seed: 'pu late'};
+
+            await draftCourierMessage(request);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/DraftMessage', request, undefined);
+        });
+
+        it('draftEmail posts the request body', async () => {
+            mockApiClient.post.mockResolvedValueOnce(emailDraftResponse);
+            const request = {recipientNames: ['Dave'], seedSubject: '', seedBody: 'hi'};
+
+            await draftEmail(request);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/DraftEmail', request, undefined);
+        });
+
+        it('draftPodEmail calls endpoint with jobId param', async () => {
+            mockApiClient.post.mockResolvedValueOnce(emailDraftResponse);
+
+            await draftPodEmail(77);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/DraftPodEmail',
+                null,
+                {params: {jobId: 77}}
+            );
+        });
+
+        it('draftNote posts the request body and passes the abort signal', async () => {
+            mockApiClient.post.mockResolvedValueOnce(draftResponse);
+            const controller = new AbortController();
+            const request = {jobId: 5, noteTypeId: 2, seed: 'cust wants call'};
+
+            await draftNote(request, {signal: controller.signal});
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/DraftNote',
+                request,
+                expect.objectContaining({signal: controller.signal})
+            );
+        });
+    });
+
+    describe('insights', () => {
+        it('extractBlockers calls endpoint with jobId param', async () => {
+            mockApiClient.post.mockResolvedValueOnce({blockers: [], summary: '', severity: 'Ok', usage: {inputTokens: 1, outputTokens: 1}});
+
+            await extractBlockers(7);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/ExtractBlockers', null, {params: {jobId: 7}});
+        });
+
+        it('analyzePricing passes jobId and accessorialChargeGroupId', async () => {
+            mockApiClient.post.mockResolvedValueOnce({anomaly: null, suggestions: [], usage: {inputTokens: 1, outputTokens: 1}});
+
+            await analyzePricing(7, 5);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/AnalyzePricing',
+                null,
+                {params: {jobId: 7, accessorialChargeGroupId: 5}}
+            );
+        });
+
+        it('triageChangeRequest passes requestId and jobId', async () => {
+            mockApiClient.post.mockResolvedValueOnce({recommendedAction: 'approve', confidence: 0.8, rationale: '', riskFactors: [], usage: {inputTokens: 1, outputTokens: 1}});
+
+            await triageChangeRequest(42, 7);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/TriageChangeRequest',
+                null,
+                {params: {requestId: 42, jobId: 7}}
+            );
         });
     });
 });

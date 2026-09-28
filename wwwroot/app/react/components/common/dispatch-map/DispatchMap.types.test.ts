@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * DispatchMap Types and Constants Tests
  *
@@ -19,6 +20,7 @@ import {
     POSITION_THRESHOLD,
     PREFERENCE_KEYS,
 } from './DispatchMap.types';
+import {AddressType} from '../../../../enums/address-type.enum';
 
 describe('DispatchMap Constants', () => {
     describe('COURIER_REFRESH_INTERVAL_MS', () => {
@@ -74,20 +76,20 @@ describe('DispatchMap Constants', () => {
     });
 
     describe('MARKER_COLORS', () => {
-        it('should have PICKUP color', () => {
-            expect(MARKER_COLORS.PICKUP).toBe('#4CAF50');
+        it('should have PICKUP color (matches pickup header primary.main)', () => {
+            expect(MARKER_COLORS.PICKUP).toBe('#2196F3');
         });
 
-        it('should have DELIVERY color', () => {
-            expect(MARKER_COLORS.DELIVERY).toBe('#F44336');
+        it('should have DELIVERY color (matches delivery header success.main)', () => {
+            expect(MARKER_COLORS.DELIVERY).toBe('#4CAF50');
         });
 
-        it('should have OTHER_PICKUP color', () => {
-            expect(MARKER_COLORS.OTHER_PICKUP).toBe('#3F51B5');
+        it('should have OTHER_PICKUP color (primary.dark)', () => {
+            expect(MARKER_COLORS.OTHER_PICKUP).toBe('#1976D2');
         });
 
-        it('should have OTHER_DELIVERY color', () => {
-            expect(MARKER_COLORS.OTHER_DELIVERY).toBe('#FF5722');
+        it('should have OTHER_DELIVERY color (success.dark)', () => {
+            expect(MARKER_COLORS.OTHER_DELIVERY).toBe('#388E3C');
         });
 
         it('should have COURIER_FLAG color', () => {
@@ -109,34 +111,34 @@ describe('DispatchMap Constants', () => {
     describe('COURIER_LABEL_COLORS', () => {
         it('should have NO_JOBS colors', () => {
             expect(COURIER_LABEL_COLORS.NO_JOBS).toEqual({
-                bg: '#E3F2FD',
-                text: '#1565C0',
-                border: '#1976D2',
+                bg: '#ECEFF1',
+                text: '#37474F',
+                border: '#CFD8DC',
             });
         });
 
         it('should have HAS_JOBS colors', () => {
             expect(COURIER_LABEL_COLORS.HAS_JOBS).toEqual({
-                bg: '#E8F5E9',
-                text: '#2E7D32',
-                border: '#388E3C',
+                bg: '#C8E6C9',
+                text: '#1B5E20',
+                border: '#A5D6A7',
             });
         });
 
         it('should have OVERDUE colors', () => {
             expect(COURIER_LABEL_COLORS.OVERDUE).toEqual({
-                bg: '#D32F2F',
+                bg: '#B3261E',
                 text: '#FFFFFF',
-                border: '#B71C1C',
+                border: '#8C1D18',
             });
         });
 
         it('should have contrasting text colors for readability', () => {
-            // White text on red background
+            // White on-error text on the solid MD3 error fill
             expect(COURIER_LABEL_COLORS.OVERDUE.text).toBe('#FFFFFF');
-            // Dark text on light backgrounds
-            expect(COURIER_LABEL_COLORS.NO_JOBS.text).toBe('#1565C0');
-            expect(COURIER_LABEL_COLORS.HAS_JOBS.text).toBe('#2E7D32');
+            // Dark on-container text on the light tonal containers
+            expect(COURIER_LABEL_COLORS.NO_JOBS.text).toBe('#37474F');
+            expect(COURIER_LABEL_COLORS.HAS_JOBS.text).toBe('#1B5E20');
         });
     });
 
@@ -277,12 +279,12 @@ describe('DispatchMap Type Definitions', () => {
             const markerData: JobMarkerData = {
                 marker: {},
                 jobId: 123,
-                type: 'pickup',
+                type: AddressType.Pickup,
                 isCurrentJob: true,
             };
 
             expect(markerData.jobId).toBe(123);
-            expect(markerData.type).toBe('pickup');
+            expect(markerData.type).toBe(AddressType.Pickup);
             expect(markerData.isCurrentJob).toBe(true);
         });
 
@@ -290,11 +292,11 @@ describe('DispatchMap Type Definitions', () => {
             const markerData: JobMarkerData = {
                 marker: {},
                 jobId: 456,
-                type: 'delivery',
+                type: AddressType.Delivery,
                 isCurrentJob: false,
             };
 
-            expect(markerData.type).toBe('delivery');
+            expect(markerData.type).toBe(AddressType.Delivery);
         });
     });
 

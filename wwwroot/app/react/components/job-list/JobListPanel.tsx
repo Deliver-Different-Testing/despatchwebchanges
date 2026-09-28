@@ -7,8 +7,8 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
+import {Box, Progress} from '@mantine/core';
+import {useDebouncedValue, useDisclosure, useHotkeys, useLocalStorage} from '@mantine/hooks';
 import dayjs from 'dayjs';
 import type {
     CourierData,
@@ -20,54 +20,52 @@ import type {
 } from '../../interfaces/dispatchJob';
 import {JobListStatsHeader} from './JobListStatsHeader';
 import {JobListToolbar} from './JobListToolbar';
+import {JobListViewOptions} from './JobListViewOptions';
+import {JobListColumnEditor} from './JobListColumnEditor';
+import {availableColumns, DEFAULT_COLUMN_WIDTHS, orderColumns} from './jobListColumns';
+import {HeaderSlotPortal} from '../common/header-slot/HeaderSlotPortal';
 import {JobListTable} from './JobListTable';
+import {flattenLineFormat, formatAddressWithFields, getDeliveryAddressUs, getPickupAddressUs} from './jobAddressFormat';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
-import {allocateJobs, bulkUpdateReadStatus, restoreJobs, updateJobReadStatus} from '../../services/jobListApi';
+import {
+    addRestoreEvent,
+    allocateJobs,
+    bulkUpdateReadStatus,
+    restoreJobs,
+    getRestorePodImpact,
+    updateJobReadStatus,
+    getActivePartnerOptions,
+    getPartnerRateForJob,
+} from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
-import {isDelivered, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
+import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch, priorityRank} from './jobListHelpers';
+import {
+    jobListStorageKey,
+    loadJobListCategory,
+    loadJobListColumnsFromServer,
+    persistJobListCategory,
+    persistJobListColumnsToServer,
+    toStatusFilter,
+} from './jobListPreferences';
+import {loadEffectiveAddressFormat, type EffectiveAddressFormat} from './addressFormatPreferences';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
+import {DispatchDialog, type DispatchConfirmation} from '../dialogs/dispatch-dialog';
+import {isNetworkPartnerSession} from '../dialogs/dispatch-dialog/dispatchSession';
+import {assignAgentToJobs, assignNpAgentToJobs} from '../../services/dispatchExecutorApi';
+import {RestoreConfirmationDialog} from '../dialogs/restore-confirmation-dialog';
+import type {RestorePodImpactSummary} from '../dialogs/restore-confirmation-dialog';
+import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
 
 // ── Constants ────────────────────────────────────────────────────────
 
-const DEFAULT_COLUMN_WIDTHS: Record<string, number> = {
-    priority: 50,
-    date: 80,
-    time: 80,
-    speed: 80,
-    isArchived: 80,
-    vehicle: 100,
-    jobNo: 130,
-    client: 85,
-    pickup: 120,
-    delivery: 380,
-    courier: 150,
-    remaining: 110,
-    status: 100,
-};
 
 const DEFAULT_STORAGE_PREFIX = 'jobListReact';
 
 // ── Filter / Sort Helpers ────────────────────────────────────────────
-
-function isActive(job: DispatchJob): boolean {
-    if (needsDispatch(job)) return false;
-    const activeStatuses = [JOB_STATUS.Dispatched, JOB_STATUS.Accepted, JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
-    return activeStatuses.includes(job.statusId as any) || isUrgent(job) || hasIssues(job);
-}
-
-function isInTransit(job: DispatchJob): boolean {
-    return job.statusId === JOB_STATUS.InTransit;
-}
-
-function hasIssues(job: DispatchJob): boolean {
-    return [JOB_STATUS.Rejected, JOB_STATUS.LatePickup, JOB_STATUS.Warning, JOB_STATUS.LateDelivery, JOB_STATUS.Undeliverable].includes(
-        job.statusId as any,
-    );
-}
 
 function matchesCategory(job: DispatchJob, category: JobCategory): boolean {
     switch (category) {
@@ -109,6 +107,7 @@ function matchesSearch(job: DispatchJob, query: string): boolean {
     return (
         safeIncludes(job.jobNo, query) ||
         safeIncludes(job.client, query) ||
+        safeIncludes(job.refA, query) ||
         safeIncludes(job.statusName, query) ||
         safeIncludes(job.assignedCourier?.text, query) ||
         safeIncludes(job.pickupContact, query) ||
@@ -123,34 +122,13 @@ function matchesSearch(job: DispatchJob, query: string): boolean {
     );
 }
 
-function formatAddressOrFallback(
-    address: AddressViewModel | undefined,
-    pickLines: (a: AddressViewModel) => Array<string | undefined>,
-    fallback: string | undefined,
-): string {
-    if (address) {
-        return pickLines(address).filter((l): l is string => Boolean(l && l.trim())).join(', ');
-    }
-    return (fallback || '').split(',').map((l) => l.trim()).join(', ');
-}
-
-function getPickupAddressStr(job: DispatchJob): string {
-    return formatAddressOrFallback(
-        job.pickupAddress,
-        (a) => [a.addressLine2, a.addressLine3, a.addressLine4, a.addressLine5, a.addressLine6, a.addressLine7, a.addressLine8],
-        job.from,
-    );
-}
-
-function getDeliveryAddressStr(job: DispatchJob): string {
-    return formatAddressOrFallback(
-        job.deliveryAddress,
-        (a) => [a.addressLine2, a.addressLine3, a.addressLine4, a.addressLine5, a.addressLine8],
-        job.toAddress,
-    );
-}
-
-function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean): string | number {
+/** `null` means "no value to order by" — those rows sink to the bottom whichever way the sort runs. */
+function getSortValue(
+    job: DispatchJob,
+    column: string,
+    isUsCustomer?: boolean,
+    addressFormat?: EffectiveAddressFormat,
+): string | number | null {
     switch (column) {
         case 'date':
             return job.booked ? dayjs(job.booked).startOf('day').valueOf() : 0;
@@ -170,36 +148,39 @@ function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean):
             return job.jobNo || '';
         case 'client':
             return job.client || '';
+        case 'refA':
+            return job.refA || '';
         case 'pickup':
-            return getPickupAddressStr(job);
+            return addressFormat?.pickup
+                ? formatAddressWithFields(job.pickupAddress, flattenLineFormat(addressFormat.pickup), job.from)
+                : getPickupAddressUs(job);
         case 'delivery':
-            return getDeliveryAddressStr(job);
+            return addressFormat?.delivery
+                ? formatAddressWithFields(job.deliveryAddress, flattenLineFormat(addressFormat.delivery), job.toAddress)
+                : getDeliveryAddressUs(job);
         case 'courier':
             return isUsCustomer
                 ? (job.courierData?.courierName || job.assignedCourier?.text || '')
                 : String(job.courierData?.courierNumber || job.assignedCourier?.id || '');
-        case 'remaining': {
-            const hasNoCourier = !job.assignedCourier && !job.courier;
-            const remainValue = job.remain !== undefined && job.remain !== null ? job.remain : Number.MAX_SAFE_INTEGER;
-            return hasNoCourier ? remainValue - 1000000 : remainValue;
-        }
+        case 'remaining':
+            return job.remain ?? null;
         case 'status':
             return job.status || job.statusName || '';
         case 'isArchived':
             return job.isArchived ? 1 : 0;
         case 'priority':
-            if (isUrgent(job)) return 0;
-            if (hasIssues(job)) return 1;
-            if (needsDispatch(job)) return 2;
-            if (isActive(job)) return 3;
-            if (isDelivered(job)) return 4;
-            return 5;
+            return priorityRank(job);
         default:
             return '';
     }
 }
 
-function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: boolean): DispatchJob[] {
+function sortJobs(
+    jobs: DispatchJob[],
+    sortState: JobListSort,
+    isUsCustomer?: boolean,
+    addressFormat?: EffectiveAddressFormat,
+): DispatchJob[] {
     const sorted = [...jobs];
 
     if (!sortState.column || !sortState.direction) {
@@ -220,14 +201,20 @@ function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: bo
 
     // Pre-compute sort values once (O(n)) instead of recomputing in every comparison (O(n log n))
     const col = sortState.column!;
-    const sortCache = new Map<number, string | number>();
+    const sortCache = new Map<number, string | number | null>();
     for (const job of sorted) {
-        sortCache.set(job.id, getSortValue(job, col, isUsCustomer));
+        sortCache.set(job.id, getSortValue(job, col, isUsCustomer, addressFormat));
     }
 
     return sorted.sort((a, b) => {
         const aValue = sortCache.get(a.id)!;
         const bValue = sortCache.get(b.id)!;
+
+        // Ahead of the direction flip, so a value-less row stays last both ways.
+        if (aValue === null || bValue === null) {
+            if (aValue === bValue) return 0;
+            return aValue === null ? 1 : -1;
+        }
 
         let comparison: number;
         if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -256,19 +243,21 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               onAddStop,
                                                               onJobsLoaded,
                                                               defaultCategory,
+                                                              forcedCategory,
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
-                                                              onDateFilterModeChange,
+                                                              headerSlot,
+                                                              topSlot,
                                                               setJobsCallback,
                                                               setRefreshCallback,
                                                               setSelectJobCallback,
                                                               setUpdateSearchParamsCallback,
                                                           }) => {
-    const getStorageKey = useCallback((suffix: string): string => {
-        const contactId = window.ContactID ?? 0;
-        return `${storagePrefix}_${suffix}_${contactId}`;
-    }, [storagePrefix]);
+    const getStorageKey = useCallback(
+        (suffix: string): string => jobListStorageKey(storagePrefix, suffix),
+        [storagePrefix],
+    );
 
     // ── Prefetch note types (cached forever, removes waterfall from job detail) ──
     useEffect(() => {
@@ -301,38 +290,92 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     // ── UI State ─────────────────────────────────────────────────────
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<JobCategory>(defaultCategory || 'all');
+    const [selectedCategory, setSelectedCategory] = useState<JobCategory>(
+        () => forcedCategory ?? loadJobListCategory(storagePrefix) ?? defaultCategory ?? 'all',
+    );
     const [searchQuery, setSearchQuery] = useState('');
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-    const [sortState, setSortState] = useState<JobListSort>(() => {
-        try {
-            const saved = localStorage.getItem(getStorageKey('sortState'));
-            if (saved) return JSON.parse(saved);
-        } catch { /* ignore */
-        }
-        return {column: null, direction: null};
+    const [debouncedRawQuery] = useDebouncedValue(searchQuery, 200);
+    // Clearing the box filters immediately; only typing pays the debounce.
+    const debouncedSearchQuery = searchQuery ? debouncedRawQuery : '';
+    /*
+     * Persisted panel preferences. `getInitialValueInEffect: false` throughout —
+     * the default defers the read to an effect, which would paint one frame of
+     * default widths/order before the saved layout lands. The two non-JSON keys
+     * keep their original encodings so preferences saved before this hook
+     * arrived still load.
+     */
+    const [sortState, setSortState] = useLocalStorage<JobListSort>({
+        key: getStorageKey('sortState'),
+        defaultValue: {column: null, direction: null},
+        getInitialValueInEffect: false,
     });
-    const [densityMode, setDensityMode] = useState<DensityMode>(() => {
-        try {
-            const saved = localStorage.getItem(getStorageKey('densityMode'));
-            if (saved) return saved as DensityMode;
-        } catch { /* ignore */
-        }
-        return 'dense';
+    const [densityMode, setDensityMode] = useLocalStorage<DensityMode>({
+        key: getStorageKey('densityMode'),
+        defaultValue: 'dense',
+        serialize: (value) => value,
+        deserialize: (value) => (value as DensityMode) || 'dense',
+        getInitialValueInEffect: false,
     });
-    const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
-        try {
-            const saved = localStorage.getItem(getStorageKey('columnWidths'));
-            if (saved) return {...DEFAULT_COLUMN_WIDTHS, ...JSON.parse(saved)};
-        } catch { /* ignore */
-        }
-        return {...DEFAULT_COLUMN_WIDTHS};
+    const [columnWidths, setColumnWidths] = useLocalStorage<Record<string, number>>({
+        key: getStorageKey('columnWidths'),
+        defaultValue: {...DEFAULT_COLUMN_WIDTHS},
+        // A saved width map only covers the columns the user actually resized,
+        // so it layers over the defaults rather than replacing them.
+        deserialize: (value) => {
+            try {
+                return value ? {...DEFAULT_COLUMN_WIDTHS, ...JSON.parse(value)} : {...DEFAULT_COLUMN_WIDTHS};
+            } catch {
+                return {...DEFAULT_COLUMN_WIDTHS};
+            }
+        },
+        getInitialValueInEffect: false,
     });
-    const [loggedInCouriersOnly, setLoggedInCouriersOnly] = useState(() => {
-        try {
-            return localStorage.getItem(getStorageKey('loggedInCouriersOnly')) === 'true';
-        } catch { /* ignore */ }
-        return false;
+    const [columnOrder, setColumnOrder] = useLocalStorage<string[]>({
+        key: getStorageKey('columnOrder'),
+        defaultValue: [],
+        getInitialValueInEffect: false,
+    });
+    const [hiddenColumns, setHiddenColumns] = useLocalStorage<string[]>({
+        key: getStorageKey('hiddenColumns'),
+        defaultValue: [],
+        getInitialValueInEffect: false,
+    });
+    // "Edit columns" mode for this list's own column editor — local to this
+    // panel instance, opened from its own toolbar button.
+    const [columnEditMode, setColumnEditMode] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        loadJobListColumnsFromServer(storagePrefix).then((prefs) => {
+            if (cancelled || !prefs) return;
+            setColumnOrder(prefs.columnOrder);
+            setColumnWidths({...DEFAULT_COLUMN_WIDTHS, ...prefs.columnWidths});
+            setHiddenColumns(prefs.hiddenColumns);
+        }).catch((error) => console.error(`Failed to load job list columns (${storagePrefix}) from server:`, error));
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [storagePrefix]);
+
+    // Effective address format: user's own override, else the tenant default,
+    // resolved independently per side — a side left undefined (unresolved yet,
+    // or neither configured) keeps the legacy hardcoded NZ/US format in JobListTable.
+    const [addressFormat, setAddressFormat] = useState<EffectiveAddressFormat | undefined>(undefined);
+    useEffect(() => {
+        let cancelled = false;
+        loadEffectiveAddressFormat().then((format) => {
+            if (!cancelled) setAddressFormat(format);
+        }).catch((error) => console.error('Failed to load address format preference:', error));
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+    const [loggedInCouriersOnly, setLoggedInCouriersOnly] = useLocalStorage<boolean>({
+        key: getStorageKey('loggedInCouriersOnly'),
+        defaultValue: false,
+        serialize: (value) => String(value),
+        deserialize: (value) => value === 'true',
+        getInitialValueInEffect: false,
     });
     const [lastUpdated, setLastUpdated] = useState(() => `Last updated: ${dayjs().format('h:mm A')}`);
 
@@ -341,6 +384,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const [contextMenuPos, setContextMenuPos] = useState<{ mouseX: number; mouseY: number } | null>(null);
 
     const isJobSearchPage = appPage === 3; // AppPage.JobSearch
+    // Live-dispatching affordance: the dispatch job list only, not job search.
+    const showLoggedInSwitch = appPage === 1 && !hideLoggedInSwitch; // AppPage.Dispatch
+    // Forced off where the switch is hidden, so a stored `true` can't keep
+    // filtering the courier search with no UI to clear it.
+    const loggedInCouriersOnlyEffective = showLoggedInSwitch && loggedInCouriersOnly;
 
     // ── Register callbacks for AngularJS bridge (legacy mode) ────────
     const updateJobsRef = useRef<((jobs: DispatchJob[], total: number) => void) | null>(null);
@@ -385,10 +433,27 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [fetchConfig, setUpdateSearchParamsCallback]);
 
-    // Update category when defaultCategory prop changes
+    // Update category when defaultCategory prop changes. Only an actual change counts —
+    // on mount the stored category has already won in the initialiser above, and this
+    // effect would otherwise clobber it every time the panel is remounted.
+    const previousDefaultCategoryRef = useRef(defaultCategory);
     useEffect(() => {
-        if (defaultCategory) setSelectedCategory(defaultCategory);
+        if (defaultCategory && defaultCategory !== previousDefaultCategoryRef.current) {
+            setSelectedCategory(defaultCategory);
+        }
+        previousDefaultCategoryRef.current = defaultCategory;
     }, [defaultCategory]);
+
+    // A scope that dictates its own category (the dispatch clear-list) applies it
+    // when it changes too, so the panel need not be remounted to pick it up. On
+    // mount the initialiser has already applied it, hence the same ref guard.
+    const previousForcedCategoryRef = useRef(forcedCategory);
+    useEffect(() => {
+        if (forcedCategory && forcedCategory !== previousForcedCategoryRef.current) {
+            setSelectedCategory(forcedCategory);
+        }
+        previousForcedCategoryRef.current = forcedCategory;
+    }, [forcedCategory]);
 
     // Update lastUpdated when hook data changes (fetchConfig mode)
     useEffect(() => {
@@ -397,41 +462,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [hookData?.isLoading, hookData?.isFetching]);
 
-    // ── Persist preferences ──────────────────────────────────────────
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('sortState'), JSON.stringify(sortState));
-    }, [sortState, getStorageKey]);
-
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('densityMode'), densityMode);
-    }, [densityMode, getStorageKey]);
-
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('columnWidths'), JSON.stringify(columnWidths));
-    }, [columnWidths, getStorageKey]);
-
-    useEffect(() => {
-        localStorage.setItem(getStorageKey('loggedInCouriersOnly'), String(loggedInCouriersOnly));
-    }, [loggedInCouriersOnly, getStorageKey]);
-
-    // The current-work table is locked to today-only; tell AngularJS on mount.
-    useEffect(() => {
-        onDateFilterModeChange?.(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // ── Debounced search (avoids filtering on every keystroke) ────────
-    useEffect(() => {
-        if (!searchQuery) {
-            setDebouncedSearchQuery('');
-            return;
-        }
-        const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 200);
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
-
     // ── Computed: filtered & sorted jobs ─────────────────────────────
-    const {filteredJobs, stats} = useMemo(() => {
+    const filteredJobs = useMemo(() => {
         let filtered = jobs;
 
         // Category filter
@@ -446,24 +478,33 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             });
         }
 
-        // Search filter (skip when backend handles it via fetchConfig)
-        if (debouncedSearchQuery && !fetchConfig) {
+        // Search filter (skip when the backend handles it via fetchConfig — unless
+        // that fetch has no server-side search of its own, e.g. Current Work).
+        if (debouncedSearchQuery && (!fetchConfig || fetchConfig.clientSideSearch)) {
             filtered = filtered.filter((job) => matchesSearch(job, debouncedSearchQuery));
         }
 
         // Sort
-        filtered = sortJobs(filtered, sortState, isUsCustomer);
+        filtered = sortJobs(filtered, sortState, isUsCustomer, addressFormat);
 
-        // Stats from full (unfiltered) jobs — single pass
+        return filtered;
+    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, addressFormat, fetchConfig]);
+
+    // ── Computed: stats header ───────────────────────────────────────
+    // The header describes the whole list, so the server counts it — before any category filter and
+    // across every page, neither of which the loaded rows can answer for. The local pass is the
+    // fallback for the lists that push their jobs in rather than fetching them.
+    const stats = useMemo(() => {
+        if (hookData.statusCounts) return hookData.statusCounts;
+
         const statsResult = {total: jobs.length, active: 0, transit: 0, done: 0};
         for (const j of jobs) {
-            if (isActive(j)) statsResult.active++;
+            if (needsDispatch(j)) statsResult.active++;
             if (isInTransit(j)) statsResult.transit++;
             if (isDelivered(j)) statsResult.done++;
         }
-
-        return {filteredJobs: filtered, stats: statsResult};
-    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, fetchConfig]);
+        return statsResult;
+    }, [jobs, hookData.statusCounts]);
 
     // ── Related job highlighting ────────────────────────────────────
     const relatedJobIds = useMemo(() => {
@@ -484,16 +525,12 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         multiSelect.clear();
     }, [selectedCategory, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Escape key clears multi-select
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && multiSelect.selectCount > 0) {
-                multiSelect.clear();
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [multiSelect.selectCount]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Escape key clears multi-select. The empty tags-to-ignore list keeps the
+    // previous document-level reach — Escape works from inside the search box
+    // too, which useHotkeys would otherwise skip.
+    useHotkeys([['Escape', () => {
+        if (multiSelect.selectCount > 0) multiSelect.clear();
+    }]], []);
 
     // ── Handlers ─────────────────────────────────────────────────────
 
@@ -505,7 +542,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             if (isCtrlOrCmd || isShift) {
                 // If starting multi-select from a plain-clicked job, include it
                 if (selectedJobId !== null && multiSelect.selectCount === 0) {
-                    multiSelect.toggle(selectedJobId, {ctrlKey: true, metaKey: false, shiftKey: false} as React.MouseEvent);
+                    multiSelect.toggle(selectedJobId, {
+                        ctrlKey: true,
+                        metaKey: false,
+                        shiftKey: false
+                    } as React.MouseEvent);
                 }
                 // Modifier click → multi-select, don't change detail panel
                 multiSelect.toggle(job.id, event);
@@ -545,19 +586,20 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const handleCategoryChange = useCallback(
         (category: JobCategory) => {
             setSelectedCategory(category);
+            persistJobListCategory(storagePrefix, category);
             if (fetchConfig) {
-                hookDataRef.current.updateParams({statusFilter: category === 'all' ? undefined : category});
+                hookDataRef.current.updateParams({statusFilter: toStatusFilter(category)});
             }
             if (onCategoryChange) onCategoryChange(category);
         },
-        [onCategoryChange, fetchConfig],
+        [onCategoryChange, fetchConfig, storagePrefix],
     );
 
     const handleSearchChange = useCallback(
         (query: string) => {
             setSearchQuery(query.toLowerCase());
-            if (fetchConfig) {
-                hookDataRef.current.updateParams({ searchText: query || undefined });
+            if (fetchConfig && !fetchConfig.clientSideSearch) {
+                hookDataRef.current.updateParams({searchText: query || undefined});
             }
             if (onSearchChange) onSearchChange(query);
         },
@@ -573,7 +615,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 return {column, direction: newDirection};
             });
         },
-        [],
+        [setSortState],
     );
 
     // When sort changes: update hook params (fetchConfig mode) or notify AngularJS (legacy mode)
@@ -594,19 +636,41 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const handleLoggedInCouriersOnlyChange = useCallback((checked: boolean) => {
         setLoggedInCouriersOnly(checked);
-    }, []);
+    }, [setLoggedInCouriersOnly]);
 
     const handleDensityModeChange = useCallback((mode: DensityMode) => {
         setDensityMode(mode);
-    }, []);
+    }, [setDensityMode]);
 
     const handleColumnWidthsChange = useCallback((widths: Record<string, number>) => {
         setColumnWidths(widths);
-    }, []);
+    }, [setColumnWidths]);
 
     const handleResetColumns = useCallback(() => {
-        setColumnWidths({...DEFAULT_COLUMN_WIDTHS});
-    }, []);
+        const defaults = {columnWidths: {...DEFAULT_COLUMN_WIDTHS}, columnOrder: [] as string[], hiddenColumns: [] as string[]};
+        setColumnWidths(defaults.columnWidths);
+        setColumnOrder(defaults.columnOrder);
+        setHiddenColumns(defaults.hiddenColumns);
+        persistJobListColumnsToServer(storagePrefix, defaults);
+    }, [storagePrefix, setColumnWidths, setColumnOrder, setHiddenColumns]);
+
+    const handleEditColumns = useCallback(() => setColumnEditMode(true), []);
+
+    const handleDoneEditingColumns = useCallback(() => {
+        setColumnEditMode(false);
+        persistJobListColumnsToServer(storagePrefix, {columnOrder, columnWidths, hiddenColumns});
+    }, [storagePrefix, columnOrder, columnWidths, hiddenColumns]);
+
+    // Every configurable column for this tenant/page, in the user's order —
+    // what the editor lists. The table then drops the hidden ones.
+    const editorColumns = useMemo(
+        () => orderColumns(availableColumns(isUsCustomer, isJobSearchPage), columnOrder),
+        [isUsCustomer, isJobSearchPage, columnOrder],
+    );
+    const tableColumns = useMemo(
+        () => editorColumns.filter(col => col.locked || !hiddenColumns.includes(col.key)),
+        [editorColumns, hiddenColumns],
+    );
 
     const handleRefresh = useCallback(() => {
         if (fetchConfig) {
@@ -618,12 +682,27 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     // ── Bulk action handlers ───────────────────────────────────────────
 
-    const handleBulkRestore = useCallback(async () => {
-        const ids = [...multiSelect.selectedIds];
+    const [bulkRestoreConfirm, setBulkRestoreConfirm] = useState<RestorePodImpactSummary | null>(null);
+    const [bulkRestoreChecking, setBulkRestoreChecking] = useState(false);
+
+    const performBulkRestore = useCallback(async (removeCapturedImages = false) => {
+        // Archived jobs live only in the archive tables; restore operates on live (tucJob)
+        // rows, so restoring an archived job silently no-ops — exclude them.
+        const ids = [...multiSelect.selectedIds].filter(
+            id => !jobs.find(j => j.id === id)?.isArchived,
+        );
+        if (ids.length === 0) {
+            showToast('Archived jobs can’t be restored', 'warning');
+            return;
+        }
         try {
-            await restoreJobs(ids);
+            await Promise.all(ids.map(id => addRestoreEvent(id)));
+            await restoreJobs(ids, removeCapturedImages);
             showToast(`${ids.length} job(s) restored`, 'success');
             multiSelect.clear();
+            // Invalidate job detail (and related/photos) so an open detail panel reflects the
+            // reset status, then refresh the list.
+            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             if (fetchConfig) {
                 hookDataRef.current.refresh();
             } else if (onRefresh) {
@@ -632,7 +711,38 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         } catch {
             showToast('Failed to restore jobs', 'error');
         }
-    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+    }, [multiSelect, jobs, showToast, fetchConfig, onRefresh]);
+
+    const handleBulkRestore = useCallback(async () => {
+        // Exclude archived jobs — restore only operates on live rows.
+        const restorableIds = [...multiSelect.selectedIds].filter(
+            id => !jobs.find(j => j.id === id)?.isArchived,
+        );
+        if (restorableIds.length === 0) {
+            showToast('Archived jobs can’t be restored', 'warning');
+            return;
+        }
+        if (bulkRestoreChecking) return;
+
+        // Restoring re-opens a completed job and always clears the POD name, so find out what it
+        // would cost before doing it. A failed check falls back to confirming completed jobs only.
+        setBulkRestoreChecking(true);
+        let summary: RestorePodImpactSummary = {jobsWithPodName: 0, imageCount: 0};
+        try {
+            summary = summarisePodImpact(await getRestorePodImpact(restorableIds));
+        } catch {
+            // Never block a restore on the pre-check.
+        } finally {
+            setBulkRestoreChecking(false);
+        }
+
+        const anyCompleted = restorableIds.some(id => jobs.find(j => j.id === id)?.done);
+        if (needsRestoreConfirmation(anyCompleted, summary)) {
+            setBulkRestoreConfirm(summary);
+            return;
+        }
+        void performBulkRestore();
+    }, [multiSelect, jobs, performBulkRestore, showToast, bulkRestoreChecking]);
 
     const handleBulkMarkRead = useCallback(async () => {
         const ids = [...multiSelect.selectedIds];
@@ -666,17 +776,45 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 
-    const handleBulkSendToPartner = useCallback(async (_partnerId: number, _partnerName: string) => {
-        // Bulk partner dispatch requires per-job rate confirmation via the SendToPartnerDialog.
-        // A shared-rate bulk dialog can be added later if needed.
-        showToast('Partner dispatch requires rate confirmation — please dispatch jobs individually via right-click', 'info');
-    }, [showToast]);
+    // Bulk dispatch dialog state. The universal DispatchDialog is rendered at the
+    // panel level so the toolbar's "Dispatch" button just toggles open=true.
+    const [bulkDispatchOpen, {open: openBulkDispatch, close: closeBulkDispatch}] = useDisclosure(false);
+    const handleBulkDispatchClick = useCallback(() => {
+        if (multiSelect.selectCount > 0) openBulkDispatch();
+    }, [multiSelect.selectCount, openBulkDispatch]);
 
-    const handleBulkDispatch = useCallback(async (courierId: number, courierName: string) => {
+    const handleBulkDispatchCourier = useCallback(async (
+        {type, destination, emailSubject, emailBody}: DispatchConfirmation,
+    ) => {
         const ids = [...multiSelect.selectedIds];
         try {
-            await allocateJobs(courierId, ids);
-            showToast(`${ids.length} job(s) dispatched to ${courierName}`, 'success');
+            let message: string;
+            let severity: 'success' | 'warning' = 'success';
+
+            if (type === 'Agent' || type === 'NP') {
+                // Server-side batches so one job failing its flight gate reports rather
+                // than aborting the rest — and so the agent email fires once per job.
+                const result = type === 'Agent'
+                    ? await assignAgentToJobs(ids, destination.id, false, emailSubject, emailBody)
+                    : await assignNpAgentToJobs(ids, destination.id);
+
+                const noun = type === 'Agent' ? 'agent' : 'network partner';
+                message = `${result.assigned} job(s) assigned to ${noun} ${destination.text}`;
+
+                if (result.failed > 0) {
+                    const reasons = [...new Set(
+                        result.results.filter((r) => !r.succeeded && r.failureReason).map((r) => r.failureReason),
+                    )].join('; ');
+                    message = `${message} — ${result.failed} failed: ${reasons}`;
+                    severity = 'warning';
+                }
+            } else {
+                await allocateJobs(destination.id, ids);
+                message = `${ids.length} job(s) dispatched to ${destination.text}`;
+            }
+
+            showToast(message, severity);
+            closeBulkDispatch();
             multiSelect.clear();
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             if (fetchConfig) {
@@ -684,10 +822,18 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             } else if (onRefresh) {
                 onRefresh();
             }
-        } catch {
-            showToast('Failed to dispatch jobs', 'error');
+        } catch (err) {
+            // Re-throw so the dialog surfaces the error inline.
+            const message = err instanceof Error ? err.message : 'Failed to dispatch jobs';
+            throw new Error(message, {cause: err});
         }
-    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+    }, [multiSelect, showToast, fetchConfig, onRefresh, closeBulkDispatch]);
+
+    // Bulk DFRNT Partner is disabled in the dialog (per-job rates required),
+    // so this should never fire — but the dialog still needs the prop.
+    const handleBulkSendToPartner = useCallback(async () => {
+        throw new Error('DFRNT Partner is not available for bulk dispatch.');
+    }, []);
 
     const handleJobDispatch = useCallback(async (
         job: DispatchJob,
@@ -737,21 +883,44 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // ── Render ───────────────────────────────────────────────────────
 
     return (
-        <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            bgcolor: 'background.paper',
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 1,
-            overflow: 'hidden',
-            position: 'relative',
-        }}>
+        <Box
+            data-testid="job-list-panel"
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                backgroundColor: 'var(--dd-surface-container)',
+                border: '1px solid var(--mantine-color-default-border)',
+                borderRadius: 0,
+                overflow: 'hidden',
+                position: 'relative',
+            }}
+        >
             {fetchConfig && hookData.isFetching && (
-                <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 }} />
+                <Progress.Root
+                    size="xs"
+
+                    style={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1}}
+                >
+                    <Progress.Section value={100} animated aria-label="Loading jobs"/>
+                </Progress.Root>
             )}
+            {topSlot}
             <JobListStatsHeader stats={stats}/>
+            {headerSlot && (
+                <HeaderSlotPortal slot={headerSlot}>
+                    <JobListViewOptions
+                        densityMode={densityMode}
+                        onDensityModeChange={handleDensityModeChange}
+                        onResetColumns={handleResetColumns}
+                        onEditColumns={handleEditColumns}
+                        loggedInCouriersOnly={loggedInCouriersOnly}
+                        onLoggedInCouriersOnlyChange={handleLoggedInCouriersOnlyChange}
+                        showLoggedInSwitch={showLoggedInSwitch}
+                        headerVariant
+                    />
+                </HeaderSlotPortal>
+            )}
             <JobListToolbar
                 selectedCategory={selectedCategory}
                 onCategoryChange={handleCategoryChange}
@@ -762,16 +931,29 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 densityMode={densityMode}
                 onDensityModeChange={handleDensityModeChange}
                 onResetColumns={handleResetColumns}
+                onEditColumns={handleEditColumns}
                 appPage={appPage}
                 selectedCount={multiSelect.selectCount}
                 onClearSelection={multiSelect.clear}
-                onBulkDispatch={handleBulkDispatch}
+                onBulkDispatchClick={handleBulkDispatchClick}
                 onBulkRestore={handleBulkRestore}
                 onBulkMarkRead={handleBulkMarkRead}
                 onBulkMarkUnread={handleBulkMarkUnread}
-                onBulkSendToPartner={handleBulkSendToPartner}
-                hideLoggedInSwitch={hideLoggedInSwitch}
+                showLoggedInSwitch={showLoggedInSwitch}
+                renderViewOptions={!headerSlot}
             />
+            {columnEditMode && (
+                <JobListColumnEditor
+                    columns={editorColumns}
+                    hiddenColumns={hiddenColumns}
+                    columnWidths={columnWidths}
+                    onOrderChange={setColumnOrder}
+                    onHiddenChange={setHiddenColumns}
+                    onColumnWidthsChange={setColumnWidths}
+                    onReset={handleResetColumns}
+                    onDone={handleDoneEditingColumns}
+                />
+            )}
             <JobListTable
                 jobs={visibleJobs}
                 selectedJobId={selectedJobId}
@@ -785,10 +967,12 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 densityMode={densityMode}
                 columnWidths={columnWidths}
                 onColumnWidthsChange={handleColumnWidthsChange}
+                columns={tableColumns}
                 isUsCustomer={isUsCustomer}
+                addressFormat={addressFormat}
                 appPage={appPage}
                 isJobSearchPage={isJobSearchPage}
-                loggedInCouriersOnly={loggedInCouriersOnly}
+                loggedInCouriersOnly={loggedInCouriersOnlyEffective}
                 onLoadMore={fetchConfig ? hookData.fetchNextPage : undefined}
                 hasMore={fetchConfig ? hookData.hasMore : false}
                 isFetchingMore={fetchConfig ? hookData.isFetchingNextPage : false}
@@ -809,6 +993,37 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh={handleRefresh}
                 onAddStop={onAddStop}
                 isUsCustomer={isUsCustomer}
+            />
+            {/* Bulk dispatch dialog — opened by the toolbar's "Dispatch" button. */}
+            <DispatchDialog
+                open={bulkDispatchOpen}
+                mode={{
+                    kind: 'bulk',
+                    jobs: visibleJobs
+                        .filter(j => multiSelect.selectedIds.has(j.id))
+                        .map(j => ({id: j.id, jobNo: j.jobNo})),
+                }}
+                initialType="Courier"
+                isNetworkPartner={isNetworkPartnerSession()}
+                onClose={closeBulkDispatch}
+                onDispatchCourier={handleBulkDispatchCourier}
+                onSendToPartner={handleBulkSendToPartner}
+                fetchRate={getPartnerRateForJob}
+                getPartnerOptions={getActivePartnerOptions}
+            />
+            {/* Confirm before a restore that reopens a completed job or destroys proof of delivery. */}
+            <RestoreConfirmationDialog
+                open={bulkRestoreConfirm !== null}
+                count={[...multiSelect.selectedIds].filter(id => {
+                    const j = jobs.find(x => x.id === id);
+                    return j && !j.isArchived && j.done;
+                }).length}
+                podImpact={bulkRestoreConfirm ?? undefined}
+                onClose={() => setBulkRestoreConfirm(null)}
+                onConfirm={async (removeCapturedImages) => {
+                    setBulkRestoreConfirm(null);
+                    await performBulkRestore(removeCapturedImages);
+                }}
             />
         </Box>
     );

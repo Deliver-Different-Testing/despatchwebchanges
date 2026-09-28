@@ -22,18 +22,24 @@ public sealed class StringToBooleanConverter : JsonConverter<bool?>
             case JsonTokenType.String:
                 var stringValue = reader.GetString();
                 if (string.IsNullOrWhiteSpace(stringValue))
+                {
                     return null;
+                }
 
                 // Handle common string representations
                 if (stringValue.Equals("true", StringComparison.OrdinalIgnoreCase) ||
                     stringValue.Equals("1", StringComparison.Ordinal) ||
                     stringValue.Equals("yes", StringComparison.OrdinalIgnoreCase))
+                {
                     return true;
+                }
 
                 if (stringValue.Equals("false", StringComparison.OrdinalIgnoreCase) ||
                     stringValue.Equals("0", StringComparison.Ordinal) ||
                     stringValue.Equals("no", StringComparison.OrdinalIgnoreCase))
+                {
                     return false;
+                }
 
                 return null;
             case JsonTokenType.Number:
@@ -54,8 +60,12 @@ public sealed class StringToBooleanConverter : JsonConverter<bool?>
     public override void Write(Utf8JsonWriter writer, bool? value, JsonSerializerOptions options)
     {
         if (value.HasValue)
+        {
             writer.WriteBooleanValue(value.Value);
+        }
         else
+        {
             writer.WriteNullValue();
+        }
     }
 }

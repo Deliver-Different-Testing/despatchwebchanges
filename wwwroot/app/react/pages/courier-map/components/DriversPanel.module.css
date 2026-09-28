@@ -1,0 +1,79 @@
+/*
+ * DriversPanel — only rules props cannot express live here: a custom scrollbar
+ * (pseudo-elements), and the toggle handle's ::after touch-target expansion plus
+ * its hover/active states. Resting values sit next to their pseudo-state rules,
+ * because an inline resting value would outrank the class and make the hover
+ * unreachable.
+ */
+
+/* Thin scrollbar for the driver list. Firefox honours scrollbar-width/color;
+   WebKit needs the pseudo-elements. */
+.listArea {
+    scrollbar-width: thin;
+    scrollbar-color: var(--mantine-color-gray-4) transparent;
+}
+
+.listArea::-webkit-scrollbar {
+    width: 5px;
+}
+
+.listArea::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.listArea::-webkit-scrollbar-thumb {
+    background: var(--mantine-color-gray-4);
+    border-radius: 3px;
+}
+
+.listArea::-webkit-scrollbar-thumb:hover {
+    background: var(--mantine-color-gray-5);
+}
+
+/* The handle is a deliberately narrow sliver (22x52) so it does not cover the
+   map, so the hit area is grown with ::after rather than by resizing it. */
+.toggleHandle {
+    position: absolute;
+    left: -22px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 52px;
+    border: 1px solid var(--mantine-color-default-border);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    background-color: var(--mantine-color-body);
+    box-shadow: var(--mantine-shadow-md);
+    z-index: 51;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggleHandle::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    left: -14px;
+    right: -8px;
+}
+
+.toggleHandle:hover {
+    background-color: var(--mantine-color-gray-1);
+}
+
+.toggleHandle:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* The chevron flips to point the other way when the panel is tucked away. The
+   resting rotation lives here so the transition has something to animate from. */
+.toggleChevron {
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform: rotate(0deg);
+}
+
+.toggleHandle[data-hidden='true'] .toggleChevron {
+    transform: rotate(180deg);
+}

@@ -1,19 +1,12 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * RelatedJobTabs Component Tests
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {RelatedJobTabs} from './RelatedJobTabs';
 import {createMockJob} from '../__testUtils__/mockJob';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('RelatedJobTabs', () => {
     const onTabChange = jest.fn();
@@ -23,15 +16,16 @@ describe('RelatedJobTabs', () => {
     });
 
     it('renders nothing when there is only one job', () => {
-        const {container} = renderWithTheme(
+        renderWithTheme(
             <RelatedJobTabs
                 sortedRelatedJobs={[createMockJob()]}
                 selectedTabIndex={0}
-                isRecurringJob={false}
                 onTabChange={onTabChange}
             />
         );
-        expect(container.firstChild).toBeNull();
+        // `MantineProvider` injects a <style> element, so assert on the absence
+        // of tabs rather than on an empty container.
+        expect(screen.queryAllByRole('tab')).toHaveLength(0);
     });
 
     it('renders tabs for multiple related jobs', () => {
@@ -44,7 +38,6 @@ describe('RelatedJobTabs', () => {
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={false}
                 onTabChange={onTabChange}
             />
         );
@@ -54,32 +47,38 @@ describe('RelatedJobTabs', () => {
         expect(screen.getByText('J-003')).toBeInTheDocument();
     });
 
-    it('uses full jobNo for recurring jobs when siblings do not share a prefix', () => {
-        // Label policy (2026-05-26): parent (first) always shows full jobNo;
-        // children show '*<suffix>' only if their jobNo starts with the
-        // parent's. 'J-001' / 'J-002' don't share a prefix, so both fall
-        // back to their full jobNo regardless of the recurring flag.
+    it('falls back to synthetic "Job #N" labels when jobNo is missing', () => {
+        // Defensive fallback for legacy recurring booking templates from
+        // before the 2026-04-08 child-template backfill: those rows have
+        // ucbkJobNumber = null, so the parent/suffix policy would produce
+        // blank tabs. tabLabel() drops to a synthetic 1-based 'Job #N'
+        // for those rows only. Templates with a real jobNo (post-backfill,
+        // and all freshly-booked schedule families) use the real number
+        // via the abbreviation policy in the next test.
         const jobs = [
-            createMockJob({id: 1, jobNo: 'J-001'}),
-            createMockJob({id: 2, jobNo: 'J-002'}),
+            createMockJob({id: 1, jobNo: undefined as unknown as string}),
+            createMockJob({id: 2, jobNo: undefined as unknown as string}),
+            createMockJob({id: 3, jobNo: undefined as unknown as string}),
         ];
         renderWithTheme(
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={true}
                 onTabChange={onTabChange}
             />
         );
 
-        expect(screen.getByText('J-001')).toBeInTheDocument();
-        expect(screen.getByText('J-002')).toBeInTheDocument();
-        expect(screen.queryByText('Job #1')).not.toBeInTheDocument();
+        expect(screen.getByText('Job #1')).toBeInTheDocument();
+        expect(screen.getByText('Job #2')).toBeInTheDocument();
+        expect(screen.getByText('Job #3')).toBeInTheDocument();
     });
 
     it('abbreviates child tab labels using parent jobNo prefix', () => {
         // Parent KT2103CRT + child KT2103CRTLHP → child renders as '*LHP'.
-        // Mirrors the RunViewer Detail panel convention.
+        // Mirrors RunViewer's relatedJobTabLabel (homeControl.js ~lines
+        // 273-286). Applied to both recurring and non-recurring families
+        // since the 2026-06-10 child-template migrations now populate
+        // real ucbkJobNumber on every leg.
         const jobs = [
             createMockJob({id: 1, jobNo: 'KT2103CRT'}),
             createMockJob({id: 2, jobNo: 'KT2103CRTDEL'}),
@@ -89,7 +88,6 @@ describe('RelatedJobTabs', () => {
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={true}
                 onTabChange={onTabChange}
             />
         );
@@ -97,7 +95,7 @@ describe('RelatedJobTabs', () => {
         expect(screen.getByText('KT2103CRT')).toBeInTheDocument();
         expect(screen.getByText('*DEL')).toBeInTheDocument();
         expect(screen.getByText('*LHP')).toBeInTheDocument();
-        // Full jobNo NOT rendered as a tab label (it lives on the title attr).
+        // Full child jobNo NOT rendered as a tab label (it lives on the title attr).
         expect(screen.queryByText('KT2103CRTLHP')).not.toBeInTheDocument();
     });
 
@@ -110,7 +108,6 @@ describe('RelatedJobTabs', () => {
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={false}
                 onTabChange={onTabChange}
             />
         );

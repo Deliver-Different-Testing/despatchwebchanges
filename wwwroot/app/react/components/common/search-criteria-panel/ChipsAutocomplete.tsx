@@ -3,12 +3,16 @@
  *
  * Reusable multi-select chip input with async autocomplete search.
  * Used for Clients, Couriers, and Speeds filters in the search criteria panel.
+ *
+ * Built on Mantine's `MultiSelect` rather than `TagsInput`: the options come from
+ * a server search and carry an `id`, so this is a pick-from-results control, not
+ * free-form tagging. `MultiSelect` speaks strings, so ids are stringified on the
+ * way in and resolved back to `ISuggestion` on the way out.
  */
 
-import React, {useState, useEffect, useCallback} from 'react';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
+import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
+import {Loader, MultiSelect} from '@mantine/core';
+import {useDebouncedValue} from '@mantine/hooks';
 import {ISuggestion} from '../../../../interfaces/job.interface';
 
 export interface ChipsAutocompleteProps {
@@ -19,6 +23,8 @@ export interface ChipsAutocompleteProps {
     onSearch: (searchText: string) => Promise<ISuggestion[]>;
     onChange: (items: ISuggestion[]) => void;
 }
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 export const ChipsAutocomplete: React.FC<ChipsAutocompleteProps> = ({
     label,
@@ -31,93 +37,90 @@ export const ChipsAutocomplete: React.FC<ChipsAutocompleteProps> = ({
     const [inputValue, setInputValue] = useState('');
     const [options, setOptions] = useState<ISuggestion[]>([]);
     const [loading, setLoading] = useState(false);
+    const [debouncedInput] = useDebouncedValue(inputValue, SEARCH_DEBOUNCE_MS);
 
-    // Debounced search
+    // Every suggestion this component has seen, so a selected item keeps its
+    // label after the search that produced it is cleared.
+    const knownRef = useRef(new Map<string, ISuggestion>());
+    for (const item of [...value, ...options]) {
+        knownRef.current.set(String(item.id), item);
+    }
+
     useEffect(() => {
-        if (!inputValue || inputValue.length < minInputLength) {
+        if (!debouncedInput || debouncedInput.length < minInputLength) {
             setOptions([]);
-            return;
+            return undefined;
         }
 
-        const timer = setTimeout(async () => {
-            setLoading(true);
+        // The debounce hook has no teardown of its own, so this guards against a
+        // slow request resolving after a newer one (or after unmount).
+        let cancelled = false;
+        setLoading(true);
+        (async () => {
             try {
-                const results = await onSearch(inputValue);
+                const results = await onSearch(debouncedInput);
+                if (cancelled) return;
                 // Filter out already-selected items
                 const selectedIds = new Set(value.map(v => v.id));
                 setOptions(results.filter(r => !selectedIds.has(r.id)));
             } catch (error) {
+                if (cancelled) return;
                 console.error('ChipsAutocomplete search failed:', error);
                 setOptions([]);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
-        }, 300);
+        })();
 
-        return () => clearTimeout(timer);
-    }, [inputValue, minInputLength, onSearch, value]);
+        return () => {
+            cancelled = true;
+        };
+    }, [debouncedInput, minInputLength, onSearch, value]);
 
-    const handleChange = useCallback((_event: React.SyntheticEvent, newValue: ISuggestion[]) => {
-        onChange(newValue);
+    const selectedValues = useMemo(() => value.map(v => String(v.id)), [value]);
+
+    const data = useMemo(() => {
+        const seen = new Set<string>();
+        return [...value, ...options]
+            .filter(item => {
+                const key = String(item.id);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            })
+            .map(item => ({value: String(item.id), label: item.text}));
+    }, [value, options]);
+
+    const handleChange = useCallback((ids: string[]) => {
+        onChange(ids.map(id => knownRef.current.get(id)).filter((s): s is ISuggestion => s != null));
     }, [onChange]);
 
+    const nothingFound = inputValue.length >= minInputLength
+        ? `No ${label.toLowerCase()} found`
+        : `Type at least ${minInputLength} character${minInputLength > 1 ? 's' : ''} to search`;
+
     return (
-        <Autocomplete
-            multiple
-            size="small"
-            options={options}
-            loading={loading}
-            value={value}
-            inputValue={inputValue}
-            getOptionLabel={(option) => option.text}
-            isOptionEqualToValue={(option, val) => option.id === val.id}
-            onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
+        <MultiSelect
+            size="xs"
+            searchable
+            // Already-selected items are not offered again, matching the previous
+            // Autocomplete's behaviour.
+            hidePickedOptions
+            data={data}
+            value={selectedValues}
             onChange={handleChange}
-            noOptionsText={
-                inputValue.length >= minInputLength
-                    ? `No ${label.toLowerCase()} found`
-                    : `Type at least ${minInputLength} character${minInputLength > 1 ? 's' : ''} to search`
+            searchValue={inputValue}
+            onSearchChange={setInputValue}
+            placeholder={value.length === 0 ? placeholder : ''}
+            nothingFoundMessage={nothingFound}
+            // Mantine's Loader carries no implicit role; this one is a genuine
+            // indeterminate busy indicator for the in-flight search.
+            rightSection={
+                loading ? <Loader size={18} role="progressbar" aria-label={`Searching ${label.toLowerCase()}`} /> : undefined
             }
-            slotProps={{
-                chip: {
-                    size: 'small' as const,
-                    sx: {
-                        height: 22,
-                        fontSize: '0.75rem',
-                        bgcolor: 'action.hover',
-                    },
-                },
-            }}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    placeholder={value.length === 0 ? placeholder : ''}
-                    slotProps={{
-                        input: {
-                            ...params.InputProps,
-                            endAdornment: (
-                                <>
-                                    {loading ? <CircularProgress color="inherit" size={18} /> : null}
-                                    {params.InputProps.endAdornment}
-                                </>
-                            ),
-                        },
-                    }}
-                />
-            )}
-            sx={{
-                '& .MuiOutlinedInput-root': {
-                    minHeight: 34,
-                    padding: '2px 10px',
-                    bgcolor: 'background.paper',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'divider',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'text.disabled',
-                    },
-                },
-            }}
+            // The results are already filtered server-side (and de-selected above),
+            // so the built-in substring filter would only hide valid matches.
+            filter={({options: opts}) => opts}
         />
     );
 };

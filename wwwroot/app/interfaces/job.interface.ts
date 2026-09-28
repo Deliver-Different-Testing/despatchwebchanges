@@ -3,7 +3,7 @@ import {LateEventType} from "../enums/late-event-type.enum";
 import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
-import {IFlightSegment, IFlightSegmentDto} from "../components/Nationwide/nationwide.interfaces";
+import {IFlightSegment, IFlightSegmentDto} from "./nationwideFlight.interfaces";
 import {AirportViewModel} from "../react/interfaces";
 import {Dayjs} from "dayjs";
 
@@ -71,6 +71,12 @@ export interface IJob {
     alertLateDelivery?: number;
     minutes?: number;
     statusId?: number;
+    /** The server's single resolved status. Render from this, not from statusId + done + void. */
+    resolvedStatusId?: number;
+    resolvedIsVoid?: boolean;
+    resolvedIsComplete?: boolean;
+    /** Bulk rows only: pushed to live dispatch. Distinct from `done`, which means delivered. */
+    released?: boolean;
     status: string;
     statusName: string;
     lp?: number;
@@ -112,6 +118,12 @@ export interface IJob {
     isPartnerJob?: boolean;
     /** Name of the OTHER tenant on a partner pairing — populated for sender + receiver. */
     partnerTenantName?: string | null;
+    /**
+     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
+     * payloads so the backend can disambiguate when a tenant has multiple active
+     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
+     */
+    partnerPairingId?: number | null;
     invoiced?: boolean;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
@@ -141,6 +153,8 @@ export interface IJob {
     oneOff?: boolean;
     preBook: boolean;
     isBulkJob: boolean;
+    /** The live job id behind a bulk row, whose own `id` is a BulkJobId. */
+    linkedJobId?: number;
     runName: string;
     scheduleName: string;
     conNote: string;
@@ -152,6 +166,12 @@ export interface IJob {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
+    // Speed-grouping classification (mirrors live jobs). Gates the flight UI.
+    isFlightJob?: boolean;
+    isAgentJob?: boolean;
+    // Recurring flight: complete flight number (e.g. "NZ123") saved against the
+    // booking so the same flight auto-assigns on each push-to-live.
+    savedFlightNumber?: string;
     assignedFlight?: IAssignedFlight;
     assignedAgent?: IAgent;
     assignedCourier?: ISuggestion;
@@ -175,6 +195,10 @@ export interface IJob {
     daysOfWeek?: DaysOfWeek
     frequency?: Frequency;
     holidayDeliveryOption: HolidayDeliveryOptions,
+    // Create-ahead offset (days). Backed by tucJobBooking.RecurringInitialDays.
+    // Drives uspPrebookSet's @TargetDate = today + N. Raising the value
+    // triggers CreateAheadBackfillDialog. Zero / null = legacy same-day push.
+    recurringInitialDays?: number;
     // Recurring Route assignment. Null when not assigned to any route.
     // Cascades through booking tree on update via JobProperty.RouteId.
     routeId?: number | null;
@@ -274,6 +298,12 @@ export interface IJobDto {
     alertLateDelivery?: number;
     minutes?: number;
     statusId?: number;
+    /** The server's single resolved status. Render from this, not from statusId + done + void. */
+    resolvedStatusId?: number;
+    resolvedIsVoid?: boolean;
+    resolvedIsComplete?: boolean;
+    /** Bulk rows only: pushed to live dispatch. Distinct from `done`, which means delivered. */
+    released?: boolean;
     status: string;
     statusName: string;
     lp?: number;
@@ -315,6 +345,12 @@ export interface IJobDto {
     isPartnerJob?: boolean;
     /** Name of the OTHER tenant on a partner pairing — populated for sender + receiver. */
     partnerTenantName?: string | null;
+    /**
+     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
+     * payloads so the backend can disambiguate when a tenant has multiple active
+     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
+     */
+    partnerPairingId?: number | null;
     invoiced?: boolean;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
@@ -344,6 +380,8 @@ export interface IJobDto {
     oneOff?: boolean;
     preBook: boolean;
     isBulkJob: boolean;
+    /** The live job id behind a bulk row, whose own `id` is a BulkJobId. */
+    linkedJobId?: number;
     runName: string;
     scheduleName: string;
     conNote: string;
@@ -355,6 +393,9 @@ export interface IJobDto {
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
+    isFlightJob?: boolean;
+    isAgentJob?: boolean;
+    savedFlightNumber?: string;
     assignedFlight?: IAssignedFlightDto;
     assignedAgent?: IAgent;
     assignedCourier?: ISuggestion;
@@ -378,6 +419,9 @@ export interface IJobDto {
     daysOfWeek?: number;
     frequency?: number;
     holidayDeliveryOption: number;
+    // See IJob.recurringInitialDays. Wire-format INT (nullable) — direct
+    // pass-through from tucJobBooking.RecurringInitialDays column.
+    recurringInitialDays?: number;
     // Recurring Route assignment from JobRecurringMapping. Null when
     // unassigned. dtoMappings maps this to IJob.routeId.
     routeId?: number | null;
@@ -419,6 +463,7 @@ export interface IParcelDimensions {
     length?: number;
     depth?: number;
     weight?: number;
+    cubic?: number;
     dimensions: string;
     barcode?: string;
     itemTypes?: Array<{name: string; quantity: number}>;
@@ -451,6 +496,7 @@ export interface IPalletInfo {
     length: number;
     depth: number;
     height: number;
+    cubic: number;
     pu?: boolean;
     do?: boolean;
     dgClass?: number;
@@ -782,6 +828,7 @@ export interface IDispatchJob {
     client?: string;
     clientId?: number;
     clientName?: string;
+    refA?: string;
 
     jobType?: number;
     minutes?: number;
@@ -796,6 +843,12 @@ export interface IDispatchJob {
     // Job flags
     locked?: boolean;
     isPartnerJob?: boolean;
+    /**
+     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
+     * payloads so the backend can disambiguate when a tenant has multiple active
+     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
+     */
+    partnerPairingId?: number | null;
     invoiced?: boolean;
     allowSplit?: boolean;
     isActive?: boolean;
@@ -908,6 +961,7 @@ export interface IDispatchJobDto {
     client?: string;
     clientId?: number;
     clientName?: string;
+    refA?: string;
 
     jobType?: number;
     minutes?: number;
@@ -922,6 +976,12 @@ export interface IDispatchJobDto {
     // Job flags
     locked?: boolean;
     isPartnerJob?: boolean;
+    /**
+     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
+     * payloads so the backend can disambiguate when a tenant has multiple active
+     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
+     */
+    partnerPairingId?: number | null;
     invoiced?: boolean;
     allowSplit?: boolean;
     isActive?: boolean;
@@ -1012,6 +1072,18 @@ export interface IJobSearchResultDto {
     totalCount: number;
     hasMore: boolean;
     mapItems?: IDispatchMapItem[];
+    statusCounts?: IJobListStatusCounts;
+}
+
+/**
+ * The job list's stats header, counted server-side over every match — before any category filter,
+ * so switching tabs cannot move the numbers. Answered with the first page only.
+ */
+export interface IJobListStatusCounts {
+    total: number;
+    active: number;
+    transit: number;
+    done: number;
 }
 
 export interface IJobSearchResult {

@@ -1,4 +1,6 @@
+#nullable enable annotations
 using System.Globalization;
+using System.Security.Claims;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -17,37 +19,97 @@ public sealed class TenantInfoService(
     IDbContextFactory<DespatchContext> contextFactory,
     IMemoryCache cache) : ITenantInfoService
 {
-    private DespatchContext _context;
+    private DespatchContext? _context;
     private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
 
-    private string _cachedTimeZone;
-    private string _cachedCountryCode;
-    private int? _cachedStaffId;
-    private int? _cachedContactId;
-    private TimeZoneInfo _cachedTimeZoneInfo;
-    private CultureInfo _cachedCultureInfo;
+    private string? _timeZoneOverride;
+    private TimeZoneInfo? _cachedTimeZoneInfo;
+    private CultureInfo? _cachedCultureInfo;
+
+    private readonly Dictionary<string, Claim?> _claims = new();
 
     /// <summary>
-    /// Gets the tenant's timezone from user claims.
+    /// Reads a claim from the current user, memoizing the <see cref="Claim"/> object
+    /// (not just its value) so callers can distinguish an absent claim from a
+    /// present-but-empty one. Returns null when the claim — or the HTTP context — is
+    /// absent.
     /// </summary>
-    private string GetTimeZone() => _cachedTimeZone ??= contextAccessor.HttpContext?.User.Claims
-        .FirstOrDefault(x => x.Type == "TimeZone")?.Value;
+    private Claim? Claim(string type)
+    {
+        if (_claims.TryGetValue(type, out var cached))
+        {
+            return cached;
+        }
+
+        var claim = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == type);
+        _claims[type] = claim;
+        return claim;
+    }
+
+    private string? ClaimValue(string type) => Claim(type)?.Value;
+
+    /// <summary>
+    /// Gets the tenant's timezone: the <c>TimeZone</c> claim when present, otherwise the
+    /// request-supplied override (see <see cref="SetTenantTimeZoneOverride"/>). Returns
+    /// null only when neither is available, so callers can apply their own UTC default.
+    /// </summary>
+    private string? GetTimeZone()
+    {
+        var claim = ClaimValue("TimeZone");
+        return !string.IsNullOrWhiteSpace(claim) ? claim
+            : !string.IsNullOrWhiteSpace(_timeZoneOverride) ? _timeZoneOverride
+            : null;
+    }
+
+    /// <inheritdoc />
+    public void SetTenantTimeZoneOverride(string? timeZone)
+    {
+        if (string.IsNullOrWhiteSpace(timeZone))
+        {
+            return;
+        }
+
+        _timeZoneOverride = timeZone;
+        // GetTimeZone() re-evaluates against the override; clear the resolved info
+        // that may have been populated (as UTC) before the override arrived.
+        _cachedTimeZoneInfo = null;
+    }
 
     /// <summary>
     /// Gets the tenant's country code from user claims.
     /// </summary>
-    private string GetCountryCode() => _cachedCountryCode ??= contextAccessor.HttpContext?.User.Claims
-        .FirstOrDefault(x => x.Type == "CountryCode")?.Value;
+    private string? GetCountryCode() => ClaimValue("CountryCode");
 
     /// <summary>
-    /// Gets the TimeZoneInfo for the tenant's timezone.
+    /// Gets the TimeZoneInfo for the tenant's timezone, falling back to UTC when no
+    /// timezone is resolvable so timezone-converting features degrade gracefully.
     /// </summary>
-    private TimeZoneInfo GetTimeZoneInfo()
+    private TimeZoneInfo GetTimeZoneInfo() => _cachedTimeZoneInfo ??= ResolveTimeZoneInfo(GetTimeZone());
+
+    /// <summary>
+    /// Resolves a timezone id to a <see cref="TimeZoneInfo"/> without throwing. Accepts
+    /// both Windows ("New Zealand Standard Time") and IANA ("Pacific/Auckland") ids, and
+    /// falls back to UTC for a missing/blank/unknown id rather than throwing — so a
+    /// timezone that can't be resolved degrades gracefully instead of 500ing the request.
+    /// </summary>
+    private static TimeZoneInfo ResolveTimeZoneInfo(string? timeZone)
     {
-        if (_cachedTimeZoneInfo != null) return _cachedTimeZoneInfo;
-        var timeZone = GetTimeZone();
-        _cachedTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZone ?? "UTC");
-        return _cachedTimeZoneInfo;
+        if (string.IsNullOrWhiteSpace(timeZone))
+        {
+            return TimeZoneInfo.Utc;
+        }
+
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(timeZone);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            // On Windows hosts IANA ids aren't recognised directly; convert then retry.
+            return TimeZoneInfo.TryConvertIanaIdToWindowsId(timeZone, out var windowsId)
+                ? TimeZoneInfo.FindSystemTimeZoneById(windowsId)
+                : TimeZoneInfo.Utc;
+        }
     }
 
     /// <summary>
@@ -55,7 +117,11 @@ public sealed class TenantInfoService(
     /// </summary>
     private CultureInfo GetCultureInfo()
     {
-        if (_cachedCultureInfo != null) return _cachedCultureInfo;
+        if (_cachedCultureInfo != null)
+        {
+            return _cachedCultureInfo;
+        }
+
         var countryCode = GetCountryCode();
         var cultureCode = countryCode switch
         {
@@ -86,7 +152,6 @@ public sealed class TenantInfoService(
     /// <returns>The current time in the specified timezone.</returns>
     public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
-        if (timeZone is null) return GetCurrentTenantTime();
         var cacheKey = $"timezone_info_{timeZone.Name}";
         var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
         {
@@ -104,7 +169,10 @@ public sealed class TenantInfoService(
     /// <returns>A culture-specific formatted date string, or empty if null.</returns>
     public string FormatDateForTenant(DateTime? dateTime)
     {
-        if (!dateTime.HasValue) return string.Empty;
+        if (!dateTime.HasValue)
+        {
+            return string.Empty;
+        }
 
         var culture = GetCultureInfo();
         return dateTime.Value.ToString("g", culture);
@@ -115,31 +183,40 @@ public sealed class TenantInfoService(
     /// Gets the current staff member's ID from user claims.
     /// </summary>
     /// <returns>The staff ID, or 0 if not found.</returns>
-    public int GetStaffId()
-    {
-        if (_cachedStaffId.HasValue) return _cachedStaffId.Value;
-        var staffIdString = contextAccessor.HttpContext?.User.Claims
-            .FirstOrDefault(x => x.Type == "StaffID")?.Value;
-        _cachedStaffId = int.Parse(staffIdString ?? "0");
-        return _cachedStaffId.Value;
-    }
+    public int GetStaffId() => GetStaffIdOrNull() ?? 0;
 
     /// <inheritdoc />
-    public string GetCurrentTenantId() =>
-        contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
+    public int? GetStaffIdOrNull() =>
+        int.TryParse(ClaimValue("StaffID"), out var staffId) && staffId > 0 ? staffId : null;
+
+    /// <inheritdoc />
+    public string? GetCurrentTenantId() => ClaimValue("CurrentTenantID");
 
     /// <summary>
     /// Gets the current contact's ID from user claims.
     /// </summary>
     /// <returns>The contact ID, or 0 if not found.</returns>
-    public int GetContactId()
-    {
-        if (_cachedContactId.HasValue) return _cachedContactId.Value;
-        var contactId = contextAccessor.HttpContext?.User.Claims
-            .FirstOrDefault(x => x.Type == "ContactID")?.Value;
-        _cachedContactId = int.Parse(contactId ?? "0");
-        return _cachedContactId.Value;
-    }
+    public int GetContactId() => int.Parse(ClaimValue("ContactID") ?? "0");
+
+    /// <inheritdoc />
+    public int? GetClientTypeId() =>
+        Claim("ClientTypeId") is { } claim && int.TryParse(claim.Value, out var value) ? value : null;
+
+    /// <inheritdoc />
+    public bool ClientTypeIdClaimAbsent => Claim("ClientTypeId") is null;
+
+    /// <inheritdoc />
+    public int? GetNpAgentId() =>
+        Claim("NpAgentId") is { Value: { Length: > 0 } v } && int.TryParse(v, out var value) ? value : null;
+
+    /// <inheritdoc />
+    public bool NpAgentIdClaimAbsent => Claim("NpAgentId") is null;
+
+    /// <inheritdoc />
+    public bool NpAgentIdClaimEmpty => Claim("NpAgentId") is { } claim && string.IsNullOrEmpty(claim.Value);
+
+    /// <inheritdoc />
+    public int? GetClientId() => int.TryParse(ClaimValue("ClientID"), out var value) ? value : null;
 
     /// <summary>
     /// Determines if the current tenant is a US-based tenant.
@@ -154,9 +231,9 @@ public sealed class TenantInfoService(
 
     /// <summary>
     /// Gets the current staff member's information (ID and full name) with 8-hour caching.
+    /// Returns null when no TucStaff row matches the current staff ID claim.
     /// </summary>
-    /// <returns>A Suggestion object with staff ID and name.</returns>
-    public async Task<Suggestion> GetStaffInfoAsync()
+    public async Task<Suggestion?> GetStaffInfoAsync()
     {
         var staffId = GetStaffId();
 
@@ -179,7 +256,7 @@ public sealed class TenantInfoService(
             return staff;
         });
     }
-    
+
     /// <summary>
     /// Gets the tenant's timezone ID string, defaulting to UTC if not set.
     /// </summary>

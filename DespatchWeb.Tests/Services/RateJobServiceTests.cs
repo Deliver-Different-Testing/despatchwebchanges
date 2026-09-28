@@ -28,6 +28,8 @@ public class RateJobServiceTests : IDisposable
     private readonly IPricingPermissionService _pricingPermissionServiceMock =
         Substitute.For<IPricingPermissionService>();
 
+    private readonly ITenantClock _clock = new FakeTenantClock(TestDates.Now);
+
     public RateJobServiceTests()
     {
         // By default, allow all job access in tests (internal user behavior)
@@ -54,7 +56,8 @@ public class RateJobServiceTests : IDisposable
         _tenantInfoServiceMock,
         _httpContextAccessorMock,
         _jobReportServiceMock,
-        _pricingPermissionServiceMock
+        _pricingPermissionServiceMock,
+        _clock
     );
 
     private static HttpClient CreateMockHttpClient(HttpStatusCode statusCode, string content)
@@ -71,6 +74,26 @@ public class RateJobServiceTests : IDisposable
             {
                 Content = new StringContent(content, Encoding.UTF8, "application/json")
             });
+    }
+
+    [Theory]
+    // waited pickup, waited delivery, booked truck hours, expected TruckHours sent to rating
+    [InlineData(30, 0, null, 30)]
+    [InlineData(0, 45, null, 45)] // delivery-only waiting must reach rating, not just pickup
+    [InlineData(30, 45, null, 75)]
+    [InlineData(0, 0, null, null)]
+    [InlineData(30, 45, 4, 4)] // an explicitly booked duration always wins
+    public void ResolveTruckHours_FallsBackToBothWaitingLegs(
+        int pickupWaitTime, int deliveryWaitTime, int? truckHours, int? expected)
+    {
+        var dto = new JobRatingDetailsDtoNz
+        {
+            PickupWaitTime = pickupWaitTime,
+            DeliveryWaitTime = deliveryWaitTime,
+            TruckHours = truckHours
+        };
+
+        Assert.Equal(expected, RateJobService.ResolveTruckHours(dto));
     }
 
     [Fact]
@@ -341,7 +364,8 @@ public class RateJobServiceTests : IDisposable
             TotalPallets = 2,
             ExtraStopOffs = 1,
             DryIceWeight = 5m,
-            WaitTime = 30,
+            PickupWaitTime = 30,
+            DeliveryWaitTime = 0,
             Quantity = 3,
             Cubic = 1.5m,
             IsPrebook = true,
@@ -368,7 +392,7 @@ public class RateJobServiceTests : IDisposable
         Assert.Equal(2, capturedDto.TotalPallets);
         Assert.Equal(1, capturedDto.ExtraStopOffs);
         Assert.Equal(5, capturedDto.DryIceWeight);
-        Assert.Equal(30, capturedDto.WaitTime);
+        Assert.Equal(30, capturedDto.PickupWaitTime);
         Assert.Equal(3, capturedDto.Quantity);
         Assert.Equal(1.5m, capturedDto.Cubic);
         Assert.True(capturedDto.IsPrebook);
@@ -804,7 +828,7 @@ public class RateJobServiceTests : IDisposable
 
         // Assert
         await _jobCommandRepositoryMock.Received().UpdateJobVoidStatusAsync(
-            Arg.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(2)));
+            Arg.Is<List<int>>(ids => ids!.Count == 2 && ids.Contains(1) && ids.Contains(2)));
     }
 
     [Fact]
@@ -861,7 +885,7 @@ public class RateJobServiceTests : IDisposable
 
         // Assert
         await _jobCommandRepositoryMock.Received().UpdateJobVoidStatusAsync(
-            Arg.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(3) && !ids.Contains(2)));
+            Arg.Is<List<int>>(ids => ids!.Count == 2 && ids.Contains(1) && ids.Contains(3) && !ids.Contains(2)));
     }
 
     [Fact]
@@ -1004,11 +1028,7 @@ public class RateJobServiceTests : IDisposable
         fileMock.Length.Returns(stream.Length);
         fileMock.OpenReadStream().Returns(stream);
         fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
-            .Returns(callInfo =>
-            {
-                stream.CopyTo(callInfo.Arg<Stream>());
-                return Task.CompletedTask;
-            });
+            .Returns(callInfo => stream.CopyToAsync(callInfo.Arg<Stream>()!));
 
         return fileMock;
     }

@@ -1,138 +1,100 @@
-import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Collapse from '@mui/material/Collapse';
-import Button from '@mui/material/Button';
-import Paper from '@mui/material/Paper';
-import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import HistoryIcon from '@mui/icons-material/History';
-import EditIcon from '@mui/icons-material/Edit';
-import {NoteHistoryEntry} from '../../../interfaces';
+import React from 'react';
+import {Badge, Box, Button, Collapse, Group, Loader, Paper, Stack, Text} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {ChevronDown, ChevronUp, History, Pencil} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {NoteHistoryProps} from "./NoteHistoryProps";
 
-interface NoteHistoryProps {
-    history: NoteHistoryEntry[];
-    isLoading: boolean;
-    timeZoneAbbr: string;
-}
+const captionProps = {size: 'xs', c: 'dimmed', tt: 'uppercase', style: {letterSpacing: 0.5}} as const;
 
 export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, timeZoneAbbr}) => {
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, {toggle}] = useDisclosure(false);
 
     if (isLoading) {
         return (
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 2}}>
-                <CircularProgress size={16} />
-                <Typography variant="body2" color="text.secondary">
-                    Loading edit history...
-                </Typography>
-            </Box>
+            <Group gap="xs" mt="md" wrap="nowrap">
+                <Loader size={16} role="progressbar" aria-label="Loading edit history"/>
+                <Text size="sm" c="dimmed">Loading edit history...</Text>
+            </Group>
         );
     }
 
     if (history.length === 0) return null;
 
     return (
-        <Box sx={{mt: 2}}>
+        <Box mt="md">
             <Button
-                size="small"
-                onClick={() => setExpanded(!expanded)}
-                startIcon={<HistoryIcon fontSize="small" />}
-                endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                sx={{textTransform: 'none', color: 'text.secondary', mb: 1}}
+                variant="subtle"
+                color="gray"
+                size="compact-sm"
+                mb="xs"
+                onClick={toggle}
+                leftSection={<Icon lucide={History} size={16}/>}
+                rightSection={<Icon lucide={expanded ? ChevronUp : ChevronDown} size={16}/>}
             >
                 Edit History ({history.length})
             </Button>
-
-            <Collapse in={expanded}>
-                <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 1.5,
-                        maxHeight: 300,
-                        overflowY: 'auto',
-                        pr: 0.5,
-                        '&::-webkit-scrollbar': {width: 6},
-                        '&::-webkit-scrollbar-track': {bgcolor: 'grey.100', borderRadius: 3},
-                        '&::-webkit-scrollbar-thumb': {
-                            bgcolor: 'grey.300',
-                            borderRadius: 3,
-                            '&:hover': {bgcolor: 'grey.400'},
-                        },
-                    }}>
+            <Collapse expanded={expanded} keepMounted={false}>
+                <Stack gap="sm" pr={4} style={{maxHeight: 300, overflowY: 'auto'}}>
                     {history.map((entry) => (
-                        <Paper
-                            key={entry.noteHistoryId}
-                            variant="outlined"
-                            sx={{p: 2, borderRadius: 2}}
-                        >
+                        <Paper key={entry.noteHistoryId} withBorder radius="md" p="md">
                             {/* Header */}
-                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1.5}}>
-                                <EditIcon fontSize="small" color="action" />
-                                <Typography variant="body2" fontWeight={600}>
-                                    {entry.editedByName}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    {entry.editedAtStr} {timeZoneAbbr}
-                                </Typography>
-                            </Box>
+                            <Group gap="xs" mb="sm" wrap="nowrap">
+                                <Box c="dimmed" style={{display: 'flex'}}>
+                                    <Icon lucide={Pencil} size={16}/>
+                                </Box>
+                                <Text size="sm" fw={600}>{entry.editedByName}</Text>
+                                <Text size="xs" c="dimmed">{entry.editedAtStr} {timeZoneAbbr}</Text>
+                            </Group>
 
                             {/* Text change */}
                             {entry.oldNoteText !== entry.newNoteText && (
-                                <Box sx={{mb: 1}}>
-                                    <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
-                                        Text changed
-                                    </Typography>
+                                <Box mb="xs">
+                                    <Text {...captionProps}>Text changed</Text>
                                     <Box
-                                        sx={{
-                                            mt: 0.5,
-                                            p: 1.5,
-                                            bgcolor: 'grey.100',
-                                            borderRadius: 1,
-                                            borderLeft: 3,
-                                            borderColor: 'error.light',
+                                        mt={4}
+                                        p="sm"
+                                        style={{
+                                            backgroundColor: 'var(--mantine-color-gray-1)',
+                                            borderRadius: 'var(--mantine-radius-sm)',
+                                            borderLeft: '3px solid var(--mantine-color-red-4)',
                                         }}
                                     >
-                                        <Typography variant="body2" color="text.secondary" sx={{whiteSpace: 'pre-wrap'}}>
+                                        <Text size="sm" c="dimmed" style={{whiteSpace: 'pre-wrap'}}>
                                             {entry.oldNoteText}
-                                        </Typography>
+                                        </Text>
                                     </Box>
                                 </Box>
                             )}
 
                             {/* Type change */}
                             {entry.oldNoteTypeId !== entry.newNoteTypeId && (
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5}}>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Type:
-                                    </Typography>
-                                    <Chip label={entry.oldNoteTypeName ?? 'Unknown'} size="small" variant="outlined" color="default" />
-                                    <Typography variant="caption" color="text.secondary">
-                                        &rarr;
-                                    </Typography>
-                                    <Chip label={entry.newNoteTypeName ?? 'Unknown'} size="small" variant="outlined" color="primary" />
-                                </Box>
+                                <Group gap="xs" mb={4} wrap="nowrap">
+                                    <Text size="xs" c="dimmed">Type:</Text>
+                                    <Badge size="sm" color="gray" variant="light">
+                                        {entry.oldNoteTypeName ?? 'Unknown'}
+                                    </Badge>
+                                    <Text size="xs" c="dimmed">&rarr;</Text>
+                                    <Badge size="sm">{entry.newNoteTypeName ?? 'Unknown'}</Badge>
+                                </Group>
                             )}
 
                             {/* Importance change */}
                             {entry.oldIsImportant !== entry.newIsImportant && (
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Important:
-                                    </Typography>
-                                    <Chip
-                                        label={entry.newIsImportant ? 'Marked important' : 'Unmarked important'}
-                                        size="small"
-                                        color={entry.newIsImportant ? 'warning' : 'default'}
-                                        variant="outlined"
-                                    />
-                                </Box>
+                                <Group gap="xs" wrap="nowrap">
+                                    <Text size="xs" c="dimmed">Important:</Text>
+                                    <Badge
+                                        size="sm"
+                                        color={entry.newIsImportant ? 'orange' : 'gray'}
+                                        variant="light"
+                                    >
+                                        {entry.newIsImportant ? 'Marked important' : 'Unmarked important'}
+                                    </Badge>
+                                </Group>
                             )}
                         </Paper>
                     ))}
-                </Box>
+                </Stack>
             </Collapse>
         </Box>
     );

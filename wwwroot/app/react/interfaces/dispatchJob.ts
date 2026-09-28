@@ -6,10 +6,12 @@
  * received from the home controller after DTO mapping.
  */
 
+import type React from 'react';
 import type {Dayjs} from 'dayjs';
 import type {AddressViewModel} from './address';
 import type {ShowToastFn} from '../services/toastService';
-import type {RequestOptions} from '../services/apiClient';
+
+import {RequestOptions} from "../services/requestOptions";
 
 // Re-export shared types that the AngularJS layer already defines
 export interface DispatchJobSuggestion {
@@ -95,6 +97,13 @@ export interface DispatchJob {
     internalStatusId?: number;
     statusName?: string;
     status?: string;
+    /** The server's single resolved status. Render from this, never from statusId + done + void. */
+    resolvedStatusId?: number;
+    resolvedIsVoid?: boolean;
+    resolvedIsComplete?: boolean;
+    void?: boolean;
+    /** Bulk rows only: pushed to live dispatch. Distinct from `done`, which means delivered. */
+    released?: boolean;
     time?: Dayjs;
     booked: Dayjs;
     remain?: number;
@@ -128,6 +137,7 @@ export interface DispatchJob {
     client?: string;
     clientId?: number;
     clientName?: string;
+    refA?: string;
     jobType?: number;
     minutes?: number;
     pickupTime?: number;
@@ -158,7 +168,10 @@ export interface DispatchJob {
     childNotes?: string;
     pickupFrom?: number;
     rootParentId?: number;
+    /** The live job id behind a bulk row, whose own `id` is a BulkJobId. */
+    linkedJobId?: number;
     displaySplitJobDetail?: boolean;
+    jobRelationshipTypeId?: number;
 
     // UI helper fields
     searchText?: string;
@@ -246,18 +259,38 @@ export interface JobListSearchParams {
     isInternal?: boolean;
     despatchViewIds?: (string | number)[];
     selectedClearListId?: number;
+    /** Current Work list: the courier whose available work to fetch. */
+    courierId?: number;
 }
 
 export interface JobSearchResult {
     jobs: DispatchJob[];
     totalCount: number;
     hasMore: boolean;
+    /** Stats-header counts over every match. Present on the first page only. */
+    statusCounts?: JobListStatusCounts | null;
+}
+
+export interface JobListStatusCounts {
+    total: number;
+    active: number;
+    transit: number;
+    done: number;
 }
 
 export interface FetchConfig {
     fetchFn: (params: JobListSearchParams, options?: RequestOptions) => Promise<JobSearchResult>;
     queryKeyFn: (params: JobListSearchParams) => readonly unknown[];
     initialParams: JobListSearchParams;
+    /** Auto-refresh interval in ms (React Query refetchInterval). `false`/undefined = off. */
+    refetchInterval?: number | false;
+    /**
+     * Set when the fetch returns the full result set and has no backend search
+     * support (e.g. Current Work, which loads a courier's whole job list with
+     * no `searchText`/pagination params). The panel filters locally instead of
+     * forwarding `searchText` to the fetch.
+     */
+    clientSideSearch?: boolean;
 }
 
 // ── Mount Configuration ──────────────────────────────────────────────
@@ -283,8 +316,6 @@ export interface MountJobListConfig {
     fetchConfig?: FetchConfig;
     /** Hide the "Logged-in only" toggle in the toolbar */
     hideLoggedInSwitch?: boolean;
-    /** Called once on mount with the current-work date filter mode (always today-only). */
-    onDateFilterModeChange?: (todayOnly: boolean) => void;
 }
 
 // ── React Component Props ────────────────────────────────────────────
@@ -304,14 +335,30 @@ export interface JobListPanelProps {
     /** Called when jobs are fetched/updated (fetchConfig mode) — used to sync map markers */
     onJobsLoaded?: (jobs: DispatchJob[]) => void;
     defaultCategory?: JobCategory;
+    /**
+     * Category that outranks both the stored preference and `defaultCategory`.
+     * For scopes that dictate their own filter -- the dispatch clear-list, which
+     * V1 forced to `needs-dispatch` on area click. Never persisted, so leaving
+     * the scope restores whatever the operator had chosen.
+     */
+    forcedCategory?: JobCategory;
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
     /** If provided, React manages its own data fetching via React Query */
     fetchConfig?: FetchConfig;
     /** Hide the "Logged-in only" toggle in the toolbar */
     hideLoggedInSwitch?: boolean;
-    /** Called once on mount with the current-work date filter mode (always today-only). */
-    onDateFilterModeChange?: (todayOnly: boolean) => void;
+    /**
+     * Card header DOM node (from BoxShell). When provided, the view options
+     * (density / reset columns / logged-in toggle) are portaled into the header
+     * instead of the toolbar.
+     */
+    headerSlot?: HTMLElement | null;
+    /**
+     * Content rendered as the card's first row, above the stats header. Used by
+     * the dispatch page for the views rail; left unset elsewhere.
+     */
+    topSlot?: React.ReactNode;
     /** Called by mount module to allow pushing jobs from AngularJS (legacy, used when no fetchConfig) */
     setJobsCallback?: (cb: (jobs: DispatchJob[], totalCount: number) => void) => void;
     /** Called by mount module to allow triggering refresh from AngularJS */

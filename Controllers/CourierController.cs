@@ -25,7 +25,9 @@ public class CourierController(
         try
         {
             if (despatchViewIds == null || despatchViewIds.Count == 0)
-                despatchViewIds = [49];
+            {
+                return Json(new ClearListViewModel());
+            }
 
             var result = await courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate);
 
@@ -83,7 +85,6 @@ public class CourierController(
 
     public Task<IActionResult> PotentialCouriers(int jobId)
     {
-        // TODO: Disabled due to performance issues - re-enable once optimized
         return Task.FromResult<IActionResult>(Json(new List<PotentialCouriersViewModel>()));
     }
 
@@ -190,7 +191,6 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-
 
     public async Task<IActionResult> GetCourierDetailsForDashboard(int courierId)
     {

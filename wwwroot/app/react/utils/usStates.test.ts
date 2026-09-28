@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * US States Utility Tests
  */

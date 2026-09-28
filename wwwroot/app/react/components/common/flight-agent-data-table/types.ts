@@ -1,64 +1,28 @@
 /**
  * Types for FlightAgentDataTable React Component
+ *
+ * The flight shapes are the API ones; the table adds the pre-formatted strings it renders
+ * from them, so these extend the models rather than restating every field.
  */
 
 import { Dayjs } from 'dayjs';
+import type {
+    FlightSegment as FlightSegmentModel,
+    FlightViewModel,
+} from '../../../interfaces/nationwideJobs';
 
-export interface FlightSegment {
-    segmentOrder: number;
-    carrierFsCode: string;
-    flightNumber: string;
-    departureTime: Dayjs;
-    arrivalTime: Dayjs;
-    departureAirportFsCode: string;
-    departureTerminal?: string;
-    arrivalAirportFsCode: string;
-    arrivalTerminal?: string;
-    flightEquipmentIataCode: string;
-    elapsedTime: number;
-    stopsInSegment: number;
-    departureAirportName?: string;
-    departureAirportCity?: string;
-    departureAirportTimeZone: string;
-    departureAirportId?: number;
-    arrivalAirportName?: string;
-    arrivalAirportCity?: string;
-    arrivalAirportTimeZone: string;
-    arrivalAirportId?: number;
-    aircraftName?: string;
-    airlineName?: string;
+/** Times and zones the table formats once and hangs off the row. */
+interface FormattedFlightTimes {
     _departureTimeStr?: string;
     _arrivalTimeStr?: string;
     _departureTimeZoneStr?: string;
     _arrivalTimeZoneStr?: string;
 }
 
-export interface FlightOption {
-    airline: string;
-    flightNumber: string;
-    departureTime: Dayjs;
-    arrivalTime: Dayjs;
-    departureAirport: string;
-    arrivalAirport: string;
-    duration: string;
-    stops: number;
-    aircraft: string;
-    serviceClasses: string[];
-    isCodeShare: boolean;
-    amount: number;
-    codeShareAirline: string;
-    airlineId: number;
-    departureTimeZone: string;
-    arrivalTimeZone: string;
-    isMultiSegment: boolean;
-    elapsedTime: number;
-    score: number;
-    connectionId: string;
+export interface FlightSegment extends FlightSegmentModel, FormattedFlightTimes {}
+
+export interface FlightOption extends Omit<FlightViewModel, 'flightSegments'>, FormattedFlightTimes {
     flightSegments: FlightSegment[];
-    _departureTimeStr?: string;
-    _arrivalTimeStr?: string;
-    _departureTimeZoneStr?: string;
-    _arrivalTimeZoneStr?: string;
     showSegments?: boolean;
 }
 
@@ -117,6 +81,9 @@ export interface FlightAgentDataTableProps {
     activeAirlineOptions: AirlineSuggestion[];
     selectedAirline?: AirlineSuggestion;
 
+    // Nearby-airport search (includes flights from alternate airports near the selected ones)
+    includeNearbyAirports: boolean;
+
     // Airport selection
     outboundAirportOptions: AirportSuggestion[];
     inboundAirportOptions: AirportSuggestion[];
@@ -140,6 +107,7 @@ export interface FlightAgentDataTableProps {
     // Callbacks
     onFlightSearchChange: (searchText: string) => void;
     onFilterFlightsByAirline: (airline: AirlineSuggestion | null) => void;
+    onToggleNearbyAirports: (value: boolean) => void;
     onOutboundAirportChange: (airport: AirportSuggestion | null) => void;
     onInboundAirportChange: (airport: AirportSuggestion | null) => void;
     onAddFlightToJob: (flight: FlightOption) => void;

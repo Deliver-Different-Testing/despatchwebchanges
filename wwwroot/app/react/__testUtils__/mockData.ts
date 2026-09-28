@@ -8,8 +8,9 @@
 import dayjs from 'dayjs';
 import type { AddressViewModel } from '../interfaces/address';
 import type { AgentInfo } from '../interfaces/agent';
+import type { DispatchJob } from '../interfaces/dispatchJob';
 import type { EventType, AddEventJob } from '../interfaces/event';
-import type { Task, TaskAssignee } from '../interfaces/tasks';
+import Task, {TaskAssignee} from '../interfaces/tasks';
 import type { PrebookListModel } from '../interfaces/recurringJobs';
 import type {
     FlightSegment,
@@ -29,7 +30,7 @@ export function createMockAddress(overrides?: Partial<AddressViewModel>): Addres
         addressLine5: 'Auckland Central',        // Suburb
         addressLine6: 'Auckland',                // City
         addressLine7: '1010',                    // Post Code
-        addressLine8: '',                        // Additional Notes
+        addressLine8: '',                        // Country
         fullAddress: '123 Test Street, Auckland Central, Auckland 1010',
         latitude: -36.8485,
         longitude: 174.7633,
@@ -49,7 +50,7 @@ export function createMockUSAddress(overrides?: Partial<AddressViewModel>): Addr
         addressLine5: 'New York',                // City (US)
         addressLine6: 'NY',                      // State (US)
         addressLine7: '10001',                   // ZIP Code
-        addressLine8: '',                        // Additional Notes
+        addressLine8: '',                        // Country
         fullAddress: '456 Main St, New York, NY 10001',
         latitude: 40.7128,
         longitude: -74.006,
@@ -211,3 +212,75 @@ export function createMockArray<T>(
 ): T[] {
     return Array.from({ length: count }, (_, i) => factory(i));
 }
+
+/**
+ * UC30028239 — Stryker changed the delivery address online, only the free-text copy moved,
+ * and dispatch kept routing to the old Epsom address. Shared by every test that exercises
+ * the two copies disagreeing.
+ */
+export const STALE_ADDRESS_DEVICE = 'ALLEVIA HOSPITAL CSSD 79 ST GEORGES BAY ROAD PARNELL AUCKLAND 1052';
+export const STALE_ADDRESS_LINES =
+    'ALLEVIA HOSPITAL EPSOM, 15-17 , GILGIT ROAD, GATE 4 - LOADING DOCK, Newmarket, Auckland, 1050, New Zealand';
+
+/**
+ * A dispatch-grid job. The address lines matter — the grid and the context menu both
+ * compose their columns from them — so they carry realistic values rather than placeholders.
+ */
+export function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
+    return {
+        angularId: 'job-1',
+        id: 1,
+        jobNo: 'J001',
+        hasBeenRead: true,
+        showCourierSearch: false,
+        isParentOrSingle: true,
+        parentId: 0,
+        isFlightJob: false,
+        isAgentJob: false,
+        isBulkJob: false,
+        isArchived: false,
+        statusId: 0,
+        statusName: 'New',
+        status: 'New',
+        booked: dayjs('2025-03-15T09:00:00'),
+        time: dayjs('2025-03-15T17:00:00'),
+        remain: 120,
+        courierSearchLoading: false,
+        pickupAddress: {
+            addressLine1: '', addressLine2: '', addressLine3: '10',
+            addressLine4: 'Queen St', addressLine5: 'Auckland CBD',
+            addressLine6: 'Auckland', addressLine7: '1010', addressLine8: '',
+            fullAddress: '10 Queen St, Auckland',
+        } as AddressViewModel,
+        deliveryAddress: {
+            addressLine1: '', addressLine2: '', addressLine3: '20',
+            addressLine4: 'High St', addressLine5: 'Newmarket',
+            addressLine6: 'Auckland', addressLine7: '1023', addressLine8: '',
+            fullAddress: '20 High St, Auckland',
+        } as AddressViewModel,
+        speed: 'Standard',
+        vehicle: {id: 1, text: 'Car'},
+        client: 'Test Client',
+        clientId: 100,
+        refA: 'PO-4471',
+        pickUpTimeZone: {id: 1, text: 'NZST'},
+        deliveryTimeZone: {id: 1, text: 'NZST'},
+        ...overrides,
+    } as DispatchJob;
+}
+
+/**
+ * The HERE Maps address fields for 123 Main Street, New York — the US sample the address
+ * search, the lookup response and the address-api tests all resolve to.
+ */
+export const HERE_US_ADDRESS_FIELDS = {
+    label: '123 Main Street, New York, NY 10001',
+    countryCode: 'USA',
+    countryName: 'United States',
+    stateCode: 'NY',
+    state: 'New York',
+    city: 'New York',
+    street: 'Main Street',
+    postalCode: '10001',
+    houseNumber: '123',
+};

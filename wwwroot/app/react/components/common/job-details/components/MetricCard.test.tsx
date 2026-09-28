@@ -1,18 +1,11 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * MetricCard Component Tests
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {MetricCard} from './MetricCard';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('MetricCard', () => {
     it('renders label and value', () => {
@@ -24,6 +17,27 @@ describe('MetricCard', () => {
     it('renders em dash for empty value', () => {
         renderWithTheme(<MetricCard label="POD Name" value="" />);
         expect(screen.getByText('\u2014')).toBeInTheDocument();
+    });
+
+    it('renders the value with tabular figures so numbers align', () => {
+        renderWithTheme(<MetricCard label="Pricing" value="$45.50" />);
+        expect(screen.getByText('$45.50')).toHaveStyle({fontVariantNumeric: 'tabular-nums'});
+    });
+
+    /**
+     * The category no longer switches the typeface (the theme's `mono` alias
+     * resolved to the body face, so the distinction was invisible); what it does
+     * carry is the accent used by the highlight rule and the "has a value"
+     * underline.
+     */
+    it('keys the accent to the metric category', () => {
+        const {container} = renderWithTheme(
+            <MetricCard label="Pricing" value="$45.50" category="pricing" filled highlight />
+        );
+        const card = container.querySelector('[style*="--metric-accent"]') as HTMLElement;
+        expect(card.style.getPropertyValue('--metric-accent')).toBe('var(--mantine-color-orange-5)');
+        expect(card).toHaveStyle({borderTopWidth: '3px', borderTopStyle: 'solid'});
+        expect(card.style.borderTopColor).toBe('var(--mantine-color-orange-5)');
     });
 
     it('renders a clickable button when onClick is provided and not disabled', () => {

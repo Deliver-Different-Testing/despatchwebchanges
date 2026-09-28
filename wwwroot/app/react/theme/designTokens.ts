@@ -4,19 +4,29 @@
  * Semantic color constants for use outside MUI's sx prop / theme context.
  * For MUI sx props, prefer theme path strings (e.g. bgcolor: 'background.default').
  *
- * These re-export values from muiTheme.ts to keep a single source of truth.
+ * These re-export values from palettes.ts to keep a single source of truth.
  */
 
-import {accentPalette, sharedColors} from './muiTheme';
+import {accentPalette, aiColors, grossModeColor, sharedColors, shellColors} from './palettes';
 
-/** Toolbar / dark-accent color (#57534e) */
-export const toolbarColor = accentPalette[600];
+/** Ink-Blue shell colour (#0d0c2c) — app bar, side-nav header, dark chrome. */
+export const toolbarColor = shellColors.appBar;
+
+/** Full Ink-Blue shell token set (bar/panel/border/text). */
+export {shellColors};
 
 /** Surface / dialog body background (#FAFAFA) */
 export const surfaceDefault = sharedColors.surface.default;
 
-/** AI feature accent color (deep purple) */
-export const aiAccentColor = '#7c4dff';
+/**
+ * AI + gross-mode accents now live in the framework-free palettes.ts (the single
+ * source, shared with the MUI theme's `ai` palette role); re-exported here so
+ * existing `designTokens` call sites keep working.
+ */
+export {aiColors, grossModeColor};
+
+/** AI feature accent color (deep purple). Kept for existing call sites. */
+export const aiAccentColor = aiColors.main;
 
 /** Status palette for feature-specific status indicators */
 export const statusColors = {
@@ -67,4 +77,24 @@ export const driverLocationColors = {
         bg: sharedColors.surface.default,
         border: sharedColors.divider,
     },
+} as const;
+
+/**
+ * Pricing-mode identity colours.
+ *
+ * The three pricing modes appear in both the single-job price dialog and the
+ * bulk upload dialog and mean the same thing in each, so the colour is a shared
+ * token rather than a per-dialog literal. Colour is never the only cue: every
+ * mode also carries its own glyph, and selection adds border weight and a tint.
+ */
+export const pricingModeColors = {
+    recalculate: accentPalette[600],
+    base: sharedColors.success.main,
+    gross: grossModeColor,
+} as const;
+
+/** Blast-radius colours for the recurring-job "insert to live" scope choice. */
+export const insertScopeColors = {
+    group: sharedColors.info.main,
+    route: sharedColors.warning.main,
 } as const;

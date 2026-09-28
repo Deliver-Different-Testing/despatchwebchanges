@@ -43,6 +43,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[ClientTypeFeature]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CourierSettlementBatch]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[DespatchViewZoneGroup]",
          "ObjectType": 0
       },
@@ -52,6 +60,10 @@
       },
       {
          "Name": "[dbo].[ExtraCharges]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Feature]",
          "ObjectType": 0
       },
       {
@@ -87,10 +99,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[JobPartnerDispatch]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[JobRecoveryAgents]",
          "ObjectType": 0
       },
@@ -99,7 +107,27 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[PricingBreakdownAllocation]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PricingBreakdownAllocationArchive]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[PricingBreakdownArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Routes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[StaffDispatchLayout]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[StaffPreference]",
          "ObjectType": 0
       },
       {
@@ -240,10 +268,6 @@
       },
       {
          "Name": "[dbo].[tblSetting]",
-         "ObjectType": 0
-      },
-      {
-         "Name": "[dbo].[tblSMPPSettings]",
          "ObjectType": 0
       },
       {
@@ -499,10 +523,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DD_stpBulkScheduleJob_Insert]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DD_stpGetAgentDistanceRate]",
          "ObjectType": 1
       },
@@ -511,7 +531,7 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DD_stpJob_Excelerator_Insert]",
+         "Name": "[dbo].[DD_stpJob_InsertExcelerator]",
          "ObjectType": 1
       },
       {
@@ -543,10 +563,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DESWEB_stpUpdateSplitJobMeetingAddress]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DESWEB_stpVoidPrebookJob]",
          "ObjectType": 1
       },
@@ -559,23 +575,11 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[REP_qryPerformance_Summary_PerformanceSpend]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[sp_AddJobAccessorial]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[sp_RateJob2]",
          "ObjectType": 1
       },
       {
@@ -591,7 +595,11 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[uspRestoreJob]",
+         "Name": "[dbo].[uspRestoreJobs]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpJob_Insert_JobNumber]",
          "ObjectType": 1
       },
       {
@@ -599,8 +607,28 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[UTL_stpJob_RestoreDevice]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpJobBooking_InsertJobAndChildren]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpJobBooking_InsertSchedule]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[UTL_stpJobBooking_RecomputeFirstDueOnEdit]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[UTL_stpPPD_ExclusiveAmount]",
          "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[EncryptJobIdReversible]",
+         "ObjectType": 2
       },
       {
          "Name": "[dbo].[UTL_fncClearList_Other]",
@@ -619,7 +647,15 @@
          "ObjectType": 2
       },
       {
+         "Name": "[dbo].[UTL_fncMFV_FAF_Rates]",
+         "ObjectType": 2
+      },
+      {
          "Name": "[dbo].[UTL_fncS_GetNationwideService_RawPrice]",
+         "ObjectType": 2
+      },
+      {
+         "Name": "[dbo].[UTL_fncSuburb_FromNameWithPostCode]",
          "ObjectType": 2
       }
    ],

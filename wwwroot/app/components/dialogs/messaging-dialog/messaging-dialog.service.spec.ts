@@ -150,6 +150,40 @@ describe('MessagingDialogService', () => {
             });
         });
 
+        /*
+         * The drawer's spinner keyframes live in a CSS module, and the emitted
+         * stylesheet is only fetched if this loader lists it — a missing one fails
+         * silently and the refresh spinner simply never turns. routes.ts pairs
+         * script and stylesheet through islandFiles(); so must this.
+         */
+        it('loads the island stylesheet alongside the script when the manifest has one', async () => {
+            delete (window as any).ReactMessagingDialog;
+            mockHttp.get.mockResolvedValue({
+                data: {
+                    'vendor-react.js': 'vendor-react.abc.js',
+                    'messagingDialogReact.js': 'messagingDialogReact.msg456.js',
+                    'messagingDialogReact.css': 'messagingDialogReact.msg789.css',
+                },
+            });
+            mockOcLazyLoad.load.mockImplementation(async (arg: any) => {
+                if (typeof arg === 'object' && arg.name) {
+                    (window as any).ReactMessagingDialog = {
+                        open: jest.fn().mockResolvedValue(undefined),
+                    };
+                }
+            });
+
+            await service.openMessagingDialog();
+
+            expect(mockOcLazyLoad.load).toHaveBeenCalledWith({
+                name: 'uDispatch.messagingDialogReact',
+                files: [
+                    'dist/messagingDialogReact.msg456.js',
+                    'dist/messagingDialogReact.msg789.css',
+                ],
+            });
+        });
+
         it('should fall back to unhashed filename when manifest entry is missing', async () => {
             delete (window as any).ReactMessagingDialog;
             mockHttp.get.mockResolvedValue({ data: {} });

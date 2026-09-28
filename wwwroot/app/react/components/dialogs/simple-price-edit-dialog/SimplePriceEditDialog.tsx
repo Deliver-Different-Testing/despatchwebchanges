@@ -7,26 +7,12 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { alpha } from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
-import Radio from '@mui/material/Radio';
-import InputAdornment from '@mui/material/InputAdornment';
-import PriceChangeIcon from '@mui/icons-material/PriceChange';
-import CloseIcon from '@mui/icons-material/Close';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import SyncIcon from '@mui/icons-material/Sync';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import EditNoteIcon from '@mui/icons-material/EditNote';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import InfoIcon from '@mui/icons-material/Info';
-import CheckIcon from '@mui/icons-material/Check';
+import { Box, Button, Divider, Group, Loader, Radio, Stack, Text, TextInput, ThemeIcon, alpha, NumberInput} from '@mantine/core';
+import { ArrowRight, Check, CircleCheck, CirclePlus, Info, Lock, NotebookPen, RefreshCw, Tag } from 'lucide-react';
+import { IconTruck } from '@tabler/icons-react';
+import { DialogShell, DialogHeader, DialogFooter } from '../shared/mantine';
+import { Icon } from '../../common/icon/Icon';
+import { pricingModeColors } from '../../../theme/designTokens';
 
 import { SimplePriceEditDialogProps, PricingMode, ChildPriceUpdate } from './types';
 
@@ -35,59 +21,71 @@ interface ModeOption {
     title: string;
     description: string;
     icon: React.ReactNode;
-    iconColorClass: string;
 }
 
 const MODE_OPTIONS: ModeOption[] = [
     {
         mode: 'recalculate',
-        title: 'Recalculate',
-        description: 'Auto-price based on job details',
-        icon: <SyncIcon sx={{ fontSize: 22 }} />,
-        iconColorClass: 'recalculate',
+        title: 'Auto-Calculate Prices',
+        description: 'Recalculate from job details & current rates',
+        icon: <Icon lucide={RefreshCw} size={22} />,
     },
     {
         mode: 'base',
-        title: 'Raw Base Amount',
-        description: 'Set the base price directly',
-        icon: <AddCircleIcon sx={{ fontSize: 22 }} />,
-        iconColorClass: 'base',
+        title: 'Base Price (add surcharges)',
+        description: 'Enter the base amount; PPD & fuel added on top',
+        icon: <Icon lucide={CirclePlus} size={22} />,
     },
     {
         mode: 'gross',
-        title: 'Gross Amount',
-        description: 'Set final price directly',
-        icon: <EditNoteIcon sx={{ fontSize: 22 }} />,
-        iconColorClass: 'gross',
+        title: 'Final Price (use as-is)',
+        description: 'Enter the final amount; applied as-is',
+        icon: <Icon lucide={NotebookPen} size={22} />,
     },
 ];
 
-/** Purple used exclusively for the "gross" pricing mode (no theme palette equivalent). */
-const GROSS_MODE_COLOR = '#9c27b0';
-
-const getSelectedIconColor = (mode: PricingMode) => {
-    switch (mode) {
-        case 'recalculate': return 'grey.600';
-        case 'base': return 'success.main';
-        case 'gross': return GROSS_MODE_COLOR;
-    }
-};
+const scrim = (opacity: number) => alpha('var(--mantine-color-black)', opacity);
 
 const getSubmitButtonText = (mode: PricingMode) => {
     switch (mode) {
         case 'recalculate': return 'Recalculate & Save';
-        case 'base': return 'Apply Raw Base';
-        case 'gross': return 'Apply Amount';
+        case 'base': return 'Apply Base Amount';
+        case 'gross': return 'Apply Final Amount';
     }
 };
 
 const getModeSubtitle = (mode: PricingMode) => {
     switch (mode) {
         case 'recalculate': return 'Recalculated based on job details';
-        case 'base': return 'Raw base amount applied';
-        case 'gross': return 'Gross amount applied';
+        case 'base': return 'Base price applied';
+        case 'gross': return 'Final price applied';
     }
 };
+
+/** The rounded job-number pill used in the header area and on each child row. */
+function JobPill({jobNumber, compact = false}: {jobNumber: string; compact?: boolean}): React.ReactElement {
+    return (
+        <Group
+            gap={compact ? 6 : 'xs'}
+            wrap="nowrap"
+            display="inline-flex"
+            style={{
+                paddingInline: compact ? 10 : 14,
+                paddingBlock: compact ? 4 : 6,
+                backgroundColor: compact ? alpha('var(--mantine-color-gray-6)', 0.1) : scrim(0.06),
+                borderRadius: 'var(--mantine-radius-sm)',
+                flexShrink: 0,
+            }}
+        >
+            <Box c="dimmed" style={{display: 'flex'}}>
+                <Icon tabler={IconTruck} size={compact ? 13 : 18} />
+            </Box>
+            <Text size={compact ? 'xs' : 'sm'} fw={600} style={compact ? undefined : {letterSpacing: 0.5}} truncate>
+                {jobNumber}
+            </Text>
+        </Group>
+    );
+}
 
 export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     open,
@@ -96,12 +94,13 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     isBulk = false,
     hideRecalculate = false,
     childJobs,
+    readOnly = false,
     onClose,
     onSubmit,
     showToast,
 }) => {
     // Bulk jobs only support gross-amount editing — tblBulkJob has no fuel/PPD breakdown
-    // and no SuburbID for the rating pipeline. Recalculate/Raw Base remain visible but disabled.
+    // and no SuburbID for the rating pipeline. Auto-Calculate/Base Price remain visible but disabled.
     const availableModes = hideRecalculate
         ? MODE_OPTIONS.filter(o => o.mode !== 'recalculate')
         : MODE_OPTIONS;
@@ -176,208 +175,150 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
         onClose();
     }, [onClose]);
 
+    // The dialog must not close mid-save
+    const handleClose = useCallback(() => {
+        if (!isLoading) onClose();
+    }, [isLoading, onClose]);
+
     // --- Render helpers ---
 
     const renderEditState = () => (
-        <Box sx={{ p: '20px 24px 24px' }}>
+        <Box pt="md" px="lg" pb="lg">
             {/* Job Reference Badge */}
-            <Box sx={(theme) => ({
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 1,
-                px: 1.75,
-                py: 0.75,
-                bgcolor: alpha(theme.palette.common.black, 0.06),
-                borderRadius: 5,
-                mb: 2.5,
-            })}>
-                <LocalShippingIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                <Typography variant="body2" fontWeight={600} letterSpacing={0.5}>
-                    {jobNumber}
-                </Typography>
+            <Box mb="lg">
+                <JobPill jobNumber={jobNumber} />
             </Box>
 
             {/* Pricing Options */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+            {/* One radiogroup, not three loose radios: Radio.Group owns the value and
+                gives the set arrow-key navigation and a single tab stop. */}
+            <Radio.Group
+                value={selectedMode}
+                onChange={(value) => { if (!readOnly) setSelectedMode(value as PricingMode); }}
+            >
+                <Stack gap={10}>
                 {availableModes.map((opt) => {
                     const isSelected = selectedMode === opt.mode;
                     const disabled = isModeDisabled(opt.mode);
+                    const modeColor = pricingModeColors[opt.mode];
                     return (
-                        <Box
+                        <Radio.Card
                             key={opt.mode}
-                            onClick={() => { if (!disabled) setSelectedMode(opt.mode); }}
+                            value={opt.mode}
+                            radius="lg"
+                            p={14}
+                            disabled={disabled || readOnly}
+                            data-pricing-mode={opt.mode}
                             title={disabled ? 'Not available for bulk jobs' : undefined}
-                            sx={(theme) => ({
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1.75,
-                                p: '14px 16px',
-                                border: 2,
-                                borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.08),
-                                borderRadius: 2.5,
-                                cursor: disabled ? 'not-allowed' : 'pointer',
+                            style={{
+                                '--radio-color': modeColor,
+                                borderWidth: 2,
+                                cursor: (disabled || readOnly) ? 'default' : 'pointer',
                                 opacity: disabled ? 0.5 : 1,
-                                bgcolor: isSelected ? alpha(theme.palette.grey[600], 0.06) : 'background.paper',
-                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                '&:hover': disabled ? undefined : {
-                                    borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.18),
-                                    bgcolor: isSelected ? alpha(theme.palette.grey[600], 0.06) : alpha(theme.palette.common.black, 0.02),
-                                },
-                            })}
+                                backgroundColor: isSelected ? alpha(modeColor, 0.06) : 'var(--mantine-color-white)',
+                            } as React.CSSProperties}
                         >
-                            <Radio
-                                checked={isSelected}
-                                disabled={disabled}
-                                sx={{
-                                    p: 0,
-                                    color: 'text.disabled',
-                                    '&.Mui-checked': { color: 'grey.600' },
-                                }}
-                            />
-                            <Box sx={(theme) => {
-                                const iconBgMap: Record<PricingMode, string> = {
-                                    recalculate: alpha(theme.palette.grey[600], 0.12),
-                                    base: alpha(theme.palette.success.main, 0.12),
-                                    gross: alpha(GROSS_MODE_COLOR, 0.12),
-                                };
-                                return {
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 2.5,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                    bgcolor: isSelected ? iconBgMap[opt.mode] : alpha(theme.palette.common.black, 0.06),
-                                    color: isSelected ? getSelectedIconColor(opt.mode) : 'text.secondary',
-                                    transition: 'all 0.2s ease',
-                                };
-                            }}>
-                                {opt.icon}
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, minWidth: 0 }}>
-                                <Typography variant="body1" fontWeight={500}>
-                                    {opt.title}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary" lineHeight={1.4}>
-                                    {disabled ? 'Not available for bulk jobs' : opt.description}
-                                </Typography>
-                            </Box>
-                        </Box>
+                            <Group gap={14} wrap="nowrap">
+                                <Radio.Indicator/>
+                                <ThemeIcon
+                                    size={40}
+                                    radius="lg"
+                                    style={{
+                                        '--ti-bg': alpha(modeColor, isSelected ? 0.16 : 0.08),
+                                        '--ti-color': modeColor,
+                                    } as React.CSSProperties}
+                                >
+                                    {opt.icon}
+                                </ThemeIcon>
+                                <Stack gap={2} style={{minWidth: 0}}>
+                                    <Text fw={500}>{opt.title}</Text>
+                                    <Text size="xs" c="dimmed" style={{lineHeight: 1.4}}>
+                                        {disabled ? 'Not available for bulk jobs' : opt.description}
+                                    </Text>
+                                </Stack>
+                            </Group>
+                        </Radio.Card>
                     );
                 })}
-            </Box>
+            </Stack>
+        </Radio.Group>
 
             {/* Amount Input (shown for base/gross modes) */}
             {(selectedMode === 'base' || selectedMode === 'gross') && (
-                <Box sx={(theme) => ({
-                    mt: 2.5,
-                    pt: 2.5,
-                    borderTop: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
-                    '@keyframes slideDown': {
-                        from: { opacity: 0, transform: 'translateY(-8px)' },
-                        to: { opacity: 1, transform: 'translateY(0)' },
-                    },
-                    animation: 'slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                })}>
-                    <Typography variant="body2" fontWeight={500} color="text.secondary" sx={{ mb: 1.25 }}>
-                        {selectedMode === 'base' ? 'Enter Raw Base Amount' : 'Enter Final Amount'}
-                    </Typography>
-                    <TextField
-                        fullWidth
-                        type="number"
+<>
+                    <Divider my="md" color={scrim(0.08)}/>
+                    <Box>
+                    <Text size="sm" fw={500} c="dimmed" mb={10}>
+                        {selectedMode === 'base' ? 'Enter Base Amount' : 'Enter Final Amount'}
+                    </Text>
+                    <NumberInput
                         value={amount || ''}
-                        onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+                        onChange={(value) => setAmount(Number(value) || 0)}
                         placeholder="0.00"
-                        autoFocus
-                        slotProps={{
+                        disabled={readOnly}
+                        data-autofocus={!readOnly || undefined}
+                        step={0.01}
+                        decimalScale={2}
+                        min={0}
+                        leftSection={<Text size="xl" fw={500} c="dimmed">$</Text>}
+                        aria-label={selectedMode === 'base' ? 'Enter Base Amount' : 'Enter Final Amount'}
+                        styles={{
                             input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <Typography sx={{ fontSize: 24, fontWeight: 500, color: 'text.secondary' }}>
-                                            $
-                                        </Typography>
-                                    </InputAdornment>
-                                ),
-                            },
-                            htmlInput: {
-                                step: '0.01',
-                                min: '0',
-                                onWheel: (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur(),
-                                style: {
-                                    fontSize: 28,
-                                    fontWeight: 600,
-                                    padding: '8px 0',
-                                },
+                                fontSize: 28,
+                                fontWeight: 600,
+                                height: 'auto',
+                                paddingBlock: 8,
+                                backgroundColor: scrim(0.04),
+                                borderRadius: 'var(--mantine-radius-lg)',
+                                border: '2px solid transparent',
                             },
                         }}
-                        sx={(theme) => ({
-                            '& .MuiOutlinedInput-root': {
-                                bgcolor: alpha(theme.palette.common.black, 0.04),
-                                borderRadius: 2.5,
-                                '& fieldset': { border: '2px solid transparent' },
-                                '&:hover fieldset': { borderColor: 'transparent' },
-                                '&.Mui-focused': {
-                                    bgcolor: 'background.paper',
-                                    '& fieldset': { borderColor: 'grey.600' },
-                                },
-                            },
-                            // Hide number spinner
-                            '& input[type=number]': {
-                                MozAppearance: 'textfield',
-                            },
-                            '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
-                                WebkitAppearance: 'none',
-                                margin: 0,
-                            },
-                        })}
                     />
                 </Box>
+                </>
             )}
 
             {/* Sum mismatch indicator — shown in gross/base modes when children are present */}
             {(selectedMode === 'gross' || selectedMode === 'base') && childSum !== null && (
-                <Box sx={(theme) => ({
-                    mt: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    px: 1.5,
-                    py: 1,
-                    borderRadius: 2,
-                    bgcolor: hasChildSumMismatch
-                        ? alpha(theme.palette.error.main, 0.06)
-                        : alpha(theme.palette.success.main, 0.06),
-                    border: `1px solid ${hasChildSumMismatch
-                        ? alpha(theme.palette.error.main, 0.25)
-                        : alpha(theme.palette.success.main, 0.25)}`,
-                })}>
-                    <Typography variant="caption" color={hasChildSumMismatch ? 'error.main' : 'success.main'} fontWeight={500}>
+                <Group
+                    justify="space-between"
+                    wrap="nowrap"
+                    mt="sm"
+                    px="sm"
+                    py="xs"
+                    style={{
+                        borderRadius: 'var(--mantine-radius-md)',
+                        backgroundColor: hasChildSumMismatch
+                            ? alpha('var(--mantine-color-red-6)', 0.06)
+                            : alpha('var(--mantine-color-green-6)', 0.06),
+                        border: `1px solid ${hasChildSumMismatch
+                            ? alpha('var(--mantine-color-red-6)', 0.25)
+                            : alpha('var(--mantine-color-green-6)', 0.25)}`,
+                    }}
+                >
+                    <Text size="xs" fw={500} c={hasChildSumMismatch ? 'red.6' : 'green.6'}>
                         {hasChildSumMismatch
                             ? `Parent must equal children total — set to $${childSum.toFixed(2)}`
                             : 'Parent matches children total'}
-                    </Typography>
-                    <Typography variant="caption" fontWeight={700} color={hasChildSumMismatch ? 'error.main' : 'success.main'}>
+                    </Text>
+                    <Text size="xs" fw={700} c={hasChildSumMismatch ? 'red.6' : 'green.6'}>
                         ${childSum.toFixed(2)}
-                    </Typography>
-                </Box>
+                    </Text>
+                </Group>
             )}
 
             {/* Child jobs — hidden in recalculate mode since the system sets the price */}
             {childJobs && childJobs.length > 0 && selectedMode !== 'recalculate' && (
-                <Box sx={(theme) => ({
-                    mt: 2.5,
-                    pt: 2.5,
-                    borderTop: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
-                })}>
-                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5}}>
-                        <Typography variant="body2" fontWeight={500} color="text.secondary">
-                            Child Jobs
-                        </Typography>
+<>
+                    <Divider my="md" color={scrim(0.08)}/>
+                    <Box>
+                    <Group justify="space-between" mb="sm" wrap="nowrap">
+                        <Text size="sm" fw={500} c="dimmed">Child Jobs</Text>
                         {(selectedMode === 'gross' || selectedMode === 'base') && amount > 0 && (
                             <Button
-                                size="small"
-                                variant="text"
+                                variant="subtle"
+                                size="compact-xs"
+                                disabled={readOnly}
                                 onClick={() => {
                                     const currentSum = childJobs.reduce((s, c) => s + (childAmounts[c.jobId] ?? c.charge), 0);
                                     if (currentSum <= 0) return;
@@ -394,307 +335,172 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                     });
                                     setChildAmounts(prev => ({...prev, ...updated}));
                                 }}
-                                sx={{fontSize: '0.75rem', py: 0.25, px: 1, minWidth: 0, textTransform: 'none'}}
                             >
                                 Set proportionally
                             </Button>
                         )}
-                    </Box>
-                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+                    </Group>
+                    <Stack gap="xs">
                         {childJobs.map((child) => {
                             const currentAmount = childAmounts[child.jobId] ?? child.charge;
                             const isChanged = Math.abs(currentAmount - child.charge) > 0.001;
                             return (
-                                <Box
+                                <Group
                                     key={child.jobId}
-                                    sx={(theme) => ({
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1.5,
-                                        p: '10px 12px',
-                                        bgcolor: alpha(theme.palette.common.black, 0.03),
-                                        borderRadius: 2,
-                                        border: `1px solid ${isChanged ? theme.palette.primary.main : alpha(theme.palette.common.black, 0.08)}`,
+                                    gap="sm"
+                                    wrap="nowrap"
+                                    py={10}
+                                    px="sm"
+                                    style={{
+                                        backgroundColor: scrim(0.03),
+                                        borderRadius: 'var(--mantine-radius-md)',
+                                        border: `1px solid ${isChanged ? 'var(--mantine-color-brand-6)' : scrim(0.08)}`,
                                         transition: 'border-color 0.2s ease',
-                                    })}
+                                    }}
                                 >
-                                    <Box sx={(theme) => ({
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: 0.75,
-                                        px: 1.25,
-                                        py: 0.5,
-                                        bgcolor: alpha(theme.palette.grey[600], 0.1),
-                                        borderRadius: 4,
-                                        flexShrink: 0,
-                                    })}>
-                                        <LocalShippingIcon sx={{fontSize: 13, color: 'text.secondary'}} />
-                                        <Typography variant="caption" fontWeight={600} noWrap>
-                                            {child.jobNumber}
-                                        </Typography>
-                                    </Box>
-                                    <TextField
-                                        type="number"
+                                    <JobPill jobNumber={child.jobNumber} compact />
+                                    <NumberInput
                                         value={currentAmount || ''}
-                                        onChange={(e) => {
-                                            const val = parseFloat(e.target.value) || 0;
+                                        onChange={(value) => {
+                                            const val = Number(value) || 0;
                                             setChildAmounts(prev => ({...prev, [child.jobId]: val}));
                                         }}
-                                        size="small"
-                                        slotProps={{
-                                            input: {
-                                                startAdornment: (
-                                                    <InputAdornment position="start">$</InputAdornment>
-                                                ),
-                                            },
-                                            htmlInput: {step: '0.01', min: '0', onWheel: (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur()},
-                                        }}
-                                        sx={(theme) => ({
-                                            flex: 1,
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {borderColor: isChanged ? theme.palette.primary.main : undefined},
-                                            },
-                                            // Hide number spinner
-                                            '& input[type=number]': {MozAppearance: 'textfield'},
-                                            '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
-                                                WebkitAppearance: 'none',
-                                                margin: 0,
-                                            },
-                                        })}
+                                        disabled={readOnly}
+                                        size="sm"
+                                        step={0.01}
+                                        decimalScale={2}
+                                        min={0}
+                                        leftSection="$"
+                                        aria-label={`Price for ${child.jobNumber}`}
+                                        style={{flex: 1}}
+                                        styles={isChanged
+                                            ? {input: {borderColor: 'var(--mantine-color-brand-6)'}}
+                                            : undefined}
                                     />
                                     {isChanged && (
-                                        <Typography variant="caption" color="text.disabled" sx={{flexShrink: 0, minWidth: 60, textAlign: 'right'}}>
+                                        <Text size="xs" c="dimmed" ta="right" style={{flexShrink: 0, minWidth: 60}}>
                                             was ${child.charge.toFixed(2)}
-                                        </Typography>
+                                        </Text>
                                     )}
-                                </Box>
+                                </Group>
                             );
                         })}
-                    </Box>
+                    </Stack>
                 </Box>
+                </>
             )}
 
             {/* Error message */}
             {errorMessage && (
-                <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-                    {errorMessage}
-                </Typography>
+                <Text c="red.6" size="sm" mt="md">{errorMessage}</Text>
             )}
         </Box>
     );
 
     const renderLoadingState = () => (
-        <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            py: 7.5,
-            px: 3,
-            gap: 2,
-        }}>
-            <CircularProgress size={48} />
-            <Typography variant="body1" color="text.secondary" fontWeight={500}>
-                Saving price...
-            </Typography>
-        </Box>
+        <Stack align="center" justify="center" gap="md" py={60} px="lg">
+            <Loader size={48} role="progressbar" aria-label="Saving price" />
+            <Text fw={500} c="dimmed">Saving price...</Text>
+        </Stack>
     );
 
     const renderSuccessState = () => (
-        <Box sx={{ p: '32px 24px', textAlign: 'center' }}>
-            <CheckCircleIcon sx={{ fontSize: 56, color: 'success.main', mb: 2 }} />
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
-                Price Updated
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {getModeSubtitle(selectedMode)}
-            </Typography>
+        <Box py="xl" px="lg" ta="center">
+            <Box c="green.6" mb="md" style={{display: 'flex', justifyContent: 'center'}}>
+                <Icon lucide={CircleCheck} size={56} />
+            </Box>
+            <Text fw={600} fz="lg" mb="xs">Price Updated</Text>
+            <Text size="sm" c="dimmed" mb="lg">{getModeSubtitle(selectedMode)}</Text>
 
             {/* New Price Display */}
-            <Box sx={(theme) => ({
-                bgcolor: alpha(theme.palette.success.main, 0.08),
-                border: `2px solid ${alpha(theme.palette.success.main, 0.2)}`,
-                borderRadius: 3,
-                p: 2.5,
-                mb: 2.5,
-            })}>
-                <Typography variant="caption" color="text.secondary" sx={{
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.5,
-                    display: 'block',
-                    mb: 0.5,
-                }}>
+            <Box
+                p="md"
+                mb="md"
+                style={{
+                    backgroundColor: alpha('var(--mantine-color-green-6)', 0.08),
+                    border: `2px solid ${alpha('var(--mantine-color-green-6)', 0.2)}`,
+                    borderRadius: 'var(--mantine-radius-lg)',
+                }}
+            >
+                <Text size="xs" c="dimmed" tt="uppercase" display="block" mb={4} style={{letterSpacing: 0.5}}>
                     New Price
-                </Typography>
-                <Typography sx={{ fontSize: 36, fontWeight: 700, color: 'success.main' }}>
-                    ${savedAmount.toFixed(2)}
-                </Typography>
+                </Text>
+                <Text fz={36} fw={700} c="green.6">${savedAmount.toFixed(2)}</Text>
             </Box>
 
             {/* Price Comparison */}
             {currentCharge !== savedAmount && (
-                <Box sx={(theme) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 2,
-                    p: 2,
-                    bgcolor: alpha(theme.palette.common.black, 0.03),
-                    borderRadius: 2.5,
-                    mb: 2.5,
-                })}>
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                            Previous Price
-                        </Typography>
-                        <Typography variant="body1" fontWeight={600} color="text.secondary">
-                            ${currentCharge.toFixed(2)}
-                        </Typography>
+                <Group
+                    justify="center"
+                    align="center"
+                    gap="md"
+                    p="md"
+                    mb="md"
+                    style={{backgroundColor: scrim(0.03), borderRadius: 'var(--mantine-radius-lg)'}}
+                >
+                    <Box ta="center">
+                        <Text size="xs" c="dimmed" display="block" mb={4}>Previous Price</Text>
+                        <Text fw={600} c="dimmed">${currentCharge.toFixed(2)}</Text>
                     </Box>
-                    <ArrowForwardIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                            New Price
-                        </Typography>
-                        <Typography variant="body1" fontWeight={600} color="success.main">
-                            ${savedAmount.toFixed(2)}
-                        </Typography>
+                    <Box c="dimmed" style={{display: 'flex'}}>
+                        <Icon lucide={ArrowRight} size={20} />
                     </Box>
-                </Box>
+                    <Box ta="center">
+                        <Text size="xs" c="dimmed" display="block" mb={4}>New Price</Text>
+                        <Text fw={600} c="green.6">${savedAmount.toFixed(2)}</Text>
+                    </Box>
+                </Group>
             )}
 
-            <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 0.75,
-            }}>
-                <InfoIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="caption" color="text.secondary">
-                    Job {jobNumber} has been updated
-                </Typography>
-            </Box>
+            <Group justify="center" gap={6} wrap="nowrap">
+                <Box c="dimmed" style={{display: 'flex'}}>
+                    <Icon lucide={Info} size={16} />
+                </Box>
+                <Text size="xs" c="dimmed">Job {jobNumber} has been updated</Text>
+            </Group>
         </Box>
     );
 
     return (
-        <Dialog
-            open={open}
-            onClose={isLoading ? undefined : onClose}
-            maxWidth="sm"
-            disableEnforceFocus
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        width: childJobs && childJobs.length > 0 ? 480 : 420,
-                        maxWidth: '95vw',
-                        maxHeight: '90vh',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    },
-                },
-            }}
+        <DialogShell
+            opened={open}
+            onClose={handleClose}
+            size={childJobs && childJobs.length > 0 ? 480 : 420}
+            label="Edit Price"
         >
             {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    minHeight: 56,
-                    flexShrink: 0,
-                })}
-            >
-                <PriceChangeIcon sx={{ fontSize: 24 }} />
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
-                        Edit Price
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Adjust the job price
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    disabled={isLoading}
-                    sx={(theme) => ({
-                        color: 'white',
-                        '&:hover': { bgcolor: alpha(theme.palette.common.white, 0.1) },
-                    })}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-
-            {/* Content — scrollable so action buttons remain visible */}
-            <Box sx={{overflowY: 'auto', flex: 1}}>
-                {isLoading && renderLoadingState()}
-                {showResult && !isLoading && renderSuccessState()}
-                {!showResult && !isLoading && renderEditState()}
-            </Box>
-
+            <DialogHeader
+                icon={<Icon lucide={readOnly ? Lock : Tag} />}
+                title="Edit Price"
+                subtitle={readOnly ? 'View only — this job is locked' : 'Adjust the job price'}
+                onClose={onClose}
+                closeDisabled={isLoading}
+            />
+            {isLoading && renderLoadingState()}
+            {showResult && !isLoading && renderSuccessState()}
+            {!showResult && !isLoading && renderEditState()}
             {/* Actions for result state */}
             {showResult && !isLoading && (
-                <Box sx={{
-                    px: 2,
-                    py: 2,
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    flexShrink: 0,
-                }}>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleDone}
-                        startIcon={<CheckIcon />}
-                        sx={{ minWidth: 120, borderRadius: 2, fontWeight: 500 }}
-                    >
-                        Done
-                    </Button>
-                </Box>
+                <DialogFooter
+                    hideCancel
+                    onConfirm={handleDone}
+                    confirmLabel="Done"
+                    confirmIcon={<Icon lucide={Check} />}
+                />
             )}
-
             {/* Actions for edit state */}
             {!showResult && !isLoading && (
-                <Box sx={{
-                    px: 2,
-                    py: 2,
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    gap: 1,
-                    flexShrink: 0,
-                }}>
-                    <Button
-                        variant="outlined"
-                        onClick={onClose}
-                        sx={{ minWidth: 80, color: 'text.secondary', borderColor: 'divider' }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleSubmit}
-                        disabled={isSubmitDisabled}
-                        startIcon={selectedMode === 'recalculate' ? <SyncIcon /> : undefined}
-                        sx={{ minWidth: 120, borderRadius: 2, fontWeight: 500 }}
-                    >
-                        {getSubmitButtonText(selectedMode)}
-                    </Button>
-                </Box>
+                <DialogFooter
+                    onCancel={onClose}
+                    cancelLabel={readOnly ? 'Close' : 'Cancel'}
+                    onConfirm={handleSubmit}
+                    confirmLabel={getSubmitButtonText(selectedMode)}
+                    confirmIcon={selectedMode === 'recalculate' ? <Icon lucide={RefreshCw} /> : undefined}
+                    confirmDisabled={isSubmitDisabled}
+                    hideConfirm={readOnly}
+                />
             )}
-        </Dialog>
+        </DialogShell>
     );
 };
 

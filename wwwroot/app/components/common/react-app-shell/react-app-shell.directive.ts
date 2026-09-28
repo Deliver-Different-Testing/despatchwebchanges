@@ -1,6 +1,8 @@
 import angular from 'angular';
-import { initAiSettings } from '../../../functions/aiSettings';
-import { openHubUrl, openJobInSearch } from '../../../react/services/navigationService';
+import {openHubUrl, openJobInSearch} from '../../../react/services/navigationService';
+import type MessagingDialogService from '../../dialogs/messaging-dialog/messaging-dialog.service';
+import {ReactAppShellScope} from "./react-app-shell.scope";
+
 /**
  * React App Shell Directive
  *
@@ -8,29 +10,20 @@ import { openHubUrl, openJobInSearch } from '../../../react/services/navigationS
  * This makes it easy to use the React toolbar and sidenav across all pages.
  */
 
-interface ReactAppShellScope extends angular.IScope {
-    title: string;
-    messagesCount?: number;
-    onMessagesClick?: (event: { $event: MouseEvent }) => void;
-    views?: any[];
-    viewsLoading?: boolean;
-    onToggleView?: (args: { view: any }) => void;
-    onClearAllViews?: () => void;
-    layouts?: any[];
-    currentLayoutName?: string;
-    onSaveLayout?: () => void;
-    onLoadLayout?: (args: { index: number }) => void;
-    onDeleteLayout?: (args: { index: number }) => void;
-    onSettingsClick?: (event: { $event: MouseEvent }) => void;
-    onRefreshClick?: () => void;
-    refreshLoading?: boolean;
-    // Date filter
-    dateFilterData?: any;
-    appPage?: string;
-    onDateFilterRefresh?: (args: { dateFilterData: any }) => void;
-    // Actions menu
-    onCreateNewJob?: (event: { $event: MouseEvent }) => void;
-    onInterCourierCharge?: (event: { $event: MouseEvent }) => void;
+interface BreadcrumbItem {
+    label: string;
+    href?: string;
+}
+
+function buildBreadcrumbs(section: string | undefined, title: string | undefined): BreadcrumbItem[] {
+    const crumbs: BreadcrumbItem[] = [];
+    if (section) {
+        crumbs.push({label: section});
+    }
+    if (title) {
+        crumbs.push({label: title});
+    }
+    return crumbs;
 }
 
 function reactAppShellDirective(
@@ -38,12 +31,16 @@ function reactAppShellDirective(
     $state: angular.ui.IStateService,
     APP_CONFIG: any,
     $rootScope: angular.IRootScopeService,
-    toastrService: any
+    toastrService: any,
+    $interval: angular.IIntervalService,
+    messagingDialogService: MessagingDialogService
 ): angular.IDirective<ReactAppShellScope> {
     return {
         restrict: 'E',
         scope: {
             title: '@',
+            section: '@?',
+            beta: '<?',
             messagesCount: '<?',
             onMessagesClick: '&?',
             views: '<?',
@@ -55,6 +52,12 @@ function reactAppShellDirective(
             onSaveLayout: '&?',
             onLoadLayout: '&?',
             onDeleteLayout: '&?',
+            onRenameLayout: '&?',
+            onImportLayouts: '&?',
+            onCustomizePanels: '&?',
+            onResetLayout: '&?',
+            columnEditMode: '<?',
+            onToggleColumnEditMode: '&?',
             onSettingsClick: '&?',
             onRefreshClick: '&?',
             refreshLoading: '<?',
@@ -75,6 +78,36 @@ function reactAppShellDirective(
             let mounted = false;
             let stateChangeListener: (() => void) | null = null;
 
+            // Whether this page wires its own messages handler. When it does we
+            // defer entirely to the page (its click handler + `messages-count`);
+            // otherwise the directive self-wires the shared messaging dialog and
+            // polls the unread count so the button is present on every page.
+            const pageOwnsMessages = !!scope.onMessagesClick;
+            let selfUnreadCount = 0;
+            let unreadPoll: angular.IPromise<void> | null = null;
+
+            // Refresh the directive-owned unread badge (self-wired pages only).
+            const refreshSelfUnreadCount = async () => {
+                if (pageOwnsMessages) return;
+                try {
+                    selfUnreadCount = await messagingDialogService.getUnreadMessageCount();
+                    updateToolbarActions();
+                } catch (error) {
+                    console.error('[ReactAppShellDirective] Failed to fetch unread message count:', error);
+                }
+            };
+
+            // Open the shared messaging dialog, then refresh the badge on close.
+            const openSelfMessaging = async (event: MouseEvent) => {
+                try {
+                    await messagingDialogService.openMessagingDialog(event);
+                } catch (error) {
+                    console.error('[ReactAppShellDirective] Failed to open messaging dialog:', error);
+                } finally {
+                    void refreshSelfUnreadCount();
+                }
+            };
+
             // Create a unique container ID
             const containerId = 'react-app-shell-' + Math.random().toString(36).substring(2, 9);
             const containerEl = element.find('.react-app-shell-container')[0];
@@ -89,14 +122,24 @@ function reactAppShellDirective(
 
                 const actions: any = {};
 
-                // Messages
-                if (scope.onMessagesClick) {
+                // Messages — always available on every page. If the host page
+                // wires `on-messages-click`, defer to it (and its `messages-count`);
+                // otherwise the directive self-wires the shared messaging dialog
+                // and its own polled unread count.
+                if (pageOwnsMessages) {
                     actions.messages = {
                         unreadCount: scope.messagesCount || 0,
                         onClick: (event: MouseEvent) => {
                             scope.$apply(() => {
                                 scope.onMessagesClick!({ $event: event });
                             });
+                        },
+                    };
+                } else {
+                    actions.messages = {
+                        unreadCount: selfUnreadCount,
+                        onClick: (event: MouseEvent) => {
+                            void openSelfMessaging(event);
                         },
                     };
                 }
@@ -175,6 +218,54 @@ function reactAppShellDirective(
                                 scope.onDeleteLayout!({ index });
                             });
                         },
+                        // Rename a custom layout. Only wired when the host page
+                        // provides `on-rename-layout`.
+                        ...(scope.onRenameLayout ? {
+                            onRenameLayout: (index: number) => {
+                                scope.$apply(() => {
+                                    scope.onRenameLayout!({ index });
+                                });
+                            },
+                        } : {}),
+                        // "Import V1 layouts" — copy the user's legacy layouts into
+                        // this page's V2 store. Only wired when the host page
+                        // provides `on-import-layouts`.
+                        ...(scope.onImportLayouts ? {
+                            onImportLayouts: () => {
+                                scope.$apply(() => {
+                                    scope.onImportLayouts!();
+                                });
+                            },
+                        } : {}),
+                        // Cross-link the organiser: "Customize panels…" opens the
+                        // dedicated panel-visibility dialog. Only wired when the host
+                        // page provides `on-customize-panels`.
+                        ...(scope.onCustomizePanels ? {
+                            onCustomizePanels: () => {
+                                scope.$apply(() => {
+                                    scope.onCustomizePanels!();
+                                });
+                            },
+                        } : {}),
+                        // "Edit columns" mode toggle. Only wired when the host
+                        // page provides `on-toggle-column-edit-mode`.
+                        ...(scope.onToggleColumnEditMode ? {
+                            columnEditMode: !!scope.columnEditMode,
+                            onToggleColumnEditMode: () => {
+                                scope.$apply(() => {
+                                    scope.onToggleColumnEditMode!();
+                                });
+                            },
+                        } : {}),
+                        // "Reset layout" restores the shipped arrangement. Only
+                        // wired when the host page provides `on-reset-layout`.
+                        ...(scope.onResetLayout ? {
+                            onResetLayout: () => {
+                                scope.$apply(() => {
+                                    scope.onResetLayout!();
+                                });
+                            },
+                        } : {}),
                     };
                 }
 
@@ -245,10 +336,15 @@ function reactAppShellDirective(
                         await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
                     }
 
-                    // Load the React App Shell module
+                    // Load the React App Shell module, plus its stylesheet when the
+                    // bundle emits one (CSS modules in the shell's components).
+                    const shellFiles = [getAssetPath('appShellReact.js')];
+                    if (manifest['appShellReact.css']) {
+                        shellFiles.push(getAssetPath('appShellReact.css'));
+                    }
                     await $ocLazyLoad.load({
                         name: 'uDispatch.appShellReact',
-                        files: [getAssetPath('appShellReact.js')]
+                        files: shellFiles
                     });
 
                     console.log('[ReactAppShellDirective] Module loaded, checking for ReactAppShell...');
@@ -267,9 +363,12 @@ function reactAppShellDirective(
                     // Mount the shell
                     ReactAppShell.mount(containerId, {
                         title: scope.title || 'Dashboard',
+                        breadcrumbs: buildBreadcrumbs(scope.section, scope.title),
+                        beta: !!scope.beta,
                         firstName,
                         fullName,
                         isUsCustomer: APP_CONFIG.US_Customer,
+                        isNetworkPartner: !!(window as any).IsNetworkPartner,
                         currentState: $state.current.name || '',
                         onLogoClick: () => openHubUrl(),
                         onNavigate: (state: string) => {
@@ -284,11 +383,17 @@ function reactAppShellDirective(
                     mounted = true;
                     console.log('[ReactAppShellDirective] Mounted successfully');
 
-                    // Fetch server-side AI feature flag so isAiEnabled() reflects it
-                    await initAiSettings().catch(() => {/* non-fatal */});
-
-                    // Set up toolbar actions (after AI flag is resolved)
+                    // Set up toolbar actions
                     updateToolbarActions();
+
+                    // For self-wired pages, seed the unread badge and poll it so
+                    // the messages button stays current on every page.
+                    if (!pageOwnsMessages) {
+                        void refreshSelfUnreadCount();
+                        unreadPoll = $interval(() => {
+                            void refreshSelfUnreadCount();
+                        }, 60000);
+                    }
 
                     // Listen for state changes
                     stateChangeListener = $rootScope.$on('$stateChangeSuccess', (
@@ -308,15 +413,19 @@ function reactAppShellDirective(
             // Watch for changes to scope properties
             scope.$watchGroup([
                 'title',
+                'section',
                 'messagesCount',
                 'viewsLoading',
                 'currentLayoutName',
                 'refreshLoading',
+                'editMode',
             ], () => {
                 if (mounted) {
                     const ReactAppShell = (window as any).ReactAppShell;
-                    if (ReactAppShell && scope.title) {
-                        ReactAppShell.updateTitle(scope.title);
+                    if (ReactAppShell) {
+                        ReactAppShell.updateBreadcrumbs(
+                            buildBreadcrumbs(scope.section, scope.title)
+                        );
                     }
                     updateToolbarActions();
                 }
@@ -336,13 +445,18 @@ function reactAppShellDirective(
             }, true);
 
             // Mount on init
-            mountShell();
+           void mountShell();
 
-            // Cleanup on destroy
+            // Clean-up on destroy
             scope.$on('$destroy', () => {
                 console.log('[ReactAppShellDirective] Destroying...');
                 if (stateChangeListener) {
                     stateChangeListener();
+                }
+
+                if (unreadPoll) {
+                    $interval.cancel(unreadPoll);
+                    unreadPoll = null;
                 }
 
                 if (mounted) {
@@ -356,6 +470,6 @@ function reactAppShellDirective(
     };
 }
 
-reactAppShellDirective.$inject = ['$ocLazyLoad', '$state', 'APP_CONFIG', '$rootScope', 'toastrService'];
+reactAppShellDirective.$inject = ['$ocLazyLoad', '$state', 'APP_CONFIG', '$rootScope', 'toastrService', '$interval', 'messagingDialogService'];
 
 export default reactAppShellDirective;

@@ -1,47 +1,76 @@
 import {ContactID} from '../contants';
+import {getPreference, savePreference} from '../react/services/preferencesApi';
 
 const STORAGE_KEY = `aiEnabled_${ContactID}`;
+const AUTO_OPEN_STORAGE_KEY = `aiAutoOpen_${ContactID}`;
 
-/** Cached server-side flag. null = not yet fetched (assume enabled to avoid flicker). */
-let _serverEnabled: boolean | null = null;
+/** StaffPreference key: source of truth is the server, localStorage is a synchronous read-through cache. */
+const AUTO_MATE_PREFERENCE_KEY = 'AutoMate';
 
-/**
- * Fetches the server-side EnableAiFeatures flag and caches it.
- * Call once during app init (e.g. app shell mount).
- */
-export async function initAiSettings(): Promise<void> {
-    try {
-        const response = await fetch('/Ai/IsEnabled', {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'include',
-        });
-        if (response.ok) {
-            const data = await response.json() as { enabled: boolean };
-            _serverEnabled = data.enabled;
-        }
-    } catch {
-        // Network error — default to enabled so existing features don't break
-        _serverEnabled = null;
-    }
+interface AutoMatePreference {
+    aiEnabled: boolean;
+    aiAutoOpen: boolean;
 }
 
 /**
- * Returns true only when AI is enabled both server-side (via Anthropic__EnableAiFeatures)
- * and by the user's per-account localStorage preference.
+ * Returns true when the signed-in user has opted in to AI features via
+ * the Settings page. Defaults to false: users have to turn it on themselves.
  */
 export function isAiEnabled(): boolean {
-    if (_serverEnabled === false) return false;
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === null ? true : stored === 'true';
+    return localStorage.getItem(STORAGE_KEY) === 'true';
 }
 
-/** Returns true unless the server has explicitly disabled AI features.
- *  Unlike isAiEnabled(), this ignores the user's per-account preference
- *  so that the settings toggle remains visible for users to change. */
-export function isAiServerEnabled(): boolean {
-    return _serverEnabled !== false;
+/**
+ * Returns true when the user wants the Auto-mate briefing to open expanded
+ * automatically, rather than starting collapsed (click-to-open). Defaults to
+ * false, preserving the click-to-open behaviour.
+ */
+export function isAiAutoOpenEnabled(): boolean {
+    return localStorage.getItem(AUTO_OPEN_STORAGE_KEY) === 'true';
+}
+
+/**
+ * Pushes the combined Auto-mate payload to the server. Fire-and-forget: a
+ * failed sync is logged rather than surfaced, so the toggle stays usable
+ * offline — the local value it just wrote is already correct for this
+ * browser.
+ */
+function persistAutoMateToServer(): void {
+    const payload: AutoMatePreference = {aiEnabled: isAiEnabled(), aiAutoOpen: isAiAutoOpenEnabled()};
+    void savePreference(AUTO_MATE_PREFERENCE_KEY, JSON.stringify(payload)).catch(error =>
+        console.error('Failed to sync Auto-mate settings to server:', error),
+    );
 }
 
 export function setAiEnabled(enabled: boolean): void {
     localStorage.setItem(STORAGE_KEY, String(enabled));
+    persistAutoMateToServer();
+}
+
+export function setAiAutoOpenEnabled(enabled: boolean): void {
+    localStorage.setItem(AUTO_OPEN_STORAGE_KEY, String(enabled));
+    persistAutoMateToServer();
+}
+
+/**
+ * Pulls Auto-mate settings from the server into localStorage so the existing
+ * synchronous isAiEnabled()/isAiAutoOpenEnabled() reads see them, the same
+ * read-through pattern dispatch layouts use. If the server has nothing yet,
+ * seeds it from whatever is currently in localStorage so the setting follows
+ * the user to their next device.
+ */
+export async function loadAutoMateFromServer(): Promise<void> {
+    const json = await getPreference(AUTO_MATE_PREFERENCE_KEY);
+    if (json === null) {
+        persistAutoMateToServer();
+        return;
+    }
+
+    try {
+        const payload = JSON.parse(json) as AutoMatePreference;
+        localStorage.setItem(STORAGE_KEY, String(payload.aiEnabled));
+        localStorage.setItem(AUTO_OPEN_STORAGE_KEY, String(payload.aiAutoOpen));
+    } catch (error) {
+        console.error('Failed to parse Auto-mate settings from server:', error);
+    }
 }

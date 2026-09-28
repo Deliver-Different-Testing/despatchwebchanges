@@ -1,10 +1,10 @@
-using DespatchWeb.Controllers;
+﻿using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -15,35 +15,43 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryBulkSearchTests : IDisposable
 {
-    private readonly Mock<IAddStopJobService> _addStopJobServiceMock = new();
-    private readonly Mock<IClientAccessValidatorService> _clientAccessValidatorMock = new();
+    private readonly IAddStopJobService _addStopJobServiceMock = Substitute.For<IAddStopJobService>();
+    private readonly IClientAccessValidatorService _clientAccessValidatorMock = Substitute.For<IClientAccessValidatorService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly Mock<IDeliveryJourneyService> _deliveryJourneyServiceMock = new();
-    private readonly Mock<IDispatchJobService> _dispatchJobServiceMock = new();
+    private readonly IDeliveryJourneyService _deliveryJourneyServiceMock = Substitute.For<IDeliveryJourneyService>();
+    private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
     private readonly HttpClient _httpClient = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<IJobPhotoService> _jobPhotoServiceMock = new();
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobReportService> _jobReportServiceMock = new();
-    private readonly Mock<IPodReportService> _podReportServiceMock = new();
-    private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
-    private readonly Mock<IRateJobService> _rateJobServiceMock = new();
-    private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
-    private readonly Mock<ISplitJobService> _splitJobServiceMock = new();
-    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<ISendToPartnerService> _sendToPartnerServiceMock = new();
-    private readonly Mock<IPartnerJobGate> _partnerJobGateMock = new();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
+    private readonly IPodMediaService _podMediaServiceMock = Substitute.For<IPodMediaService>();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
+    private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
+    private readonly IPriceReportService _priceReportServiceMock = Substitute.For<IPriceReportService>();
+    private readonly IPdfOverlayClient _pdfOverlayClientMock = Substitute.For<IPdfOverlayClient>();
+    private readonly IPricingPermissionService _pricingPermissionServiceMock = Substitute.For<IPricingPermissionService>();
+    private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
+    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
+    private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
+
+    private readonly ISplitPricingPreviewService _splitPricingPreviewServiceMock =
+        Substitute.For<ISplitPricingPreviewService>();
+
+    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
+    private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
+    private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
 
     public JobRepositoryBulkSearchTests()
     {
-        _pricingPermissionServiceMock.Setup(x => x.CanModifyPricesAsync()).ReturnsAsync(true);
-        _pricingPermissionServiceMock.Setup(x => x.CanBulkUpdatePricesAsync()).ReturnsAsync(true);
-        _pricingPermissionServiceMock.Setup(x => x.CanModifyPriceBreakdownAsync()).ReturnsAsync(true);
-        _pricingPermissionServiceMock.Setup(x => x.CanUsePricingModeAsync(It.IsAny<string>())).ReturnsAsync(true);
-        _pricingPermissionServiceMock.Setup(x => x.ValidateJobAccessAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
-        _pricingPermissionServiceMock.Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync([]);
+        _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(true);
+        _pricingPermissionServiceMock.CanBulkUpdatePricesAsync().Returns(true);
+        _pricingPermissionServiceMock.CanModifyPriceBreakdownAsync().Returns(true);
+        _pricingPermissionServiceMock.CanUsePricingModeAsync(Arg.Any<string>()).Returns(true);
+        _pricingPermissionServiceMock.ValidateJobAccessAsync(Arg.Any<int>()).Returns(Task.CompletedTask);
+        _pricingPermissionServiceMock.ValidateJobsAccessAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns([]);
     }
 
     public void Dispose()
@@ -53,25 +61,32 @@ public class JobRepositoryBulkSearchTests : IDisposable
     }
 
     private JobController CreateController() => new(
-        _jobQueryRepositoryMock.Object,
-        _jobCommandRepositoryMock.Object,
-        _taskRepositoryMock.Object,
-        _clientAccessValidatorMock.Object,
+        _jobQueryRepositoryMock,
+        _jobCommandRepositoryMock,
+        _taskRepositoryMock,
+        _clientAccessValidatorMock,
         _httpClient,
-        _rateJobServiceMock.Object,
-        _recurringJobRepositoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _rateJobServiceMock,
+        _recurringJobRepositoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _addStopJobServiceMock.Object,
-        _jobReportServiceMock.Object,
-        _jobPhotoServiceMock.Object,
-        _dispatchJobServiceMock.Object,
-        _deliveryJourneyServiceMock.Object,
-        _pricingPermissionServiceMock.Object,
-        _podReportServiceMock.Object,
-        _splitJobServiceMock.Object,
-        _sendToPartnerServiceMock.Object,
-        _partnerJobGateMock.Object);
+        _addStopJobServiceMock,
+        _jobReportServiceMock,
+        _jobPhotoServiceMock,
+        _podMediaServiceMock,
+        _dispatchJobServiceMock,
+        _deliveryJourneyServiceMock,
+        _pricingPermissionServiceMock,
+        _podReportServiceMock,
+        _priceReportServiceMock,
+        _pdfOverlayClientMock,
+        _splitJobServiceMock,
+        _splitPricingPreviewServiceMock,
+        _sendToPartnerServiceMock,
+        _partnerJobGateMock,
+        _flightAssignmentServiceMock,
+        Substitute.For<IArrivalWaitRerateService>(),
+        Substitute.For<IAccessorialChargeRepository>());
 
     [Fact]
     public async Task BulkSearch_WithBulkJobId_IgnoresOtherFilters()
@@ -94,11 +109,10 @@ public class JobRepositoryBulkSearchTests : IDisposable
             TotalCount = 1
         };
 
-        _jobQueryRepositoryMock
-            .Setup(x => x.BulkSearchAsync(
-                It.Is<PodSearchRequest>(r => r.BulkJobId == 42),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResult);
+        _jobQueryRepositoryMock.BulkSearchAsync(
+                Arg.Is<PodSearchRequest>(r => r!.BulkJobId == 42),
+                Arg.Any<CancellationToken>())
+            .Returns(expectedResult);
 
         var controller = CreateController();
         var result = await controller.BulkSearch(request);
@@ -127,11 +141,10 @@ public class JobRepositoryBulkSearchTests : IDisposable
             TotalCount = 2
         };
 
-        _jobQueryRepositoryMock
-            .Setup(x => x.BulkSearchAsync(
-                It.Is<PodSearchRequest>(r => !r.BulkJobIdSet),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResult);
+        _jobQueryRepositoryMock.BulkSearchAsync(
+                Arg.Is<PodSearchRequest>(r => !r!.BulkJobIdSet),
+                Arg.Any<CancellationToken>())
+            .Returns(expectedResult);
 
         var controller = CreateController();
         var result = await controller.BulkSearch(request);
@@ -161,11 +174,10 @@ public class JobRepositoryBulkSearchTests : IDisposable
             TotalCount = 1
         };
 
-        _jobQueryRepositoryMock
-            .Setup(x => x.PodSearchAsync(
-                It.Is<PodSearchRequest>(r => r.JobId == 123),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResult);
+        _jobQueryRepositoryMock.PodSearchAsync(
+                Arg.Is<PodSearchRequest>(r => r!.JobId == 123),
+                Arg.Any<CancellationToken>())
+            .Returns(expectedResult);
 
         var controller = CreateController();
         var result = await controller.PodSearch(request);

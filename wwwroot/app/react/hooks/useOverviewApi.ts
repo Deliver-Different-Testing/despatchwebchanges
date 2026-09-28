@@ -11,15 +11,18 @@ import type {
     OverviewQueryParams,
 } from '../pages/overview/OverviewPage.interfaces';
 
-export function useOverviewJobs(params: OverviewQueryParams) {
+export function useOverviewJobs(params: OverviewQueryParams, refetchInterval?: number) {
     return useQuery({
         queryKey: queryKeys.overview.jobs(params),
         queryFn: ({signal}) => overviewApi.getAllJobs(params, {signal}),
         placeholderData: keepPreviousData,
+        // The Dispatch panel polls on the toolbar's cadence, like every other
+        // panel on that board; the Overview page passes nothing and stays manual.
+        refetchInterval,
         // Page/filter combos are uniquely keyed, so the only thing staleTime
         // affects here is back-nav within the same combo — 60s avoids an
         // immediate refetch when the user toggles tabs and returns.
-        staleTime: 60 * 1000,
+        staleTime: refetchInterval ?? 60 * 1000,
     });
 }
 
@@ -50,7 +53,7 @@ export function useOverviewStats() {
 }
 
 export function useOverviewOpenJobs(
-    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers'>,
+    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers' | 'despatchViewIds' | 'scopeToDespatchViews'>,
     refetchInterval?: number,
 ) {
     return useQuery({

@@ -7,13 +7,39 @@ namespace DespatchWeb.Services;
 
 public sealed class PartnerJobGate(
     IJobQueryRepository jobQueryRepository,
-    IJobChangeRequestService changeRequestService) : IPartnerJobGate
+    IJobChangeRequestService changeRequestService,
+    ISendToPartnerService sendToPartnerService) : IPartnerJobGate
 {
+    public async Task<PartnerJobGateResult> EvaluateAllocateAsync(int jobId, CancellationToken ct)
+    {
+        // Acceptance state is keyed by local job id; IM returns null (the client surfaces it
+        // as NotFound) for jobs that aren't partner-inbound, which we treat as "no gate".
+        // We don't pre-check IsPartnerJobAsync — the IM call is cheap and short-circuits.
+        var state = await sendToPartnerService.GetInboundJobAcceptanceStateAsync(jobId);
+        if (state is null)
+        {
+            return new PartnerJobGateResult.NotPartner();
+        }
+
+        return state.Status switch
+        {
+            // Modes 2/3 + legacy unset → no gate active.
+            "Allowed" or "Accepted" => new PartnerJobGateResult.NotPartner(),
+            "PendingAcceptance" => new PartnerJobGateResult.Blocked(
+                "Partner rate has not been accepted yet — open the job and review the offered rate before allocating."),
+            "Rejected" => new PartnerJobGateResult.Blocked(
+                $"Partner rate was rejected: {state.RejectionReason ?? "no reason supplied"}. Wait for the partner to re-dispatch or cancel."),
+            _ => new PartnerJobGateResult.Blocked($"Unknown acceptance state '{state.Status}'.")
+        };
+    }
+
     public async Task<PartnerJobGateResult> EvaluateAsync(int jobId, JobProperty property, string? requestedValue,
         CancellationToken ct)
     {
         if (!await jobQueryRepository.IsPartnerJobAsync(jobId))
+        {
             return new PartnerJobGateResult.NotPartner();
+        }
 
         var mapped = MapJobProperty(property);
         return mapped switch
@@ -29,7 +55,9 @@ public sealed class PartnerJobGate(
         string? reason, CancellationToken ct)
     {
         if (!await jobQueryRepository.IsPartnerJobAsync(jobId))
+        {
             return new PartnerJobGateResult.NotPartner();
+        }
 
         return await FileChangeRequestAsync(jobId, field, requestedValue, reason, ct);
     }
@@ -46,7 +74,9 @@ public sealed class PartnerJobGate(
         }, ct);
 
         if (!result.Success || result.Request is null)
+        {
             return new PartnerJobGateResult.Blocked(result.Message ?? "Failed to file change request");
+        }
 
         return result.Request.Status == JobChangeRequestStatus.Applied
             ? new PartnerJobGateResult.AutoApplied(result.Request.Id)

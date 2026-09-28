@@ -289,9 +289,11 @@ public class JobReportServiceLargeDataTests
         Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
 
-        // Fields with commas should be quoted
-        Assert.Contains("\"TEST,001\"", csvContent);
-        Assert.Contains("\"Ref,With,Commas\"", csvContent);
+        // Commas are stripped from string fields so they can never break the column structure
+        Assert.Contains("TEST001", csvContent);
+        Assert.Contains("RefWithCommas", csvContent);
+        // Embedded quotes are still escaped and the field wrapped
+        Assert.Contains("\"123 \"\"Main\"\" Street\"", csvContent);
     }
 
     [Fact]
@@ -409,6 +411,110 @@ public class JobReportServiceLargeDataTests
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         Assert.Single(lines); // Header only
+    }
+
+    [Fact]
+    public async Task GenerateJobsReportAsync_IncludesCubicColumn()
+    {
+        // Arrange
+        var jobs = new List<JobDownloadModel>
+        {
+            new() { Id = 1, JobNumber = "TEST-001", Cubic = 4.0m, BookDate = TestDates.Now }
+        };
+
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
+
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
+
+        var service = CreateService();
+        var request = new PodSearchDownloadRequest
+        {
+            FromDate = DateTimeOffset.Now.AddMonths(-1),
+            ToDate = DateTimeOffset.Now
+        };
+
+        // Act
+        var result = await service.GenerateJobsReportAsync(request);
+
+        // Assert - header has a Cubic column and the summed value is written
+        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
+        var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var header = lines[0].Split(',');
+        var cubicIndex = Array.IndexOf(header, "Cubic");
+        Assert.True(cubicIndex >= 0, "CSV header should contain a Cubic column");
+        Assert.Equal("4.0", lines[1].Split(',')[cubicIndex]);
+    }
+
+    [Fact]
+    public async Task GenerateJobsReportAsync_WritesVoidAndStatusNameColumns()
+    {
+        // Arrange
+        var jobs = new List<JobDownloadModel>
+        {
+            new() { Id = 1, JobNumber = "VOID-001", Void = true, StatusName = "Void", BookDate = TestDates.Now },
+            new() { Id = 2, JobNumber = "LIVE-001", Void = false, StatusName = "New", BookDate = TestDates.Now }
+        };
+
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
+
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
+
+        var service = CreateService();
+        var request = new PodSearchDownloadRequest
+        {
+            FromDate = DateTimeOffset.Now.AddMonths(-1),
+            ToDate = DateTimeOffset.Now
+        };
+
+        // Act
+        var result = await service.GenerateJobsReportAsync(request);
+
+        // Assert
+        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
+        var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        // Void is the last column, so cells carry the trailing \r of the CRLF line ending
+        var header = SplitCells(lines[0]);
+        var voidIndex = Array.IndexOf(header, "Void");
+        var statusIndex = Array.IndexOf(header, "StatusName");
+        Assert.True(voidIndex >= 0, "CSV header should contain a Void column");
+        Assert.True(statusIndex >= 0, "CSV header should contain a StatusName column");
+
+        var voidRow = SplitCells(lines[1]);
+        Assert.Equal("True", voidRow[voidIndex]);
+        Assert.Equal("Void", voidRow[statusIndex]);
+
+        var liveRow = SplitCells(lines[2]);
+        Assert.Equal("False", liveRow[voidIndex]);
+        Assert.Equal("New", liveRow[statusIndex]);
+    }
+
+    private static string[] SplitCells(string line)
+    {
+        var cells = line.Split(',');
+        for (var i = 0; i < cells.Length; i++)
+        {
+            cells[i] = cells[i].Trim('\r');
+        }
+
+        return cells;
     }
 
     private static List<JobDownloadModel> GenerateLargeJobDownloadDataset(int count)

@@ -8,16 +8,18 @@
  * same query as the inbox itself so the count and the list never disagree.
  */
 
-import React, {useState, useMemo} from 'react';
-import {alpha} from '@mui/material/styles';
-import IconButton from '@mui/material/IconButton';
-import Badge from '@mui/material/Badge';
-import Drawer from '@mui/material/Drawer';
-import Box from '@mui/material/Box';
-import Tooltip from '@mui/material/Tooltip';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import type {SxProps, Theme} from '@mui/material/styles';
+import React, {useMemo} from 'react';
+import {ActionIcon, Drawer, Indicator, Tooltip} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {Handshake} from 'lucide-react';
+import {Icon} from '../../components/common/icon/Icon';
+import {
+    badgeOverflowStyle,
+    toolbarIconButtonClassName,
+    toolbarIconButtonStyle,
+} from '../../components/common/app-toolbar/ToolbarActions';
 import {useApproverInbox} from './useApproverInbox';
+import {useHasActivePartners} from './useHasActivePartners';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
 import {ageLevel} from '../../components/job-change-requests/jobChangeRequestFormatting';
 
@@ -36,22 +38,13 @@ export interface PartnerApprovalsBadgeProps {
     toolbarVariant?: boolean;
 }
 
-// Toolbar-styled icon button — mirrors the hover treatment used by the
-// other AppToolbar actions (Messages, Refresh, etc.) so the badge looks
-// native to the bar rather than bolted on.
-const toolbarIconButtonSx: SxProps<Theme> = {
-    p: 1,
-    '&:hover': {
-        bgcolor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
-    },
-};
-
 export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
     onOpenJob,
     toolbarVariant = false,
 }) => {
-    const [open, setOpen] = useState(false);
-    const {data: items = []} = useApproverInbox();
+    const [opened, {open, close}] = useDisclosure(false);
+    const {data: hasActivePartners} = useHasActivePartners();
+    const {data: items = []} = useApproverInbox({enabled: hasActivePartners === true});
 
     const {count, hasOverdue} = useMemo(() => {
         let overdue = false;
@@ -68,57 +61,61 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
         ? 'No partner approvals waiting'
         : `${count} partner approval${count === 1 ? '' : 's'} waiting${hasOverdue ? ' (overdue)' : ''}`;
 
+    // Hide the badge entirely for tenants with no active partner pairings.
+    // While the gating query is still resolving we render nothing — partner
+    // status doesn't change often, and a brief absence is preferable to a
+    // visible flash that disappears once the answer arrives.
+    if (hasActivePartners !== true) {
+        return null;
+    }
+
     return (
         <>
-            <Tooltip title={tooltip}>
-                <IconButton
-                    onClick={() => setOpen(true)}
+            <Tooltip label={tooltip}>
+                <ActionIcon
+                    onClick={open}
                     aria-label="Open partner approvals"
-                    color={toolbarVariant ? 'inherit' : undefined}
-                    size={toolbarVariant ? undefined : 'small'}
-                    sx={toolbarVariant ? toolbarIconButtonSx : {position: 'relative'}}
+                    size={toolbarVariant ? 'lg' : 30}
+                    variant="subtle"
+                    color={toolbarVariant ? undefined : 'gray'}
+                    className={toolbarVariant ? toolbarIconButtonClassName : undefined}
+                    style={toolbarVariant ? {...toolbarIconButtonStyle, ...badgeOverflowStyle} : badgeOverflowStyle}
                 >
-                    <Badge
-                        badgeContent={count}
-                        color={hasOverdue ? 'error' : 'warning'}
-                        max={99}
-                        invisible={count === 0}
-                        sx={toolbarVariant ? {
-                            '& .MuiBadge-badge': {
-                                fontSize: '0.65rem',
-                                minWidth: 18,
-                                height: 18,
-                            },
-                        } : undefined}
+                    <Indicator
+                        label={count > 99 ? '99+' : count}
+                        disabled={count === 0}
+                        color={hasOverdue ? 'red' : 'orange'}
+                        size={18}
+                        offset={2}
                     >
-                        <HandshakeIcon sx={toolbarVariant ? {fontSize: 22} : undefined}/>
-                    </Badge>
-                </IconButton>
+                        <Icon lucide={Handshake} size={18} />
+                    </Indicator>
+                </ActionIcon>
             </Tooltip>
 
             <Drawer
-                anchor="right"
-                open={open}
-                onClose={() => setOpen(false)}
-                slotProps={{
-                    paper: {
-                        elevation: 24,
-                        sx: {
-                            width: {xs: '100%', sm: 460},
-                            bgcolor: 'background.default',
-                            overflow: 'hidden',
-                        },
+                opened={opened}
+                onClose={close}
+                position="right"
+                size={460}
+                padding={0}
+                withCloseButton={false}
+                styles={{
+                    content: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        backgroundColor: 'var(--mantine-color-body)',
                     },
+                    body: {flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'},
                 }}
             >
-                <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-                    <PartnerApprovalsInbox
-                        onOpenJob={(jobId, jobNo) => {
-                            onOpenJob?.(jobId, jobNo);
-                            setOpen(false);
-                        }}
-                    />
-                </Box>
+                <PartnerApprovalsInbox
+                    onOpenJob={(jobId, jobNo) => {
+                        onOpenJob?.(jobId, jobNo);
+                        close();
+                    }}
+                />
             </Drawer>
         </>
     );

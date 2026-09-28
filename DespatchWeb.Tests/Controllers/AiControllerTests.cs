@@ -3,19 +3,20 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(AiController))]
 public class AiControllerTests
 {
-    private readonly IAiAssistantService _assistantService = Substitute.For<IAiAssistantService>();
     private readonly IAiRateLimiter _rateLimiter = Substitute.For<IAiRateLimiter>();
-    private readonly AnthropicSettings _settingsValue = new() { EnableAiFeatures = true };
     private readonly IAiSummarizationService _summarizationService = Substitute.For<IAiSummarizationService>();
+    private readonly IAiDraftingService _draftingService = Substitute.For<IAiDraftingService>();
+    private readonly IAiInsightsService _insightsService = Substitute.For<IAiInsightsService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
 
     public AiControllerTests()
@@ -29,212 +30,26 @@ public class AiControllerTests
 
         _rateLimiter
             .RecordTokenUsageAsync(
-                Arg.Any<int>(),
-                Arg.Any<string>(),
-                Arg.Any<int>(),
-                Arg.Any<int>())
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<AiTaskClass>(), Arg.Any<AiUsageInfo>())
             .Returns(Task.CompletedTask);
     }
 
-    private AiController CreateController(AnthropicSettings? settings = null) => new(
-        _assistantService,
+    private AiController CreateController() => new(
         _summarizationService,
+        _draftingService,
+        _insightsService,
         _rateLimiter,
-        _tenantInfo,
-        Options.Create(settings ?? _settingsValue));
-
-    private static AiChatRequest CreateValidChatRequest() =>
-        new()
-        {
-            Messages =
-            [
-                new AiChatMessage { Role = "user", Content = "How many active jobs?" }
-            ]
-        };
-
-    [Fact]
-    public void IsEnabled_WhenFeaturesEnabled_ReturnsEnabledTrue()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = true });
-
-        var result = controller.IsEnabled();
-
-        var json = result as JsonResult;
-        Assert.NotNull(json);
-        dynamic? value = json.Value;
-        Assert.True((bool)value!.enabled);
-    }
-
-    [Fact]
-    public void IsEnabled_WhenFeaturesDisabled_ReturnsEnabledFalse()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = controller.IsEnabled();
-
-        var json = result as JsonResult;
-        Assert.NotNull(json);
-        dynamic? value = json.Value;
-        Assert.False((bool)value!.enabled);
-    }
-
-    [Fact]
-    public async Task Chat_AiFeaturesDisabled_Returns503()
-    {
-        // Arrange
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-        var request = CreateValidChatRequest();
-
-        // Act
-        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
-
-        // Assert
-        var statusResult = result as ObjectResult;
-        Assert.NotNull(statusResult);
-        Assert.Equal(503, statusResult.StatusCode);
-    }
-
-    [Fact]
-    public async Task Chat_InvalidRequest_Returns400()
-    {
-        // Arrange
-        var controller = CreateController();
-        var request = new AiChatRequest { Messages = [] };
-
-        // Act
-        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
-
-        // Assert
-        var badRequest = result as BadRequestObjectResult;
-        Assert.NotNull(badRequest);
-    }
-
-    [Fact]
-    public async Task Chat_RateLimitExceeded_Returns429()
-    {
-        // Arrange
-        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>())
-            .Returns(false);
-
-        var controller = CreateController();
-        var request = CreateValidChatRequest();
-
-        // Act
-        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
-
-        // Assert
-        var statusResult = result as ObjectResult;
-        Assert.NotNull(statusResult);
-        Assert.Equal(429, statusResult.StatusCode);
-    }
-
-    [Fact]
-    public async Task Chat_ValidRequest_ReturnsJsonResponse()
-    {
-        // Arrange
-        _assistantService.ChatAsync(Arg.Any<List<AiMessage>>(), Arg.Any<CancellationToken>())
-            .Returns(new AiChatResponse
-            {
-                Message = "There are 5 active jobs.",
-                Usage = new AiUsageInfo { InputTokens = 100, OutputTokens = 20 }
-            });
-
-        var controller = CreateController();
-        var request = CreateValidChatRequest();
-
-        // Act
-        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-    }
-
-    [Fact]
-    public async Task Chat_ValidRequest_RecordsTokenUsage()
-    {
-        // Arrange
-        _assistantService.ChatAsync(Arg.Any<List<AiMessage>>(), Arg.Any<CancellationToken>()).Returns(
-            new AiChatResponse
-            {
-                Message = "OK",
-                Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 50 }
-            });
-
-        var controller = CreateController();
-        var request = CreateValidChatRequest();
-
-        // Act
-        await controller.Chat(request, TestContext.Current.CancellationToken);
-
-        // Assert
-        await _rateLimiter
-            .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", 200, 50);
-    }
-
-    [Fact]
-    public async Task Chat_ServiceThrows_Returns500()
-    {
-        // Arrange
-        _assistantService.ChatAsync(Arg.Any<List<AiMessage>>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Exception("Service error"));
-
-        var controller = CreateController();
-        var request = CreateValidChatRequest();
-
-        // Act
-        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
-
-        // Assert
-        var statusResult = result as ObjectResult;
-        Assert.NotNull(statusResult);
-        Assert.Equal(500, statusResult.StatusCode);
-    }
-
-    [Fact]
-    public async Task Chat_Cancelled_Returns499()
-    {
-        // Arrange
-        _assistantService.ChatAsync(Arg.Any<List<AiMessage>>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
-
-        var controller = CreateController();
-        var request = CreateValidChatRequest();
-
-        // Act
-        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
-
-        // Assert
-        var statusResult = result as ObjectResult;
-        Assert.NotNull(statusResult);
-        Assert.Equal(499, statusResult.StatusCode);
-    }
-
-    [Fact]
-    public async Task SummarizeJobNotes_AiFeaturesDisabled_Returns503()
-    {
-        // Arrange
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        // Act
-        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
-
-        // Assert
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
+        _tenantInfo);
 
     [Fact]
     public async Task SummarizeJobNotes_RateLimited_Returns429()
     {
-        // Arrange
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
         var controller = CreateController();
 
-        // Act
         var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
 
-        // Assert
         var statusResult = result as ObjectResult;
         Assert.Equal(429, statusResult!.StatusCode);
     }
@@ -242,7 +57,6 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeJobNotes_ValidRequest_ReturnsJson()
     {
-        // Arrange
         _summarizationService.SummarizeJobNotesAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
         {
             Summary = "Job had two pickups.",
@@ -251,31 +65,14 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        // Act
         var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
 
-        // Assert
         Assert.IsType<JsonResult>(result);
-    }
-
-    [Fact]
-    public async Task SummarizeJobEvents_AiFeaturesDisabled_Returns503()
-    {
-        // Arrange
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        // Act
-        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
-
-        // Assert
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
     public async Task SummarizeJobEvents_ValidRequest_ReturnsJson()
     {
-        // Arrange
         _summarizationService.SummarizeJobEventsAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
         {
             Summary = "Late alert resolved.",
@@ -284,39 +81,23 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        // Act
         var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
 
-        // Assert
         Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
     public async Task SummarizeJobEvents_ServiceThrows_Returns500()
     {
-        // Arrange
         _summarizationService.SummarizeJobEventsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception("DB error"));
 
         var controller = CreateController();
 
-        // Act
         var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
 
-        // Assert
         var statusResult = result as ObjectResult;
         Assert.Equal(500, statusResult!.StatusCode);
-    }
-
-    [Fact]
-    public async Task SummarizeTaskDashboard_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeTaskDashboard(TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -335,9 +116,9 @@ public class AiControllerTests
     public async Task SummarizeTaskDashboard_ValidRequest_ReturnsJson()
     {
         _summarizationService.SummarizeTaskDashboardAsync(Arg.Any<CancellationToken>()).Returns(
-            new AiSummaryResponse
+            new StructuredSummaryResponse
             {
-                Summary = "3 overdue tasks need attention.",
+                Verdict = "3 overdue tasks need attention.",
                 Usage = new AiUsageInfo { InputTokens = 150, OutputTokens = 30 }
             });
 
@@ -352,9 +133,9 @@ public class AiControllerTests
     public async Task SummarizeTaskDashboard_ValidRequest_RecordsTokenUsage()
     {
         _summarizationService.SummarizeTaskDashboardAsync(Arg.Any<CancellationToken>()).Returns(
-            new AiSummaryResponse
+            new StructuredSummaryResponse
             {
-                Summary = "Summary",
+                Verdict = "Summary",
                 Usage = new AiUsageInfo { InputTokens = 100, OutputTokens = 25 }
             });
 
@@ -364,7 +145,8 @@ public class AiControllerTests
 
         await _rateLimiter
             .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", 100, 25);
+            .RecordTokenUsageAsync(1, "Pacific/Auckland", "SummarizeTaskDashboard", AiTaskClass.Judgment,
+                Arg.Is<AiUsageInfo>(u => u.InputTokens == 100 && u.OutputTokens == 25));
     }
 
     [Fact]
@@ -396,17 +178,6 @@ public class AiControllerTests
     }
 
     [Fact]
-    public async Task SummarizeJob_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeJob(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
     public async Task SummarizeJob_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
@@ -421,9 +192,9 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeJob_ValidRequest_ReturnsJson()
     {
-        _summarizationService.SummarizeJobAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        _summarizationService.SummarizeJobAsync(1, Arg.Any<CancellationToken>()).Returns(new StructuredSummaryResponse
         {
-            Summary = "Job picked up on time and delivered.",
+            Verdict = "Job picked up on time and delivered.",
             Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 35 }
         });
 
@@ -449,17 +220,6 @@ public class AiControllerTests
     }
 
     [Fact]
-    public async Task SummarizeOperations_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeOperations(TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
     public async Task SummarizeOperations_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
@@ -474,9 +234,9 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeOperations_ValidRequest_ReturnsJson()
     {
-        _summarizationService.SummarizeOperationsAsync(Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        _summarizationService.SummarizeOperationsAsync(Arg.Any<CancellationToken>()).Returns(new StructuredSummaryResponse
         {
-            Summary = "15 active, 8 inactive.",
+            Verdict = "15 active, 8 inactive.",
             Usage = new AiUsageInfo { InputTokens = 80, OutputTokens = 20 }
         });
 
@@ -490,9 +250,9 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeOperations_ValidRequest_RecordsTokenUsage()
     {
-        _summarizationService.SummarizeOperationsAsync(Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        _summarizationService.SummarizeOperationsAsync(Arg.Any<CancellationToken>()).Returns(new StructuredSummaryResponse
         {
-            Summary = "OK",
+            Verdict = "OK",
             Usage = new AiUsageInfo { InputTokens = 90, OutputTokens = 15 }
         });
 
@@ -502,7 +262,8 @@ public class AiControllerTests
 
         await _rateLimiter
             .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", 90, 15);
+            .RecordTokenUsageAsync(1, "Pacific/Auckland", "SummarizeOperations", AiTaskClass.Judgment,
+                Arg.Is<AiUsageInfo>(u => u.InputTokens == 90 && u.OutputTokens == 15));
     }
 
     [Fact]
@@ -520,17 +281,6 @@ public class AiControllerTests
     }
 
     [Fact]
-    public async Task SummarizeCompliance_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeCompliance(TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
     public async Task SummarizeCompliance_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
@@ -545,9 +295,9 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeCompliance_ValidRequest_ReturnsJson()
     {
-        _summarizationService.SummarizeComplianceAsync(Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        _summarizationService.SummarizeComplianceAsync(Arg.Any<CancellationToken>()).Returns(new StructuredSummaryResponse
         {
-            Summary = "3 expired licenses.",
+            Verdict = "3 expired licenses.",
             Usage = new AiUsageInfo { InputTokens = 120, OutputTokens = 20 }
         });
 
@@ -587,162 +337,236 @@ public class AiControllerTests
     }
 
     [Fact]
-    public async Task AnalyzeLateAlert_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
-    public async Task AnalyzeLateAlert_RateLimited_Returns429()
+    public async Task DraftMessage_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
         var controller = CreateController();
 
-        var result = await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
+        var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
         Assert.Equal(429, statusResult!.StatusCode);
     }
 
     [Fact]
-    public async Task AnalyzeLateAlert_ValidRequest_ReturnsJson()
+    public async Task DraftMessage_ValidRequest_ReturnsJsonAndRecordsUsage()
     {
-        _summarizationService.AnalyzeLateAlertAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
-        {
-            Summary = "Recommend: Monitor the situation.",
-            Usage = new AiUsageInfo { InputTokens = 100, OutputTokens = 20 }
-        });
-
-        var controller = CreateController();
-
-        var result = await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
-
-        Assert.IsType<JsonResult>(result);
-    }
-
-    [Fact]
-    public async Task AnalyzeLateAlert_ValidRequest_RecordsTokenUsage()
-    {
-        _summarizationService.AnalyzeLateAlertAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
-        {
-            Summary = "Analysis",
-            Usage = new AiUsageInfo { InputTokens = 110, OutputTokens = 22 }
-        });
-
-        var controller = CreateController();
-
-        await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
-
-        await _rateLimiter.Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", 110, 22);
-    }
-
-    [Fact]
-    public async Task AnalyzeLateAlert_ServiceThrows_Returns500()
-    {
-        _summarizationService.AnalyzeLateAlertAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Exception("Error"));
-
-        var controller = CreateController();
-
-        var result = await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(500, statusResult!.StatusCode);
-    }
-
-    [Fact]
-    public async Task SuggestCouriers_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
-    public async Task SuggestCouriers_RateLimited_Returns429()
-    {
-        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
-        var controller = CreateController();
-
-        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(429, statusResult!.StatusCode);
-    }
-
-    [Fact]
-    public async Task SuggestCouriers_ValidRequest_ReturnsJson()
-    {
-        _summarizationService.SuggestCouriersAsync(1, Arg.Any<CancellationToken>()).Returns(
-            new AiCourierSuggestionResponse
+        _draftingService.DraftCourierMessageAsync(Arg.Any<DraftMessageRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new AiDraftResponse
             {
-                Summary = "1. John - closest. 2. Jane - lowest load.",
-                Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 40 },
-                Couriers =
-                [
-                    new SuggestedCourier { CourierId = 10, Code = "C10", FirstName = "John" },
-                    new SuggestedCourier { CourierId = 11, Code = "C11", FirstName = "Jane" }
-                ]
+                Draft = "Hi Dave, the pickup is running 30 minutes late.",
+                Usage = new AiUsageInfo { InputTokens = 70, OutputTokens = 18 }
             });
 
         var controller = CreateController();
 
-        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
+        var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
 
         Assert.IsType<JsonResult>(result);
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(
+            1, "Pacific/Auckland", "DraftMessage", AiTaskClass.Drafting,
+            Arg.Is<AiUsageInfo>(u => u.InputTokens == 70 && u.OutputTokens == 18));
     }
 
     [Fact]
-    public async Task SuggestCouriers_ValidRequest_RecordsTokenUsage()
+    public async Task DraftMessage_Cancelled_Returns499()
     {
-        _summarizationService.SuggestCouriersAsync(1, Arg.Any<CancellationToken>()).Returns(
-            new AiCourierSuggestionResponse
-            {
-                Summary = "Suggestions",
-                Usage = new AiUsageInfo { InputTokens = 250, OutputTokens = 45 }
-            });
-
-        var controller = CreateController();
-
-        await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
-
-        await _rateLimiter
-            .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", 250, 45);
-    }
-
-    [Fact]
-    public async Task SuggestCouriers_ServiceThrows_Returns500()
-    {
-        _summarizationService.SuggestCouriersAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Exception("Error"));
-
-        var controller = CreateController();
-
-        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(500, statusResult!.StatusCode);
-    }
-
-    [Fact]
-    public async Task SuggestCouriers_Cancelled_Returns499()
-    {
-        _summarizationService.SuggestCouriersAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        _draftingService.DraftCourierMessageAsync(Arg.Any<DraftMessageRequest>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new OperationCanceledException());
 
         var controller = CreateController();
 
-        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
+        var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(499, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task DraftMessage_ServiceThrows_Returns500()
+    {
+        _draftingService.DraftCourierMessageAsync(Arg.Any<DraftMessageRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("AI error"));
+
+        var controller = CreateController();
+
+        var result = await controller.DraftMessage(new DraftMessageRequest(), TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(500, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task DraftEmail_ValidRequest_ReturnsJson()
+    {
+        _draftingService.DraftEmailAsync(Arg.Any<DraftEmailRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new AiEmailDraftResponse
+            {
+                Subject = "Schedule change",
+                Body = "Hi team, please note the schedule change.",
+                Usage = new AiUsageInfo { InputTokens = 60, OutputTokens = 22 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.DraftEmail(new DraftEmailRequest(), TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task DraftPodEmail_RateLimited_Returns429()
+    {
+        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
+        var controller = CreateController();
+
+        var result = await controller.DraftPodEmail(1, TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(429, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task DraftPodEmail_ValidRequest_ReturnsJson()
+    {
+        _draftingService.DraftPodEmailAsync(1, Arg.Any<CancellationToken>())
+            .Returns(new AiEmailDraftResponse
+            {
+                Subject = "Proof of Delivery - J12345",
+                Body = "Your shipment was delivered.",
+                Usage = new AiUsageInfo { InputTokens = 110, OutputTokens = 40 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.DraftPodEmail(1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task DraftNote_ValidRequest_ReturnsJson()
+    {
+        _draftingService.DraftNoteAsync(Arg.Any<DraftNoteRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new AiDraftResponse
+            {
+                Draft = "Customer requested a call before delivery.",
+                Usage = new AiUsageInfo { InputTokens = 50, OutputTokens = 12 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.DraftNote(new DraftNoteRequest(), TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task DraftNote_ServiceThrows_Returns500()
+    {
+        _draftingService.DraftNoteAsync(Arg.Any<DraftNoteRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("AI error"));
+
+        var controller = CreateController();
+
+        var result = await controller.DraftNote(new DraftNoteRequest(), TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(500, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExtractBlockers_RateLimited_Returns429()
+    {
+        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
+        var controller = CreateController();
+
+        var result = await controller.ExtractBlockers(1, TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(429, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExtractBlockers_ValidRequest_ReturnsJsonAndRecordsUsage()
+    {
+        _insightsService.ExtractBlockersAsync(1, Arg.Any<CancellationToken>())
+            .Returns(new ExtractBlockersResponse
+            {
+                Summary = "2 blockers",
+                Severity = SummarySeverity.Caution,
+                Usage = new AiUsageInfo { InputTokens = 90, OutputTokens = 25 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.ExtractBlockers(1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(
+            1, "Pacific/Auckland", "ExtractBlockers", AiTaskClass.Judgment,
+            Arg.Is<AiUsageInfo>(u => u.InputTokens == 90 && u.OutputTokens == 25));
+    }
+
+    [Fact]
+    public async Task AnalyzePricing_ValidRequest_ReturnsJson()
+    {
+        _insightsService.AnalyzePricingAsync(1, 5, Arg.Any<CancellationToken>())
+            .Returns(new PricingAnalysisResponse
+            {
+                Anomaly = new PricingAnomaly { StoredCharge = 95, RecomputedRate = 145, DeltaPercent = -34.5m, IsOutlier = true },
+                Usage = new AiUsageInfo { InputTokens = 120, OutputTokens = 30 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.AnalyzePricing(1, 5, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task AnalyzePricing_ServiceThrows_Returns500()
+    {
+        _insightsService.AnalyzePricingAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("AI error"));
+
+        var controller = CreateController();
+
+        var result = await controller.AnalyzePricing(1, 5, TestContext.Current.CancellationToken);
+
+        var statusResult = result as ObjectResult;
+        Assert.Equal(500, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task TriageChangeRequest_ValidRequest_ReturnsJson()
+    {
+        _insightsService.TriageChangeRequestAsync(42, 1, Arg.Any<CancellationToken>())
+            .Returns(new ChangeRequestTriageResponse
+            {
+                RecommendedAction = "approve",
+                Confidence = 0.8,
+                Rationale = "Reasonable rate change.",
+                Usage = new AiUsageInfo { InputTokens = 70, OutputTokens = 20 }
+            });
+
+        var controller = CreateController();
+
+        var result = await controller.TriageChangeRequest(42, 1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task TriageChangeRequest_Cancelled_Returns499()
+    {
+        _insightsService.TriageChangeRequestAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        var controller = CreateController();
+
+        var result = await controller.TriageChangeRequest(42, 1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
         Assert.Equal(499, statusResult!.StatusCode);

@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * DashboardSettingsDialog Component Tests
  *
@@ -6,16 +5,15 @@
  */
 
 import React from 'react';
-import {screen, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {screen} from '@testing-library/react';
 import {
-    DashboardBox,
     DashboardSettingsConfig,
     DashboardSettingsDialog,
     DashboardSettingsDialogProps,
     RefreshOption,
 } from './DashboardSettingsDialog';
-import {createProps, renderWithTheme} from '../../../__testUtils__';
+import { createProps, renderWithMantine as renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 const mockRefreshOptions: RefreshOption[] = [
     {id: 0, text: 'Disabled'},
@@ -24,28 +22,15 @@ const mockRefreshOptions: RefreshOption[] = [
     {id: 300, text: '5 minutes'},
 ];
 
-const mockBoxes: Record<string, DashboardBox> = {
-    pendingJobs: {name: 'pendingJobs', title: 'Pending Jobs', description: 'Shows all pending jobs', visible: true},
-    activeJobs: {name: 'activeJobs', title: 'Active Jobs', description: 'Shows active jobs in progress', visible: true},
-    completedJobs: {
-        name: 'completedJobs',
-        title: 'Completed Jobs',
-        description: 'Shows completed jobs',
-        visible: false
-    },
-};
-
 const mockConfig: DashboardSettingsConfig = {
     title: 'Dashboard Settings',
     showRefreshInterval: true,
     showDriverLocationRefresh: true,
-    showDashboards: true,
 };
 
 const defaultProps: DashboardSettingsDialogProps = {
     open: true,
     config: mockConfig,
-    boxes: mockBoxes,
     selectedRefreshInterval: mockRefreshOptions[1],
     selectedDriverLocationRefreshInterval: mockRefreshOptions[2],
     refreshOptions: mockRefreshOptions,
@@ -57,41 +42,63 @@ const createMockProps = (overrides?: Partial<DashboardSettingsDialogProps>) =>
     createProps(defaultProps, overrides);
 
 describe('DashboardSettingsDialog', () => {
+    // ── Dashboard panels — removed; visibility lives in Customize Panels ──
+    describe('Dashboard panels', () => {
+        it('renders no panels section, panel toggles or moved notice', () => {
+            renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps()}
+                />,
+            );
+
+            expect(screen.queryByText('Dashboard panels')).not.toBeInTheDocument();
+            expect(screen.queryByText(/Panel options have moved/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/choose which panels appear/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/panel visibility is only available/i)).not.toBeInTheDocument();
+        });
+    });
+
+    // ── Section separators ──────────────────────────────────────────
+    describe('Section separators', () => {
+        it('renders dividers between sections only, never trailing', () => {
+            const {unmount} = renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({
+                        config: {title: 'Dashboard Settings', showNationwideBetaToggle: true},
+                    })}
+                />,
+            );
+            expect(screen.queryAllByRole('separator')).toHaveLength(0);
+            unmount();
+
+            renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({config: {...mockConfig, showNationwideBetaToggle: true}})}
+                />,
+            );
+            expect(screen.getAllByRole('separator')).toHaveLength(1);
+        });
+    });
+
     // ── Default render (single render for all read-only checks) ─────
     describe('Default render', () => {
-        it('renders dialog with all sections, panels, switches and refresh options', () => {
+        it('renders dialog with all sections, switches and refresh options', () => {
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
             // Dialog chrome
             expect(screen.getByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Dashboard Settings')).toBeInTheDocument();
-            expect(screen.getByText('Configure your dashboard preferences')).toBeInTheDocument();
+            expect(screen.getByText('Choose how often your dashboard updates and which features are on')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /save/i})).toBeInTheDocument();
 
             // Auto-Refresh section
-            expect(screen.getByText('Auto-Refresh')).toBeInTheDocument();
-            expect(screen.getByText('Job List')).toBeInTheDocument();
-            expect(screen.getByText('How often the job list refreshes')).toBeInTheDocument();
-            expect(screen.getByText('30 seconds')).toBeInTheDocument();
-            expect(screen.getByText('Driver Locations')).toBeInTheDocument();
-            expect(screen.getByText('How often the map updates')).toBeInTheDocument();
-
-            // Dashboard Panels section
-            expect(screen.getByText('Dashboard Panels')).toBeInTheDocument();
-            expect(screen.getByText('Pending Jobs')).toBeInTheDocument();
-            expect(screen.getByText('Active Jobs')).toBeInTheDocument();
-            expect(screen.getByText('Completed Jobs')).toBeInTheDocument();
-            expect(screen.getByText('Shows all pending jobs')).toBeInTheDocument();
-            expect(screen.getByText('Shows active jobs in progress')).toBeInTheDocument();
-            expect(screen.getByText('Shows completed jobs')).toBeInTheDocument();
-            expect(screen.getByText(/toggle panels to show or hide/i)).toBeInTheDocument();
-
-            // Switches
-            const switches = screen.getAllByRole('switch');
-            expect(switches.length).toBeGreaterThanOrEqual(3);
-            const checkedSwitches = switches.filter(s => (s as HTMLInputElement).checked);
-            expect(checkedSwitches.length).toBeGreaterThanOrEqual(2);
+            expect(screen.getByText('Auto-refresh')).toBeInTheDocument();
+            expect(screen.getByText('Job list')).toBeInTheDocument();
+            expect(screen.getByText('How often the job list checks for new and updated jobs')).toBeInTheDocument();
+            expect(screen.getByRole('combobox', {name: 'Job list'})).toHaveValue('30 seconds');
+            expect(screen.getByText('Driver locations')).toBeInTheDocument();
+            expect(screen.getByText('How often driver positions update on the map')).toBeInTheDocument();
         });
     });
 
@@ -119,7 +126,7 @@ describe('DashboardSettingsDialog', () => {
                     showRefreshInterval: false
                 }
             })} />);
-            expect(screen.queryByText('Auto-Refresh')).not.toBeInTheDocument();
+            expect(screen.queryByText('Auto-refresh')).not.toBeInTheDocument();
         });
 
         it('hides Driver Locations when showDriverLocationRefresh is false', () => {
@@ -129,62 +136,74 @@ describe('DashboardSettingsDialog', () => {
                     showDriverLocationRefresh: false
                 }
             })} />);
-            expect(screen.queryByText('Driver Locations')).not.toBeInTheDocument();
-        });
-
-        it('shows empty state when showDashboards is false', () => {
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps({
-                config: {
-                    ...mockConfig,
-                    showDashboards: false
-                }
-            })} />);
-            expect(screen.getByText(/panel visibility requires a custom layout/i)).toBeInTheDocument();
-        });
-    });
-
-    // ── Toggle Box Visibility ───────────────────────────────────────
-    describe('Toggle Box Visibility', () => {
-        it('toggles via switch and via row click', async () => {
-            const user = userEvent.setup();
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
-
-            const pendingJobsRow = screen.getByText('Pending Jobs').closest('div[class*="Paper"]') as HTMLElement;
-            const toggle = within(pendingJobsRow).getByRole('switch');
-
-            const initialState = (toggle as HTMLInputElement).checked;
-            await user.click(toggle);
-            expect((toggle as HTMLInputElement).checked).toBe(!initialState);
-
-            // Toggle back via row click
-            await user.click(pendingJobsRow);
-            expect((toggle as HTMLInputElement).checked).toBe(initialState);
+            expect(screen.queryByText('Driver locations')).not.toBeInTheDocument();
         });
     });
 
     // ── Refresh Interval Selection ──────────────────────────────────
     describe('Refresh Interval Selection', () => {
         it('allows changing job list refresh interval', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
-            const jobListSection = screen.getByText('Job List').closest('div');
-            const select = within(jobListSection!.parentElement!).getByRole('combobox');
+            const select = screen.getByRole('combobox', {name: 'Job list'});
 
             await user.click(select);
-            await user.click(screen.getByText('5 minutes'));
-            expect(screen.getByText('5 minutes')).toBeInTheDocument();
+            await user.click(await screen.findByRole('option', {name: '5 minutes'}));
+            // Assert against the combobox itself: once selected, "5 minutes" appears
+            // both as the combobox value and (briefly) as the lingering menu option,
+            // so a bare getByText('5 minutes') matches multiple elements on slow CI.
+            expect(select).toHaveValue('5 minutes');
+        });
+    });
+
+    // ── Tasks refresh (independent cadence) ─────────────────────────
+    describe('Tasks refresh', () => {
+        it('is hidden unless showTaskRefresh is set', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
+            expect(screen.queryByText('Tasks')).not.toBeInTheDocument();
+            expect(
+                screen.queryByText('How often the Tasks panel checks for new and updated tasks'),
+            ).not.toBeInTheDocument();
+        });
+
+        it('renders its own dropdown and emits selectedTaskRefreshInterval on save', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            renderWithTheme(
+                <DashboardSettingsDialog
+                    {...createMockProps({
+                        config: {...mockConfig, showTaskRefresh: true},
+                        selectedTaskRefreshInterval: mockRefreshOptions[0],
+                        onSave,
+                    })}
+                />,
+            );
+
+            expect(screen.getByText('Tasks')).toBeInTheDocument();
+
+            const select = screen.getByRole('combobox', {name: 'Tasks'});
+            await user.click(select);
+            await user.click(await screen.findByRole('option', {name: '1 minute'}));
+
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    selectedTaskRefreshInterval: expect.objectContaining({id: 60}),
+                }),
+            );
         });
     });
 
     // ── Close / Save ────────────────────────────────────────────────
     describe('Close Functionality', () => {
         it('calls onClose when close button or Cancel is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onClose})} />);
 
-            await user.click(screen.getByRole('button', {name: ''}));
+            await user.click(screen.getByRole('button', {name: /close dialog/i}));
             expect(onClose).toHaveBeenCalledTimes(1);
 
             onClose.mockClear();
@@ -194,14 +213,10 @@ describe('DashboardSettingsDialog', () => {
     });
 
     describe('Save Functionality', () => {
-        it('calls onSave with current settings including toggled box visibility', async () => {
-            const user = userEvent.setup();
+        it('calls onSave with the current settings and no boxes', async () => {
+            const user = setupUser();
             const onSave = jest.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onSave})} />);
-
-            // Toggle a box first
-            const pendingJobsRow = screen.getByText('Pending Jobs').closest('div[class*="Paper"]');
-            await user.click(pendingJobsRow!);
 
             await user.click(screen.getByRole('button', {name: /save/i}));
 
@@ -209,11 +224,9 @@ describe('DashboardSettingsDialog', () => {
                 expect.objectContaining({
                     selectedRefreshInterval: expect.any(Object),
                     selectedDriverLocationRefreshInterval: expect.any(Object),
-                    boxes: expect.objectContaining({
-                        pendingJobs: expect.objectContaining({visible: false}),
-                    }),
                 })
             );
+            expect(onSave.mock.calls[0][0]).not.toHaveProperty('boxes');
         });
     });
 
@@ -225,23 +238,66 @@ describe('DashboardSettingsDialog', () => {
                 selectedDriverLocationRefreshInterval: undefined,
             })} />);
 
-            const driverSection = screen.getByText('Driver Locations').closest('div');
-            expect(within(driverSection!.parentElement!).getByText('Disabled')).toBeInTheDocument();
+            expect(screen.getByRole('combobox', {name: 'Driver locations'})).toHaveValue('Disabled');
         });
     });
 
-    // ── Edge Cases ──────────────────────────────────────────────────
-    describe('Edge Cases', () => {
-        it('renders without error when boxes is empty', () => {
-            renderWithTheme(<DashboardSettingsDialog {...createMockProps({boxes: {}})} />);
-            expect(screen.getByText('Dashboard Panels')).toBeInTheDocument();
+    // ── Current Work title (courier display mode) ────────────────────
+    describe('Current Work title', () => {
+        it('is hidden unless showCourierDisplayMode is set', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
+            expect(screen.queryByText('Current Work title')).not.toBeInTheDocument();
         });
 
-        it('displays name when title is not provided', () => {
+        it('renders all four options with the saved value selected', () => {
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({
-                boxes: {myPanel: {name: 'My Panel Name', visible: true}},
+                config: {...mockConfig, showCourierDisplayMode: true},
+                selectedCourierDisplayMode: 'number',
             })} />);
-            expect(screen.getByText('My Panel Name')).toBeInTheDocument();
+
+            expect(screen.getByText('Current Work title')).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: 'Off'})).not.toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show Courier Name'})).not.toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show Courier Number'})).toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show Name and Number'})).not.toBeChecked();
+        });
+
+        it('emits the newly-picked mode on save', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps({
+                config: {...mockConfig, showCourierDisplayMode: true},
+                selectedCourierDisplayMode: 'off',
+                onSave,
+            })} />);
+
+            await user.click(screen.getByRole('radio', {name: 'Show Name and Number'}));
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave).toHaveBeenCalledWith(
+                expect.objectContaining({courierDisplayMode: 'both'}),
+            );
+        });
+
+        it('omits courierDisplayMode from the save result when the section is not shown', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps({onSave})} />);
+
+            await user.click(screen.getByRole('button', {name: /save/i}));
+
+            expect(onSave.mock.calls[0][0]).not.toHaveProperty('courierDisplayMode');
+        });
+    });
+
+    // ── Auto-mate Settings — moved to the global Settings page ───────
+    describe('Auto-mate Settings', () => {
+        it('no longer renders the Auto-mate section here', () => {
+            renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
+
+            expect(screen.queryByText('Auto-mate Settings')).not.toBeInTheDocument();
+            expect(screen.queryByText('Show Auto-mate briefings')).not.toBeInTheDocument();
+            expect(screen.queryByText('Open automatically')).not.toBeInTheDocument();
         });
     });
 });

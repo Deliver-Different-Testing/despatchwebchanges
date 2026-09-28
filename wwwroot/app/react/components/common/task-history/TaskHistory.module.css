@@ -1,0 +1,66 @@
+/*
+ * Timeline chrome that props cannot express: a spinning refresh glyph
+ * (`@keyframes`), and an event card whose `:hover` lifts it and repaints its
+ * border. Everything else — density-driven padding, the per-event accent, the
+ * staggered entrance delay — stays inline, because it is computed per row.
+ */
+
+/*
+ * Mantine's Timeline leaves no gap between a bullet and its body, and hard-codes both the
+ * inter-item gap and the rail's overshoot to `spacing-xl`. This journey is density-driven,
+ * so both track `--journey-row-gap`, set on the Timeline root. Without the `::before`
+ * override the rail runs past the final bullet.
+ */
+.item {
+    padding-inline-start: calc(var(--offset) + var(--mantine-spacing-sm));
+}
+
+.item:not(:first-of-type) {
+    margin-top: var(--journey-row-gap);
+}
+
+.item::before {
+    bottom: calc(var(--journey-row-gap) * -1);
+    /* The rail is chrome, not an accent — it stays neutral even though every item is
+       active so that each bullet takes its own tone. */
+    border-color: var(--mantine-color-default-border);
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinning svg {
+    animation: spin 1s linear infinite;
+}
+
+/*
+ * Only a clickable card reacts. The left keyline is the event's own accent and is
+ * set inline, so the hover rule must not touch `border-left-color`.
+ */
+.clickableCard {
+    transition:
+        box-shadow 150ms ease,
+        border-color 150ms ease;
+}
+
+.clickableCard:hover {
+    box-shadow: var(--mantine-shadow-sm);
+    border-top-color: var(--mantine-primary-color-filled);
+    border-right-color: var(--mantine-primary-color-filled);
+    border-bottom-color: var(--mantine-primary-color-filled);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinning svg,
+    .item,
+    .clickableCard {
+        animation: none;
+        transition: none;
+    }
+}

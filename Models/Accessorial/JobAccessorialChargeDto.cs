@@ -26,4 +26,5 @@ public sealed record JobAccessorialChargeDto
     public string AddedAtStage { get; init; }
     public string CreatedBy { get; init; }
     public DateTime? Created { get; init; }
+    public bool AlwaysApply { get; init; }
 }

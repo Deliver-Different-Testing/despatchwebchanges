@@ -5,37 +5,27 @@
  * Renders preset range buttons (Today, Fortnight, Month, Custom) and
  * optional From/To date inputs when Custom is selected.
  *
- * Uses a plain TextField for typing dates (DD/MM/YYYY) with a MUI
- * DatePicker calendar popup for visual selection.  The MUI DatePicker's
- * built-in field uses section-based spinbutton editing which mangles
- * fast typing, so we bypass it entirely.
+ * **Wall-clock only.** Mantine's `DateInput` is string-valued (`YYYY-MM-DD`), so
+ * nothing here builds an instant and there is no zone to convert. The tenant's
+ * day-first/month-first order stays owned by `dateUtils`: `valueFormat` renders
+ * it and `dateParser` reads it back, so a US tenant types `MM/DD/YYYY` and an NZ
+ * tenant `DD/MM/YYYY` exactly as before.
+ *
+ * The previous version hand-built this control — a `TextField`, a calendar
+ * `IconButton`, a `Popover` and a `DateCalendar`, plus its own text/commit/revert
+ * state — because MUI's `DatePicker` field edits in spinbutton sections and
+ * mangles fast typing. Mantine's `DateInput` *is* a free-text field with a
+ * calendar dropdown, so all of that is now props: `dateParser` for typed input
+ * and `fixOnBlur` for the revert-to-last-valid behaviour.
  */
 
-import React, {useState, useEffect, useCallback} from 'react';
-import {alpha} from '@mui/material/styles';
-import type {SxProps, Theme} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import TextField from '@mui/material/TextField';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Typography from '@mui/material/Typography';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
-import Popover from '@mui/material/Popover';
+import React, {useCallback} from 'react';
+import {Box, Group, SegmentedControl, Stack} from '@mantine/core';
+import {DateInput as MantineDateInput} from '@mantine/dates';
+import {CalendarDays} from 'lucide-react';
 import dayjs, {Dayjs} from 'dayjs';
-
-/** Parse a DD/MM/YYYY string into a dayjs object without relying on customParseFormat plugin. */
-function parseDDMMYYYY(input: string): Dayjs | null {
-    const match = input.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!match) return null;
-    const [, dd, mm, yyyy] = match;
-    const d = dayjs(`${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`);
-    return d.isValid() ? d : null;
-}
+import {getInputDateFormat, parseInputDate} from '../../../utils/dateUtils';
+import {Icon} from '../icon/Icon';
 
 export interface DateRangePickerProps {
     dateSearchRange: string;
@@ -51,88 +41,43 @@ const RANGE_OPTIONS = [
     {value: 'fortnight', label: 'Fortnight'},
     {value: 'month', label: 'Month'},
     {value: 'custom', label: 'Custom'},
-] as const;
+];
 
-const toggleButtonSx: SxProps<Theme> = {
-    flex: '1 1 auto',
-    minWidth: 70,
-    height: 32,
-    fontSize: '0.75rem',
-    fontWeight: 500,
-    textTransform: 'none',
-};
+/** The string form both the picker and `parseInputDate` agree on. */
+const ISO_DATE = 'YYYY-MM-DD';
 
-interface DateInputProps {
+interface RangeDateInputProps {
+    label: string;
     value: Dayjs;
     onChange: (dateTime: Dayjs) => void;
 }
 
-const DateInput: React.FC<DateInputProps> = ({value, onChange}) => {
-    const [text, setText] = useState(value?.isValid() ? value.format('DD/MM/YYYY') : '');
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+const RangeDateInput: React.FC<RangeDateInputProps> = ({label, value, onChange}) => {
+    const inputFormat = getInputDateFormat();
 
-    useEffect(() => {
-        if (value?.isValid()) {
-            setText(value.format('DD/MM/YYYY'));
-        }
-    }, [value]);
-
-    const commitText = useCallback((input: string) => {
-        const parsed = parseDDMMYYYY(input);
-        if (parsed) {
-            onChange(parsed);
-        } else {
-            // Revert to last valid value
-            setText(value?.isValid() ? value.format('DD/MM/YYYY') : '');
-        }
-    }, [onChange, value]);
-
-    const handleCalendarChange = useCallback((newValue: Dayjs | null) => {
-        if (newValue?.isValid()) {
-            onChange(newValue);
-            setAnchorEl(null);
+    const handleChange = useCallback((next: string | null) => {
+        if (next) {
+            onChange(dayjs(next));
         }
     }, [onChange]);
 
     return (
-        <>
-            <TextField
-                size="small"
-                fullWidth
-                placeholder="DD/MM/YYYY"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onBlur={() => commitText(text)}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitText(text);
-                }}
-                slotProps={{
-                    input: {
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    size="small"
-                                    edge="end"
-                                    onClick={(e) => setAnchorEl(e.currentTarget)}
-                                >
-                                    <CalendarTodayIcon fontSize="small" />
-                                </IconButton>
-                            </InputAdornment>
-                        ),
-                    },
-                }}
+        <Box style={{flex: '1 1 120px', minWidth: 0}}>
+            <MantineDateInput
+                label={label}
+                value={value?.isValid() ? value.format(ISO_DATE) : null}
+                onChange={handleChange}
+                valueFormat={inputFormat}
+                // Typed text is read in the tenant's order by `dateUtils`, not by
+                // dayjs — which would ignore the format without `customParseFormat`.
+                dateParser={(input) => parseInputDate(input)?.format(ISO_DATE) ?? null}
+                placeholder={inputFormat}
+                rightSection={<Icon lucide={CalendarDays} size={16}/>}
+                rightSectionPointerEvents="none"
+                size="sm"
+                labelProps={{size: 'xs', c: 'dimmed'}}
             />
-            <Popover
-                open={!!anchorEl}
-                anchorEl={anchorEl}
-                onClose={() => setAnchorEl(null)}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
-            >
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DateCalendar value={value} onChange={handleCalendarChange} />
-                </LocalizationProvider>
-            </Popover>
-        </>
+        </Box>
     );
 };
 
@@ -143,75 +88,32 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     onSearchRangeChange,
     onFromDateChange,
     onToDateChange,
-}) => {
-    const handleRangeChange = (_event: React.MouseEvent<HTMLElement>, newRange: string | null) => {
-        if (newRange !== null) {
-            onSearchRangeChange(newRange);
-        }
-    };
-
-    return (
-        <Box>
-            <ToggleButtonGroup
-                value={dateSearchRange}
-                exclusive
-                onChange={handleRangeChange}
-                sx={(theme) => ({
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '6px',
-                    '& .MuiToggleButtonGroup-grouped': {
-                        border: 'none',
-                        borderRadius: 1,
-                        bgcolor: alpha(theme.palette.text.primary, 0.04),
-                        color: 'text.primary',
-                        '&:hover': {
-                            bgcolor: alpha(theme.palette.text.primary, 0.08),
-                        },
-                        '&.Mui-selected': {
-                            bgcolor: 'primary.main',
-                            color: 'primary.contrastText',
-                            boxShadow: 'none',
-                            '&:hover': {
-                                bgcolor: 'primary.dark',
-                            },
-                        },
-                    },
-                })}
+}) => (
+    <Stack gap={0}>
+        {/* An exclusive toggle group is radio semantics: one tab stop, arrow-key
+            navigation, and no way to deselect — all of which SegmentedControl
+            already owns and the MUI ToggleButtonGroup did not. */}
+        <SegmentedControl
+            value={dateSearchRange}
+            onChange={onSearchRangeChange}
+            data={RANGE_OPTIONS}
+            size="xs"
+            fullWidth
+        />
+        {dateSearchRange === 'custom' && (
+            <Group
+                gap="xs"
+                align="flex-start"
+                wrap="wrap"
+                mt="xs"
+                pt="sm"
+                style={{borderTop: '1px solid var(--mantine-color-default-border)'}}
             >
-                {RANGE_OPTIONS.map(({value, label}) => (
-                    <ToggleButton key={value} value={value} sx={toggleButtonSx}>
-                        {label}
-                    </ToggleButton>
-                ))}
-            </ToggleButtonGroup>
-
-            {dateSearchRange === 'custom' && (
-                <Box sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                    mt: 1,
-                    pt: 1.5,
-                    borderTop: 1,
-                    borderColor: 'divider',
-                }}>
-                    <Box sx={{flex: '1 1 120px', minWidth: 0}}>
-                        <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.5}}>
-                            From
-                        </Typography>
-                        <DateInput value={fromDate} onChange={onFromDateChange} />
-                    </Box>
-                    <Box sx={{flex: '1 1 120px', minWidth: 0}}>
-                        <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.5}}>
-                            To
-                        </Typography>
-                        <DateInput value={toDate} onChange={onToDateChange} />
-                    </Box>
-                </Box>
-            )}
-        </Box>
-    );
-};
+                <RangeDateInput label="From" value={fromDate} onChange={onFromDateChange}/>
+                <RangeDateInput label="To" value={toDate} onChange={onToDateChange}/>
+            </Group>
+        )}
+    </Stack>
+);
 
 export default DateRangePicker;

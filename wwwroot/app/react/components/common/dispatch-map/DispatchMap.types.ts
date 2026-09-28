@@ -6,6 +6,7 @@
 
 import type { IDispatchMapItem } from '../../../../interfaces/job.interface';
 import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
+import type { AddressType } from '../../../../enums/address-type.enum';
 import React from "react";
 
 // Re-export for convenience
@@ -31,6 +32,13 @@ export interface DispatchMapProps {
     clearListId?: number;
     /** Callback when envelope data is updated */
     onEnvelopeUpdate?: (data: ClearListEnvelopeData) => void;
+    /**
+     * Scopes the map control preferences (auto-zoom etc.) in localStorage so a
+     * page's choices don't bleed into other pages that mount the map. When set,
+     * keys become `${key}-${scope}-${ContactID}`; omitted keeps the legacy
+     * unscoped `${key}-${ContactID}`.
+     */
+    preferenceScope?: string | number;
 }
 
 /**
@@ -70,7 +78,7 @@ export interface MapControlButtonsProps {
 export interface JobMarkerData {
     marker: any; // H.map.Marker
     jobId: number;
-    type: 'pickup' | 'delivery';
+    type: AddressType;
     isCurrentJob: boolean;
 }
 
@@ -127,24 +135,30 @@ export const DEFAULT_MAP_ZOOM = 12;
 export const MAX_AUTO_ZOOM = 16;
 
 /**
- * Marker icon colors
+ * Marker icon colors. Pickup uses blue (US theme primary.main) and delivery
+ * uses green (success.main) on every map, regardless of the user's theme;
+ * OTHER_* are the dark variants used to distinguish non-current jobs.
  */
 export const MARKER_COLORS = {
-    PICKUP: '#4CAF50',
-    DELIVERY: '#F44336',
-    OTHER_PICKUP: '#3F51B5',
-    OTHER_DELIVERY: '#FF5722',
+    PICKUP: '#2196F3',
+    DELIVERY: '#4CAF50',
+    OTHER_PICKUP: '#1976D2',
+    OTHER_DELIVERY: '#388E3C',
     COURIER_FLAG: '#1E88E5',
     COURIER_FLAG_LARGE: '#1565C0',
 } as const;
 
 /**
- * Courier label colors based on status
+ * Courier label colors based on status, expressed as Material Design 3 tonal
+ * pairs (container fill + matching on-container text + subtle same-hue outline):
+ *   - NO_JOBS  → neutral tonal container (idle)
+ *   - HAS_JOBS → green tonal container (active)
+ *   - OVERDUE  → solid MD3 error fill + on-error text (urgent)
  */
 export const COURIER_LABEL_COLORS = {
-    NO_JOBS: { bg: '#E3F2FD', text: '#1565C0', border: '#1976D2' },    // Light blue - neutral
-    HAS_JOBS: { bg: '#E8F5E9', text: '#2E7D32', border: '#388E3C' },   // Soft green - active
-    OVERDUE: { bg: '#D32F2F', text: '#FFFFFF', border: '#B71C1C' },    // Red - urgent
+    NO_JOBS: { bg: '#ECEFF1', text: '#37474F', border: '#CFD8DC' },    // Neutral tonal container - idle
+    HAS_JOBS: { bg: '#C8E6C9', text: '#1B5E20', border: '#A5D6A7' },   // Green tonal container - active
+    OVERDUE: { bg: '#B3261E', text: '#FFFFFF', border: '#8C1D18' },    // MD3 error - urgent
 } as const;
 
 /**

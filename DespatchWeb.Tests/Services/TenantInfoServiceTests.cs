@@ -88,20 +88,6 @@ public class TenantInfoServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public void GetCurrentTimeFromTimeZone_WithNullTimeZone_ReturnsTenantTime()
-    {
-        // Arrange
-        SetupHttpContextWithClaims(("TimeZone", "UTC"));
-        var service = CreateService();
-
-        // Act
-        var result = service.GetCurrentTimeFromTimeZone(null);
-
-        // Assert
-        Assert.True(Math.Abs((result - DateTime.UtcNow).TotalSeconds) < 1);
-    }
-
-    [Fact]
     public void GetCurrentTimeFromTimeZone_WithSpecificTimeZone_ReturnsCorrectTime()
     {
         // Arrange
@@ -211,6 +197,67 @@ public class TenantInfoServiceTests : IAsyncDisposable
     {
         // Arrange
         SetupHttpContextWithClaims(); // No claims
+        var service = CreateService();
+
+        // Act
+        var result = service.GetStaffId();
+
+        // Assert
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    public void GetStaffIdOrNull_WithValidClaim_ReturnsStaffId()
+    {
+        // Arrange
+        SetupHttpContextWithClaims(("StaffID", "42"));
+        var service = CreateService();
+
+        // Act
+        var result = service.GetStaffIdOrNull();
+
+        // Assert
+        Assert.Equal(42, result);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("abc")]
+    [InlineData("")]
+    public void GetStaffIdOrNull_WithNonPositiveOrUnparseableClaim_ReturnsNull(string claimValue)
+    {
+        // Arrange
+        SetupHttpContextWithClaims(("StaffID", claimValue));
+        var service = CreateService();
+
+        // Act
+        var result = service.GetStaffIdOrNull();
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void GetStaffIdOrNull_WithNoClaim_ReturnsNull()
+    {
+        // Arrange
+        SetupHttpContextWithClaims(); // No claims
+        var service = CreateService();
+
+        // Act
+        var result = service.GetStaffIdOrNull();
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void GetStaffId_WithUnparseableClaim_DoesNotThrow()
+    {
+        // Arrange — GetStaffId used int.Parse, which threw FormatException on a
+        // non-numeric claim rather than falling back to 0.
+        SetupHttpContextWithClaims(("StaffID", "abc"));
         var service = CreateService();
 
         // Act
@@ -380,6 +427,81 @@ public class TenantInfoServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public void ConvertUtcToTenantTimeZone_NoClaim_WithOverride_UsesOverride()
+    {
+        // Repro of the delivery-journey "shows UTC" bug: the TimeZone claim is absent on
+        // this request, so without the override the conversion would degrade to UTC (+00).
+        // The client-supplied override (window.TimeZone) keeps it correct.
+        SetupHttpContextWithClaims(); // no TimeZone claim
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("New Zealand Standard Time");
+        var utcTime = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var result = service.ConvertUtcToTenantTimeZone(utcTime);
+
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset); // NZST (June) is +12
+        Assert.NotEqual(TimeSpan.Zero, result.Offset);
+    }
+
+    [Fact]
+    public void GetTenantTimeZone_NoClaim_WithOverride_ReturnsOverride()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("Pacific/Auckland");
+
+        Assert.Equal("Pacific/Auckland", service.GetTenantTimeZone());
+    }
+
+    [Fact]
+    public void GetTenantTimeZone_ClaimPresent_TakesPrecedenceOverOverride()
+    {
+        // The server-side claim is authoritative when present; the override only fills gaps.
+        SetupHttpContextWithClaims(("TimeZone", "Pacific Standard Time"));
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("New Zealand Standard Time");
+
+        Assert.Equal("Pacific Standard Time", service.GetTenantTimeZone());
+    }
+
+    [Fact]
+    public void SetTenantTimeZoneOverride_WhitespaceValue_IsIgnored()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("   ");
+
+        Assert.Equal("UTC", service.GetTenantTimeZone());
+    }
+
+    [Fact]
+    public void ConvertUtcToTenantTimeZone_EmptyClaim_DoesNotThrow_DefaultsToUtc()
+    {
+        // A present-but-empty TimeZone claim used to throw TimeZoneNotFoundException
+        // (500ing the journey). It must now degrade gracefully to UTC instead.
+        SetupHttpContextWithClaims(("TimeZone", ""));
+        var service = CreateService();
+        var utcTime = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var result = service.ConvertUtcToTenantTimeZone(utcTime);
+
+        Assert.Equal(TimeSpan.Zero, result.Offset);
+    }
+
+    [Fact]
+    public void ConvertUtcToTenantTimeZone_EmptyClaim_WithOverride_UsesOverride()
+    {
+        SetupHttpContextWithClaims(("TimeZone", ""));
+        var service = CreateService();
+        service.SetTenantTimeZoneOverride("New Zealand Standard Time");
+        var utcTime = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+
+        var result = service.ConvertUtcToTenantTimeZone(utcTime);
+
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset);
+    }
+
+    [Fact]
     public async Task GetStaffInfoAsync_WithValidStaffId_ReturnsStaffInfo()
     {
         // Arrange
@@ -425,5 +547,173 @@ public class TenantInfoServiceTests : IAsyncDisposable
 
         // Assert
         Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("1", 1)]   // Internal
+    [InlineData("3", 3)]   // NetworkPartner
+    [InlineData("5", 5)]   // DFRNTAdmin
+    public void GetClientTypeId_WithValidClaim_ReturnsValue(string claimValue, int expected)
+    {
+        SetupHttpContextWithClaims(("ClientTypeId", claimValue));
+        var service = CreateService();
+
+        Assert.Equal(expected, service.GetClientTypeId());
+    }
+
+    [Fact]
+    public void GetClientTypeId_WithNoClaim_ReturnsNull()
+    {
+        // Couriers and pre-claim sessions don't carry ClientTypeId — caller
+        // gets null instead of a misleading zero.
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+
+        Assert.Null(service.GetClientTypeId());
+    }
+
+    [Fact]
+    public void GetClientTypeId_WithEmptyClaim_ReturnsNull()
+    {
+        // Hub stamps an empty string when the underlying tucClient row had a null
+        // ClientTypeId, so the claim is present-but-empty rather than absent.
+        SetupHttpContextWithClaims(("ClientTypeId", string.Empty));
+        var service = CreateService();
+
+        Assert.Null(service.GetClientTypeId());
+    }
+
+    [Fact]
+    public void GetClientTypeId_CalledMultipleTimes_ReturnsCachedValue()
+    {
+        SetupHttpContextWithClaims(("ClientTypeId", "3"));
+        var service = CreateService();
+
+        Assert.Equal(3, service.GetClientTypeId());
+        Assert.Equal(3, service.GetClientTypeId());
+    }
+
+    [Fact]
+    public void GetNpAgentId_WithValidClaim_ReturnsValue()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", "77"));
+        var service = CreateService();
+
+        Assert.Equal(77, service.GetNpAgentId());
+    }
+
+    [Fact]
+    public void GetNpAgentId_WithNoClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+
+        Assert.Null(service.GetNpAgentId());
+    }
+
+    [Fact]
+    public void GetNpAgentId_WithEmptyClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", string.Empty));
+        var service = CreateService();
+
+        Assert.Null(service.GetNpAgentId());
+    }
+
+    [Fact]
+    public void GetNpAgentId_CalledMultipleTimes_ReturnsCachedValue()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", "77"));
+        var service = CreateService();
+
+        Assert.Equal(77, service.GetNpAgentId());
+        Assert.Equal(77, service.GetNpAgentId());
+    }
+
+    [Fact]
+    public void ClientTypeIdClaimAbsent_ClaimMissing_ReturnsTrue()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+
+        Assert.True(service.ClientTypeIdClaimAbsent);
+    }
+
+    [Fact]
+    public void ClientTypeIdClaimAbsent_ClaimPresentButEmpty_ReturnsFalse()
+    {
+        // Spec §3.3: empty-string ≠ absent. The claim being present, even as "",
+        // signals Hub-authoritative data — no DB fallback.
+        SetupHttpContextWithClaims(("ClientTypeId", string.Empty));
+        var service = CreateService();
+
+        Assert.False(service.ClientTypeIdClaimAbsent);
+    }
+
+    [Fact]
+    public void ClientTypeIdClaimAbsent_ClaimPresent_ReturnsFalse()
+    {
+        SetupHttpContextWithClaims(("ClientTypeId", "3"));
+        var service = CreateService();
+
+        Assert.False(service.ClientTypeIdClaimAbsent);
+    }
+
+    [Fact]
+    public void NpAgentIdClaimAbsent_ClaimMissing_ReturnsTrueAndEmptyFalse()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+
+        Assert.True(service.NpAgentIdClaimAbsent);
+        Assert.False(service.NpAgentIdClaimEmpty);
+    }
+
+    [Fact]
+    public void NpAgentIdClaimEmpty_ClaimPresentButEmpty_ReturnsTrueAndAbsentFalse()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", string.Empty));
+        var service = CreateService();
+
+        Assert.False(service.NpAgentIdClaimAbsent);
+        Assert.True(service.NpAgentIdClaimEmpty);
+    }
+
+    [Fact]
+    public void NpAgentIdClaim_ParseableValue_BothFlagsFalse()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", "42"));
+        var service = CreateService();
+
+        Assert.False(service.NpAgentIdClaimAbsent);
+        Assert.False(service.NpAgentIdClaimEmpty);
+        Assert.Equal(42, service.GetNpAgentId());
+    }
+
+    [Fact]
+    public void GetClientId_WithValidClaim_ReturnsValue()
+    {
+        SetupHttpContextWithClaims(("ClientID", "123"));
+        var service = CreateService();
+
+        Assert.Equal(123, service.GetClientId());
+    }
+
+    [Fact]
+    public void GetClientId_WithNoClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+
+        Assert.Null(service.GetClientId());
+    }
+
+    [Fact]
+    public void GetClientId_WithEmptyClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims(("ClientID", string.Empty));
+        var service = CreateService();
+
+        Assert.Null(service.GetClientId());
     }
 }

@@ -1,41 +1,29 @@
 /**
  * Task Item Interfaces
  *
- * Type definitions for the React TaskItem component.
+ * Type definitions for the React TaskItem component. The task shapes themselves are the
+ * API ones — re-exported here so the component keeps its own import path.
  */
 
 import {Dayjs} from 'dayjs';
+import type Task from '../../../interfaces/tasks';
 
-export interface TaskAssignee {
-    id: number;
-    text: string;
-}
-
-export interface Task {
-    id: number;
-    title: string;
-    description: string;
-    dueDate: Dayjs;
-    closed: boolean;
-    assignee: TaskAssignee;
-    jobId: number;
-    eventType: string;
-    jobNumber: string;
-    priority?: 'high' | 'medium' | 'low';
-    _dueDateString?: string;
-    _dueTimeString?: string;
-}
+export type {TaskAssignee} from '../../../interfaces/tasks';
+export type {default as Task} from '../../../interfaces/tasks';
 
 export interface TaskItemConfig {
     showJobId?: boolean;
     showAssignee?: boolean;
     showJobType?: boolean;
+    showCourierCode?: boolean;
+    showClientCode?: boolean;
     showDateTime?: boolean;
     showDescription?: boolean;
     showStatusIndicators?: boolean;
     allowCompletion?: boolean;
-    showOverdueWarning?: boolean;
     onTaskClick?: boolean;
+    /** When true, clicking an unassigned, open task also claims it for the current user. */
+    autoAssignOnClick?: boolean;
     compactView?: boolean;
     customClass?: string;
 }
@@ -48,6 +36,7 @@ export interface TasksServiceInterface {
     updateTaskDate(eventId: number, date: Dayjs): Promise<void>;
     updateTaskTime(eventId: number, time: Dayjs): Promise<void>;
     reassignTaskToStaff(eventId: number, staffId: number): Promise<void>;
+    unassignTask(eventId: number): Promise<void>;
 }
 
 export interface DispatchServiceInterface {
@@ -59,6 +48,8 @@ export interface TaskItemProps {
     config?: TaskItemConfig;
     onTaskUpdated?: () => void;
     onTaskClick?: (task: Task) => void;
+    /** Current user's staff id; required for `config.autoAssignOnClick` to take effect. */
+    currentUserId?: number;
     tasksService: TasksServiceInterface;
     dispatchService: DispatchServiceInterface;
     showSuccessToast?: (message: string) => void;

@@ -1,11 +1,13 @@
+/** @jest-environment node */
 /**
  * Nationwide API Service Tests
  */
 
-import { nationwideApi, NationwideApiService, FlightViewModelDto } from './nationwideApi';
+import {NationwideApiService, nationwideApi} from './nationwideApi';
 import { apiClient } from './apiClient';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import type {FlightViewModelDto} from '../interfaces/nationwideJobs';
 
 dayjs.extend(utc);
 
@@ -149,6 +151,9 @@ describe('NationwideApiService', () => {
             aircraft: 'Boeing 787',
             serviceClasses: ['Economy', 'Business'],
             isCodeShare: false,
+            serviceType: 'J',
+            isCharter: false,
+            serviceTypeDescription: 'Scheduled Passenger',
             amount: 150.0,
             codeShareAirline: '',
             airlineId: 1,
@@ -201,6 +206,7 @@ describe('NationwideApiService', () => {
                     departureAirportId: 150,
                     arrivalAirportId: 96,
                     minimumLayoverMinutes: 60,
+                    includeNearbyAirports: false,
                 }
             );
         });
@@ -418,6 +424,9 @@ describe('NationwideApiService', () => {
             aircraft: 'Boeing 787',
             serviceClasses: ['Economy'],
             isCodeShare: false,
+            serviceType: 'J',
+            isCharter: false,
+            serviceTypeDescription: 'Scheduled Passenger',
             amount: 150.0,
             codeShareAirline: '',
             airlineId: 1,
@@ -561,6 +570,158 @@ describe('NationwideApiService', () => {
             expect(result!.cargoOpeningTime.format('HH:mm')).toBe('06:00');
             expect(result!.cargoClosingTime.format('HH:mm')).toBe('22:00');
             expect(result!.arrivalTime.utcOffset()).toBe(660); // +11:00
+        });
+    });
+});
+
+describe('getScheduledFlightOptions paging cursor', () => {
+    // The widget pages forward from the last flight returned. AngularJS's NWData
+    // computed this; React dropped it, which would have left "load more" and
+    // "next day" stuck on the first page.
+    beforeEach(() => jest.clearAllMocks());
+
+    const flightDto = (departureTime: string) => ({
+        flightNumber: 'NZ1',
+        departureTime,
+        arrivalTime: departureTime,
+        flightSegments: [],
+    });
+
+    it('returns the last flight departure time as the cursor', async () => {
+        mockApiClient.get.mockResolvedValue({
+            flights: [flightDto('2026-03-15T08:00:00'), flightDto('2026-03-15T17:30:00')],
+        });
+
+        const result = await nationwideApi.getScheduledFlightOptions({
+            jobId: 1, departureDate: '2026-03-15T00:00:00',
+        });
+
+        expect(result.lastDepartureTime?.format('YYYY-MM-DD HH:mm')).toBe('2026-03-15 17:30');
+    });
+
+    it('has no cursor when the search came back empty', async () => {
+        mockApiClient.get.mockResolvedValue({flights: []});
+
+        const result = await nationwideApi.getScheduledFlightOptions({
+            jobId: 1, departureDate: '2026-03-15T00:00:00',
+        });
+
+        expect(result.lastDepartureTime).toBeUndefined();
+        expect(result.flights).toEqual([]);
+    });
+
+    it('leaves the recurring picker without a cursor -- it does not page by day', async () => {
+        // Deliberate divergence: getRecurringFlightOptions feeds a saved-flight
+        // dialog that only picks a flight number, so it has nothing to page.
+        mockApiClient.get.mockResolvedValue({
+            flights: [flightDto('2026-03-15T08:00:00')],
+        });
+
+        const result = await nationwideApi.getRecurringFlightOptions({
+            bookingId: 1, departureDate: '2026-03-15T00:00:00',
+        } as never);
+
+        expect(result.flights).toHaveLength(1);
+        expect(result.lastDepartureTime).toBeUndefined();
+    });
+});
+
+describe('NationwideApiService flight and agent operations', () => {
+    // Ported from the AngularJS `NWData` service for the React Nationwide page.
+    // Contracts were checked against NationwideJobController: AssignFlightToJob
+    // and SendAgentQuote are [HttpPost] [FromBody]; GetActiveAirlines and
+    // GetNearbyAirports are GETs with query params.
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    describe('assignFlightToJob', () => {
+        it('posts the request body to nationwideJob/AssignFlightToJob', async () => {
+            mockApiClient.post.mockResolvedValue(undefined);
+            const request = {
+                jobId: 42,
+                fromAirportId: 1,
+                toAirportId: 2,
+                flightNumber: 'NZ123',
+                departureDate: '2026-03-15T08:00:00',
+                flightSegments: [],
+                packageDeliveryNotes: 'Leave at dock',
+            };
+
+            await nationwideApi.assignFlightToJob(request);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('nationwideJob/AssignFlightToJob', request);
+        });
+    });
+
+    describe('getActiveAirlines', () => {
+        it('gets nationwideJob/GetActiveAirlines and returns the list', async () => {
+            const airlines = [{id: 1, name: 'NZ', fullAirlineName: 'Air New Zealand'}];
+            mockApiClient.get.mockResolvedValue(airlines);
+
+            const result = await nationwideApi.getActiveAirlines();
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('nationwideJob/GetActiveAirlines');
+            expect(result).toEqual(airlines);
+        });
+    });
+
+    describe('getNearbyAirports', () => {
+        it('gets nationwideJob/GetNearbyAirports with jobId and usePickup', async () => {
+            const airports = [{id: 9, name: 'AKL', timezone: 'New Zealand Standard Time'}];
+            mockApiClient.get.mockResolvedValue(airports);
+
+            const result = await nationwideApi.getNearbyAirports(7, false);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'nationwideJob/GetNearbyAirports',
+                {jobId: 7, usePickup: false},
+            );
+            expect(result).toEqual(airports);
+        });
+
+        it('defaults usePickup to true, matching the AngularJS signature', async () => {
+            mockApiClient.get.mockResolvedValue([]);
+
+            await nationwideApi.getNearbyAirports(7);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'nationwideJob/GetNearbyAirports',
+                {jobId: 7, usePickup: true},
+            );
+        });
+    });
+
+    describe('getAgentsForJob', () => {
+        it('gets nationwideJob/GetAgentsForJob and returns the agents', async () => {
+            const agents = [{agentId: 3, agentName: 'Acme Air', agentRate: 120, agentRanking: 'A', agentNotes: ''}];
+            mockApiClient.get.mockResolvedValue(agents);
+
+            const result = await nationwideApi.getAgentsForJob(55);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('nationwideJob/GetAgentsForJob', {jobId: 55});
+            expect(result).toEqual(agents);
+        });
+
+        it('returns an empty array when the server sends nothing', async () => {
+            // The AngularJS wrapper turned an empty list into a user-facing message;
+            // that copy belongs in the UI, so the service just normalises to [].
+            mockApiClient.get.mockResolvedValue(undefined as never);
+
+            await expect(nationwideApi.getAgentsForJob(55)).resolves.toEqual([]);
+        });
+    });
+
+    describe('sendAgentQuote', () => {
+        it('posts jobId and agentId to nationwideJob/SendAgentQuote', async () => {
+            mockApiClient.post.mockResolvedValue(undefined);
+
+            await nationwideApi.sendAgentQuote(11, 22);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                'nationwideJob/SendAgentQuote',
+                {jobId: 11, agentId: 22},
+            );
         });
     });
 });

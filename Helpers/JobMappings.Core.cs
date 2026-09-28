@@ -34,9 +34,19 @@ public static partial class JobMappings
         Time = j.UcjbTime,
         ParentId = j.ParentId,
         RootParentId = j.RootParentId,
+        JobRelationshipTypeId = j.JobRelationshipTypeId,
         Date = FormatDate(j.UcjbDate),
         Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
-        DispatchTime = j.UcjbDispTime,
+        // UcjbDispTime is a datetime that legacy create-flows pre-fill with the
+        // booking's time-of-day under a 1900-01-01 sentinel date - rendering it
+        // directly produces "Jan/01 23:00" on undispatched jobs. The actual
+        // dispatch moment lives split across UcjbDispDate (date) + UcjbDispTime
+        // (time portion), both stamped together at dispatch (JobRepository:5340,
+        // NationwideJobRepository:155). Combine them when DispDate carries a
+        // real value; surface NULL otherwise so the UI shows '-'.
+        DispatchTime = j.UcjbDispDate.HasValue && j.UcjbDispDate.Value.Year > 1900
+            ? j.UcjbDispDate.Value.CombineWithTime(j.UcjbDispTime)
+            : null,
         CreatedDate = j.CreatedTimeUtc,
         ScheduleName = j.ScheduleName ?? Defaults.NotAvailable,
         FollowupTime = j.FollowupTime,
@@ -143,6 +153,7 @@ public static partial class JobMappings
         SigNotRequired = j.DeliverToLeave != null ? j.DeliverToLeave.Name : string.Empty,
         DeliverToLeaveId = j.DeliverToLeaveId,
         DeliverToContact = j.DeliverToContact ?? Defaults.NotSpecified,
+        DispatcherName = j.UcjbDisp != null ? FormatFullName(j.UcjbDisp) : null,
 
         // Location data
         PickUpLatitude = j.PickUpLatitude,
@@ -159,7 +170,7 @@ public static partial class JobMappings
 
         // Job characteristics
         Weight = j.UcjbWeight,
-        CalculateDimsOncePerJob = j.DimensionsType == 1,
+        CalculateDimsOncePerJob = j.DimensionsType == 2,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
         JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),
@@ -279,17 +290,24 @@ public static partial class JobMappings
         Locked = j.UcjbLocked ?? false,
         IsPartnerJob = j.PartnerJobGuid.HasValue,
 
-        // The other tenant's name on a partner pairing. Sender side gets it via
-        // JobPartnerDispatch; receiver side falls back to the most recent change
-        // request's pairing (a fresh inbound mirror with no change requests yet
+        // The other tenant's name on a partner pairing. Resolved from the direct
+        // PartnerPairing nav; falls back to the most recent change request's
+        // pairing for legacy mirrors created before TucJob.PartnerPairingId was
+        // being populated (a fresh inbound mirror with no change requests yet
         // shows null, and the UI gracefully falls back to "the partner").
-        PartnerTenantName = j.JobPartnerDispatch != null && j.JobPartnerDispatch.PartnerPairing != null
-            ? j.JobPartnerDispatch.PartnerPairing.PartnerTenantName
+        PartnerTenantName = j.PartnerPairing != null
+            ? j.PartnerPairing.PartnerTenantName
             : j.TucJobChangeRequests
                 .Where(r => r.UjcrPairing != null && r.UjcrPairing.PartnerTenantName != null)
                 .OrderByDescending(r => r.UjcrRequestedAtUtc)
                 .Select(r => r.UjcrPairing.PartnerTenantName)
                 .FirstOrDefault(),
+
+        // Without this the Job Details PartnerJobBanner always renders the "Stale
+        // partner link" warning (it keys purely on pairingId == null), even for
+        // freshly-dispatched jobs where IM stamped the column. JobMappings.Dispatch
+        // already maps this; Job Details reads JobViewModel via this Core mapping.
+        PartnerPairingId = j.PartnerPairingId,
 
         // Job item flags - loaded inline from navigation property (3-tier: stop child → own → parent)
         TailLiftPu = j.TucJobItemChildJobs.Any(i => i.Pu == true)
@@ -312,6 +330,7 @@ public static partial class JobMappings
                 Depth = i.Depth,
                 Length = i.Length,
                 Weight = i.Weight,
+                Cubic = i.Cubic,
                 Barcode = i.Barcode
             }).ToList()
             : j.TucJobItemJobs.Any(i => i.ChildJobId == null)
@@ -323,6 +342,7 @@ public static partial class JobMappings
                     Depth = i.Depth,
                     Length = i.Length,
                     Weight = i.Weight,
+                    Cubic = i.Cubic,
                     Barcode = i.Barcode
                 }).ToList()
                 : j.Parent != null
@@ -335,6 +355,7 @@ public static partial class JobMappings
                             Depth = i.Depth,
                             Length = i.Length,
                             Weight = i.Weight,
+                            Cubic = i.Cubic,
                             Barcode = i.Barcode
                         }).ToList()
                     : new List<ParcelDimensions>(),
@@ -350,6 +371,7 @@ public static partial class JobMappings
                 Length = i.Length ?? 0,
                 Depth = i.Depth ?? 0,
                 Height = i.Height ?? 0,
+                Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
                 Pu = i.Pu,
                 Do = i.Do,
                 DgClass = i.Dgclass,
@@ -365,6 +387,7 @@ public static partial class JobMappings
                     Length = i.Length ?? 0,
                     Depth = i.Depth ?? 0,
                     Height = i.Height ?? 0,
+                    Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
                     Pu = i.Pu,
                     Do = i.Do,
                     DgClass = i.Dgclass,
@@ -381,6 +404,7 @@ public static partial class JobMappings
                             Length = i.Length ?? 0,
                             Depth = i.Depth ?? 0,
                             Height = i.Height ?? 0,
+                            Cubic = i.Cubic.HasValue ? (double)i.Cubic.Value : 0,
                             Pu = i.Pu,
                             Do = i.Do,
                             DgClass = i.Dgclass,

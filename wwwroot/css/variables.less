@@ -1,22 +1,20 @@
-@standard-grey: #999;
+@standard-grey: #a8a29e;
 
-// Primary colors - aligned with MUI theme (muiTheme.ts)
-@primary-blue: #2196f3;
-@primary-green: #4CAF50;
-@primary-color: #2196f3;
-@primary-warning: #FF9800;
-@error-red: #F44336;
+// Primary colors - aligned with the Mantine theme (dfrntMantineTheme.ts). US tenants: DFRNT Cyan.
+@primary-blue: #3bc7f4;
+@primary-green: #13b964;
+@primary-color: #3bc7f4;
+@primary-warning: #fe811a;
+@error-red: #dc3246;
 
-// Theme colors (US = blue, Non-US = warm amber)
-@theme-us-primary: #2196f3;
-@theme-nz-primary: #f4c430;
-
-// NZ tenant colors - matches MUI urgentPrimaryPalette
+// Non-US ("urgent") primary. LESS is compiled once, so the cyan above is baked in
+// as the default and these drive the `.theme-nz` overrides applied at runtime by
+// the body class in app.ts. Matches urgentPrimaryPalette in palettes.ts.
 @nz-primary: #f4c430;
 @nz-primary-dark: #d4a324;
 
-// Page and container backgrounds - matches MUI surface.default
-@main-background-color: #FAFAFA;
+// Page and container backgrounds - matches MUI surface.default (DFRNT Light Grey)
+@main-background-color: #f4f2f1;
 @page-background: @main-background-color;
 @card-background: #ffffff;
 @surface-background: #ffffff;
@@ -28,58 +26,55 @@
 // Text colors
 @text-dark: rgba(0, 0, 0, 0.87);
 @text-light: white;
-@text-muted: rgba(0, 0, 0, 0.54);
+@text-muted: rgba(0, 0, 0, 0.6);
 
 // Interactive states - neutral to match MUI hover pattern
 @hover-color: rgba(0, 0, 0, 0.04);
 @active-color: rgba(0, 0, 0, 0.12);
 
-// Status chip colors
-@status-new-bg: #EBF5FF;
-@status-new-text: #1E40AF;
-@status-awaiting-bg: #F3E8FF;
-@status-awaiting-text: #6B21A8;
-@status-despatched-bg: #FEF3C7;
-@status-despatched-text: #92400E;
-@status-undeliverable-bg: #FEE2E2;
-@status-undeliverable-text: #991B1B;
+// Status chip colors (soft bg + dark text) - DFRNT ramp tints
+@status-new-bg: #eaeeff;        // Reflex 50
+@status-new-text: #132279;      // Reflex 800
+@status-awaiting-bg: #f3edfc;   // Grape 50
+@status-awaiting-text: #3f226e; // Grape 800
+@status-despatched-bg: #fff3e6; // Orange 50
+@status-despatched-text: #853f08; // Orange 800
+@status-undeliverable-bg: #fdeaec; // Red 50
+@status-undeliverable-text: #6c1823; // Red 800
 
-// Status colors
-@status-blue: #BFDBFE; // New, Preassigned
-@status-green: #BBF7D0; // Despatched, Accepted
-@status-green-dark: #86EFAC; // Picked up, In Transit, Out for Delivery
-@status-red-light: #FCA5A5; // Rejected, Late Pickup, Late Delivery, Warning
-@status-red: #DC2626; // Undeliverable
-@status-gray: #9CA3AF; // Completed, Awaiting POD, Assuming Completed
+// Status colors - DFRNT ramp. Black-text groups take light tints; white-text
+// groups (@status-red, @status-gray) take a dark-enough step for legibility.
+@status-blue: #aab8ff; // New, Preassigned (Reflex 200)
+@status-green: #a1e3c1; // Despatched, Accepted (Green 200)
+@status-green-dark: #5fd199; // Picked up, In Transit, Out for Delivery (Green 300)
+@status-red-light: #f1adb5; // Rejected, Late Pickup, Late Delivery, Warning (Red 200)
+@status-red: #bb2a3c; // Undeliverable (Red 600 - white text ~5.5:1)
+@status-gray: #78716c; // Completed, Awaiting POD, Assuming Completed (warm gray 600 - white text)
 
 // Spacing
-@brand: #333;
 @spacing: 14px;
-
-// Animations
-@animationDuration: 1s;
 
 // MD3 Motion tokens
 @duration-short: 150ms;
 @duration-medium: 300ms;
 @easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
 
-// MD3 Border radius tokens - matches MUI tokens.radius
-@radius-sm: 6px;
-@radius-md: 8px;
-@radius-lg: 12px;
+// Softly-rounded corporate corner scale - matches tokens.radius in dfrntMantineTheme.ts
+@radius-sm: 8px;
+@radius-md: 10px;
+@radius-lg: 14px;
 @radius-full: 9999px;
 
-// MD3 Elevation tokens - matches MUI tokens.shadow
+// MD3 Elevation tokens - matches tokens.shadow in dfrntMantineTheme.ts
 @elevation-1: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);
 @elevation-2: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
 @elevation-3: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
 
-// MD3 Surface colors
-@surface-container-lowest: #fafafa;
-@surface-container-low: #f5f5f5;
-@surface-container: #eeeeee;
-@surface-container-high: #e0e0e0;
+// MD3 Surface colors - matches the warm ladder in theme/md3.ts
+@surface-container-lowest: #ffffff;
+@surface-container-low: #f8f7f7;
+@surface-container: #f5f5f4;
+@surface-container-high: #e7e5e4;
 
 // Font Sizes
 @font-xs: 11px; // Status badges, timestamps, meta info
@@ -101,5 +96,3 @@
 @line-snug: 1.375;
 @line-normal: 1.4;
 @line-relaxed: 1.5;
-
-@dialog-border-radius: 12px;

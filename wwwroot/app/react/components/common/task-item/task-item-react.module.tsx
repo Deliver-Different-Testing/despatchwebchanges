@@ -7,13 +7,11 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {TaskItem} from './TaskItem';
 import {Task, TaskItemConfig, TasksServiceInterface, DispatchServiceInterface} from './TaskItem.interfaces';
-import {getTheme} from '../../../theme/muiTheme';
 import {toastService} from '../../../services/toastService';
 import angular from 'angular';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 
 /**
  * AngularJS Component Controller for React TaskItem
@@ -53,9 +51,6 @@ class TaskItemReactController implements angular.IController {
 
     private render(): void {
         if (!this.root || !this.task) return;
-
-        const currentTheme = getTheme();
-
         // Wrap the AngularJS callback to match expected signature
         const handleTaskClick = (task: Task) => {
             console.log('[TaskItemReact] Task clicked:', task.id, task.jobNumber);
@@ -67,21 +62,19 @@ class TaskItemReactController implements angular.IController {
             }
         };
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <TaskItem
-                    task={this.task}
-                    config={this.config}
-                    onTaskUpdated={this.onTaskUpdated}
-                    onTaskClick={handleTaskClick}
-                    tasksService={this.tasksService}
-                    dispatchService={this.dispatchService}
-                    showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
-                    showErrorToast={(msg) => toastService.showErrorToast(msg)}
-                />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+        <TaskItem
+            task={this.task}
+            config={this.config}
+            onTaskUpdated={this.onTaskUpdated}
+            onTaskClick={handleTaskClick}
+            tasksService={this.tasksService}
+            dispatchService={this.dispatchService}
+            showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
+            showErrorToast={(msg) => toastService.showErrorToast(msg)}
+        />
+
+        ));
     }
 }
 

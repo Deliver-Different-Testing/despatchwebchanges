@@ -1,49 +1,59 @@
 ﻿using System.Collections;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
-/// <summary>
-/// Unit tests for JobController - tests all job management endpoints.
-/// These tests use mocks to isolate controller logic for debugging and validation.
-/// </summary>
+[TestSubject(typeof(JobController))]
 public class JobControllerTests : IDisposable
 {
-    private readonly HttpClient _httpClient = new();
-    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
-    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
-    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly IAddStopJobService _addStopJobServiceMock = Substitute.For<IAddStopJobService>();
 
     private readonly IClientAccessValidatorService _clientAccessValidatorMock =
         Substitute.For<IClientAccessValidatorService>();
 
-    private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
-    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly IAddStopJobService _addStopJobServiceMock = Substitute.For<IAddStopJobService>();
-    private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
-    private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
-    private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
     private readonly IDeliveryJourneyService _deliveryJourneyServiceMock = Substitute.For<IDeliveryJourneyService>();
+    private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
+    private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
+    private readonly IArrivalWaitRerateService _arrivalWaitRerateServiceMock = Substitute.For<IArrivalWaitRerateService>();
+    private readonly IAccessorialChargeRepository _accessorialChargeRepositoryMock = Substitute.For<IAccessorialChargeRepository>();
+    private readonly HttpClient _httpClient = new();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
+    private readonly IPodMediaService _podMediaServiceMock = Substitute.For<IPodMediaService>();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
+    private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
+    private readonly IPdfOverlayClient _pdfOverlayClientMock = Substitute.For<IPdfOverlayClient>();
+    private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
+    private readonly IPriceReportService _priceReportServiceMock = Substitute.For<IPriceReportService>();
 
     private readonly IPricingPermissionService _pricingPermissionServiceMock =
         Substitute.For<IPricingPermissionService>();
 
-    private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
-    private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
+    private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
+    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
-    private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
+
+    private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
+
+    private readonly ISplitPricingPreviewService _splitPricingPreviewServiceMock =
+        Substitute.For<ISplitPricingPreviewService>();
+    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public JobControllerTests()
     {
@@ -87,13 +97,20 @@ public class JobControllerTests : IDisposable
             _addStopJobServiceMock,
             _jobReportServiceMock,
             _jobPhotoServiceMock,
+            _podMediaServiceMock,
             _dispatchJobServiceMock,
             _deliveryJourneyServiceMock,
             _pricingPermissionServiceMock,
             _podReportServiceMock,
+            _priceReportServiceMock,
+            _pdfOverlayClientMock,
             _splitJobServiceMock,
+            _splitPricingPreviewServiceMock,
             _sendToPartnerServiceMock,
-            _partnerJobGateMock);
+            _partnerJobGateMock,
+            _flightAssignmentServiceMock,
+            _arrivalWaitRerateServiceMock,
+            _accessorialChargeRepositoryMock);
     }
 
     /// <summary>
@@ -107,6 +124,110 @@ public class JobControllerTests : IDisposable
             HttpContext = new DefaultHttpContext()
         };
         return controller;
+    }
+
+    /// <summary>A controller with a real HttpContext so actions reading HttpContext.RequestAborted work.</summary>
+    private JobController CreateControllerWithHttpContext()
+    {
+        var controller = CreateController();
+        controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        return controller;
+    }
+
+    [Fact]
+    public async Task OverlayDocuments_ReturnsDocumentsFromClientAsJson()
+    {
+        var docs = new List<OverlayDocument>
+        {
+            new("Invoice", "Customer Invoice", true),
+            new("Manifest", "Delivery Manifest", false)
+        };
+        _pdfOverlayClientMock.ListJobDocumentsAsync(42, Arg.Any<CancellationToken>()).Returns(docs);
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocuments(42);
+
+        // Assert the serialised contract, not the CLR object — the SPA reads camelCase keys and the
+        // app's Newtonsoft config emits property names verbatim, so casing is the thing under test.
+        var json = Assert.IsType<JsonResult>(result);
+        var serialised = JsonConvert.SerializeObject(json.Value);
+        Assert.Contains("\"documentType\":\"Invoice\"", serialised);
+        Assert.Contains("\"displayName\":\"Customer Invoice\"", serialised);
+        Assert.Contains("\"available\":true", serialised);
+        Assert.Contains("\"documentType\":\"Manifest\"", serialised);
+        Assert.Contains("\"available\":false", serialised);
+    }
+
+    [Fact]
+    public async Task OverlayDocuments_NullFromClient_ReturnsEmptyJson()
+    {
+        _pdfOverlayClientMock.ListJobDocumentsAsync(42, Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<OverlayDocument>?)null);
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocuments(42);
+
+        var json = Assert.IsType<JsonResult>(result);
+        var serialised = JsonConvert.SerializeObject(json.Value);
+        Assert.Equal("[]", serialised);
+    }
+
+    [Fact]
+    public async Task OverlayDocument_TemplateExists_ReturnsPdfFile()
+    {
+        var pdf = new byte[] { 1, 2, 3 };
+        _pdfOverlayClientMock.RenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>()).Returns(pdf);
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocument(42, "Invoice");
+
+        var file = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("application/pdf", file.ContentType);
+        Assert.Equal("Invoice-42.pdf", file.FileDownloadName);
+        Assert.Equal(pdf, file.FileContents);
+    }
+
+    [Fact]
+    public async Task OverlayDocument_NoTemplate_ReturnsNotFound()
+    {
+        _pdfOverlayClientMock.RenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>())
+            .Returns((byte[]?)null);
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocument(42, "Invoice");
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task OverlayDocument_RenderFails_ReturnsServerErrorNotNotFound()
+    {
+        // A real render-side failure (e.g. an undecodable delivery photo) must surface as a 500 with
+        // the actual cause — not be mislabelled "no template available" (the original bug).
+        _pdfOverlayClientMock.RenderJobAsync(42, "Invoice", Arg.Any<CancellationToken>())
+            .Throws(new PdfOverlayRenderException(500, "Image bytes could not be decoded."));
+
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocument(42, "Invoice");
+
+        var status = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, status.StatusCode);
+    }
+
+    [Fact]
+    public async Task OverlayDocument_BlankDocumentType_ReturnsBadRequest()
+    {
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.OverlayDocument(42, "  ");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _pdfOverlayClientMock.DidNotReceiveWithAnyArgs().RenderJobAsync(0, null!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -241,7 +362,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<JobCoordinateModel> coordinates) Assert.Equal(2, coordinates.Count);
+        if (jsonResult.Value is List<JobCoordinateModel> coordinates)
+        {
+            Assert.Equal(2, coordinates.Count);
+        }
     }
 
     [Fact]
@@ -354,6 +478,41 @@ public class JobControllerTests : IDisposable
 
         // Assert
         await _jobQueryRepositoryMock.Received().GetJobPriceBreakdownAsync(jobId, false, true);
+    }
+
+    [Fact]
+    public async Task GetSplitPricingBreakdown_ValidJobId_ReturnsBreakdown()
+    {
+        const int jobId = 4071;
+        var expected = new SplitPricingBreakdownDto
+        {
+            JobId = jobId,
+            Items = [],
+            Legs = [],
+            Locks = new SplitPricingLockStateDto()
+        };
+        _jobQueryRepositoryMock.GetSplitPricingBreakdownAsync(jobId).Returns(expected);
+
+        var controller = CreateController();
+
+        var result = await controller.GetSplitPricingBreakdown(jobId);
+
+        Assert.IsType<JsonResult>(result);
+        Assert.Same(expected, ((JsonResult)result).Value);
+    }
+
+    [Fact]
+    public async Task GetSplitPricingBreakdown_NotASplitParent_ReturnsNullJson()
+    {
+        const int jobId = 1;
+        _jobQueryRepositoryMock.GetSplitPricingBreakdownAsync(jobId).Returns((SplitPricingBreakdownDto?)null);
+
+        var controller = CreateController();
+
+        var result = await controller.GetSplitPricingBreakdown(jobId);
+
+        Assert.IsType<JsonResult>(result);
+        Assert.Null(((JsonResult)result).Value);
     }
 
     [Fact]
@@ -540,6 +699,39 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateSplitPricingBreakdown_ValidRequest_ReturnsOkAndAddsEvent()
+    {
+        var request = new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = 1,
+            ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 1, Revenue = 200m }]
+        };
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateSplitPricingBreakdown(request);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).UpdateSplitPricingBreakdownAsync(request);
+        await _taskRepositoryMock.Received(1).AddEventAsync(1, "Manually rated price", (int)EventType.ChangePrice);
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdown_LockRejection_Returns409()
+    {
+        var request = new UpdateSplitPricingBreakdownRequest { JobId = 1 };
+        _jobCommandRepositoryMock.UpdateSplitPricingBreakdownAsync(request)
+            .Returns(Task.FromException(new InvalidOperationException("locked")));
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateSplitPricingBreakdown(request);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, statusResult.StatusCode);
+    }
+
+    [Fact]
     public async Task Detail_ValidJobId_ReturnsJobDetails()
     {
         // Arrange
@@ -549,7 +741,7 @@ public class JobControllerTests : IDisposable
             Job = new JobViewModel { Id = jobId, JobNo = "JOB001" }
         };
 
-        _jobQueryRepositoryMock.GetJobByIdAsync(jobId, Arg.Any<CancellationToken>()).Returns(expectedJob);
+        _jobQueryRepositoryMock.GetJobByIdAsync(jobId).Returns(expectedJob);
 
         var controller = CreateController();
 
@@ -570,7 +762,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 999;
 
-        _jobQueryRepositoryMock.GetJobByIdAsync(jobId, Arg.Any<CancellationToken>())
+        _jobQueryRepositoryMock.GetJobByIdAsync(jobId)
             .ThrowsAsync(new Exception("Job not found"));
 
         var controller = CreateController();
@@ -756,7 +948,7 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const string key = "jobs/1/photo.png";
 
-        _jobPhotoServiceMock.DeleteJobPhotoOrSignatureAsync(jobId, key)
+        _jobPhotoServiceMock.ArchiveJobPhotoAsync(jobId, key)
             .Returns(true);
 
         var controller = CreateController();
@@ -775,7 +967,7 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const string key = "invalid-key";
 
-        _jobPhotoServiceMock.DeleteJobPhotoOrSignatureAsync(jobId, key)
+        _jobPhotoServiceMock.ArchiveJobPhotoAsync(jobId, key)
             .Returns(false);
 
         var controller = CreateController();
@@ -800,7 +992,9 @@ public class JobControllerTests : IDisposable
             new() { FileName = "photo2.png", S3Key = "jobs/1/photo2.png" }
         };
 
-        _jobPhotoServiceMock.GetDeliveryPhotosAsync(jobId, year, month)
+        // The media service owns the family sweep, so the endpoint returns whatever it resolves --
+        // including a leg's images when the parent's own id keys nothing.
+        _podMediaServiceMock.GetDeliveryMediaAsync(jobId, year, month)
             .Returns(expectedPhotos);
 
         var controller = CreateController();
@@ -809,9 +1003,9 @@ public class JobControllerTests : IDisposable
         var result = await controller.GetJobDeliveryPhotosAndSignature(jobId, year, month);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<S3PhotoInfo> photos) Assert.Equal(2, photos.Count);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        var photos = Assert.IsAssignableFrom<IReadOnlyList<S3PhotoInfo>>(jsonResult.Value);
+        Assert.Equal(2, photos.Count);
     }
 
     [Fact]
@@ -826,7 +1020,7 @@ public class JobControllerTests : IDisposable
             new() { FileName = "pickup1.png", S3Key = "jobs/1/pickup1.png" }
         };
 
-        _jobPhotoServiceMock.GetPickupPhotosAsync(jobId, year, month)
+        _podMediaServiceMock.GetPickupMediaAsync(jobId, year, month)
             .Returns(expectedPhotos);
 
         var controller = CreateController();
@@ -835,9 +1029,9 @@ public class JobControllerTests : IDisposable
         var result = await controller.GetJobPickupPhotos(jobId, year, month);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<S3PhotoInfo> photos) Assert.Single(photos);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        var photos = Assert.IsAssignableFrom<IReadOnlyList<S3PhotoInfo>>(jsonResult.Value);
+        Assert.Single(photos);
     }
 
     [Fact]
@@ -960,24 +1154,6 @@ public class JobControllerTests : IDisposable
 
         // Act
         var result = await controller.VoidBulkJob(request);
-
-        // Assert
-        Assert.IsType<OkResult>(result);
-    }
-
-    [Fact]
-    public async Task VoidPrebookJob_ValidJobId_ReturnsOk()
-    {
-        // Arrange
-        const int jobId = 1;
-
-        _jobCommandRepositoryMock.VoidPrebookJobAsync(jobId)
-            .Returns(Task.CompletedTask);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.VoidPrebookJob(jobId);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -1122,7 +1298,9 @@ public class JobControllerTests : IDisposable
         _tenantInfoServiceMock.GetStaffInfoAsync()
             .Returns(staffInfo);
         _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(),
-            Arg.Any<int?>(), Arg.Any<CancellationToken>()).Returns((10, 11));
+            Arg.Any<int?>(), Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+            Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(),
+            Arg.Any<CancellationToken>()).Returns((10, 11));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1132,7 +1310,7 @@ public class JobControllerTests : IDisposable
         // Assert - Verify service is called with correct parameters (no suburb ID)
         Assert.IsType<OkResult>(result);
         await _splitJobServiceMock.Received().SplitJobAsync(42, "Jane Smith", Arg.Is<AddressViewModel>(a =>
-            a.AddressLine1 == "456 New Meeting Point" &&
+            a!.AddressLine1 == "456 New Meeting Point" &&
             a.AddressLine5 == "Wellington" &&
             a.AddressLine7 == "6011" &&
             a.Latitude == -41.2865m &&
@@ -1167,7 +1345,9 @@ public class JobControllerTests : IDisposable
 
         _tenantInfoServiceMock.GetStaffInfoAsync()
             .Returns(staffInfo);
-        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42, Arg.Any<CancellationToken>())
+        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42,
+                Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+                Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(), Arg.Any<CancellationToken>())
             .Returns((1, 2));
 
         var controller = CreateControllerForSplitJob();
@@ -1178,6 +1358,63 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<OkResult>(result);
         await _splitJobServiceMock.Received().SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42,
+            Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+            Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SplitJob_ForwardsTheConfirmedPricing_IncludingPerLineOverrides()
+    {
+        // Arrange
+        var request = new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointAddress = new AddressViewModel(
+                addressLine1: "15",
+                addressLine2: string.Empty,
+                addressLine3: string.Empty,
+                addressLine4: "Meeting St",
+                addressLine5: "Auckland",
+                addressLine6: string.Empty,
+                addressLine7: "1010",
+                addressLine8: string.Empty),
+            PricingAllocation =
+            [
+                new SplitPricingAllocationItem { Sequence = 1, SharePercent = 65m },
+                new SplitPricingAllocationItem { Sequence = 2, SharePercent = 35m }
+            ],
+            LineAllocation =
+            [
+                new SplitPricingLineAllocationItem
+                {
+                    PricingBreakdownId = 3, Sequence = 1, SharePercent = 100m
+                },
+                new SplitPricingLineAllocationItem
+                {
+                    PricingBreakdownId = 3, Sequence = 2, SharePercent = 0m
+                }
+            ]
+        };
+
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns(new Suggestion { Id = 1, Text = "John Doe" });
+
+        var controller = CreateControllerForSplitJob();
+
+        // Act
+        var result = await controller.SplitJob(request);
+
+        // Assert — the shares the user confirmed reach the service untouched.
+        Assert.IsType<OkResult>(result);
+        await _splitJobServiceMock.Received(1).SplitJobAsync(
+            1,
+            "John Doe",
+            Arg.Any<AddressViewModel>(),
+            Arg.Any<int?>(),
+            Arg.Is<IReadOnlyList<SplitPricingAllocationItem>?>(a =>
+                a != null && a.Count == 2 && a[0].SharePercent == 65m),
+            Arg.Is<IReadOnlyList<SplitPricingLineAllocationItem>?>(l =>
+                l != null && l.Count == 2 && l[0].PricingBreakdownId == 3 && l[0].SharePercent == 100m
+                && l[1].SharePercent == 0m),
             Arg.Any<CancellationToken>());
     }
 
@@ -1206,7 +1443,9 @@ public class JobControllerTests : IDisposable
             .Returns(staffInfo);
         _splitJobServiceMock
             .SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(), Arg.Any<int?>(),
-                Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("Job not found"));
+                Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+                Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("Job not found"));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1251,6 +1490,8 @@ public class JobControllerTests : IDisposable
                 Arg.Any<string>(),
                 Arg.Do<AddressViewModel>(addr => capturedAddress = addr),
                 Arg.Any<int?>(),
+                Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+                Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(),
                 Arg.Any<CancellationToken>())
             .Returns((1, 2));
 
@@ -1275,6 +1516,89 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task SplitJob_SplitJobException_ReturnsTheAuthoredMessageVerbatim()
+    {
+        // Without this the message is sanitised to the generic "An unexpected error occurred",
+        // which leaves split failures undiagnosable in staging/production.
+        const string authored = "Splitting isn't set up on this system — the 'SplitChild' job "
+                                + "relationship type is missing. Please contact support.";
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns(new Suggestion { Id = 1, Text = "Test User" });
+        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(),
+                Arg.Any<int?>(), Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+                Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new SplitJobException(authored));
+
+        var result = await CreateControllerForSplitJob().SplitJob(new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointAddress = new AddressViewModel()
+        });
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.Equal(authored, objectResult.Value);
+    }
+
+    [Fact]
+    public async Task SplitJob_UnexpectedException_ReturnsSanitisedMessage()
+    {
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns(new Suggestion { Id = 1, Text = "Test User" });
+        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(),
+                Arg.Any<int?>(), Arg.Any<IReadOnlyList<SplitPricingAllocationItem>?>(),
+                Arg.Any<IReadOnlyList<SplitPricingLineAllocationItem>?>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("Login failed for user 'sa' on server prod-rds"));
+
+        var result = await CreateControllerForSplitJob().SplitJob(new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointAddress = new AddressViewModel()
+        });
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.DoesNotContain("prod-rds", objectResult.Value?.ToString());
+    }
+
+    private static SendPodReportRequest PodEmailRequest() => new()
+    {
+        JobId = 7,
+        Recipients = ["ops@acme.test"],
+        Subject = "Your POD",
+        Body = "Body"
+    };
+
+    [Fact]
+    public async Task SendPodReport_PodEmailException_ReturnsTheAuthoredMessageVerbatim()
+    {
+        // Without this the message is sanitised to the generic "An unexpected error occurred",
+        // which is exactly what left the "Failed to send POD report" reports undiagnosable.
+        const string authored = "The POD report could not be queued for sending. Please try again or contact support.";
+        _podReportServiceMock
+            .SendPodEmailAsync(7, Arg.Any<List<string>>(), Arg.Any<string>(), Arg.Any<string>())
+            .ThrowsAsync(new PodEmailException(authored));
+
+        var result = await CreateController().SendPodReport(PodEmailRequest());
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.Equal(authored, objectResult.Value);
+    }
+
+    [Fact]
+    public async Task SendPodReport_UnexpectedException_ReturnsSanitisedMessage()
+    {
+        _podReportServiceMock
+            .SendPodEmailAsync(7, Arg.Any<List<string>>(), Arg.Any<string>(), Arg.Any<string>())
+            .ThrowsAsync(new InvalidOperationException("Login failed for user 'sa' on server prod-rds"));
+
+        var result = await CreateController().SendPodReport(PodEmailRequest());
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+        Assert.DoesNotContain("prod-rds", objectResult.Value?.ToString());
+    }
+
+    [Fact]
     public async Task UnSplitJob_ValidJobId_ReturnsMessage()
     {
         // Arrange
@@ -1296,6 +1620,47 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdatePodDetails_JobNotFound_ReturnsNotFoundWithTheAuthoredMessage()
+    {
+        // A 200 here made a completion that wrote nothing look like a success to the
+        // client, which still toasted "Completed" while the job stayed active.
+        const string authored = "Job 99999 could not be completed because it no longer exists.";
+        var request = new UpdatePodDetailsRequest
+        {
+            JobId = 99999,
+            JobStatus = (int)JobStatus.Completed,
+            PodName = "Jane Doe",
+            PodTime = "2026-03-14T10:35:32+13:00"
+        };
+        _jobCommandRepositoryMock.UpdatePodDetailsAsync(request)
+            .ThrowsAsync(new JobNotFoundException(authored));
+
+        var result = await CreateController().UpdatePodDetails(request);
+
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal(authored, notFound.Value);
+    }
+
+    [Fact]
+    public async Task UpdatePodDetails_UnexpectedFailure_Returns500()
+    {
+        var request = new UpdatePodDetailsRequest
+        {
+            JobId = 1,
+            JobStatus = (int)JobStatus.Completed,
+            PodName = "Jane Doe",
+            PodTime = "2026-03-14T10:35:32+13:00"
+        };
+        _jobCommandRepositoryMock.UpdatePodDetailsAsync(request)
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await CreateController().UpdatePodDetails(request);
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, objectResult.StatusCode);
+    }
+
+    [Fact]
     public async Task RestoreJobs_ValidRequest_ReturnsOk()
     {
         // Arrange
@@ -1311,6 +1676,213 @@ public class JobControllerTests : IDisposable
 
         // Assert
         Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task RestoreJobs_RemoveCapturedImagesTrue_ArchivesEachJobsImagesUsingPreRestoreMonth()
+    {
+        // Arrange
+        var request = new RestoreJobsRequest { JobIds = [1, 2], RemoveCapturedImages = true };
+        _jobQueryRepositoryMock.GetJobCompletionTimesAsync(request.JobIds)
+            .Returns(new Dictionary<int, DateTime?>
+            {
+                [1] = new DateTime(2024, 7, 15),
+                [2] = new DateTime(2024, 8, 3)
+            });
+        _jobPhotoServiceMock.ArchiveJobCapturedMediaAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>())
+            .Returns(new AwsBatchOperationResult());
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RestoreJobs(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).RestoreJobsAsync(request.JobIds);
+        await _jobPhotoServiceMock.Received(1).ArchiveJobCapturedMediaAsync(1, 2024, 7);
+        await _jobPhotoServiceMock.Received(1).ArchiveJobCapturedMediaAsync(2, 2024, 8);
+    }
+
+    [Fact]
+    public async Task RestoreJobs_RemoveCapturedImagesFalse_DoesNotArchive()
+    {
+        // Arrange
+        var request = new RestoreJobsRequest { JobIds = [1, 2], RemoveCapturedImages = false };
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RestoreJobs(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).RestoreJobsAsync(request.JobIds);
+        await _jobQueryRepositoryMock.DidNotReceive().GetJobCompletionTimesAsync(Arg.Any<IReadOnlyList<int>>());
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs()
+            .ArchiveJobCapturedMediaAsync(0, 0, 0);
+    }
+
+    [Fact]
+    public async Task RestoreJobs_JobWithoutCompletionTime_SkipsArchive()
+    {
+        // Arrange — a job with no recorded completion time has nothing to locate in S3.
+        var request = new RestoreJobsRequest { JobIds = [1], RemoveCapturedImages = true };
+        _jobQueryRepositoryMock.GetJobCompletionTimesAsync(request.JobIds)
+            .Returns(new Dictionary<int, DateTime?> { [1] = null });
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RestoreJobs(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs()
+            .ArchiveJobCapturedMediaAsync(0, 0, 0);
+    }
+
+    [Fact]
+    public async Task RestoreJobs_ArchiveThrows_StillReturnsOk()
+    {
+        // Arrange — archiving is best-effort; the restore has already committed.
+        var request = new RestoreJobsRequest { JobIds = [1], RemoveCapturedImages = true };
+        _jobQueryRepositoryMock.GetJobCompletionTimesAsync(request.JobIds)
+            .Returns(new Dictionary<int, DateTime?> { [1] = new DateTime(2024, 7, 15) });
+        _jobPhotoServiceMock.ArchiveJobCapturedMediaAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>())
+            .ThrowsAsync(new Exception("S3 down"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RestoreJobs(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).RestoreJobsAsync(request.JobIds);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_ReturnsPodNameAndCapturedImageCountPerJob()
+    {
+        // Arrange
+        var request = new RestorePodImpactRequest { JobIds = [1, 2] };
+        _jobQueryRepositoryMock.GetRestorePodDetailsAsync(request.JobIds)
+            .Returns(new List<RestorePodDetail>
+            {
+                new() { JobId = 1, PodName = "J. Smith", CompletedTime = new DateTime(2024, 7, 15) },
+                new() { JobId = 2, PodName = null, CompletedTime = new DateTime(2024, 8, 3) }
+            });
+        _jobPhotoServiceMock.CountJobCapturedMediaAsync(1, 2024, 7).Returns(3);
+        _jobPhotoServiceMock.CountJobCapturedMediaAsync(2, 2024, 8).Returns(0);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(request);
+
+        // Assert
+        var json = Assert.IsType<JsonResult>(result);
+        var impacts = Assert.IsAssignableFrom<IReadOnlyList<RestorePodImpact>>(json.Value);
+
+        var first = Assert.Single(impacts, i => i.JobId == 1);
+        Assert.Equal("J. Smith", first.PodName);
+        Assert.Equal(3, first.CapturedImageCount);
+        Assert.True(first.ImageCountKnown);
+
+        var second = Assert.Single(impacts, i => i.JobId == 2);
+        Assert.Null(second.PodName);
+        Assert.Equal(0, second.CapturedImageCount);
+        Assert.True(second.ImageCountKnown);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_JobWithoutCompletionTime_SkipsTheS3Probe()
+    {
+        // Arrange — with no completion time there is no anchor month, so nothing is locatable in S3.
+        var request = new RestorePodImpactRequest { JobIds = [1] };
+        _jobQueryRepositoryMock.GetRestorePodDetailsAsync(request.JobIds)
+            .Returns(new List<RestorePodDetail>
+            {
+                new() { JobId = 1, PodName = "J. Smith", CompletedTime = null }
+            });
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(request);
+
+        // Assert
+        var json = Assert.IsType<JsonResult>(result);
+        var impact = Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<RestorePodImpact>>(json.Value));
+        Assert.Equal("J. Smith", impact.PodName);
+        Assert.Equal(0, impact.CapturedImageCount);
+        Assert.True(impact.ImageCountKnown);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().CountJobCapturedMediaAsync(0, 0, 0);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_ProbeThrows_ReportsCountUnknownAndStillReturnsThePodName()
+    {
+        // Arrange — the POD-name half is a plain DB read and must survive an S3 outage.
+        var request = new RestorePodImpactRequest { JobIds = [1] };
+        _jobQueryRepositoryMock.GetRestorePodDetailsAsync(request.JobIds)
+            .Returns(new List<RestorePodDetail>
+            {
+                new() { JobId = 1, PodName = "J. Smith", CompletedTime = new DateTime(2024, 7, 15) }
+            });
+        _jobPhotoServiceMock.CountJobCapturedMediaAsync(1, 2024, 7).ThrowsAsync(new Exception("S3 down"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(request);
+
+        // Assert
+        var json = Assert.IsType<JsonResult>(result);
+        var impact = Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<RestorePodImpact>>(json.Value));
+        Assert.Equal("J. Smith", impact.PodName);
+        Assert.False(impact.ImageCountKnown);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_SelectionAboveTheProbeCap_SkipsS3Entirely()
+    {
+        // Arrange — a large bulk selection must not stall on one S3 listing per job.
+        var jobIds = Enumerable.Range(1, JobController.MaxRestorePodImageProbeJobs + 1).ToList();
+        var request = new RestorePodImpactRequest { JobIds = jobIds };
+        _jobQueryRepositoryMock.GetRestorePodDetailsAsync(request.JobIds)
+            .Returns(jobIds.Select(id => new RestorePodDetail
+            {
+                JobId = id, PodName = "J. Smith", CompletedTime = new DateTime(2024, 7, 15)
+            }).ToList());
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(request);
+
+        // Assert
+        var json = Assert.IsType<JsonResult>(result);
+        var impacts = Assert.IsAssignableFrom<IReadOnlyList<RestorePodImpact>>(json.Value);
+        Assert.Equal(jobIds.Count, impacts.Count);
+        Assert.All(impacts, i => Assert.False(i.ImageCountKnown));
+        Assert.All(impacts, i => Assert.Equal("J. Smith", i.PodName));
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().CountJobCapturedMediaAsync(0, 0, 0);
+    }
+
+    [Fact]
+    public async Task GetRestorePodImpact_EmptyJobIds_ReturnsBadRequest()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetRestorePodImpact(new RestorePodImpactRequest { JobIds = [] });
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobQueryRepositoryMock.DidNotReceiveWithAnyArgs()
+            .GetRestorePodDetailsAsync(Arg.Any<IReadOnlyList<int>>());
     }
 
     [Fact]
@@ -1376,6 +1948,23 @@ public class JobControllerTests : IDisposable
         Assert.IsType<OkResult>(result);
     }
 
+    [Theory]
+    [InlineData(JobProperty.PickupArrivalTime)]
+    [InlineData(JobProperty.DeliveryArrivalTime)]
+    public async Task UpdateJob_ArrivalField_HandsOffToTheWaitingRerate(JobProperty field)
+    {
+        const int jobId = 1;
+        const string value = "2024-06-10T09:15:00.0000000+12:00";
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, field, value, CancellationToken.None);
+
+        Assert.IsType<OkResult>(result);
+        await _arrivalWaitRerateServiceMock.Received(1)
+            .HandleArrivalEditAsync(jobId, field, Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task UpdateJob_Exception_Returns500()
     {
@@ -1395,6 +1984,109 @@ public class JobControllerTests : IDisposable
         var objectResult = (ObjectResult)result;
         Assert.Equal(500, objectResult.StatusCode);
     }
+
+    [Fact]
+    public async Task UpdateJob_ArchivedCompletedJob_ReturnsBadRequestWithTheAuthoredMessage()
+    {
+        // Arrange
+        const int jobId = 1;
+        const string message = "Job JOB-001 is archived and completed, so it can't be marked not done.";
+
+        _jobCommandRepositoryMock.UpdateJobAsync(jobId, JobProperty.Delivered, "false")
+            .ThrowsAsync(new ArchivedJobCompletionException(message));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.UpdateJob(jobId, JobProperty.Delivered, "false", CancellationToken.None);
+
+        // Assert - a refusal the operator can read, not a 500
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains(message, JsonConvert.SerializeObject(badRequest.Value));
+    }
+
+    [Fact]
+    public async Task UpdateJob_DateField_WithoutCascade_DoesNotPropagateToFamily()
+    {
+        // "This job only" must move the parent and nothing else — and must not fall through to
+        // the legacy rate propagation, which would silently redistribute a split family.
+        const int jobId = 1;
+        const string value = "2024-03-12T09:30:00+13:00";
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, JobProperty.BookedTime, value, CancellationToken.None);
+
+        await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
+            .PropagateDateToChildrenAsync(0, default, null!, TestContext.Current.CancellationToken);
+        await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
+            .PropagateUpdateToChildrenAsync(0, default, null!, TestContext.Current.CancellationToken);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(new[] { jobId }, GetIntArray(ok.Value, "updatedJobIds"));
+    }
+
+    [Fact]
+    public async Task UpdateJob_DateField_WithCascade_ReturnsParentAndUpdatedChildren()
+    {
+        const int jobId = 1;
+        const string value = "2024-03-12T09:30:00+13:00";
+
+        _splitJobServiceMock
+            .PropagateDateToChildrenAsync(jobId, JobProperty.BookedTime, value, Arg.Any<CancellationToken>())
+            .Returns(new DateCascadeResult([2, 3], [4]));
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, JobProperty.BookedTime, value, CancellationToken.None,
+            cascadeToChildren: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal([1, 2, 3], GetIntArray(ok.Value, "updatedJobIds"));
+        Assert.Equal([4], GetIntArray(ok.Value, "failedJobIds"));
+    }
+
+    [Fact]
+    public async Task UpdateJob_DateField_CascadeThrows_StillReportsParentUpdated()
+    {
+        // The parent's date is already written; a failing cascade must not read to the user as
+        // "nothing happened" — that is what drove the original rebooking.
+        const int jobId = 1;
+        const string value = "2024-03-12T09:30:00+13:00";
+
+        _splitJobServiceMock
+            .PropagateDateToChildrenAsync(jobId, JobProperty.Date, value, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, JobProperty.Date, value, CancellationToken.None,
+            cascadeToChildren: true);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(new[] { jobId }, GetIntArray(ok.Value, "updatedJobIds"));
+        Assert.True((bool)ok.Value!.GetType().GetProperty("cascadeFailed")!.GetValue(ok.Value)!);
+    }
+
+    [Fact]
+    public async Task UpdateJob_NonDateRateAffectingField_StillUsesLegacyPropagation()
+    {
+        // Regression guard: only date fields take the new path. Size/weight/speed keep the
+        // existing split-redistribute and multi-re-rate behaviour.
+        const int jobId = 1;
+
+        var controller = CreateController();
+
+        var result = await controller.UpdateJob(jobId, JobProperty.Size, "3", CancellationToken.None);
+
+        await _splitJobServiceMock.Received(1)
+            .PropagateUpdateToChildrenAsync(jobId, JobProperty.Size, "3", Arg.Any<CancellationToken>());
+        await _splitJobServiceMock.DidNotReceiveWithAnyArgs()
+            .PropagateDateToChildrenAsync(0, default, null!, TestContext.Current.CancellationToken);
+        Assert.IsType<OkResult>(result);
+    }
+
+    private static int[] GetIntArray(object? value, string propertyName) =>
+        ((IEnumerable<int>)value!.GetType().GetProperty(propertyName)!.GetValue(value)!).ToArray();
 
     [Fact]
     public async Task UpdateRecurringJob_ValidRequest_ReturnsOk()
@@ -1562,7 +2254,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> speeds) Assert.Equal(3, speeds.Count);
+        if (jsonResult.Value is List<Suggestion> speeds)
+        {
+            Assert.Equal(3, speeds.Count);
+        }
     }
 
     [Fact]
@@ -1586,7 +2281,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> speeds) Assert.Single((IEnumerable)speeds);
+        if (jsonResult.Value is List<Suggestion> speeds)
+        {
+            Assert.Single((IEnumerable)speeds);
+        }
     }
 
     [Fact]
@@ -1611,7 +2309,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> contacts) Assert.Equal(2, contacts.Count);
+        if (jsonResult.Value is List<Suggestion> contacts)
+        {
+            Assert.Equal(2, contacts.Count);
+        }
     }
 
     [Fact]
@@ -1635,7 +2336,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Lookup> locations) Assert.Equal(2, locations.Count);
+        if (jsonResult.Value is List<Lookup> locations)
+        {
+            Assert.Equal(2, locations.Count);
+        }
     }
 
     [Fact]
@@ -1659,7 +2363,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<UndeliverableLocation> locations) Assert.Equal(2, locations.Count);
+        if (jsonResult.Value is List<UndeliverableLocation> locations)
+        {
+            Assert.Equal(2, locations.Count);
+        }
     }
 
     [Fact]
@@ -1684,7 +2391,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> statuses) Assert.Equal(3, statuses.Count);
+        if (jsonResult.Value is List<Suggestion> statuses)
+        {
+            Assert.Equal(3, statuses.Count);
+        }
     }
 
     [Fact]
@@ -1708,7 +2418,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<InternalStatus> statuses) Assert.Equal(2, statuses.Count);
+        if (jsonResult.Value is List<InternalStatus> statuses)
+        {
+            Assert.Equal(2, statuses.Count);
+        }
     }
 
     [Fact]
@@ -1733,7 +2446,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> eventTypes) Assert.Equal(3, eventTypes.Count);
+        if (jsonResult.Value is List<Suggestion> eventTypes)
+        {
+            Assert.Equal(3, eventTypes.Count);
+        }
     }
 
     [Fact]
@@ -2077,7 +2793,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<OkObjectResult>(result);
         var okResult = (OkObjectResult)result;
-        if (okResult.Value is List<S3FileInfo> files) Assert.Equal(2, files.Count);
+        if (okResult.Value is List<S3FileInfo> files)
+        {
+            Assert.Equal(2, files.Count);
+        }
     }
 
     [Fact]
@@ -2334,7 +3053,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<MultiSuggestion> jobs) Assert.Equal(2, jobs.Count);
+        if (jsonResult.Value is List<MultiSuggestion> jobs)
+        {
+            Assert.Equal(2, jobs.Count);
+        }
     }
 
     [Fact]
@@ -2359,7 +3081,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<MultiSuggestion> jobs) Assert.Equal(2, jobs.Count);
+        if (jsonResult.Value is List<MultiSuggestion> jobs)
+        {
+            Assert.Equal(2, jobs.Count);
+        }
     }
 
     [Fact]
@@ -2447,7 +3172,7 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task QuickCreateJob_ValidRequest_ReturnsJobId()
+    public async Task QuickCreateJob_ValidRequest_ReturnsJobIdAndJobNumber()
     {
         // Arrange
         var request = new JobCreateViewModel
@@ -2456,10 +3181,9 @@ public class JobControllerTests : IDisposable
             PickUpAddress = new AddressViewModel { AddressLine1 = "123 Pickup St" },
             DeliveryAddress = new AddressViewModel { AddressLine1 = "456 Delivery Ave" }
         };
-        const int expectedJobId = 123;
 
         _jobCommandRepositoryMock.QuickAddJobAsync(request)
-            .Returns(expectedJobId);
+            .Returns(new QuickAddJobResult(123, "ABC123"));
 
         var controller = CreateController();
 
@@ -2467,9 +3191,11 @@ public class JobControllerTests : IDisposable
         var result = await controller.QuickCreateJob(request);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        Assert.Equal(expectedJobId, jsonResult.Value);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        var value = jsonResult.Value;
+        Assert.NotNull(value);
+        Assert.Equal(123, value.GetType().GetProperty("jobId")!.GetValue(value));
+        Assert.Equal("ABC123", value.GetType().GetProperty("jobNumber")!.GetValue(value));
     }
 
     [Fact]
@@ -2494,7 +3220,7 @@ public class JobControllerTests : IDisposable
         var request = new JobCreateViewModel();
 
         _jobCommandRepositoryMock.QuickAddJobAsync(request)
-            .Returns(0);
+            .Returns(new QuickAddJobResult(0, string.Empty));
 
         var controller = CreateController();
 
@@ -2508,21 +3234,26 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task ReleaseBulkJob_ValidBulkJobId_ReturnsOk()
+    public async Task ReleaseBulkJob_ValidBulkJobId_ReturnsOkWithJobNumbers()
     {
         // Arrange
         const int bulkJobId = 1;
+        var expectedNumbers = new[] { "BJR-001", "BJR-002" };
 
         _jobCommandRepositoryMock.ReleaseBulkJobByIdAsync(bulkJobId)
-            .Returns(Task.CompletedTask);
+            .Returns(expectedNumbers);
 
         var controller = CreateController();
 
         // Act
         var result = await controller.ReleaseBulkJob(bulkJobId);
 
-        // Assert
-        Assert.IsType<OkResult>(result);
+        // Assert — the controller now returns the job numbers so the client can copy
+        // them to the clipboard and surface them in the success toast.
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(ok.Value);
+        var jobNumbersProperty = ok.Value.GetType().GetProperty("jobNumbers")?.GetValue(ok.Value);
+        Assert.Equal(expectedNumbers, jobNumbersProperty);
     }
 
     [Fact]
@@ -2531,7 +3262,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int bulkJobId = 1;
 
-        _jobCommandRepositoryMock.ReleaseBulkJobByIdAsync(bulkJobId).ThrowsAsync(new Exception("Release failed"));
+        _jobCommandRepositoryMock.ReleaseBulkJobByIdAsync(bulkJobId)
+            .ThrowsAsync(new Exception("Release failed"));
 
         var controller = CreateController();
 
@@ -2617,7 +3349,56 @@ public class JobControllerTests : IDisposable
         var jsonResult = (JsonResult)result;
         var journey = jsonResult.Value as List<DeliveryJourneyViewModel>;
         Assert.Single(journey!);
-        if (journey != null) Assert.Equal(jobId, journey[0].JobId);
+        if (journey != null)
+        {
+            Assert.Equal(jobId, journey[0].JobId);
+        }
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourney_WithClientTimeZone_AppliesTenantTimeZoneOverride()
+    {
+        // The client passes its known-good window.TimeZone so the journey converts
+        // correctly even when the server-side TimeZone claim is missing on this request.
+        const int jobId = 1;
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)
+            .Returns(new List<DeliveryJourneyViewModel>());
+
+        var controller = CreateController();
+
+        await controller.GetDeliveryJourney(jobId, "New Zealand Standard Time");
+
+        _tenantInfoServiceMock.Received(1).SetTenantTimeZoneOverride("New Zealand Standard Time");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourney_WithoutClientTimeZone_PassesNullOverride()
+    {
+        // No client tz supplied — the override is a no-op (null is ignored by the service),
+        // leaving the existing claim-based resolution untouched.
+        const int jobId = 1;
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)
+            .Returns(new List<DeliveryJourneyViewModel>());
+
+        var controller = CreateController();
+
+        await controller.GetDeliveryJourney(jobId);
+
+        _tenantInfoServiceMock.Received(1).SetTenantTimeZoneOverride(null);
+    }
+
+    [Fact]
+    public async Task GetRecurringJobDeliveryJourney_WithClientTimeZone_AppliesTenantTimeZoneOverride()
+    {
+        const int bookingId = 7;
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForRecurringBookingAsync(bookingId, Arg.Any<int>())
+            .Returns(new RecurringJourneyDto());
+
+        var controller = CreateController();
+
+        await controller.GetRecurringJobDeliveryJourney(bookingId, "New Zealand Standard Time");
+
+        _tenantInfoServiceMock.Received(1).SetTenantTimeZoneOverride("New Zealand Standard Time");
     }
 
     [Fact]
@@ -2641,7 +3422,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<TimeZoneSuggestion> timeZones) Assert.Equal(2, timeZones.Count);
+        if (jsonResult.Value is List<TimeZoneSuggestion> timeZones)
+        {
+            Assert.Equal(2, timeZones.Count);
+        }
     }
 
     [Fact]
@@ -2741,6 +3525,18 @@ public class JobControllerTests : IDisposable
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(200, okResult.StatusCode);
+
+        // The Recalculate button is a deliberate user-initiated override: the manual-pricing
+        // flag must be cleared BEFORE the rate engine runs (so it isn't blocked by the
+        // RatedManually guard), and must not be restamped back to true afterward — the result
+        // is a genuine system-computed rate, not a manual override.
+        Received.InOrder(() =>
+        {
+            _jobCommandRepositoryMock.SetJobRatedManuallyAsync(jobId, false, false);
+            _rateJobServiceMock.RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+        });
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .SetJobRatedManuallyAsync(jobId, Arg.Any<bool>(), true);
     }
 
     [Fact]
@@ -2780,6 +3576,57 @@ public class JobControllerTests : IDisposable
 
         // Assert
         Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task SwapPod_AfterSwap_ReSendsSecondAndReAssignsAndReSendsFirst()
+    {
+        // After swapping the POD, the corrected delivery data must be pushed back
+        // out: re-send the second job, then re-assign + re-send the first job
+        // (mirrors the legacy Job Search controller chain).
+        const string job1 = "JOB001";
+        const string job2 = "JOB002";
+
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns(10);
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns(20);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10, Arg.Any<string?>()).Returns(false);
+
+        var controller = CreateController();
+
+        var result = await controller.SwapPod(job1, job2);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1)
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 20));
+        await _jobCommandRepositoryMock.Received(1)
+            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 10));
+        await _jobCommandRepositoryMock.Received(1)
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 10));
+    }
+
+    [Fact]
+    public async Task SwapPod_FirstJobIsOutboundPartnerJob_SkipsReAssignButStillReSends()
+    {
+        // Re-assigning a partner-dispatched job would diverge from the partner's
+        // view, so the first job's re-assign is skipped — but the re-sends still run.
+        const string job1 = "JOB001";
+        const string job2 = "JOB002";
+
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns(10);
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns(20);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10, Arg.Any<string?>()).Returns(true);
+
+        var controller = CreateController();
+
+        var result = await controller.SwapPod(job1, job2);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>());
+        await _jobCommandRepositoryMock.Received(1)
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 20));
+        await _jobCommandRepositoryMock.Received(1)
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 10));
     }
 
     [Fact]
@@ -2974,24 +3821,45 @@ public class JobControllerTests : IDisposable
     {
         // Arrange
         var runDate = DateTimeOffset.Now;
-        const string scan = "SCAN001";
+        const int jobId = 42;
         var expectedResults = new List<ScanDetailResult>
         {
             new() { BulkScanId = 1, ScanDateTime = TestDates.Now }
         };
 
-        _jobQueryRepositoryMock.ScanList(runDate, scan)
+        _jobQueryRepositoryMock.ScanList(runDate, jobId, false)
             .Returns(expectedResults);
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.ScanJobDetail(runDate, scan);
+        var result = await controller.ScanJobDetail(runDate, jobId);
 
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<ScanDetailResult> results) Assert.Single((IEnumerable)results);
+        if (jsonResult.Value is List<ScanDetailResult> results)
+        {
+            Assert.Single((IEnumerable)results);
+        }
+    }
+
+    [Fact]
+    public async Task ScanJobDetail_BulkJob_PassesIsBulkJobTrue()
+    {
+        // Arrange
+        var runDate = DateTimeOffset.Now;
+        const int bulkJobId = 99;
+        _jobQueryRepositoryMock.ScanList(runDate, bulkJobId, true)
+            .Returns(new List<ScanDetailResult>());
+
+        var controller = CreateController();
+
+        // Act
+        await controller.ScanJobDetail(runDate, bulkJobId, isBulkJob: true);
+
+        // Assert
+        await _jobQueryRepositoryMock.Received(1).ScanList(runDate, bulkJobId, true);
     }
 
     private static DispatchJobViewModel CreateTestDispatchJob(int id, string jobNumber) =>
@@ -3102,7 +3970,7 @@ public class JobControllerTests : IDisposable
     public async Task Void_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1, Arg.Any<string?>()).Returns(true);
 
         var result = await controller.Void(new VoidJobRequest { JobId = 1 });
 
@@ -3115,21 +3983,123 @@ public class JobControllerTests : IDisposable
         // Receiver-side mirror: PartnerJobGuid is set but no JobPartnerDispatch row,
         // so IsOutboundPartnerJobAsync returns false and the void runs locally.
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(2).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(2, Arg.Any<string?>()).Returns(false);
         _jobQueryRepositoryMock.IsJobArchived(2).Returns(false);
         _jobQueryRepositoryMock.GetJobParentIdAsync(2).Returns((int?)null);
 
         var result = await controller.Void(new VoidJobRequest { JobId = 2 });
 
         Assert.IsType<OkResult>(result);
-        await _jobCommandRepositoryMock.Received().VoidJobAsync(Arg.Is<VoidJobRequest>(r => r.JobId == 2));
+        await _jobCommandRepositoryMock.Received().VoidJobAsync(Arg.Is<VoidJobRequest>(r => r!.JobId == 2));
+    }
+
+    [Fact]
+    public async Task ChangeArchivedJobCourier_Eligible_CallsCommandAndReturnsOk()
+    {
+        var controller = CreateController();
+
+        var result = await controller.ChangeArchivedJobCourier(
+            new ChangeArchivedJobCourierRequest { JobId = 1, CourierId = 20 });
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).ChangeArchivedJobCourierAsync(1, 20);
+    }
+
+    [Fact]
+    public async Task ChangeArchivedJobCourier_CommandRefuses_ReturnsBadRequestWithMessage()
+    {
+        var controller = CreateController();
+        _jobCommandRepositoryMock.ChangeArchivedJobCourierAsync(1, 20)
+            .ThrowsAsync(new ArchivedCourierChangeException(
+                "This job has already been invoiced and the courier can no longer be changed."));
+
+        var result = await controller.ChangeArchivedJobCourier(
+            new ChangeArchivedJobCourierRequest { JobId = 1, CourierId = 20 });
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("already been invoiced", JsonConvert.SerializeObject(badRequest.Value));
+    }
+
+    [Fact]
+    public async Task ChangeArchivedJobCourier_RejectsOutboundPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1, Arg.Any<string?>()).Returns(true);
+
+        var result = await controller.ChangeArchivedJobCourier(
+            new ChangeArchivedJobCourierRequest { JobId = 1, CourierId = 20 });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().ChangeArchivedJobCourierAsync(0, 0);
+    }
+
+    [Fact]
+    public async Task CourierChangeEligibility_CleanArchivedJob_CanChange()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.GetArchivedCourierChangeEligibilityAsync(1)
+            .Returns(new ArchivedCourierChangeEligibility(false, false, true, 10, "Olive Old"));
+
+        var result = await controller.CourierChangeEligibility(1);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ArchivedCourierChangeEligibilityResponse>(ok.Value);
+        Assert.True(response.CanChange);
+        Assert.Null(response.Reason);
+        Assert.Equal(10, response.CurrentCourierId);
+        Assert.Equal("Olive Old", response.CurrentCourierName);
+    }
+
+    [Fact]
+    public async Task CourierChangeEligibility_Invoiced_ReportsReason()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.GetArchivedCourierChangeEligibilityAsync(1)
+            .Returns(new ArchivedCourierChangeEligibility(true, false, true, 10, "Olive Old"));
+
+        var result = await controller.CourierChangeEligibility(1);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ArchivedCourierChangeEligibilityResponse>(ok.Value);
+        Assert.False(response.CanChange);
+        Assert.Equal("invoiced", response.Reason);
+    }
+
+    [Fact]
+    public async Task CourierChangeEligibility_Settled_ReportsReason()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.GetArchivedCourierChangeEligibilityAsync(1)
+            .Returns(new ArchivedCourierChangeEligibility(false, true, true, 10, "Olive Old"));
+
+        var result = await controller.CourierChangeEligibility(1);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ArchivedCourierChangeEligibilityResponse>(ok.Value);
+        Assert.False(response.CanChange);
+        Assert.Equal("settled", response.Reason);
+    }
+
+    [Fact]
+    public async Task CourierChangeEligibility_NotArchived_ReportsReason()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.GetArchivedCourierChangeEligibilityAsync(1)
+            .Returns((ArchivedCourierChangeEligibility)null);
+
+        var result = await controller.CourierChangeEligibility(1);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ArchivedCourierChangeEligibilityResponse>(ok.Value);
+        Assert.False(response.CanChange);
+        Assert.Equal("notArchived", response.Reason);
     }
 
     [Fact]
     public async Task Allocate_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(5).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(5, Arg.Any<string?>()).Returns(true);
 
         var result = await controller.Allocate(new AllocateJobsToCourierRequest { JobIds = [5], CourierId = 1 });
 
@@ -3142,20 +4112,20 @@ public class JobControllerTests : IDisposable
         // Tenant B (receiver) has no JobPartnerDispatch row for the job — they own
         // the courier slot locally and must be able to dispatch.
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(6).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(6, Arg.Any<string?>()).Returns(false);
 
         var result = await controller.Allocate(new AllocateJobsToCourierRequest { JobIds = [6], CourierId = 1 });
 
         Assert.IsType<OkResult>(result);
         await _dispatchJobServiceMock.Received()
-            .DispatchJobsToCourierAsync(Arg.Is<List<int>>(ids => ids.Contains(6)), 1);
+            .DispatchJobsToCourierAsync(Arg.Is<List<int>>(ids => ids!.Contains(6)), 1);
     }
 
     [Fact]
     public async Task ReAllocate_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(7).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(7, Arg.Any<string?>()).Returns(true);
 
         var result = await controller.ReAllocate(new AllocateJobsToCourierRequest { JobIds = [7], CourierId = 1 });
 
@@ -3172,7 +4142,7 @@ public class JobControllerTests : IDisposable
         // Auto-dispatch reassignment would swap the partner-placeholder courier on the
         // sender side and diverge from the partner's view of who owns the job.
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(31).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(31, Arg.Any<string?>()).Returns(true);
 
         var result = await controller.ReAssignSelected("31");
 
@@ -3185,8 +4155,8 @@ public class JobControllerTests : IDisposable
     public async Task ReAssignSelected_RejectsWhenAnyJobInBatchIsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(32).Returns(false);
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(33).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(32, Arg.Any<string?>()).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(33, Arg.Any<string?>()).Returns(true);
 
         var result = await controller.ReAssignSelected("32,33");
 
@@ -3199,20 +4169,20 @@ public class JobControllerTests : IDisposable
     public async Task ReAssignSelected_AllowsInboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(35).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(35, Arg.Any<string?>()).Returns(false);
 
         var result = await controller.ReAssignSelected("35");
 
         Assert.IsType<OkResult>(result);
         await _jobCommandRepositoryMock.Received()
-            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Contains(35)));
+            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Contains(35)));
     }
 
     [Fact]
     public async Task SetFirstJob_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(34).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(34, Arg.Any<string?>()).Returns(true);
 
         var result = await controller.SetFirstJob(jobId: 34, courierId: 1);
 
@@ -3224,7 +4194,7 @@ public class JobControllerTests : IDisposable
     public async Task SetFirstJob_AllowsInboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(36).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(36, Arg.Any<string?>()).Returns(false);
 
         var result = await controller.SetFirstJob(jobId: 36, courierId: 2);
 
@@ -3403,5 +4373,139 @@ public class JobControllerTests : IDisposable
         var result = await controller.ApplyWebQtyUpdate(20);
 
         Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    // ------------------------------------------------------------------
+    // PreviewCreateAheadBackfill / CreateCreateAheadBackfill endpoints
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_ReturnsJson_OnHappyPath()
+    {
+        var controller = CreateController();
+        var preview = new PreviewCreateAheadBackfillResult
+        {
+            Candidates = new List<CreateAheadBackfillCandidate>
+            {
+                new() { ServiceDate = new DateOnly(2024, 6, 17), DisplayLabel = "Mon 17 Jun" }
+            }
+        };
+        _recurringJobRepositoryMock
+            .PreviewCreateAheadBackfillAsync(Arg.Any<PreviewCreateAheadBackfillRequest>())
+            .Returns(preview);
+
+        var result = await controller.PreviewCreateAheadBackfill(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = 100, OldValue = 0, NewValue = 2
+        });
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Same(preview, json.Value);
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_ReturnsBadRequest_OnArgumentException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .PreviewCreateAheadBackfillAsync(Arg.Any<PreviewCreateAheadBackfillRequest>())
+            .Throws(new ArgumentException("NewValue must be between 0 and 30"));
+
+        var result = await controller.PreviewCreateAheadBackfill(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = 100, OldValue = 0, NewValue = 999
+        });
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("between 0 and 30", bad.Value?.ToString());
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_ReturnsBadRequest_OnInvalidOperationException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .PreviewCreateAheadBackfillAsync(Arg.Any<PreviewCreateAheadBackfillRequest>())
+            .Throws(new InvalidOperationException("Parent recurring booking 100 not found"));
+
+        var result = await controller.PreviewCreateAheadBackfill(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = 100, OldValue = 0, NewValue = 2
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task PreviewCreateAheadBackfill_Returns500_OnUnexpectedException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .PreviewCreateAheadBackfillAsync(Arg.Any<PreviewCreateAheadBackfillRequest>())
+            .Throws(new Exception("boom"));
+
+        var result = await controller.PreviewCreateAheadBackfill(new PreviewCreateAheadBackfillRequest
+        {
+            JobId = 100, OldValue = 0, NewValue = 2
+        });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_ReturnsJson_OnHappyPath()
+    {
+        var controller = CreateController();
+        var payload = new CreateCreateAheadBackfillResult
+        {
+            JobsCreated = 3,
+            DuplicatesSkipped = 1,
+            CreatedDates = [new DateOnly(2024, 6, 17), new DateOnly(2024, 6, 18)]
+        };
+        _recurringJobRepositoryMock
+            .CreateCreateAheadBackfillAsync(Arg.Any<CreateCreateAheadBackfillRequest>())
+            .Returns(payload);
+
+        var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
+        {
+            JobId = 100, Dates = [new DateOnly(2024, 6, 17), new DateOnly(2024, 6, 18)]
+        });
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Same(payload, json.Value);
+    }
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_ReturnsBadRequest_OnArgumentException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .CreateCreateAheadBackfillAsync(Arg.Any<CreateCreateAheadBackfillRequest>())
+            .Throws(new ArgumentException("JobId is required"));
+
+        var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
+        {
+            JobId = 0, Dates = [new DateOnly(2024, 6, 17)]
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task CreateCreateAheadBackfill_Returns500_OnUnexpectedException()
+    {
+        var controller = CreateController();
+        _recurringJobRepositoryMock
+            .CreateCreateAheadBackfillAsync(Arg.Any<CreateCreateAheadBackfillRequest>())
+            .Throws(new Exception("boom"));
+
+        var result = await controller.CreateCreateAheadBackfill(new CreateCreateAheadBackfillRequest
+        {
+            JobId = 100, Dates = [new DateOnly(2024, 6, 17)]
+        });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
     }
 }

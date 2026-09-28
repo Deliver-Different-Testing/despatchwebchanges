@@ -1,33 +1,33 @@
 /**
  * React Dashboard Settings Dialog
  *
- * A modern replacement for the AngularJS dashboard-settings-dialog using MUI components.
+ * The gear dialog behind Dispatch, Job Search and the dashboards: refresh
+ * cadences and the classic/new page toggle. Panel visibility is not here — it
+ * lives in the Customize Panels dialog, reached from the Layouts menu.
+ * Auto-mate settings are not here either — they live on the global Settings
+ * page, reached from the sidebar. Follows the dialog design language in CLAUDE.md.
  */
 
-import React, {useState, useMemo} from 'react';
-import {alpha} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Switch from '@mui/material/Switch';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import Divider from '@mui/material/Divider';
-import CloseIcon from '@mui/icons-material/Close';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import InfoIcon from '@mui/icons-material/Info';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import {aiAccentColor} from '../../../theme/designTokens';
+import React, {useState} from 'react';
+import {Box, Divider, Group, Select, Paper, Stack, Text} from '@mantine/core';
+import {Clock, IdCard, Settings, Sparkles} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+} from '../shared/mantine';
+import {SectionHeading, SettingRadioGroup, SettingRow} from '../../common/settings-controls/SettingsControls';
+import type {CourierDisplayMode} from '../../../interfaces';
+
+const COURIER_DISPLAY_MODE_OPTIONS: {value: CourierDisplayMode; label: string}[] = [
+    {value: 'off', label: 'Off'},
+    {value: 'name', label: 'Show Courier Name'},
+    {value: 'number', label: 'Show Courier Number'},
+    {value: 'both', label: 'Show Name and Number'},
+];
 
 // Types that mirror the AngularJS interfaces
 export interface RefreshOption {
@@ -35,6 +35,7 @@ export interface RefreshOption {
     text: string;
 }
 
+/** A dashboard panel. Owned by the Customize Panels dialog, which imports this. */
 export interface DashboardBox {
     name?: string;
     title?: string;
@@ -47,37 +48,82 @@ export interface DashboardSettingsConfig {
     title: string;
     showRefreshInterval?: boolean;
     showDriverLocationRefresh?: boolean;
-    showDashboards?: boolean;
-    showAiToggle?: boolean;
+    /** Show the "Tasks" auto-refresh dropdown (its own independent cadence). */
+    showTaskRefresh?: boolean;
+    /** Show the "Use the new Nationwide" toggle (on by default). Nationwide settings only. */
+    showNationwideBetaToggle?: boolean;
+    /** Show the "Current Work title" courier display setting. Dispatch page only. */
+    showCourierDisplayMode?: boolean;
 }
 
 export interface DashboardSettingsResult {
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
-    boxes?: Record<string, DashboardBox>;
-    aiEnabled?: boolean;
+    selectedTaskRefreshInterval?: RefreshOption;
+    /** Set when `showNationwideBetaToggle` is true; the caller persists + redirects. */
+    nationwideBetaEnabled?: boolean;
+    /** Set when `showCourierDisplayMode` is true; the caller persists + applies it. */
+    courierDisplayMode?: CourierDisplayMode;
 }
 
 export interface DashboardSettingsDialogProps {
     open: boolean;
     config: DashboardSettingsConfig;
-    boxes: Record<string, DashboardBox>;
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
+    selectedTaskRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
-    aiEnabled?: boolean;
+    nationwideBetaEnabled?: boolean;
+    selectedCourierDisplayMode?: CourierDisplayMode;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
+}
+
+/** One "how often does X refresh" row: a label, an explanation and an interval picker. */
+function RefreshIntervalSetting({title, description, value, options, onChange}: {
+    title: string;
+    description: string;
+    value: RefreshOption;
+    options: RefreshOption[];
+    onChange: (option: RefreshOption) => void;
+}) {
+    return (
+        <Paper withBorder radius="md" p={16}>
+            <Group justify="space-between" wrap="nowrap" gap={16}>
+                <Box>
+                    <Text fz="sm" fw={600}>{title}</Text>
+                    <Text fz="sm" c="dimmed">{description}</Text>
+                </Box>
+                <Select
+                    size="sm"
+                    w={140}
+                    aria-label={title}
+                    allowDeselect={false}
+                    /* Up to three of these render at once over the same options, and
+                       Mantine keeps a closed dropdown mounted — without this every
+                       interval sits in the DOM several times over. */
+                    comboboxProps={{keepMounted: false}}
+                    value={String(value.id)}
+                    onChange={(selected) => {
+                        const option = options.find((o) => String(o.id) === selected);
+                        if (option) onChange(option);
+                    }}
+                    data={options.map((option) => ({value: String(option.id), label: option.text}))}
+                />
+            </Group>
+        </Paper>
+    );
 }
 
 export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = ({
     open,
     config,
-    boxes: initialBoxes,
     selectedRefreshInterval: initialRefreshInterval,
     selectedDriverLocationRefreshInterval: initialDriverInterval,
+    selectedTaskRefreshInterval: initialTaskInterval,
     refreshOptions,
-    aiEnabled: initialAiEnabled,
+    nationwideBetaEnabled: initialNationwideBetaEnabled,
+    selectedCourierDisplayMode: initialCourierDisplayMode,
     onClose,
     onSave,
 }) => {
@@ -87,453 +133,122 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [driverLocationInterval, setDriverLocationInterval] = useState<RefreshOption>(
         initialDriverInterval ?? {id: 0, text: 'Disabled'}
     );
-    const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? true);
-    const [boxes, setBoxes] = useState<Record<string, DashboardBox>>(() => {
-        // Deep clone the boxes
-        const cloned: Record<string, DashboardBox> = {};
-        for (const key of Object.keys(initialBoxes)) {
-            cloned[key] = {...initialBoxes[key]};
-        }
-        return cloned;
-    });
-
-    const boxList = useMemo(() => {
-        return Object.entries(boxes).map(([key, box]) => ({
-            key,
-            ...box,
-        }));
-    }, [boxes]);
-
-    const handleToggleBox = (boxKey: string) => {
-        setBoxes((prev) => ({
-            ...prev,
-            [boxKey]: {
-                ...prev[boxKey],
-                visible: !prev[boxKey]?.visible,
-            },
-        }));
-    };
+    const [taskInterval, setTaskInterval] = useState<RefreshOption>(
+        initialTaskInterval ?? {id: 0, text: 'Disabled'}
+    );
+    const [nationwideBetaEnabled, setNationwideBetaEnabled] = useState<boolean>(
+        initialNationwideBetaEnabled ?? true,
+    );
+    const [courierDisplayMode, setCourierDisplayMode] = useState<CourierDisplayMode>(
+        initialCourierDisplayMode ?? 'off',
+    );
 
     const handleSave = () => {
         onSave({
             selectedRefreshInterval: refreshInterval,
             selectedDriverLocationRefreshInterval: driverLocationInterval,
-            boxes,
-            aiEnabled,
+            selectedTaskRefreshInterval: taskInterval,
+            nationwideBetaEnabled: config.showNationwideBetaToggle ? nationwideBetaEnabled : undefined,
+            ...(config.showCourierDisplayMode ? {courierDisplayMode} : {}),
         });
     };
 
-    return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <SettingsIcon sx={{fontSize: 28}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h5" fontWeight={600}>
-                        {config.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Configure your dashboard preferences
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+    /* Built as a list so the dividers land strictly between whichever sections
+       a given page turned on — a per-section trailing rule left one dangling at
+       the bottom whenever the last section was switched off. */
+    const sections = [
+        config.showRefreshInterval && (
+            <Box p={24} key="autoRefresh">
+                <SectionHeading icon={<Icon lucide={Clock}/>} title="Auto-refresh"/>
 
-            {/* Content */}
-            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
-                {/* Auto-Refresh Section */}
-                {config.showRefreshInterval && (
-                    <Box sx={{p: 3}}>
-                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{mb: 2}}>
-                            <Box
-                                sx={(theme) => ({
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                })}
-                            >
-                                <ScheduleIcon color="primary" />
-                            </Box>
-                            <Typography variant="h6" fontWeight={600}>
-                                Auto-Refresh
-                            </Typography>
-                        </Stack>
+                <Stack gap={16}>
+                    <RefreshIntervalSetting
+                        title="Job list"
+                        description="How often the job list checks for new and updated jobs"
+                        value={refreshInterval}
+                        options={refreshOptions}
+                        onChange={setRefreshInterval}
+                    />
 
-                        <Stack spacing={2}>
-                            {/* Job List Refresh */}
-                            <Paper
-                                elevation={0}
-                                sx={(theme) => ({
-                                    p: 2,
-                                    borderRadius: 2,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    bgcolor: 'white',
-                                })}
-                            >
-                                <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                >
-                                    <Box>
-                                        <Typography variant="subtitle2" fontWeight={600}>
-                                            Job List
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            How often the job list refreshes
-                                        </Typography>
-                                    </Box>
-                                    <FormControl size="small" sx={{minWidth: 140}}>
-                                        <Select
-                                            value={refreshInterval.id}
-                                            onChange={(e) => {
-                                                const option = refreshOptions.find(
-                                                    (o) => o.id === e.target.value
-                                                );
-                                                if (option) setRefreshInterval(option);
-                                            }}
-                                        >
-                                            {refreshOptions.map((option) => (
-                                                <MenuItem key={option.id} value={option.id}>
-                                                    {option.text}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Stack>
-                            </Paper>
-
-                            {/* Driver Location Refresh */}
-                            {config.showDriverLocationRefresh && (
-                                <Paper
-                                    elevation={0}
-                                    sx={(theme) => ({
-                                        p: 2,
-                                        borderRadius: 2,
-                                        border: `1px solid ${theme.palette.divider}`,
-                                        bgcolor: 'white',
-                                    })}
-                                >
-                                    <Stack
-                                        direction="row"
-                                        alignItems="center"
-                                        justifyContent="space-between"
-                                    >
-                                        <Box>
-                                            <Typography variant="subtitle2" fontWeight={600}>
-                                                Driver Locations
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                How often the map updates
-                                            </Typography>
-                                        </Box>
-                                        <FormControl size="small" sx={{minWidth: 140}}>
-                                            <Select
-                                                value={driverLocationInterval.id}
-                                                onChange={(e) => {
-                                                    const option = refreshOptions.find(
-                                                        (o) => o.id === e.target.value
-                                                    );
-                                                    if (option) setDriverLocationInterval(option);
-                                                }}
-                                            >
-                                                {refreshOptions.map((option) => (
-                                                    <MenuItem key={option.id} value={option.id}>
-                                                        {option.text}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    </Stack>
-                                </Paper>
-                            )}
-                        </Stack>
-                    </Box>
-                )}
-
-                {config.showRefreshInterval && <Divider />}
-
-                {/* AI Features Section */}
-                {config.showAiToggle && (
-                    <Box sx={{p: 3}}>
-                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{mb: 2}}>
-                            <Box
-                                sx={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(aiAccentColor, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <AutoAwesomeIcon sx={{color: aiAccentColor}} />
-                            </Box>
-                            <Typography variant="h6" fontWeight={600}>
-                                AI Features
-                            </Typography>
-                        </Stack>
-
-                        <Paper
-                            elevation={0}
-                            onClick={() => setAiEnabled((prev) => !prev)}
-                            sx={(theme) => ({
-                                p: 2,
-                                borderRadius: 2,
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'white',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                '&:hover': {
-                                    borderColor: aiAccentColor,
-                                    bgcolor: alpha(aiAccentColor, 0.02),
-                                },
-                            })}
-                        >
-                            <Stack
-                                direction="row"
-                                alignItems="center"
-                                justifyContent="space-between"
-                            >
-                                <Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Typography variant="subtitle2" fontWeight={600}>
-                                            AI Summaries & Suggestions
-                                        </Typography>
-                                        <Chip
-                                            label="BETA"
-                                            size="small"
-                                            sx={{
-                                                height: 18,
-                                                fontSize: '0.625rem',
-                                                fontWeight: 700,
-                                                bgcolor: aiAccentColor,
-                                                color: '#fff',
-                                            }}
-                                        />
-                                    </Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Show AI-powered job summaries, inline panels, and smart suggestions
-                                    </Typography>
-                                </Box>
-                                <Switch
-                                    checked={aiEnabled}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={() => setAiEnabled((prev) => !prev)}
-                                    sx={{
-                                        '& .MuiSwitch-switchBase.Mui-checked': {
-                                            color: aiAccentColor,
-                                        },
-                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                            backgroundColor: aiAccentColor,
-                                        },
-                                    }}
-                                />
-                            </Stack>
-                        </Paper>
-                    </Box>
-                )}
-
-                {config.showAiToggle && <Divider />}
-
-                {/* Dashboard Panels Section */}
-                <Box sx={{p: 3}}>
-                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{mb: 1}}>
-                        <Box
-                            sx={(theme) => ({
-                                width: 36,
-                                height: 36,
-                                borderRadius: 1.5,
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            })}
-                        >
-                            <DashboardIcon color="primary" />
-                        </Box>
-                        <Typography variant="h6" fontWeight={600}>
-                            Dashboard Panels
-                        </Typography>
-                    </Stack>
-
-                    {config.showDashboards ? (
-                        <>
-                            <Typography variant="body2" color="text.secondary" sx={{mb: 2, ml: 6}}>
-                                Toggle panels to show or hide them on your dashboard
-                            </Typography>
-
-                            <Stack spacing={1}>
-                                {boxList.map((box) => (
-                                    <Paper
-                                        key={box.key}
-                                        elevation={0}
-                                        onClick={() => handleToggleBox(box.key)}
-                                        sx={(theme) => ({
-                                            p: 2,
-                                            borderRadius: 2,
-                                            border: `1px solid ${theme.palette.divider}`,
-                                            bgcolor: 'white',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s ease',
-                                            '&:hover': {
-                                                borderColor: theme.palette.primary.main,
-                                                bgcolor: alpha(theme.palette.primary.main, 0.02),
-                                            },
-                                        })}
-                                    >
-                                        <Stack
-                                            direction="row"
-                                            alignItems="center"
-                                            spacing={2}
-                                        >
-                                            <Box
-                                                sx={(theme) => ({
-                                                    width: 40,
-                                                    height: 40,
-                                                    borderRadius: 1.5,
-                                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                })}
-                                            >
-                                                <DashboardIcon
-                                                    sx={(theme) => ({
-                                                        color: theme.palette.primary.main,
-                                                        fontSize: 22,
-                                                    })}
-                                                />
-                                            </Box>
-                                            <Box sx={{flex: 1}}>
-                                                <Typography variant="subtitle2" fontWeight={600}>
-                                                    {box.title || box.name}
-                                                </Typography>
-                                                {box.description && (
-                                                    <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                    >
-                                                        {box.description}
-                                                    </Typography>
-                                                )}
-                                            </Box>
-                                            <Switch
-                                                checked={box.visible ?? true}
-                                                onClick={(e) => e.stopPropagation()}
-                                                onChange={() => handleToggleBox(box.key)}
-                                                color="primary"
-                                            />
-                                        </Stack>
-                                    </Paper>
-                                ))}
-                            </Stack>
-                        </>
-                    ) : (
-                        /* Empty state when custom layout not available */
-                        <Paper
-                            elevation={0}
-                            sx={(theme) => ({
-                                p: 4,
-                                borderRadius: 2,
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'white',
-                                textAlign: 'center',
-                            })}
-                        >
-                            <Box
-                                sx={(theme) => ({
-                                    width: 56,
-                                    height: 56,
-                                    borderRadius: 2,
-                                    bgcolor: alpha(theme.palette.info.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    mx: 'auto',
-                                    mb: 2,
-                                })}
-                            >
-                                <InfoIcon sx={(theme) => ({fontSize: 28, color: theme.palette.info.main})} />
-                            </Box>
-                            <Typography variant="body1" color="text.secondary">
-                                Panel visibility requires a custom layout.
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
-                                Create a custom layout to manage panel visibility.
-                            </Typography>
-                        </Paper>
+                    {/* Tasks — an independent cadence from the job list's */}
+                    {config.showTaskRefresh && (
+                        <RefreshIntervalSetting
+                            title="Tasks"
+                            description="How often the Tasks panel checks for new and updated tasks"
+                            value={taskInterval}
+                            options={refreshOptions}
+                            onChange={setTaskInterval}
+                        />
                     )}
-                </Box>
-            </DialogContent>
 
+                    {config.showDriverLocationRefresh && (
+                        <RefreshIntervalSetting
+                            title="Driver locations"
+                            description="How often driver positions update on the map"
+                            value={driverLocationInterval}
+                            options={refreshOptions}
+                            onChange={setDriverLocationInterval}
+                        />
+                    )}
+                </Stack>
+            </Box>
+        ),
+
+        /* Nationwide version toggle — opt-in because the React Nationwide page
+           is new and unproven. */
+        config.showNationwideBetaToggle && (
+            <Box p={24} key="nationwideVersion">
+                <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Nationwide version"/>
+                <SettingRow
+                    title="Try the new Nationwide"
+                    description="A rebuilt Nationwide page — faster loads, modern dialogs, and saved
+                        layouts that follow your account across browsers and computers. It is still
+                        being proven, so the classic page stays the default: turn this on to try it,
+                        and off again at any time if you hit a problem. Applies to your account only."
+                    checked={nationwideBetaEnabled}
+                    onToggle={() => setNationwideBetaEnabled((prev) => !prev)}
+                />
+            </Box>
+        ),
+
+        config.showCourierDisplayMode && (
+            <Box p={24} key="courierDisplayMode">
+                <SectionHeading icon={<Icon lucide={IdCard}/>} title="Current Work title"/>
+                <SettingRadioGroup<CourierDisplayMode>
+                    title="Courier info on the Current Work title"
+                    description="Choose what shows once a courier is focused in the Current Work panel."
+                    value={courierDisplayMode}
+                    options={COURIER_DISPLAY_MODE_OPTIONS}
+                    onChange={setCourierDisplayMode}
+                />
+            </Box>
+        ),
+    ].filter(Boolean);
+
+    return (
+        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label={config.title}>
+            <DialogHeader
+                icon={<Icon lucide={Settings}/>}
+                title={config.title}
+                subtitle="Choose how often your dashboard updates and which features are on"
+                onClose={onClose}
+            />
+            {/* Content */}
+            <Box bg={dialogContentBg}>
+                {sections.map((section, index) => (
+                    <React.Fragment key={(section as React.ReactElement).key}>
+                        {index > 0 && <Divider/>}
+                        {section}
+                    </React.Fragment>
+                ))}
+            </Box>
             {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'white',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={onClose} variant="outlined" sx={{minWidth: 100}}>
-                    Cancel
-                </Button>
-                <Button onClick={handleSave} variant="contained" sx={{minWidth: 100}}>
-                    Save
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSave}
+                confirmLabel="Save"
+            />
+        </DialogShell>
     );
 };
 

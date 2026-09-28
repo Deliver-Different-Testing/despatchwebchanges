@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Reflection;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -20,7 +19,8 @@ public class NationwideJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
     ITenantClock clock,
-    IClearListEnvelopeService clearListEnvelopeService)
+    IClearListEnvelopeService clearListEnvelopeService,
+    IInboundAgentLinkService inboundAgentLinkService)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), INationwideJobRepository
 {
     private readonly ITenantClock _clock = clock;
@@ -41,8 +41,10 @@ public class NationwideJobRepository(
         var hasExistingFlight = await Context.TucJobNationwides.AnyAsync(
             n => n.UcnwJobId == requestData.JobId, cancellationToken);
         if (hasExistingFlight)
+        {
             throw new InvalidOperationException(
                 $"Job {requestData.JobId} already has a flight assigned");
+        }
 
         var isUsCustomer = _infoService.IsUsTenant();
 
@@ -87,13 +89,17 @@ public class NationwideJobRepository(
 
                 var departureAirportId = requestData.FromAirportId ?? job.FromAirportId;
                 if (!departureAirportId.HasValue)
+                {
                     throw new InvalidOperationException(
                         "Departure airport ID is required but was not set on the job or request.");
+                }
 
                 var arrivalAirportId = requestData.ToAirportId ?? job.ToAirportId;
                 if (!arrivalAirportId.HasValue)
+                {
                     throw new InvalidOperationException(
                         "Arrival airport ID is required but was not set on the job or request.");
+                }
 
                 var airports = await GetAirportAddressInfosAsync(
                     [departureAirportId.Value, arrivalAirportId.Value]);
@@ -167,14 +173,15 @@ public class NationwideJobRepository(
                 await Context.SaveChangesAsync(cancellationToken);
 
                 // Create journey record (requires primary flight record ID from first save)
+                var flightStaffId = _infoService.GetStaffIdOrNull();
                 var journeyRecord = new JobDeliveryJourney
                 {
                     JobId = requestData.JobId,
                     FlightId = primaryFlightRecord.UcnwId,
                     ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
-                    StaffId = _infoService.GetStaffId(),
+                    StaffId = flightStaffId,
                     UpdatedAt = _clock.UtcNow,
-                    UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+                    UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(flightStaffId)
                 };
                 await Context.JobDeliveryJourneys.AddAsync(journeyRecord, cancellationToken);
 
@@ -216,7 +223,10 @@ public class NationwideJobRepository(
                 : new { Latitude = j.DeliveryLatitude, Longitude = j.DeliveryLongitude })
             .FirstOrDefaultAsync();
 
-        if (jobCoords?.Latitude == null || jobCoords.Longitude == null) return [];
+        if (jobCoords?.Latitude == null || jobCoords.Longitude == null)
+        {
+            return [];
+        }
 
         var jobLatitude = jobCoords.Latitude.Value;
         var jobLongitude = jobCoords.Longitude.Value;
@@ -246,27 +256,29 @@ public class NationwideJobRepository(
             .ToListAsync();
 
         // Calculate distances in C#, filter and sort
-        return airports
-            .Select(a => new
-            {
-                a.AirportId,
-                a.Name,
-                Distance = DistanceCalculator.CalculateDistance(
-                    jobLatitude,
-                    jobLongitude,
-                    a.AirportLatitude,
-                    a.AirportLongitude),
-                Timezone = a.TimeZone
-            })
-            .Where(result => result.Distance <= maxDistanceMiles)
-            .OrderBy(result => result.Distance)
-            .Select(result => new AirportSuggestion
-            {
-                Id = result.AirportId,
-                Text = $"{result.Name} ({result.Distance} mi)",
-                Timezone = result.Timezone
-            })
-            .ToList();
+        return
+        [
+            .. airports
+                .Select(a => new
+                {
+                    a.AirportId,
+                    a.Name,
+                    Distance = DistanceCalculator.CalculateDistance(
+                        jobLatitude,
+                        jobLongitude,
+                        a.AirportLatitude,
+                        a.AirportLongitude),
+                    Timezone = a.TimeZone
+                })
+                .Where(result => result.Distance <= maxDistanceMiles)
+                .OrderBy(result => result.Distance)
+                .Select(result => new AirportSuggestion
+                {
+                    Id = result.AirportId,
+                    Text = $"{result.Name} ({result.Distance} mi)",
+                    Timezone = result.Timezone
+                })
+        ];
     }
 
     public async Task<IReadOnlyList<AgentViewModel>> GetAgentsAsync(int jobId)
@@ -289,7 +301,8 @@ public class NationwideJobRepository(
         return results;
     }
 
-    public async Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
+    public async Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false,
+        string emailSubject = null, string emailBody = null)
     {
         var job = await Context.TucJobs
             .AsTracking()
@@ -344,7 +357,8 @@ public class NationwideJobRepository(
                     NoteTypeId = (int)NoteType.AgentUpdate,
                     NoteText = $"Agent {agentName} assigned",
                     CreatedBy = _infoService.GetStaffId(),
-                    CreatedDate = currentDate
+                    CreatedDate = currentDate,
+                    CreatedDateUtc = _clock.UtcNow
                 };
 
                 await Context.AddAsync(stopJobNote);
@@ -358,20 +372,152 @@ public class NationwideJobRepository(
             NoteTypeId = (int)NoteType.AgentUpdate,
             NoteText = $"Agent {agentName} assigned",
             CreatedBy = _infoService.GetStaffId(),
-            CreatedDate = currentDate
+            CreatedDate = currentDate,
+            CreatedDateUtc = _clock.UtcNow
         };
         await Context.TucNotes.AddAsync(note);
 
+        var agentStaffId = _infoService.GetStaffIdOrNull();
         var journeyRecord = new JobDeliveryJourney
         {
             JobId = jobId,
             NewAgentId = agentId,
             UpdatedAt = DateTime.UtcNow,
             ChangeType = nameof(DeliveryJourneyChangeType.AgentAssignment),
-            StaffId = _infoService.GetStaffId(),
-            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+            StaffId = agentStaffId,
+            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(agentStaffId)
         };
         await Context.AddAsync(journeyRecord);
+
+        await Context.SaveChangesAsync();
+
+        // Best-effort: email the agent a link to the job in the inbound-agent portal.
+        // The assignment is already committed, so a send failure must not unwind it. Only
+        // send when there is actually a link to include (agent email + InboundUrl present).
+        try
+        {
+            var preview = await EvaluateAgentInboundEmailAsync(agentId, jobId);
+            if (preview.WillEmail)
+            {
+                await SendAgentRequestMessageAsync(agentId, jobId, emailSubject, emailBody);
+            }
+
+            return preview;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex,
+                "Job {JobId}: failed to email agent {AgentId} the inbound link (best-effort, ignored)",
+                jobId, agentId);
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.Failed, null);
+        }
+    }
+
+    public Task<AgentInboundEmailResult> GetAgentInboundEmailPreviewAsync(int agentId, int jobId) =>
+        EvaluateAgentInboundEmailAsync(agentId, jobId);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<BulkAssignmentResult>> AssignAgentToJobsAsync(int agentId,
+        IReadOnlyList<int> jobIds, bool includeStopJobs = false,
+        string emailSubject = null, string emailBody = null)
+    {
+        var results = new List<BulkAssignmentResult>(jobIds.Count);
+
+        foreach (var jobId in jobIds)
+        {
+            try
+            {
+                // Same gate the single-job UI enforces before assigning — a job whose
+                // flight leg has no flight booked cannot take an agent yet.
+                if (!await CanAssignAgentToJobAsync(jobId))
+                {
+                    results.Add(new BulkAssignmentResult(jobId, false,
+                        "A flight must be assigned to the flight portion before an agent can be assigned.",
+                        null));
+                    continue;
+                }
+
+                var email = await AddAgentToJobAsync(agentId, jobId, includeStopJobs, emailSubject, emailBody);
+                results.Add(new BulkAssignmentResult(jobId, true, null, email.Status));
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Bulk agent assignment: job {JobId} failed, continuing with the batch", jobId);
+                results.Add(new BulkAssignmentResult(jobId, false, ex.Message, null));
+            }
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<BulkAssignmentResult>> AssignNpAgentToJobsAsync(int npAgentId,
+        IReadOnlyList<int> jobIds)
+    {
+        var results = new List<BulkAssignmentResult>(jobIds.Count);
+
+        foreach (var jobId in jobIds)
+        {
+            try
+            {
+                await AssignNpAgentToJobAsync(npAgentId, jobId);
+                results.Add(new BulkAssignmentResult(jobId, true, null, null));
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Bulk network partner assignment: job {JobId} failed, continuing with the batch",
+                    jobId);
+                results.Add(new BulkAssignmentResult(jobId, false, ex.Message, null));
+            }
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    public async Task AssignNpAgentToJobAsync(int npAgentId, int jobId)
+    {
+        var agent = await Context.TucAgents
+            .FirstOrDefaultAsync(a => a.UcagId == npAgentId);
+        ArgumentNullException.ThrowIfNull(agent);
+
+        if (!agent.IsNetworkPartner)
+        {
+            throw new ArgumentException(
+                $"Agent {npAgentId} is not a network partner.", nameof(npAgentId));
+        }
+
+        var job = await Context.TucJobs
+            .AsTracking()
+            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        ArgumentNullException.ThrowIfNull(job);
+
+        // Deliberately narrow: NpAgentId drives the network partner's row-level
+        // visibility (see the tucJob query filter), so the courier-facing status
+        // and dispatch stamps stay exactly as they were.
+        job.NpAgentId = npAgentId;
+
+        var staffId = _infoService.GetStaffIdOrNull();
+
+        await Context.TucNotes.AddAsync(new TucNote
+        {
+            JobId = jobId,
+            NoteTypeId = (int)NoteType.AgentUpdate,
+            NoteText = $"Network partner {agent.UcagName} assigned",
+            CreatedBy = _infoService.GetStaffId(),
+            CreatedDate = _clock.TenantNow,
+            CreatedDateUtc = _clock.UtcNow
+        });
+
+        await Context.AddAsync(new JobDeliveryJourney
+        {
+            JobId = jobId,
+            NewAgentId = npAgentId,
+            UpdatedAt = DateTime.UtcNow,
+            ChangeType = nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment),
+            StaffId = staffId,
+            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId)
+        });
 
         await Context.SaveChangesAsync();
     }
@@ -383,12 +529,14 @@ public class NationwideJobRepository(
         CancellationToken cancellationToken = default)
     {
         if (!isInternal && string.IsNullOrEmpty(clientIds))
+        {
             return new JobSearchResult
             {
                 Jobs = [],
                 TotalCount = 0,
                 HasMore = false
             };
+        }
 
         return await DespatchQry(
             AppPage.Domestic,
@@ -412,76 +560,110 @@ public class NationwideJobRepository(
             })
             .ToListAsync();
 
-    public async Task<IReadOnlyList<string>> GetActiveAirlineCodesAsync() =>
-        await Context.FlightCarriers
-            .Where(fc => fc.IsActive)
-            .Select(x => x.CarrierCode)
-            .ToListAsync();
-
     public async Task<string> GetAirlineCodeByIdAsync(int airlineId) =>
         await Context.FlightCarriers
             .Where(fc => fc.FlightCarrierId == airlineId)
             .Select(fc => fc.CarrierCode)
             .FirstOrDefaultAsync();
 
-    public async Task SendAgentRequestMessageAsync(int agentId, int jobId)
+    public async Task SendAgentRequestMessageAsync(int agentId, int jobId, string emailSubject = null,
+        string emailBody = null)
     {
         var agentEmail = await Context.TucAgents
             .Where(a => a.UcagId == agentId)
             .Select(a => a.UcagFax)
             .FirstOrDefaultAsync();
 
-        var smppSetting = await Context.TblSmppsettings.FirstOrDefaultAsync();
+        if (string.IsNullOrWhiteSpace(agentEmail))
+        {
+            Log.Information("Agent {AgentId} has no email; skipping agent message for job {JobId}",
+                agentId, jobId);
+            return;
+        }
+
+        var replyToAddress = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
+                             ?? "support@deliverdifferent.com";
 
         var staffId = _infoService.GetStaffId();
 
-        // Create an object
-        var agentQuoteTemplateDto = await Context.TucJobs
+        var jobData = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => new AgentQuoteTemplateDto
+            .Select(j => new
             {
-                DeliveryAddressLine5 = j.DeliveryAddressLine5,
-                JobNo = j.UcjbNumber,
-                ReferenceA = j.UcjbClientRefa,
-                ReferenceB = j.UcjbClientRefb,
-                JobDate = j.UcjbDate,
-                SuburbFrom = j.DeliveryAddressLine6,
-                ToAddress = new AddressViewModel(
-                    j.DeliveryAddressLine1,
-                    j.DeliveryAddressLine2,
-                    j.DeliveryAddressLine3,
-                    j.DeliveryAddressLine4,
-                    j.DeliveryAddressLine5,
-                    j.DeliveryAddressLine6,
-                    j.DeliveryAddressLine7,
-                    j.DeliveryAddressLine8).FullAddress,
-                CompletedTime = j.UcjbComplTime,
-                PodName = j.UcjbPodname,
-                SuburbTo = j.DeliveryAddressLine6
+                j.UcjbNumber,
+                j.ParentId,
+                DeliveryCompany = j.DeliveryAddressLine1,
+                DeliveryStreetNumber = j.DeliveryAddressLine3,
+                DeliveryStreetName = j.DeliveryAddressLine4,
+                DeliveryCity = j.DeliveryAddressLine6,
+                j.UcjbQty,
+                j.UcjbWeight,
+                DeliveryContactName = j.DeliverToContact,
+                DeliveryContactPhone = j.DeliverToPhone
             })
             .FirstOrDefaultAsync();
+        ArgumentNullException.ThrowIfNull(jobData);
 
-        agentQuoteTemplateDto.CompletedTimeFormatted =
-            _infoService.FormatDateForTenant(agentQuoteTemplateDto.CompletedTime);
+        // Flight legs are stored against the flight job, but the agent is usually assigned to a
+        // sibling (pickup/delivery) job under the same parent. Resolve the leg across the whole
+        // family so the flight tokens fill regardless of which family member was emailed.
+        // Final arrival leg = latest ETA, then latest leg number.
+        var parentId = jobData.ParentId ?? jobId;
+        var finalLeg = await Context.TucJobNationwides
+            .Where(n => Context.TucJobs
+                .Where(j => j.UcjbId == parentId || j.ParentId == parentId)
+                .Select(j => (int?)j.UcjbId)
+                .Contains(n.UcnwJobId))
+            .OrderByDescending(n => n.UcnwEta)
+            .ThenByDescending(n => n.UcnwLegNumber)
+            .Select(n => new { n.UcnwFlightNo, n.UcnwEta, n.DepartureAirportCity })
+            .FirstOrDefaultAsync();
 
-        Log.Information("AgentQuoteTemplateDto for job {JobId} and agent {AgentId}: {@AgentQuoteTemplateDto}",
-            jobId,
-            agentId,
-            agentQuoteTemplateDto);
-        var subject = FormatDelimMessage(smppSetting.AgentEmailSubject, "[", "]", agentQuoteTemplateDto);
-        var body = FormatDelimMessage(smppSetting.AgentEmailMessage, "[", "]", agentQuoteTemplateDto);
+        var agentName = await GetAgentNameAsync(agentId);
+        var inboundUrl = await inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
+
+        var weightUnit = _infoService.IsUsTenant() ? "lb" : "kg";
+
+        var tokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AgentName"] = agentName ?? string.Empty,
+            ["JobNumber"] = jobData.UcjbNumber ?? string.Empty,
+            ["DeliveryCompany"] = jobData.DeliveryCompany ?? string.Empty,
+            ["DeliveryStreetNumber"] = jobData.DeliveryStreetNumber ?? string.Empty,
+            ["DeliveryStreetName"] = jobData.DeliveryStreetName ?? string.Empty,
+            ["DeliveryCity"] = jobData.DeliveryCity ?? string.Empty,
+            ["InboundUrl"] = inboundUrl,
+            ["FlightNumber"] = finalLeg?.UcnwFlightNo ?? string.Empty,
+            ["FlightETA"] = _infoService.FormatDateForTenant(finalLeg?.UcnwEta) ?? string.Empty,
+            ["FromSuburbCity"] = finalLeg?.DepartureAirportCity ?? string.Empty,
+            ["Quantity"] = jobData.UcjbQty?.ToString() ?? string.Empty,
+            ["Weight"] = jobData.UcjbWeight.HasValue
+                ? $"{jobData.UcjbWeight.Value} {weightUnit}"
+                : string.Empty,
+            ["DeliveryContactName"] = jobData.DeliveryContactName ?? string.Empty,
+            ["DeliveryContactPhone"] = jobData.DeliveryContactPhone ?? string.Empty
+        };
+
+        var subject = AgentEmailTemplates.Substitute(
+            string.IsNullOrWhiteSpace(emailSubject) ? AgentEmailTemplates.DefaultSubject : emailSubject, tokens);
+        var body = AgentEmailTemplates.Substitute(
+            string.IsNullOrWhiteSpace(emailBody) ? AgentEmailTemplates.DefaultBody : emailBody, tokens);
+
+        // The external mailer sends the body as HTML, so render the plain-text template into a
+        // branded, inline-styled fragment; otherwise the newlines collapse onto a single line.
+        var htmlBody = AgentEmailTemplates.RenderHtmlBody(body, inboundUrl);
 
         var request = new TucManualMessage
         {
             JobId = jobId,
             Subject = subject,
-            ReplyToEmailAddress = smppSetting.AgentEmailReplyAddress,
-            UcmmMessage = body,
+            ReplyToEmailAddress = replyToAddress,
+            UcmmMessage = htmlBody,
             UcmmStaffId = staffId,
             SendToEmailAddress = agentEmail
         };
 
-        Context.Add(request);
+        await Context.AddAsync(request);
         await Context.SaveChangesAsync();
     }
 
@@ -490,7 +672,9 @@ public class NationwideJobRepository(
         // First, verify the job exists
         var jobExists = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
         if (!jobExists)
+        {
             throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
+        }
 
         await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -549,7 +733,10 @@ public class NationwideJobRepository(
     {
         var query = Context.TucAgents.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(searchTerm)) query = query.Where(a => a.UcagName.Contains(searchTerm));
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(a => a.UcagName.Contains(searchTerm));
+        }
 
         // 3-way Assign Route picker (HANDOVER-KEVIN-2026-05-26.md):
         //   null  → all agents (existing Nationwide behaviour, untouched)
@@ -579,6 +766,49 @@ public class NationwideJobRepository(
             .Select(nj => nj.WebhookAlertId)
             .Distinct()
             .ToListAsync();
+
+    public async Task<IReadOnlyList<SavedFlightCandidate>> GetSavedFlightCandidatesAsync(IReadOnlyList<int> jobIds)
+    {
+        if (jobIds is null || jobIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await (
+            from j in Context.TucJobs
+            where jobIds.Contains(j.UcjbId) && j.BookingParentId != null
+            join b in Context.TucJobBookings on j.BookingParentId equals b.UcbkId
+            where b.SavedFlightNumber != null && b.SavedFlightNumber != ""
+                                              && b.FromAirportId != null && b.ToAirportId != null
+            select new
+            {
+                JobId = j.UcjbId,
+                b.FromAirportId,
+                b.ToAirportId,
+                b.SavedFlightNumber,
+                j.UcjbDate,
+                j.UcjbTime
+            }).ToListAsync();
+
+        return
+        [
+            .. rows
+                .Select(r => new SavedFlightCandidate
+                {
+                    JobId = r.JobId,
+                    FromAirportId = r.FromAirportId,
+                    ToAirportId = r.ToAirportId,
+                    SavedFlightNumber = r.SavedFlightNumber,
+                    // Wall-clock departure: date column + time-of-day column, zero
+                    // offset so the search keys off the right calendar date.
+                    DepartureDate = new DateTimeOffset(
+                        r.UcjbTime.HasValue
+                            ? r.UcjbDate.Date.Add(r.UcjbTime.Value.TimeOfDay)
+                            : r.UcjbDate,
+                        TimeSpan.Zero)
+                })
+        ];
+    }
 
     public async Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId) =>
         await Context.TucAgents
@@ -635,6 +865,8 @@ public class NationwideJobRepository(
                 VehicleSizeId = j.UcjbSize ?? 0,
                 DangerousGoods = j.Dgdocument ?? false,
                 DryIceWeight = j.DryIceWeight ?? 0,
+                PickupWaitTime = j.WaitedPickUp ?? 0,
+                DeliveryWaitTime = j.WaitedDelivery ?? 0,
                 Ppd = 0
             })
             .FirstOrDefaultAsync();
@@ -755,6 +987,16 @@ public class NationwideJobRepository(
             })
             .ToListAsync();
 
+    public async Task<IReadOnlyList<Suggestion>> GetAllActiveAirportSuggestionsAsync() =>
+        await Context.TblAirports
+            .Where(a => a.Active)
+            .Select(a => new Suggestion
+            {
+                Id = a.AirportId,
+                Text = a.Name
+            })
+            .ToListAsync();
+
     public async Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request)
     {
         var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(request.RecoveryId);
@@ -780,7 +1022,10 @@ public class NationwideJobRepository(
                                  ra.IsPrimary)
                     .ToListAsync();
 
-                foreach (var agent in otherPrimaryAgents) agent.IsPrimary = false;
+                foreach (var agent in otherPrimaryAgents)
+                {
+                    agent.IsPrimary = false;
+                }
 
                 // Also check recovery jobs where the parent job is the main job
                 var childJobPrimaryAgents = await Context.JobRecoveryAgents
@@ -791,7 +1036,10 @@ public class NationwideJobRepository(
                                  ra.IsPrimary)
                     .ToListAsync();
 
-                foreach (var agent in childJobPrimaryAgents) agent.IsPrimary = false;
+                foreach (var agent in childJobPrimaryAgents)
+                {
+                    agent.IsPrimary = false;
+                }
             }
         }
 
@@ -866,7 +1114,9 @@ public class NationwideJobRepository(
             .FirstOrDefaultAsync();
 
         if (cargoData == null)
+        {
             return null;
+        }
 
         // Get the arrival airport timezone, default to tenant timezone if not available
         TimeZoneInfo arrivalTimeZone;
@@ -920,7 +1170,9 @@ public class NationwideJobRepository(
     public async Task<bool> CanAssignAgentToJobAsync(int agentJobId)
     {
         if (Debugger.IsAttached)
+        {
             return true;
+        }
 
         var result = await Context.TucJobs
             .Where(j => j.UcjbId == agentJobId)
@@ -973,25 +1225,47 @@ public class NationwideJobRepository(
             dto.VehicleSizeId,
             dto.DangerousGoods,
             dto.DryIceWeight,
-            dto.WaitTime
+            dto.PickupWaitTime,
+            dto.DeliveryWaitTime,
+            cubicList: null
         );
 
-        return results
-            .Select(r => new FlightRateDto
-            {
-                JobTypeId = r.JobTypeID ?? 0,
-                Name = r.Name ?? string.Empty,
-                Speed = r.Speed ?? string.Empty,
-                Description = r.Description ?? string.Empty,
-                Rate = r.Rate ?? 0,
-                SaleRate = r.SaleRate ?? 0,
-                Availability = r.Availability ?? string.Empty,
-                AvailabilityColour = r.AvailabilityColour ?? string.Empty,
-                BookDate = r.BookDate ?? _clock.TenantNow,
-                Duration = r.Duration,
-                FlightRate = r.FlightRate ?? 0
-            })
-            .ToList();
+        return
+        [
+            .. results
+                .Select(r => new FlightRateDto
+                {
+                    JobTypeId = r.JobTypeID ?? 0,
+                    Name = r.Name ?? string.Empty,
+                    Speed = r.Speed ?? string.Empty,
+                    Description = r.Description ?? string.Empty,
+                    Rate = r.Rate ?? 0,
+                    SaleRate = r.SaleRate ?? 0,
+                    Availability = r.Availability ?? string.Empty,
+                    AvailabilityColour = r.AvailabilityColour ?? string.Empty,
+                    BookDate = r.BookDate ?? _clock.TenantNow,
+                    Duration = r.Duration,
+                    FlightRate = r.FlightRate ?? 0
+                })
+        ];
+    }
+
+    private async Task<AgentInboundEmailResult> EvaluateAgentInboundEmailAsync(int agentId, int jobId)
+    {
+        var agentEmail = await Context.TucAgents
+            .Where(a => a.UcagId == agentId)
+            .Select(a => a.UcagFax)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrWhiteSpace(agentEmail))
+        {
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoAgentEmail, null);
+        }
+
+        var link = await inboundAgentLinkService.BuildJobLinkAsync(jobId);
+        return string.IsNullOrWhiteSpace(link)
+            ? new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail)
+            : new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail);
     }
 
     private static void UpdateFlightJobStatus(TucJob job, FlightSegmentViewModel primaryFlight)
@@ -1230,7 +1504,11 @@ public class NationwideJobRepository(
         await Context.AddAsync(primaryFlightRecord);
 
         // Add connection flight legs if there are multiple segments
-        if (segments.Count <= 1) return primaryFlightRecord;
+        if (segments.Count <= 1)
+        {
+            return primaryFlightRecord;
+        }
+
         Log.Information("Processing {ConnectionCount} connection flights for PrimaryFlight: {PrimaryFlightNumber}",
             segments.Count - 1, primaryFlightNumber);
 
@@ -1263,8 +1541,15 @@ public class NationwideJobRepository(
         var lookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var tz in timeZones)
         {
-            if (!string.IsNullOrEmpty(tz.Name)) lookup.TryAdd(tz.Name, tz.Id);
-            if (!string.IsNullOrEmpty(tz.Code)) lookup.TryAdd(tz.Code, tz.Id);
+            if (!string.IsNullOrEmpty(tz.Name))
+            {
+                lookup.TryAdd(tz.Name, tz.Id);
+            }
+
+            if (!string.IsNullOrEmpty(tz.Code))
+            {
+                lookup.TryAdd(tz.Code, tz.Id);
+            }
         }
 
         return lookup;
@@ -1292,6 +1577,8 @@ public class NationwideJobRepository(
 
     private async Task<NationwideJobDetail> GetJobDetailsAsync(int jobId)
     {
+        var cubicList = await GetCubicListAsync(jobId);
+
         // Single query to get all job details including airport IDs
         var jobDetail = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -1319,19 +1606,30 @@ public class NationwideJobRepository(
                 ToState = j.DeliveryAddressLine5,
                 TotalPallets = null,
                 ExtraStopOffs = true,
-                WaitTime = null,
-                Cubic = null
+                PickupWaitTime = j.WaitedPickUp ?? 0,
+                DeliveryWaitTime = j.WaitedDelivery ?? 0,
+                Cubic = null,
+                CubicList = cubicList
             })
             .FirstOrDefaultAsync();
 
-        if (jobDetail == null) return null;
+        if (jobDetail == null)
+        {
+            return null;
+        }
 
         // If airport already assigned, return immediately
-        if (jobDetail.AirPortId != null) return jobDetail;
+        if (jobDetail.AirPortId != null)
+        {
+            return jobDetail;
+        }
 
         // Otherwise try to find nearest airport
         var nearbyAirports = await GetNearbyAirportsAsync(jobId);
-        if (nearbyAirports.Count == 0) return jobDetail;
+        if (nearbyAirports.Count == 0)
+        {
+            return jobDetail;
+        }
 
         var nearestAirportId = nearbyAirports[0].Id;
         Log.Information("Using nearest airport {AirportId} for job {JobId}", nearestAirportId, jobId);
@@ -1354,8 +1652,10 @@ public class NationwideJobRepository(
             ToState = jobDetail.ToState,
             TotalPallets = jobDetail.TotalPallets,
             ExtraStopOffs = jobDetail.ExtraStopOffs,
-            WaitTime = jobDetail.WaitTime,
-            Cubic = jobDetail.Cubic
+            PickupWaitTime = jobDetail.PickupWaitTime,
+            DeliveryWaitTime = jobDetail.DeliveryWaitTime,
+            Cubic = jobDetail.Cubic,
+            CubicList = jobDetail.CubicList
         };
     }
 
@@ -1400,7 +1700,7 @@ public class NationwideJobRepository(
                 }
             });
 
-        return agentResults.ToList();
+        return [.. agentResults];
     }
 
     private static async Task<decimal?> GetAgentRateAsync(DespatchContext context,
@@ -1422,44 +1722,16 @@ public class NationwideJobRepository(
             nationwideJob.VehicleSizeId,
             nationwideJob.DangerousGoods,
             nationwideJob.DryIceWeight,
-            nationwideJob.WaitTime,
+            nationwideJob.PickupWaitTime,
+            nationwideJob.DeliveryWaitTime,
             agent.AgentVehicleId,
+            nationwideJob.CubicList,
             cancellationToken: ct
         );
 
         return rates
             .Select(r => r.Rate)
             .FirstOrDefault();
-    }
-
-    private static string FormatDelimMessage<T>(string format, string startDelim, string endDelim, T data)
-    {
-        var message = string.Empty;
-        while (!string.IsNullOrEmpty(format) && format.Length > 0)
-        {
-            var c = format[..1];
-            format = format[1..];
-
-            if (c == startDelim)
-            {
-                var endDelimIndex = format.IndexOf(endDelim, StringComparison.Ordinal);
-                var fieldName = format[..endDelimIndex];
-                format = format[(endDelimIndex + 1)..];
-
-                var props = typeof(T).GetRuntimeProperties();
-                var p = props.First(x => string.Equals(x.Name, fieldName, StringComparison.CurrentCultureIgnoreCase));
-
-                message += p.GetValue(data)?.ToString();
-            }
-            else
-            {
-                message += c;
-            }
-        }
-
-        message = message.Replace("  ", " ");
-        message = message.Trim();
-        return message;
     }
 
     private async Task<int> GetAirportProcessingTimeAsync(int airportId) =>

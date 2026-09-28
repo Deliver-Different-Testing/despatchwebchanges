@@ -1,9 +1,10 @@
 /**
- * JobFieldsSection - Material Design list-based layout matching AngularJS md-list pattern
+ * JobFieldsSection - Material 3 elevated cards laid out in a 60/40 column split.
  *
  * Left column (60%):
  *   - Package Details + Additional Info (side by side 50/50)
- *   - Delivery Details + Truck Options (side by side 50/50)
+ *   - Delivery Details
+ *   - Tracking
  *
  * Right column (40%):
  *   - Booked By
@@ -12,38 +13,15 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
-import List from '@mui/material/List';
-import Collapse from '@mui/material/Collapse';
-import IconButton from '@mui/material/IconButton';
-import type {SvgIconProps} from '@mui/material/SvgIcon';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import DescriptionIcon from '@mui/icons-material/Description';
-import TrackChangesIcon from '@mui/icons-material/TrackChanges';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
-import BusinessIcon from '@mui/icons-material/Business';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import Tooltip from '@mui/material/Tooltip';
+import {ActionIcon, Box, Collapse, Flex, Paper, Stack, Tooltip} from '@mantine/core';
+import {Briefcase, Building2, Eye, EyeOff, FileText, Target, User} from 'lucide-react';
+import {IconPackage, IconTruck} from '@tabler/icons-react';
+import {Icon} from '../../icon/Icon';
 import {EditableField} from './EditableField';
+import {SectionHeader} from './SectionHeader';
 import type {IJob} from '../JobDetails.types';
 import {getTrackingMethodText} from '../JobDetails.types';
-import {
-    cardContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
-    sectionBorderSx,
-    getSectionToolbarSx,
-} from '../JobDetails.styles';
-
-const leftColumnSx = {...cardContainerSx as object, flex: 3, minWidth: 0};
-const rightColumnSx = {...cardContainerSx as object, flex: 2, minWidth: 0};
-const packageRowSx = {display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, ...sectionBorderSx as object};
+import {cardContainerProps} from '../JobDetails.styles';
 
 interface JobFieldsSectionProps {
     job: IJob;
@@ -72,170 +50,186 @@ interface JobFieldsSectionProps {
     onInActiveByClick: () => void;
 }
 
-function SectionToolbar({
-                            title,
-                            icon: IconComponent,
-                            isEditMode,
-                            sectionKey,
-                            isVisible,
-                            onToggleVisibility,
-                            dense,
-                        }: {
-    title: string;
-    icon: React.ComponentType<SvgIconProps>;
-    isEditMode?: boolean;
-    sectionKey?: string;
-    isVisible?: boolean;
-    onToggleVisibility?: (key: string) => void;
-    dense?: boolean;
-}) {
-    const handleClick = React.useCallback(() => {
-        if (sectionKey && onToggleVisibility) onToggleVisibility(sectionKey);
-    }, [sectionKey, onToggleVisibility]);
+/** A card that stretches to fill its share of a row. */
+const cardFillStyle: React.CSSProperties = {
+    ...cardContainerProps.style,
+    flex: 1,
+    minWidth: 0,
+};
 
+/** Edit-mode visibility toggle for the section header endAction slot. */
+function VisibilityToggle({
+    sectionKey,
+    isVisible,
+    onToggleVisibility,
+}: {
+    sectionKey: string;
+    isVisible: boolean;
+    onToggleVisibility: (key: string) => void;
+}) {
+    const label = isVisible ? 'Hide section' : 'Show section';
     return (
-        <Box sx={dense ? getSectionToolbarSx(true) : sectionToolbarSx}>
-            <IconComponent sx={sectionToolbarIconSx}/>
-            <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                {title}
-            </Typography>
-            <Box sx={{flex: 1}}/>
-            {isEditMode && sectionKey && onToggleVisibility && (
-                <IconButton size="small" onClick={handleClick}>
-                    {isVisible ? <VisibilityIcon sx={{fontSize: 18}}/> : <VisibilityOffIcon sx={{fontSize: 18}}/>}
-                </IconButton>
-            )}
-        </Box>
+        <Tooltip label={label}>
+            <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                aria-label={label}
+                onClick={() => onToggleVisibility(sectionKey)}
+            >
+                <Icon lucide={isVisible ? Eye : EyeOff} size={18}/>
+            </ActionIcon>
+        </Tooltip>
     );
 }
 
 export const JobFieldsSection = React.memo(({
-                                                job,
-                                                dense,
-                                                isUsCustomer,
-                                                isEditMode,
-                                                isFieldVisible,
-                                                onToggleField,
-                                                onSpeedClick,
-                                                onJobTypeClick,
-                                                onSizeClick,
-                                                onEditRefA,
-                                                onEditRefB,
-                                                onEditOurRef,
-                                                onEditConNote,
-                                                onDgClassClick,
-                                                onLeaveClick,
-                                                onTrackingMethodClick,
-                                                onEditTrackingMobile,
-                                                onEditTrackingEmail,
-                                                onCourierClick,
-                                                onContactClick,
-                                                onClientClick,
-                                                onEditCustomJobName,
-                                                onEditDimensions,
-                                                onInActiveByClick,
-                                            }: JobFieldsSectionProps) => {
+    job,
+    dense,
+    isUsCustomer,
+    isEditMode,
+    isFieldVisible,
+    onToggleField,
+    onSpeedClick,
+    onJobTypeClick,
+    onSizeClick,
+    onEditRefA,
+    onEditRefB,
+    onEditOurRef,
+    onEditConNote,
+    onDgClassClick,
+    onLeaveClick,
+    onTrackingMethodClick,
+    onEditTrackingMobile,
+    onEditTrackingEmail,
+    onCourierClick,
+    onContactClick,
+    onClientClick,
+    onEditCustomJobName,
+    onEditDimensions,
+    onInActiveByClick,
+}: JobFieldsSectionProps) => {
     const locked = !!job.locked;
 
     const hasDgDocs = job.dgClass
         ? ((job.dgClass || 0) === 1 || job.dgDocumentation ? 'Yes' : 'No')
         : '';
 
+    const editEndAction = (key: string) => (
+        isEditMode ? (
+            <VisibilityToggle
+                sectionKey={key}
+                isVisible={isFieldVisible(key)}
+                onToggleVisibility={onToggleField}
+            />
+        ) : undefined
+    );
+
     return (
-        <Box sx={{display: 'flex', gap: 2, flexDirection: {xs: 'column', md: 'row'}}}>
+        <Flex gap="sm" direction={{base: 'column', md: 'row'}}>
             {/* Left Column - 60% */}
-            <Box sx={leftColumnSx}>
-                    {/* Package Details + Additional Info - side by side */}
-                    <Box sx={packageRowSx}>
-                        {/* Package Details */}
-                        <Box sx={{flex: 1, minWidth: 0}}>
-                            <SectionToolbar title="Package Details" icon={Inventory2Icon} dense={dense}
-                                isEditMode={isEditMode} sectionKey="packageDetails"
-                                isVisible={isFieldVisible('packageDetails')}
-                                onToggleVisibility={onToggleField}
-                            />
-                            <Collapse in={isFieldVisible('packageDetails')} unmountOnExit>
-                            <List dense disablePadding>
-                                <EditableField
-                                    icon="straighten" label="Dimensions"
-                                    value={(() => {
-                                        const count = job.parcelDimensions?.length;
-                                        const weight = job.weight;
-                                        const parts: string[] = [];
-                                        if (count) parts.push(`${count} parcel${count !== 1 ? 's' : ''}`);
-                                        if (weight != null) parts.push(`${weight} ${isUsCustomer ? 'lbs' : 'kg'}`);
-                                        return parts.length ? parts.join(' \u00b7 ') : '\u2014';
-                                    })()}
-                                    onClick={onEditDimensions} disabled={locked}
-                                    dense={dense} isEditMode={isEditMode}
-                                    isVisible={isFieldVisible('dimensions')}
-                                    onToggleVisibility={onToggleField} fieldKey="dimensions"
-                                    endAdornment={job.calculateDimsOncePerJob ?
-                                        <Tooltip title="Dimensions calculated once per job">
-                                            <Box data-testid="calc-once-indicator" sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main', ml: 1, flexShrink: 0}} />
-                                        </Tooltip> : undefined}
-                                />
-                                <EditableField
-                                    icon="qr_code" label="Barcode" value={job.barcode}
-                                    dense={dense} isEditMode={isEditMode}
-                                    isVisible={isFieldVisible('dimensions')}
-                                    onToggleVisibility={onToggleField} fieldKey="dimensions"
-                                />
-                            </List>
-                            </Collapse>
-                        </Box>
-
-                        <Divider orientation="vertical" flexItem sx={{display: {xs: 'none', sm: 'block'}}}/>
-                        <Divider sx={{display: {xs: 'block', sm: 'none'}}}/>
-
-                        {/* Additional Info */}
-                        <Box sx={{flex: 1, minWidth: 0}}>
-                            <SectionToolbar title="Additional Info" icon={DescriptionIcon} dense={dense}
-                                isEditMode={isEditMode} sectionKey="additionalInfo"
-                                isVisible={isFieldVisible('additionalInfo')}
-                                onToggleVisibility={onToggleField}
-                            />
-                            <Collapse in={isFieldVisible('additionalInfo')} unmountOnExit>
-                            <List dense disablePadding>
-                                <EditableField
-                                    icon="warning" label="DG Class"
-                                    value={job.dgClass ? `Class ${job.dgClass}` : undefined}
-                                    onClick={onDgClassClick} disabled={locked}
-                                    dense={dense} isEditMode={isEditMode}
-                                    isVisible={isFieldVisible('dgDocs')}
-                                    onToggleVisibility={onToggleField} fieldKey="dgDocs"
-                                />
-                                {job.dgClass && (
-                                    <EditableField
-                                        icon="description" label="DG Docs" value={hasDgDocs}
-                                        dense={dense}
-                                    />
-                                )}
-                                <EditableField
-                                    icon="package_2" label="Leave Parcel"
-                                    value={job.sigNotRequired || 'Signature Required'}
-                                    onClick={onLeaveClick} disabled={locked}
-                                    dense={dense} isEditMode={isEditMode}
-                                    isVisible={isFieldVisible('leaveParcel')}
-                                    onToggleVisibility={onToggleField} fieldKey="leaveParcel"
-                                />
-                            </List>
-                            </Collapse>
-                        </Box>
-                    </Box>
-
-                    {/* Delivery Details */}
-                    {(isEditMode || isFieldVisible('deliveryDetails')) && (
-                    <Box sx={sectionBorderSx}>
-                        <SectionToolbar
-                            title="Delivery Details" icon={LocalShippingIcon}
-                            isEditMode={isEditMode} sectionKey="deliveryDetails"
-                            isVisible={isFieldVisible('deliveryDetails')}
-                            onToggleVisibility={onToggleField}
+            <Stack gap="sm" style={{flex: 3, minWidth: 0}}>
+                {/* Package Details + Additional Info — side by side */}
+                <Flex gap="sm" direction={{base: 'column', sm: 'row'}}>
+                    <Paper {...cardContainerProps} style={cardFillStyle}>
+                        <SectionHeader
+                            tabler={IconPackage}
+                            title="Package Details"
                             dense={dense}
+                            endAction={editEndAction('packageDetails')}
                         />
-                        <Collapse in={isFieldVisible('deliveryDetails')} unmountOnExit>
-                        <List dense disablePadding>
+                        <Collapse expanded={isFieldVisible('packageDetails')} keepMounted={false}>
+                            <EditableField
+                                icon="straighten" label="Quantity"
+                                value={(() => {
+                                    const pallets = job.palletInfo ?? [];
+                                    const palletQty = pallets.reduce((sum, p) => sum + (p.quantity || 0), 0);
+                                    const count = palletQty || job.parcelDimensions?.length || 0;
+                                    const weight = job.weight;
+                                    // Cube total from the same source the count prefers (pallets first,
+                                    // then parcels). Pallet cubic is per-unit (× quantity); parcel cubic
+                                    // is already stored per-barcode, so a plain sum reconstructs the total.
+                                    const cube = palletQty
+                                        ? pallets.reduce((sum, p) => sum + (p.cubic || 0) * (p.quantity || 1), 0)
+                                        : (job.parcelDimensions ?? []).reduce((sum, p) => sum + (p.cubic || 0), 0);
+                                    const parts: string[] = [];
+                                    if (count) parts.push(`${count} parcel${count !== 1 ? 's' : ''}`);
+                                    if (weight != null) parts.push(`${weight} ${isUsCustomer ? 'lbs' : 'kg'}`);
+                                    if (cube > 0) parts.push(`${cube.toFixed(3)} ${isUsCustomer ? 'ft³' : 'm³'}`);
+                                    return parts.length ? parts.join(' · ') : '—';
+                                })()}
+                                onClick={onEditDimensions}
+                                dense={dense} isEditMode={isEditMode}
+                                isVisible={isFieldVisible('dimensions')}
+                                onToggleVisibility={onToggleField} fieldKey="dimensions"
+                                endAdornment={job.calculateDimsOncePerJob ?
+                                    <Tooltip label="Dimensions calculated once per job">
+                                        <Box
+                                            data-testid="calc-once-indicator"
+                                            ml="xs"
+                                            style={{
+                                                width: 8,
+                                                height: 8,
+                                                borderRadius: '50%',
+                                                backgroundColor: 'var(--mantine-color-green-5)',
+                                                flexShrink: 0,
+                                            }}
+                                        />
+                                    </Tooltip> : undefined}
+                            />
+                            <EditableField
+                                icon="qr_code" label="Barcode" value={job.barcode}
+                                dense={dense} isEditMode={isEditMode}
+                                isVisible={isFieldVisible('dimensions')}
+                                onToggleVisibility={onToggleField} fieldKey="dimensions"
+                            />
+                        </Collapse>
+                    </Paper>
+
+                    <Paper {...cardContainerProps} style={cardFillStyle}>
+                        <SectionHeader
+                            lucide={FileText}
+                            title="Additional Info"
+                            dense={dense}
+                            endAction={editEndAction('additionalInfo')}
+                        />
+                        <Collapse expanded={isFieldVisible('additionalInfo')} keepMounted={false}>
+                            <EditableField
+                                icon="warning" label="DG Class"
+                                value={job.dgClass ? `Class ${job.dgClass}` : undefined}
+                                onClick={onDgClassClick} disabled={locked}
+                                dense={dense} isEditMode={isEditMode}
+                                isVisible={isFieldVisible('dgDocs')}
+                                onToggleVisibility={onToggleField} fieldKey="dgDocs"
+                            />
+                            {job.dgClass && (
+                                <EditableField
+                                    icon="description" label="DG Docs" value={hasDgDocs}
+                                    dense={dense}
+                                />
+                            )}
+                            <EditableField
+                                icon="package_2" label="Leave Parcel"
+                                value={job.sigNotRequired || 'Signature Required'}
+                                onClick={onLeaveClick} disabled={locked}
+                                dense={dense} isEditMode={isEditMode}
+                                isVisible={isFieldVisible('leaveParcel')}
+                                onToggleVisibility={onToggleField} fieldKey="leaveParcel"
+                            />
+                        </Collapse>
+                    </Paper>
+                </Flex>
+
+                {/* Delivery Details */}
+                {(isEditMode || isFieldVisible('deliveryDetails')) && (
+                    <Paper {...cardContainerProps}>
+                        <SectionHeader
+                            tabler={IconTruck}
+                            title="Delivery Details"
+                            dense={dense}
+                            endAction={editEndAction('deliveryDetails')}
+                        />
+                        <Collapse expanded={isFieldVisible('deliveryDetails')} keepMounted={false}>
                             <EditableField
                                 icon="person" label="Dispatcher" value={job.dispatcherName}
                                 dense={dense} isEditMode={isEditMode}
@@ -250,6 +244,12 @@ export const JobFieldsSection = React.memo(({
                                 onToggleVisibility={onToggleField} fieldKey="courierName"
                             />
                             <EditableField
+                                icon="badge" label="Courier Number" value={job.courierData?.courierNumber}
+                                dense={dense} isEditMode={isEditMode}
+                                isVisible={isFieldVisible('courierNumber')}
+                                onToggleVisibility={onToggleField} fieldKey="courierNumber"
+                            />
+                            <EditableField
                                 icon="phone_android" label="Courier Mobile" value={job.courierData?.courierMobile}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('courierMobile')}
@@ -261,21 +261,20 @@ export const JobFieldsSection = React.memo(({
                                 isVisible={isFieldVisible('scheduleName')}
                                 onToggleVisibility={onToggleField} fieldKey="scheduleName"
                             />
-                        </List>
                         </Collapse>
-                    </Box>
-                    )}
+                    </Paper>
+                )}
 
-                    {/* Tracking */}
-                    {(isEditMode || isFieldVisible('trackingSection')) && (
-                    <Box sx={sectionBorderSx}>
-                        <SectionToolbar title="Tracking" icon={TrackChangesIcon} dense={dense}
-                            isEditMode={isEditMode} sectionKey="trackingSection"
-                            isVisible={isFieldVisible('trackingSection')}
-                            onToggleVisibility={onToggleField}
+                {/* Tracking */}
+                {(isEditMode || isFieldVisible('trackingSection')) && (
+                    <Paper {...cardContainerProps}>
+                        <SectionHeader
+                            lucide={Target}
+                            title="Tracking"
+                            dense={dense}
+                            endAction={editEndAction('trackingSection')}
                         />
-                        <Collapse in={isFieldVisible('trackingSection')} unmountOnExit>
-                        <List dense disablePadding>
+                        <Collapse expanded={isFieldVisible('trackingSection')} keepMounted={false}>
                             <EditableField
                                 icon="notifications" label="Method" value={getTrackingMethodText(job.trackingMethod)}
                                 onClick={onTrackingMethodClick} disabled={locked}
@@ -297,26 +296,23 @@ export const JobFieldsSection = React.memo(({
                                 isVisible={isFieldVisible('email')}
                                 onToggleVisibility={onToggleField} fieldKey="email"
                             />
-                        </List>
                         </Collapse>
-                    </Box>
-                    )}
-            </Box>
+                    </Paper>
+                )}
+            </Stack>
 
             {/* Right Column - 40% */}
-            <Box sx={rightColumnSx}>
-                    {/* Booked By */}
-                    {(isEditMode || isFieldVisible('bookedBy')) && (
-                    <Box>
-                        <SectionToolbar
-                            title="Booked By" icon={PersonOutlineIcon}
-                            isEditMode={isEditMode} sectionKey="bookedBy"
-                            isVisible={isFieldVisible('bookedBy')}
-                            onToggleVisibility={onToggleField}
+            <Stack gap="sm" style={{flex: 2, minWidth: 0}}>
+                {/* Booked By */}
+                {(isEditMode || isFieldVisible('bookedBy')) && (
+                    <Paper {...cardContainerProps}>
+                        <SectionHeader
+                            lucide={User}
+                            title="Booked By"
                             dense={dense}
+                            endAction={editEndAction('bookedBy')}
                         />
-                        <Collapse in={isFieldVisible('bookedBy')} unmountOnExit>
-                        <List dense disablePadding>
+                        <Collapse expanded={isFieldVisible('bookedBy')} keepMounted={false}>
                             <EditableField
                                 icon="account_circle" label="Logged In" value={job.loggedInContactName}
                                 dense={dense} isEditMode={isEditMode}
@@ -342,25 +338,20 @@ export const JobFieldsSection = React.memo(({
                                 isVisible={isFieldVisible('fromContactNumber')}
                                 onToggleVisibility={onToggleField} fieldKey="fromContactNumber"
                             />
-                        </List>
                         </Collapse>
-                    </Box>
-                    )}
+                    </Paper>
+                )}
 
-                    <Divider/>
-
-                    {/* Job Details */}
-                    {(isEditMode || isFieldVisible('jobDetails')) && (
-                    <Box>
-                        <SectionToolbar
-                            title="Job Details" icon={WorkOutlineIcon}
-                            isEditMode={isEditMode} sectionKey="jobDetails"
-                            isVisible={isFieldVisible('jobDetails')}
-                            onToggleVisibility={onToggleField}
+                {/* Job Details */}
+                {(isEditMode || isFieldVisible('jobDetails')) && (
+                    <Paper {...cardContainerProps}>
+                        <SectionHeader
+                            lucide={Briefcase}
+                            title="Job Details"
                             dense={dense}
+                            endAction={editEndAction('jobDetails')}
                         />
-                        <Collapse in={isFieldVisible('jobDetails')} unmountOnExit>
-                        <List dense disablePadding>
+                        <Collapse expanded={isFieldVisible('jobDetails')} keepMounted={false}>
                             <EditableField
                                 icon="label" label="Job Name" value={job.customJobName}
                                 onClick={onEditCustomJobName} disabled={locked}
@@ -421,34 +412,29 @@ export const JobFieldsSection = React.memo(({
                                 isVisible={isFieldVisible('conNote')}
                                 onToggleVisibility={onToggleField} fieldKey="conNote"
                             />
-                        </List>
                         </Collapse>
-                    </Box>
+                    </Paper>
+                )}
+
+                {/* Client */}
+                <Paper {...cardContainerProps}>
+                    <SectionHeader lucide={Building2} title="Client" dense={dense}/>
+                    <EditableField
+                        icon="business" label="Client" value={job.clientName}
+                        onClick={onClientClick} disabled={locked}
+                        dense={dense} isEditMode={isEditMode}
+                        isVisible={isFieldVisible('client')}
+                        onToggleVisibility={onToggleField} fieldKey="client"
+                    />
+                    {job.inActiveBy && (
+                        <EditableField
+                            icon="person_off" label="InActive By" value={job.inActiveBy?.text}
+                            onClick={onInActiveByClick} disabled={locked}
+                            dense={dense}
+                        />
                     )}
-
-                    <Divider/>
-
-                    {/* Client */}
-                    <Box>
-                        <SectionToolbar title="Client" icon={BusinessIcon} dense={dense}/>
-                        <List dense disablePadding>
-                            <EditableField
-                                icon="business" label="Client" value={job.clientName}
-                                onClick={onClientClick} disabled={locked}
-                                dense={dense} isEditMode={isEditMode}
-                                isVisible={isFieldVisible('client')}
-                                onToggleVisibility={onToggleField} fieldKey="client"
-                            />
-                            {job.inActiveBy && (
-                                <EditableField
-                                    icon="person_off" label="InActive By" value={job.inActiveBy?.text}
-                                    onClick={onInActiveByClick} disabled={locked}
-                                    dense={dense}
-                                />
-                            )}
-                        </List>
-                    </Box>
-            </Box>
-        </Box>
+                </Paper>
+            </Stack>
+        </Flex>
     );
 });

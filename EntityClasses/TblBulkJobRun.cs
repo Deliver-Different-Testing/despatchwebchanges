@@ -15,6 +15,10 @@ public partial class TblBulkJobRun
 
     public int? PickRunOrder { get; set; }
 
+    public bool IsStart { get; set; }
+
+    public bool IsEnd { get; set; }
+
     public virtual TblBulkJob BulkJob { get; set; }
 
     public virtual TblBulkRun Run { get; set; }

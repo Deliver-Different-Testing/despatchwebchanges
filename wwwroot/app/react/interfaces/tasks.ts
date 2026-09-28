@@ -11,7 +11,7 @@ export interface TaskAssignee {
     text: string;
 }
 
-export interface Task {
+interface Task {
     id: number;
     title: string;
     description: string;
@@ -21,10 +21,15 @@ export interface Task {
     jobId: number;
     eventType: string;
     jobNumber: string;
+    courierCode?: string;
+    courierName?: string;
+    clientCode?: string;
     priority?: 'high' | 'medium' | 'low';
     _dueDateString?: string;
     _dueTimeString?: string;
 }
+
+export default Task
 
 export interface TaskFiltersRequest {
     searchText?: string;
@@ -38,6 +43,8 @@ export interface TaskFiltersRequest {
     showCompleted?: boolean;
     courierId?: number;
     jobId?: number;
+    /** Row cap. Omitted, the server falls back to its own default (500). */
+    limit?: number;
 }
 
 export interface StaffSuggestion {
@@ -70,6 +77,10 @@ export interface TaskAssignStaffRequest {
     staffId: number;
 }
 
+export interface TaskUnassignRequest {
+    eventId: number;
+}
+
 export interface TaskApiResponse {
     id: number;
     title: string;
@@ -80,6 +91,9 @@ export interface TaskApiResponse {
     jobId: number;
     eventType: string;
     jobNumber: string;
+    courierCode?: string;
+    courierName?: string;
+    clientCode?: string;
     priority?: 'high' | 'medium' | 'low';
 }
 

@@ -3,21 +3,35 @@
  *
  * A fullscreen photo viewer for POD (Proof of Delivery) photos.
  * Displays photos with navigation controls, indicator dots, and metadata.
+ *
+ * This is a lightbox rather than a design-language dialog, so it deliberately
+ * does not use `DialogShell`: the modal content is transparent and full-bleed,
+ * and the chrome is white-on-black scrim rather than a brand fill.
  */
 
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
-import {alpha} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import IconButton from '@mui/material/IconButton';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import CloseIcon from '@mui/icons-material/Close';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import {ActionIcon, Box, Group, Image, Modal, Text, alpha} from '@mantine/core';
+import {useWindowEvent} from '@mantine/hooks';
+import {ChevronLeft, ChevronRight, X} from 'lucide-react';
+import {Icon} from '../icon/Icon';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {PodPhotoViewerProps, PodPhoto} from "./pod-photo-viewer.types";
 
 export type {PodPhoto};
+
+const WHITE = 'var(--mantine-color-white)';
+const scrim = (opacity: number) => alpha('var(--mantine-color-black)', opacity);
+
+const navButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    backgroundColor: scrim(0.5),
+    color: WHITE,
+    borderRadius: '50%',
+    width: 40,
+    height: 40,
+};
 
 export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
     photos,
@@ -55,57 +69,49 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
         setCurrentIndex(index);
     }, []);
 
-    // Handle keyboard navigation
-    useEffect(() => {
+    /*
+     * Keyboard navigation. `useWindowEvent`, not `useHotkeys`: the latter binds
+     * to `document`, and a keydown dispatched on `window` never reaches a
+     * document listener — which is exactly how this viewer is driven and tested.
+     */
+    useWindowEvent('keydown', (event: KeyboardEvent) => {
         if (!isOpen) return;
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            switch (event.key) {
-                case 'ArrowLeft':
-                    prevPhoto();
-                    break;
-                case 'ArrowRight':
-                    nextPhoto();
-                    break;
-                case 'Escape':
-                    onClose();
-                    break;
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, nextPhoto, prevPhoto, onClose]);
+        switch (event.key) {
+            case 'ArrowLeft':
+                prevPhoto();
+                break;
+            case 'ArrowRight':
+                nextPhoto();
+                break;
+            case 'Escape':
+                onClose();
+                break;
+        }
+    });
 
     if (!currentPhoto) return null;
 
     return (
-        <Dialog
-            open={isOpen}
+        <Modal
+            opened={isOpen}
             onClose={onClose}
-            maxWidth={false}
-            fullWidth
-            slotProps={{
-                paper: {
-                    sx: {
-                        backgroundColor: 'transparent',
-                        boxShadow: 'none',
-                        maxWidth: '100vw',
-                        maxHeight: '100vh',
-                        margin: 0,
-                        width: '100%',
-                        height: '100%',
-                    },
-                },
-                backdrop: {
-                    sx: (theme) => ({
-                        backgroundColor: alpha(theme.palette.common.black, 0.8),
-                    }),
-                },
+            fullScreen
+            withCloseButton={false}
+            padding={0}
+            /*
+             * Escape is owned by the keydown handler above. Mantine closes on
+             * Escape via its own listener that does not stop propagation, so
+             * leaving it on would fire onClose twice for one key press.
+             */
+            closeOnEscape={false}
+            overlayProps={{backgroundOpacity: 0.8, color: 'var(--mantine-color-black)'}}
+            styles={{
+                content: {backgroundColor: 'transparent', boxShadow: 'none'},
+                body: {padding: 0, height: '100%'},
             }}
         >
             <Box
-                sx={{
+                style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -114,177 +120,92 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                     position: 'relative',
                 }}
             >
-                <Box
-                    sx={{
-                        position: 'relative',
-                        width: '100%',
-                        maxWidth: 800,
-                        mx: 2,
-                    }}
-                >
+                <Box style={{position: 'relative', width: '100%', maxWidth: 800, marginInline: 'var(--mantine-spacing-md)'}}>
                     {/* Close Button */}
-                    <IconButton
+                    <ActionIcon
+                        variant="transparent"
                         onClick={onClose}
                         aria-label="Close photo viewer"
-                        sx={(theme) => ({
-                            position: 'absolute',
-                            top: -48,
-                            right: 0,
-                            color: 'white',
-                            backgroundColor: 'transparent',
-                            zIndex: 2,
-                            '&:hover': {
-                                backgroundColor: alpha(theme.palette.common.white, 0.1),
-                            },
-                        })}
+                        style={{position: 'absolute', top: -48, right: 0, color: WHITE, zIndex: 2}}
                     >
-                        <CloseIcon sx={{fontSize: 24}} />
-                    </IconButton>
+                        <Icon lucide={X} size={24}/>
+                    </ActionIcon>
 
                     {/* Photo Container */}
-                    <Box
-                        sx={{
-                            position: 'relative',
-                            width: '100%',
-                        }}
-                    >
-                        <Box
-                            component="img"
+                    <Box style={{position: 'relative', width: '100%'}}>
+                        <Image
                             src={currentPhoto.url}
                             alt={`POD ${currentIndex + 1}`}
-                            sx={{
-                                width: '100%',
-                                height: 'auto',
-                                borderRadius: 1,
-                                display: 'block',
-                            }}
+                            radius="sm"
+                            w="100%"
+                            h="auto"
                         />
 
                         {/* Previous Button */}
-                        <IconButton
+                        <ActionIcon
+                            variant="transparent"
                             onClick={prevPhoto}
                             aria-label="Previous photo"
-                            sx={(theme) => ({
-                                position: 'absolute',
-                                left: 16,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                backgroundColor: alpha(theme.palette.common.black, 0.5),
-                                color: 'white',
-                                borderRadius: '50%',
-                                width: 40,
-                                height: 40,
-                                '&:hover': {
-                                    backgroundColor: alpha(theme.palette.common.black, 0.75),
-                                },
-                            })}
+                            style={{...navButtonStyle, left: 16}}
                         >
-                            <ChevronLeftIcon sx={{fontSize: 24}} />
-                        </IconButton>
+                            <Icon lucide={ChevronLeft} size={24}/>
+                        </ActionIcon>
 
                         {/* Next Button */}
-                        <IconButton
+                        <ActionIcon
+                            variant="transparent"
                             onClick={nextPhoto}
                             aria-label="Next photo"
-                            sx={(theme) => ({
-                                position: 'absolute',
-                                right: 16,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                backgroundColor: alpha(theme.palette.common.black, 0.5),
-                                color: 'white',
-                                borderRadius: '50%',
-                                width: 40,
-                                height: 40,
-                                '&:hover': {
-                                    backgroundColor: alpha(theme.palette.common.black, 0.75),
-                                },
-                            })}
+                            style={{...navButtonStyle, right: 16}}
                         >
-                            <ChevronRightIcon sx={{fontSize: 24}} />
-                        </IconButton>
+                            <Icon lucide={ChevronRight} size={24}/>
+                        </ActionIcon>
                     </Box>
 
                     {/* Indicator Dots */}
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            mt: 2,
-                            gap: 1,
-                        }}
-                    >
+                    <Group justify="center" gap="xs" mt="md" wrap="nowrap">
                         {photos.map((_, index) => (
-                            <Box
+                            <button
                                 key={index}
-                                component="button"
+                                type="button"
                                 onClick={() => setPhotoIndex(index)}
                                 aria-label={`Go to photo ${index + 1}`}
-                                sx={(theme) => ({
+                                aria-current={currentIndex === index || undefined}
+                                style={{
                                     width: 8,
                                     height: 8,
                                     borderRadius: '50%',
-                                    backgroundColor: currentIndex === index
-                                        ? 'white'
-                                        : alpha(theme.palette.common.white, 0.5),
+                                    backgroundColor: currentIndex === index ? WHITE : alpha(WHITE, 0.5),
                                     border: 'none',
                                     padding: 0,
                                     cursor: 'pointer',
                                     transition: 'background-color 0.2s',
-                                    '&:hover': {
-                                        backgroundColor: currentIndex === index
-                                            ? 'white'
-                                            : alpha(theme.palette.common.white, 0.7),
-                                    },
-                                })}
+                                }}
                             />
                         ))}
-                    </Box>
+                    </Group>
 
                     {/* Photo Info */}
-                    <Box
-                        sx={{
-                            textAlign: 'center',
-                            mt: 1,
-                            color: 'white',
-                        }}
-                    >
+                    <Box style={{textAlign: 'center', marginTop: 'var(--mantine-spacing-xs)', color: WHITE}}>
                         {currentPhoto.timestamp && (
-                            <Typography
-                                variant="body2"
-                                sx={{fontSize: 14, m: 0}}
-                            >
+                            <Text fz={14} m={0} c={WHITE}>
                                 {currentPhoto.timestamp} {formattedTimeZone}
-                            </Typography>
+                            </Text>
                         )}
                         {currentPhoto.uploadedBy && (
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    fontSize: 12,
-                                    color: (theme) => alpha(theme.palette.common.white, 0.7),
-                                    mt: 0.5,
-                                }}
-                            >
+                            <Text fz={12} mt={4} c={alpha(WHITE, 0.7)}>
                                 Delivered by {currentPhoto.uploadedBy}
-                            </Typography>
+                            </Text>
                         )}
                         {currentPhoto.coordinates && (
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    fontSize: 12,
-                                    color: (theme) => alpha(theme.palette.common.white, 0.7),
-                                    mt: 0.5,
-                                }}
-                            >
+                            <Text fz={12} mt={4} c={alpha(WHITE, 0.7)}>
                                 Location: {currentPhoto.coordinates.lat}, {currentPhoto.coordinates.lng}
-                            </Typography>
+                            </Text>
                         )}
                     </Box>
                 </Box>
             </Box>
-        </Dialog>
+        </Modal>
     );
 };
 

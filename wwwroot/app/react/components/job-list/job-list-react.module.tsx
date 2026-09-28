@@ -7,143 +7,49 @@
  *   2. Legacy mode — AngularJS pushes data via updateJobs()
  */
 
-import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import {JobListPanel} from './JobListPanel';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
 import type {MountJobListConfig, DispatchJob, JobListSearchParams} from '../../interfaces';
-import {ErrorBoundary} from '../common/error-boundary';
+import {createJobListBridge} from './jobListBridge';
 
-let jobListRoot: Root | null = null;
-let jobListContainer: HTMLElement | null = null;
+const INSTANCE = 'jobList';
 
-// Callbacks stored at module scope so AngularJS can interact
-let updateJobsCallback: ((jobs: DispatchJob[], totalCount: number) => void) | null = null;
-let refreshCallback: (() => void) | null = null;
-let selectJobCallback: ((jobId: number) => void) | null = null;
-let updateSearchParamsCallback: ((params: Partial<JobListSearchParams>) => void) | null = null;
-let currentConfig: MountJobListConfig | null = null;
+const bridge = createJobListBridge({
+    logName: 'JobListReact',
+    defaultAppPage: 1,
+});
 
 /**
  * Mounts the job list component into a container element
  */
-export function mountJobList(
-    containerId: string,
-    config: MountJobListConfig,
-): void {
-    console.log('[JobListReact] Mounting to container:', containerId);
-
-    // If there's an existing root for a different container, unmount it first
-    if (jobListRoot && jobListContainer && jobListContainer.id !== containerId) {
-        console.log('[JobListReact] Unmounting previous instance from:', jobListContainer.id);
-        jobListRoot.unmount();
-        jobListRoot = null;
-        jobListContainer = null;
-    }
-
-    // Find the container
-    const container = document.getElementById(containerId);
-    if (!container) {
-        console.error('[JobListReact] Container not found:', containerId);
-        return;
-    }
-
-    jobListContainer = container;
-    currentConfig = config;
-
-    // Create new root if needed
-    if (!jobListRoot) {
-        console.log('[JobListReact] Creating new React root');
-        jobListRoot = createRoot(container);
-    }
-
-    renderJobList(config);
-    console.log('[JobListReact] Job list rendered');
-}
-
-function renderJobList(config: MountJobListConfig): void {
-    if (!jobListRoot) return;
-
-    const currentTheme = getTheme();
-
-    jobListRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <ErrorBoundary>
-                    <JobListPanel
-                        showToast={config.showToast}
-                        isUsCustomer={config.isUsCustomer}
-                        appPage={config.appPage ?? 1}
-                        onJobSelect={config.onJobSelect}
-                        onJobDispatch={config.onJobDispatch}
-                        onRefresh={config.onRefresh}
-                        onSearchChange={config.onSearchChange}
-                        onCategoryChange={config.onCategoryChange}
-                        onBackendFilter={config.onBackendFilter}
-                        onLoadMoreJobs={config.onLoadMoreJobs}
-                        onAddStop={config.onAddStop}
-                        onJobsLoaded={config.onJobsLoaded}
-                        defaultCategory={config.defaultCategory}
-                        storagePrefix={config.storagePrefix}
-                        fetchConfig={config.fetchConfig}
-                        setJobsCallback={(cb) => {
-                            updateJobsCallback = cb;
-                        }}
-                        setRefreshCallback={(cb) => {
-                            refreshCallback = cb;
-                        }}
-                        setSelectJobCallback={(cb) => {
-                            selectJobCallback = cb;
-                        }}
-                        setUpdateSearchParamsCallback={(cb) => {
-                            updateSearchParamsCallback = cb;
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>,
-    );
+export function mountJobList(containerId: string, config: MountJobListConfig): void {
+    bridge.mount(INSTANCE, containerId, config);
 }
 
 /**
  * Push updated job data from AngularJS into the React component (legacy mode)
  */
 export function updateJobListJobs(jobs: DispatchJob[], totalCount: number): void {
-    if (updateJobsCallback) {
-        updateJobsCallback(jobs, totalCount);
-    }
+    bridge.updateJobs(INSTANCE, jobs, totalCount);
 }
 
 /**
  * Update mount configuration (e.g., when appPage changes)
  */
 export function updateJobListConfig(config: Partial<MountJobListConfig>): void {
-    if (currentConfig) {
-        currentConfig = {...currentConfig, ...config};
-        renderJobList(currentConfig);
-    }
+    bridge.updateConfig(INSTANCE, config);
 }
 
 /**
  * Set the selected job from AngularJS (e.g., map click, detail panel)
  */
 export function selectJobInList(jobId: number): void {
-    if (selectJobCallback) {
-        selectJobCallback(jobId);
-    }
+    bridge.selectJob(INSTANCE, jobId);
 }
 
 /**
  * Triggers a data refresh in the React component
  */
 export function refreshJobList(): void {
-    if (refreshCallback) {
-        refreshCallback();
-    }
+    bridge.refresh(INSTANCE);
 }
 
 /**
@@ -151,28 +57,14 @@ export function refreshJobList(): void {
  * Triggers a React Query refetch with new params.
  */
 export function updateSearchParams(params: Partial<JobListSearchParams>): void {
-    if (updateSearchParamsCallback) {
-        updateSearchParamsCallback(params);
-    }
+    bridge.updateSearchParams(INSTANCE, params);
 }
 
 /**
  * Unmounts the job list component
  */
 export function unmountJobList(): void {
-    console.log('[JobListReact] Unmounting job list');
-
-    if (jobListRoot) {
-        jobListRoot.unmount();
-        jobListRoot = null;
-    }
-
-    jobListContainer = null;
-    updateJobsCallback = null;
-    refreshCallback = null;
-    selectJobCallback = null;
-    updateSearchParamsCallback = null;
-    currentConfig = null;
+    bridge.unmount(INSTANCE);
 }
 
 // Expose globally for AngularJS access (typed via global.d.ts)

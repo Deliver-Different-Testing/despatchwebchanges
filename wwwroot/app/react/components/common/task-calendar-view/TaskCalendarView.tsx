@@ -6,25 +6,24 @@
  */
 
 import React, {useState, useMemo, useEffect, useCallback} from 'react';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Checkbox from '@mui/material/Checkbox';
-import Divider from '@mui/material/Divider';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Tooltip from '@mui/material/Tooltip';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import {alpha} from '@mui/material/styles';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import TodayIcon from '@mui/icons-material/Today';
-import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
-import ViewWeekIcon from '@mui/icons-material/ViewWeek';
-import ViewDayIcon from '@mui/icons-material/ViewDay';
-import WarningIcon from '@mui/icons-material/Warning';
+import {
+    ActionIcon,
+    Box,
+    Button,
+    Card,
+    Checkbox,
+    Divider,
+    Group,
+    SegmentedControl,
+    Stack,
+    Text,
+    Title,
+    Tooltip,
+    alpha,
+} from '@mantine/core';
+import {CalendarDays, ChevronLeft, ChevronRight, Columns3, Rows3, TriangleAlert} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import classes from './TaskCalendarView.module.css';
 import dayjs, {Dayjs} from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekday from 'dayjs/plugin/weekday';
@@ -42,6 +41,8 @@ dayjs.extend(isoWeek);
 dayjs.extend(weekday);
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+const DIV = 'var(--mantine-color-default-border)';
 
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -232,10 +233,10 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
         }
     };
 
-    const handleViewModeChange = (_event: React.MouseEvent<HTMLElement>, newMode: ViewMode | null): void => {
-        if (newMode !== null) {
-            setViewMode(newMode);
-        }
+    // SegmentedControl hands back the value itself, where ToggleButtonGroup passed
+    // (event, value) and could emit null when the active button was re-clicked.
+    const handleViewModeChange = (newMode: string): void => {
+        setViewMode(newMode as ViewMode);
     };
 
     const handleTaskClick = (task: Task): void => {
@@ -267,53 +268,41 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
         const isOverdue = isTaskOverdue(task);
 
         return (
-            <Box
+            <Group
                 key={task.id}
                 onClick={() => handleTaskClick(task)}
-                sx={{
-                    backgroundColor: 'background.paper',
-                    borderRadius: 2,
-                    p: '8px 12px',
-                    mb: 0.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
+                className={classes.taskItem}
+                gap={8}
+                wrap="nowrap"
+                mb={4}
+                px={12}
+                py={8}
+                mih={32}
+                bg="var(--mantine-color-body)"
+                style={{
+                    borderRadius: 'var(--mantine-radius-lg)',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    border: 1,
-                    borderColor: 'divider',
-                    borderLeft: '3px solid',
-                    borderLeftColor: isOverdue ? 'error.main' : 'warning.main',
-                    boxShadow: 1,
-                    minHeight: 32,
-                    '&:hover': {
-                        boxShadow: 2,
-                        transform: 'translateY(-1px)',
-                        backgroundColor: 'grey.50',
-                    },
+                    border: '1px solid var(--mantine-color-default-border)',
+                    borderLeft: `3px solid ${isOverdue ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-yellow-6)'}`,
                 }}
             >
                 <Checkbox
                     checked={task.closed}
                     onClick={e => handleTaskCheckboxChange(task, e)}
-                    size="small"
-                    sx={{p: 0, minWidth: 18}}
+                    onChange={() => undefined}
+                    size="xs"
                 />
-                <Typography
-                    sx={{
-                        flex: 1,
-                        fontSize: '0.8125rem',
-                        fontWeight: 500,
-                        color: task.closed ? 'text.disabled' : 'text.primary',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        textDecoration: task.closed ? 'line-through' : 'none',
-                    }}
+                <Text
+                    fz="0.8125rem"
+                    fw={500}
+                    truncate
+                    c={task.closed ? 'dimmed' : undefined}
+                    td={task.closed ? 'line-through' : undefined}
+                    style={{flex: 1}}
                 >
                     {task.title}
-                </Typography>
-            </Box>
+                </Text>
+            </Group>
         );
     };
 
@@ -325,121 +314,103 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
             <Box
                 key={index}
                 onClick={() => handleSelectDate(day.date)}
-                sx={(theme) => ({
+                className={classes.calendarDay}
+                mih={100}
+                style={{
                     flex: 1,
-                    backgroundColor: day.isToday ? alpha(theme.palette.primary.main, 0.08) : dayIsSelected ? 'primary.main' : isPast ? 'grey.50' : 'background.paper',
-                    borderRadius: 3,
+                    backgroundColor: day.isToday
+                        ? alpha('var(--mantine-primary-color-filled)', 0.08)
+                        : dayIsSelected
+                            ? 'var(--mantine-primary-color-filled)'
+                            : isPast ? 'var(--mantine-color-gray-0)' : 'var(--mantine-color-body)',
+                    borderRadius: 'var(--mantine-radius-sm)',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    border: '2px solid',
-                    borderColor: day.isToday ? 'primary.main' : 'transparent',
-                    minHeight: 100,
+                    border: `2px solid ${day.isToday ? 'var(--mantine-primary-color-filled)' : 'transparent'}`,
                     position: 'relative',
                     overflow: 'hidden',
-                    boxShadow: 1,
                     opacity: day.isCurrentMonth ? 1 : 0.4,
-                    '&:hover': {
-                        boxShadow: 3,
-                        transform: 'translateY(-2px)',
-                    },
-                })}
+                }}
             >
-                <Box sx={{p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                    <Typography
-                        sx={{
-                            fontSize: '1rem',
-                            fontWeight: day.isToday ? 700 : 500,
-                            color: dayIsSelected ? 'background.paper' : day.isToday ? 'primary.main' : isPast ? 'text.disabled' : 'text.primary',
-                        }}
+                <Group p={12} justify="space-between" align="flex-start" wrap="nowrap">
+                    <Text
+                        fz="1rem"
+                        fw={day.isToday ? 700 : 500}
+                        c={dayIsSelected
+                            ? 'var(--mantine-color-body)'
+                            : day.isToday ? 'var(--mantine-primary-color-filled)' : isPast ? 'dimmed' : undefined}
                     >
                         {day.dayNumber}
-                    </Typography>
+                    </Text>
                     {day.dayNumber === 1 && (
-                        <Typography
-                            sx={{
-                                fontSize: '0.75rem',
-                                color: dayIsSelected ? 'background.paper' : 'text.disabled',
-                                fontWeight: 500,
-                                textTransform: 'uppercase',
-                            }}
+                        <Text
+                            fz="0.75rem"
+                            fw={500}
+                            tt="uppercase"
+                            c={dayIsSelected ? 'var(--mantine-color-body)' : 'dimmed'}
                         >
                             {day.monthName}
-                        </Typography>
+                        </Text>
                     )}
-                </Box>
+                </Group>
 
-                <Box sx={{px: 1.5, pb: 1.5}}>
+                <Box px={12} pb={12}>
                     {day.tasks.slice(0, 3).map(task => (
-                        <Box
+                        <Group
                             key={task.id}
                             onClick={e => {
                                 e.stopPropagation();
                                 handleTaskClick(task);
                             }}
-                            sx={{
-                                bgcolor: dayIsSelected ? 'rgba(255, 255, 255, 0.95)' : 'grey.100',
-                                borderRadius: 2,
-                                p: '6px 10px',
-                                mb: 0.75,
-                                fontSize: '0.75rem',
+                            className={classes.dayTask}
+                            gap={4}
+                            wrap="nowrap"
+                            px={10}
+                            py={6}
+                            mb={6}
+                            fz="0.75rem"
+                            style={{
+                                backgroundColor: dayIsSelected ? 'rgba(255, 255, 255, 0.95)' : 'var(--mantine-color-gray-1)',
+                                borderRadius: 'var(--mantine-radius-lg)',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                borderLeft: '3px solid',
-                                borderLeftColor: getTaskPriorityColor(task),
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                                '&:hover': {
-                                    transform: 'translateX(4px)',
-                                    boxShadow: 1,
-                                },
+                                borderLeft: `3px solid ${getTaskPriorityColor(task)}`,
                             }}
                         >
                             <Checkbox
                                 checked={task.closed}
                                 onClick={e => handleTaskCheckboxChange(task, e)}
-                                size="small"
-                                sx={{p: 0, minWidth: 18}}
+                                onChange={() => undefined}
+                                size="xs"
                             />
-                            <Typography
+                            <Text
                                 component="span"
-                                sx={{
-                                    fontWeight: 600,
-                                    fontSize: '0.75rem',
-                                    color: isTaskOverdue(task) ? 'error.dark' : 'warning.dark',
-                                    mr: 0.75,
-                                }}
+                                fw={600}
+                                fz="0.75rem"
+                                mr={6}
+                                c={isTaskOverdue(task) ? 'var(--mantine-color-red-8)' : 'var(--mantine-color-yellow-8)'}
                             >
                                 {dayjs(task.dueDate).format('h:mm a')}
-                            </Typography>
-                            <Typography
+                            </Text>
+                            <Text
                                 component="span"
-                                sx={{
-                                    color: 'text.primary',
-                                    fontWeight: 500,
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    flex: 1,
-                                    textDecoration: task.closed ? 'line-through' : 'none',
-                                }}
+                                fw={500}
+                                truncate
+                                td={task.closed ? 'line-through' : undefined}
+                                style={{flex: 1}}
                             >
                                 {task.title}
-                            </Typography>
-                        </Box>
+                            </Text>
+                        </Group>
                     ))}
                     {day.tasks.length > 3 && (
-                        <Typography
-                            sx={{
-                                fontSize: '0.75rem',
-                                color: dayIsSelected ? 'background.paper' : 'text.secondary',
-                                textAlign: 'center',
-                                mt: 0.75,
-                                fontWeight: 500,
-                            }}
+                        <Text
+                            fz="0.75rem"
+                            fw={500}
+                            ta="center"
+                            mt={6}
+                            c={dayIsSelected ? 'var(--mantine-color-body)' : 'dimmed'}
                         >
                             +{day.tasks.length - 3} more
-                        </Typography>
+                        </Text>
                     )}
                 </Box>
             </Box>
@@ -447,130 +418,114 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
     };
 
     const renderMonthView = (): React.ReactNode => (
-        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+        <Stack gap={0} h="100%">
             {/* Day Headers */}
-            <Box sx={{display: 'flex', mb: 1.5}}>
+            <Group gap={0} mb={12} wrap="nowrap">
                 {DAY_HEADERS.map(day => (
-                    <Box
+                    <Text
                         key={day}
-                        sx={{
-                            flex: 1,
-                            textAlign: 'center',
-                            fontWeight: 600,
-                            fontSize: '0.8125rem',
-                            color: 'text.secondary',
-                            py: 1.5,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                        }}
+                        ta="center"
+                        fw={600}
+                        fz="0.8125rem"
+                        c="dimmed"
+                        py={12}
+                        tt="uppercase"
+                        style={{flex: 1, letterSpacing: '0.05em'}}
                     >
                         {day}
-                    </Box>
+                    </Text>
                 ))}
-            </Box>
+            </Group>
 
             {/* Calendar Grid */}
-            <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', gap: 1}}>
+            <Stack gap={8} style={{flex: 1}}>
                 {calendarWeeks.map((week, weekIndex) => (
-                    <Box key={weekIndex} sx={{flex: 1, display: 'flex', gap: 1}}>
+                    <Group key={weekIndex} gap={8} align="stretch" wrap="nowrap" style={{flex: 1}}>
                         {week.days.map((day, dayIndex) => renderCalendarDay(day, dayIndex))}
-                    </Box>
+                    </Group>
                 ))}
-            </Box>
-        </Box>
+            </Stack>
+        </Stack>
     );
 
     const renderWeekView = (): React.ReactNode => (
-        <Box
-            sx={{
-                height: '100%',
-                display: 'flex',
-                backgroundColor: 'background.paper',
-                borderRadius: 3,
-                boxShadow: 1,
-                overflow: 'hidden',
-            }}
+        <Group
+            gap={0}
+            align="stretch"
+            wrap="nowrap"
+            h="100%"
+            bg="var(--mantine-color-body)"
+            style={{borderRadius: 'var(--mantine-radius-sm)', overflow: 'hidden'}}
         >
             {/* Time Column */}
             <Box
-                sx={{
-                    width: 80,
-                    flexShrink: 0,
-                    borderRight: 1,
-                    borderColor: 'divider',
-                    backgroundColor: 'grey.50',
-                }}
+                w={80}
+                bg="var(--mantine-color-gray-0)"
+                style={{flexShrink: 0, borderRight: `1px solid ${DIV}`}}
             >
-                <Box sx={{height: 56, borderBottom: 1, borderColor: 'divider'}} />
+                <Box h={56} style={{borderBottom: `1px solid ${DIV}`}} />
                 <Box>
                     {TIME_SLOTS.map(time => (
-                        <Box
+                        <Text
                             key={time}
-                            sx={{
-                                height: 72,
-                                p: '8px 12px',
-                                textAlign: 'right',
-                                fontSize: '0.75rem',
-                                color: 'text.secondary',
-                                borderBottom: 1,
-                                borderColor: 'divider',
-                                fontWeight: 500,
-                            }}
+                            h={72}
+                            px={12}
+                            py={8}
+                            ta="right"
+                            fz="0.75rem"
+                            fw={500}
+                            c="dimmed"
+                            style={{borderBottom: `1px solid ${DIV}`}}
                         >
                             {formatTimeSlot(time)}
-                        </Box>
+                        </Text>
                     ))}
                 </Box>
             </Box>
 
             {/* Days Container */}
-            <Box sx={{flex: 1, display: 'flex', overflowX: 'auto'}}>
+            <Group gap={0} align="stretch" wrap="nowrap" style={{flex: 1, overflowX: 'auto'}}>
                 {weekDays.map((day, index) => (
                     <Box
                         key={index}
-                        sx={{
+                        miw={160}
+                        style={{
                             flex: 1,
-                            minWidth: 160,
-                            borderRight: index < 6 ? 1 : 0,
-                            borderColor: 'divider',
+                            borderRight: index < 6 ? `1px solid ${DIV}` : undefined,
                         }}
                     >
                         <Box
-                            sx={(theme) => ({
-                                height: 56,
-                                p: 1.5,
-                                textAlign: 'center',
-                                backgroundColor: isToday(day) ? alpha(theme.palette.primary.main, 0.08) : theme.palette.background.paper,
-                                borderBottom: 1,
-                                borderColor: 'divider',
+                            h={56}
+                            p={12}
+                            ta="center"
+                            style={{
+                                backgroundColor: isToday(day)
+                                    ? alpha('var(--mantine-primary-color-filled)', 0.08)
+                                    : 'var(--mantine-color-body)',
+                                borderBottom: `1px solid ${DIV}`,
                                 position: 'sticky',
                                 top: 0,
                                 zIndex: 5,
-                            })}
+                            }}
                         >
-                            <Typography
-                                sx={{
-                                    fontSize: '0.875rem',
-                                    color: isToday(day) ? 'primary.main' : 'text.primary',
-                                    fontWeight: isToday(day) ? 600 : 500,
-                                }}
+                            <Text
+                                fz="0.875rem"
+                                fw={isToday(day) ? 600 : 500}
+                                c={isToday(day) ? 'var(--mantine-primary-color-filled)' : undefined}
                             >
                                 {formatWeekDayHeader(day)}
-                            </Typography>
+                            </Text>
                         </Box>
 
-                        <Box sx={{height: 'calc(100% - 56px)', overflowY: 'auto'}}>
+                        <Box style={{height: 'calc(100% - 56px)', overflowY: 'auto'}}>
                             {TIME_SLOTS.map(time => (
                                 <Box
                                     key={time}
-                                    sx={{
-                                        height: 72,
-                                        borderBottom: 1,
-                                        borderColor: 'divider',
-                                        '&:hover': {bgcolor: 'action.hover'},
-                                    }}
+                                    className={classes.timeSlot}
+                                    h={72}
+                                    style={{borderBottom: `1px solid ${DIV}`}}
                                 >
-                                    <Box sx={{p: '4px 6px'}}>
+                                    <Box px={6} py={4}>
                                         {getTasksForTimeSlot(tasks, day, time).map(task =>
                                             renderTaskItem(task)
                                         )}
@@ -580,61 +535,52 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                         </Box>
                     </Box>
                 ))}
-            </Box>
-        </Box>
+            </Group>
+        </Group>
     );
 
     const renderDayView = (): React.ReactNode => (
-        <Box sx={{height: '100%', display: 'flex', gap: 2}}>
+        <Group gap={16} align="stretch" wrap="nowrap" h="100%">
             {/* Time Column */}
             <Box
-                sx={{
-                    width: 80,
-                    flexShrink: 0,
-                    backgroundColor: 'grey.50',
-                    borderRadius: '12px 0 0 12px',
-                }}
+                w={80}
+                bg="var(--mantine-color-gray-0)"
+                style={{flexShrink: 0, borderRadius: 'var(--mantine-radius-sm) 0 0 var(--mantine-radius-sm)'}}
             >
                 {TIME_SLOTS.map(time => (
-                    <Box
+                    <Text
                         key={time}
-                        sx={{
-                            height: 80,
-                            p: '8px 12px',
-                            textAlign: 'right',
-                            fontSize: '0.75rem',
-                            color: 'text.secondary',
-                            borderBottom: 1,
-                            borderColor: 'divider',
-                            fontWeight: 500,
-                        }}
+                        h={80}
+                        px={12}
+                        py={8}
+                        ta="right"
+                        fz="0.75rem"
+                        fw={500}
+                        c="dimmed"
+                        style={{borderBottom: `1px solid ${DIV}`}}
                     >
                         {formatTimeSlot(time)}
-                    </Box>
+                    </Text>
                 ))}
             </Box>
 
             {/* Day Content */}
             <Box
-                sx={{
+                bg="var(--mantine-color-body)"
+                style={{
                     flex: 1,
-                    backgroundColor: 'background.paper',
                     overflowY: 'auto',
-                    borderRadius: '0 12px 12px 0',
-                    boxShadow: 1,
+                    borderRadius: '0 var(--mantine-radius-sm) var(--mantine-radius-sm) 0',
                 }}
             >
                 {TIME_SLOTS.map(time => (
                     <Box
                         key={time}
-                        sx={{
-                            height: 80,
-                            borderBottom: 1,
-                            borderColor: 'divider',
-                            '&:hover': {bgcolor: 'action.hover'},
-                        }}
+                        className={classes.timeSlot}
+                        h={80}
+                        style={{borderBottom: `1px solid ${DIV}`}}
                     >
-                        <Box sx={{p: '6px 12px'}}>
+                        <Box px={12} py={6}>
                             {getTasksForTimeSlot(tasks, currentDate, time).map(task =>
                                 renderTaskItem(task)
                             )}
@@ -645,159 +591,129 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
 
             {/* Overdue Tasks Sidebar */}
             {overdueTasks.length > 0 && (
-                <Card
-                    sx={{
-                        width: 320,
-                        flexShrink: 0,
-                        borderRadius: 3,
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                    <Box
-                        sx={(theme) => ({
-                            backgroundColor: alpha(theme.palette.error.main, 0.08),
-                            color: 'error.dark',
-                            p: 2,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                        })}
+                <Card w={320} p={0} radius={12} style={{flexShrink: 0, display: 'flex', flexDirection: 'column'}}>
+                    <Group
+                        p={16}
+                        gap={8}
+                        wrap="nowrap"
+                        c="var(--mantine-color-red-8)"
+                        style={{backgroundColor: alpha('var(--mantine-color-red-6)', 0.08)}}
                     >
-                        <WarningIcon sx={{color: 'error.main'}} />
-                        <Typography sx={{fontSize: '1rem', fontWeight: 600}}>
+                        <Icon lucide={TriangleAlert} color="var(--mantine-color-red-6)"/>
+                        <Text fz="1rem" fw={600}>
                             Overdue Tasks ({overdueTasks.length})
-                        </Typography>
-                    </Box>
-                    <CardContent
-                        sx={(theme) => ({
+                        </Text>
+                    </Group>
+                    <Box
+                        p={12}
+                        style={{
                             flex: 1,
                             overflowY: 'auto',
-                            p: 1.5,
-                            backgroundColor: alpha(theme.palette.error.main, 0.04),
-                        })}
+                            backgroundColor: alpha('var(--mantine-color-red-6)', 0.04),
+                        }}
                     >
                         {overdueTasks.map(task => (
-                            <Box key={task.id} sx={{mb: 1}}>
+                            <Box key={task.id} mb={8}>
                                 {renderTaskItem(task)}
                             </Box>
                         ))}
-                    </CardContent>
+                    </Box>
                 </Card>
             )}
-        </Box>
+        </Group>
     );
 
     return (
-        <Box
-            sx={{
-                height: 'calc(100vh - 205px)',
-                display: 'flex',
-                flexDirection: 'column',
-                backgroundColor: 'grey.50',
-                borderRadius: 3,
-                overflow: 'hidden',
-            }}
+        <Stack
+            data-testid="task-calendar-view"
+            gap={0}
+            bg="var(--mantine-color-gray-0)"
+            // height/overflow stay inline: a regression test asserts them with
+            // toHaveStyle, and a fixed viewport height here overshoots the real flex
+            // space and clips the bottom with no scrollbar.
+            style={{height: '100%', minHeight: 0, borderRadius: 'var(--mantine-radius-sm)', overflow: 'hidden'}}
         >
             {/* Toolbar */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    px: 2,
-                    py: 1,
-                    backgroundColor: 'background.paper',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    boxShadow: 1,
+            <Group
+                px={16}
+                py={8}
+                gap={0}
+                wrap="nowrap"
+                bg="var(--mantine-color-body)"
+                style={{
+                    borderBottom: `1px solid ${DIV}`,
+                    boxShadow: 'var(--mantine-shadow-xs)',
                 }}
             >
-                <ToggleButtonGroup
+                {/* A SegmentedControl rather than a toggle group: one tab stop, arrow-key
+                    navigation, and the selected state is a real radio, not a pressed button. */}
+                <SegmentedControl
                     value={viewMode}
-                    exclusive
                     onChange={handleViewModeChange}
-                    size="small"
-                    sx={{
-                        backgroundColor: 'grey.100',
-                        borderRadius: '100px',
-                        p: 0.5,
-                        '& .MuiToggleButton-root': {
-                            border: 'none',
-                            borderRadius: '100px !important',
-                            px: 1.5,
-                            '&.Mui-selected': {
-                                backgroundColor: 'background.paper',
-                                boxShadow: 1,
-                            },
-                        },
-                    }}
-                >
-                    <ToggleButton value="month" aria-label="Month view">
-                        <Tooltip title="Month View">
-                            <CalendarViewMonthIcon />
-                        </Tooltip>
-                    </ToggleButton>
-                    <ToggleButton value="week" aria-label="Week view">
-                        <Tooltip title="Week View">
-                            <ViewWeekIcon />
-                        </Tooltip>
-                    </ToggleButton>
-                    <ToggleButton value="day" aria-label="Day view">
-                        <Tooltip title="Day View">
-                            <ViewDayIcon />
-                        </Tooltip>
-                    </ToggleButton>
-                </ToggleButtonGroup>
+                    size="xs"
+                    radius={100}
+                    data={[
+                        {value: 'month', label: (
+                            <Tooltip label="Month View">
+                                <Icon lucide={CalendarDays} aria-label="Month view"/>
+                            </Tooltip>
+                        )},
+                        {value: 'week', label: (
+                            <Tooltip label="Week View">
+                                <Icon lucide={Columns3} aria-label="Week view"/>
+                            </Tooltip>
+                        )},
+                        {value: 'day', label: (
+                            <Tooltip label="Day View">
+                                <Icon lucide={Rows3} aria-label="Day view"/>
+                            </Tooltip>
+                        )},
+                    ]}
+                />
 
-                <Divider orientation="vertical" flexItem sx={{mx: 2.5, height: 24, alignSelf: 'center'}} />
+                <Divider orientation="vertical" mx={20} h={24} style={{alignSelf: 'center'}}/>
 
-                <Box sx={{display: 'flex', alignItems: 'center'}}>
-                    <IconButton onClick={handlePreviousPeriod} size="small">
-                        <ChevronLeftIcon />
-                    </IconButton>
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            minWidth: 240,
-                            textAlign: 'center',
-                            fontWeight: 500,
-                            fontSize: '1.125rem',
-                            color: 'text.primary',
-                        }}
+                <Group gap={0} wrap="nowrap">
+                    <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        onClick={handlePreviousPeriod}
+                        aria-label="Previous period"
                     >
+                        <Icon lucide={ChevronLeft}/>
+                    </ActionIcon>
+                    {/* Title, not Text: the period heading is queried by role. */}
+                    <Title order={6} miw={240} ta="center" fw={500} fz="1.125rem">
                         {formatPeriodTitle()}
-                    </Typography>
-                    <IconButton onClick={handleNextPeriod} size="small">
-                        <ChevronRightIcon />
-                    </IconButton>
-                </Box>
+                    </Title>
+                    <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        onClick={handleNextPeriod}
+                        aria-label="Next period"
+                    >
+                        <Icon lucide={ChevronRight}/>
+                    </ActionIcon>
+                </Group>
 
-                <Box sx={{flex: 1}} />
+                <div style={{flex: 1}}/>
 
                 <Button
-                    variant="contained"
-                    startIcon={<TodayIcon />}
+                    radius={100}
+                    fw={500}
+                    leftSection={<Icon lucide={CalendarDays}/>}
                     onClick={handleGoToToday}
-                    sx={{
-                        borderRadius: '100px',
-                        fontWeight: 500,
-                        textTransform: 'none',
-                        boxShadow: 'none',
-                        '&:hover': {
-                            boxShadow: 1,
-                        },
-                    }}
                 >
                     Today
                 </Button>
-            </Box>
+            </Group>
 
-            <Box sx={{flex: 1, overflow: 'auto', p: 2}}>
+            <Box p={16} style={{flex: 1, overflow: 'auto'}}>
                 {viewMode === 'month' && renderMonthView()}
                 {viewMode === 'week' && renderWeekView()}
                 {viewMode === 'day' && renderDayView()}
             </Box>
-        </Box>
+        </Stack>
     );
 };
 

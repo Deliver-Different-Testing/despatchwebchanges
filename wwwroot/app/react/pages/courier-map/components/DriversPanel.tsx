@@ -1,27 +1,21 @@
 /**
  * DriversPanel Component
  *
- * Glassmorphic sidebar panel with summary statistics, search,
- * and a status-coded driver list. Floats over the map.
+ * Sidebar panel with summary statistics, search, and a status-coded driver
+ * list. Floats over the map on an opaque surface with theme elevation, matching
+ * the app's MD3 surface language.
  */
 
 import React, { useMemo } from 'react';
-import {alpha, useTheme} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import List from '@mui/material/List';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import Close from '@mui/icons-material/Close';
-import PersonOff from '@mui/icons-material/PersonOff';
-import Search from '@mui/icons-material/Search';
-import SearchOff from '@mui/icons-material/SearchOff';
-import Sync from '@mui/icons-material/Sync';
-import type { DriversPanelProps } from '../CourierMapPage.types';
+import {
+    alpha, Box, CloseButton, Group, Loader, MultiSelect, Stack, Text, TextInput,
+    UnstyledButton, useMantineTheme,
+} from '@mantine/core';
+import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
+import classes from './DriversPanel.module.css';
+import { NoData } from '../../../components/common/no-data';
+import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
 
 const PANEL_WIDTH = 340;
@@ -40,46 +34,30 @@ function StatCard({
     palette: 'primary' | 'info' | 'error';
     highlight?: boolean;
 }) {
-    const theme = useTheme();
-    const color = theme.palette[palette].main;
+    const theme = useMantineTheme();
+    // 'info' was MUI's Reflex Blue (#2a4eff) — the `reflex` ramp here, not the
+    // brand primary, so the three cards stay visually distinct.
+    const rampName = palette === 'primary' ? theme.primaryColor : palette === 'info' ? 'reflex' : 'red';
+    const color = (theme.colors[rampName] ?? theme.colors.gray)[5];
 
     return (
         <Box
-            sx={{
+            ta="center"
+            py={6}
+            px={4}
+            style={{
                 flex: 1,
-                textAlign: 'center',
-                py: 0.75,
-                px: 0.5,
-                borderRadius: 2,
-                bgcolor: highlight
-                    ? alpha(color, 0.1)
-                    : alpha(color, 0.05),
+                borderRadius: 'var(--mantine-radius-md)',
+                backgroundColor: alpha(color, highlight ? 0.1 : 0.05),
                 transition: 'background-color 200ms ease',
             }}
         >
-            <Typography
-                sx={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'text.secondary',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    lineHeight: 1.4,
-                }}
-            >
+            <Text fz={10} fw={600} c="dimmed" tt="uppercase" lh={1.4} style={{letterSpacing: '0.06em'}}>
                 {label}
-            </Typography>
-            <Typography
-                sx={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color,
-                    lineHeight: 1.2,
-                    fontVariantNumeric: 'tabular-nums',
-                }}
-            >
+            </Text>
+            <Text fz={18} fw={700} lh={1.2} style={{color, fontVariantNumeric: 'tabular-nums'}}>
                 {value}
-            </Typography>
+            </Text>
         </Box>
     );
 }
@@ -92,10 +70,20 @@ export function DriversPanel({
     searchTerm,
     onSearchChange,
     onDriverClick,
-    onRefresh,
     isPanelHidden,
     onTogglePanel,
+    fleetOptions,
+    isFleetOptionsLoading,
+    selectedFleetIds,
+    onSelectedFleetIdsChange,
+    selectedDriverId,
 }: DriversPanelProps) {
+    const selectedFleets = useMemo(() => {
+        const lookup = new Map(fleetOptions.map((f) => [f.id, f]));
+        return selectedFleetIds
+            .map((id) => lookup.get(id))
+            .filter((f): f is FleetSelectorOption => f != null);
+    }, [fleetOptions, selectedFleetIds]);
     // Compute summary stats from the driver data
     const stats = useMemo(() => {
         const totalJobs = drivers.reduce((sum, d) => sum + d.totalJobs, 0);
@@ -116,337 +104,167 @@ export function DriversPanel({
         });
     }, [drivers, searchTerm]);
 
+    // MultiSelect speaks strings; the fleet ids are numbers.
+    const fleetData = useMemo(
+        () => fleetOptions.map((f) => ({value: String(f.id), label: f.text})),
+        [fleetOptions],
+    );
+    const selectedFleetValues = useMemo(() => selectedFleetIds.map(String), [selectedFleetIds]);
+
     return (
         <Box
-            sx={{
+            w={PANEL_WIDTH}
+            style={{
                 position: 'absolute',
                 top: 16,
                 right: 16,
-                width: PANEL_WIDTH,
                 maxHeight: 'calc(100% - 32px)',
-                borderRadius: '16px',
+                borderRadius: 'var(--mantine-radius-md)',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'visible',
                 zIndex: 50,
-                bgcolor: 'rgba(255, 255, 255, 0.82)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.45)',
-                boxShadow:
-                    '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
-                transform: isPanelHidden
-                    ? 'translateX(calc(100% + 4px))'
-                    : 'translateX(0)',
+                // Opaque surface + elevation to match the rest of the app; the shadow
+                // doubles as MD3 "busy background" protection over the map.
+                backgroundColor: 'var(--mantine-color-body)',
+                border: '1px solid var(--mantine-color-default-border)',
+                boxShadow: 'var(--mantine-shadow-lg)',
+                transform: isPanelHidden ? 'translateX(calc(100% + 4px))' : 'translateX(0)',
                 transition: `transform ${ANIMATION_DURATION} ${ANIMATION_EASING}, box-shadow ${ANIMATION_DURATION} ${ANIMATION_EASING}`,
             }}
         >
             {/* Panel inner wrapper for overflow clipping */}
             <Box
-                sx={{
+                style={{
                     display: 'flex',
                     flexDirection: 'column',
                     minWidth: 0,
                     overflow: 'hidden',
-                    borderRadius: '16px',
+                    borderRadius: 'var(--mantine-radius-md)',
                 }}
             >
                 {/* ── Header ────────────────────────── */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        px: 2.5,
-                        pt: 2,
-                        pb: 1.5,
-                        flexShrink: 0,
-                    }}
-                >
-                    <Typography
-                        variant="subtitle2"
-                        sx={{
-                            fontWeight: 700,
-                            fontSize: 14,
-                            letterSpacing: '-0.01em',
-                        }}
-                    >
+                <Group px={20} pt={16} pb={12} style={{flexShrink: 0}}>
+                    <Text fz={14} fw={700} style={{letterSpacing: '-0.01em'}}>
                         Drivers
-                    </Typography>
-                    <Tooltip title="Refresh locations">
-                        <span>
-                            <IconButton
-                                size="small"
-                                onClick={onRefresh}
-                                disabled={isLoading}
-                                sx={{
-                                    color: 'text.secondary',
-                                    width: 30,
-                                    height: 30,
-                                }}
-                            >
-                                <Sync
-                                    sx={{
-                                        fontSize: 18,
-                                        ...(isLoading && {
-                                            animation: 'spin 1s linear infinite',
-                                            '@keyframes spin': {
-                                                from: { transform: 'rotate(0deg)' },
-                                                to: { transform: 'rotate(360deg)' },
-                                            },
-                                        }),
-                                    }}
-                                />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
-                </Box>
+                    </Text>
+                </Group>
 
                 {/* ── Stats summary ─────────────────── */}
-                <Box sx={{ display: 'flex', gap: 0.75, px: 2, pb: 1.5, flexShrink: 0 }}>
-                    <StatCard
-                        label="Active"
-                        value={totalActiveDrivers}
-                        palette="primary"
-                    />
-                    <StatCard
-                        label="Jobs"
-                        value={stats.totalJobs}
-                        palette="info"
-                    />
+                <Group gap={6} px={16} pb={12} grow style={{flexShrink: 0}}>
+                    <StatCard label="Active" value={totalActiveDrivers} palette="primary" />
+                    <StatCard label="Jobs" value={stats.totalJobs} palette="info" />
                     <StatCard
                         label="Overdue"
                         value={stats.overdueCount}
                         palette="error"
                         highlight={stats.overdueCount > 0}
                     />
+                </Group>
+
+                {/* ── Fleet filter ──────────────────── */}
+                <Box px={16} pb={8} style={{flexShrink: 0}}>
+                    <MultiSelect
+                        size="xs"
+                        data={fleetData}
+                        value={selectedFleetValues}
+                        onChange={(values) => onSelectedFleetIdsChange(values.map(Number))}
+                        placeholder={selectedFleetIds.length === 0 ? 'All fleets' : ''}
+                        aria-label="Filter by fleet"
+                        searchable
+                        clearable
+                        // MultiSelect keeps its dropdown open across picks and renders the
+                        // selection as pills natively, so the MUI original's
+                        // disableCloseOnSelect, renderOption checkbox and renderValue Chip
+                        // all fall away. The check mark is the selected affordance.
+                        rightSection={
+                            isFleetOptionsLoading ? <Loader size={14} aria-label="Loading fleets" /> : undefined
+                        }
+                        nothingFoundMessage="No fleets"
+                    />
                 </Box>
 
                 {/* ── Search ────────────────────────── */}
-                <Box sx={{ px: 2, pb: 1, flexShrink: 0 }}>
-                    <TextField
-                        fullWidth
-                        size="small"
+                <Box px={16} pb={8} style={{flexShrink: 0}}>
+                    <TextInput
+                        size="xs"
                         placeholder="Search by name or code..."
                         value={searchInputValue}
-                        onChange={(e) => onSearchChange(e.target.value)}
+                        onChange={(e) => onSearchChange(e.currentTarget.value)}
                         aria-label="Search drivers"
-                        slotProps={{
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <Search
-                                            sx={{
-                                                fontSize: 18,
-                                                color: 'text.disabled',
-                                            }}
-                                        />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: searchInputValue ? (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => onSearchChange('')}
-                                            aria-label="Clear search"
-                                            edge="end"
-                                            sx={{ mr: -0.5 }}
-                                        >
-                                            <Close sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ) : null,
-                            },
-                        }}
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                borderRadius: 2.5,
-                                fontSize: 13,
-                                bgcolor: 'rgba(0, 0, 0, 0.03)',
-                                '& fieldset': { border: 'none' },
-                                '&:hover': {
-                                    bgcolor: 'rgba(0, 0, 0, 0.05)',
-                                },
-                                '&.Mui-focused': {
-                                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                                    '& fieldset': {
-                                        border: '1.5px solid',
-                                        borderColor: 'primary.main',
-                                    },
-                                },
-                            },
-                        }}
+                        leftSection={<Icon lucide={Search} size={16} />}
+                        rightSection={
+                            searchInputValue ? (
+                                <CloseButton
+                                    size="sm"
+                                    onClick={() => onSearchChange('')}
+                                    aria-label="Clear search"
+                                />
+                            ) : undefined
+                        }
                     />
                 </Box>
 
                 {/* ── List area ─────────────────────── */}
-                <Box
-                    sx={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        minHeight: 0,
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: 'rgba(0,0,0,0.12) transparent',
-                        '&::-webkit-scrollbar': { width: 5 },
-                        '&::-webkit-scrollbar-track': { background: 'transparent' },
-                        '&::-webkit-scrollbar-thumb': {
-                            background: 'rgba(0,0,0,0.12)',
-                            borderRadius: 3,
-                        },
-                        '&::-webkit-scrollbar-thumb:hover': {
-                            background: 'rgba(0,0,0,0.2)',
-                        },
-                    }}
-                >
-                    {/* Loading state */}
+                <Box className={classes.listArea} style={{flex: 1, overflowY: 'auto', minHeight: 0}}>
                     {isLoading && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                py: 5,
-                                gap: 1.5,
-                            }}
-                        >
-                            <CircularProgress
-                                size={32}
-                                thickness={4}
-                            />
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ fontSize: 13 }}
-                            >
+                        <Stack align="center" gap={12} py={40}>
+                            <Loader size={32} aria-label="Loading drivers" />
+                            <Text fz={13} c="dimmed">
                                 Loading drivers...
-                            </Typography>
-                        </Box>
+                            </Text>
+                        </Stack>
                     )}
 
                     {/* Empty: no drivers at all */}
                     {!isLoading && drivers.length === 0 && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                py: 5,
-                                gap: 1,
-                            }}
-                        >
-                            <PersonOff
-                                sx={{
-                                    fontSize: 40,
-                                    color: 'text.disabled',
-                                    opacity: 0.6,
-                                }}
-                            />
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                fontWeight={500}
-                            >
-                                No active drivers
-                            </Typography>
-                            <Typography
-                                variant="caption"
-                                color="text.disabled"
-                            >
-                                Drivers will appear when they log in
-                            </Typography>
-                        </Box>
+                        <NoData
+                            icon={<Icon lucide={UserX} />}
+                            title="No active drivers"
+                            message="Drivers will appear when they log in"
+                        />
                     )}
 
                     {/* Empty: search has no results */}
-                    {!isLoading &&
-                        drivers.length > 0 &&
-                        filteredDrivers.length === 0 && (
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    py: 5,
-                                    gap: 1,
-                                }}
-                            >
-                                <SearchOff
-                                    sx={{
-                                        fontSize: 40,
-                                        color: 'text.disabled',
-                                        opacity: 0.6,
-                                    }}
-                                />
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    fontWeight={500}
-                                >
-                                    No matches found
-                                </Typography>
-                                <Typography
-                                    variant="caption"
-                                    color="text.disabled"
-                                >
-                                    Try a different name or code
-                                </Typography>
-                            </Box>
-                        )}
+                    {!isLoading && drivers.length > 0 && filteredDrivers.length === 0 && (
+                        <NoData
+                            icon={<Icon lucide={SearchX} />}
+                            title="No matches found"
+                            message="Try a different name or code"
+                        />
+                    )}
 
                     {/* Driver list */}
                     {!isLoading && filteredDrivers.length > 0 && (
-                        <List disablePadding sx={{ py: 0.5 }}>
+                        <Box component="ul" py={4} m={0} style={{listStyle: 'none', paddingInline: 0}}>
                             {filteredDrivers.map((driver) => (
-                                <DriverListItem
-                                    key={driver.courierId}
-                                    driver={driver}
-                                    onClick={() => onDriverClick(driver)}
-                                />
+                                <Box component="li" key={driver.courierId}>
+                                    <DriverListItem
+                                        driver={driver}
+                                        onClick={() => onDriverClick(driver)}
+                                        isSelected={driver.courierId === selectedDriverId}
+                                    />
+                                </Box>
                             ))}
-                        </List>
+                        </Box>
                     )}
                 </Box>
             </Box>
 
             {/* ── Toggle handle ─────────────────── */}
-            <IconButton
+            <UnstyledButton
                 onClick={onTogglePanel}
                 aria-label="Toggle drivers panel"
-                size="small"
-                sx={{
-                    position: 'absolute',
-                    left: -22,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 22,
-                    height: 52,
-                    borderRadius: '10px 0 0 10px',
-                    bgcolor: 'rgba(255, 255, 255, 0.82)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.45)',
-                    borderRight: 'none',
-                    boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.04)',
-                    zIndex: 51,
-                    '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.95)',
-                    },
-                    '&:active': {
-                        transform: 'translateY(-50%) scale(0.95)',
-                    },
-                }}
+                className={classes.toggleHandle}
+                data-hidden={isPanelHidden}
             >
-                <ChevronRight
-                    sx={{
-                        fontSize: 16,
-                        color: 'text.secondary',
-                        transition: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                        transform: isPanelHidden
-                            ? 'rotate(180deg)'
-                            : 'rotate(0deg)',
-                    }}
+                <Icon
+                    lucide={ChevronRight}
+                    size={16}
+                    className={classes.toggleChevron}
+                    color="var(--mantine-color-dimmed)"
                 />
-            </IconButton>
+            </UnstyledButton>
         </Box>
     );
 }

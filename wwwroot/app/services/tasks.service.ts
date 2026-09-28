@@ -23,6 +23,13 @@ interface PageFilterNames {
     eventType: string;
 }
 
+function isLocalStorageAvailable(): boolean {
+    if (typeof window === 'undefined') return false;
+    const modernizr = (globalThis as {Modernizr?: {localstorage?: boolean}}).Modernizr;
+    if (modernizr) return !!modernizr.localstorage;
+    return typeof window.localStorage !== 'undefined';
+}
+
 class TasksService implements angular.IServiceProvider {
     static $inject = [
         "$http",
@@ -315,7 +322,7 @@ class TasksService implements angular.IServiceProvider {
     }
 
     getSavedStaffFilter(appPage: AppPage): string {
-        if (!Modernizr.localstorage) return StatusFilter.All;
+        if (!isLocalStorageAvailable()) return StatusFilter.All;
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
         if (!filterName) {
@@ -327,7 +334,7 @@ class TasksService implements angular.IServiceProvider {
     }
 
     getSavedEventTypeFilter(appPage: AppPage): string {
-        if (!Modernizr.localstorage) return StatusFilter.All;
+        if (!isLocalStorageAvailable()) return StatusFilter.All;
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
@@ -339,7 +346,7 @@ class TasksService implements angular.IServiceProvider {
     }
 
     saveStaffFilter(filter: string, appPage: AppPage): void {
-        if (!Modernizr.localstorage) return;
+        if (!isLocalStorageAvailable()) return;
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.staff;
         if (!filterName) {
@@ -351,7 +358,7 @@ class TasksService implements angular.IServiceProvider {
     }
 
     saveEventTypeFilter(filter: string, appPage: AppPage): void {
-        if (!Modernizr.localstorage) return;
+        if (!isLocalStorageAvailable()) return;
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {

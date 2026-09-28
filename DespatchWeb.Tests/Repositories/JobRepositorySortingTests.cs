@@ -1,5 +1,4 @@
-using DespatchWeb.EntityClasses;
-using DespatchWeb.Enums;
+﻿using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 
@@ -7,51 +6,58 @@ namespace DespatchWeb.Tests.Repositories;
 
 public class JobRepositorySortingTests
 {
-    private static List<DispatchJobViewModel> CreateSortableJobs() =>
-    [
-        new()
+    private static IQueryable<PodSearchSortKey> CreateSortableKeys() =>
+        new List<PodSearchSortKey>
         {
-            Id = 1,
-            Booked = new DateTime(2024, 1, 10),
-            Time = new DateTime(2024, 1, 10, 8, 0, 0),
-            JobNo = "A001",
-            Client = "Alpha Corp",
-            Status = "Pending",
-            Speed = "Express",
-            Courier = "Alice",
-            From = "Auckland",
-            ToAddress = "Wellington",
-            Vehicle = new Suggestion { Text = "Car" }
-        },
-        new()
-        {
-            Id = 2,
-            Booked = new DateTime(2024, 1, 12),
-            Time = new DateTime(2024, 1, 12, 10, 0, 0),
-            JobNo = "C003",
-            Client = "Charlie Ltd",
-            Status = "Active",
-            Speed = "Standard",
-            Courier = "Carol",
-            From = "Christchurch",
-            ToAddress = "Dunedin",
-            Vehicle = new Suggestion { Text = "Van" }
-        },
-        new()
-        {
-            Id = 3,
-            Booked = new DateTime(2024, 1, 11),
-            Time = new DateTime(2024, 1, 11, 9, 0, 0),
-            JobNo = "B002",
-            Client = "Bravo Inc",
-            Status = "Completed",
-            Speed = "Economy",
-            Courier = "Bob",
-            From = "Brisbane",
-            ToAddress = "Sydney",
-            Vehicle = new Suggestion { Text = "Truck" }
-        }
-    ];
+            new()
+            {
+                JobId = 1,
+                IsArchived = false,
+                Date = new DateTime(2024, 1, 10),
+                Time = new DateTime(2024, 1, 10, 8, 0, 0),
+                JobNumber = "A001",
+                ClientCode = "Alpha Corp",
+                RefA = "PO-100",
+                StatusCode = "Pending",
+                SpeedName = "Express",
+                CourierCode = "Alice",
+                PickupSuburb = "Auckland",
+                DeliveryAddress = "Wellington",
+                VehicleName = "Car"
+            },
+            new()
+            {
+                JobId = 2,
+                IsArchived = true,
+                Date = new DateTime(2024, 1, 12),
+                Time = new DateTime(2024, 1, 12, 10, 0, 0),
+                JobNumber = "C003",
+                ClientCode = "Charlie Ltd",
+                RefA = "PO-300",
+                StatusCode = "Active",
+                SpeedName = "Standard",
+                CourierCode = "Carol",
+                PickupSuburb = "Christchurch",
+                DeliveryAddress = "Dunedin",
+                VehicleName = "Van"
+            },
+            new()
+            {
+                JobId = 3,
+                IsArchived = false,
+                Date = new DateTime(2024, 1, 11),
+                Time = new DateTime(2024, 1, 11, 9, 0, 0),
+                JobNumber = "B002",
+                ClientCode = "Bravo Inc",
+                RefA = "PO-200",
+                StatusCode = "Completed",
+                SpeedName = "Economy",
+                CourierCode = "Bob",
+                PickupSuburb = "Brisbane",
+                DeliveryAddress = "Sydney",
+                VehicleName = "Truck"
+            }
+        }.AsQueryable();
 
     [Theory]
     [InlineData("date", false, 1, 2)]
@@ -62,6 +68,8 @@ public class JobRepositorySortingTests
     [InlineData("jobno", true, 2, 1)]
     [InlineData("client", false, 1, 2)]
     [InlineData("client", true, 2, 1)]
+    [InlineData("refa", false, 1, 2)]
+    [InlineData("refa", true, 2, 1)]
     [InlineData("status", false, 2, 1)]
     [InlineData("status", true, 1, 2)]
     [InlineData("speed", false, 3, 2)]
@@ -74,29 +82,58 @@ public class JobRepositorySortingTests
     [InlineData("delivery", true, 1, 2)]
     [InlineData("vehicle", false, 1, 2)]
     [InlineData("vehicle", true, 2, 1)]
-    public void ApplyDispatchJobSorting_SortsCorrectly(string column, bool descending, int expectedFirstId, int expectedLastId)
+    [InlineData("isarchived", false, 1, 2)]
+    [InlineData("isarchived", true, 2, 1)]
+    public void ApplyPodSearchSorting_SortsCorrectly(
+        string column, bool descending, int expectedFirstId, int expectedLastId)
     {
-        var jobs = CreateSortableJobs();
+        var keys = CreateSortableKeys();
 
-        var result = JobRepository.ApplyDispatchJobSorting(jobs, column, descending).ToList();
+        var result = JobRepository.ApplyPodSearchSorting(keys, column, descending).ToList();
 
         Assert.Equal(3, result.Count);
-        Assert.Equal(expectedFirstId, result.First().Id);
-        Assert.Equal(expectedLastId, result.Last().Id);
+        Assert.Equal(expectedFirstId, result.First().JobId);
+        Assert.Equal(expectedLastId, result.Last().JobId);
     }
 
     [Theory]
     [InlineData("unknown")]
     [InlineData("")]
     [InlineData(null)]
-    public void ApplyDispatchJobSorting_UnrecognisedColumn_FallsBackToDateAsc(string? column)
+    public void ApplyPodSearchSorting_UnrecognisedColumn_FallsBackToDateAsc(string? column)
     {
-        var jobs = CreateSortableJobs();
+        var keys = CreateSortableKeys();
 
-        var result = JobRepository.ApplyDispatchJobSorting(jobs, column, false).ToList();
+        var result = JobRepository.ApplyPodSearchSorting(keys, column, false).ToList();
 
-        Assert.Equal(1, result.First().Id);
-        Assert.Equal(2, result.Last().Id);
+        Assert.Equal(1, result.First().JobId);
+        Assert.Equal(2, result.Last().JobId);
+    }
+
+    [Fact]
+    public void ApplyPodSearchSorting_UnrecognisedColumnDescending_SortsDateDescending()
+    {
+        var keys = CreateSortableKeys();
+
+        var result = JobRepository.ApplyPodSearchSorting(keys, "unknown", true).ToList();
+
+        Assert.Equal([2, 3, 1], result.Select(k => k.JobId).ToList());
+    }
+
+    [Fact]
+    public void ApplyPodSearchSorting_TiedSortKeys_BreaksTheTieOnJobId()
+    {
+        // Without a total order, OFFSET/FETCH can serve the same row on two consecutive pages.
+        var keys = new List<PodSearchSortKey>
+        {
+            new() {JobId = 3, ClientCode = "Same"},
+            new() {JobId = 1, ClientCode = "Same"},
+            new() {JobId = 2, ClientCode = "Same"}
+        }.AsQueryable();
+
+        var result = JobRepository.ApplyPodSearchSorting(keys, "client", false).ToList();
+
+        Assert.Equal([1, 2, 3], result.Select(k => k.JobId).ToList());
     }
 
     [Fact]
@@ -254,8 +291,8 @@ public class JobRepositorySortingTests
         Assert.Equal(expected, result.To);
     }
 
-    private static TucCourier MakeCourier(int id, string code, string name, string surname) =>
-        new() { UccrId = id, Code = code, UccrName = name, UccrSurname = surname };
+    private static JobRepository.CourierLite MakeCourier(int id, string code, string name, string surname) =>
+        new(id, code, name, surname);
 
     [Fact]
     public void GetCourierDescription_Transfer_RunViewerCourier_FormatsOpsDescription()
@@ -301,6 +338,19 @@ public class JobRepositorySortingTests
             (int)ScanType.Transfer, courier, null, null, null);
 
         Assert.Equal("C01 Alice Smith", result);
+    }
+
+    [Fact]
+    public void GetCourierDescription_Transfer_NullCourier_DoesNotThrow()
+    {
+        // A Transfer scan can have a null/unmatched CourierId (the courier is a
+        // LEFT JOIN). It must not NRE — render an empty courier, plus any TransferTo.
+        var transferTo = MakeCourier(2, "C02", "Bob", "Jones");
+
+        var result = JobRepository.GetCourierDescription(
+            (int)ScanType.Transfer, null, transferTo, null, null);
+
+        Assert.Equal("   to C02 Bob Jones", result);
     }
 
     [Fact]

@@ -7,14 +7,10 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { QueryClientProvider } from '@tanstack/react-query';
 import { DispatchMap } from './DispatchMap';
 import type { IDispatchMapItem, ClearListEnvelopeData } from './DispatchMap.types';
-import { getTheme } from '../../../theme/muiTheme';
-import { queryClient } from '../../../query/queryClient';
 import angular from 'angular';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 
 /**
  * AngularJS Component Controller for React DispatchMap
@@ -59,9 +55,6 @@ class DispatchMapReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap AngularJS callbacks to run within digest cycle
         const handleMarkerClick = this.onMarkerClick
             ? (job: IDispatchMapItem) => {
@@ -79,23 +72,19 @@ class DispatchMapReactController implements angular.IController {
               }
             : undefined;
 
-        this.root.render(
-            <QueryClientProvider client={queryClient}>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <DispatchMap
-                        jobs={this.jobs}
-                        currentJob={this.currentJob}
-                        mapCenter={this.mapCenter}
-                        mapZoom={this.mapZoom}
-                        onMarkerClick={handleMarkerClick}
-                        showAvailableCouriers={this.showAvailableCouriers}
-                        clearListId={this.clearListId}
-                        onEnvelopeUpdate={handleEnvelopeUpdate}
-                    />
-                </ThemeProvider>
-            </QueryClientProvider>
-        );
+        this.root.render(islandTree(
+            <DispatchMap
+                jobs={this.jobs}
+                currentJob={this.currentJob}
+                mapCenter={this.mapCenter}
+                mapZoom={this.mapZoom}
+                onMarkerClick={handleMarkerClick}
+                showAvailableCouriers={this.showAvailableCouriers}
+                clearListId={this.clearListId}
+                onEnvelopeUpdate={handleEnvelopeUpdate}
+            />
+
+        ));
     }
 }
 

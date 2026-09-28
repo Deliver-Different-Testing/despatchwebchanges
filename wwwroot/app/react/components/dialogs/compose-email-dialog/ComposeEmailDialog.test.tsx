@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * ComposeEmailDialog Tests
  *
@@ -8,10 +7,18 @@
 
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {ComposeEmailDialog} from './ComposeEmailDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithMantine } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
+import {draftEmail} from '../../../services/aiAssistantApi';
+import {isAiEnabled} from '../../../../functions/aiSettings';
+
+jest.mock('../../../services/aiAssistantApi', () => ({draftEmail: jest.fn()}));
+jest.mock('../../../../functions/aiSettings', () => ({isAiEnabled: jest.fn()}));
+
+const mockDraftEmail = draftEmail as jest.Mock;
+const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 const createMockCouriers = (): DriverEmail[] => [
     {courierId: 1, code: 'C01', name: 'Alice Smith', email: 'alice@test.com', phone: '111', fleet: 'Alpha'},
@@ -27,7 +34,7 @@ const defaultProps = {
 };
 
 const renderDialog = (props: Partial<typeof defaultProps> = {}) =>
-    renderWithTheme(<ComposeEmailDialog {...defaultProps} {...props} />);
+    renderWithMantine(<ComposeEmailDialog {...defaultProps} {...props} />);
 
 describe('ComposeEmailDialog', () => {
     describe('Rendering', () => {
@@ -185,10 +192,9 @@ describe('ComposeEmailDialog', () => {
 
         it('should show body error when only subject is filled', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('Test Subject');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Test Subject'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             expect(screen.queryByText('Please enter an email subject')).not.toBeInTheDocument();
@@ -197,10 +203,9 @@ describe('ComposeEmailDialog', () => {
 
         it('should show subject error when only body is filled', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('Test body content');
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Test body content'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
@@ -209,12 +214,10 @@ describe('ComposeEmailDialog', () => {
 
         it('should treat whitespace-only subject as empty', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('   ');
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('Some body');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: '   '}});
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Some body'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
@@ -223,12 +226,10 @@ describe('ComposeEmailDialog', () => {
 
         it('should treat whitespace-only body as empty', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('Valid subject');
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('   ');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Valid subject'}});
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: '   '}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
@@ -237,26 +238,24 @@ describe('ComposeEmailDialog', () => {
 
         it('should clear subject error when user types in subject field', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('T');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'T'}});
 
             expect(screen.queryByText('Please enter an email subject')).not.toBeInTheDocument();
         });
 
         it('should clear body error when user types in body field', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
             expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
 
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('T');
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'T'}});
 
             expect(screen.queryByText('Please enter an email message')).not.toBeInTheDocument();
         });
@@ -265,12 +264,10 @@ describe('ComposeEmailDialog', () => {
     describe('Send', () => {
         it('should call onSend with correct data when form is valid', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('Test Subject');
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('Test body content');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Test Subject'}});
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Test body content'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             expect(defaultProps.onSend).toHaveBeenCalledWith({
@@ -282,12 +279,10 @@ describe('ComposeEmailDialog', () => {
 
         it('should trim subject and body before sending', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('  Padded Subject  ');
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('  Padded body  ');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: '  Padded Subject  '}});
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: '  Padded body  '}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             expect(defaultProps.onSend).toHaveBeenCalledWith(
@@ -300,12 +295,10 @@ describe('ComposeEmailDialog', () => {
 
         it('should include all selected courier IDs', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('Subject');
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('Body');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Subject'}});
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Body'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             const sentData = defaultProps.onSend.mock.calls[0][0] as GroupEmailData;
@@ -314,12 +307,10 @@ describe('ComposeEmailDialog', () => {
 
         it('should reset form fields after successful send', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('Test Subject');
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('Test body');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Test Subject'}});
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Test body'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             expect(screen.getByLabelText('Subject')).toHaveValue('');
@@ -343,12 +334,10 @@ describe('ComposeEmailDialog', () => {
         it('should handle single courier', async () => {
             const singleCourier = [createMockCouriers()[0]];
             renderDialog({selectedCouriers: singleCourier});
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('Direct');
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('Personal message');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Direct'}});
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Personal message'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
 
             expect(defaultProps.onSend).toHaveBeenCalledWith({
@@ -370,12 +359,10 @@ describe('ComposeEmailDialog', () => {
 
         it('should reset form fields when cancelled', async () => {
             renderDialog();
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            await user.click(screen.getByLabelText('Subject'));
-            await user.paste('Draft subject');
-            await user.click(screen.getByLabelText('Message'));
-            await user.paste('Draft body');
+            fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Draft subject'}});
+            fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Draft body'}});
             fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
             expect(screen.getByLabelText('Subject')).toHaveValue('');
@@ -401,6 +388,38 @@ describe('ComposeEmailDialog', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
             expect(defaultProps.onSend).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('AI draft', () => {
+        beforeEach(() => jest.clearAllMocks());
+
+        it('hides the Draft button when AI is disabled', () => {
+            mockIsAiEnabled.mockReturnValue(false);
+
+            renderDialog();
+
+            expect(screen.queryByRole('button', {name: /^draft$/i})).not.toBeInTheDocument();
+        });
+
+        it('fills subject and body from the AI draft', async () => {
+            mockIsAiEnabled.mockReturnValue(true);
+            mockDraftEmail.mockResolvedValueOnce({
+                subject: 'Drafted subject',
+                body: 'Drafted body',
+                usage: {inputTokens: 1, outputTokens: 1},
+            });
+            renderDialog();
+            const user = setupUser();
+
+            await user.click(screen.getByRole('button', {name: /^draft$/i}));
+
+            expect(await screen.findByDisplayValue('Drafted subject')).toBeInTheDocument();
+            expect(await screen.findByDisplayValue('Drafted body')).toBeInTheDocument();
+            expect(mockDraftEmail).toHaveBeenCalledWith(
+                expect.objectContaining({recipientNames: ['Alice Smith', 'Bob Jones', 'Charlie Brown']}),
+                expect.anything(),
+            );
         });
     });
 });

@@ -1,10 +1,9 @@
-/** @jest-environment jest-environment-jsdom */
 
 import React from 'react';
-import {screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {EditParcelDimensionsDialog} from './EditParcelDimensionsDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import { renderWithMantine as renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import type {ParcelDimensions} from './types';
 import {apiClient} from '../../../services/apiClient';
 
@@ -61,13 +60,32 @@ describe('EditParcelDimensionsDialog header parcel count', () => {
     });
 });
 
+// ── Read-only (locked job) ─────────────────────────────────────────
+
+describe('EditParcelDimensionsDialog read-only mode', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    it('hides Save, shows Close, disables inputs and shows the view-only subtitle', () => {
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} readOnly />);
+
+        expect(screen.getByText('View only — this job is locked')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^Save|Continue/i})).not.toBeInTheDocument();
+
+        // Parcel fields are visible but not editable.
+        const textboxes = screen.getAllByRole('textbox');
+        expect(textboxes.length).toBeGreaterThan(0);
+        textboxes.forEach((tb) => expect(tb).toBeDisabled());
+    });
+});
+
 // ── Discard changes confirmation ───────────────────────────────────
 
 describe('EditParcelDimensionsDialog discard changes confirmation', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('closes directly when no changes have been made', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
@@ -77,12 +95,12 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
     });
 
     it('shows confirmation dialog when cancelling with unsaved changes', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
         const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
-        await user.type(nameInput, 'Changed');
+        await user.paste('Changed');
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
 
@@ -91,12 +109,12 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
     });
 
     it('closes when Discard is confirmed', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
         const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
-        await user.type(nameInput, 'Changed');
+        await user.paste('Changed');
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
 
@@ -107,12 +125,12 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
     });
 
     it('keeps dialog open when Keep editing is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
         const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
-        await user.type(nameInput, 'Changed');
+        await user.paste('Changed');
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
 
@@ -131,7 +149,7 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('increases qty when + is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
         expect(screen.getByText(/1 parcel total/i)).toBeInTheDocument();
@@ -140,7 +158,7 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     });
 
     it('decreases qty when - is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel()]} />);
 
         expect(screen.getByText(/2 parcels total/i)).toBeInTheDocument();
@@ -154,7 +172,7 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     });
 
     it('deletes a row when Delete row is clicked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[
             mockParcel({itemName: 'A'}),
             mockParcel({itemName: 'B'}),
@@ -166,13 +184,82 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
     });
 
     it('keeps at least one empty row when the last row is deleted', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
         await user.click(screen.getByRole('button', {name: /delete row/i}));
 
         // Still has one row (reset to empty), so still shows 1 parcel total
         expect(screen.getByText(/1 type · 1 parcel total/i)).toBeInTheDocument();
+    });
+});
+
+// ── Barcode auto-fill from job number ──────────────────────────────
+
+describe('EditParcelDimensionsDialog barcode auto-fill', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    const savedParcels = () => {
+        const call = mockPost.mock.calls.find(c => c[0] === 'job/UpdateJobPackages');
+        return (call?.[1]?.parcels ?? []) as ParcelDimensions[];
+    };
+
+    it('auto-fills an added item barcode as {jobNumber}-N, continuing past existing barcodes and leaving them untouched', async () => {
+        const user = setupUser();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                jobNumber={55}
+                parcels={[mockParcel({weight: 5, barcode: '55-3'})]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /increase quantity/i}));
+        await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        const barcodes = savedParcels().map(p => p.barcode);
+        expect(barcodes).toContain('55-3'); // existing barcode preserved
+        expect(barcodes).toContain('55-4'); // new item continues the sequence
+    });
+
+    it('auto-fills the first barcode of a newly added package type', async () => {
+        const user = setupUser();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                jobNumber={55}
+                parcels={[mockParcel({weight: 5})]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /add package type/i}));
+
+        // Give the new type a weight so Save enables.
+        const weightInputs = screen.getAllByRole('textbox', {name: 'Weight'});
+        await user.clear(weightInputs[weightInputs.length - 1]);
+        await user.paste('5');
+
+        await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        expect(savedParcels().map(p => p.barcode)).toContain('55-1');
+    });
+
+    it('leaves added barcodes empty when no jobNumber is provided', async () => {
+        const user = setupUser();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                parcels={[mockParcel({weight: 5})]}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /increase quantity/i}));
+        await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        expect(savedParcels().some(p => p.barcode)).toBe(false);
     });
 });
 
@@ -188,27 +275,28 @@ describe('EditParcelDimensionsDialog weight validation', () => {
         expect(screen.getByText(/all parcels must have a weight greater than 0/i)).toBeInTheDocument();
     });
 
-    it('enables Save once all parcels have a weight greater than 0', async () => {
-        const user = userEvent.setup();
+    it('enables Save once all parcels have a weight greater than 0', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
-        const weightInputs = screen.getAllByPlaceholderText('—');
+        const weightInputs = screen.getAllByRole('textbox', {name: 'Weight'});
         const weightInput = weightInputs[weightInputs.length - 1];
-        await user.clear(weightInput);
-        await user.type(weightInput, '10');
+        /*
+         * fireEvent, not user.clear + paste: Mantine's modal moves focus to its
+         * first focusable element on mount, and in jsdom that lands after the
+         * first interaction — so the paste goes to the close button.
+         */
+        fireEvent.change(weightInput, {target: {value: '10'}});
 
         expect(screen.getByRole('button', {name: /save/i})).not.toBeDisabled();
         expect(screen.queryByText(/all parcels must have a weight greater than 0/i)).not.toBeInTheDocument();
     });
 
-    it('disables Save when a parcel weight is zero', async () => {
-        const user = userEvent.setup();
+    it('disables Save when a parcel weight is zero', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel({weight: 5})]} />);
 
-        const weightInputs = screen.getAllByPlaceholderText('—');
+        const weightInputs = screen.getAllByRole('textbox', {name: 'Weight'});
         const weightInput = weightInputs[weightInputs.length - 1];
-        await user.clear(weightInput);
-        await user.type(weightInput, '0');
+        fireEvent.change(weightInput, {target: {value: '0'}});
 
         expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
     });
@@ -232,7 +320,7 @@ describe('EditParcelDimensionsDialog partnerMode', () => {
     });
 
     it('skips the UpdateJobPackages POST and resolves with captured parcels', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         const showToast = jest.fn();
         renderWithTheme(
@@ -259,7 +347,7 @@ describe('EditParcelDimensionsDialog partnerMode', () => {
     });
 
     it('non-partner mode still POSTs to UpdateJobPackages', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         const onSubmit = jest.fn();
         renderWithTheme(
             <EditParcelDimensionsDialog

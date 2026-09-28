@@ -6,108 +6,38 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import {JobFileUploadDialog} from './JobFileUploadDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import type {FileUploadType} from './types';
 import type {ToastService} from '../../../services/toastService';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-interface DialogState {
-    open: boolean;
-    jobId: number;
-    initialUploadType: FileUploadType;
-    resolve?: (value: void) => void;
+const host = createDialogHost<{jobId: number; initialUploadType: FileUploadType}, void>({
+    containerId: 'react-job-file-upload-dialog-root',
+    render: ({open: isOpen, payload, close, showToast}) => islandTree(
+        <JobFileUploadDialog
+            open={isOpen}
+            jobId={payload.jobId}
+            initialUploadType={payload.initialUploadType}
+            onClose={() => close()}
+            showToast={showToast}
+        />
+    ),
+});
+
+function normalizeUploadType(uploadType: FileUploadType | string): FileUploadType {
+    if (uploadType === 'pod' || uploadType === 'POD') return 'pod';
+    if (uploadType === 'both' || uploadType === 'BOTH') return 'both';
+    return 'normal';
 }
 
-const defaultToastService: ToastService = {
-    showToast: (message: string, type: string) => {
-        console.log(`[${type.toUpperCase()}] ${message}`);
-    },
-};
-
-class JobFileUploadDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private toastService: ToastService = defaultToastService;
-    private dialogState: DialogState = {
-        open: false,
-        jobId: 0,
-        initialUploadType: 'normal',
-    };
-
-    setToastService(service: ToastService): void {
-        this.toastService = service;
-    }
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-job-file-upload-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.();
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const currentTheme = getTheme();
-
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <JobFileUploadDialog
-                        open={this.dialogState.open}
-                        jobId={this.dialogState.jobId}
-                        initialUploadType={this.dialogState.initialUploadType}
-                        onClose={handleClose}
-                        showToast={this.toastService.showToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
-    }
-
-    open(jobId: number, uploadType: FileUploadType | string = 'normal'): Promise<void> {
-        this.initializeDialogRoot();
-
-        const normalizedType: FileUploadType =
-            (uploadType === 'pod' || uploadType === 'POD') ? 'pod'
-            : (uploadType === 'both' || uploadType === 'BOTH') ? 'both'
-            : 'normal';
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                jobId,
-                initialUploadType: normalizedType,
-                resolve,
-            };
-            this.renderDialog();
-        });
-    }
-}
-
-const dialogManager = new JobFileUploadDialogManager();
-
-export function open(jobId: number, uploadType?: FileUploadType | string): Promise<void> {
-    return dialogManager.open(jobId, uploadType);
+export function open(jobId: number, uploadType: FileUploadType | string = 'normal'): Promise<void> {
+    return host.open({jobId, initialUploadType: normalizeUploadType(uploadType)});
 }
 
 export function setToastService(service: ToastService): void {
-    dialogManager.setToastService(service);
+    host.setToastService(service);
 }
 
 // Expose to window for AngularJS and React access

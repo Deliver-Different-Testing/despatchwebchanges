@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * HereMap Component Tests
  *
@@ -8,7 +7,7 @@
 
 import React from 'react';
 import {render} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantine} from '../../../__testUtils__';
 import {HereMap} from './HereMap';
 import type {
     CourierLocation,
@@ -21,11 +20,8 @@ import type {
 import {DEFAULT_MAP_CONFIG, getDefaultMapCenter, NZ_MAP_CENTER, US_MAP_CENTER, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES} from './HereMap.types';
 import {createCurvedPath, getAllVisiblePoints,} from './hereMapUtils';
 
-const theme = createTheme();
 
-const renderWithProviders = (ui: React.ReactElement) => {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-};
+const renderWithProviders = renderWithMantine;
 
 // Sample data factories
 const createMockCredentials = (): HereMapCredentials => ({
@@ -112,6 +108,19 @@ describe('HereMap Component', () => {
             renderWithProviders(<HereMap {...props} />);
 
             expect(document.getElementById('test-map')).toBeInTheDocument();
+        });
+
+        it('isolates the map container stacking context so HERE overlays cannot cover the control rail', () => {
+            // The MapZoomViewControls rail is a sibling of the map container at
+            // zIndex 10. HERE Maps renders info bubbles / tooltips inside the
+            // container at a far higher z-index (~1001); unless the container
+            // establishes its own stacking context those overlays paint over the
+            // rail and it "disappears". Isolating the container keeps HERE's
+            // internal stacking contained below the sibling controls.
+            const props = createDefaultProps({credentials: undefined});
+            renderWithProviders(<HereMap {...props} />);
+
+            expect(document.getElementById('test-map')).toHaveStyle({isolation: 'isolate'});
         });
 
         it('renders the zoom/traffic/layers control buttons', () => {
@@ -282,8 +291,8 @@ describe('MAP_CONSTANTS', () => {
 
 describe('MARKER_ICONS', () => {
     it('has expected icon URLs', () => {
-        expect(MARKER_ICONS.FROM).toContain('39e75f'); // Green for pickup
-        expect(MARKER_ICONS.TO).toContain('ff6863'); // Red for delivery
+        expect(MARKER_ICONS.FROM).toContain('2196f3'); // Blue for pickup (US primary.main)
+        expect(MARKER_ICONS.TO).toContain('4caf50'); // Green for delivery (success.main)
         expect(MARKER_ICONS.EXTRA).toContain('000000'); // Black for extra markers
     });
 });
@@ -335,6 +344,18 @@ describe('getDefaultMapCenter', () => {
     it('returns NZ center for non-US customers', () => {
         (window as any).serverConfig = {isUSCustomer: false};
         expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);
+    });
+
+    it('prefers the network partner address over the country centre', () => {
+        // An NP works one address, not a country. The server only sets this for NP
+        // sessions whose agent record is geocoded.
+        (window as any).serverConfig = {isUSCustomer: false, npMapCenter: {lat: -36.85, lng: 174.76}};
+        expect(getDefaultMapCenter()).toEqual({lat: -36.85, lng: 174.76});
+    });
+
+    it('falls back to the country centre when the partner address is not geocoded', () => {
+        (window as any).serverConfig = {isUSCustomer: true, npMapCenter: null};
+        expect(getDefaultMapCenter()).toEqual(US_MAP_CENTER);
     });
 
     it('returns NZ center when isUSCustomer is undefined', () => {

@@ -10,18 +10,10 @@ jest.mock('angular', () => ({
     __esModule: true,
 }));
 
-jest.mock('../../../functions/countSubJobs', () => ({
-    default: jest.fn((jobNo: string, relatedJobs: string) => {
-        return relatedJobs ? relatedJobs.split(',').length : 0;
-    }),
-    __esModule: true,
-}));
-
-jest.mock('../../Nationwide/nationwide.interfaces', () => ({}));
+jest.mock('../../../interfaces/nationwideFlight.interfaces', () => ({}));
 jest.mock('../../../interfaces/dialog-result.interfaces', () => ({}));
 
 import FlightAgentConfirmationDialogService from './flight-agent-confirmation-dialog.service';
-import countSubJobs from '../../../functions/countSubJobs';
 
 // --- Mock factories ---
 
@@ -68,7 +60,6 @@ describe('FlightAgentConfirmationDialogService', () => {
 
         delete (window as any).React;
         delete (window as any).ReactFlightAgentConfirmationDialog;
-        (countSubJobs as jest.Mock).mockClear();
     });
 
     afterEach(() => {
@@ -80,7 +71,6 @@ describe('FlightAgentConfirmationDialogService', () => {
     function setupWindowGlobal() {
         (window as any).ReactFlightAgentConfirmationDialog = {
             openFlightDialog: jest.fn().mockResolvedValue(createMockFlightResult()),
-            openAgentDialog: jest.fn().mockResolvedValue(createMockFlightResult()),
         };
     }
 
@@ -157,15 +147,6 @@ describe('FlightAgentConfirmationDialogService', () => {
                 files: ['dist/flightAgentConfirmationDialogReact.js'],
             });
         });
-
-        it('should also load via agentConfirmationDialog when not yet loaded', async () => {
-            const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0, relatedJobs: null };
-            const agent = { id: 1, text: 'Agent A' };
-
-            await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
-
-            expect(mockHttp.get).toHaveBeenCalledWith('dist/manifest.json');
-        });
     });
 
     describe('Flight Dialog Opening', () => {
@@ -226,86 +207,6 @@ describe('FlightAgentConfirmationDialogService', () => {
         });
     });
 
-    describe('Agent Dialog Opening', () => {
-        beforeEach(() => {
-            setupWindowGlobal();
-        });
-
-        it('should call openAgentDialog with correct parameters', async () => {
-            const job = { id: 55, jobNo: 'AG-55', conNote: 'CN-100', dgClass: 2, relatedJobs: null };
-            const agent = { id: 10, text: 'Test Agent' };
-
-            await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
-
-            expect((window as any).ReactFlightAgentConfirmationDialog.openAgentDialog).toHaveBeenCalledWith({
-                jobId: 55,
-                jobNumber: 'AG-55',
-                agent: agent,
-                existingAwb: 'CN-100',
-                dgClass: 2,
-                stopJobCount: 0,
-            });
-        });
-
-        it('should calculate stopJobCount using countSubJobs when relatedJobs exists', async () => {
-            const relatedJobs = 'JOB1a,JOB1b,JOB1c';
-            const job = { id: 1, jobNo: 'JOB1', conNote: '', dgClass: 0, relatedJobs };
-            const agent = { id: 1, text: 'Agent' };
-
-            await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
-
-            expect(countSubJobs).toHaveBeenCalledWith('JOB1', relatedJobs);
-            const callArgs = (window as any).ReactFlightAgentConfirmationDialog.openAgentDialog.mock.calls[0][0];
-            expect(callArgs.stopJobCount).toBe(3);
-        });
-
-        it('should set stopJobCount to 0 when relatedJobs is falsy', async () => {
-            const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0, relatedJobs: null };
-            const agent = { id: 1, text: 'Agent' };
-
-            await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
-
-            expect(countSubJobs).not.toHaveBeenCalled();
-            const callArgs = (window as any).ReactFlightAgentConfirmationDialog.openAgentDialog.mock.calls[0][0];
-            expect(callArgs.stopJobCount).toBe(0);
-        });
-
-        it('should set stopJobCount to 0 when relatedJobs is undefined', async () => {
-            const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0, relatedJobs: undefined };
-            const agent = { id: 1, text: 'Agent' };
-
-            await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
-
-            expect(countSubJobs).not.toHaveBeenCalled();
-            const callArgs = (window as any).ReactFlightAgentConfirmationDialog.openAgentDialog.mock.calls[0][0];
-            expect(callArgs.stopJobCount).toBe(0);
-        });
-
-        it('should return mapped result from agent dialog', async () => {
-            const expectedResult = createMockFlightResult({
-                shouldAssign: true,
-                awb: 'AWB-AGENT',
-                shouldAssignToStopJobs: true,
-                packageDeliveryNotes: 'Deliver to reception',
-            });
-            (window as any).ReactFlightAgentConfirmationDialog.openAgentDialog.mockResolvedValue(expectedResult);
-
-            const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0, relatedJobs: null };
-            const agent = { id: 1, text: 'Agent' };
-
-            const result = await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
-
-            expect(result).toEqual({
-                shouldAssign: true,
-                awb: 'AWB-AGENT',
-                shouldAssignToStopJobs: true,
-                packageReadyTime: undefined,
-                packageDeliverByTime: undefined,
-                packageDeliveryNotes: 'Deliver to reception',
-            });
-        });
-    });
-
     describe('Error Handling', () => {
         it('should return { shouldAssign: false, awb: undefined } on flight dialog error', async () => {
             setupWindowGlobal();
@@ -317,20 +218,6 @@ describe('FlightAgentConfirmationDialogService', () => {
             const flight = { flightNumber: 'NZ123' };
 
             const result = await service.flightConfirmationDialog(mockEvent, job as any, flight as any);
-
-            expect(result).toEqual({ shouldAssign: false, awb: undefined });
-        });
-
-        it('should return { shouldAssign: false, awb: undefined } on agent dialog error', async () => {
-            setupWindowGlobal();
-            (window as any).ReactFlightAgentConfirmationDialog.openAgentDialog.mockRejectedValue(
-                new Error('Dialog error')
-            );
-
-            const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0, relatedJobs: null };
-            const agent = { id: 1, text: 'Agent' };
-
-            const result = await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
 
             expect(result).toEqual({ shouldAssign: false, awb: undefined });
         });
@@ -347,18 +234,6 @@ describe('FlightAgentConfirmationDialogService', () => {
             expect(result).toEqual({ shouldAssign: false, awb: undefined });
         });
 
-        it('should return { shouldAssign: false, awb: undefined } on agent dialog user cancellation', async () => {
-            setupWindowGlobal();
-            (window as any).ReactFlightAgentConfirmationDialog.openAgentDialog.mockRejectedValue(undefined);
-
-            const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0, relatedJobs: null };
-            const agent = { id: 1, text: 'Agent' };
-
-            const result = await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
-
-            expect(result).toEqual({ shouldAssign: false, awb: undefined });
-        });
-
         it('should not rethrow when flight dialog load fails', async () => {
             mockHttp.get.mockRejectedValue(new Error('Network error'));
 
@@ -370,31 +245,11 @@ describe('FlightAgentConfirmationDialogService', () => {
             expect(result).toEqual({ shouldAssign: false, awb: undefined });
         });
 
-        it('should not rethrow when agent dialog load fails', async () => {
-            mockHttp.get.mockRejectedValue(new Error('Network error'));
-
-            const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0, relatedJobs: null };
-            const agent = { id: 1, text: 'Agent' };
-
-            const result = await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
-
-            expect(result).toEqual({ shouldAssign: false, awb: undefined });
-        });
-
         it('should return fallback when window global is missing after load for flight dialog', async () => {
             const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0 };
             const flight = { flightNumber: 'NZ123' };
 
             const result = await service.flightConfirmationDialog(mockEvent, job as any, flight as any);
-
-            expect(result).toEqual({ shouldAssign: false, awb: undefined });
-        });
-
-        it('should return fallback when window global is missing after load for agent dialog', async () => {
-            const job = { id: 1, jobNo: 'JOB-1', conNote: '', dgClass: 0, relatedJobs: null };
-            const agent = { id: 1, text: 'Agent' };
-
-            const result = await service.agentConfirmationDialog(mockEvent, job as any, agent as any);
 
             expect(result).toEqual({ shouldAssign: false, awb: undefined });
         });

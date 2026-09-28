@@ -15,13 +15,13 @@ public class OverviewController(IJobQueryRepository jobRepository, ICourierRepos
     {
         try
         {
-            // Validate status group
             if (!Enum.IsDefined(typeof(JobStatusGroup), parameters.StatusGroup))
+            {
                 return BadRequest($"Invalid status group: {parameters.StatusGroup}");
+            }
 
             var statusEnum = (JobStatusGroup)parameters.StatusGroup;
 
-            // Get paginated jobs
             var paginatedJobs = await jobRepository.GetJobsForOverviewPageAsync(
                 statusEnum,
                 parameters

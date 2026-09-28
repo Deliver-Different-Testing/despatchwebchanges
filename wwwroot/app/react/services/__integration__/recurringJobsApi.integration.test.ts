@@ -99,35 +99,6 @@ describe('recurringJobsApi integration', () => {
         });
     });
 
-    describe('voidPrebookJob', () => {
-        it('voids a job with correct parameter', async () => {
-            let capturedBody: unknown = null;
-
-            server.use(
-                http.post('*/job/VoidPrebookJob', async ({ request }) => {
-                    capturedBody = await request.json();
-                    return new HttpResponse(null, { status: 200 });
-                })
-            );
-
-            await recurringJobsApi.voidPrebookJob(123);
-
-            expect(capturedBody).toMatchObject({ jobId: 123 });
-        });
-
-        it('handles not found error', async () => {
-            server.use(
-                http.post('*/job/VoidPrebookJob', () => {
-                    return HttpResponse.json({ message: 'Job not found' }, { status: 404 });
-                })
-            );
-
-            await expect(recurringJobsApi.voidPrebookJob(999)).rejects.toMatchObject({
-                status: 404,
-            });
-        });
-    });
-
     describe('exportToCsv', () => {
         it('sends query and triggers download', async () => {
             let capturedBody: unknown = null;

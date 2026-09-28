@@ -1,10 +1,10 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Optimised: read-only tests consolidated to reduce render count.
  */
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, render, screen} from '@testing-library/react';
+import {MantineTestProvider} from '../../../__testUtils__';
+import {createTestQueryClient} from '../../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverEarningsTab} from './DriverEarningsTab';
 import {CourierDailyEarningsPaginated} from '../../../interfaces';
@@ -24,24 +24,14 @@ jest.mock('../../../services/driverManagementApi', () => ({
 
 const mockUseDriverEarnings = useDriverEarnings as jest.MockedFunction<typeof useDriverEarnings>;
 
-const theme = createTheme();
-
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-            },
-        },
-    });
 
 const renderWithProviders = (showToast = jest.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <DriverEarningsTab showToast={showToast}/>
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>
     );
 };
@@ -108,94 +98,68 @@ describe('DriverEarningsTab', () => {
         setupMocks();
         renderWithProviders();
 
+        const lastCall = () =>
+            mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1][0];
+
         // Click Name (default active asc, toggles to desc)
         fireEvent.click(screen.getByText('Name'));
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('name');
-            expect(lastCall[0].sortDescending).toBe(true);
-        });
+        expect(lastCall().orderBy).toBe('name');
+        expect(lastCall().sortDescending).toBe(true);
 
         // Click Hours Logged
         fireEvent.click(screen.getByText('Hours Logged'));
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('hoursLogged');
-        });
+        expect(lastCall().orderBy).toBe('hoursLogged');
 
         // Click Deliveries
         fireEvent.click(screen.getByText('Deliveries'));
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('deliveries');
-        });
+        expect(lastCall().orderBy).toBe('deliveries');
 
         // Click Earnings
         fireEvent.click(screen.getByText('Earnings', {selector: 'span'}));
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('earnings');
-        });
+        expect(lastCall().orderBy).toBe('earnings');
 
         // Click Hourly Rate
         fireEvent.click(screen.getByText('Hourly Rate'));
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('hourlyRate');
-        });
+        expect(lastCall().orderBy).toBe('hourlyRate');
     });
 
     it('should toggle direction: first click desc (on active), second click asc, third click desc', async () => {
         setupMocks();
         renderWithProviders();
 
+        const lastCall = () =>
+            mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1][0];
+
         // Name is default active asc, clicking toggles to desc
         fireEvent.click(screen.getByText('Name'));
-
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('name');
-            expect(lastCall[0].sortDescending).toBe(true);
-        });
+        expect(lastCall().orderBy).toBe('name');
+        expect(lastCall().sortDescending).toBe(true);
 
         // Second click → asc
         fireEvent.click(screen.getByText('Name'));
-
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('name');
-            expect(lastCall[0].sortDescending).toBe(false);
-        });
+        expect(lastCall().orderBy).toBe('name');
+        expect(lastCall().sortDescending).toBe(false);
 
         // Third click → desc
         fireEvent.click(screen.getByText('Name'));
-
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('name');
-            expect(lastCall[0].sortDescending).toBe(true);
-        });
+        expect(lastCall().orderBy).toBe('name');
+        expect(lastCall().sortDescending).toBe(true);
     });
 
     it('should reset page to 1 when sort changes and pass sortDescending correctly', async () => {
         setupMocks();
         renderWithProviders();
 
+        const lastCall = () =>
+            mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1][0];
+
         // Clicking a different column should reset page to 1
         fireEvent.click(screen.getByText('Hours Logged'));
-
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].page).toBe(1);
-        });
+        expect(lastCall().page).toBe(1);
 
         // Hours Logged is now active asc → click toggles to desc, verify sortDescending
         fireEvent.click(screen.getByText('Hours Logged'));
-
-        await waitFor(() => {
-            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-            expect(lastCall[0].sortDescending).toBe(true);
-        });
+        expect(lastCall().sortDescending).toBe(true);
     });
 
     it('should show loading indicator when isLoading is true', () => {

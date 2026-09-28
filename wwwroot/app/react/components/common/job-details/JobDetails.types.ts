@@ -19,7 +19,7 @@ export type {
     IAssignedFlight,
 } from '../../../../interfaces/job.interface';
 
-export type {IFlightSegment} from '../../../../components/Nationwide/nationwide.interfaces';
+export type {IFlightSegment} from '../../../../interfaces/nationwideFlight.interfaces';
 export type {PodPhoto} from '../pod-photo-viewer/pod-photo-viewer.types';
 export type {UpdatePodDetailsRequest} from '../../../../interfaces/requests.interfaces';
 export type {Is3PhotoInfo} from '../../../../interfaces/aws.interfaces';
@@ -57,6 +57,7 @@ export const DEFAULT_FIELD_VISIBILITY: FieldVisibility = {
     // Delivery Details section fields
     dispatcherName: true,
     courierName: true,
+    courierNumber: true,
     courierMobile: true,
     scheduleName: true,
 
@@ -145,6 +146,14 @@ export function getTrackingMethodText(method?: number): string {
         case 3: return 'Email & Mobile';
         default: return '';
     }
+}
+
+/**
+ * The job id POD media, documents and uploads are keyed by. A bulk (scheduled) row's own id is a
+ * BulkJobId; everything POD-related lives against the live job it materialised into.
+ */
+export function podMediaJobId(job: {id: number; linkedJobId?: number}): number {
+    return job.linkedJobId ?? job.id;
 }
 
 /** Check if a photo file is an image */

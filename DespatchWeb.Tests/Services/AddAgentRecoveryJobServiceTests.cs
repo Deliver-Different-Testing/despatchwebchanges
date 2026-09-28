@@ -1,6 +1,7 @@
 ﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using NSubstitute;
@@ -17,6 +18,9 @@ public class AddAgentRecoveryJobServiceTests
     private readonly INationwideJobRepository _nationwideJobRepositoryMock = Substitute.For<INationwideJobRepository>();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
+
+    // The leg created by CreateMinimalTucJobAsync, then mutated in place by the service.
+    private TucJob? _createdLeg;
 
     private AddAgentRecoveryJobService CreateService() => new(
         _jobQueryRepositoryMock,
@@ -61,6 +65,28 @@ public class AddAgentRecoveryJobServiceTests
     }
 
     [Fact]
+    public async Task AddRecoveryAgentJobAsync_CreateJobFails_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+        _jobCommandRepositoryMock.CreateMinimalTucJobAsync(
+                Arg.Any<CreateMinimalTucJobInputModel>(), Arg.Any<CancellationToken>())
+            .Returns(new CreateMinimalTucJobResponse { Success = false, Message = "SP error" });
+
+        // Assert
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<int>>?)Act ??
+                                                            throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddRecoveryAgentJobAsync(request);
+    }
+
+    [Fact]
     public async Task AddRecoveryAgentJobAsync_ValidRequest_CreatesNewJob()
     {
         // Arrange
@@ -74,12 +100,16 @@ public class AddAgentRecoveryJobServiceTests
         // Act
         var result = await service.AddRecoveryAgentJobAsync(request);
 
-        // Assert
+        // Assert - the leg is booked through the maintained create-job path...
         Assert.Equal(newJobId, result);
-        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
-            j.UcjbNumber == "JOB001R1" &&
-            j.ParentId == parentJob.UcjbId &&
-            j.JobRelationshipTypeId == (int)JobRelationshipTypes.SplitChild));
+        await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001R1"),
+            Arg.Any<CancellationToken>());
+
+        // ...then patched into a hidden SplitChild leg.
+        Assert.NotNull(_createdLeg);
+        Assert.Equal(parentJob.UcjbId, _createdLeg.ParentId);
+        Assert.Equal((int)JobRelationshipTypes.SplitChild, _createdLeg.JobRelationshipTypeId);
     }
 
     [Fact]
@@ -97,8 +127,8 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
-            j.ParentId == 500));
+        Assert.NotNull(_createdLeg);
+        Assert.Equal(500, _createdLeg.ParentId);
     }
 
     [Fact]
@@ -116,7 +146,7 @@ public class AddAgentRecoveryJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucNote>(n =>
-            n.JobId == parentJob.UcjbId &&
+            n!.JobId == parentJob.UcjbId &&
             n.NoteText.Contains("Recovery agent") &&
             n.NoteTypeId == (int)NoteType.AgentUpdate));
     }
@@ -128,7 +158,7 @@ public class AddAgentRecoveryJobServiceTests
         var service = CreateService();
         var request = CreateValidRequest();
         var parentJob = CreateParentJob();
-        var newJobId = 999;
+        const int newJobId = 999;
 
         SetupSuccessfulMocks(request, parentJob, newJobId);
 
@@ -137,6 +167,7 @@ public class AddAgentRecoveryJobServiceTests
 
         // Assert
         await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<JobRecoveryAgent>(r =>
+            r!.JobId == newJobId &&
             r.AgentId == request.AgentId &&
             r.AirportId == request.AirportId &&
             r.IsPrimary == request.IsPrimaryRecoveryAgent));
@@ -155,7 +186,7 @@ public class AddAgentRecoveryJobServiceTests
         // Act
         await service.AddRecoveryAgentJobAsync(request);
 
-        // Assert
+        // Assert - one save after applying the leg fields, one after the note/agent records.
         await _jobCommandRepositoryMock.Received(2).SaveChangesAsync();
     }
 
@@ -177,11 +208,11 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
-            j.UcjbClientId == parentJob.UcjbClientId &&
-            j.UcjbWeight == parentJob.UcjbWeight &&
-            j.UcjbSpeed == parentJob.UcjbSpeed &&
-            j.UcjbType == parentJob.UcjbType));
+        Assert.NotNull(_createdLeg);
+        Assert.Equal(parentJob.UcjbClientId, _createdLeg.UcjbClientId);
+        Assert.Equal(parentJob.UcjbWeight, _createdLeg.UcjbWeight);
+        Assert.Equal(parentJob.UcjbSpeed, _createdLeg.UcjbSpeed);
+        Assert.Equal(parentJob.UcjbType, _createdLeg.UcjbType);
     }
 
     [Fact]
@@ -198,8 +229,8 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
-            j.UcjbAttention == true));
+        Assert.NotNull(_createdLeg);
+        Assert.True(_createdLeg.UcjbAttention);
     }
 
     [Fact]
@@ -217,8 +248,8 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
-            j.UcjbOurRef == "PARENT123"));
+        Assert.NotNull(_createdLeg);
+        Assert.Equal("PARENT123", _createdLeg.UcjbOurRef);
     }
 
     [Fact]
@@ -236,8 +267,9 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
-            j.UcjbNumber == "JOB001R1"));
+        await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001R1"),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -259,8 +291,68 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
-            j.UcjbNumber == "JOB001R2"));
+        await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001R2"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AddRecoveryAgentJobAsync_NewLeg_DoesNotDuplicateParentCharge()
+    {
+        // Regression guard for the reported "split charges the client x2 / x3" bug.
+        //
+        // The recovery leg is an internal, non-dispatched sub-record (DisplayInDespatch = false,
+        // RatedManually = true) — the client charge stays on the parent job. Previously the leg
+        // copied job.UcjbAmount, so both the untouched parent (relType null -> billed) and the new
+        // SplitChild leg (DisplayStatement -> billed) appeared on the client statement at the full
+        // amount: one agent => 2x, a second agent => 3x.
+        //
+        // The leg must now carry no charge so the family grand-total equals the original job amount.
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentJob = CreateParentJob();
+        parentJob.UcjbAmount = 100m;
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+
+        await service.AddRecoveryAgentJobAsync(request);
+
+        Assert.NotNull(_createdLeg);
+
+        // The leg is still a SplitChild, but it carries no client charge...
+        Assert.Equal((int)JobRelationshipTypes.SplitChild, _createdLeg.JobRelationshipTypeId);
+        Assert.Equal(0m, _createdLeg.UcjbAmount);
+
+        // ...and the parent keeps the original charge.
+        Assert.Equal(100m, parentJob.UcjbAmount);
+
+        // Invariant: parent + legs equals the original total — no double-charging.
+        var grandTotal = (parentJob.UcjbAmount ?? 0m) + (_createdLeg.UcjbAmount ?? 0m);
+        Assert.Equal(100m, grandTotal);
+    }
+
+    [Fact]
+    public async Task AddRecoveryAgentJobAsync_SecondAgent_StillNoDuplicateCharge()
+    {
+        // A second recovery agent was the x3 case. Each added leg must stay at zero charge so the
+        // family total never drifts above the original regardless of how many agents are added.
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentJob = CreateParentJob();
+        parentJob.UcjbNumber = "JOB001";
+        parentJob.UcjbAmount = 100m;
+
+        SetupSuccessfulMocks(request, parentJob, 1000);
+        _jobQueryRepositoryMock.JobNumberExistsAsync("JOB001R1").Returns(true); // first agent already added
+        _jobQueryRepositoryMock.JobNumberExistsAsync("JOB001R2").Returns(false);
+
+        await service.AddRecoveryAgentJobAsync(request);
+
+        await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m!.JobNumber == "JOB001R2"),
+            Arg.Any<CancellationToken>());
+        Assert.NotNull(_createdLeg);
+        Assert.Equal(0m, _createdLeg.UcjbAmount);
     }
 
     private static AddAgentRecoveryRequest CreateValidRequest() => new()
@@ -278,6 +370,8 @@ public class AddAgentRecoveryJobServiceTests
         UcjbDate = TestDates.Today,
         UcjbTime = TestDates.Today.AddHours(10),
         UcjbClientId = 1,
+        UcjbContact = "Booker",
+        UcjbSpeed = 1,
         UcjbStatus = 1,
         UcjbFrom = 100,
         UcjbFromAddr = "123 Origin St",
@@ -287,6 +381,8 @@ public class AddAgentRecoveryJobServiceTests
 
     private void SetupSuccessfulMocks(AddAgentRecoveryRequest request, TucJob parentJob, int newJobId)
     {
+        _createdLeg = new TucJob { UcjbId = newJobId };
+
         _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
             .Returns(parentJob);
         _jobQueryRepositoryMock.JobNumberExistsAsync(Arg.Any<string>())
@@ -295,14 +391,16 @@ public class AddAgentRecoveryJobServiceTests
             .Returns("Test Agent");
         _tenantInfoServiceMock.GetStaffId()
             .Returns(1);
+        _tenantInfoServiceMock.GetContactId()
+            .Returns(1);
 
-        // Capture the job when added and set its ID
-        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<TucJob>())
-            .Returns(callInfo =>
-            {                                                                                                                                                                   
-                callInfo.Arg<TucJob>().UcjbId = newJobId;
-                return Task.CompletedTask;                                                                                                                                      
-            });          
+        // The leg is created via the maintained create-job path, then reloaded for the field update.
+        _jobCommandRepositoryMock.CreateMinimalTucJobAsync(
+                Arg.Any<CreateMinimalTucJobInputModel>(), Arg.Any<CancellationToken>())
+            .Returns(new CreateMinimalTucJobResponse { Success = true, JobId = newJobId });
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(newJobId)
+            .Returns(_createdLeg);
+
         _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<TucNote>())
             .Returns(Task.CompletedTask);
         _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<JobRecoveryAgent>())

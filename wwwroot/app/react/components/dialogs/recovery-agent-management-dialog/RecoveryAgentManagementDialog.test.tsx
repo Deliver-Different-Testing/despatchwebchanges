@@ -1,14 +1,17 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * RecoveryAgentManagementDialog Component Tests
  */
 
 import React from 'react';
 import {act, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {RecoveryAgentManagementDialog, RecoveryAgentManagementDialogProps} from './RecoveryAgentManagementDialog';
-import {renderWithTheme} from '../../../__testUtils__';
-import type {RecoveryAgentJobViewModel, Suggestion} from '../../../services/nationwideApi';
+import { renderWithMantine } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
+import type {Suggestion} from '../../../interfaces/job';
+import type {RecoveryAgentJobViewModel} from '../../../interfaces/nationwideJobs';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 const mockAirports: Suggestion[] = [
     {id: 1, text: 'Los Angeles International (LAX)'},
@@ -78,14 +81,14 @@ const createMockProps = (
 describe('RecoveryAgentManagementDialog', () => {
     it('does not render dialog when open is false', () => {
         const props = createMockProps({open: false});
-        renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+        renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('renders job header, package details, and existing recovery agents', async () => {
         const props = createMockProps();
         await act(async () => {
-            renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+            renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         });
 
         await waitFor(() => {
@@ -112,7 +115,7 @@ describe('RecoveryAgentManagementDialog', () => {
     it('shows empty state when there are no recovery agents', async () => {
         const props = createMockProps({job: emptyJob});
         await act(async () => {
-            renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+            renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         });
 
         expect(screen.getByText('No Recovery Agents Assigned')).toBeInTheDocument();
@@ -123,14 +126,14 @@ describe('RecoveryAgentManagementDialog', () => {
 
     it('shows a loading indicator until the job is provided', () => {
         const props = createMockProps({job: null});
-        renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+        renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('loads agent options for the chosen airport and assigns an agent', async () => {
         const props = createMockProps();
         await act(async () => {
-            renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+            renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         });
 
         await waitFor(() => {
@@ -188,7 +191,7 @@ describe('RecoveryAgentManagementDialog', () => {
     it('shows a warning when promoting a new agent to primary while another primary exists', async () => {
         const props = createMockProps();
         await act(async () => {
-            renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+            renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         });
         await waitFor(() => {
             expect(props.onLoadAirports).toHaveBeenCalled();
@@ -213,7 +216,7 @@ describe('RecoveryAgentManagementDialog', () => {
     it('opens the edit form and saves a primary toggle change', async () => {
         const props = createMockProps();
         await act(async () => {
-            renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+            renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         });
 
         // Click edit on Sue (the non-primary agent)
@@ -250,7 +253,7 @@ describe('RecoveryAgentManagementDialog', () => {
         try {
             const props = createMockProps();
             await act(async () => {
-                renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+                renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
             });
 
             const removeButton = screen.getByRole('button', {name: /remove sue recovery/i});
@@ -277,7 +280,7 @@ describe('RecoveryAgentManagementDialog', () => {
         try {
             const props = createMockProps();
             await act(async () => {
-                renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+                renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
             });
 
             const removeButton = screen.getByRole('button', {name: /remove sue recovery/i});
@@ -298,7 +301,7 @@ describe('RecoveryAgentManagementDialog', () => {
                 onAddAgent: jest.fn().mockRejectedValue(new Error('network')),
             });
             await act(async () => {
-                renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+                renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
             });
 
             await waitFor(() => {
@@ -344,7 +347,7 @@ describe('RecoveryAgentManagementDialog', () => {
     it('calls onClose when no forms are open and Cancel is clicked', async () => {
         const props = createMockProps();
         await act(async () => {
-            renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+            renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         });
 
         await waitFor(() => {
@@ -365,7 +368,7 @@ describe('RecoveryAgentManagementDialog', () => {
         try {
             const props = createMockProps();
             await act(async () => {
-                renderWithTheme(<RecoveryAgentManagementDialog {...props} />);
+                renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
             });
             await waitFor(() => {
                 expect(props.onLoadAirports).toHaveBeenCalled();
@@ -380,10 +383,10 @@ describe('RecoveryAgentManagementDialog', () => {
                 await userEvent.click(primaryCheckbox);
             });
 
-            // Click the close (X) icon button in header (aria-label="Cancel" is the first match)
-            const cancelMatches = screen.getAllByRole('button', {name: /cancel/i});
+            // The header (X) closes the whole dialog, so it must run the unsaved-changes
+            // guard — unlike the assign form's own Cancel, which just resets the form.
             await act(async () => {
-                await userEvent.click(cancelMatches[0]);
+                await userEvent.click(screen.getByLabelText('Close dialog'));
             });
 
             expect(confirmSpy).toHaveBeenCalledWith(

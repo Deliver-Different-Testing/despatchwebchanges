@@ -8,6 +8,7 @@
 
 import NationwideComponent from '../nationwide.controller';
 import JobDataType from '../enums/JobDataType';
+import {STATUS_TO_LIST_MAP} from '../../../react/pages/nationwide/lib/statusListMap';
 
 export { JobDataType };
 
@@ -102,13 +103,11 @@ export function createController(overrides: Partial<Ctrl> = {}): Ctrl {
     };
     ctrl.nationwidePageId = 2;
 
-    // STATUS_TO_LIST_MAP
-    ctrl.STATUS_TO_LIST_MAP = {
-        0: [JobDataType.NEW],
-        1: [JobDataType.NEW],
-        2: [JobDataType.NEW, JobDataType.POD],
-        3: [JobDataType.POD],
-    };
+    // The real map from the shared lib -- this used to be a hand-written fiction
+    // (it invented statuses 0 and 2 and omitted 4 -> REPRICE), so any test
+    // asserting on the derived list set was validating behaviour that does not
+    // exist in production.
+    ctrl.STATUS_TO_LIST_MAP = STATUS_TO_LIST_MAP;
 
     // Mocked services
     ctrl.nationwideService = {
@@ -148,9 +147,11 @@ export function createController(overrides: Partial<Ctrl> = {}): Ctrl {
         saveEventTypeFilter: jest.fn(),
     };
     ctrl.jobAddStopService = {addNewStop: jest.fn().mockResolvedValue(undefined)};
+    ctrl.dispatchDialogService = {
+        openDispatchDialog: jest.fn().mockResolvedValue(null),
+    };
     ctrl.flightAgentConfirmationDialogService = {
         flightConfirmationDialog: jest.fn().mockResolvedValue({shouldAssign: false}),
-        agentConfirmationDialog: jest.fn().mockResolvedValue({shouldAssign: false}),
     };
     ctrl.$mdDialog = {
         show: jest.fn().mockResolvedValue(undefined),

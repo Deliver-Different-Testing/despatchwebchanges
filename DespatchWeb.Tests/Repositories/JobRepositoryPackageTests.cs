@@ -3,7 +3,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -15,19 +15,19 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryPackageTests : IAsyncDisposable
 {
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public JobRepositoryPackageTests()
     {
-        _contextFactoryMock = _db.CreateMoqFactoryMock();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
     }
 
     public async ValueTask DisposeAsync()
@@ -39,12 +39,13 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     private DespatchContext CreateContext() => _db.CreateContext();
 
     private JobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         new FakeTenantClock(TestDates.Now),
-        _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        Mock.Of<IJobApiClient>()
+        _clearListEnvelopeServiceMock,
+        _createJobServiceMock,
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
     );
 
     // ── UpdatePackagesForJobAsync ────────────────────────────────────
@@ -303,6 +304,197 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         Assert.Equal((short)3, job.UcjbQty);
     }
 
+    // ── UpdatePackagesForJobAsync (archived jobs) ────────────────────
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ArchivedJob_ReplacesArchiveParcels()
+    {
+        // Arrange — an archived job (lives in tucJobArchive, not tucJob) with 3 parcels
+        await using var ctx = CreateContext();
+        ctx.TucJobArchives.Add(CreateArchiveJob(100, "ARC100"));
+        ctx.TucJobItemsArchives.AddRange(
+            new TucJobItemsArchive { JobId = 100, ItemId = 1, Notes = "A" },
+            new TucJobItemsArchive { JobId = 100, ItemId = 2, Notes = "B" },
+            new TucJobItemsArchive { JobId = 100, ItemId = 3, Notes = "C" }
+        );
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        // Act — submit a single replacement parcel
+        var parcels = new List<ParcelDimensions>
+        {
+            new() { ItemName = "B updated", Length = 10, Height = 5, Depth = 5 }
+        };
+        await repo.UpdatePackagesForJobAsync(100, parcels);
+
+        // Assert — the archive items table holds only the submitted parcel, and qty syncs
+        await using var verify = CreateContext();
+        var remaining = await verify.TucJobItemsArchives.Where(i => i.JobId == 100)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Single(remaining);
+        Assert.Equal("B updated", remaining[0].Notes);
+        Assert.Equal(10, remaining[0].Length);
+
+        var archive = await verify.TucJobArchives.FirstAsync(j => j.UcjbId == 100,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal((short)1, archive.UcjbQty);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ArchivedJob_AbsentFromLiveTable_DoesNotThrow()
+    {
+        // Regression: archived jobs are moved out of tucJob, so the old code path threw
+        // ArgumentNullException (via IsStopJob's tucJob-only lookup) and the endpoint 500'd.
+        await using var ctx = CreateContext();
+        ctx.TucJobArchives.Add(CreateArchiveJob(101, "ARC101"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        var parcels = new List<ParcelDimensions>
+        {
+            new() { ItemName = "Only parcel", Length = 1, Height = 1, Depth = 1 }
+        };
+
+        // Act + Assert — completes without throwing and writes to the archive table
+        await repo.UpdatePackagesForJobAsync(101, parcels);
+
+        await using var verify = CreateContext();
+        var remaining = await verify.TucJobItemsArchives.Where(i => i.JobId == 101)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Single(remaining);
+        Assert.Empty(await verify.TucJobItems.Where(i => i.JobId == 101)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ArchivedStopJob_OnlyDeletesOwnItems()
+    {
+        // Arrange — archived parent (110) with two archived stop jobs (111a, 112b)
+        await using var ctx = CreateContext();
+        ctx.TucJobArchives.Add(CreateArchiveJob(110, "ARC110"));
+        ctx.TucJobArchives.Add(CreateArchiveJobWithParent(111, "ARC110a", 110));
+        ctx.TucJobArchives.Add(CreateArchiveJobWithParent(112, "ARC110b", 110));
+
+        ctx.TucJobItemsArchives.Add(new TucJobItemsArchive { JobId = 110, ItemId = 1, Notes = "Parent item" });
+        ctx.TucJobItemsArchives.Add(new TucJobItemsArchive { JobId = 110, ItemId = 2, ChildJobId = 111, Notes = "Stop A - keep" });
+        ctx.TucJobItemsArchives.Add(new TucJobItemsArchive { JobId = 110, ItemId = 3, ChildJobId = 111, Notes = "Stop A - remove" });
+        ctx.TucJobItemsArchives.Add(new TucJobItemsArchive { JobId = 110, ItemId = 4, ChildJobId = 112, Notes = "Stop B item" });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        // Act — update stop A (job 111) with a single parcel
+        var parcels = new List<ParcelDimensions>
+        {
+            new() { ItemName = "Stop A - keep", Length = 1, Height = 1, Depth = 1 }
+        };
+        await repo.UpdatePackagesForJobAsync(111, parcels);
+
+        // Assert — parent (1) and stop B (4) untouched; stop A re-inserted with a fresh ItemId
+        await using var verify = CreateContext();
+        var allItems = await verify.TucJobItemsArchives
+            .Where(i => i.JobId == 110)
+            .OrderBy(i => i.ItemId)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, allItems.Count);
+        Assert.Equal(1, allItems[0].ItemId);
+        Assert.Equal(4, allItems[1].ItemId);
+        Assert.Equal(5, allItems[2].ItemId);
+        Assert.Equal("Stop A - keep", allItems[2].Notes);
+        Assert.Equal(111, allItems[2].ChildJobId);
+    }
+
+    // ── UpdateJobWeightAsync ─────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateJobWeightAsync_LiveJob_UpdatesLiveWeight()
+    {
+        // Sanity guard: the archive routing must not break the live path.
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(200, "JOB200"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        await repo.UpdateJobWeightAsync(200, 12.5m);
+
+        await using var verify = CreateContext();
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 200,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(12.5, job.UcjbWeight);
+    }
+
+    [Fact]
+    public async Task UpdateJobWeightAsync_ArchivedJob_UpdatesArchiveWeight()
+    {
+        // Arrange — an archived job; weight edits must land on tucJobArchive.
+        await using var ctx = CreateContext();
+        ctx.TucJobArchives.Add(CreateArchiveJob(210, "ARC210"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+        await repo.UpdateJobWeightAsync(210, 7.25m);
+
+        await using var verify = CreateContext();
+        var archive = await verify.TucJobArchives.FirstAsync(j => j.UcjbId == 210,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(7.25, archive.UcjbWeight);
+    }
+
+    [Fact]
+    public async Task UpdateJobWeightAsync_ArchivedJob_SyncsWeightAcrossChain()
+    {
+        // Arrange — archived parent (220) with a split child (221, RootParentId = 220).
+        await using var ctx = CreateContext();
+        var parent = CreateArchiveJob(220, "ARC220");
+        var child = CreateArchiveJobWithParent(221, "ARC220A", 220);
+        child.RootParentId = 220;
+        ctx.TucJobArchives.AddRange(parent, child);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        // Act — update via the child id; weight should sync across the whole chain.
+        await repo.UpdateJobWeightAsync(221, 9m);
+
+        // Assert — both parent and child carry the new weight.
+        await using var verify = CreateContext();
+        var rows = await verify.TucJobArchives
+            .Where(j => j.UcjbId == 220 || j.UcjbId == 221)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.All(rows, r => Assert.Equal(9, r.UcjbWeight));
+    }
+
+    [Fact]
+    public async Task UpdateJobWeightAsync_ArchivedStopJob_OnlyUpdatesThatStop()
+    {
+        // Arrange — archived parent (230) with two archived stops (231a, 232b).
+        await using var ctx = CreateContext();
+        ctx.TucJobArchives.Add(CreateArchiveJob(230, "ARC230"));
+        ctx.TucJobArchives.Add(CreateArchiveJobWithParent(231, "ARC230a", 230));
+        ctx.TucJobArchives.Add(CreateArchiveJobWithParent(232, "ARC230b", 230));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        // Act — set weight on stop A only.
+        await repo.UpdateJobWeightAsync(231, 4m);
+
+        // Assert — stop A updated; parent and stop B left untouched (null).
+        await using var verify = CreateContext();
+        var stopA = await verify.TucJobArchives.FirstAsync(j => j.UcjbId == 231,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var parent = await verify.TucJobArchives.FirstAsync(j => j.UcjbId == 230,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var stopB = await verify.TucJobArchives.FirstAsync(j => j.UcjbId == 232,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(4, stopA.UcjbWeight);
+        Assert.Null(parent.UcjbWeight);
+        Assert.Null(stopB.UcjbWeight);
+    }
+
     // ── UpdatePackagesForBulkJobAsync ───────────────────────────────
 
     [Fact]
@@ -378,5 +570,18 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     {
         BulkJobId = id,
         JobNumber = jobNumber
+    };
+
+    private static TucJobArchive CreateArchiveJob(int id, string jobNumber) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = jobNumber
+    };
+
+    private static TucJobArchive CreateArchiveJobWithParent(int id, string jobNumber, int parentId) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = jobNumber,
+        ParentId = parentId
     };
 }

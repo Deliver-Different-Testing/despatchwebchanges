@@ -3,19 +3,26 @@ using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(HomeController))]
 public class HomeControllerTests : IDisposable
 {
     private readonly IClientRepository _clientRepoMock = Substitute.For<IClientRepository>();
     private readonly IDfrntViewsRepository _viewsRepoMock = Substitute.For<IDfrntViewsRepository>();
     private readonly ITenantInfoService _infoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly IConnectionStringManager _connectionStringManagerMock = Substitute.For<IConnectionStringManager>();
+    private readonly IFeatureVisibilityService _featureVisibilityMock = Substitute.For<IFeatureVisibilityService>();
+
+    private readonly INetworkPartnerContextService _networkPartnerContextMock =
+        Substitute.For<INetworkPartnerContextService>();
 
     private readonly string? _originalSqlCredentials = Environment.GetEnvironmentVariable("SQLCredentials");
     private readonly string? _originalHubUrl = Environment.GetEnvironmentVariable("HubUrl");
@@ -27,7 +34,9 @@ public class HomeControllerTests : IDisposable
             _clientRepoMock,
             _viewsRepoMock,
             _infoServiceMock,
-            _connectionStringManagerMock);
+            _connectionStringManagerMock,
+            _featureVisibilityMock,
+            _networkPartnerContextMock);
 
         controller.ControllerContext = new ControllerContext
         {
@@ -72,6 +81,7 @@ public class HomeControllerTests : IDisposable
             FullName = "Jane Doe",
             Email = "jane@test.com",
             Internal = true,
+            IsNetworkPartner = true,
             StaffID = 5
         };
         _clientRepoMock.ValidateClientAsync(100).Returns(clientDetail);
@@ -82,7 +92,128 @@ public class HomeControllerTests : IDisposable
 
         var result = await controller.Index();
 
-        Assert.IsType<ViewResult>(result);
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal(true, view.ViewData["ClientInternal"]);
+        Assert.Equal(true, view.ViewData["IsNetworkPartner"]);
+    }
+
+    [Fact]
+    public async Task Index_NetworkPartner_PublishesTheResolvedDashboardsAndMapCentre()
+    {
+        // The Razor globals are the only channel carrying this to the frontend —
+        // the nav filter and the map centre both read them.
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        _clientRepoMock.ValidateClientAsync(100).Returns(new ClientViewModel {IsNetworkPartner = true, StaffID = 5});
+        _featureVisibilityMock.GetVisibleDashboardsAsync()
+            .Returns(new HashSet<string> {"dw-dispatch"});
+        _networkPartnerContextMock.GetMapCentreAsync().Returns(new MapCentre(-36.8485m, 174.7633m));
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal(["dw-dispatch"], Assert.IsType<string[]>(view.ViewData["VisibleFeatures"]));
+        Assert.Equal(new MapCentre(-36.8485m, 174.7633m), view.ViewData["NpMapCenter"]);
+    }
+
+    [Fact]
+    public async Task Index_UngatedSession_LeavesTheDashboardsAndMapCentreNull()
+    {
+        // Null is what makes the frontend treat the session as ungated; an empty
+        // array would hide every dashboard.
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        _clientRepoMock.ValidateClientAsync(100).Returns(new ClientViewModel {StaffID = 5});
+        _featureVisibilityMock.GetVisibleDashboardsAsync().Returns((IReadOnlySet<string>?)null);
+        _networkPartnerContextMock.GetMapCentreAsync().Returns((MapCentre?)null);
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Null(view.ViewData["VisibleFeatures"]);
+        Assert.Null(view.ViewData["NpMapCenter"]);
+    }
+
+    [Fact]
+    public async Task Index_DashboardVisibilityLookupThrows_StillReturnsViewUngated()
+    {
+        // An NP-only enrichment failure must never bounce an authenticated
+        // session to the login page — the session just renders ungated.
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        _clientRepoMock.ValidateClientAsync(100).Returns(new ClientViewModel {IsNetworkPartner = true, StaffID = 5});
+        _featureVisibilityMock.GetVisibleDashboardsAsync()
+            .ThrowsAsync(new InvalidOperationException("Invalid object name 'Feature'."));
+        _networkPartnerContextMock.GetMapCentreAsync().Returns(new MapCentre(-36.8485m, 174.7633m));
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Null(view.ViewData["VisibleFeatures"]);
+        Assert.Equal(new MapCentre(-36.8485m, 174.7633m), view.ViewData["NpMapCenter"]);
+    }
+
+    [Fact]
+    public async Task Index_MapCentreLookupThrows_StillReturnsViewWithNullMapCentre()
+    {
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        _clientRepoMock.ValidateClientAsync(100).Returns(new ClientViewModel {IsNetworkPartner = true, StaffID = 5});
+        _featureVisibilityMock.GetVisibleDashboardsAsync()
+            .Returns(new HashSet<string> {"dw-dispatch"});
+        _networkPartnerContextMock.GetMapCentreAsync()
+            .ThrowsAsync(new InvalidOperationException("Invalid column name 'Latitude'."));
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal(["dw-dispatch"], Assert.IsType<string[]>(view.ViewData["VisibleFeatures"]));
+        Assert.Null(view.ViewData["NpMapCenter"]);
+    }
+
+    [Fact]
+    public async Task Index_ContactMissingFromTenantDb_RedirectsToPublicPath()
+    {
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        Environment.SetEnvironmentVariable("PublicPath", "https://public.test.com");
+        _clientRepoMock.ValidateClientAsync(100).Returns((ClientViewModel?)null);
+
+        var controller = CreateController(CreateAuthenticatedUser());
+
+        var result = await controller.Index();
+
+        var redirect = Assert.IsType<RedirectResult>(result);
+        Assert.Equal("https://public.test.com", redirect.Url);
+    }
+
+    [Fact]
+    public async Task Index_NonNetworkPartner_SetsIsNetworkPartnerFalse()
+    {
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        var user = CreateAuthenticatedUser();
+        var clientDetail = new ClientViewModel
+        {
+            FirstName = "Jane",
+            FullName = "Jane Doe",
+            Email = "jane@test.com",
+            Internal = false,
+            IsNetworkPartner = false,
+            StaffID = 5
+        };
+        _clientRepoMock.ValidateClientAsync(100).Returns(clientDetail);
+        _connectionStringManagerMock.SetConnectionStringAsync(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.CompletedTask);
+
+        var controller = CreateController(user);
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal(false, view.ViewData["IsNetworkPartner"]);
     }
 
     [Fact]

@@ -85,6 +85,8 @@ public partial class TucClientContact
 
     public string AccessCode { get; set; }
 
+    public int? RelationshipTypeId { get; set; }
+
     public virtual ICollection<TblClientContactJobType> TblClientContactJobTypes { get; set; } = new List<TblClientContactJobType>();
 
     public virtual ICollection<TblClientContact> TblClientContacts { get; set; } = new List<TblClientContact>();

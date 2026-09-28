@@ -6,7 +6,11 @@ public sealed class DispatchJobViewModelComparer : IEqualityComparer<DispatchJob
 {
     public bool Equals(DispatchJobViewModel x, DispatchJobViewModel y)
     {
-        if (x == null || y == null) return false;
+        if (x == null || y == null)
+        {
+            return false;
+        }
+
         return x.Id == y.Id;
     }
 

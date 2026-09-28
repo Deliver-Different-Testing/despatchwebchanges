@@ -1,11 +1,6 @@
 import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import Collapse from '@mui/material/Collapse';
+import {Box, Card, Collapse, Flex, Group, TextInput} from '@mantine/core';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../components/common/panel-controls';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../query';
 import {
@@ -16,11 +11,14 @@ import {
     useOverviewOpenJobs,
 } from '../../hooks/useOverviewApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
+import {PanelHeader} from '../../components/common/panel-header';
+import {SymbolIcon} from '../../components/common/symbol-icon';
 import {FilterPanel} from './components/FilterPanel';
 import {StatsTabs} from './components/StatsTabs';
-import {DeliveriesTable} from './components/DeliveriesTable';
+import {DeliveriesTable, transformStatus} from '../../components/common/deliveries-table';
 import {OpenJobsWidget} from './components/OpenJobsWidget';
 import {MapDialog} from './components/MapDialog';
+import {OpenJobConfirmDialog} from '../../components/common/recurring-delivery-journey/OpenJobConfirmDialog';
 import type {
     OverviewPageProps,
     OverviewQueryParams,
@@ -54,10 +52,6 @@ function saveCollapseState(cardName: string, isCollapsed: boolean): void {
     } catch { /* localStorage may be unavailable */ }
 }
 
-function transformStatus(status: string): string {
-    return status.toUpperCase().replace(/[\s-]/g, '_');
-}
-
 export const OverviewPage: React.FC<OverviewPageProps> = ({
                                                               onOpenJobDetail,
                                                               setRefreshCallback,
@@ -86,6 +80,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     // Map dialog state
     const [mapDialogOpen, setMapDialogOpen] = useState(false);
     const [mapDelivery, setMapDelivery] = useState<OverviewTableParentJob | null>(null);
+
+    // Open-job confirmation dialog state
+    const [confirmTarget, setConfirmTarget] = useState<{jobId: number; jobNumber: string} | null>(null);
 
     // Expandable rows state
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -217,6 +214,19 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         [],
     );
 
+    /*
+     * Resets every criterion at once. It lives here rather than being composed
+     * from the per-group props in the panel, because "unselect all" is a toggle:
+     * calling it on an empty group would select everything instead of clearing.
+     */
+    const handleClearAllFilters = useCallback(() => {
+        setDateRange({});
+        setSelectedRegionIds(new Set());
+        setSelectedSpeedIds(new Set());
+        setSelectedCouriers([]);
+        setPage(1);
+    }, []);
+
     const handleToggleAllSpeeds = useCallback(() => {
         if (allSpeedsSelected) {
             setSelectedSpeedIds(new Set());
@@ -283,11 +293,22 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     const handleOpenJobDetail = useCallback(
         (delivery: OverviewTableParentJob) => {
             if (delivery?.jobId) {
-                onOpenJobDetail(delivery.jobId);
+                setConfirmTarget({jobId: delivery.jobId, jobNumber: delivery.jobName});
             }
         },
-        [onOpenJobDetail],
+        [],
     );
+
+    const handleConfirmOpenJob = useCallback(() => {
+        if (confirmTarget) {
+            onOpenJobDetail(confirmTarget.jobId);
+        }
+        setConfirmTarget(null);
+    }, [confirmTarget, onOpenJobDetail]);
+
+    const handleCancelOpenJob = useCallback(() => {
+        setConfirmTarget(null);
+    }, []);
 
     const handleToggleOverviewCard = useCallback(() => {
         setIsOverviewCollapsed((prev) => {
@@ -296,18 +317,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         });
     }, []);
     
+    // Flex takes a responsive direction natively — no media query needed.
     return (
-        <Box
-            sx={{
-                p: 2,
-                display: 'flex',
-                flexDirection: {xs: 'column', md: 'row'},
-                gap: 2,
-                bgcolor: 'background.default',
-            }}
-        >
+        <Flex p={8} gap={16} direction={{base: 'column', md: 'row'}} bg="var(--mantine-color-body)">
             {/* Left Panel — Filters */}
-            <Box sx={{flex: '0 0 20%', minWidth: 250}}>
+            <Box miw={250} style={{flex: '0 0 20%'}}>
                 <FilterPanel
                     regions={regions}
                     regionsLoading={regionsLoading}
@@ -326,72 +340,64 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                     onRemoveCourier={handleRemoveCourier}
                     dateRange={dateRange}
                     onDateRangeChange={handleDateRangeChange}
+                    onClearAll={handleClearAllFilters}
                 />
             </Box>
 
             {/* Right Panel — Overview + Open Jobs */}
-            <Box sx={{flex: 1, minWidth: 0}}>
-                <Card variant="outlined">
-                    {/* Card Header */}
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            px: 2,
-                            py: 1,
-                            bgcolor: 'background.paper',
-                            color: 'text.primary',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            minHeight: 44,
-                        }}
-                    >
-                        <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                            overview
-                        </span>
-                        <Typography variant="subtitle1" sx={{ml: 1, flex: 1, fontWeight: 500}}>
-                            Overview
-                        </Typography>
-                        <IconButton size="small" onClick={handleToggleOverviewCard} sx={{color: 'inherit'}}>
-                            <span className="material-symbols-outlined">
-                                {isOverviewCollapsed ? 'expand_more' : 'expand_less'}
-                            </span>
-                        </IconButton>
-                    </Box>
-
-                    <Collapse in={!isOverviewCollapsed}>
-                        <Box sx={{p: 2}}>
-                            {/* Search */}
-                            <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 2}}>
-                                <TextField
-                                    size="small"
-                                    placeholder="Search deliveries..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    slotProps={{
-                                        input: {
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                                        search
-                                                    </span>
-                                                </InputAdornment>
-                                            ),
-                                        },
-                                    }}
-                                    sx={{flex: 1}}
+            <Box miw={0} style={{flex: 1}}>
+                <Card withBorder p={0}>
+                    <PanelHeader
+                        icon={<SymbolIcon name="overview" />}
+                        title="Overview"
+                        action={
+                            <HeaderActionIcon
+                                label={isOverviewCollapsed ? 'Expand overview' : 'Collapse overview'}
+                                onClick={handleToggleOverviewCard}
+                                aria-expanded={!isOverviewCollapsed}
+                            >
+                                <SymbolIcon
+                                    name={isOverviewCollapsed ? 'expand_more' : 'expand_less'}
+                                    size={PANEL_CONTROL_GLYPH_SIZE}
                                 />
-                            </Box>
+                            </HeaderActionIcon>
+                        }
+                    />
 
-                            {/* Stats Tabs */}
-                            <StatsTabs
-                                statistics={statistics}
-                                activeTab={activeTab}
-                                onTabChange={handleTabChange}
+                    <Collapse expanded={!isOverviewCollapsed}>
+                        {/*
+                          * The panel's controls, on the same 32px band as the header
+                          * above them: which status, and free-text within it.
+                          */}
+                        <Group
+                            gap="sm"
+                            px="md"
+                            py="xs"
+                            wrap="nowrap"
+                            style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
+                        >
+                            <div style={{flex: 1}}/>
+                            <TextInput
+                                size="xs"
+                                w={220}
+                                placeholder="Search deliveries"
+                                aria-label="Search deliveries"
+                                value={search}
+                                onChange={(e) => setSearch(e.currentTarget.value)}
+                                leftSection={<SymbolIcon name="search" size={PANEL_CONTROL_GLYPH_SIZE} />}
                             />
-
+                        </Group>
+                        {/* The status tabs lead the list they filter — they are the
+                            page's headline read, not a compact control, so they sit at
+                            the top of the list rather than on the 32px control band. */}
+                        <StatsTabs
+                            statistics={statistics}
+                            activeTab={activeTab}
+                            onTabChange={handleTabChange}
+                        />
+                        <Box px={16} pb={16}>
                             {/* AI Operations Insights */}
-                            {isAiEnabled() && <Box ref={aiContainerRef} sx={{mb: 2}}/>}
+                            {isAiEnabled() && <Box ref={aiContainerRef} mb={16}/>}
 
                             {/* Deliveries Table */}
                             <DeliveriesTable
@@ -422,7 +428,16 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 onClose={() => setMapDialogOpen(false)}
                 delivery={mapDelivery}
             />
-        </Box>
+
+            {/* Open-job confirmation */}
+            <OpenJobConfirmDialog
+                open={confirmTarget != null}
+                jobId={confirmTarget?.jobId ?? null}
+                jobNumber={confirmTarget?.jobNumber ?? null}
+                onCancel={handleCancelOpenJob}
+                onConfirm={handleConfirmOpenJob}
+            />
+        </Flex>
     );
 };
 

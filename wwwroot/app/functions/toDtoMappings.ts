@@ -1,4 +1,4 @@
-﻿import {IFlightSegment, IFlightSegmentDto} from "../components/Nationwide/nationwide.interfaces";
+﻿import {IFlightSegment, IFlightSegmentDto} from "../interfaces/nationwideFlight.interfaces";
 import {formatDateForApiWithTzs} from "../react/utils/dateUtils";
 import {IJobQueryParams, IJobQueryParamsDto} from "../interfaces/job.interface";
 

@@ -7,10 +7,7 @@
 
 import React from 'react';
 import {createRoot} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {DfrntMantineProvider} from '../../../theme/DfrntMantineProvider';
 import {SplitJobCourierDialog, SplitJobCourierResult} from './SplitJobCourierDialog';
 
 export function openSplitJobCourierDialog(): Promise<SplitJobCourierResult> {
@@ -26,12 +23,9 @@ export function openSplitJobCourierDialog(): Promise<SplitJobCourierResult> {
         }
 
         root.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={getTheme()}>
-                    <CssBaseline/>
-                    <SplitJobCourierDialog open onClose={handleClose}/>
-                </ThemeProvider>
-            </ReactQueryProvider>,
+            <DfrntMantineProvider>
+                <SplitJobCourierDialog open onClose={handleClose}/>
+            </DfrntMantineProvider>,
         );
     });
 }

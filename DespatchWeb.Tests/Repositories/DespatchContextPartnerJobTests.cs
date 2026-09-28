@@ -74,10 +74,9 @@ public class DespatchContextPartnerJobTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task IsOutboundPartnerJobAsync_JobWithDispatchRow_ReturnsTrue()
+    public async Task IsOutboundPartnerJobAsync_PairingOwnedByLocalTenant_ReturnsTrue()
     {
-        // Sender side: PartnerJobGuid is set AND a JobPartnerDispatch row links the
-        // job to the outbound pairing.
+        // Sender side: the linked pairing's OwnerTenantId matches the local tenant.
         await using var context = _db.CreateContext();
         context.IntMgrPartnerPairings.Add(new IntMgrPartnerPairing
         {
@@ -94,37 +93,78 @@ public class DespatchContextPartnerJobTests : IAsyncDisposable
         {
             UcjbId = 200,
             UcjbNumber = "JOB-200",
-            PartnerJobGuid = Guid.NewGuid()
-        });
-        context.JobPartnerDispatches.Add(new JobPartnerDispatch
-        {
-            JobId = 200,
+            PartnerJobGuid = Guid.NewGuid(),
             PartnerPairingId = 7
         });
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var result = await context.IsOutboundPartnerJobAsync(200);
+        var result = await context.IsOutboundPartnerJobAsync(200, localTenantId: "100");
 
         Assert.True(result);
     }
 
     [Fact]
-    public async Task IsOutboundPartnerJobAsync_PartnerJobWithoutDispatchRow_ReturnsFalse()
+    public async Task IsOutboundPartnerJobAsync_PairingOwnedByOtherTenant_ReturnsFalse()
     {
-        // Receiver side: PartnerJobGuid is set but no JobPartnerDispatch row, so the
-        // courier slot is local and the outbound guard must not fire.
+        // Receiver side: the linked pairing's OwnerTenantId is the originating partner,
+        // not us. Outbound guard must not fire.
         await using var context = _db.CreateContext();
+        context.IntMgrPartnerPairings.Add(new IntMgrPartnerPairing
+        {
+            Id = 8,
+            PartnerTenantId = "100",
+            PartnerTenantName = "Our Tenant",
+            PartnerBaseUrl = "https://us.example.com",
+            Status = "Active",
+            OwnerTenantId = "200",
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
+        });
         context.TucJobs.Add(new TucJob
         {
             UcjbId = 201,
             UcjbNumber = "JOB-201",
+            PartnerJobGuid = Guid.NewGuid(),
+            PartnerPairingId = 8
+        });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var result = await context.IsOutboundPartnerJobAsync(201, localTenantId: "100");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task IsOutboundPartnerJobAsync_PartnerJobWithoutPairingId_ReturnsFalse()
+    {
+        // Stale-link case: partner job whose source pairing isn't recorded
+        // (e.g. created before TucJob.PartnerPairingId was populated). The
+        // outbound guard returns false so the controller's other partner
+        // guards still apply.
+        await using var context = _db.CreateContext();
+        context.TucJobs.Add(new TucJob
+        {
+            UcjbId = 202,
+            UcjbNumber = "JOB-202",
             PartnerJobGuid = Guid.NewGuid()
         });
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var result = await context.IsOutboundPartnerJobAsync(201);
+        var result = await context.IsOutboundPartnerJobAsync(202, localTenantId: "100");
 
         Assert.False(result);
+    }
+
+    [Fact]
+    public async Task IsOutboundPartnerJobAsync_NullOrEmptyLocalTenantId_ReturnsFalse()
+    {
+        // Defensive: a missing tenant id means we can't tell which side of the
+        // pairing we're on. Treat as non-outbound (matches the legacy
+        // JobPartnerDispatch-row check which returned false for missing rows).
+        await using var context = _db.CreateContext();
+
+        Assert.False(await context.IsOutboundPartnerJobAsync(999, localTenantId: null));
+        Assert.False(await context.IsOutboundPartnerJobAsync(999, localTenantId: ""));
     }
 
     [Fact]
@@ -132,7 +172,7 @@ public class DespatchContextPartnerJobTests : IAsyncDisposable
     {
         await using var context = _db.CreateContext();
 
-        var result = await context.IsOutboundPartnerJobAsync(999);
+        var result = await context.IsOutboundPartnerJobAsync(999, localTenantId: "100");
 
         Assert.False(result);
     }

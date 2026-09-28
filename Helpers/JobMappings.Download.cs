@@ -34,7 +34,9 @@ public static partial class JobMappings
             Quantity = j.UcjbQty,
             Weight = j.UcjbWeight,
             Size = j.UcjbSize,
+            Cubic = j.TucJobItemJobs.Sum(i => i.Cubic),
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+            Void = j.UcjbVoid,
             PickupAddressLine1 = j.PickupAddressLine1,
             PickupAddressLine2 = j.PickupAddressLine2,
             PickupAddressLine3 = j.PickupAddressLine3,
@@ -64,6 +66,8 @@ public static partial class JobMappings
             CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
             OurReference = j.UcjbOurRef,
             Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.UcjtName : null,
+            NotifiedSpeed = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName
+                : j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.UcjtName : null,
             Notes = j.UcjbNotes
         };
 
@@ -93,7 +97,10 @@ public static partial class JobMappings
             Quantity = j.UcjbQty,
             Weight = j.UcjbWeight,
             Size = j.UcjbSize,
+            // Cubic is summed from tucJobItemsArchive by JobId in the repository - TucJobArchive
+            // has no JobId-keyed item navigation (TucJobItemsArchives is keyed by ChildJobId).
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
+            Void = j.UcjbVoid,
             PickupAddressLine1 = j.PickupAddressLine1,
             PickupAddressLine2 = j.PickupAddressLine2,
             PickupAddressLine3 = j.PickupAddressLine3,
@@ -123,6 +130,8 @@ public static partial class JobMappings
             CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
             OurReference = j.UcjbOurRef,
             Speed = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
+            NotifiedSpeed = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName
+                : j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
             Notes = j.UcjbNotes
         };
 }

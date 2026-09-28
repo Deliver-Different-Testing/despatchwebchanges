@@ -6,23 +6,27 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import {useTheme} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import FlightIcon from '@mui/icons-material/Flight';
-import CloseIcon from '@mui/icons-material/Close';
-import OverviewIcon from '@mui/icons-material/Dashboard';
-import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import {Box, Flex, Tabs} from '@mantine/core';
+import {useMediaQuery} from '@mantine/hooks';
+import {LayoutDashboard} from 'lucide-react';
+import {IconPlane, IconPlaneDeparture} from '@tabler/icons-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    DialogHeader,
+    DialogShell,
+    dialogSize,
+} from '../shared/mantine';
 import { FlightDetailsDialogProps, FlightSegmentData, FlightData } from './types';
 import { FlightSummaryCard } from './FlightSummaryCard';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import { FlightItinerary } from './FlightItinerary';
+
+/**
+ * The dialog goes edge-to-edge on a phone. Kept as the pixel value MUI's
+ * `breakpoints.down('sm')` resolved to, so it flips where it always did rather
+ * than at Mantine's differently-placed `sm`.
+ */
+const FULLSCREEN_BELOW = '(max-width: 599px)';
 
 /**
  * Create a pseudo-segment from the main flight data for non-segmented flights
@@ -71,9 +75,9 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
     flight,
     onClose,
 }) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const isFullscreen = useMediaQuery(theme.breakpoints.down('sm'));
+    /* Resolved on the first render rather than deferred to an effect, or the
+       dialog mounts windowed and jumps to full screen a tick later. */
+    const isFullscreen = useMediaQuery(FULLSCREEN_BELOW, false, {getInitialValueInEffect: false});
 
     // State
     const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -134,134 +138,54 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
         return `${mins}m`;
     }, []);
 
-    // Handle tab change
-    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-        setSelectedTabIndex(newValue);
+    /* Mantine tabs are keyed by string, so the index the segment lookup needs is
+       parsed back out rather than handed over directly. */
+    const handleTabChange = (value: string | null) => {
+        setSelectedTabIndex(value ? Number(value) : 0);
     };
 
     return (
-        <Dialog
-            open={open}
+        <DialogShell
+            opened={open}
             onClose={onClose}
-            maxWidth="md"
-            fullWidth
+            size={dialogSize.md}
+            label="Flight Details"
             fullScreen={isFullscreen}
-            slotProps={{
-                paper: {
-                    sx: {
-                        borderRadius: isFullscreen ? 0 : 3,
-                        overflow: 'hidden',
-                        height: isFullscreen ? '100vh' : 680,
-                        maxHeight: isFullscreen ? '100vh' : '95vh',
-                        width: isFullscreen ? '100vw' : 900,
-                        maxWidth: '95vw',
-                    },
-                },
-            }}
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <FlightIcon sx={{ fontSize: 24 }} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
-                        Flight Details
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                        View flight information and segments
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
+            <DialogHeader
+                icon={<Icon tabler={IconPlane}/>}
+                title="Flight Details"
+                subtitle="View flight information and segments"
+                onClose={onClose}
+            />
 
             {/* Segment tabs for multi-segment flights */}
             {flight.isMultiSegment && flight.flightSegments && flight.flightSegments.length > 0 && (
-                <Box
-                    sx={{
-                        bgcolor: 'grey.50',
-                        borderBottom: '1px solid',
-                        borderColor: 'grey.200',
-                    }}
+                <Tabs
+                    value={String(selectedTabIndex)}
+                    onChange={handleTabChange}
+                    bg="var(--mantine-color-gray-0)"
                 >
-                    <Tabs
-                        value={selectedTabIndex}
-                        onChange={handleTabChange}
-                        variant="scrollable"
-                        scrollButtons="auto"
-                        sx={{
-                            px: 3,
-                            '& .MuiTab-root': {
-                                minHeight: 48,
-                                textTransform: 'none',
-                                fontWeight: 500,
-                                fontSize: '0.875rem',
-                                gap: 1,
-                            },
-                        }}
-                    >
-                        <Tab
-                            icon={<OverviewIcon sx={{ fontSize: 20 }} />}
-                            iconPosition="start"
-                            label="Overview"
-                        />
+                    <Tabs.List px={24}>
+                        <Tabs.Tab value="0" leftSection={<Icon lucide={LayoutDashboard} size={20}/>}>
+                            Overview
+                        </Tabs.Tab>
                         {flight.flightSegments.map((_, index) => (
-                            <Tab
+                            <Tabs.Tab
                                 key={index}
-                                icon={<FlightTakeoffIcon sx={{ fontSize: 20 }} />}
-                                iconPosition="start"
-                                label={`Segment ${index + 1}`}
-                            />
+                                value={String(index + 1)}
+                                leftSection={<Icon tabler={IconPlaneDeparture} size={20}/>}
+                            >
+                                Segment {index + 1}
+                            </Tabs.Tab>
                         ))}
-                    </Tabs>
-                </Box>
+                    </Tabs.List>
+                </Tabs>
             )}
 
             {/* Content */}
-            <DialogContent
-                sx={{
-                    p: 0,
-                    bgcolor: 'grey.50',
-                    flex: 1,
-                    overflow: 'auto',
-                }}
-            >
-                <Box
-                    sx={{
-                        p: isMobile ? 2 : 3,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: isMobile ? 2 : 3,
-                    }}
-                >
+            <Box bg="var(--mantine-color-gray-0)">
+                <Flex direction="column" p={{base: 16, sm: 24}} gap={{base: 16, sm: 24}}>
                     {/* Flight summary card */}
                     <FlightSummaryCard
                         segment={currentSegment}
@@ -284,9 +208,9 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                             getConnectionTime={getConnectionTime}
                         />
                     )}
-                </Box>
-            </DialogContent>
-        </Dialog>
+                </Flex>
+            </Box>
+        </DialogShell>
     );
 };
 

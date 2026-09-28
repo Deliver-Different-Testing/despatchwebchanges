@@ -185,7 +185,11 @@ public class CsvFormattingTests
     /// </summary>
     private static string FormatCsvField(string? value)
     {
-        if (string.IsNullOrEmpty(value)) return string.Empty;
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
+
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";
@@ -225,7 +229,11 @@ public class FileExtensionValidationTests
 
     private static bool IsValidBulkPriceExtension(string fileName)
     {
-        if (string.IsNullOrEmpty(fileName)) return false;
+        if (string.IsNullOrEmpty(fileName))
+        {
+            return false;
+        }
+
         var extension = Path.GetExtension(fileName);
         return ValidExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
     }

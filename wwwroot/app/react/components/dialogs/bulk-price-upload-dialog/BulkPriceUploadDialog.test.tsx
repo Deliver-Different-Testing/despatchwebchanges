@@ -1,24 +1,19 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * BulkPriceUploadDialog Component Tests
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
+import { setupUser } from '../../../__testUtils__/setupUser';
+import {renderWithMantine} from '../../../__testUtils__';
 import {BulkPriceUploadDialog} from './BulkPriceUploadDialog';
 import {BulkPricePreviewResponse} from './types';
+import {pricingModeColors} from '../../../theme/designTokens';
 
-const theme = createTheme();
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+const renderWithTheme = (ui: React.ReactElement) => renderWithMantine(ui);
 
 const mockResponse: BulkPricePreviewResponse = {
     rows: [
@@ -40,8 +35,55 @@ const mockResponse: BulkPricePreviewResponse = {
         },
     ],
     totalJobs: 2,
+    skippedJobs: 0,
     totalOldAmount: 300.00,
     totalNewAmount: 330.00,
+};
+
+const mockPartialResponse: BulkPricePreviewResponse = {
+    rows: [
+        {
+            jobId: 1,
+            jobNo: 'JOB-001',
+            field: 'Amount',
+            oldAmount: 100.00,
+            newAmount: 0.00,
+            isPrebook: false,
+        },
+        {
+            jobId: 2,
+            jobNo: 'JOB-002',
+            field: 'Amount',
+            oldAmount: 200.00,
+            newAmount: 200.00,
+            isPrebook: false,
+            skipped: true,
+            error: 'Could not be updated — the job was not found, is locked, or has already been invoiced.',
+        },
+    ],
+    totalJobs: 1,
+    skippedJobs: 1,
+    totalOldAmount: 100.00,
+    totalNewAmount: 0.00,
+};
+
+const mockNoneUpdatedResponse: BulkPricePreviewResponse = {
+    rows: [
+        {
+            jobId: 1,
+            jobNo: 'JOB-001',
+            field: 'Amount',
+            oldAmount: 100.00,
+            newAmount: 100.00,
+            isPrebook: false,
+            skipped: true,
+            error: 'Could not be updated — the job was not found, is locked, or has already been invoiced.',
+        },
+    ],
+    totalJobs: 0,
+    skippedJobs: 1,
+    totalOldAmount: 0.00,
+    totalNewAmount: 0.00,
 };
 
 const createMockProps = (overrides = {}) => ({
@@ -88,6 +130,17 @@ describe('BulkPriceUploadDialog', () => {
 
             expect(screen.getByText('Expected File Format')).toBeInTheDocument();
             expect(screen.getByText(/Id/)).toBeInTheDocument();
+        });
+
+        it('should note which columns apply to which pricing mode', () => {
+            const props = createMockProps();
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+
+            // Amount means different things per mode; Fuel is only honoured in gross mode
+            // (base mode calculates it); recalculate ignores the price columns entirely.
+            expect(screen.getByText(/Base mode: pre-surcharge base price/)).toBeInTheDocument();
+            expect(screen.getByText(/calculated automatically in Base mode/)).toBeInTheDocument();
+            expect(screen.getByText(/Recalculate mode re-prices each job from its details/)).toBeInTheDocument();
         });
 
         it('should display Cancel button in upload state', () => {
@@ -178,9 +231,9 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            expect(screen.getByText('Recalculate')).toBeInTheDocument();
-            expect(screen.getByText('Raw Base Amount')).toBeInTheDocument();
-            expect(screen.getByText('Gross Amount')).toBeInTheDocument();
+            expect(screen.getByText('Auto-Calculate Prices')).toBeInTheDocument();
+            expect(screen.getByText('Base Price (add surcharges)')).toBeInTheDocument();
+            expect(screen.getByText('Final Price (use as-is)')).toBeInTheDocument();
         });
 
         it('should default to recalculate mode', async () => {
@@ -188,7 +241,7 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            expect(screen.getByText(/Prices will be recalculated based on job details/)).toBeInTheDocument();
+            expect(screen.getByText(/Prices will be recalculated from job details/)).toBeInTheDocument();
         });
 
         it('should update description when selecting base mode', async () => {
@@ -196,10 +249,10 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            const baseOption = screen.getByText('Raw Base Amount');
+            const baseOption = screen.getByText('Base Price (add surcharges)');
             await userEvent.click(baseOption);
 
-            expect(screen.getByText(/Raw base amounts from file will be saved/)).toBeInTheDocument();
+            expect(screen.getByText(/File amounts are treated as base prices/)).toBeInTheDocument();
         });
 
         it('should update description when selecting gross mode', async () => {
@@ -207,10 +260,44 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            const grossOption = screen.getByText('Gross Amount');
+            const grossOption = screen.getByText('Final Price (use as-is)');
             await userEvent.click(grossOption);
 
-            expect(screen.getByText(/Amounts from file will be applied directly/)).toBeInTheDocument();
+            expect(screen.getByText(/File amounts are applied directly as the final prices/)).toBeInTheDocument();
+        });
+
+        /*
+         * The three modes were divs with a hand-drawn dot: not focusable, and
+         * announced as nothing. Radio.Card makes them one tab stop with arrow-key
+         * movement and a reported selection.
+         */
+        it('exposes the modes as a radio group with the current mode selected', async () => {
+            const props = createMockProps();
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            expect(screen.getByRole('radio', {name: /Auto-Calculate Prices/})).toBeChecked();
+            expect(screen.getByRole('radio', {name: /Base Price/})).not.toBeChecked();
+
+            await userEvent.click(screen.getByRole('radio', {name: /Base Price/}));
+            expect(screen.getByRole('radio', {name: /Base Price/})).toBeChecked();
+        });
+
+        it('gives each mode its own colour from the shared pricing-mode token', async () => {
+            const props = createMockProps();
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            const colours = ['recalculate', 'base', 'gross'].map((mode) =>
+                (document.querySelector(`[data-pricing-mode="${mode}"]`) as HTMLElement | null)
+                    ?.style.getPropertyValue('--radio-color').trim());
+
+            expect(colours).toEqual([
+                pricingModeColors.recalculate,
+                pricingModeColors.base,
+                pricingModeColors.gross,
+            ]);
+            expect(new Set(colours).size).toBe(3);
         });
 
         it('should display Back and Apply buttons', async () => {
@@ -228,10 +315,10 @@ describe('BulkPriceUploadDialog', () => {
             await uploadFileAndGoToModeSelect();
 
             // Select gross mode
-            const grossOption = screen.getByText('Gross Amount');
+            const grossOption = screen.getByText('Final Price (use as-is)');
             await userEvent.click(grossOption);
 
-            expect(screen.getByRole('button', { name: /apply gross amounts/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /apply final amounts/i })).toBeInTheDocument();
         });
 
         it('should go back to upload state when clicking Back', async () => {
@@ -306,6 +393,42 @@ describe('BulkPriceUploadDialog', () => {
             });
         });
 
+        it('should show a warning toast when some jobs are skipped', async () => {
+            const props = createMockProps({
+                onSubmit: jest.fn().mockResolvedValue(mockPartialResponse),
+            });
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
+            await userEvent.click(applyButton);
+
+            await waitFor(() => {
+                expect(props.showToast).toHaveBeenCalledWith(
+                    'Updated 1 job; 1 skipped.',
+                    'warning'
+                );
+            });
+        });
+
+        it('should show an error toast when no jobs are updated', async () => {
+            const props = createMockProps({
+                onSubmit: jest.fn().mockResolvedValue(mockNoneUpdatedResponse),
+            });
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
+            await userEvent.click(applyButton);
+
+            await waitFor(() => {
+                expect(props.showToast).toHaveBeenCalledWith(
+                    'No prices were updated. 1 job could not be updated.',
+                    'error'
+                );
+            });
+        });
+
         it('should show error toast on failure', async () => {
             const props = createMockProps({
                 onSubmit: jest.fn().mockRejectedValue(new Error('Upload failed')),
@@ -322,6 +445,23 @@ describe('BulkPriceUploadDialog', () => {
                     'error'
                 );
             });
+        });
+
+        it('should not report a failure when the response body is malformed', async () => {
+            // A successful (2xx) request whose body is missing/misshaped must not be thrown into the
+            // error path: the server has already committed the update, so reporting it as failed
+            // (the reported bug) is wrong. Reading the response defensively keeps us on the result
+            // screen and out of the error toast.
+            const props = createMockProps({
+                onSubmit: jest.fn().mockResolvedValue({} as BulkPricePreviewResponse),
+            });
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+            await uploadFileAndGoToModeSelect();
+
+            await userEvent.click(screen.getByRole('button', { name: /recalculate & save/i }));
+
+            expect(await screen.findByText('Prices Updated')).toBeInTheDocument();
+            expect(props.showToast).not.toHaveBeenCalledWith(expect.anything(), 'error');
         });
 
         it('should return to mode-select state on error', async () => {
@@ -361,6 +501,26 @@ describe('BulkPriceUploadDialog', () => {
             expect(screen.getByText('Prices Updated')).toBeInTheDocument();
         });
 
+        it('should show a "Partially Updated" header and the skip reason when some jobs are skipped', async () => {
+            const props = createMockProps({
+                onSubmit: jest.fn().mockResolvedValue(mockPartialResponse),
+            });
+            renderWithTheme(<BulkPriceUploadDialog {...props} />);
+
+            const file = createMockFile();
+            const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+            await userEvent.upload(input, file);
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
+            await userEvent.click(screen.getByRole('button', { name: /recalculate & save/i }));
+
+            expect(await screen.findByText('Partially Updated')).toBeInTheDocument();
+            expect(screen.getByText(/1 job could not be updated/i)).toBeInTheDocument();
+            // The per-row skip reason is surfaced in the results table.
+            expect(
+                screen.getByText(/not found, is locked, or has already been invoiced/i)
+            ).toBeInTheDocument();
+        });
+
         it('should display summary statistics', async () => {
             const props = createMockProps();
             await uploadAndApply(props);
@@ -396,10 +556,8 @@ describe('BulkPriceUploadDialog', () => {
             const searchInput = screen.getByPlaceholderText('Search by job number...');
             fireEvent.change(searchInput, { target: { value: 'JOB-001' } });
 
-            await waitFor(() => {
-                expect(screen.getByText('JOB-001')).toBeInTheDocument();
-                expect(screen.queryByText('JOB-002')).not.toBeInTheDocument();
-            });
+            expect(await screen.findByText('JOB-001')).toBeInTheDocument();
+            expect(screen.queryByText('JOB-002')).not.toBeInTheDocument();
         });
 
         it('should show result count', async () => {
@@ -487,17 +645,8 @@ describe('BulkPriceUploadDialog', () => {
             expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
 
             // Close and reopen
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <BulkPriceUploadDialog {...props} open={false} />
-                </ThemeProvider>
-            );
-
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <BulkPriceUploadDialog {...props} open={true} />
-                </ThemeProvider>
-            );
+            rerender(<BulkPriceUploadDialog {...props} open={false} />);
+            rerender(<BulkPriceUploadDialog {...props} open={true} />);
 
             // Should be back to upload state
             expect(screen.getByText('Drop your file here')).toBeInTheDocument();
@@ -548,3 +697,4 @@ describe('BulkPriceUploadDialog', () => {
         });
     });
 });
+

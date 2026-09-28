@@ -4,103 +4,95 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import Chip from '@mui/material/Chip';
-import ViewListIcon from '@mui/icons-material/ViewList';
+import {Badge, Group, Paper, Table} from '@mantine/core';
+import {List} from 'lucide-react';
 import type {IPalletInfo} from '../JobDetails.types';
-import {
-    cardContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
-} from '../JobDetails.styles';
+import {cardContainerProps} from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 
 interface PalletSectionProps {
     pallets: IPalletInfo[];
     isUsCustomer: boolean;
 }
 
-const cellSx = {py: 0.75, px: 1.5, fontSize: '0.8125rem'} as const;
-const cellBoldSx = {...cellSx, fontWeight: 600} as const;
-const headerCellSx = {...cellSx, fontWeight: 600, fontSize: '0.75rem', color: 'text.secondary'} as const;
+const cellStyle: React.CSSProperties = {paddingBlock: 6, paddingInline: 12, fontSize: '0.8125rem'};
+const cellBoldStyle: React.CSSProperties = {...cellStyle, fontWeight: 600};
+const headerCellStyle: React.CSSProperties = {
+    ...cellStyle,
+    fontWeight: 600,
+    fontSize: '0.75rem',
+    color: 'var(--mantine-color-dimmed)',
+};
+const summaryRowStyle: React.CSSProperties = {backgroundColor: 'var(--mantine-color-gray-1)'};
 
 export const PalletSection = React.memo(function PalletSection({pallets, isUsCustomer}: PalletSectionProps) {
     if (!pallets?.length) return null;
 
     const weightUnit = isUsCustomer ? 'lbs' : 'kg';
     const dimUnit = isUsCustomer ? 'in' : 'cm';
-    const volUnit = isUsCustomer ? 'in\u00B3' : 'cm\u00B3';
+    // Cubic is stored as dimensional volume (ft³ for US, m³ for NZ) — see
+    // EditParcelDimensionsDialog's cubic calc. Sourcing the total from this stored value
+    // (rather than recomputing from L×W×H) keeps it accurate even when a job's volume was
+    // set without dimensions (e.g. a Per Job weight/volume entry with no L/W/H).
+    const volUnit = isUsCustomer ? 'ft³' : 'm³';
 
     const totalItems = pallets.reduce((sum, p) => sum + (p.quantity || 0), 0);
     const totalWeight = pallets.reduce((sum, p) => sum + (p.weight || 0) * (p.quantity || 1), 0);
-    const totalVolume = pallets.reduce((sum, p) => {
-        const vol = (p.length || 0) * (p.depth || 0) * (p.height || 0);
-        return sum + vol * (p.quantity || 1);
-    }, 0);
+    const totalVolume = pallets.reduce((sum, p) => sum + (p.cubic || 0) * (p.quantity || 1), 0);
 
     return (
-        <Box sx={cardContainerSx}>
-            <Box sx={sectionToolbarSx}>
-                <ViewListIcon sx={sectionToolbarIconSx} />
-                <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                    Pallet Information
-                </Typography>
-                <Typography variant="caption" color="text.disabled" sx={{ml: 0.5}}>
-                    ({pallets.length})
-                </Typography>
-                <Box sx={{flex: 1}} />
-            </Box>
-            <Table size="small">
-                <TableHead>
-                    <TableRow>
-                        <TableCell sx={headerCellSx}>Item ID</TableCell>
-                        <TableCell sx={headerCellSx} align="right">Qty</TableCell>
-                        <TableCell sx={headerCellSx} align="right">Weight ({weightUnit})</TableCell>
-                        <TableCell sx={headerCellSx}>Dimensions ({dimUnit})</TableCell>
-                        <TableCell sx={headerCellSx}>Status</TableCell>
-                        <TableCell sx={headerCellSx}>DG Class</TableCell>
-                        <TableCell sx={headerCellSx}>Notes</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
+        <Paper {...cardContainerProps}>
+            <SectionHeader
+                lucide={List}
+                title="Pallet Information"
+                subtitle={`${pallets.length} ${pallets.length === 1 ? 'pallet' : 'pallets'}`}
+            />
+            <Table highlightOnHover>
+                <Table.Thead>
+                    <Table.Tr>
+                        <Table.Th style={headerCellStyle}>Item ID</Table.Th>
+                        <Table.Th style={headerCellStyle} ta="right">Qty</Table.Th>
+                        <Table.Th style={headerCellStyle} ta="right">Weight ({weightUnit})</Table.Th>
+                        <Table.Th style={headerCellStyle}>Dimensions ({dimUnit})</Table.Th>
+                        <Table.Th style={headerCellStyle} ta="right">Volume ({volUnit})</Table.Th>
+                        <Table.Th style={headerCellStyle}>Status</Table.Th>
+                        <Table.Th style={headerCellStyle}>DG Class</Table.Th>
+                        <Table.Th style={headerCellStyle}>Notes</Table.Th>
+                    </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
                     {pallets.map((pallet, index) => (
-                        <TableRow
-                            key={`${pallet.itemId}-${index}`}
-                            hover
-                        >
-                            <TableCell sx={cellSx}>{pallet.itemId || '\u2014'}</TableCell>
-                            <TableCell sx={cellSx} align="right">{pallet.quantity}</TableCell>
-                            <TableCell sx={cellSx} align="right">{pallet.weight}</TableCell>
-                            <TableCell sx={cellSx}>
-                                {pallet.length} x {pallet.depth} x {pallet.height}
-                            </TableCell>
-                            <TableCell sx={cellSx}>
-                                <Box sx={{display: 'flex', gap: 0.5}}>
-                                    {pallet.pu && <Chip label="PU" size="small" color="primary" variant="outlined" sx={{height: 20, fontSize: '0.6875rem'}} />}
-                                    {pallet.do && <Chip label="DO" size="small" color="success" variant="outlined" sx={{height: 20, fontSize: '0.6875rem'}} />}
-                                </Box>
-                            </TableCell>
-                            <TableCell sx={cellSx}>{pallet.dgClass || '\u2014'}</TableCell>
-                            <TableCell sx={cellSx}>{pallet.notes || '\u2014'}</TableCell>
-                        </TableRow>
+                        <Table.Tr key={`${pallet.itemId}-${index}`}>
+                            <Table.Td style={cellStyle}>{pallet.itemId || '—'}</Table.Td>
+                            <Table.Td style={cellStyle} ta="right">{pallet.quantity}</Table.Td>
+                            <Table.Td style={cellStyle} ta="right">{pallet.weight}</Table.Td>
+                            <Table.Td style={cellStyle}>
+                                {pallet.length || pallet.depth || pallet.height
+                                    ? `${pallet.length} x ${pallet.depth} x ${pallet.height}`
+                                    : '—'}
+                            </Table.Td>
+                            <Table.Td style={cellStyle} ta="right">{pallet.cubic ? pallet.cubic.toFixed(3) : '—'}</Table.Td>
+                            <Table.Td style={cellStyle}>
+                                <Group gap={4}>
+                                    {pallet.pu && <Badge size="sm" color="brand">PU</Badge>}
+                                    {pallet.do && <Badge size="sm" color="green">DO</Badge>}
+                                </Group>
+                            </Table.Td>
+                            <Table.Td style={cellStyle}>{pallet.dgClass || '—'}</Table.Td>
+                            <Table.Td style={cellStyle}>{pallet.notes || '—'}</Table.Td>
+                        </Table.Tr>
                     ))}
                     {/* Summary footer */}
-                    <TableRow sx={{bgcolor: 'grey.50'}}>
-                        <TableCell sx={cellBoldSx}>Total</TableCell>
-                        <TableCell sx={cellBoldSx} align="right">{totalItems}</TableCell>
-                        <TableCell sx={cellBoldSx} align="right">{totalWeight.toFixed(1)}</TableCell>
-                        <TableCell sx={cellBoldSx} colSpan={4}>
-                            Volume: {totalVolume.toFixed(1)} {volUnit}
-                        </TableCell>
-                    </TableRow>
-                </TableBody>
+                    <Table.Tr style={summaryRowStyle}>
+                        <Table.Td style={cellBoldStyle}>Total</Table.Td>
+                        <Table.Td style={cellBoldStyle} ta="right">{totalItems}</Table.Td>
+                        <Table.Td style={cellBoldStyle} ta="right">{totalWeight.toFixed(1)}</Table.Td>
+                        <Table.Td style={cellBoldStyle} colSpan={5}>
+                            Volume: {totalVolume.toFixed(3)} {volUnit}
+                        </Table.Td>
+                    </Table.Tr>
+                </Table.Tbody>
             </Table>
-        </Box>
+        </Paper>
     );
 });

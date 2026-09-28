@@ -132,8 +132,9 @@ describe('notesApi integration', () => {
         it('fetches all note types', async () => {
             const result = await notesApi.getNoteTypes();
 
-            expect(result).toHaveLength(3);
+            expect(result).toHaveLength(4);
             expect(result[0]).toMatchObject({ id: 1, text: 'General', isPublic: true });
+            expect(result[3]).toMatchObject({ id: 4, text: 'Dispatch', isCourierFacing: true });
         });
 
         it('returns empty array when response is null', async () => {

@@ -17,37 +17,55 @@
 
 import React, {useMemo, useState, useCallback} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
-import Button from '@mui/material/Button';
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import {alpha} from '@mui/material/styles';
+import {
+    ActionIcon,
+    Alert,
+    Badge,
+    Box,
+    Button,
+    Card,
+    Group,
+    Loader,
+    Stack,
+    Text,
+    Textarea,
+    ThemeIcon,
+    Tooltip,
+    alpha,
+} from '@mantine/core';
+import {CircleCheckBig, CircleX, ExternalLink, Handshake, RefreshCw} from 'lucide-react';
+import {Icon} from '../../components/common/icon/Icon';
 import {useApproverInbox} from './useApproverInbox';
-import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
 import {
     ageLevel,
     formatChangeRequestValue,
     getFieldMeta,
     relativeAgeShort,
 } from '../../components/job-change-requests/jobChangeRequestFormatting';
+import {
+    dialogContentBg,
+    headerChipProps,
+    headerChromeStyle,
+    headerOnColor,
+    headerOverlayColor,
+} from '../../components/dialogs/shared/mantine/styles';
+import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
 
 export interface PartnerApprovalsInboxProps {
     /** Optional callback fired when the user clicks "View job" on a row. */
     onOpenJob?: (jobId: number, jobNo: string) => void;
 }
+
+/**
+ * Age drives the row's left rule and wash. Kept as one lookup so the three
+ * levels cannot drift apart between the border, the fill and the badge.
+ */
+const AGE_ACCENT = {
+    overdue: 'red',
+    stale: 'orange',
+    fresh: 'blue',
+} as const;
 
 export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onOpenJob}) => {
     const {data: items = [], isLoading, error, refetch, isFetching} = useApproverInbox();
@@ -111,76 +129,58 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
             ? 'All clear · nothing to review'
             : `${items.length} change request${items.length === 1 ? '' : 's'} awaiting your decision${isFetching ? ' · refreshing…' : ''}`;
 
+    const fg = headerOnColor();
+
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, bgcolor: 'background.default'}}>
-            {/* Gradient header — mirrors the dialog / SideNav pattern so the
-                drawer reads as a first-class surface in the app shell rather
-                than a bolted-on panel. */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    flexShrink: 0,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <HandshakeIcon sx={{fontSize: 24}}/>
-                </Box>
-                <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="h6" fontWeight={600} noWrap>
+        <Box
+            bg={dialogContentBg}
+            style={{display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0}}
+        >
+            {/* Solid brand header — mirrors <DialogHeader> so the drawer reads as a
+                first-class surface in the app shell rather than a bolted-on panel. */}
+            <Box style={{...headerChromeStyle(), flexShrink: 0}}>
+                <ThemeIcon {...headerChipProps()}>
+                    <Icon lucide={Handshake}/>
+                </ThemeIcon>
+                <Box style={{flex: 1, minWidth: 0}}>
+                    <Text component="h2" m={0} fw={600} fz="lg" c={fg} truncate>
                         Partner Approvals
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}} noWrap>
+                    </Text>
+                    <Text fz="sm" c={fg} truncate style={{opacity: 0.85}}>
                         {subtitle}
-                    </Typography>
+                    </Text>
                 </Box>
-                <Tooltip title="Refresh now">
-                    <span>
-                        <IconButton
-                            onClick={() => refetch()}
-                            disabled={isFetching}
-                            sx={{
-                                color: 'white',
-                                '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                                '&.Mui-disabled': {color: 'rgba(255,255,255,0.4)'},
-                            }}
-                        >
-                            <RefreshIcon/>
-                        </IconButton>
-                    </span>
+                <Tooltip label="Refresh now">
+                    <ActionIcon
+                        variant="subtle"
+                        onClick={() => refetch()}
+                        disabled={isFetching}
+                        aria-label="Refresh now"
+                        style={{
+                            '--ai-color': fg,
+                            '--ai-hover': headerOverlayColor(0.1),
+                        } as React.CSSProperties & Record<`--${string}`, string>}
+                    >
+                        <Icon lucide={RefreshCw}/>
+                    </ActionIcon>
                 </Tooltip>
             </Box>
 
             {/* Scrollable list area */}
-            <Box sx={{flex: 1, overflow: 'auto', p: 2}}>
+            <Box p="md" style={{flex: 1, overflow: 'auto'}}>
                 {isLoading && (
-                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6}}>
-                        <CircularProgress size={20} sx={{mr: 1.5}}/>
-                        <Typography variant="body2" color="text.secondary">Loading approvals…</Typography>
-                    </Box>
+                    <Group justify="center" gap="sm" py={48}>
+                        <Loader size={20} aria-label="Loading approvals"/>
+                        <Text size="sm" c="dimmed">Loading approvals…</Text>
+                    </Group>
                 )}
                 {actionError && (
-                    <Alert severity="error" sx={{mb: 2}} onClose={() => setActionError('')}>
+                    <Alert color="red" mb="md" withCloseButton onClose={() => setActionError('')}>
                         {actionError}
                     </Alert>
                 )}
                 {error && (
-                    <Alert severity="error" sx={{mb: 2}}>
+                    <Alert color="red" mb="md">
                         Could not load approvals: {(error as {message?: string}).message}
                     </Alert>
                 )}
@@ -188,18 +188,18 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                 {!isLoading && items.length === 0 && !error ? (
                     <EmptyState/>
                 ) : !isLoading ? (
-                    <Stack spacing={3}>
+                    <Stack gap={24}>
                         {grouped.map(group => (
                             <Box key={group.key}>
-                                <Box sx={{display: 'flex', alignItems: 'baseline', mb: 1, gap: 1}}>
-                                    <Typography variant="overline" sx={{letterSpacing: 1, fontWeight: 600}}>
+                                <Group align="baseline" gap="xs" mb="xs">
+                                    <Text tt="uppercase" fz="xs" fw={600} style={{letterSpacing: 1}}>
                                         {group.label}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
+                                    </Text>
+                                    <Text fz="xs" c="dimmed">
                                         {group.items.length} request{group.items.length === 1 ? '' : 's'}
-                                    </Typography>
-                                </Box>
-                                <Stack spacing={1.25}>
+                                    </Text>
+                                </Group>
+                                <Stack gap={10}>
                                     {group.items.map(item => (
                                         <InboxRow
                                             key={item.request.id}
@@ -229,19 +229,15 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
 
 function EmptyState() {
     return (
-        <Box sx={{
-            textAlign: 'center',
-            py: 8,
-            color: 'text.secondary',
-        }}>
-            <CheckCircleOutlineIcon sx={{fontSize: 64, opacity: 0.4, mb: 1}}/>
-            <Typography variant="subtitle1" sx={{fontWeight: 500}}>
+        <Stack align="center" gap={4} py={64} c="dimmed">
+            <Icon lucide={CircleCheckBig} size={64} style={{opacity: 0.4}}/>
+            <Text fz="md" fw={500}>
                 Inbox zero
-            </Typography>
-            <Typography variant="caption" sx={{display: 'block', mt: 0.5}}>
+            </Text>
+            <Text fz="xs">
                 No partner change requests are awaiting your review.
-            </Typography>
-        </Box>
+            </Text>
+        </Stack>
     );
 }
 
@@ -279,125 +275,122 @@ function InboxRow({
     const level = ageLevel(request.requestedAt);
     const age = relativeAgeShort(request.requestedAt);
     const disabled = actingOn !== null;
+    const accent = AGE_ACCENT[level] ?? AGE_ACCENT.fresh;
 
     return (
-        <Card variant="outlined" sx={(theme) => ({
-            borderLeft: 3,
-            borderLeftColor: level === 'overdue' ? 'error.main' : level === 'stale' ? 'warning.main' : 'info.main',
-            bgcolor: level === 'overdue'
-                ? alpha(theme.palette.error.main, 0.04)
-                : level === 'stale'
-                    ? alpha(theme.palette.warning.main, 0.04)
-                    : 'background.paper',
-        })}>
-            <CardContent sx={{py: 1.5, '&:last-child': {pb: 1.5}}}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap'}}>
-                    <Tooltip title={`Open job ${jobNo}`}>
+        <Card
+            withBorder
+            p={0}
+            style={{
+                borderLeft: `3px solid var(--mantine-color-${accent}-6)`,
+                // Fresh rows keep the card fill; aged rows take a faint wash of
+                // their accent so the queue's shape reads at a glance.
+                backgroundColor: level === 'fresh'
+                    ? undefined
+                    : alpha(`var(--mantine-color-${accent}-6)`, 0.04),
+            }}
+        >
+            <Box px="md" py={12}>
+                <Group gap="xs" mb={4} wrap="wrap">
+                    <Tooltip label={`Open job ${jobNo}`}>
                         <Button
-                            size="small"
-                            variant="text"
-                            endIcon={<OpenInNewIcon sx={{fontSize: 14}}/>}
+                            size="compact-xs"
+                            variant="subtle"
+                            fw={700}
+                            rightSection={<Icon lucide={ExternalLink} size={14}/>}
                             onClick={() => onOpenJob?.(request.jobId, jobNo)}
-                            sx={{textTransform: 'none', minWidth: 0, fontWeight: 700, py: 0.25, px: 0.5}}
                         >
                             {jobNo}
                         </Button>
                     </Tooltip>
-                    <Typography variant="body2" sx={{color: 'text.secondary'}}>·</Typography>
-                    <Typography
-                        component="span"
-                        sx={{
-                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            width: 20, height: 20, borderRadius: '50%', bgcolor: 'action.hover',
-                            fontSize: '0.8rem',
-                        }}
-                    >
-                        {meta.glyph}
-                    </Typography>
-                    <Typography variant="subtitle2" sx={{fontWeight: 600}}>{meta.label}</Typography>
+                    <Text size="sm" c="dimmed">·</Text>
+                    <ThemeIcon size={20} radius="xl" variant="light" color="gray">
+                        <Text fz="0.8rem" component="span">{meta.glyph}</Text>
+                    </ThemeIcon>
+                    <Text fz="sm" fw={600}>{meta.label}</Text>
                     {request.requiresCommercialRefresh && (
-                        <Tooltip title="Triggers a price re-rate when approved">
-                            <Chip size="small" label="re-rates" color="warning" variant="outlined"/>
+                        <Tooltip label="Triggers a price re-rate when approved">
+                            <Badge size="sm" color="orange" variant="light">re-rates</Badge>
                         </Tooltip>
                     )}
-                    <Box sx={{ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.5}}>
-                        {level === 'overdue' && <Chip size="small" color="error" label="Overdue"/>}
-                        {level === 'stale' && <Chip size="small" color="warning" label="Review soon"/>}
-                        <Tooltip title={new Date(request.requestedAt).toLocaleString()}>
-                            <Typography variant="caption" color="text.secondary">{age} ago</Typography>
+                    <Group gap={4} align="center" ml="auto">
+                        {level === 'overdue' && <Badge size="sm" color="red" variant="light">Overdue</Badge>}
+                        {level === 'stale' && <Badge size="sm" color="orange" variant="light">Review soon</Badge>}
+                        <Tooltip label={new Date(request.requestedAt).toLocaleString()}>
+                            <Text fz="xs" c="dimmed">{age} ago</Text>
                         </Tooltip>
-                    </Box>
-                </Box>
+                    </Group>
+                </Group>
 
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, flexWrap: 'wrap'}}>
-                    <Typography variant="caption" color="text.secondary">From</Typography>
-                    <Typography component="span" sx={{fontFamily: 'monospace', fontSize: '0.85rem'}}>
+                <Group gap={4} mb={4} wrap="wrap">
+                    <Text fz="xs" c="dimmed">From</Text>
+                    <Text component="span" ff="monospace" fz="0.85rem">
                         {fromDisplay}
-                    </Typography>
-                    <Typography component="span" sx={{mx: 0.5, color: 'text.secondary'}}>→</Typography>
-                    <Typography component="span" sx={{fontFamily: 'monospace', fontWeight: 600, fontSize: '0.85rem'}}>
+                    </Text>
+                    <Text component="span" c="dimmed" mx={4}>→</Text>
+                    <Text component="span" ff="monospace" fw={600} fz="0.85rem">
                         {toDisplay}
-                    </Typography>
-                </Box>
+                    </Text>
+                </Group>
 
                 {request.reason && (
-                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 0.5, fontStyle: 'italic'}}>
+                    <Text fz="xs" c="dimmed" fs="italic" mt={4}>
                         “{request.reason}”
-                    </Typography>
+                    </Text>
                 )}
 
                 {isRejecting ? (
-                    <Box sx={{mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1}}>
-                        <TextField
+                    <Stack gap="xs" mt={12}>
+                        <Textarea
                             label="Reason for rejection (optional)"
+                            description="Shared with the partner so they know why"
                             value={rejectReason}
-                            onChange={e => onChangeRejectReason(e.target.value)}
-                            size="small"
-                            fullWidth
-                            multiline
+                            onChange={e => onChangeRejectReason(e.currentTarget.value)}
+                            size="sm"
                             minRows={2}
+                            autosize
+                            data-autofocus
                             autoFocus
                             disabled={disabled}
-                            helperText="Shared with the partner so they know why"
                         />
-                        <Box sx={{display: 'flex', gap: 1, justifyContent: 'flex-end'}}>
-                            <Button size="small" onClick={onCancelReject} disabled={disabled}>Back</Button>
+                        <Group gap="xs" justify="flex-end">
+                            <Button size="xs" variant="default" onClick={onCancelReject} disabled={disabled}>
+                                Back
+                            </Button>
                             <Button
-                                size="small"
-                                variant="contained"
-                                color="error"
-                                startIcon={<HighlightOffIcon/>}
+                                size="xs"
+                                color="red"
+                                leftSection={<Icon lucide={CircleX} size={16}/>}
                                 onClick={onConfirmReject}
                                 disabled={disabled}
                             >
                                 Confirm reject
                             </Button>
-                        </Box>
-                    </Box>
+                        </Group>
+                    </Stack>
                 ) : (
-                    <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1}}>
+                    <Group gap="xs" justify="flex-end" mt="xs">
                         <Button
-                            size="small"
-                            variant="outlined"
-                            color="error"
+                            size="xs"
+                            variant="outline"
+                            color="red"
                             onClick={onStartReject}
                             disabled={disabled}
                         >
                             Reject
                         </Button>
                         <Button
-                            size="small"
-                            variant="contained"
-                            color="success"
-                            startIcon={<CheckCircleOutlineIcon/>}
+                            size="xs"
+                            color="green"
+                            leftSection={<Icon lucide={CircleCheckBig} size={16}/>}
                             onClick={onApprove}
                             disabled={disabled}
                         >
                             Approve
                         </Button>
-                    </Box>
+                    </Group>
                 )}
-            </CardContent>
+            </Box>
         </Card>
     );
 }

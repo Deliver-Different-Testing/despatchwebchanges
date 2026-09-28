@@ -1,21 +1,24 @@
+/** @jest-environment node */
 /**
  * CourierMapPage Types and Constants Tests
  *
  * Tests for the type definitions and constants used by the CourierMapPage component.
  */
 
+import { DEFAULT_THEME, mergeMantineTheme } from '@mantine/core';
+import { dfrntTheme } from '../../theme/dfrntMantineTheme';
 import {
     US_BOUNDS,
     NZ_BOUNDS,
     POSITION_THRESHOLD,
     ICON_CACHE_LIMIT,
-    MARKER_LABEL_MAX_LENGTH,
     REFRESH_INTERVAL_MS,
     SEARCH_DEBOUNCE_MS,
     DEFAULT_ZOOM,
     DRIVER_FOCUS_ZOOM,
     OVERVIEW_ZOOM,
-    AVATAR_COLORS,
+    getMarkerColors,
+    darkenHex,
 } from './CourierMapPage.types';
 import type {
     CourierMarker,
@@ -24,6 +27,7 @@ import type {
     MapControlsProps,
     UseCourierMapReturn,
 } from './CourierMapPage.types';
+import {LIVE_TEMPLATE} from './CourierMapDisplaySettings';
 
 describe('CourierMapPage Constants', () => {
     describe('US_BOUNDS', () => {
@@ -114,16 +118,6 @@ describe('CourierMapPage Constants', () => {
         });
     });
 
-    describe('MARKER_LABEL_MAX_LENGTH', () => {
-        it('should be 12 characters', () => {
-            expect(MARKER_LABEL_MAX_LENGTH).toBe(12);
-        });
-
-        it('should allow reasonable driver names', () => {
-            expect(MARKER_LABEL_MAX_LENGTH).toBeGreaterThanOrEqual(8);
-        });
-    });
-
     describe('REFRESH_INTERVAL_MS', () => {
         it('should be 30 seconds (30000ms)', () => {
             expect(REFRESH_INTERVAL_MS).toBe(30000);
@@ -181,29 +175,98 @@ describe('CourierMapPage Constants', () => {
         });
     });
 
-    describe('AVATAR_COLORS', () => {
-        it('should have 10 colors', () => {
-            expect(AVATAR_COLORS).toHaveLength(10);
+    describe('getMarkerColors', () => {
+        // The real app theme, so the assertion is about the shipped palette rather
+        // than a fixture. index 5 is the named colour, 7 the darker edge.
+        const theme = mergeMantineTheme(DEFAULT_THEME, dfrntTheme);
+
+        it('sources marker colors from the theme ramps so map and list agree', () => {
+            const colors = getMarkerColors(theme);
+
+            // overdue → error(red), active → primary(brand), idle → success(green)
+            expect(colors.overdue.bg).toBe(theme.colors.red[5]);
+            expect(colors.overdue.border).toBe(theme.colors.red[7]);
+            expect(colors.active.bg).toBe(theme.colors[theme.primaryColor][5]);
+            expect(colors.active.border).toBe(theme.colors[theme.primaryColor][7]);
+            expect(colors.idle.bg).toBe(theme.colors.green[5]);
+            expect(colors.idle.border).toBe(theme.colors.green[7]);
         });
 
-        it('should have all valid hex colors', () => {
-            const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
-            AVATAR_COLORS.forEach((color) => {
-                expect(color).toMatch(hexColorRegex);
+        it('resolves to concrete hex, not CSS variables (HERE renders these into an SVG)', () => {
+            const colors = getMarkerColors(theme);
+            for (const {bg, border} of Object.values(colors)) {
+                expect(bg).toMatch(/^#[0-9a-f]{3,8}$/i);
+                expect(border).toMatch(/^#[0-9a-f]{3,8}$/i);
+            }
+        });
+
+        it('uses white label text for every status for contrast on the pill', () => {
+            const colors = getMarkerColors(theme);
+            expect(colors.overdue.text).toBe('#ffffff');
+            expect(colors.active.text).toBe('#ffffff');
+            expect(colors.idle.text).toBe('#ffffff');
+        });
+
+        it('defaults to "status" coloring when colorMode is omitted', () => {
+            expect(getMarkerColors(theme)).toEqual(getMarkerColors(theme, 'status'));
+        });
+
+        it('collapses every status to one flat color in "single" mode', () => {
+            const colors = getMarkerColors(theme, 'single');
+            expect(colors.overdue).toEqual(colors.active);
+            expect(colors.idle).toEqual(colors.active);
+        });
+
+        it('uses a fixed blue for the single-color mode by default, regardless of tenant brand', () => {
+            const colors = getMarkerColors(theme, 'single');
+            expect(colors.active.bg).toBe(theme.colors.blue[5]);
+            expect(colors.active.border).toBe(theme.colors.blue[7]);
+            expect(colors.active.text).toBe('#ffffff');
+        });
+
+        describe('custom single color override', () => {
+            it('uses the custom bg/text for every status when supplied in single mode', () => {
+                const colors = getMarkerColors(theme, 'single', {bg: '#ff0000', text: '#000000'});
+                for (const status of ['overdue', 'active', 'idle'] as const) {
+                    expect(colors[status].bg).toBe('#ff0000');
+                    expect(colors[status].text).toBe('#000000');
+                }
+            });
+
+            it('derives the border as a darkened edge of the custom bg', () => {
+                const colors = getMarkerColors(theme, 'single', {bg: '#ff0000', text: '#000000'});
+                expect(colors.active.border).toBe(darkenHex('#ff0000', 0.2));
+                expect(colors.active.border).not.toBe('#ff0000');
+            });
+
+            it('falls back to the default blue when no custom color is supplied', () => {
+                const colors = getMarkerColors(theme, 'single', undefined);
+                expect(colors.active.bg).toBe(theme.colors.blue[5]);
+            });
+
+            it('is ignored in status mode', () => {
+                const withCustom = getMarkerColors(theme, 'status', {bg: '#ff0000', text: '#000000'});
+                const withoutCustom = getMarkerColors(theme, 'status');
+                expect(withCustom).toEqual(withoutCustom);
             });
         });
+    });
 
-        it('should have unique colors', () => {
-            const uniqueColors = new Set(AVATAR_COLORS);
-            expect(uniqueColors.size).toBe(AVATAR_COLORS.length);
+    describe('darkenHex', () => {
+        it('reduces each RGB channel by the given ratio', () => {
+            expect(darkenHex('#ff0000', 0.2)).toBe('#cc0000');
+            expect(darkenHex('#ffffff', 0.5)).toBe('#808080');
         });
 
-        it('should include expected colors', () => {
-            expect(AVATAR_COLORS).toContain('#3b82f6'); // blue
-            expect(AVATAR_COLORS).toContain('#10b981'); // emerald
-            expect(AVATAR_COLORS).toContain('#ef4444'); // red
+        it('accepts 3-digit hex shorthand', () => {
+            expect(darkenHex('#fff', 0.5)).toBe('#808080');
+        });
+
+        it('never goes below #000000', () => {
+            expect(darkenHex('#000000', 0.9)).toBe('#000000');
         });
     });
+
 });
 
 describe('CourierMapPage Type Definitions', () => {
@@ -216,6 +279,7 @@ describe('CourierMapPage Type Definitions', () => {
                 status: 'active',
                 lat: 40.7128,
                 lng: -74.006,
+                isSelected: false,
             };
 
             expect(marker.courierId).toBe(123);
@@ -284,6 +348,8 @@ describe('CourierMapPage Type Definitions', () => {
                 onFitAll: jest.fn(),
                 onRefresh: jest.fn(),
                 isLoading: false,
+                displaySettings: LIVE_TEMPLATE,
+                onDisplaySettingsChange: jest.fn(),
             };
 
             expect(props.onFitAll).toBeDefined();
@@ -296,6 +362,8 @@ describe('CourierMapPage Type Definitions', () => {
                 onFitAll: jest.fn(),
                 onRefresh: jest.fn(),
                 isLoading: true,
+                displaySettings: LIVE_TEMPLATE,
+                onDisplaySettingsChange: jest.fn(),
             };
 
             expect(props.isLoading).toBe(true);
@@ -307,13 +375,20 @@ describe('CourierMapPage Type Definitions', () => {
             const returnValue: UseCourierMapReturn = {
                 mapContainerRef: {current: null as HTMLDivElement | null},
                 isInitialized: true,
+                map: null,
+                platform: null,
+                defaultLayers: null,
                 updateCouriers: jest.fn(),
                 centerOnCourier: jest.fn(),
+                setSelectedDriver: jest.fn(),
                 returnToOverview: jest.fn(),
             };
 
             expect(returnValue).toHaveProperty('mapContainerRef');
             expect(returnValue).toHaveProperty('isInitialized');
+            expect(returnValue).toHaveProperty('map');
+            expect(returnValue).toHaveProperty('platform');
+            expect(returnValue).toHaveProperty('defaultLayers');
             expect(returnValue).toHaveProperty('updateCouriers');
             expect(returnValue).toHaveProperty('centerOnCourier');
             expect(returnValue).toHaveProperty('returnToOverview');

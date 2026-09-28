@@ -4,7 +4,6 @@ public class JobViewModel : DispatchJobViewModel
 {
     public new bool Van { get; set; }
     public bool? VanOk { get; set; }
-    public bool? Void { get; set; }
     public new bool? Truck { get; set; }
     public bool? Reprice { get; set; }
     public bool? Attention { get; set; }
@@ -20,6 +19,8 @@ public class JobViewModel : DispatchJobViewModel
 
     public string DeliverToContact { get; set; }
 
+    public string DispatcherName { get; set; }
+
     public int? TrackingMethod { get; set; }
     public string TrackingMobile { get; set; }
     public string TrackingEmail { get; set; }
@@ -30,7 +31,6 @@ public class JobViewModel : DispatchJobViewModel
     public int? AcceptedJobTypeId { get; set; }
     public int? NotifiedJobTypeId { get; set; }
     public int Items { get; set; }
-    public string RefA { get; set; }
     public string RefB { get; set; }
     public string OurRef { get; set; }
     public string SigNotRequired { get; set; }
@@ -45,7 +45,6 @@ public class JobViewModel : DispatchJobViewModel
     public bool? DgDocumentation { get; set; }
 
     public bool? PrivateRes { get; set; }
-    public DateTime? CompletedTime { get; set; }
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
     public string FromContactNumberSource { get; set; }
@@ -97,6 +96,7 @@ public sealed class ParcelDimensions
     public double? Length { get; set; }
     public double? Depth { get; set; }
     public double? Weight { get; set; }
+    public decimal? Cubic { get; set; }
     public string Barcode { get; set; }
 }
 
@@ -119,6 +119,7 @@ public sealed class PalletInfo
     public double Length { get; set; }
     public double Depth { get; set; }
     public double Height { get; set; }
+    public double Cubic { get; set; }
     public bool? Pu { get; set; }
     public bool? Do { get; set; }
     public int? DgClass { get; set; }
@@ -221,6 +222,7 @@ public sealed class TimeZoneSuggestion : Suggestion
 public sealed class NoteTypeViewModel : Suggestion
 {
     public bool IsPublic { get; set; }
+    public bool IsCourierFacing { get; set; }
     public string Description { get; set; }
 }
 

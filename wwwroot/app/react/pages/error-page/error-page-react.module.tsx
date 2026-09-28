@@ -6,15 +6,10 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {ErrorPage, ErrorType} from './ErrorPage';
-import {getTheme} from '../../theme/muiTheme';
 import angular from 'angular';
-
-let errorPageRoot: Root | null = null;
-let errorPageContainer: HTMLElement | null = null;
+import {islandTree} from '../../theme/DfrntMantineProvider';
+import {createPageHost} from '../../utils/reactPageHost';
 
 export interface MountErrorPageConfig {
     errorType?: ErrorType;
@@ -24,72 +19,32 @@ export interface MountErrorPageConfig {
     onGoBack?: () => void;
 }
 
+const host = createPageHost<MountErrorPageConfig>({
+    logName: 'ErrorPageReact',
+    removeContainerOnUnmount: true,
+    render: (config) => islandTree(
+        <ErrorPage
+            errorType={config.errorType}
+            customTitle={config.customTitle}
+            customMessage={config.customMessage}
+            onGoHome={config.onGoHome}
+            onGoBack={config.onGoBack}
+        />
+    ),
+});
+
 /**
  * Mounts the error page component into a container element
  */
-export function mountErrorPage(
-    containerId: string,
-    config: MountErrorPageConfig = {}
-): void {
-    console.log('[ErrorPageReact] Mounting to container:', containerId);
-
-    // If there's an existing root for a different container, unmount it first
-    if (errorPageRoot && errorPageContainer && errorPageContainer.id !== containerId) {
-        console.log('[ErrorPageReact] Unmounting previous error page from:', errorPageContainer.id);
-        errorPageRoot.unmount();
-        errorPageRoot = null;
-        errorPageContainer = null;
-    }
-
-    // Find the container
-    let container = document.getElementById(containerId);
-    if (!container) {
-        console.error('[ErrorPageReact] Container not found:', containerId);
-        container = document.createElement('div');
-        container.id = containerId;
-        document.body.appendChild(container);
-        console.log('[ErrorPageReact] Created fallback container');
-    }
-
-    errorPageContainer = container;
-
-    // Create new root if needed
-    if (!errorPageRoot) {
-        console.log('[ErrorPageReact] Creating new React root');
-        errorPageRoot = createRoot(container);
-    }
-
-    const currentTheme = getTheme();
-
-    errorPageRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
-            <ErrorPage
-                errorType={config.errorType}
-                customTitle={config.customTitle}
-                customMessage={config.customMessage}
-                onGoHome={config.onGoHome}
-                onGoBack={config.onGoBack}
-            />
-        </ThemeProvider>
-    );
-
-    console.log('[ErrorPageReact] Error page rendered');
+export function mountErrorPage(containerId: string, config: MountErrorPageConfig = {}): void {
+    host.mount(containerId, config);
 }
 
 /**
  * Unmounts the error page
  */
 export function unmountErrorPage(): void {
-    if (errorPageRoot) {
-        errorPageRoot.unmount();
-        errorPageRoot = null;
-    }
-
-    if (errorPageContainer && errorPageContainer.parentNode) {
-        errorPageContainer.parentNode.removeChild(errorPageContainer);
-        errorPageContainer = null;
-    }
+    host.unmount();
 }
 
 // Expose globally for AngularJS access (typed via global.d.ts)

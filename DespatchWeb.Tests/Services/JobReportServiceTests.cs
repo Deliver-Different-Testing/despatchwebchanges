@@ -3,6 +3,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
@@ -176,6 +177,32 @@ public class JobReportServiceTests
     }
 
     [Fact]
+    public async Task ParseBulkPriceFileAsync_CsvWithZeroValues_ParsesAsZeroNotNull()
+    {
+        // Arrange - a user setting a price to 0 must be preserved as 0, not collapsed to null
+        // (null means "leave unchanged" in the update pipeline, which would silently drop the edit).
+        const string csvContent = "Id,Amount,Fuel,RawBaseAmount\n1,0,0,0\n2,0.00,5,10";
+        var fileMock = CreateMockCsvFile("test.csv", csvContent);
+        var service = CreateService();
+
+        // Act
+        var result = await service.ParseBulkPriceFileAsync(fileMock);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+
+        Assert.Equal(1, result[0].Id);
+        Assert.Equal(0m, result[0].Amount);
+        Assert.Equal(0m, result[0].Fuel);
+        Assert.Equal(0m, result[0].RawBaseAmount);
+
+        Assert.Equal(2, result[1].Id);
+        Assert.Equal(0m, result[1].Amount);
+        Assert.Equal(5m, result[1].Fuel);
+        Assert.Equal(10m, result[1].RawBaseAmount);
+    }
+
+    [Fact]
     public async Task ParseBulkPriceFileAsync_CsvWithAllFields_ParsesAllFields()
     {
         // Arrange
@@ -263,14 +290,15 @@ public class JobReportServiceTests
         // Act
         await service.ProcessJobPriceUploadAsync(fileMock);
 
-        // Assert - verify S3 upload was called
+        // Assert - verify S3 upload was called with a {Prefix}/{yyyy}/{MM}/{filename} key.
         await _s3ClientMock.Received().PutObjectAsync(
-            Arg.Any<PutObjectRequest>(),
+            Arg.Is<PutObjectRequest>(r => System.Text.RegularExpressions.Regex.IsMatch(
+                r!.Key, @"^Jobs/\d{4}/\d{2}/Jobs-\d{14}$")),
             Arg.Any<CancellationToken>());
 
         // Assert - verify repository update was called
         await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(
-            Arg.Is<IReadOnlyList<JobManualPriceModel>>(l => l.Count == 2));
+            Arg.Is<IReadOnlyList<JobManualPriceModel>>(l => l!.Count == 2));
     }
 
     [Fact]
@@ -291,6 +319,30 @@ public class JobReportServiceTests
         await _jobCommandRepositoryMock.DidNotReceive().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
     }
 
+    [Fact]
+    public async Task GenerateRecurringJobsCsvAsync_ClientWithComma_StripsComma()
+    {
+        // Arrange - a client name with a comma must not break the column structure
+        var data = new List<PrebookListViewModel>
+        {
+            new() { JobNo = "J001", Client = "Acme, Inc", Courier = "C1", Speed = "Standard" }
+        };
+        _recurringJobRepositoryMock.GetAllRecurringJobsForExportAsync(Arg.Any<RecurringJobQueryRequest>())
+            .Returns(data);
+
+        var service = CreateService();
+
+        // Act
+        var (fileBytes, _) = await service.GenerateRecurringJobsCsvAsync(new RecurringJobQueryRequest());
+
+        // Assert - comma removed from the client name, column count preserved, no quoting introduced
+        var lines = Encoding.UTF8.GetString(fileBytes).TrimEnd('\r', '\n').Split('\n');
+        var headerColumns = lines[0].TrimEnd('\r').Split(',').Length;
+        var dataRow = lines[1].TrimEnd('\r');
+        Assert.Contains("Acme Inc", dataRow);
+        Assert.Equal(headerColumns, dataRow.Split(',').Length);
+    }
+
     private static IFormFile CreateMockFile(string fileName, string content)
     {
         var fileMock = Substitute.For<IFormFile>();
@@ -303,7 +355,7 @@ public class JobReportServiceTests
             .Returns(callInfo =>
             {
                 stream.Position = 0;
-                return stream.CopyToAsync(callInfo.Arg<Stream>(), callInfo.Arg<CancellationToken>());
+                return stream.CopyToAsync(callInfo.Arg<Stream>()!, callInfo.Arg<CancellationToken>());
             });
 
         return fileMock;
@@ -321,7 +373,7 @@ public class JobReportServiceTests
             .Returns(callInfo =>
             {
                 var ms = new MemoryStream(bytes);
-                return ms.CopyToAsync(callInfo.Arg<Stream>(), callInfo.Arg<CancellationToken>());
+                return ms.CopyToAsync(callInfo.Arg<Stream>()!, callInfo.Arg<CancellationToken>());
             });
 
         return fileMock;

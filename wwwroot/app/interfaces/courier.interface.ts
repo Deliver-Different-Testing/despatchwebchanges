@@ -53,6 +53,12 @@ export interface IAvailableCourierPosition {
     totalJobs: number;
     overDueJobs: number;
     displayOrder?: number | null;
+    courierFleetId?: number | null;
+    courierFleetName?: string | null;
+    /** City (or suburb) of the courier's most recent completed delivery. */
+    lastDeliveryCity?: string | null;
+    /** When that delivery was completed, ISO 8601 in tenant time. */
+    lastDeliveryTime?: string | null;
 }
 
 export interface IPotentialCouriers {
@@ -68,6 +74,7 @@ export interface ICourierLocationRequest {
     minLat: number;
     maxLng: number;
     maxLat: number;
+    courierFleetIds?: number[];
 }
 
 export interface IDriverWorkOverview {

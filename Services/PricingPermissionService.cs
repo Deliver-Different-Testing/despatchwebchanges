@@ -47,16 +47,22 @@ public sealed class PricingPermissionService(
         // Staff members have access to all jobs
         var staffId = tenantInfoService.GetStaffId();
         if (staffId > 0)
+        {
             return;
+        }
 
         // Client contacts only have access to their clients' jobs
         var contactId = tenantInfoService.GetContactId();
         if (contactId == 0)
+        {
             throw new UnauthorizedAccessException("User not authenticated");
+        }
 
         var accessibleClientIds = await GetAccessibleClientIdsAsync(contactId);
         if (accessibleClientIds.Count == 0)
+        {
             throw new UnauthorizedAccessException("User has no accessible clients");
+        }
 
         await using var context = await contextFactory.CreateDbContextAsync();
 
@@ -81,56 +87,57 @@ public sealed class PricingPermissionService(
     public async Task<IReadOnlyList<int>> ValidateJobsAccessAsync(IReadOnlyList<int> jobIds)
     {
         if (jobIds == null || jobIds.Count == 0)
+        {
             return [];
+        }
 
         // Staff members have access to all jobs
         var staffId = tenantInfoService.GetStaffId();
         if (staffId > 0)
+        {
             return [];
+        }
 
         // Client contacts only have access to their clients' jobs
         var contactId = tenantInfoService.GetContactId();
         if (contactId == 0)
+        {
             return jobIds; // No access to any jobs if not authenticated
+        }
 
         var accessibleClientIds = await GetAccessibleClientIdsAsync(contactId);
         if (accessibleClientIds.Count == 0)
+        {
             return jobIds; // No access to any jobs
+        }
 
         await using var context = await contextFactory.CreateDbContextAsync();
 
         // Single query: get job IDs that the user HAS access to
         var accessibleJobIds = await context.TblJobs
-            .Where(j => jobIds.Contains(j.JobId) && j.ClientId != null && accessibleClientIds.Contains(j.ClientId.Value))
+            .Where(j => jobIds.Contains(j.JobId) && j.ClientId != null &&
+                        accessibleClientIds.Contains(j.ClientId.Value))
             .Select(j => j.JobId)
             .ToListAsync();
 
         // Return jobs the user does NOT have access to (set difference)
-        return jobIds.Except(accessibleJobIds).ToList();
-    }
-
-    /// <summary>
-    /// Gets the set of client IDs the current contact has access to.
-    /// Results are cached for the duration of the request.
-    /// </summary>
-    private async Task<HashSet<int>> GetAccessibleClientIdsAsync(int contactId)
-    {
-        if (_accessibleClientIds != null)
-            return _accessibleClientIds;
-
-        var clientContacts = await clientRepository.ClientContactsAsync(contactId);
-        _accessibleClientIds = clientContacts?.Select(c => c.Id).ToHashSet() ?? [];
-        return _accessibleClientIds;
+        return [.. jobIds.Except(accessibleJobIds)];
     }
 
     /// <inheritdoc />
     public void ValidatePricingMode(string pricingMode)
     {
         if (string.IsNullOrEmpty(pricingMode))
+        {
             throw new ArgumentException("Pricing mode is required", nameof(pricingMode));
+        }
 
         if (!ValidPricingModes.Contains(pricingMode))
-            throw new ArgumentException($"Invalid pricing mode: {pricingMode}. Valid modes are: {string.Join(", ", ValidPricingModes)}", nameof(pricingMode));
+        {
+            throw new ArgumentException(
+                $"Invalid pricing mode: {pricingMode}. Valid modes are: {string.Join(", ", ValidPricingModes)}",
+                nameof(pricingMode));
+        }
     }
 
     /// <inheritdoc />
@@ -144,4 +151,20 @@ public sealed class PricingPermissionService(
             CanSetBaseAmount = true,
             CanManageBreakdown = true
         });
+
+    /// <summary>
+    /// Gets the set of client IDs the current contact has access to.
+    /// Results are cached for the duration of the request.
+    /// </summary>
+    private async Task<HashSet<int>> GetAccessibleClientIdsAsync(int contactId)
+    {
+        if (_accessibleClientIds != null)
+        {
+            return _accessibleClientIds;
+        }
+
+        var clientContacts = await clientRepository.ClientContactsAsync(contactId);
+        _accessibleClientIds = clientContacts?.Select(c => c.Id).ToHashSet() ?? [];
+        return _accessibleClientIds;
+    }
 }

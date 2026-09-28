@@ -1,14 +1,13 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * useCourierApi Hooks Tests
  */
 
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useCourierSearch, useTimeZoneOptions} from './useCourierApi';
 import {courierApi} from '../services/courierApi';
 import {CourierSuggestion, TimeZoneOption} from '../interfaces';
+import {createQueryWrapper} from '../__testUtils__';
 
 // Mock the courierApi
 jest.mock('../services/courierApi', () => ({
@@ -20,25 +19,6 @@ jest.mock('../services/courierApi', () => ({
 
 const mockCourierApi = courierApi as jest.Mocked<typeof courierApi>;
 
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-                gcTime: 0,
-            },
-        },
-    });
-
-// Wrapper component for providing QueryClient
-const createWrapper = () => {
-    const queryClient = createTestQueryClient();
-    return ({children}: {children: React.ReactNode}) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-};
-
 describe('useCourierSearch', () => {
     const mockCouriers: CourierSuggestion[] = [
         {id: 1, text: 'John Smith'},
@@ -47,7 +27,7 @@ describe('useCourierSearch', () => {
     ];
 
     it('should not fetch when search text is less than 2 characters', async () => {
-        renderHook(() => useCourierSearch('j'), {wrapper: createWrapper()});
+        renderHook(() => useCourierSearch('j'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockCourierApi.searchActiveCouriers).not.toHaveBeenCalled();
@@ -57,7 +37,7 @@ describe('useCourierSearch', () => {
     it('should fetch couriers when search text is 2 or more characters', async () => {
         mockCourierApi.searchActiveCouriers.mockResolvedValueOnce(mockCouriers);
 
-        const {result} = renderHook(() => useCourierSearch('jo'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useCourierSearch('jo'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -70,7 +50,7 @@ describe('useCourierSearch', () => {
     it('should fetch with longer search text', async () => {
         mockCourierApi.searchActiveCouriers.mockResolvedValueOnce(mockCouriers.slice(0, 2));
 
-        const {result} = renderHook(() => useCourierSearch('john'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useCourierSearch('john'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -81,7 +61,7 @@ describe('useCourierSearch', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useCourierSearch('john', {enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useCourierSearch('john', {enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockCourierApi.searchActiveCouriers).not.toHaveBeenCalled();
@@ -91,7 +71,7 @@ describe('useCourierSearch', () => {
     it('should handle empty results', async () => {
         mockCourierApi.searchActiveCouriers.mockResolvedValueOnce([]);
 
-        const {result} = renderHook(() => useCourierSearch('xyz'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useCourierSearch('xyz'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -104,7 +84,7 @@ describe('useCourierSearch', () => {
         const error = new Error('Search failed');
         mockCourierApi.searchActiveCouriers.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useCourierSearch('test'), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useCourierSearch('test'), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);
@@ -124,7 +104,7 @@ describe('useTimeZoneOptions', () => {
     it('should fetch timezone options by default', async () => {
         mockCourierApi.getTimeZoneOptions.mockResolvedValueOnce(mockTimeZones);
 
-        const {result} = renderHook(() => useTimeZoneOptions(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useTimeZoneOptions(), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -135,7 +115,7 @@ describe('useTimeZoneOptions', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useTimeZoneOptions({enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useTimeZoneOptions({enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockCourierApi.getTimeZoneOptions).not.toHaveBeenCalled();
@@ -145,7 +125,7 @@ describe('useTimeZoneOptions', () => {
     it('should handle empty results', async () => {
         mockCourierApi.getTimeZoneOptions.mockResolvedValueOnce([]);
 
-        const {result} = renderHook(() => useTimeZoneOptions(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useTimeZoneOptions(), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -158,7 +138,7 @@ describe('useTimeZoneOptions', () => {
         const error = new Error('Failed to load timezones');
         mockCourierApi.getTimeZoneOptions.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useTimeZoneOptions(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useTimeZoneOptions(), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);

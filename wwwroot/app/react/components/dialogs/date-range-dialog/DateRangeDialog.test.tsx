@@ -1,13 +1,14 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * DateRangeDialog Component Tests
+ *
+ * Consolidated: the read-only assertions share one render per scenario.
  */
 
 import React from 'react';
 import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {DateRangeDialog, DateRangeDialogProps} from './DateRangeDialog';
-import {renderWithTheme, createProps} from '../../../__testUtils__';
+import { createProps, renderWithMantine } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import dayjs from 'dayjs';
 
 const defaultProps: DateRangeDialogProps = {
@@ -21,194 +22,72 @@ const createMockProps = (overrides?: Partial<DateRangeDialogProps>) =>
 
 describe('DateRangeDialog', () => {
     describe('Rendering', () => {
-        it('renders dialog when open is true', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
+        it('renders the header, both calendars and both actions when open', () => {
+            renderWithMantine(<DateRangeDialog {...createMockProps()} />);
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(screen.getByText('Select Date Range')).toBeInTheDocument();
+            expect(screen.getByText('Choose a start and end date for your report')).toBeInTheDocument();
+            expect(screen.getByText('From')).toBeInTheDocument();
+            expect(screen.getByText('To')).toBeInTheDocument();
+            // Each calendar is labelled by its card title, so they are distinguishable.
+            expect(screen.getByLabelText('Start Date')).toBeInTheDocument();
+            expect(screen.getByLabelText('End Date')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
         });
 
         it('does not render dialog when open is false', () => {
-            const props = createMockProps({open: false});
-            renderWithTheme(<DateRangeDialog {...props} />);
+            renderWithMantine(<DateRangeDialog {...createMockProps({open: false})} />);
 
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
-        it('displays title', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
+        it('defaults both ends to today when no initial range is provided', () => {
+            renderWithMantine(<DateRangeDialog {...createMockProps()} />);
 
-            expect(screen.getByText('Select Date Range')).toBeInTheDocument();
-        });
-
-        it('displays subtitle', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('Choose a start and end date for your report')).toBeInTheDocument();
-        });
-
-        it('displays Cancel button', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
-        });
-
-        it('displays Apply button', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
-        });
-
-        it('displays From label', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('From')).toBeInTheDocument();
-        });
-
-        it('displays To label', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('To')).toBeInTheDocument();
-        });
-
-        it('displays Start Date calendar header', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('Start Date')).toBeInTheDocument();
-        });
-
-        it('displays End Date calendar header', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('End Date')).toBeInTheDocument();
+            expect(screen.getAllByText(dayjs().format('MMM D, YYYY')).length).toBeGreaterThanOrEqual(1);
         });
     });
 
-    describe('Initial Range', () => {
-        it('uses initial range when provided', () => {
-            const initialRange = {
-                start: new Date(2024, 0, 15), // Jan 15, 2024
-                end: new Date(2024, 0, 20), // Jan 20, 2024
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('Jan 15, 2024')).toBeInTheDocument();
-            expect(screen.getByText('Jan 20, 2024')).toBeInTheDocument();
-        });
-
-        it('defaults to current date when no initial range provided', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            const today = dayjs().format('MMM D, YYYY');
-            // Both start and end should show today's date
-            expect(screen.getAllByText(today).length).toBeGreaterThanOrEqual(1);
-        });
-    });
-
-    describe('Date Range Display', () => {
-        it('displays formatted start date', () => {
-            const initialRange = {
-                start: new Date(2024, 5, 10), // Jun 10, 2024
-                end: new Date(2024, 5, 15),
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
+    describe('Summary bar', () => {
+        it('shows both formatted dates and the inclusive day count', () => {
+            const initialRange = {start: new Date(2024, 5, 10), end: new Date(2024, 5, 15)};
+            renderWithMantine(<DateRangeDialog {...createMockProps({initialRange})} />);
 
             expect(screen.getByText('Jun 10, 2024')).toBeInTheDocument();
-        });
-
-        it('displays formatted end date', () => {
-            const initialRange = {
-                start: new Date(2024, 5, 10),
-                end: new Date(2024, 5, 15), // Jun 15, 2024
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
-
             expect(screen.getByText('Jun 15, 2024')).toBeInTheDocument();
-        });
-    });
-
-    describe('Duration Calculation', () => {
-        it('displays duration in days for valid range', () => {
-            const initialRange = {
-                start: new Date(2024, 0, 1),
-                end: new Date(2024, 0, 5), // 5 days
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('5 Days')).toBeInTheDocument();
-        });
-
-        it('displays singular day for 1 day range', () => {
-            const initialRange = {
-                start: new Date(2024, 0, 1),
-                end: new Date(2024, 0, 1), // Same day = 1 day
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('1 Day')).toBeInTheDocument();
-        });
-
-        it('displays Invalid for invalid range', async () => {
-            // Can't directly test invalid range from props since component enforces constraints
-            // This would require testing the calendar interaction
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            // Valid range by default shows Days, not Invalid
+            expect(screen.getByText('6 Days')).toBeInTheDocument();
             expect(screen.queryByText('Invalid')).not.toBeInTheDocument();
         });
+
+        it('counts a same-day range as one day and still allows Apply', () => {
+            const sameDay = new Date(2024, 0, 15);
+            renderWithMantine(<DateRangeDialog {...createMockProps({initialRange: {start: sameDay, end: sameDay}})} />);
+
+            expect(screen.getByText('1 Day')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /apply/i})).not.toBeDisabled();
+        });
     });
 
-    describe('Close Functionality', () => {
-        it('calls onClose when close button is clicked', async () => {
-            const user = userEvent.setup();
+    describe('Actions', () => {
+        it('calls onClose from both the header close button and Cancel', async () => {
+            const user = setupUser();
             const onClose = jest.fn();
-            const props = createMockProps({onClose});
-            renderWithTheme(<DateRangeDialog {...props} />);
+            renderWithMantine(<DateRangeDialog {...createMockProps({onClose})} />);
 
-            // Find the close icon button (X button in header)
-            const closeButton = screen.getByRole('button', {name: ''});
-            await user.click(closeButton);
-
-            expect(onClose).toHaveBeenCalled();
-        });
-
-        it('calls onClose when Cancel button is clicked', async () => {
-            const user = userEvent.setup();
-            const onClose = jest.fn();
-            const props = createMockProps({onClose});
-            renderWithTheme(<DateRangeDialog {...props} />);
+            await user.click(screen.getByRole('button', {name: 'Close dialog'}));
+            expect(onClose).toHaveBeenCalledTimes(1);
 
             await user.click(screen.getByRole('button', {name: /cancel/i}));
-
-            expect(onClose).toHaveBeenCalled();
+            expect(onClose).toHaveBeenCalledTimes(2);
         });
-    });
 
-    describe('Apply Functionality', () => {
-        it('calls onApply with date range when Apply is clicked', async () => {
-            const user = userEvent.setup();
+        it('calls onApply with the picked range', async () => {
+            const user = setupUser();
             const onApply = jest.fn();
-            const initialRange = {
-                start: new Date(2024, 0, 15),
-                end: new Date(2024, 0, 20),
-            };
-            const props = createMockProps({onApply, initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
+            const initialRange = {start: new Date(2024, 0, 15), end: new Date(2024, 0, 20)};
+            renderWithMantine(<DateRangeDialog {...createMockProps({onApply, initialRange})} />);
 
             await user.click(screen.getByRole('button', {name: /apply/i}));
 
@@ -216,100 +95,34 @@ describe('DateRangeDialog', () => {
                 start: expect.any(Date),
                 end: expect.any(Date),
             });
-        });
-
-        it('Apply button is enabled for valid range', () => {
-            const initialRange = {
-                start: new Date(2024, 0, 15),
-                end: new Date(2024, 0, 20),
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByRole('button', {name: /apply/i})).not.toBeDisabled();
+            const {start, end} = onApply.mock.calls[0][0];
+            expect(dayjs(start).format('YYYY-MM-DD')).toBe('2024-01-15');
+            expect(dayjs(end).format('YYYY-MM-DD')).toBe('2024-01-20');
         });
     });
 
-    describe('Calendars', () => {
-        it('renders two calendars', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
+    /**
+     * Two things are pinned here. The bounds are what stop the calendars producing
+     * an inverted range, so the "Invalid" state is unreachable by clicking. And each
+     * calendar has to *open on its own value's month* — a Mantine calendar does not
+     * navigate to `value` on its own, and without `defaultDate` a range in any other
+     * month renders as a fully disabled current month.
+     */
+    describe('Cross-wired bounds', () => {
+        const dayIn = (calendar: HTMLElement, label: string) =>
+            calendar.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
 
-            // MUI DateCalendar uses specific structure
-            const calendars = screen.getAllByRole('grid');
-            expect(calendars.length).toBeGreaterThanOrEqual(2);
-        });
-    });
+        it('opens on the range month and disables days past the other end', () => {
+            const initialRange = {start: new Date(2024, 0, 10), end: new Date(2024, 0, 15)};
+            renderWithMantine(<DateRangeDialog {...createMockProps({initialRange})} />);
 
-    describe('Visual Indicators', () => {
-        it('shows success styling for valid range', () => {
-            const initialRange = {
-                start: new Date(2024, 0, 15),
-                end: new Date(2024, 0, 20),
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
+            const startCalendar = screen.getByLabelText('Start Date');
+            const endCalendar = screen.getByLabelText('End Date');
 
-            // Duration chip should exist without Invalid text
-            expect(screen.getByText('6 Days')).toBeInTheDocument();
-            expect(screen.queryByText('Invalid')).not.toBeInTheDocument();
-        });
-
-        it('displays arrow between date displays', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            // Arrow icon should be present (ArrowForwardIcon)
-            expect(screen.getByTestId('ArrowForwardIcon')).toBeInTheDocument();
-        });
-    });
-
-    describe('Same Day Selection', () => {
-        it('allows same start and end date', () => {
-            const sameDay = new Date(2024, 0, 15);
-            const initialRange = {
-                start: sameDay,
-                end: sameDay,
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            expect(screen.getByText('1 Day')).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /apply/i})).not.toBeDisabled();
-        });
-    });
-
-    describe('Calendar Headers', () => {
-        it('displays calendar header icons', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            // DateRangeIcon in header
-            expect(screen.getByTestId('DateRangeIcon')).toBeInTheDocument();
-        });
-
-        it('displays calendar month icons in date summary', () => {
-            const props = createMockProps();
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            // CalendarMonthIcon appears in From/To sections
-            const calendarIcons = screen.getAllByTestId('CalendarMonthIcon');
-            expect(calendarIcons.length).toBeGreaterThanOrEqual(2);
-        });
-    });
-
-    describe('Date Range Boundaries', () => {
-        it('start calendar respects end date as max', () => {
-            const initialRange = {
-                start: new Date(2024, 0, 10),
-                end: new Date(2024, 0, 15),
-            };
-            const props = createMockProps({initialRange});
-            renderWithTheme(<DateRangeDialog {...props} />);
-
-            // The component sets maxDate on start calendar and minDate on end calendar
-            // Testing this visually would require clicking dates beyond the range
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(dayIn(startCalendar, '14 January 2024')).toBeEnabled();
+            expect(dayIn(startCalendar, '16 January 2024')).toBeDisabled();
+            expect(dayIn(endCalendar, '9 January 2024')).toBeDisabled();
+            expect(dayIn(endCalendar, '20 January 2024')).toBeEnabled();
         });
     });
 });

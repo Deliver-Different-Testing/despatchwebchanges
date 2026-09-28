@@ -14,9 +14,10 @@ export interface ParcelDimensions {
     length?: number;
     depth?: number;
     weight?: number;
+    cubic?: number;
     dimensions: string;
     barcode?: string;
-    itemTypes?: Array<{name: string; quantity: number}>;
+    itemTypes?: Array<{ name: string; quantity: number }>;
 }
 
 /**
@@ -27,8 +28,16 @@ export interface EditParcelDimensionsDialogProps {
     parcels: ParcelDimensions[];
     jobId?: number;
     bulkJobId?: number;
+    /** Human-facing job number, used to auto-fill barcodes as `{jobNumber}-N` when items are added. */
+    jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;
+    /**
+     * When true, dimensions/weight are entered once for the whole job (DimensionsType=2)
+     * rather than per parcel — the weight total and "Match proportionally" scaling
+     * sum row weights directly instead of multiplying by each row's quantity.
+     */
+    calculateDimsOncePerJob?: boolean;
     /**
      * When true, the dialog acts as a value-capture step only — no POST to
      * /job/UpdateJobPackages, no success toast — and resolves with the
@@ -36,6 +45,8 @@ export interface EditParcelDimensionsDialogProps {
      * change-request dialog (Packages requires partner approval).
      */
     partnerMode?: boolean;
+    /** When true the dialog opens in view-only mode: fields disabled, no Save. */
+    readOnly?: boolean;
     onClose: () => void;
     onSubmit: (result: EditParcelDimensionsDialogResult) => void;
     showToast: ShowToastFn;
@@ -48,9 +59,12 @@ export interface EditParcelDimensionsDialogOptions {
     parcels: ParcelDimensions[];
     jobId?: number;
     bulkJobId?: number;
+    jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;
+    calculateDimsOncePerJob?: boolean;
     partnerMode?: boolean;
+    readOnly?: boolean;
 }
 
 /**
@@ -59,4 +73,5 @@ export interface EditParcelDimensionsDialogOptions {
 export interface EditParcelDimensionsDialogResult {
     parcels: ParcelDimensions[];
     totalWeight: number;
+    calculateDimsOncePerJob: boolean;
 }

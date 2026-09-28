@@ -5,26 +5,12 @@
  */
 
 import React, {useState, useCallback, useEffect} from 'react';
-import {alpha} from '@mui/material/styles';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import CloseIcon from '@mui/icons-material/Close';
-import ManageSearchIcon from '@mui/icons-material/ManageSearch';
-import SearchOffIcon from '@mui/icons-material/SearchOff';
-import CheckIcon from '@mui/icons-material/Check';
+import {Box, Checkbox, Combobox, Group, Loader, Paper, Text, TextInput, useCombobox} from '@mantine/core';
+import {useDebouncedValue} from '@mantine/hooks';
+import {SegmentedToggle} from '../../common/segmented-toggle';
+import {Check, ListFilter, SearchX} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
 
 // Types
 export interface Suggestion {
@@ -82,6 +68,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
     onSubmit,
     onSearch,
 }) => {
+    const combobox = useCombobox({onDropdownClose: () => combobox.resetSelectedOption()});
     const hasTypeOptions = !!(typeOptions && typeOptions.length > 0);
     const defaultTypeValue = initialTypeValue ?? typeOptions?.[0]?.value ?? '';
 
@@ -144,16 +131,13 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
         }
     }, [activeSearchFn, minInputLength]);
 
-    // Debounce the search
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            if (inputValue && inputValue.length >= minInputLength) {
-               await handleSearch(inputValue);
-            }
-        }, 300);
+    const [debouncedInput] = useDebouncedValue(inputValue, 300);
 
-        return () => clearTimeout(timer);
-    }, [inputValue, handleSearch, minInputLength]);
+    useEffect(() => {
+        if (debouncedInput && debouncedInput.length >= minInputLength) {
+            void handleSearch(debouncedInput);
+        }
+    }, [debouncedInput, handleSearch, minInputLength]);
 
     const handleSubmit = () => {
         if (selectedItem) {
@@ -162,214 +146,108 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <ManageSearchIcon sx={{fontSize: 28}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h5" fontWeight={600}>
-                        {title}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Search and select an option
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-
+        <DialogShell opened={open} onClose={onClose}>
+            <DialogHeader
+                icon={<Icon lucide={ListFilter} />}
+                title={title}
+                subtitle="Search and select an option"
+                onClose={onClose}
+            />
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
-                <Paper
-                    elevation={0}
-                    sx={(theme) => ({
-                        p: 3,
-                        borderRadius: 2,
-                        border: `1px solid ${theme.palette.divider}`,
-                        bgcolor: 'white',
-                    })}
-                >
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                <Paper {...sectionPaperProps} p="lg">
                     {/* Type radio — only renders when typeOptions is supplied.
                         Steve 2026-05-26: "Add a radio button row above the
                         existing dropdown" for the 3-way Assign picker. */}
                     {hasTypeOptions && (
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mb: 2}}>
-                            <Typography variant="body2" fontWeight={600} sx={{color: 'text.secondary'}}>
-                                Type:
-                            </Typography>
-                            <RadioGroup
-                                row
+                        <Group gap="md" align="center" mb="md">
+                            <Text fz="sm" fw={600} c="dimmed">Type:</Text>
+                            <SegmentedToggle
+                                aria-label="Type"
+                                variant="inline"
                                 value={selectedType}
-                                onChange={(e) => handleTypeChange(e.target.value)}
-                            >
-                                {typeOptions!.map((opt) => (
-                                    <FormControlLabel
-                                        key={opt.value}
-                                        value={opt.value}
-                                        control={<Radio size="small" />}
-                                        label={opt.label}
-                                    />
-                                ))}
-                            </RadioGroup>
-                        </Box>
+                                onChange={handleTypeChange}
+                                data={typeOptions!.map((opt) => ({value: opt.value, label: opt.label}))}
+                            />
+                        </Group>
                     )}
 
-                    <Autocomplete
-                        fullWidth
-                        autoHighlight
-                        autoSelect
-                        options={options}
-                        loading={loading}
-                        value={selectedItem}
-                        inputValue={inputValue}
-                        getOptionLabel={(option) => option.text}
-                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                        onInputChange={(_, newInputValue) => {
-                            setInputValue(newInputValue);
+                    <Combobox
+                        store={combobox}
+                        onOptionSubmit={(value) => {
+                            const option = options.find(o => String(o.id) === value) ?? null;
+                            setSelectedItem(option);
+                            setInputValue(option?.text ?? '');
+                            combobox.closeDropdown();
                         }}
-                        onChange={(_, newValue) => {
-                            setSelectedItem(newValue);
-                        }}
-                        noOptionsText={
-                            inputValue.length >= minInputLength ? (
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, py: 1}}>
-                                    <SearchOffIcon color="action" />
-                                    <Typography color="text.secondary">
-                                        No {title.toLowerCase()} matching "{inputValue}" were found.
-                                    </Typography>
-                                </Box>
-                            ) : (
-                                <Typography color="text.secondary">
-                                    Type at least {minInputLength} character{minInputLength > 1 ? 's' : ''} to search
-                                </Typography>
-                            )
-                        }
-                        renderInput={({InputProps: autoInputProps, ...params}) => (
-                            <TextField
-                                {...params}
-                                autoFocus
+                    >
+                        <Combobox.Target>
+                            <TextInput
+                                data-autofocus
                                 placeholder={activePlaceholder}
-                                variant="outlined"
-                                slotProps={{
-                                    input: {
-                                        ...autoInputProps,
-                                        endAdornment: (
-                                            <>
-                                                {loading ? <CircularProgress color="inherit" size={20} /> : null}
-                                                {autoInputProps.endAdornment}
-                                            </>
-                                        ),
-                                    },
+                                value={inputValue}
+                                rightSection={loading ? <Loader size={18} role="progressbar" aria-label="Searching" /> : null}
+                                onFocus={() => combobox.openDropdown()}
+                                onBlur={() => combobox.closeDropdown()}
+                                onClick={() => combobox.openDropdown()}
+                                onChange={(event) => {
+                                    // Typing invalidates the previous pick.
+                                    setInputValue(event.currentTarget.value);
+                                    setSelectedItem(null);
+                                    combobox.openDropdown();
                                 }}
                             />
-                        )}
-                        renderOption={(props, option) => (
-                            <Box
-                                component="li"
-                                {...props}
-                                key={option.id}
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                }}
-                            >
-                                <ManageSearchIcon
-                                    sx={(theme) => ({
-                                        color: alpha(theme.palette.primary.main, 0.7),
-                                        fontSize: 20,
-                                    })}
-                                />
-                                <Typography>{option.text}</Typography>
-                            </Box>
-                        )}
-                    />
+                        </Combobox.Target>
+                        <Combobox.Dropdown>
+                            <Combobox.Options>
+                                {options.length > 0 ? (
+                                    options.map(option => (
+                                        <Combobox.Option value={String(option.id)} key={option.id}>
+                                            <Group gap="xs" wrap="nowrap">
+                                                <Icon lucide={ListFilter} size={20} color="var(--mantine-color-brand-6)" />
+                                                <Text>{option.text}</Text>
+                                            </Group>
+                                        </Combobox.Option>
+                                    ))
+                                ) : (
+                                    <Combobox.Empty>
+                                        {inputValue.length >= minInputLength ? (
+                                            <Group gap="xs" justify="center">
+                                                <Icon lucide={SearchX} size={18} />
+                                                <Text fz="sm" c="dimmed">
+                                                    No {title.toLowerCase()} matching &quot;{inputValue}&quot; were found.
+                                                </Text>
+                                            </Group>
+                                        ) : (
+                                            <Text fz="sm" c="dimmed">
+                                                Type at least {minInputLength} character{minInputLength > 1 ? 's' : ''} to search
+                                            </Text>
+                                        )}
+                                    </Combobox.Empty>
+                                )}
+                            </Combobox.Options>
+                        </Combobox.Dropdown>
+                    </Combobox>
 
                     {/* Re-rate checkbox */}
                     {showRerateOption && (
-                        <Box sx={{mt: 2}}>
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={shouldRerate}
-                                        onChange={(e) => setShouldRerate(e.target.checked)}
-                                        color="primary"
-                                    />
-                                }
-                                label="Re-Rate Job"
-                            />
-                        </Box>
+                        <Checkbox
+                            mt="md"
+                            label="Re-Rate Job"
+                            checked={shouldRerate}
+                            onChange={(e) => setShouldRerate(e.currentTarget.checked)}
+                        />
                     )}
                 </Paper>
-            </DialogContent>
-
-            {/* Actions */}
-            <DialogActions
-                sx={(theme) => ({
-                    px: 3,
-                    py: 2,
-                    bgcolor: 'white',
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    gap: 1,
-                })}
-            >
-                <Button onClick={onClose} variant="outlined" sx={{minWidth: 100}}>
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    disabled={!selectedItem}
-                    startIcon={<CheckIcon />}
-                    sx={{minWidth: 100}}
-                >
-                    Save
-                </Button>
-            </DialogActions>
-        </Dialog>
+            </Box>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSubmit}
+                confirmLabel="Save"
+                confirmIcon={<Icon lucide={Check} />}
+                confirmDisabled={!selectedItem}
+            />
+        </DialogShell>
     );
 };
 

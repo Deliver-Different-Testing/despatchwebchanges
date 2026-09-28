@@ -26,7 +26,10 @@ public class MessageRepository(
         var cacheKey = $"unread-messages:{currentStaffId}";
 
         // Try cache first
-        if (cache.TryGetValue<int>(cacheKey, out var cachedCount)) return cachedCount;
+        if (cache.TryGetValue<int>(cacheKey, out var cachedCount))
+        {
+            return cachedCount;
+        }
 
         // Use compiled query
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -102,6 +105,7 @@ public class MessageRepository(
             .OrderByDescending(m => m.UcmmDate)
             .Take(limit)
             .OrderBy(m => m.UcmmDate)
+            .ThenBy(m => m.UcmmId)
             .Select(m => new ChatMessageViewModel
             {
                 MessageId = m.UcmmId,
@@ -110,7 +114,7 @@ public class MessageRepository(
                 SendFromCourierId = m.UcmmSendFromCourierId,
                 SendToCourierId = m.UcmmSendToCourierId,
                 Message = m.UcmmMessage,
-                MessageTime = m.UcmmTimeSent ?? m.UcmmDate,
+                MessageTime = m.UcmmDate,
                 Read = m.Read,
                 ReadTime = m.TimeRead,
                 Sent = m.UcmmSent,
@@ -125,6 +129,7 @@ public class MessageRepository(
             .OrderByDescending(m => m.UcmmDate)
             .Take(limit)
             .OrderBy(m => m.UcmmDate)
+            .ThenBy(m => m.UcmmId)
             .Select(m => new ChatMessageViewModel
             {
                 MessageId = m.UcmmId,
@@ -133,7 +138,7 @@ public class MessageRepository(
                 SendFromCourierId = m.UcmmSendFromCourierId,
                 SendToCourierId = m.UcmmSendToCourierId,
                 Message = m.UcmmMessage,
-                MessageTime = m.UcmmTimeSent ?? m.UcmmDate,
+                MessageTime = m.UcmmDate,
                 Read = m.Read,
                 ReadTime = m.TimeRead,
                 Sent = m.UcmmSent,
@@ -149,8 +154,10 @@ public class MessageRepository(
 
         // Validate that exactly one recipient is specified
         if ((request.SendToStaffId.HasValue ? 1 : 0) + (request.SendToCourierId.HasValue ? 1 : 0) != 1)
+        {
             throw new ArgumentException("Must specify exactly one recipient (either SendToStaffId or SendToCourierId)",
                 nameof(request));
+        }
 
         ArgumentException.ThrowIfNullOrEmpty(request.Message);
 
@@ -163,9 +170,14 @@ public class MessageRepository(
         };
 
         if (request.SendToCourierId.HasValue)
+        {
             await HandleCourierMessageAsync(message, request.SendToCourierId.Value, request.MessageType, isUsTenant,
                 currentDate.Date);
-        else if (request.SendToStaffId.HasValue) HandleStaffMessage(message, request.SendToStaffId.Value);
+        }
+        else if (request.SendToStaffId.HasValue)
+        {
+            HandleStaffMessage(message, request.SendToStaffId.Value);
+        }
 
         await Context.TucManualMessages.AddAsync(message);
         await Context.SaveChangesAsync();
@@ -200,7 +212,9 @@ public class MessageRepository(
             foreach (var courierId in request.SendToCourierIds)
             {
                 if (!courierDataMap.TryGetValue(courierId, out var courierData))
+                {
                     throw new ArgumentException($"Courier {courierId} not found or inactive", nameof(request));
+                }
 
                 var message = new TucManualMessage
                 {
@@ -220,7 +234,9 @@ public class MessageRepository(
                     : courierData.UccrMobile;
 
                 if (!string.IsNullOrWhiteSpace(mobileNumber))
+                {
                     message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
+                }
 
                 if (deliveryMethod == MessageDeliveryType.App)
                 {
@@ -229,8 +245,10 @@ public class MessageRepository(
                 else
                 {
                     if (string.IsNullOrWhiteSpace(message.SendToMobile))
+                    {
                         throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS",
                             nameof(request));
+                    }
 
                     message.Subject = $"SMS to Courier: {courierData.Code}";
                 }
@@ -315,8 +333,10 @@ public class MessageRepository(
                 .SetProperty(r => r.IsActive, false));
 
         if (rowsAffected == 0)
+        {
             throw new ArgumentException($"Quick response with ID {responseId} not found for current staff member.",
                 nameof(responseId));
+        }
     }
 
     public async Task<IReadOnlyList<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
@@ -410,7 +430,9 @@ public class MessageRepository(
             : courierData.UccrMobile;
 
         if (!string.IsNullOrWhiteSpace(mobileNumber))
+        {
             message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
+        }
 
         if (deliveryMethod == MessageDeliveryType.App)
         {
@@ -419,8 +441,10 @@ public class MessageRepository(
         else // SMS
         {
             if (string.IsNullOrWhiteSpace(message.SendToMobile))
+            {
                 throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS",
                     nameof(sendToCourierId));
+            }
 
             message.Subject = $"SMS to Courier: {courierData.Code}";
         }
@@ -449,7 +473,9 @@ public class MessageRepository(
     private static string NormalizeMobileNumber(string phoneNumber, bool isUsTenant)
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))
+        {
             return phoneNumber;
+        }
 
         var normalized = phoneNumber.Replace(" ", string.Empty);
 

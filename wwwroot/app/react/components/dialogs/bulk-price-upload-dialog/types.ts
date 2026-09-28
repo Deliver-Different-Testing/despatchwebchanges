@@ -16,12 +16,16 @@ export interface BulkPricePreviewRow {
     oldAmount: number;
     newAmount: number;
     isPrebook: boolean;
+    skipped?: boolean;
     error?: string;
 }
 
 export interface BulkPricePreviewResponse {
     rows: BulkPricePreviewRow[];
+    /** Jobs whose price was actually updated. */
     totalJobs: number;
+    /** Jobs from the file that could not be updated (not found, locked, or unsupported in this mode). */
+    skippedJobs: number;
     totalOldAmount: number;
     totalNewAmount: number;
 }

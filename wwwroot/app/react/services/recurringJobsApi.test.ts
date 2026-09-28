@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Recurring Jobs API Service Tests
  */
@@ -223,23 +222,6 @@ describe('recurringJobsApi', () => {
         });
     });
 
-    describe('voidPrebookJob', () => {
-        it('should call apiClient.post with correct URL and jobId', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-
-            await recurringJobsApi.voidPrebookJob(123);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/VoidPrebookJob', {jobId: 123});
-        });
-
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 400, statusText: 'Bad Request', message: 'Invalid job'};
-            mockApiClient.post.mockRejectedValueOnce(error);
-
-            await expect(recurringJobsApi.voidPrebookJob(123)).rejects.toEqual(error);
-        });
-    });
-
     describe('exportToCsv', () => {
         const mockQuery: RecurringJobQuery = {
             order: 'booked',
@@ -287,6 +269,55 @@ describe('recurringJobsApi', () => {
             mockApiClient.postForBlob.mockRejectedValueOnce(error);
 
             await expect(recurringJobsApi.exportToCsv(mockQuery)).rejects.toThrow('Network Error');
+        });
+    });
+
+    describe('getDeliveryJourney', () => {
+        const originalTimeZone = (window as never as {TimeZone?: string}).TimeZone;
+        afterEach(() => {
+            (window as never as {TimeZone?: string}).TimeZone = originalTimeZone;
+        });
+
+        const mockJourneyDto = {
+            breakdown: {total: 1, completed: 1, voided: 0, pending: 0},
+            runs: [
+                {
+                    parentJobId: 10,
+                    parentJobNumber: 'RJ-010',
+                    serviceDate: '2026-06-18T09:30:00+12:00',
+                    status: 'Completed',
+                    miles: 12,
+                    pod: {time: '2026-06-18T15:45:00+12:00', signedBy: 'J. Doe'},
+                    children: [],
+                },
+            ],
+        };
+
+        it('sends bookingId and the tenant timezone', async () => {
+            (window as never as {TimeZone?: string}).TimeZone = 'New Zealand Standard Time';
+            mockApiClient.get.mockResolvedValueOnce(mockJourneyDto);
+
+            await recurringJobsApi.getDeliveryJourney(42);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'job/GetRecurringJobDeliveryJourney',
+                {bookingId: 42, timeZone: 'New Zealand Standard Time'},
+                undefined,
+            );
+        });
+
+        it('preserves wall-clock service and POD times regardless of browser timezone', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockJourneyDto);
+
+            const result = await recurringJobsApi.getDeliveryJourney(42);
+
+            // parseDateFromApi keeps the wall-clock + offset the backend sent, rather than
+            // re-projecting the instant into the test runner's local zone (the bare-dayjs bug).
+            const run = result.runs[0];
+            expect(run.serviceDate.format('YYYY-MM-DD HH:mm')).toBe('2026-06-18 09:30');
+            expect(run.serviceDate.utcOffset()).toBe(720); // +12:00
+            expect(run.pod?.time.format('YYYY-MM-DD HH:mm')).toBe('2026-06-18 15:45');
+            expect(run.pod?.time.utcOffset()).toBe(720);
         });
     });
 });

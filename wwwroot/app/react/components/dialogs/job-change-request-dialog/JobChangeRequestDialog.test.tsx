@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * JobChangeRequestDialog Tests
  *
@@ -7,10 +6,11 @@
  */
 
 import React from 'react';
-import {screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {act, screen, waitFor, within} from '@testing-library/react';
+import {notifications} from '@mantine/notifications';
 import {JobChangeRequestDialog, JobChangeRequestDialogProps} from './JobChangeRequestDialog';
-import {renderWithTheme} from '../../../__testUtils__';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
+import {setupUser} from '../../../__testUtils__/setupUser';
 import {jobChangeRequestApi} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
 
@@ -51,6 +51,14 @@ describe('JobChangeRequestDialog', () => {
         ]);
     });
 
+    // The toast service mounts its own singleton root — notifications from one
+    // test otherwise pile up and delay/hide the toast the next test asserts on.
+    afterEach(async () => {
+        await act(async () => {
+            notifications.clean();
+        });
+    });
+
     it('shows the job number and a field-specific title', () => {
         renderDialog();
         expect(screen.getByText(/JOB-100/)).toBeInTheDocument();
@@ -59,7 +67,7 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('updates the title when the field changes', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderDialog();
         await user.click(screen.getByLabelText(/Field/));
         await user.click(screen.getByRole('option', {name: /Agreed Rate/}));
@@ -67,7 +75,7 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('validates that a requested value is provided', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderDialog();
         // Default field is Notes (auto-apply) so the action button reads "Apply".
         await user.click(screen.getByRole('button', {name: /Apply/}));
@@ -75,15 +83,17 @@ describe('JobChangeRequestDialog', () => {
         expect(mockCreate).not.toHaveBeenCalled();
     });
 
-    it('submits Notes (auto-apply) with the typed value', async () => {
-        const user = userEvent.setup();
+    it('submits Notes (auto-apply) with the typed value and surfaces the result via a toast', async () => {
+        const user = setupUser();
         mockCreate.mockResolvedValueOnce({
             success: true,
             request: {status: 'Applied'},
         });
-        renderDialog();
+        const onClose = jest.fn();
+        renderDialog({onClose});
         // Default field is Notes — the value input is "New notes".
-        await user.type(screen.getByLabelText(/New notes/i), 'Please leave at reception');
+        await user.click(screen.getByLabelText(/New notes/i));
+        await user.paste('Please leave at reception');
         await user.click(screen.getByRole('button', {name: /Apply/}));
         await waitFor(() => {
             expect(mockCreate).toHaveBeenCalledWith({
@@ -91,13 +101,18 @@ describe('JobChangeRequestDialog', () => {
                 fieldName: 'Notes',
                 requestedValue: 'Please leave at reception',
                 reason: undefined,
+                pairingId: undefined,
             });
         });
-        expect(screen.getByText(/Change applied/)).toBeInTheDocument();
+        // Dialog closes synchronously on submit — the dispatcher isn't blocked
+        // while the request is in flight.
+        expect(onClose).toHaveBeenCalled();
+        // The result lands as a toast (standalone toastService mounts to document.body).
+        expect(await screen.findByText(/Change applied/)).toBeInTheDocument();
     });
 
     it('renders the Speed dropdown from getSpeedList when Service Speed is picked', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderDialog();
         await user.click(screen.getByRole('combobox', {name: /Field/}));
         await user.click(screen.getByRole('option', {name: /Service Speed/}));
@@ -111,16 +126,17 @@ describe('JobChangeRequestDialog', () => {
     });
 
     it('PartnerAgreedRate renders a $ adornment and submits the numeric value', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         mockCreate.mockResolvedValueOnce({
             success: true,
             request: {status: 'Pending'},
         });
         renderDialog({preselectedFieldName: 'PartnerAgreedRate'});
-        const input = screen.getByRole('spinbutton', {name: /Agreed rate/i});
-        // userEvent.type on a number input in jsdom doesn't handle the decimal
-        // point reliably — use a whole number; the field accepts both at runtime.
-        await user.type(input, '185');
+        // Mantine's `NumberInput` is a formatted text input (react-number-format),
+        // so it has no spinbutton role and its value reads back as a string.
+        const input = screen.getByRole('textbox', {name: /Agreed rate/i});
+        await user.click(input);
+        await user.paste('185');
         await user.click(screen.getByRole('button', {name: /Submit/}));
         await waitFor(() => {
             expect(mockCreate).toHaveBeenCalledWith({
@@ -130,6 +146,8 @@ describe('JobChangeRequestDialog', () => {
                 reason: undefined,
             });
         });
+        // Await the resulting toast so it doesn't leak into the next test.
+        expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
     });
 
     it('shows a "re-rates" notice for commercial fields', () => {
@@ -143,51 +161,111 @@ describe('JobChangeRequestDialog', () => {
     });
 
     describe('address fields', () => {
-        it('renders structured address inputs and submits a JSON payload', async () => {
-            const user = userEvent.setup();
-            mockCreate.mockResolvedValueOnce({
-                success: true,
-                request: {status: 'Pending'},
-            });
-            renderDialog({preselectedFieldName: 'PickupAddress'});
-
-            await user.type(screen.getByLabelText(/Address line 1/i), '123 Cuba St');
-            await user.type(screen.getByLabelText(/Suburb/i), 'Te Aro');
-            await user.type(screen.getByLabelText(/City/i), 'Wellington');
-            await user.type(screen.getByLabelText(/Postcode/i), '6011');
-
-            await user.click(screen.getByRole('button', {name: /Submit/}));
-
-            await waitFor(() => {
-                expect(mockCreate).toHaveBeenCalledTimes(1);
-            });
-            const call = mockCreate.mock.calls[0][0];
-            expect(call.fieldName).toBe('PickupAddress');
-            const payload = JSON.parse(call.requestedValue);
-            expect(payload.addressLine1).toBe('123 Cuba St');
-            expect(payload.addressLine3).toBe('Te Aro');
-            expect(payload.addressLine4).toBe('Wellington');
-            expect(payload.addressLine6).toBe('6011');
-            // fullAddress is derived from the joined non-empty lines.
-            expect(payload.fullAddress).toContain('123 Cuba St');
-            expect(payload.fullAddress).toContain('Wellington');
+        afterEach(() => {
+            delete (window as any).serverConfig;
         });
 
-        it('rejects submission when all address lines are empty', async () => {
-            const user = userEvent.setup();
-            renderDialog({preselectedFieldName: 'DeliveryAddress'});
-            await user.click(screen.getByRole('button', {name: /Submit/}));
-            expect(screen.getByText(/Enter at least one address line/)).toBeInTheDocument();
-            expect(mockCreate).not.toHaveBeenCalled();
+        describe('NZ tenant', () => {
+            beforeEach(() => {
+                (window as any).serverConfig = {isUSCustomer: false};
+            });
+
+            it('renders Suburb/City/Postcode inputs and submits a JSON payload', async () => {
+                const user = setupUser();
+                mockCreate.mockResolvedValueOnce({
+                    success: true,
+                    request: {status: 'Pending'},
+                });
+                renderDialog({preselectedFieldName: 'PickupAddress'});
+
+                await user.click(screen.getByLabelText(/Address line 1/i));
+                await user.paste('123 Cuba St');
+                await user.click(screen.getByLabelText(/Suburb/i));
+                await user.paste('Te Aro');
+                await user.click(screen.getByLabelText(/City/i));
+                await user.paste('Wellington');
+                await user.click(screen.getByLabelText(/Postcode/i));
+                await user.paste('6011');
+
+                expect(screen.queryByLabelText(/^State$/i)).not.toBeInTheDocument();
+
+                await user.click(screen.getByRole('button', {name: /Submit/}));
+
+                await waitFor(() => {
+                    expect(mockCreate).toHaveBeenCalledTimes(1);
+                });
+                const call = mockCreate.mock.calls[0][0];
+                expect(call.fieldName).toBe('PickupAddress');
+                const payload = JSON.parse(call.requestedValue);
+                expect(payload.addressLine1).toBe('123 Cuba St');
+                expect(payload.addressLine3).toBe('Te Aro');
+                expect(payload.addressLine4).toBe('Wellington');
+                expect(payload.addressLine6).toBe('6011');
+                // fullAddress is derived from the joined non-empty lines.
+                expect(payload.fullAddress).toContain('123 Cuba St');
+                expect(payload.fullAddress).toContain('Wellington');
+                // Await the resulting toast so it doesn't leak into the next test.
+                expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
+            });
+
+            it('rejects submission when all address lines are empty', async () => {
+                const user = setupUser();
+                renderDialog({preselectedFieldName: 'DeliveryAddress'});
+                await user.click(screen.getByRole('button', {name: /Submit/}));
+                expect(screen.getByText(/Enter at least one address line/)).toBeInTheDocument();
+                expect(mockCreate).not.toHaveBeenCalled();
+            });
+
+            it('pre-fills address fields from a serialised preInitialValue', () => {
+                renderDialog({
+                    preselectedFieldName: 'PickupAddress',
+                    preInitialValue: JSON.stringify({addressLine1: '99 Lambton Quay', addressLine4: 'Wellington'}),
+                });
+                expect(screen.getByLabelText(/Address line 1/i)).toHaveValue('99 Lambton Quay');
+                expect(screen.getByLabelText(/City/i)).toHaveValue('Wellington');
+            });
         });
 
-        it('pre-fills address fields from a serialised preInitialValue', () => {
-            renderDialog({
-                preselectedFieldName: 'PickupAddress',
-                preInitialValue: JSON.stringify({addressLine1: '99 Lambton Quay', addressLine4: 'Wellington'}),
+        describe('US tenant', () => {
+            beforeEach(() => {
+                (window as any).serverConfig = {isUSCustomer: true};
             });
-            expect(screen.getByLabelText(/Address line 1/i)).toHaveValue('99 Lambton Quay');
-            expect(screen.getByLabelText(/City/i)).toHaveValue('Wellington');
+
+            it('renders City/State/ZIP inputs instead of Suburb/Postcode, and submits a JSON payload', async () => {
+                const user = setupUser();
+                mockCreate.mockResolvedValueOnce({
+                    success: true,
+                    request: {status: 'Pending'},
+                });
+                renderDialog({preselectedFieldName: 'PickupAddress'});
+
+                expect(screen.queryByLabelText(/Suburb/i)).not.toBeInTheDocument();
+                expect(screen.queryByLabelText(/^Postcode$/i)).not.toBeInTheDocument();
+
+                await user.click(screen.getByLabelText(/Address line 1/i));
+                await user.paste('123 Main St');
+                await user.click(screen.getByLabelText(/City/i));
+                await user.paste('Portland');
+                await user.click(screen.getByLabelText(/^State$/i));
+                await user.paste('OR');
+                await user.click(screen.getByLabelText(/ZIP Code/i));
+                await user.paste('97201');
+
+                await user.click(screen.getByRole('button', {name: /Submit/}));
+
+                await waitFor(() => {
+                    expect(mockCreate).toHaveBeenCalledTimes(1);
+                });
+                const call = mockCreate.mock.calls[0][0];
+                expect(call.fieldName).toBe('PickupAddress');
+                const payload = JSON.parse(call.requestedValue);
+                expect(payload.addressLine1).toBe('123 Main St');
+                expect(payload.addressLine4).toBe('Portland');
+                expect(payload.addressLine5).toBe('OR');
+                expect(payload.addressLine6).toBe('97201');
+                // Await the resulting toast so it doesn't leak into the next test.
+                expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
+            });
         });
     });
 
@@ -198,7 +276,7 @@ describe('JobChangeRequestDialog', () => {
                 preInitialValue: '123.45',
             });
             expect(screen.getByRole('heading', {name: /Request change to Agreed Rate/})).toBeInTheDocument();
-            expect(screen.getByRole('spinbutton', {name: /Agreed rate/i})).toHaveValue(123.45);
+            expect(screen.getByRole('textbox', {name: /Agreed rate/i})).toHaveValue('123.45');
         });
 
         it('re-primes when reopened with different props', () => {
@@ -217,7 +295,7 @@ describe('JobChangeRequestDialog', () => {
                     preInitialValue="50"
                 />,
             );
-            expect(screen.getByRole('spinbutton', {name: /Agreed rate/i})).toHaveValue(50);
+            expect(screen.getByRole('textbox', {name: /Agreed rate/i})).toHaveValue('50');
 
             rerender(
                 <JobChangeRequestDialog
@@ -239,13 +317,13 @@ describe('JobChangeRequestDialog', () => {
                     preInitialValue="7"
                 />,
             );
-            expect(screen.getByRole('spinbutton', {name: /Quantity/i})).toHaveValue(7);
+            expect(screen.getByRole('textbox', {name: /Quantity/i})).toHaveValue('7');
         });
     });
 
     describe('field dropdown grouping', () => {
         it('groups fields under "Applies immediately" and "Requires partner approval"', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderDialog();
             await user.click(screen.getByLabelText(/Field/));
             const listbox = await screen.findByRole('listbox');
@@ -264,7 +342,7 @@ describe('JobChangeRequestDialog', () => {
 
             // The field combobox and numeric value input must NOT be present.
             expect(screen.queryByLabelText(/Field/i)).not.toBeInTheDocument();
-            expect(screen.queryByRole('spinbutton', {name: /Agreed rate/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('textbox', {name: /Agreed rate/i})).not.toBeInTheDocument();
 
             // The header switches to confirmation copy.
             expect(screen.getByRole('heading', {name: /Confirm Agreed Rate change/})).toBeInTheDocument();
@@ -274,7 +352,7 @@ describe('JobChangeRequestDialog', () => {
         });
 
         it('keeps the reason textarea editable and submits with the locked value', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockCreate.mockResolvedValueOnce({
                 success: true,
                 request: {status: 'Pending'},
@@ -286,7 +364,8 @@ describe('JobChangeRequestDialog', () => {
             });
 
             const reasonField = screen.getByLabelText(/Reason/);
-            await user.type(reasonField, 'Customer requested a rate review after holiday surcharge');
+            await user.click(reasonField);
+            await user.paste('Customer requested a rate review after holiday surcharge');
 
             await user.click(screen.getByRole('button', {name: /Submit/}));
 
@@ -298,6 +377,8 @@ describe('JobChangeRequestDialog', () => {
                     reason: 'Customer requested a rate review after holiday surcharge',
                 });
             });
+            // Await the resulting toast so it doesn't leak into the next test.
+            expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
         });
 
         it('renders addresses as a parsed single-line summary', () => {
@@ -352,17 +433,37 @@ describe('JobChangeRequestDialog', () => {
         });
     });
 
-    it('surfaces backend error message', async () => {
-        const user = userEvent.setup();
+    it('forwards pairingId to the create payload when supplied', async () => {
+        // The dispatcher's tenant may have multiple active partner pairings; sending
+        // pairingId lets the backend disambiguate without falling back to the
+        // single-active-pairing heuristic that errors out on multi-pairing tenants.
+        const user = setupUser();
+        mockCreate.mockResolvedValueOnce({success: true, request: {status: 'Applied'}});
+        renderDialog({pairingId: 17});
+        await user.click(screen.getByLabelText(/New notes/i));
+        await user.paste('x');
+        await user.click(screen.getByRole('button', {name: /Apply/}));
+        await waitFor(() => {
+            expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({pairingId: 17}));
+        });
+    });
+
+    it('surfaces backend error message via a toast after closing the dialog', async () => {
+        const user = setupUser();
         mockCreate.mockResolvedValueOnce({
             success: false,
             message: 'A pending request for Notes already exists',
         });
-        renderDialog();
-        await user.type(screen.getByLabelText(/New notes/i), 'x');
+        const onClose = jest.fn();
+        renderDialog({onClose});
+        await user.click(screen.getByLabelText(/New notes/i));
+        await user.paste('x');
         await user.click(screen.getByRole('button', {name: /Apply/}));
+        // The dialog closes immediately; the backend error appears as a toast
+        // so the dispatcher can keep working in the meantime.
         await waitFor(() => {
-            expect(screen.getByText(/already exists/)).toBeInTheDocument();
+            expect(onClose).toHaveBeenCalled();
         });
+        expect(await screen.findByText(/already exists/)).toBeInTheDocument();
     });
 });

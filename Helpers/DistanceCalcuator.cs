@@ -4,6 +4,27 @@ public static class DistanceCalculator
 {
     private const double EarthRadiusInMiles = 3959.87433;
 
+    /// <summary>
+    /// Straight-line miles between two points, or 0 when any coordinate is missing or zero.
+    /// Mirrors the coordinate validation the HERE routing path applies.
+    /// </summary>
+    public static decimal MilesOrZero(
+        decimal? pickupLat,
+        decimal? pickupLong,
+        decimal? dropOffLat,
+        decimal? dropOffLong
+    )
+    {
+        if (pickupLat is not { } fromLat || pickupLong is not { } fromLng ||
+            dropOffLat is not { } toLat || dropOffLong is not { } toLng ||
+            fromLat == 0m || fromLng == 0m || toLat == 0m || toLng == 0m)
+        {
+            return 0m;
+        }
+
+        return (decimal)CalculateDistance(fromLat, fromLng, toLat, toLng);
+    }
+
     public static double CalculateDistance(
         decimal pickupLat,
         decimal pickupLong,
@@ -24,7 +45,7 @@ public static class DistanceCalculator
             EarthRadiusInMiles
         );
 
-        return Math.Round(distance, 2);
+        return Math.Round(distance, 2, MidpointRounding.AwayFromZero);
     }
 
     private static double CalculateHaversineDistance(

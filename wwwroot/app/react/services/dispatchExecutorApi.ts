@@ -6,11 +6,12 @@
  * jobApi.ts, jobDetailApi.ts, etc.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import type {ActiveCourierViewModel} from '../../interfaces/courier.interface';
 import type {IDispatchJobDto} from '../../interfaces/job.interface';
 import {transformDispatchJobDTO} from '../../functions/dtoMappings';
 import type {DispatchJob} from '../interfaces/dispatchJob';
+import {RequestOptions} from "./requestOptions";
 
 // ── Courier Lookup ──────────────────────────────────────────────────
 
@@ -91,10 +92,110 @@ export async function isBulkJobParent(bulkJobId: number, options?: RequestOption
 // ── Nationwide / Agent ──────────────────────────────────────────────
 
 /**
- * Check if an agent can be assigned to a job.
+ * Check if an agent can be assigned to a job (a flight must be assigned first).
  */
 export async function canAssignAgentToJob(agentJobId: number, options?: RequestOptions): Promise<boolean> {
     return apiClient.get<boolean>('nationwideJob/CanAssignAgentToJob', {agentJobId}, options);
+}
+
+/** Whether assigning an agent will email them the inbound-agent job link. */
+export type AgentInboundEmailStatus = 'Queued' | 'NoAgentEmail' | 'NoInboundUrl' | 'Failed';
+
+export interface AgentInboundEmailResult {
+    status: AgentInboundEmailStatus;
+    agentEmail: string | null;
+    willEmail: boolean;
+    /** Hardcoded default subject template (returned by the preview endpoint only). */
+    defaultSubject?: string;
+    /** Hardcoded default body template (returned by the preview endpoint only). */
+    defaultBody?: string;
+}
+
+/**
+ * Assign an agent to a job. Returns whether the agent was emailed the inbound-agent
+ * link (best-effort — the assignment itself always succeeds if this resolves).
+ *
+ * `emailSubject`/`emailBody` optionally override the hardcoded default templates for this
+ * send (the dispatcher's edits from the confirmation dialog); omit to use the defaults.
+ */
+export async function assignAgentToJob(
+    jobId: number,
+    agentId: number,
+    includeStopJobs = false,
+    emailSubject?: string,
+    emailBody?: string,
+): Promise<AgentInboundEmailResult> {
+    return apiClient.post<AgentInboundEmailResult>(
+        'nationwideJob/AssignAgentToJob',
+        {jobId, agentId, includeStopJobs, emailSubject, emailBody},
+    );
+}
+
+/**
+ * Hand a job to a network partner. Stamps tucJob.NpAgentId, which is what the
+ * partner's row-level visibility keys off — it does not dispatch the job or email
+ * anyone, so the courier-facing status is left alone.
+ */
+export async function assignNpAgentToJob(jobId: number, npAgentId: number): Promise<{success: boolean}> {
+    return apiClient.post<{success: boolean}>(
+        'nationwideJob/AssignNpAgentToJob',
+        {jobId, npAgentId},
+    );
+}
+
+/** Per-job outcome of a bulk assignment; a failed job never aborts the batch. */
+export interface BulkAssignmentResult {
+    jobId: number;
+    succeeded: boolean;
+    failureReason: string | null;
+    emailStatus: AgentInboundEmailStatus | null;
+}
+
+export interface BulkAssignmentResponse {
+    assigned: number;
+    failed: number;
+    results: BulkAssignmentResult[];
+}
+
+/** Assign one agent across many jobs; each job is gated and reported independently. */
+export async function assignAgentToJobs(
+    jobIds: number[],
+    agentId: number,
+    includeStopJobs = false,
+    emailSubject?: string,
+    emailBody?: string,
+): Promise<BulkAssignmentResponse> {
+    return apiClient.post<BulkAssignmentResponse>(
+        'nationwideJob/AssignAgentToJobs',
+        {jobIds, agentId, includeStopJobs, emailSubject, emailBody},
+    );
+}
+
+/** Assign one network partner across many jobs. */
+export async function assignNpAgentToJobs(
+    jobIds: number[],
+    npAgentId: number,
+): Promise<BulkAssignmentResponse> {
+    return apiClient.post<BulkAssignmentResponse>(
+        'nationwideJob/AssignNpAgentToJobs',
+        {jobIds, npAgentId},
+    );
+}
+
+/**
+ * Pre-flight (no side effects): would assigning this agent email them the inbound-agent
+ * link, and to what address? Used to warn the dispatcher before they confirm.
+ */
+export async function getAgentInboundEmailPreview(
+    agentId: number,
+    jobId: number,
+    options?: RequestOptions,
+): Promise<AgentInboundEmailResult> {
+    return apiClient.get<AgentInboundEmailResult>(
+        'nationwideJob/GetAgentInboundEmailPreview',
+        {agentId, jobId},
+        options,
+    );
 }
 
 // ── Pricing ─────────────────────────────────────────────────────────
@@ -178,6 +279,8 @@ export const dispatchExecutorApi = {
     isJobParent,
     isBulkJobParent,
     canAssignAgentToJob,
+    assignAgentToJob,
+    getAgentInboundEmailPreview,
     recalculateJobRate,
     applyRecalculatedJobRate,
     simpleRepriceJobManual,

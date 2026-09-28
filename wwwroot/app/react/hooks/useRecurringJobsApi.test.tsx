@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * useRecurringJobsApi Hooks Tests
  */
@@ -6,7 +5,6 @@
 import React from 'react';
 import dayjs from 'dayjs';
 import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useRecurringJobsList, useSpeedList} from './useRecurringJobsApi';
 import {recurringJobsApi} from '../services/recurringJobsApi';
 import {
@@ -14,6 +12,7 @@ import {
     RecurringJobQuery,
     SpeedOption,
 } from '../interfaces';
+import {createQueryWrapper} from '../__testUtils__';
 
 // Mock the recurringJobsApi
 jest.mock('../services/recurringJobsApi', () => ({
@@ -24,25 +23,6 @@ jest.mock('../services/recurringJobsApi', () => ({
 }));
 
 const mockRecurringJobsApi = recurringJobsApi as jest.Mocked<typeof recurringJobsApi>;
-
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-                gcTime: 0,
-            },
-        },
-    });
-
-// Wrapper component for providing QueryClient
-const createWrapper = () => {
-    const queryClient = createTestQueryClient();
-    return ({children}: {children: React.ReactNode}) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-};
 
 // Sample test data
 const mockQuery: RecurringJobQuery = {
@@ -137,7 +117,7 @@ describe('useRecurringJobsApi Hooks', () => {
             mockRecurringJobsApi.getPreBookJobs.mockResolvedValueOnce(mockPaginatedResponse);
 
             const {result} = renderHook(() => useRecurringJobsList(mockQuery), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             expect(result.current.isLoading).toBe(true);
@@ -164,7 +144,7 @@ describe('useRecurringJobsApi Hooks', () => {
             };
 
             const {result} = renderHook(() => useRecurringJobsList(queryWithFilters), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -189,7 +169,7 @@ describe('useRecurringJobsApi Hooks', () => {
             };
 
             const {result} = renderHook(() => useRecurringJobsList(queryPage2), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -206,7 +186,7 @@ describe('useRecurringJobsApi Hooks', () => {
             mockRecurringJobsApi.getPreBookJobs.mockRejectedValueOnce(error);
 
             const {result} = renderHook(() => useRecurringJobsList(mockQuery), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -221,7 +201,7 @@ describe('useRecurringJobsApi Hooks', () => {
 
             const {result} = renderHook(
                 () => useRecurringJobsList(mockQuery, {enabled: false}),
-                {wrapper: createWrapper()}
+                {wrapper: createQueryWrapper()}
             );
 
             expect(result.current.isLoading).toBe(false);
@@ -235,7 +215,7 @@ describe('useRecurringJobsApi Hooks', () => {
             const {result, rerender} = renderHook(
                 ({query}: {query: RecurringJobQuery}) => useRecurringJobsList(query),
                 {
-                    wrapper: createWrapper(),
+                    wrapper: createQueryWrapper(),
                     initialProps: {query: mockQuery},
                 }
             );
@@ -267,7 +247,7 @@ describe('useRecurringJobsApi Hooks', () => {
             };
 
             const {result} = renderHook(() => useRecurringJobsList(inactiveQuery), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -283,7 +263,7 @@ describe('useRecurringJobsApi Hooks', () => {
             mockRecurringJobsApi.getSpeedList.mockResolvedValueOnce(mockSpeedOptions);
 
             const {result} = renderHook(() => useSpeedList(), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -298,7 +278,7 @@ describe('useRecurringJobsApi Hooks', () => {
             mockRecurringJobsApi.getSpeedList.mockResolvedValueOnce(mockSpeedOptions);
 
             const {result} = renderHook(() => useSpeedList(), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -314,7 +294,7 @@ describe('useRecurringJobsApi Hooks', () => {
             mockRecurringJobsApi.getSpeedList.mockRejectedValueOnce(error);
 
             const {result} = renderHook(() => useSpeedList(), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             await waitFor(() => {
@@ -326,7 +306,7 @@ describe('useRecurringJobsApi Hooks', () => {
 
         it('should not fetch when disabled', async () => {
             const {result} = renderHook(() => useSpeedList({enabled: false}), {
-                wrapper: createWrapper(),
+                wrapper: createQueryWrapper(),
             });
 
             expect(result.current.data).toBeUndefined();
@@ -336,10 +316,7 @@ describe('useRecurringJobsApi Hooks', () => {
         it('should cache speed list data', async () => {
             mockRecurringJobsApi.getSpeedList.mockResolvedValue(mockSpeedOptions);
 
-            const queryClient = createTestQueryClient();
-            const wrapper = ({children}: {children: React.ReactNode}) => (
-                <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-            );
+            const wrapper = createQueryWrapper();
 
             // First render
             const {result: result1} = renderHook(() => useSpeedList(), {wrapper});

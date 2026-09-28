@@ -1,33 +1,37 @@
 /**
  * RelatedJobTabs - Tabs for switching between related jobs in a job group
  *
- * Label policy (Kevin 2026-05-26, mirrors RunViewer Detail panel):
- *   - Parent tab (first sibling, shortest jobNo) → full jobNo
+ * Label policy (mirrors RunViewer's relatedJobTabLabel from homeControl.js
+ * ~lines 273-286, applied to both recurring and non-recurring families
+ * since the 2026-06-10 child-template migrations now populate real
+ * ucbkJobNumber on every leg):
+ *   - Parent tab (sortedRelatedJobs[0] after the chain-order sort in
+ *     useJobDetail.ts) → full jobNo
  *   - Each child tab → '*' + suffix-that-differs-from-parent
  *     (e.g. KT2103CRTLHP under parent KT2103CRT renders as '*LHP')
- *   - Fallback to full jobNo if the child's jobNo doesn't share the
- *     parent's prefix (heuristic miss)
- *   - Full jobNo always available on hover via the title attribute
- *
- * Applies regardless of isRecurringJob — the parent-first convention is
- * the same shape in both flows, and the operator benefits from seeing the
- * actual job number rather than a generic "Job #1".
+ *   - Defensive fallbacks for legacy data:
+ *       - If a leg's jobNo doesn't share the parent's prefix → full jobNo
+ *       - If the leg has no jobNo at all (legacy templates from before
+ *         the 2026-04-08 child-template backfill) → 'Job #N' placeholder
+ *   - Full jobNo always available on hover via the title attribute.
  */
 
 import React from 'react';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
+import {Tabs} from '@mantine/core';
 import type {IJob} from '../JobDetails.types';
 
 interface RelatedJobTabsProps {
     sortedRelatedJobs: IJob[];
     selectedTabIndex: number;
-    isRecurringJob: boolean;
     onTabChange: (index: number) => void;
 }
 
-function tabLabel(job: IJob, parent: IJob | undefined): string {
+function tabLabel(job: IJob, parent: IJob | undefined, fallbackIndex: number): string {
     const jobNo = job.jobNo ?? '';
+    // Legacy recurring templates from before the 2026-04-08 child-template
+    // backfill have null ucbkJobNumber - fall through to the placeholder so
+    // the tabs aren't blank.
+    if (!jobNo) return `Job #${fallbackIndex + 1}`;
     if (!parent || !parent.jobNo) return jobNo;
     if (job.id === parent.id) return parent.jobNo;
     if (jobNo.startsWith(parent.jobNo)) {
@@ -39,42 +43,37 @@ function tabLabel(job: IJob, parent: IJob | undefined): string {
 export function RelatedJobTabs({
     sortedRelatedJobs,
     selectedTabIndex,
-    isRecurringJob,
     onTabChange,
 }: RelatedJobTabsProps) {
     if (sortedRelatedJobs.length <= 1) return null;
 
     const parent = sortedRelatedJobs[0];
 
+    // Mantine keys tabs by string, so the index round-trips through `String`.
     return (
         <Tabs
-            value={selectedTabIndex}
-            onChange={(_e, value: number) => onTabChange(value)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-                borderBottom: 1,
-                borderColor: 'divider',
-                minHeight: 36,
-                '& .MuiTab-root': {
+            value={String(selectedTabIndex)}
+            onChange={(value) => onTabChange(Number(value))}
+            styles={{
+                tab: {
                     minHeight: 36,
-                    py: 0.5,
-                    textTransform: 'none',
+                    paddingBlock: 4,
                     fontSize: '0.8125rem',
                     fontWeight: 500,
                 },
-                '& .Mui-selected': {
-                    fontWeight: 600,
-                },
             }}
         >
-            {sortedRelatedJobs.map((job) => (
-                <Tab
-                    key={job.id}
-                    label={tabLabel(job, parent)}
-                    title={job.jobNo}
-                />
-            ))}
+            <Tabs.List style={{flexWrap: 'nowrap', overflowX: 'auto', minHeight: 36}}>
+                {sortedRelatedJobs.map((job, index) => (
+                    <Tabs.Tab
+                        key={job.id}
+                        value={String(index)}
+                        title={job.jobNo ?? ''}
+                    >
+                        {tabLabel(job, parent, index)}
+                    </Tabs.Tab>
+                ))}
+            </Tabs.List>
         </Tabs>
     );
 }

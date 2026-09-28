@@ -83,7 +83,7 @@ class JobDetailBridgeController implements angular.IController {
     private async loadAndMount(): Promise<void> {
         try {
             await this.ensureReactLoaded();
-            this.mountReactComponent();
+            await this.mountReactComponent();
         } catch (error) {
             console.error('[JobDetailBridge] Failed to load React job details:', error);
             // Show error in the container so it's visible
@@ -119,6 +119,7 @@ class JobDetailBridgeController implements angular.IController {
                 this.manifest = {
                     'vendor-react.js': 'vendor-react.js',
                     'jobDetailsReact.js': 'jobDetailsReact.js',
+                    'jobDetailsReact.css': 'jobDetailsReact.css',
                 };
             }
         }
@@ -132,9 +133,17 @@ class JobDetailBridgeController implements angular.IController {
             await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
         }
 
-        // Load the job details React module
+        // Load the job details React module *with its stylesheet*. This bridge is
+        // how Nationwide and the classic pages mount job details, and it used to
+        // load only the .js — so every CSS module in the island (section chrome,
+        // the AI panel's header hover, …) was silently missing on those pages.
+        // routes.ts pairs them via islandFiles(); this loader has to do the same.
         console.log('[JobDetailBridge] Loading jobDetailsReact...');
-        await this.$ocLazyLoad.load(getAssetPath('jobDetailsReact.js'));
+        const jobDetailFiles = [getAssetPath('jobDetailsReact.js')];
+        if (this.manifest!['jobDetailsReact.css']) {
+            jobDetailFiles.push(getAssetPath('jobDetailsReact.css'));
+        }
+        await this.$ocLazyLoad.load({name: 'uDispatch.jobDetailsReact', files: jobDetailFiles});
 
         console.log('[JobDetailBridge] React job details loaded, ReactJobDetails available:', !!window.ReactJobDetails);
 
@@ -143,25 +152,25 @@ class JobDetailBridgeController implements angular.IController {
         }
     }
 
-    private mountReactComponent(): void {
+    private async mountReactComponent() {
         if (!window.ReactJobDetails) {
             console.error('[JobDetailBridge] Cannot mount: ReactJobDetails not available');
             return;
         }
 
-        const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+        const showToast = async (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
             switch (type) {
                 case 'success':
-                    this.toastrService.showSuccessToast(message);
+                    await this.toastrService.showSuccessToast(message);
                     break;
                 case 'warning':
-                    this.toastrService.showWarningToast(message);
+                    await this.toastrService.showWarningToast(message);
                     break;
                 case 'error':
-                    this.toastrService.showErrorToast(message);
+                    await this.toastrService.showErrorToast(message);
                     break;
                 case 'info':
-                    this.toastrService.showInfoToast(message);
+                    await this.toastrService.showInfoToast(message);
                     break;
             }
         };

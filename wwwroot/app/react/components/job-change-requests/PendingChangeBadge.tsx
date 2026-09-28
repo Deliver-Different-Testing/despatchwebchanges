@@ -13,115 +13,68 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import {alpha} from '@mui/material/styles';
-import type {JobChangeRequestDto} from '../../services/jobChangeRequestApi';
-import {formatChangeRequestValue, relativeAgeShort, ageLevel} from './jobChangeRequestFormatting';
+import {Badge, Box, Text, Tooltip} from '@mantine/core';
+import {ageLevel, formatChangeRequestValue, relativeAgeShort} from './jobChangeRequestFormatting';
+import classes from './PendingChangeBadge.module.css';
+import {PendingChangeBadgeProps} from "./PendingChangeBadgeProps";
 
-export interface PendingChangeBadgeProps {
-    request: JobChangeRequestDto;
-    variant?: 'corner' | 'inline';
-}
+/**
+ * Amber while the request is merely waiting, red once it is overdue. `ink` is the
+ * deep step of the same ramp, for the inline strip's text on its own 10% tint.
+ */
+const accentFor = (overdue: boolean) => ({
+    '--pending-accent': overdue ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-orange-6)',
+    '--pending-ink': overdue ? 'var(--mantine-color-red-8)' : 'var(--mantine-color-orange-8)',
+} as React.CSSProperties);
 
 export const PendingChangeBadge: React.FC<PendingChangeBadgeProps> = ({request, variant = 'corner'}) => {
     const display = formatChangeRequestValue(request.fieldName, request.requestedValue);
     const age = relativeAgeShort(request.requestedAt);
-    const level = ageLevel(request.requestedAt);
+    const isOverdue = ageLevel(request.requestedAt) === 'overdue';
     const isOwn = request.origin === 'Local';
     const tooltip = (
         <Box>
-            <Typography variant="caption" sx={{display: 'block', fontWeight: 600}}>
+            <Text size="xs" fw={600}>
                 {isOwn ? 'You requested' : 'Partner requested'} · {age} ago
-            </Typography>
-            <Typography variant="caption" sx={{display: 'block'}}>
-                Pending → {display}
-            </Typography>
+            </Text>
+            <Text size="xs">Pending → {display}</Text>
             {request.reason && (
-                <Typography variant="caption" sx={{display: 'block', fontStyle: 'italic', mt: 0.5}}>
-                    “{request.reason}”
-                </Typography>
+                <Text size="xs" fs="italic" mt={4}>“{request.reason}”</Text>
             )}
         </Box>
     );
 
+    const dotClass = (layout: 'corner' | 'inline') =>
+        [classes.dot, classes[layout], isOverdue ? classes.overdue : ''].filter(Boolean).join(' ');
+
     if (variant === 'corner') {
         return (
-            <Tooltip title={tooltip} arrow>
+            <Tooltip label={tooltip} withArrow>
                 <Box
                     aria-label={`Change pending: ${display}`}
-                    sx={(theme) => ({
-                        position: 'absolute',
-                        top: 4,
-                        right: 4,
-                        height: 8,
-                        width: 8,
-                        borderRadius: '50%',
-                        bgcolor: level === 'overdue' ? 'error.main' : 'warning.main',
-                        boxShadow: `0 0 0 2px ${theme.palette.background.paper}, 0 0 0 3px ${alpha(theme.palette.warning.main, 0.4)}`,
-                        animation: level === 'overdue' ? 'pendingPulse 1.5s ease-in-out infinite' : 'none',
-                        '@keyframes pendingPulse': {
-                            '0%, 100%': {transform: 'scale(1)', opacity: 1},
-                            '50%': {transform: 'scale(1.3)', opacity: 0.7},
-                        },
-                    })}
+                    className={dotClass('corner')}
+                    style={accentFor(isOverdue)}
                 />
             </Tooltip>
         );
     }
 
+    // A tinted, hairline-bordered pill is exactly Mantine's `light` Badge, so the
+    // strip is one rather than a hand-styled Box; only the dot's pulse needs CSS.
     return (
-        <Tooltip title={tooltip} arrow placement="bottom-start">
-            <Box
-                sx={(theme) => ({
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 0.75,
-                    px: 1,
-                    py: 0.25,
-                    mt: 0.5,
-                    borderRadius: 0.75,
-                    fontSize: '0.7rem',
-                    color: level === 'overdue' ? 'error.dark' : 'warning.dark',
-                    bgcolor: alpha(level === 'overdue' ? theme.palette.error.main : theme.palette.warning.main, 0.1),
-                    border: 1,
-                    borderColor: alpha(level === 'overdue' ? theme.palette.error.main : theme.palette.warning.main, 0.3),
-                    maxWidth: '100%',
-                })}
+        <Tooltip label={tooltip} withArrow position="bottom-start">
+            <Badge
+                variant="light"
+                color={isOverdue ? 'red' : 'orange'}
+                size="sm"
+                tt="none"
+                mt={4}
+                maw="100%"
+                leftSection={<Box className={dotClass('inline')} style={accentFor(isOverdue)}/>}
             >
-                <Box
-                    sx={(theme) => ({
-                        height: 6,
-                        width: 6,
-                        borderRadius: '50%',
-                        flexShrink: 0,
-                        bgcolor: level === 'overdue' ? 'error.main' : 'warning.main',
-                        animation: level === 'overdue' ? 'pendingPulseInline 1.5s ease-in-out infinite' : 'none',
-                        '@keyframes pendingPulseInline': {
-                            '0%, 100%': {opacity: 1},
-                            '50%': {opacity: 0.4},
-                        },
-                    })}
-                />
-                <Typography component="span" variant="caption" sx={{fontWeight: 600, lineHeight: 1.3}}>
-                    Change pending →
-                </Typography>
-                <Typography
-                    component="span"
-                    variant="caption"
-                    sx={{
-                        fontFamily: 'monospace',
-                        lineHeight: 1.3,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: 240,
-                    }}
-                >
-                    {display}
-                </Typography>
-            </Box>
+                <Text component="span" size="xs" fw={600} span>Change pending →</Text>
+                <Text component="span" size="xs" span ff="monospace" ml={4}>{display}</Text>
+            </Badge>
         </Tooltip>
     );
 };

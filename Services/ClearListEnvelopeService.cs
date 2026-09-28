@@ -1,4 +1,8 @@
-﻿using DespatchWeb.EntityClasses;
+﻿// Annotations only: the `?` annotations below are intentional, but the nullable-oblivious EF
+// entity columns are cast to decimal inside SQL-translated projections, where a null yields SQL
+// NULL rather than a client-side dereference.
+#nullable enable annotations
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -11,11 +15,28 @@ namespace DespatchWeb.Services;
 /// </summary>
 public sealed class ClearListEnvelopeService(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantClock clock) : IClearListEnvelopeService
+    ITenantClock clock) : IClearListEnvelopeService, IDisposable, IAsyncDisposable
 {
-    private DespatchContext _context;
-
+    private DespatchContext? _context;
     private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
+
+    /// <summary>
+    /// Disposes the context created from the factory. Implemented for synchronous scope teardown
+    /// (e.g. a DI container disposed synchronously); the async overload is preferred where available.
+    /// </summary>
+    public void Dispose() => _context?.Dispose();
+
+    /// <summary>
+    /// Disposes the context created from the factory. The scoped DI container invokes this at the
+    /// end of the request scope; the factory hands ownership of the context to this service.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_context is not null)
+        {
+            await _context.DisposeAsync();
+        }
+    }
 
     /// <summary>
     /// Calculates the bounding envelope (min/max lat/long) for a clear list area, optionally including courier and job positions.
@@ -30,11 +51,15 @@ public sealed class ClearListEnvelopeService(
         bool includeCouriers = false)
     {
         if (clearListAreaId <= 0)
+        {
             throw new ArgumentException("Invalid clearListAreaId", nameof(clearListAreaId));
+        }
 
         if (!Enum.IsDefined(country))
+        {
             throw new ArgumentException("Invalid country", nameof(country));
-        
+        }
+
         return country switch
         {
             Country.Nz => await GetClearListEnvelopeNzAsync(clearListAreaId, includeCouriers),
@@ -53,14 +78,16 @@ public sealed class ClearListEnvelopeService(
         var query = GetClearListAreaBoundariesQuery(clearListAreaId);
 
         if (!includeCouriers)
+        {
             return await CalculateEnvelopeAsync(query);
-            
+        }
+
         var courierLocationsQuery = GetCourierLocationsQueryUs(clearListAreaId);
         var unassignedJobLocationsQuery = GetUnassignedJobLocationsQueryUs(clearListAreaId);
 
         query = query
-            .Concat(courierLocationsQuery ?? throw new InvalidOperationException())
-            .Concat(unassignedJobLocationsQuery ?? throw new InvalidOperationException());
+            .Concat(courierLocationsQuery)
+            .Concat(unassignedJobLocationsQuery);
 
         return await CalculateEnvelopeAsync(query);
     }
@@ -75,14 +102,16 @@ public sealed class ClearListEnvelopeService(
         var query = GetAreaPolygonsQueryNz(clearListAreaId);
 
         if (!includeCouriers)
+        {
             return await CalculateEnvelopeAsync(query);
-            
+        }
+
         var courierLocationsQuery = GetCourierLocationsQueryNz(clearListAreaId);
         var unassignedJobsQuery = GetUnassignedJobLocationsQueryNz(clearListAreaId);
 
         query = query
-            .Concat(courierLocationsQuery ?? throw new InvalidOperationException())
-            .Concat(unassignedJobsQuery ?? throw new InvalidOperationException());
+            .Concat(courierLocationsQuery)
+            .Concat(unassignedJobsQuery);
 
         return await CalculateEnvelopeAsync(query);
     }
@@ -210,9 +239,4 @@ public sealed class ClearListEnvelopeService(
                 MaximumLatitude = g.Max(x => x.Latitude)
             })
             .FirstOrDefaultAsync() ?? new ClearListEnvelopeViewModel();
-
-    /// <summary>
-    /// Disposes the database context if it was created.
-    /// </summary>
-    public void Dispose() => _context?.Dispose();
 }

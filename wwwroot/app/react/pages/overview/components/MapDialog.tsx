@@ -1,18 +1,16 @@
 import React, {useState, useEffect, useMemo} from 'react';
-import Dialog from '@mui/material/Dialog';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import CloseIcon from '@mui/icons-material/Close';
-import MapIcon from '@mui/icons-material/Map';
-import CircularProgress from '@mui/material/CircularProgress';
+import {Box, Group, Loader, Stack, Text} from '@mantine/core';
+import {Map as MapGlyph} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
 import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../../../query';
 import {overviewApi} from '../../../services/overviewApi';
 import {configApi} from '../../../services/configApi';
+import {SymbolIcon} from '../../../components/common/symbol-icon';
 import {HereMap} from '../../../components/common/here-map/HereMap';
 import type {HereMapCredentials, HereMapConfig} from '../../../components/common/here-map/HereMap.types';
 import type {OverviewTableParentJob} from '../OverviewPage.interfaces';
+import {DialogHeader, DialogShell} from '../../../components/dialogs/shared/mantine';
 
 interface MapDialogProps {
     open: boolean;
@@ -57,61 +55,39 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
     const childJobs = delivery?.childJobs ?? [];
 
     return (
-        <Dialog
-            open={open}
+        // The bespoke header built from the legacy sx tokens is now the shared
+        // DialogHeader, which is the same design language with the close button,
+        // on-colour and hover already correct.
+        <DialogShell
+            opened={open}
             onClose={onClose}
-            fullWidth
-            maxWidth={false}
-            slotProps={{
-                paper: {sx: {width: '90%', maxWidth: '90%', height: '80vh'}},
-            }}
+            size="90%"
+            label={`${delivery?.jobName ?? ''} Map`}
+            styles={{content: {height: '80vh'}}}
         >
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <MapIcon sx={{ fontSize: 28 }} />
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" fontWeight={600}>{delivery?.jobName} Map</Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>View delivery locations and routes</Typography>
-                </Box>
-                <IconButton onClick={onClose} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-
-            <Box sx={{flex: 1, position: 'relative', overflow: 'hidden'}}>
+            <DialogHeader
+                icon={<Icon lucide={MapGlyph}/>}
+                title={`${delivery?.jobName} Map`}
+                subtitle="View delivery locations and routes"
+                onClose={onClose}
+            />
+            <Box style={{height: '100%', position: 'relative', overflow: 'hidden'}}>
                 {isLoading && (
-                    <Box
-                        sx={{
-                            position: 'absolute',
-                            inset: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 10,
-                        }}
+                    <Stack
+                        align="center"
+                        justify="center"
+                        gap={16}
+                        style={{position: 'absolute', inset: 0, zIndex: 10}}
                     >
-                        <Box sx={{textAlign: 'center'}}>
-                            <CircularProgress size={60} />
-                            <Typography variant="body2" sx={{mt: 2}}>
-                                Loading map data...
-                            </Typography>
-                        </Box>
-                    </Box>
+                        <Loader size={60} role="progressbar" aria-label="Loading map data"/>
+                        <Text fz="sm">Loading map data...</Text>
+                    </Stack>
                 )}
 
+                {/* isolation: isolate traps HERE's internal z-index (~1001) below the
+                    timeline overlay — inline so it stays assertable with toHaveStyle. */}
                 {!isLoading && credentials && hereMapConfig && (
-                    <Box sx={{width: '100%', height: '100%', position: 'relative'}}>
+                    <Box style={{width: '100%', height: '100%', position: 'relative', isolation: 'isolate'}}>
                         <HereMap
                             mapId="overviewMapContainer"
                             credentials={credentials}
@@ -120,29 +96,27 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
 
                         {/* Timeline Navigation Overlay */}
                         <Box
-                            sx={{
+                            p={12}
+                            maw="90%"
+                            style={{
                                 position: 'absolute',
                                 bottom: 16,
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                bgcolor: 'rgba(255,255,255,0.95)',
-                                borderRadius: 2,
-                                boxShadow: 3,
-                                p: 1.5,
-                                maxWidth: '90%',
+                                backgroundColor: 'rgba(255,255,255,0.95)',
+                                borderRadius: 8,
+                                boxShadow: 'var(--mantine-shadow-md)',
                                 overflowX: 'auto',
                             }}
                         >
-                            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 1}}>
-                                <span className="material-symbols-outlined" style={{fontSize: 16}}>
-                                    timeline
-                                </span>
-                                <Typography variant="caption" sx={{fontWeight: 600}}>
+                            <Group gap={4} mb={8} wrap="nowrap">
+                                <SymbolIcon name="timeline" size={16} />
+                                <Text fz="xs" fw={600}>
                                     Delivery Route
-                                </Typography>
-                            </Box>
+                                </Text>
+                            </Group>
 
-                            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                            <Group gap={0} align="center" wrap="nowrap">
                                 {/* Parent Node */}
                                 <TimelineNode
                                     active={selectedJobIndex === 0}
@@ -180,12 +154,12 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                                         />
                                     </>
                                 )}
-                            </Box>
+                            </Group>
                         </Box>
                     </Box>
                 )}
             </Box>
-        </Dialog>
+        </DialogShell>
     );
 };
 
@@ -199,73 +173,46 @@ const TimelineNode: React.FC<{
     labelType: string;
     labelName?: string;
 }> = ({active, onClick, icon, number, labelType, labelName}) => (
-    <Box
-        onClick={onClick}
-        sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            cursor: 'pointer',
-            minWidth: 60,
-        }}
-    >
-        <Box
-            sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: active ? 'primary.main' : 'grey.300',
-                color: active ? 'primary.contrastText' : 'text.secondary',
-                transition: 'all 0.2s',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-            }}
+    <Stack align="center" gap={0} miw={60} onClick={onClick} style={{cursor: 'pointer'}}>
+        <Group
+            w={32}
+            h={32}
+            justify="center"
+            align="center"
+            gap={0}
+            fw={600}
+            fz="0.75rem"
+            bg={active ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-gray-3)'}
+            c={active ? 'var(--mantine-primary-color-contrast)' : 'dimmed'}
+            style={{borderRadius: '50%', transition: 'all 0.2s'}}
         >
             {icon ? (
-                <span className="material-symbols-outlined" style={{fontSize: 18}}>
-                    {icon}
-                </span>
+                <SymbolIcon name={icon} size={18} />
             ) : (
                 number
             )}
-        </Box>
-        <Typography
-            variant="caption"
-            sx={{
-                fontSize: '0.6rem',
-                fontWeight: active ? 600 : 400,
-                color: active ? 'primary.main' : 'text.secondary',
-                mt: 0.25,
-            }}
+        </Group>
+        <Text
+            fz="0.6rem"
+            mt={2}
+            fw={active ? 600 : 400}
+            c={active ? 'var(--mantine-primary-color-filled)' : 'dimmed'}
         >
             {labelType}
-        </Typography>
+        </Text>
         {labelName && (
-            <Typography
-                variant="caption"
-                noWrap
-                sx={{
-                    fontSize: '0.55rem',
-                    maxWidth: 70,
-                    textAlign: 'center',
-                }}
-            >
+            <Text fz="0.55rem" maw={70} ta="center" truncate>
                 {labelName}
-            </Typography>
+            </Text>
         )}
-    </Box>
+    </Stack>
 );
 
 const TimelineConnection: React.FC = () => (
-    <Box sx={{display: 'flex', alignItems: 'center', mx: 0.25}}>
-        <Box sx={{width: 16, height: 2, bgcolor: 'grey.300'}} />
-        <span className="material-symbols-outlined" style={{fontSize: 14, color: 'rgba(0,0,0,0.26)'}}>
-            chevron_right
-        </span>
-    </Box>
+    <Group align="center" gap={0} mx={2} wrap="nowrap">
+        <Box w={16} h={2} bg="var(--mantine-color-gray-3)" />
+        <SymbolIcon name="chevron_right" size={14} color="rgba(0,0,0,0.26)" />
+    </Group>
 );
 
 export default MapDialog;

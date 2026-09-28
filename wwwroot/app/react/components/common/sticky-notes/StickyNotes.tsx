@@ -5,44 +5,104 @@
  */
 
 import React, {useCallback, useMemo, useState} from 'react';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import LinearProgress from '@mui/material/LinearProgress';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
-import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
+import {ActionIcon, Anchor, Box, Group, Loader, Menu, Paper, Progress, SimpleGrid, Stack, Text, Tooltip} from '@mantine/core';
+import {CircleAlert, FilePlus, Folder, ListFilter, Shapes, StickyNote, Trash2} from 'lucide-react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
 import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
-import {cardContainerSx, sectionToolbarSx, sectionToolbarTitleSx} from '../../common/job-details/JobDetails.styles';
+import {cardContainerProps} from '../../common/job-details/JobDetails.styles';
+import {SectionHeader} from '../job-details/components/SectionHeader';
+import {Icon} from '../icon/Icon';
+import classes from './StickyNotes.module.css';
 
-const stickyNoteTitleSx = {...sectionToolbarTitleSx as object, flex: 1};
+// Mirrors backend Enums/NoteType.cs — keep in sync.
+const INTERNAL_NOTE_TYPE_ID = 1;
+const CLIENT_NOTE_TYPE_ID = 2;
+const FLIGHT_UPDATE_NOTE_TYPE_ID = 3;
+const AGENT_UPDATE_NOTE_TYPE_ID = 4;
+const CONSIGNMENT_NOTE_TYPE_ID = 5;
+const PICKUP_NOTE_TYPE_ID = 9;
+const DELIVERY_NOTE_TYPE_ID = 10;
+const PRICING_UPDATE_NOTE_TYPE_ID = 1100;
+const ADDRESS_UPDATE_NOTE_TYPE_ID = 1101;
 
 /**
- * Get note type color based on type name and importance
+ * The sticky-note fills. Deliberately literal pastels rather than theme tokens:
+ * they mimic physical note paper and carry the note's category, and the ink on
+ * them is fixed dark regardless of colour scheme. All sit in the same luminance
+ * band so `noteInk` stays legible on every one of them.
  */
-function getNoteTypeColor(noteTypeName?: string, isImportant?: boolean): string {
-    if (isImportant) return '#ffccbc'; // Orange for important
+export const NOTE_FILLS = {
+    important: '#ffccbc', // Orange for important
+    internal: '#fff9c4',  // Yellow
+    consignment: '#bbdefb', // Blue
+    client: '#c8e6c9',    // Green
+    flightUpdate: '#d1c4e9', // Lavender
+    agentUpdate: '#ffe0b2',  // Peach
+    pickup: '#b2dfdb',       // Mint
+    delivery: '#b2ebf2',     // Pale cyan
+    pricingUpdate: '#f8bbd0', // Pale pink
+    addressUpdate: '#eceff1', // Pale grey
+    default: '#e1f5fe',   // Light blue default
+} as const;
 
-    const typeLower = noteTypeName?.toLowerCase() || '';
-    switch (typeLower) {
-        case 'internal':
-            return '#fff9c4'; // Yellow
-        case 'consignment':
-            return '#bbdefb'; // Blue
-        case 'client':
-            return '#c8e6c9'; // Green
-        default:
-            return '#e1f5fe'; // Light blue default
-    }
+const FILL_BY_TYPE_ID: Record<number, string> = {
+    [INTERNAL_NOTE_TYPE_ID]: NOTE_FILLS.internal,
+    [CLIENT_NOTE_TYPE_ID]: NOTE_FILLS.client,
+    [FLIGHT_UPDATE_NOTE_TYPE_ID]: NOTE_FILLS.flightUpdate,
+    [AGENT_UPDATE_NOTE_TYPE_ID]: NOTE_FILLS.agentUpdate,
+    [CONSIGNMENT_NOTE_TYPE_ID]: NOTE_FILLS.consignment,
+    [PICKUP_NOTE_TYPE_ID]: NOTE_FILLS.pickup,
+    [DELIVERY_NOTE_TYPE_ID]: NOTE_FILLS.delivery,
+    [PRICING_UPDATE_NOTE_TYPE_ID]: NOTE_FILLS.pricingUpdate,
+    [ADDRESS_UPDATE_NOTE_TYPE_ID]: NOTE_FILLS.addressUpdate,
+};
+
+// Tenants can add their own note types, which get ids outside the canonical enum,
+// so a type whose id we don't know still gets its colour from a word in its name.
+const FILL_BY_NAME_WORD: ReadonlyArray<readonly [string, string]> = [
+    ['internal', NOTE_FILLS.internal],
+    ['client', NOTE_FILLS.client],
+    ['consignment', NOTE_FILLS.consignment],
+    ['flight', NOTE_FILLS.flightUpdate],
+    ['agent', NOTE_FILLS.agentUpdate],
+    ['pickup', NOTE_FILLS.pickup],
+    ['delivery', NOTE_FILLS.delivery],
+    ['pricing', NOTE_FILLS.pricingUpdate],
+    ['address', NOTE_FILLS.addressUpdate],
+];
+
+/** The paper colour for a note: importance first, then its type, then the default. */
+export function getNoteFill(note: JobNote): string {
+    if (note.isImportant) return NOTE_FILLS.important;
+
+    const byId = FILL_BY_TYPE_ID[note.noteTypeId];
+    if (byId) return byId;
+
+    const words = new Set((note.noteTypeName ?? '').toLowerCase().split(/\s+/));
+    return FILL_BY_NAME_WORD.find(([word]) => words.has(word))?.[1] ?? NOTE_FILLS.default;
+}
+
+/** Ink on the fixed pastel note paper, so these stay literal too. */
+const noteInk = {
+    heading: 'rgba(0,0,0,0.7)',
+    body: 'rgba(0,0,0,0.8)',
+    // 0.62 rather than 0.54: this is xs text, and the lighter alpha fell short of
+    // the 4.5:1 contrast floor on the paler fills.
+    meta: 'rgba(0,0,0,0.62)',
+    author: 'rgba(0,0,0,0.5)',
+    glyph: 'rgba(0,0,0,0.6)',
+};
+
+// Pickup + delivery notes anchor to the bottom of the panel so they sit
+// next to the address/journey area; everything else stays in date-desc order.
+function getNoteOrderBucket(noteTypeId?: number): number {
+    if (noteTypeId === DELIVERY_NOTE_TYPE_ID) return 2;
+    if (noteTypeId === PICKUP_NOTE_TYPE_ID) return 1;
+    return 0;
 }
 
 export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
@@ -54,7 +114,6 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 }) => {
     const queryClient = useQueryClient();
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
 
     // Note types are global/static — cache indefinitely
     const noteCategoriesQuery = useQuery({
@@ -82,9 +141,13 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
     const categoriesLoading = noteCategoriesQuery.isLoading;
 
     const filteredNotes = useMemo(() => {
-        if (selectedCategory === 'all') return notes;
-        const categoryId = parseInt(selectedCategory);
-        return notes.filter(note => note.noteTypeId === categoryId);
+        const base = selectedCategory === 'all'
+            ? notes
+            : notes.filter(note => note.noteTypeId === parseInt(selectedCategory));
+        // Stable sort on a copy: preserves date-desc within each bucket.
+        return [...base].sort(
+            (a, b) => getNoteOrderBucket(a.noteTypeId) - getNoteOrderBucket(b.noteTypeId)
+        );
     }, [notes, selectedCategory]);
 
     const isFilterActive = selectedCategory !== 'all';
@@ -128,10 +191,9 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         } else {
             setSelectedCategory(category.id?.toString() || 'all');
         }
-        setMenuAnchorEl(null);
     };
 
-    const handleAddNote = async (_event: React.MouseEvent<HTMLElement>): Promise<void> => {
+    const handleAddNote = async (): Promise<void> => {
         const emptyNote: JobNote = {
             noteId: 0,
             noteTypeId: 0,
@@ -152,8 +214,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         }
     };
 
-    const handleEditNote = async (_event: React.MouseEvent<HTMLElement>,
-                                  note: JobNote): Promise<void> => {
+    const handleEditNote = async (note: JobNote): Promise<void> => {
         try {
             await openNoteManagementDialog(note);
             await invalidateNotes();
@@ -171,7 +232,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         if (!confirmed) return;
 
         try {
-            await notesApi.deleteNote(note.noteId ?? 0);
+            await notesApi.deleteNote(note.noteId ?? 0, note.jobId ?? (isRecurringJob ? undefined : jobId));
             await invalidateNotes();
             showSuccessToast?.('Note deleted successfully');
         } catch (error) {
@@ -184,104 +245,100 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         setSelectedCategory('all');
     };
 
+    /** A category row in the filter menu, with its note count. */
+    const categoryItem = (key: React.Key, label: string, count: number, selected: boolean, onClick: () => void) => (
+        <Menu.Item
+            key={key}
+            leftSection={<Icon lucide={Folder} size={18}/>}
+            rightSection={<Text size="sm" c="dimmed">({count})</Text>}
+            data-selected={selected || undefined}
+            onClick={onClick}
+        >
+            {label}
+        </Menu.Item>
+    );
+
     return (
-        <Box sx={cardContainerSx}>
-            {/* Header Toolbar */}
-            <Box sx={sectionToolbarSx}>
-                <span className="material-symbols-outlined" style={{fontSize: 18, color: 'rgba(0,0,0,0.6)'}}>note</span>
-                <Typography sx={stickyNoteTitleSx}>
-                    Notes
-                    {isFilterActive && (
-                        <Typography component="span" variant="caption" color="text.secondary" sx={{ml: 0.5, fontWeight: 400}}>
-                            - {getCategoryName()}
-                        </Typography>
-                    )}
-                </Typography>
-
-                {/* Category Filter Button */}
-                <Tooltip title="Filter by Category">
-                    <span>
-                        <IconButton
-                            size="small"
-                            onClick={(e) => setMenuAnchorEl(e.currentTarget)}
-                            disabled={categoriesLoading}
-                            sx={{color: 'text.secondary'}}
-                        >
-                            {categoriesLoading ? (
-                                <Box sx={{width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                    <LinearProgress sx={{width: 18}} />
-                                </Box>
-                            ) : (
-                                <span className="material-symbols-outlined" style={{fontSize: 18}}>
-                                    {isFilterActive ? 'filter_alt' : 'category'}
-                                </span>
-                            )}
-                        </IconButton>
-                    </span>
-                </Tooltip>
-
-                {/* Category Menu */}
-                <Menu
-                    anchorEl={menuAnchorEl}
-                    open={Boolean(menuAnchorEl)}
-                    onClose={() => setMenuAnchorEl(null)}
-                >
-                    {noteCategories.length === 0 ? (
-                        <MenuItem disabled>
-                            <Typography variant="body2">No note categories available.</Typography>
-                        </MenuItem>
-                    ) : ([
-                        <MenuItem
-                            key="all"
-                            onClick={() => handleFilterByCategory('all')}
-                            selected={selectedCategory === 'all'}
-                        >
-                            <ListItemIcon>
-                                <span className="material-symbols-outlined">topic</span>
-                            </ListItemIcon>
-                            <ListItemText>All Categories</ListItemText>
-                            <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
-                                ({notes.length})
-                            </Typography>
-                        </MenuItem>,
-                        <Divider key="divider" />,
-                        ...noteCategories.map(category => (
-                            <MenuItem
-                                key={category.id}
-                                onClick={() => handleFilterByCategory(category)}
-                                selected={selectedCategory === category.id?.toString()}
+        <Paper {...cardContainerProps}>
+            <SectionHeader
+                lucide={StickyNote}
+                title="Notes"
+                subtitle={isFilterActive ? `- ${getCategoryName()}` : undefined}
+                endAction={
+                    <>
+                        {/* Category filter */}
+                        <Menu position="bottom-end">
+                            <Menu.Target>
+                                <Tooltip label="Filter by Category">
+                                    <ActionIcon
+                                        variant="subtle"
+                                        size="sm"
+                                        disabled={categoriesLoading}
+                                        aria-label="Filter by category"
+                                        style={{color: 'inherit'}}
+                                    >
+                                        {categoriesLoading
+                                            ? <Loader size={16} color="currentColor"/>
+                                            : <Icon lucide={isFilterActive ? ListFilter : Shapes} size={18}/>}
+                                    </ActionIcon>
+                                </Tooltip>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                                {noteCategories.length === 0 ? (
+                                    <Menu.Item disabled>No note categories available.</Menu.Item>
+                                ) : ([
+                                    categoryItem(
+                                        'all',
+                                        'All Categories',
+                                        notes.length,
+                                        selectedCategory === 'all',
+                                        () => handleFilterByCategory('all'),
+                                    ),
+                                    <Menu.Divider key="divider"/>,
+                                    ...noteCategories.map(category => categoryItem(
+                                        category.id!,
+                                        category.text ?? '',
+                                        categoryNoteCounts.get(category.id!) ?? 0,
+                                        selectedCategory === category.id?.toString(),
+                                        () => handleFilterByCategory(category),
+                                    )),
+                                ])}
+                            </Menu.Dropdown>
+                        </Menu>
+                        <Tooltip label="Add Note">
+                            <ActionIcon
+                                variant="subtle"
+                                size="sm"
+                                onClick={handleAddNote}
+                                aria-label="Add note"
+                                style={{color: 'inherit'}}
                             >
-                                <ListItemIcon>
-                                    <span className="material-symbols-outlined">topic</span>
-                                </ListItemIcon>
-                                <ListItemText>{category.text}</ListItemText>
-                                <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
-                                    ({categoryNoteCounts.get(category.id!) ?? 0})
-                                </Typography>
-                            </MenuItem>
-                        )),
-                    ])}
-                </Menu>
-
-                {/* Add Note Button */}
-                <Tooltip title="Add Note">
-                    <IconButton size="small" onClick={handleAddNote} sx={{color: 'text.secondary'}}>
-                        <span className="material-symbols-outlined" style={{fontSize: 18}}>note_add</span>
-                    </IconButton>
-                </Tooltip>
-            </Box>
-
+                                <Icon lucide={FilePlus} size={18}/>
+                            </ActionIcon>
+                        </Tooltip>
+                    </>
+                }
+            />
             {/* Loading Indicator */}
-            {loading && <LinearProgress sx={{height: 2}} />}
-
+            {loading && (
+                <Progress.Root size={2} radius={0}>
+                    <Progress.Section value={100} animated aria-label="Loading notes"/>
+                </Progress.Root>
+            )}
             {/* Notes Container */}
-            <Box
-                sx={{
-                    p: 2,
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 2,
-                    bgcolor: 'background.default',
+            {/*
+              * Container-query columns, not viewport ones: this panel is docked at
+              * whatever width job-detail gives it. 440px is where two 200px-min
+              * notes plus the 16px gap stop fitting, which is the wrap point the
+              * old `width: calc(50% - 8px)` + `minWidth: 200` pair produced.
+              */}
+            <SimpleGrid
+                type="container"
+                cols={{base: 1, '440px': 2}}
+                spacing={16}
+                p={16}
+                style={{
+                    backgroundColor: 'var(--mantine-color-body)',
                     minHeight: 120,
                     flex: 1,
                     overflow: 'auto',
@@ -291,98 +348,61 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                 {filteredNotes.map((note, index) => (
                     <Paper
                         key={note.noteId || index}
-                        onClick={(e) => handleEditNote(e, note)}
-                        sx={{
-                            width: 'calc(50% - 8px)',
-                            minWidth: 200,
-                            p: 2,
-                            position: 'relative',
+                        className={classes.note}
+                        onClick={() => handleEditNote(note)}
+                        shadow="xs"
+                        style={{
+                            padding: 16,
                             minHeight: 120,
                             cursor: 'pointer',
-                            transform: `rotate(${-1 + (index % 3)}deg)`,
-                            transition: 'all 0.2s ease',
-                            bgcolor: getNoteTypeColor(note.noteTypeName, note.isImportant),
-                            '&:hover': {
-                                transform: 'scale(1.02) rotate(0deg)',
-                                boxShadow: 3,
-                                zIndex: 2,
-                                '& .note-actions': {
-                                    opacity: 1,
-                                },
-                            },
-                            // Tape effect
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                top: -8,
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '40%',
-                                height: 16,
-                                bgcolor: 'rgba(0, 0, 0, 0.1)',
-                                opacity: 0.5,
-                            },
-                        }}
-                        elevation={1}
+                            '--note-rotate': `${-1 + (index % 3)}deg`,
+                            '--note-fill': getNoteFill(note),
+                        } as React.CSSProperties}
                     >
                         {/* Note Header */}
-                        <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 1}}>
-                            <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                <span
-                                    className="material-symbols-outlined"
-                                    style={{marginRight: 8, color: 'rgba(0,0,0,0.6)', fontSize: 20}}
-                                >
-                                    {note.isImportant ? 'priority_high' : 'note'}
-                                </span>
-                                <Typography variant="body2" sx={{fontWeight: 500, color: 'rgba(0,0,0,0.7)'}}>
+                        <Group justify="space-between" mb="xs" wrap="nowrap">
+                            <Group gap={8} wrap="nowrap">
+                                <Icon
+                                    lucide={note.isImportant ? CircleAlert : StickyNote}
+                                    size={20}
+                                    color={noteInk.glyph}
+                                    aria-hidden
+                                />
+                                <Text size="sm" fw={500} c={noteInk.heading}>
                                     {note.noteTypeName || 'Note'}
-                                </Typography>
-                            </Box>
-                            <Typography variant="caption" sx={{color: 'rgba(0,0,0,0.54)'}}>
-                                {note._createdDateStr}
-                            </Typography>
-                        </Box>
+                                </Text>
+                            </Group>
+                            <Text size="xs" c={noteInk.meta}>{note._createdDateStr}</Text>
+                        </Group>
 
                         {/* Note Content */}
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                whiteSpace: 'pre-wrap',
-                                wordBreak: 'break-word',
-                                color: 'rgba(0,0,0,0.8)',
-                                lineHeight: 1.5,
-                            }}
+                        <Text
+                            size="sm"
+                            c={noteInk.body}
+                            style={{whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.5}}
                         >
                             {note.noteText}
-                        </Typography>
+                        </Text>
 
                         {/* Created By */}
                         {note.createdByName && (
-                            <Typography variant="caption" sx={{display: 'block', mt: 1, color: 'rgba(0,0,0,0.5)', fontStyle: 'italic'}}>
+                            <Text size="xs" mt="xs" fs="italic" c={noteInk.author} style={{display: 'block'}}>
                                 - {note.createdByName}
-                            </Typography>
+                            </Text>
                         )}
 
                         {/* Delete Action */}
-                        <Box
-                            className="note-actions"
-                            sx={{
-                                position: 'absolute',
-                                bottom: 8,
-                                right: 8,
-                                opacity: 0,
-                                transition: 'opacity 0.2s ease',
-                            }}
-                        >
-                            <Tooltip title="Delete Note">
-                                <IconButton
-                                    size="small"
+                        <Box className={classes.noteActions}>
+                            <Tooltip label="Delete Note">
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="dark"
+                                    size="sm"
                                     onClick={(e) => handleDeleteNote(e, note)}
+                                    aria-label="Delete note"
                                 >
-                                    <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                        delete
-                                    </span>
-                                </IconButton>
+                                    <Icon lucide={Trash2} size={20}/>
+                                </ActionIcon>
                             </Tooltip>
                         </Box>
                     </Paper>
@@ -390,46 +410,39 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 
                 {/* Empty State */}
                 {!loading && filteredNotes.length === 0 && (
-                    <Box
-                        sx={{
-                            width: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minHeight: 200,
-                            color: 'text.secondary',
-                        }}
+                    <Stack
+                        align="center"
+                        justify="center"
+                        gap={0}
+                        mih={200}
+                        // Spans every column so the empty state stays centred on the
+                        // panel rather than sitting in the first grid cell.
+                        style={{gridColumn: '1 / -1'}}
                     >
-                        <span
-                            className="material-symbols-outlined"
-                            style={{fontSize: 48, marginBottom: 8, opacity: 0.5}}
-                        >
-                            sticky_note_2
-                        </span>
-                        <Typography variant="subtitle1" gutterBottom>
-                            No Notes
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
-                            {getNoNotesMessage()}
-                        </Typography>
+                        <Icon
+                            lucide={StickyNote}
+                            size={48}
+                            color="var(--mantine-color-dimmed)"
+                            style={{marginBottom: 8, opacity: 0.5}}
+                            aria-hidden
+                        />
+                        <Text size="lg" c="dimmed" mb={4}>No Notes</Text>
+                        <Text size="sm" c="dimmed" mb="md">{getNoNotesMessage()}</Text>
                         {isFilterActive && (
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: 'primary.main',
-                                    cursor: 'pointer',
-                                    '&:hover': {textDecoration: 'underline'},
-                                }}
+                            <Anchor
+                                component="button"
+                                type="button"
+                                size="sm"
+                                className={classes.clearFilter}
                                 onClick={handleClearFilter}
                             >
                                 Show all notes
-                            </Typography>
+                            </Anchor>
                         )}
-                    </Box>
+                    </Stack>
                 )}
-            </Box>
-        </Box>
+            </SimpleGrid>
+        </Paper>
     );
 });
 

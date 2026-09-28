@@ -1,25 +1,17 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for FlightDetailsDialog React component
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {screen, within} from '@testing-library/react';
 import {fireEvent} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import {FlightDetailsDialog} from './FlightDetailsDialog';
 import {FlightData, FlightSegmentData} from './types';
+import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
 
 // Create a theme for testing
-const theme = createTheme();
-
-// Helper to render component with theme
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
-
 // Create sample single-segment flight
 function createSingleSegmentFlight(overrides?: Partial<FlightData>): FlightData {
     return {

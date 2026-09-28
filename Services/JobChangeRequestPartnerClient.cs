@@ -65,6 +65,7 @@ public sealed class JobChangeRequestPartnerClient(
     {
         var (baseUrl, bearerToken) = ResolveUrlAndToken();
         if (baseUrl is null || bearerToken is null)
+        {
             return new PartnerForwardResult
             {
                 Success = false,
@@ -72,6 +73,7 @@ public sealed class JobChangeRequestPartnerClient(
                     ? "Integration Manager is not configured"
                     : "Unable to authenticate with Integration Manager"
             };
+        }
 
         var request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}{path}")
         {
@@ -85,7 +87,9 @@ public sealed class JobChangeRequestPartnerClient(
         {
             var response = await httpClient.SendAsync(request, ct);
             if (response.IsSuccessStatusCode)
+            {
                 return new PartnerForwardResult { Success = true };
+            }
 
             var body2 = await response.Content.ReadAsStringAsync(ct);
             Log.Warning("IM admin call {Path} failed: {StatusCode} {Body}", path, response.StatusCode, body2);
@@ -143,11 +147,15 @@ public sealed class JobChangeRequestPartnerClient(
     private string? ResolveBaseUrl()
     {
         if (environment.IsDevelopment())
+        {
             return Environment.GetEnvironmentVariable("IntegrationManagerUrl");
+        }
 
         var httpContext = contextAccessor.HttpContext;
         if (httpContext is null)
+        {
             return null;
+        }
 
         var req = httpContext.Request;
         var host = req.Host.Value?.Replace("despatch", "integrationmanager", StringComparison.OrdinalIgnoreCase);

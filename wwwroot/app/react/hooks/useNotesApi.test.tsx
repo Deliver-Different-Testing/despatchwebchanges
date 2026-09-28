@@ -1,11 +1,9 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * useNotesApi Hooks Tests
  */
 
 import React from 'react';
 import {renderHook, waitFor, act} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
     useJobNotes,
     useBulkJobNotes,
@@ -21,6 +19,7 @@ import {
 import {notesApi} from '../services/notesApi';
 import {JobNote, NoteType, NoteHistoryEntry} from '../interfaces';
 import dayjs from 'dayjs';
+import {createQueryWrapper} from '../__testUtils__';
 
 // Mock the notesApi
 jest.mock('../services/notesApi', () => ({
@@ -39,28 +38,6 @@ jest.mock('../services/notesApi', () => ({
 }));
 
 const mockNotesApi = notesApi as jest.Mocked<typeof notesApi>;
-
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-                gcTime: 0,
-            },
-            mutations: {
-                retry: false,
-            },
-        },
-    });
-
-// Wrapper component for providing QueryClient
-const createWrapper = () => {
-    const queryClient = createTestQueryClient();
-    return ({children}: {children: React.ReactNode}) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-};
 
 // Sample test data
 const mockNotes: JobNote[] = [
@@ -98,7 +75,7 @@ describe('useJobNotes', () => {
     it('should fetch notes for a regular job', async () => {
         mockNotesApi.getJobNotes.mockResolvedValueOnce(mockNotes);
 
-        const {result} = renderHook(() => useJobNotes(100, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useJobNotes(100, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -111,7 +88,7 @@ describe('useJobNotes', () => {
     it('should fetch notes for a recurring job', async () => {
         mockNotesApi.getJobNotes.mockResolvedValueOnce(mockNotes);
 
-        const {result} = renderHook(() => useJobNotes(100, true), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useJobNotes(100, true), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -121,7 +98,7 @@ describe('useJobNotes', () => {
     });
 
     it('should not fetch when jobId is undefined', async () => {
-        renderHook(() => useJobNotes(undefined, false), {wrapper: createWrapper()});
+        renderHook(() => useJobNotes(undefined, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockNotesApi.getJobNotes).not.toHaveBeenCalled();
@@ -129,7 +106,7 @@ describe('useJobNotes', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useJobNotes(100, false, {enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useJobNotes(100, false, {enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockNotesApi.getJobNotes).not.toHaveBeenCalled();
@@ -140,7 +117,7 @@ describe('useJobNotes', () => {
         const error = new Error('Failed to fetch notes');
         mockNotesApi.getJobNotes.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useJobNotes(100, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useJobNotes(100, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);
@@ -154,7 +131,7 @@ describe('useBulkJobNotes', () => {
     it('should fetch notes for a bulk job', async () => {
         mockNotesApi.getBulkJobNotes.mockResolvedValueOnce(mockNotes);
 
-        const {result} = renderHook(() => useBulkJobNotes(200), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useBulkJobNotes(200), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -165,7 +142,7 @@ describe('useBulkJobNotes', () => {
     });
 
     it('should not fetch when bulkJobId is undefined', async () => {
-        renderHook(() => useBulkJobNotes(undefined), {wrapper: createWrapper()});
+        renderHook(() => useBulkJobNotes(undefined), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockNotesApi.getBulkJobNotes).not.toHaveBeenCalled();
@@ -177,7 +154,7 @@ describe('useNoteTypes', () => {
     it('should fetch note types', async () => {
         mockNotesApi.getNoteTypes.mockResolvedValueOnce(mockNoteTypes);
 
-        const {result} = renderHook(() => useNoteTypes(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useNoteTypes(), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -188,7 +165,7 @@ describe('useNoteTypes', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useNoteTypes({enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useNoteTypes({enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockNotesApi.getNoteTypes).not.toHaveBeenCalled();
@@ -200,7 +177,7 @@ describe('useCreateNote', () => {
     it('should create a note successfully', async () => {
         mockNotesApi.createNote.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useCreateNote(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useCreateNote(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -227,7 +204,7 @@ describe('useCreateNote', () => {
         const error = new Error('Failed to create note');
         mockNotesApi.createNote.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useCreateNote(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useCreateNote(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -249,7 +226,7 @@ describe('useCreateBulkJobNote', () => {
     it('should create a bulk job note successfully', async () => {
         mockNotesApi.createBulkJobNote.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useCreateBulkJobNote(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useCreateBulkJobNote(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -272,7 +249,7 @@ describe('useUpdateNote', () => {
     it('should update a note successfully', async () => {
         mockNotesApi.updateNote.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useUpdateNote(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpdateNote(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -296,7 +273,7 @@ describe('useUpdateBulkJobNote', () => {
     it('should update a bulk job note successfully', async () => {
         mockNotesApi.updateBulkJobNote.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useUpdateBulkJobNote(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpdateBulkJobNote(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -320,7 +297,7 @@ describe('useDeleteNote', () => {
     it('should delete a note successfully', async () => {
         mockNotesApi.deleteNote.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useDeleteNote(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useDeleteNote(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({noteId: 1, jobId: 100});
@@ -330,14 +307,14 @@ describe('useDeleteNote', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockNotesApi.deleteNote).toHaveBeenCalledWith(1);
+        expect(mockNotesApi.deleteNote).toHaveBeenCalledWith(1, 100);
     });
 
     it('should handle errors', async () => {
         const error = new Error('Failed to delete note');
         mockNotesApi.deleteNote.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useDeleteNote(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useDeleteNote(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({noteId: 999, jobId: 100});
@@ -355,7 +332,7 @@ describe('useCreateNoteType', () => {
     it('should create a note type successfully', async () => {
         mockNotesApi.createNoteType.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useCreateNoteType(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useCreateNoteType(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({text: 'Custom', isPublic: true});
@@ -386,7 +363,7 @@ describe('useNoteHistory', () => {
     it('should fetch note history for a note', async () => {
         mockNotesApi.getNoteHistory.mockResolvedValueOnce(mockHistory);
 
-        const {result} = renderHook(() => useNoteHistory(10), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useNoteHistory(10), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -397,7 +374,7 @@ describe('useNoteHistory', () => {
     });
 
     it('should not fetch when noteId is undefined', async () => {
-        renderHook(() => useNoteHistory(undefined), {wrapper: createWrapper()});
+        renderHook(() => useNoteHistory(undefined), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockNotesApi.getNoteHistory).not.toHaveBeenCalled();
@@ -405,7 +382,7 @@ describe('useNoteHistory', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => useNoteHistory(10, 'Note', {enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => useNoteHistory(10, 'Note', {enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockNotesApi.getNoteHistory).not.toHaveBeenCalled();
@@ -416,7 +393,7 @@ describe('useNoteHistory', () => {
         const error = new Error('Failed to fetch note history');
         mockNotesApi.getNoteHistory.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useNoteHistory(10), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useNoteHistory(10), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);

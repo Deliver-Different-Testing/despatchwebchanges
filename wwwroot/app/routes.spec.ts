@@ -86,11 +86,6 @@ describe('RouterConfig', () => {
             expect(homeState.url).toBe('/?jobId');
         });
 
-        it('should configure home state with homeComponent', () => {
-            const homeState = registeredStates.get('home');
-            expect(homeState.component).toBe('homeComponent');
-        });
-
         it('should configure home state with optional jobId param', () => {
             const homeState = registeredStates.get('home');
             expect(homeState.params).toBeDefined();
@@ -100,11 +95,16 @@ describe('RouterConfig', () => {
             });
         });
 
-        it('should configure home state with lazy loading resolves', () => {
+        it('always redirects home to dispatch (classic AngularJS dispatch page is deleted)', () => {
             const homeState = registeredStates.get('home');
-            expect(homeState.resolve).toBeDefined();
-            expect(homeState.resolve.manifest).toBeDefined();
-            expect(homeState.resolve.loadModule).toBeDefined();
+            expect(homeState.component).toBeUndefined();
+            expect(homeState.resolve).toBeUndefined();
+
+            const withoutJobId = homeState.redirectTo({params: () => ({})});
+            expect(withoutJobId).toEqual({state: 'dispatch', params: {}});
+
+            const withJobId = homeState.redirectTo({params: () => ({jobId: '123'})});
+            expect(withJobId).toEqual({state: 'dispatch', params: {jobId: '123'}});
         });
     });
 
@@ -160,14 +160,19 @@ describe('RouterConfig', () => {
         it('should register all expected states', () => {
             const expectedStates = [
                 'home',
+                'dispatch',
+                'dispatchV2',
                 'nw',
+                'nwV2',
                 'cs',
                 'jobSearch',
+                'jobSearchV2',
                 'recurringJobs',
                 'overview',
                 'taskDashboard',
                 'driverManagement',
                 'courierMap',
+                'settings',
                 'notFound',
                 'error',
                 'forbidden',
@@ -179,9 +184,76 @@ describe('RouterConfig', () => {
             });
         });
 
+        it('leaves /Nationwide on the classic page unless the operator opts in', () => {
+            // Nationwide is opt-in while the React page is unproven, so an
+            // operator who has never touched the toggle must not be redirected.
+            localStorage.clear();
+            const nw = registeredStates.get('nw');
+
+            expect(nw.redirectTo({params: () => ({})})).toBeUndefined();
+        });
+
+        it('redirects /Nationwide to the React page once opted in, keeping ?jobId', () => {
+            localStorage.setItem('nationwideBetaEnabled-0', 'true');
+            const nw = registeredStates.get('nw');
+
+            expect(nw.redirectTo({params: () => ({jobId: '42'})}))
+                .toEqual({state: 'nwV2', params: {jobId: '42'}});
+
+            localStorage.clear();
+        });
+
         it('should register exactly the expected number of states', () => {
-            // 13 states total (excluding commented megaMap)
-            expect(registeredStates.size).toBe(13);
+            // 18 states total (excluding commented megaMap). `nwV2` is the
+            // parallel React rebuild of Nationwide, opt-in via a beta toggle.
+            // `dispatchV2` and `jobSearchV2` are thin redirects kept only so
+            // old bookmarks to those now-renamed URLs still resolve. `settings`
+            // is the global Settings page reached from the sidebar.
+            expect(registeredStates.size).toBe(18);
+        });
+    });
+
+    describe('Angular Material containers on React-only states', () => {
+        beforeEach(() => {
+            new RouterConfig(
+                mockUrlRouterProvider as any,
+                mockStateProvider as any
+            );
+        });
+
+        // The React-rendered states used to wrap their island in
+        // <md-content class="md-dense">, which pulled Angular Material's
+        // container styles (and its md-dense density scale) onto pages that
+        // render no Angular Material components at all. The classic AngularJS
+        // state (nw) keeps its own template.
+        const reactOnlyStates = [
+            'dispatch',
+            'jobSearch',
+            'recurringJobs',
+            'overview',
+            'taskDashboard',
+            'driverManagement',
+            'courierMap',
+        ];
+
+        it.each(reactOnlyStates)('%s renders no md-content wrapper', (stateName) => {
+            const state = registeredStates.get(stateName);
+            expect(state.template).not.toContain('md-content');
+            expect(state.template).not.toContain('md-dense');
+        });
+
+        it('recurringJobs drops the md-card margin override', () => {
+            // The override targeted Angular Material cards; the panel is a
+            // React island, so there is no md-card left to reset.
+            const state = registeredStates.get('recurringJobs');
+            expect(state.template).not.toContain('md-card');
+        });
+
+        it('keeps the full-height sizing the wrapper used to provide', () => {
+            for (const stateName of ['dispatch', 'jobSearch', 'overview', 'driverManagement']) {
+                const state = registeredStates.get(stateName);
+                expect(state.template).toContain('height: 100%');
+            }
         });
     });
 
@@ -201,6 +273,35 @@ describe('RouterConfig', () => {
         it('should configure nw state with nationwide-component template', () => {
             const nwState = registeredStates.get('nw');
             expect(nwState.template).toBe('<nationwide-component></nationwide-component>');
+        });
+    });
+
+    describe('Nationwide V2 State Configuration', () => {
+        beforeEach(() => {
+            new RouterConfig(
+                mockUrlRouterProvider as any,
+                mockStateProvider as any
+            );
+        });
+
+        // Every other section of the app-shell toolbar (Views, Layouts,
+        // Settings) is opt-in per host attribute — omitting them is how the
+        // "only Messages shows" bug happened. Assert the wiring stays in the
+        // template so it can't silently regress again.
+        it('wires the app-shell toolbar with views, layouts and settings', () => {
+            const nwV2State = registeredStates.get('nwV2');
+            expect(nwV2State.template).toContain('views="ctrl.views"');
+            expect(nwV2State.template).toContain('on-toggle-view="ctrl.toggleView(view)"');
+            expect(nwV2State.template).toContain('on-clear-all-views="ctrl.clearAllViews()"');
+            expect(nwV2State.template).toContain('layouts="ctrl.layouts"');
+            expect(nwV2State.template).toContain('on-save-layout="ctrl.saveLayout()"');
+            expect(nwV2State.template).toContain('on-load-layout="ctrl.loadLayout(index)"');
+            expect(nwV2State.template).toContain('on-delete-layout="ctrl.deleteLayout(index)"');
+            expect(nwV2State.template).toContain('on-rename-layout="ctrl.renameLayout(index)"');
+            expect(nwV2State.template).toContain('on-import-layouts="ctrl.importLayouts()"');
+            expect(nwV2State.template).toContain('on-customize-panels="ctrl.openCustomizePanelsDialog()"');
+            expect(nwV2State.template).toContain('on-reset-layout="ctrl.resetLayout()"');
+            expect(nwV2State.template).toContain('on-settings-click="ctrl.openSettingsDialog($event)"');
         });
     });
 
@@ -227,10 +328,37 @@ describe('RouterConfig', () => {
             );
         });
 
-        it('should configure jobSearch state', () => {
+        it('serves jobSearch as the React page directly at /jobSearch', () => {
             const state = registeredStates.get('jobSearch');
             expect(state.url).toBe('/jobSearch?jobId');
-            expect(state.component).toBe('jobSearchComponent');
+            expect(state.redirectTo).toBeUndefined();
+            expect(state.controller).toBeDefined();
+        });
+
+        it('redirects the legacy /jobSearchV2 bookmark to jobSearch', () => {
+            const state = registeredStates.get('jobSearchV2');
+            expect(state.url).toBe('/jobSearchV2?jobId');
+            expect(state.component).toBeUndefined();
+            expect(state.resolve).toBeUndefined();
+
+            const withoutJobId = state.redirectTo({params: () => ({})});
+            expect(withoutJobId).toEqual({state: 'jobSearch', params: {}});
+
+            const withJobId = state.redirectTo({params: () => ({jobId: '123'})});
+            expect(withJobId).toEqual({state: 'jobSearch', params: {jobId: '123'}});
+        });
+
+        it('redirects the legacy /dispatchV2 bookmark to dispatch', () => {
+            const state = registeredStates.get('dispatchV2');
+            expect(state.url).toBe('/dispatchV2?jobId');
+            expect(state.component).toBeUndefined();
+            expect(state.resolve).toBeUndefined();
+
+            const withoutJobId = state.redirectTo({params: () => ({})});
+            expect(withoutJobId).toEqual({state: 'dispatch', params: {}});
+
+            const withJobId = state.redirectTo({params: () => ({jobId: '123'})});
+            expect(withJobId).toEqual({state: 'dispatch', params: {jobId: '123'}});
         });
 
         it('should configure recurringJobs state', () => {
@@ -245,7 +373,24 @@ describe('RouterConfig', () => {
 
         it('should give the recurring jobs React container full width', () => {
             const state = registeredStates.get('recurringJobs');
-            expect(state.template).toContain('flex: 1');
+            // The flex wrapper was removed in the layout-modernization pass;
+            // the mount point now fills the viewport-height container directly.
+            expect(state.template).toContain('height: calc(100vh - 56px)');
+            expect(state.template).toContain('height: 100%; overflow: hidden');
+        });
+
+        it('should size every app-shell page against the current 56px app bar', () => {
+            // The bar height is duplicated into these templates as viewport math; a
+            // stale value leaves a gap or clips the page.
+            const shellTemplates = [...registeredStates.values()]
+                .map(state => state.template)
+                .filter((template): template is string =>
+                    typeof template === 'string' && template.includes('react-app-shell'));
+
+            expect(shellTemplates.length).toBeGreaterThan(0);
+            shellTemplates.forEach(template => {
+                expect(template).not.toContain('100vh - 64px');
+            });
         });
 
         it('should configure overview state', () => {
@@ -262,7 +407,7 @@ describe('RouterConfig', () => {
             expect(state.template).toContain('react-app-shell');
             expect(state.template).toContain('react-task-dashboard');
             expect(state.template).not.toContain('job-detail-widget');
-            expect(state.template).toContain('flex: 1');
+            expect(state.template).toContain('height: 100%; overflow: hidden');
         });
 
         it('should configure driverManagement state', () => {
@@ -277,6 +422,60 @@ describe('RouterConfig', () => {
             expect(state.url).toBe('/courierMap');
             expect(state.template).toContain('react-app-shell');
             expect(state.template).toContain('react-courier-map');
+        });
+    });
+
+    describe('Island stylesheet loading', () => {
+        // An island with a `*.module.css` gets a sibling CSS entry in the
+        // manifest. A `loadModule` that only asks for the `.js` leaves the
+        // island unstyled, and nothing fails loudly when it happens.
+        beforeEach(() => {
+            new RouterConfig(
+                mockUrlRouterProvider as any,
+                mockStateProvider as any
+            );
+        });
+
+        const invokeLoadModule = async (stateName: string, manifest: Record<string, string>) => {
+            const loaded: string[] = [];
+            const ocLazyLoad = {
+                load: jest.fn((arg: any) => {
+                    const files = typeof arg === 'string' ? [arg] : (arg.files ?? []);
+                    loaded.push(...files);
+                    return Promise.resolve();
+                })
+            };
+
+            const resolve = registeredStates.get(stateName).resolve.loadModule;
+            const fn = resolve[resolve.length - 1];
+            await fn(ocLazyLoad as any, manifest);
+
+            return loaded;
+        };
+
+        it('should load the stylesheet alongside the driverManagement island', async () => {
+            const loaded = await invokeLoadModule('driverManagement', {
+                'vendor-react.js': 'vendor-react.HASH.js',
+                'driverManagementReact.js': 'driverManagementReact.HASH.js',
+                'driverManagementReact.css': 'driverManagementReact.HASH.css',
+                'composeEmailDialogReact.js': 'composeEmailDialogReact.HASH.js',
+                'editAfterhoursDialogReact.js': 'editAfterhoursDialogReact.HASH.js'
+            });
+
+            expect(loaded).toContain('dist/driverManagementReact.HASH.js');
+            expect(loaded).toContain('dist/driverManagementReact.HASH.css');
+        });
+
+        it('should not invent a stylesheet the manifest does not list', async () => {
+            const loaded = await invokeLoadModule('driverManagement', {
+                'vendor-react.js': 'vendor-react.HASH.js',
+                'driverManagementReact.js': 'driverManagementReact.HASH.js',
+                'composeEmailDialogReact.js': 'composeEmailDialogReact.HASH.js',
+                'editAfterhoursDialogReact.js': 'editAfterhoursDialogReact.HASH.js'
+            });
+
+            expect(loaded).toContain('dist/driverManagementReact.HASH.js');
+            expect(loaded.some(f => f.endsWith('.css'))).toBe(false);
         });
     });
 });
@@ -318,5 +517,157 @@ describe('Base URL Behavior', () => {
             const otherwiseTarget = '/not-found';
             expect(otherwiseTarget).toBe('/not-found');
         });
+    });
+});
+
+const TOOLBARS = [
+    {
+        state: 'dispatch',
+        bridgeName: 'ReactDispatch',
+        layoutsKey: 'layoutV2',
+        lastActiveKey: 'lastActiveLayoutV2',
+    },
+    {
+        state: 'jobSearch',
+        bridgeName: 'ReactJobSearch',
+        layoutsKey: 'layoutsCSV2',
+        lastActiveKey: 'lastActiveLayoutCSV2',
+    },
+] as const;
+
+// Both AngularJS toolbars drive their layout dropdown through the shared
+// `createLayoutToolbarActions` factory; these cover the wiring — each state
+// talks to its own React bridge and its own storage keys.
+describe.each(TOOLBARS)('$state layout toolbar', ({state, bridgeName, layoutsKey, lastActiveKey}) => {
+    const CONTACT_ID = 4242;
+    const LAYOUTS_KEY = `${layoutsKey}-${CONTACT_ID}`;
+    const LAST_ACTIVE_KEY = `${lastActiveKey}-${CONTACT_ID}`;
+
+    let bridge: Record<string, jest.Mock>;
+
+    // Build the state's controller instance and return its `ctrl`.
+    function makeController() {
+        const registeredStates = new Map<string, any>();
+        const stateProvider: {state: jest.Mock} = {
+            state: jest.fn((name: string, config: any) => {
+                registeredStates.set(name, config);
+                return stateProvider;
+            }),
+        };
+        const urlRouterProvider = {when: jest.fn(), otherwise: jest.fn()};
+        new RouterConfig(urlRouterProvider as any, stateProvider as any);
+
+        const controllerArr = registeredStates.get(state).controller;
+        const controllerFn = controllerArr[controllerArr.length - 1];
+
+        const $scope: any = {$on: jest.fn(), $applyAsync: jest.fn()};
+        const $stateParams: any = {jobId: null};
+        const toastr = {
+            showSuccessToast: jest.fn(),
+            showWarningToast: jest.fn(),
+            showErrorToast: jest.fn(),
+            showInfoToast: jest.fn(),
+        };
+        // dispatch also takes $http/$interval for its unread-message badge;
+        // jobSearch ignores the extra arguments.
+        const $http = {get: jest.fn(() => ({then: () => ({catch: jest.fn()})}))};
+        const $interval: any = jest.fn(() => 'interval-token');
+        $interval.cancel = jest.fn();
+        controllerFn($scope, $stateParams, toastr, {US_Customer: false}, $http, $interval);
+        return {ctrl: $scope.ctrl, toastr};
+    }
+
+    const persistedNames = (): string[] =>
+        JSON.parse(localStorage.getItem(LAYOUTS_KEY) ?? '[]').map((l: {name: string}) => l.name);
+
+    beforeEach(() => {
+        localStorage.clear();
+        (window as any).ContactID = CONTACT_ID;
+        (window as any).TimeZone = 'New Zealand Standard Time';
+        bridge = {
+            mount: jest.fn(),
+            unmount: jest.fn(),
+            setCurrentLayoutName: jest.fn(),
+            reloadLayoutsFromStorage: jest.fn(),
+            promptSaveLayout: jest.fn().mockResolvedValue(null),
+            promptDeleteLayout: jest.fn().mockResolvedValue(false),
+            promptRenameLayout: jest.fn().mockResolvedValue(null),
+            importLegacyLayouts: jest.fn().mockReturnValue({imported: [], skipped: []}),
+            registerViewsListener: jest.fn(() => jest.fn()),
+            updateFilters: jest.fn(),
+            setColumnEditMode: jest.fn(),
+        };
+        (window as any)[bridgeName] = bridge;
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete (window as any)[bridgeName];
+    });
+
+    it('always exposes a selectable "Default" layout at index 0 when storage is empty', () => {
+        const {ctrl} = makeController();
+        // The reported bug: with no saved layouts the toolbar dropdown had no
+        // Default entry, so users on a custom layout could not switch back.
+        expect(ctrl.layouts[0].name).toBe('Default');
+        expect(ctrl.currentLayoutName).toBe('Default');
+    });
+
+    it('keeps Default at index 0 when saving the first custom layout', async () => {
+        const {ctrl} = makeController();
+        bridge.promptSaveLayout.mockResolvedValue('My Layout');
+
+        await ctrl.saveLayout();
+
+        expect(persistedNames()).toEqual(['Default', 'My Layout']);
+        expect(ctrl.layouts.map((l: {name: string}) => l.name)).toEqual(['Default', 'My Layout']);
+        expect(bridge.setCurrentLayoutName).toHaveBeenCalledWith('My Layout');
+        expect(bridge.reloadLayoutsFromStorage).toHaveBeenCalled();
+    });
+
+    it('switches back to Default via loadLayout(0)', async () => {
+        const {ctrl} = makeController();
+        bridge.promptSaveLayout.mockResolvedValue('My Layout');
+        await ctrl.saveLayout();
+        bridge.setCurrentLayoutName.mockClear();
+
+        ctrl.loadLayout(0);
+
+        expect(ctrl.currentLayoutName).toBe('Default');
+        expect(localStorage.getItem(LAST_ACTIVE_KEY)).toBe('Default');
+        expect(bridge.setCurrentLayoutName).toHaveBeenCalledWith('Default');
+    });
+
+    it('never deletes the Default layout', () => {
+        const {ctrl} = makeController();
+        ctrl.deleteLayout(0);
+        // No confirm prompt, no storage write, Default stays put.
+        expect(ctrl.layouts[0].name).toBe('Default');
+        expect(bridge.promptDeleteLayout).not.toHaveBeenCalled();
+        expect(bridge.reloadLayoutsFromStorage).not.toHaveBeenCalled();
+    });
+
+    it('renames a custom layout through its own storage keys', async () => {
+        const {ctrl, toastr} = makeController();
+        bridge.promptSaveLayout.mockResolvedValue('My Layout');
+        await ctrl.saveLayout();
+        bridge.promptRenameLayout.mockResolvedValue('Renamed');
+
+        await ctrl.renameLayout(1);
+
+        expect(bridge.promptRenameLayout).toHaveBeenCalledWith('My Layout');
+        expect(persistedNames()).toEqual(['Default', 'Renamed']);
+        expect(ctrl.layouts.map((l: {name: string}) => l.name)).toEqual(['Default', 'Renamed']);
+        expect(ctrl.currentLayoutName).toBe('Renamed');
+        expect(toastr.showSuccessToast).toHaveBeenCalledWith('Layout renamed successfully');
+    });
+
+    it('reports the V1 import result through the toolbar toasts', () => {
+        const {ctrl, toastr} = makeController();
+        bridge.importLegacyLayouts.mockReturnValue({imported: ['Old'], skipped: []});
+
+        ctrl.importLayouts();
+
+        expect(toastr.showSuccessToast).toHaveBeenCalledWith('Imported 1 V1 layout');
     });
 });

@@ -15,6 +15,7 @@ import {
     allocateJob,
     getCourierById,
     previewJobRate,
+    previewJobRates,
     applyJobRate,
 } from '../../../../services/jobDetailApi';
 import type {JobUpdateResponse} from '../../../../services/jobDetailApi';
@@ -79,6 +80,8 @@ export interface PendingRateChange {
     newPrice: number;
     description: string | null;
     isPrebook: boolean;
+    /** Manually-priced jobs are shown but never selectable — a hand-set price must survive. */
+    ratedManually?: boolean;
 }
 
 interface UpdateFieldParams {
@@ -117,7 +120,8 @@ export function useJobUpdate(
     options?: UseJobUpdateOptions,
 ) {
     const queryClient = useQueryClient();
-    const [pendingRateChange, setPendingRateChange] = useState<PendingRateChange | null>(null);
+    const [pendingRateChanges, setPendingRateChanges] = useState<PendingRateChange[]>([]);
+    const [selectedRateJobIds, setSelectedRateJobIds] = useState<Set<number>>(new Set());
     const [isApplyingRate, setIsApplyingRate] = useState(false);
 
     const invalidateJob = async (jobId: number) => {
@@ -133,23 +137,74 @@ export function useJobUpdate(
         ]);
     };
 
+    const openRateChanges = useCallback((rows: PendingRateChange[]) => {
+        setPendingRateChanges(rows);
+        setSelectedRateJobIds(new Set(rows.filter(r => !r.ratedManually).map(r => r.jobId)));
+    }, []);
+
     const checkForRateChange = useCallback(async (job: IJob) => {
         try {
             const preview = await previewJobRate(job.id);
             if (Math.abs(preview.rate - job.charge) > 0.001) {
-                setPendingRateChange({
+                openRateChanges([{
                     jobId: job.id,
                     jobNo: job.jobNo,
                     oldPrice: job.charge,
                     newPrice: preview.rate,
                     description: preview.description,
                     isPrebook: job.preBook,
-                });
+                }]);
             }
         } catch {
             // Preview failure is non-fatal — user can still manually edit price
         }
+    }, [openRateChanges]);
+
+    /**
+     * Batch equivalent used after a date cascade. Prices are compared against the DB's current
+     * amounts rather than the client's cached charge, so a stale list can't mislead the user.
+     * A 403 (no recalculate permission) is swallowed exactly like the single-job probe — the
+     * user simply never sees a price step.
+     */
+    const checkForRateChanges = useCallback(async (jobIds: number[]) => {
+        if (jobIds.length === 0) return;
+        try {
+            const previews = await previewJobRates(jobIds);
+            openRateChanges(
+                previews
+                    // Manually-priced jobs are left out entirely rather than shown disabled —
+                    // a hand-set price is a decision already made, not one to re-confirm.
+                    .filter(p => !p.failed && !p.ratedManually
+                        && Math.abs(p.rate - p.currentAmount) > 0.001)
+                    .map(p => ({
+                        jobId: p.jobId,
+                        jobNo: p.jobNo ?? `Job ${p.jobId}`,
+                        oldPrice: p.currentAmount,
+                        newPrice: p.rate,
+                        description: p.description,
+                        isPrebook: p.isPrebook,
+                    })),
+            );
+        } catch {
+            // Same deliberate swallow as checkForRateChange.
+        }
+    }, [openRateChanges]);
+
+    const toggleRateSelection = useCallback((jobId: number) => {
+        setSelectedRateJobIds((prev) => {
+            const next = new Set(prev);
+            if (!next.delete(jobId)) next.add(jobId);
+            return next;
+        });
     }, []);
+
+    const toggleAllRateSelection = useCallback(() => {
+        setSelectedRateJobIds((prev) => {
+            const selectable = pendingRateChanges.filter(r => !r.ratedManually);
+            const allSelected = selectable.length > 0 && selectable.every(r => prev.has(r.jobId));
+            return allSelected ? new Set() : new Set(selectable.map(r => r.jobId));
+        });
+    }, [pendingRateChanges]);
 
     const invalidateChangeRequests = (jobId: number) =>
         queryClient.invalidateQueries({queryKey: ['jobChangeRequests', jobId]});
@@ -176,8 +231,7 @@ export function useJobUpdate(
             } else {
                 showToast(`${job.jobNo} updated`, 'success');
             }
-            await invalidateJob(job.id);
-            await invalidateJobLists();
+            await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
             if (!response?.pending && RERATE_FIELDS.has(field) && !job.ratedManually) {
                 await checkForRateChange(job);
@@ -227,8 +281,7 @@ export function useJobUpdate(
             } else {
                 showToast(`${job.jobNo} updated`, 'success');
             }
-            await invalidateJob(job.id);
-            await invalidateJobLists();
+            await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
             if (!response?.pending && !job.ratedManually) {
                 await checkForRateChange(job);
@@ -242,11 +295,13 @@ export function useJobUpdate(
     const updatePodMutation = useMutation({
         mutationFn: (data: UpdatePodDetailsRequest) => updatePodDetails(data),
         onSuccess: async (_data, variables) => {
-           await invalidateJob(variables.jobId);
-           await invalidateJobLists();
+           await Promise.all([invalidateJob(variables.jobId), invalidateJobLists()]);
         },
-        onError: () => {
-            showToast('Failed to update POD details.', 'error');
+        onError: (error: unknown) => {
+            // A 404 carries an authored message from the backend (e.g. the job no longer
+            // exists) — show it rather than a generic failure the operator can't act on.
+            const message = (error as {message?: string})?.message;
+            showToast(message || 'Failed to update POD details.', 'error');
         },
     });
 
@@ -288,8 +343,7 @@ export function useJobUpdate(
             } else {
                 showToast('Job dispatched successfully', 'success');
             }
-            await invalidateJob(job.id);
-            await invalidateJobLists();
+            await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
         },
         onError: () => {
             showToast('Failed to dispatch job.', 'error');
@@ -297,24 +351,43 @@ export function useJobUpdate(
     });
 
     const confirmRateChange = useCallback(async () => {
-        if (!pendingRateChange) return;
+        const targets = pendingRateChanges.filter(r => selectedRateJobIds.has(r.jobId));
+        if (targets.length === 0) return;
         setIsApplyingRate(true);
+        const failed: string[] = [];
         try {
-            await applyJobRate(pendingRateChange.jobId, pendingRateChange.isPrebook);
-            await invalidateJob(pendingRateChange.jobId);
-            await invalidateJobLists();
-            await queryClient.invalidateQueries({queryKey: ['notes']});
-            showToast('Price updated', 'success');
-        } catch {
-            showToast('Failed to apply new price. Please try again.', 'error');
+            // ApplyRecalculatedJobRate is per-job, so a family applies sequentially. One failure
+            // must not strand the rest — the user is told exactly which jobs kept their price.
+            for (const target of targets) {
+                try {
+                    await applyJobRate(target.jobId, target.isPrebook);
+                } catch {
+                    failed.push(target.jobNo);
+                }
+            }
+            await Promise.all([
+                queryClient.invalidateQueries({queryKey: ['jobs', 'detail']}),
+                invalidateJobLists(),
+                queryClient.invalidateQueries({queryKey: ['notes']}),
+            ]);
+
+            if (failed.length === 0) {
+                showToast(targets.length === 1 ? 'Price updated' : `Price updated on ${targets.length} jobs`,
+                    'success');
+            } else {
+                showToast(`Price updated on ${targets.length - failed.length} of ${targets.length} jobs — `
+                    + `${failed.join(', ')} unchanged`, 'warning');
+            }
         } finally {
             setIsApplyingRate(false);
-            setPendingRateChange(null);
+            setPendingRateChanges([]);
+            setSelectedRateJobIds(new Set());
         }
-    }, [pendingRateChange, showToast]);
+    }, [pendingRateChanges, selectedRateJobIds, showToast]);
 
     const dismissRateChange = useCallback(() => {
-        setPendingRateChange(null);
+        setPendingRateChanges([]);
+        setSelectedRateJobIds(new Set());
     }, []);
 
     return {
@@ -330,7 +403,11 @@ export function useJobUpdate(
         invalidateJob,
         invalidateJobLists,
         checkForRateChange,
-        pendingRateChange,
+        checkForRateChanges,
+        pendingRateChanges,
+        selectedRateJobIds,
+        toggleRateSelection,
+        toggleAllRateSelection,
         isApplyingRate,
         confirmRateChange,
         dismissRateChange,

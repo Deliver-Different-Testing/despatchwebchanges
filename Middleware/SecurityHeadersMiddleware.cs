@@ -34,7 +34,9 @@ public class SecurityHeadersMiddleware(RequestDelegate next, IHostEnvironment en
         headers["Permissions-Policy"] = "geolocation=(), microphone=()";
 
         if (!environment.IsDevelopment())
+        {
             headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
+        }
 
         headers.ContentSecurityPolicy = environment.IsDevelopment()
             ? ContentSecurityPolicy

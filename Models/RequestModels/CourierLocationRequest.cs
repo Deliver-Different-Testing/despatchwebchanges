@@ -1,3 +1,4 @@
+#nullable enable annotations
 namespace DespatchWeb.Models.RequestModels;
 
 public sealed class CourierLocationRequest
@@ -9,4 +10,6 @@ public sealed class CourierLocationRequest
     public decimal MaxLng { get; init; }
 
     public decimal MaxLat { get; init; }
+
+    public List<int>? CourierFleetIds { get; init; }
 }

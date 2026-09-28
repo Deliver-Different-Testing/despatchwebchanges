@@ -5,30 +5,21 @@
  */
 
 import React, {lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import LinearProgress from '@mui/material/LinearProgress';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import Skeleton from '@mui/material/Skeleton';
-import Stack from '@mui/material/Stack';
-import Collapse from '@mui/material/Collapse';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import type {SxProps, Theme} from '@mui/material/styles';
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
+import {
+    ActionIcon, Alert, Badge, Box, Collapse, Group, Paper, Progress, Skeleton, Stack, Text,
+    UnstyledButton,
+} from '@mantine/core';
+import {Briefcase, Eye, EyeOff, Info, MailOpen, Mail} from 'lucide-react';
+import {Icon} from '../icon/Icon';
+import {sectionBorderStyle} from './JobDetails.styles';
+import classes from './JobDetails.module.css';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
 import {useJobDetail} from './hooks/useJobDetail';
 import {useJobUpdate} from './hooks/useJobUpdate';
 import {PriceChangeModal} from '../../dialogs/price-change-modal/PriceChangeModal';
+import {FamilyPriceChangeDialog} from '../../dialogs/family-price-change-dialog';
+import {CascadeDateConfirmDialog} from '../../dialogs/cascade-date-confirm-dialog';
 import {useFieldVisibility} from './hooks/useFieldVisibility';
 import {useViewDensity} from './hooks/useViewDensity';
 import {usePodPhotos} from './hooks/usePodPhotos';
@@ -38,7 +29,12 @@ import {useRouteList} from '../../../hooks/useRecurringJobsApi';
 import {WarningBanner} from './components/WarningBanner';
 import {RelatedJobTabs} from './components/RelatedJobTabs';
 import {JobDetailHeader} from './components/JobDetailHeader';
+import {AiSummaryCard} from '../ai-summary-card/AiSummaryCard';
+import {AiBlockersCard} from '../ai-blockers-card/AiBlockersCard';
+import {summarizeJob, extractBlockers} from '../../../services/aiAssistantApi';
+import {isAiAutoOpenEnabled, isAiEnabled} from '../../../../functions/aiSettings';
 import {MetricsGrid} from './components/MetricsGrid';
+import {RateAcceptanceBanner} from './components/RateAcceptanceBanner';
 import {AddressSection} from './components/AddressSection';
 import {TotalDistance} from './components/TotalDistance';
 import {FlightInformation} from './components/FlightInformation';
@@ -47,9 +43,15 @@ import {JobFieldsSection} from './components/JobFieldsSection';
 import {ToggleProperties} from './components/ToggleProperties';
 import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
+import {DispatchDialog, type DispatchMode} from '../../dialogs/dispatch-dialog';
+import {useChangeCourierFlow} from '../../dialogs/change-courier-dialog';
+import {isNetworkPartnerSession, stopJobCountFor} from '../../dialogs/dispatch-dialog/dispatchSession';
+import {getActivePartnerOptions, getPartnerRateForJob} from '../../../services/jobListApi';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
 import {JobChangeRequestsForJob} from '../../job-change-requests/JobChangeRequestsForJob';
 import {JobChangeRequestDialog} from '../../dialogs/job-change-request-dialog/JobChangeRequestDialog';
+import {EditSavedFlightDialog} from '../../dialogs/edit-saved-flight-dialog';
+import {CreateAheadBackfillDialog} from './components/CreateAheadBackfillDialog';
 import {PartnerJobBanner} from './components/PartnerJobBanner';
 
 import type {IJob, MountJobDetailsConfig} from './JobDetails.types';
@@ -65,23 +67,29 @@ function CardVisibilityToggle({label, fieldKey, isVisible, onToggle}: {
     label: string; fieldKey: string; isVisible: boolean; onToggle: (key: string) => void;
 }) {
     return (
-        <List dense disablePadding sx={{borderTop: 1, borderColor: 'divider'}}>
-            <ListItem dense disablePadding secondaryAction={
-                <IconButton edge="end" size="small" onClick={() => onToggle(fieldKey)}>
-                    {isVisible ? <VisibilityIcon sx={{fontSize: 18}}/> : <VisibilityOffIcon sx={{fontSize: 18}}/>}
-                </IconButton>
-            }>
-                <ListItemButton dense onClick={() => onToggle(fieldKey)}>
-                    <ListItemText primary={label} slotProps={{
-                        primary: {
-                            variant: 'body2',
-                            fontSize: '0.8125rem',
-                            color: isVisible ? 'text.primary' : 'text.disabled'
-                        }
-                    }}/>
-                </ListItemButton>
-            </ListItem>
-        </List>
+        <Group
+            justify="space-between"
+            gap="xs"
+            style={{...sectionBorderStyle, paddingInline: 8, paddingBlock: 4}}
+        >
+            <UnstyledButton
+                onClick={() => onToggle(fieldKey)}
+                style={{flex: 1, minWidth: 0, textAlign: 'left'}}
+            >
+                <Text c={isVisible ? undefined : 'dimmed'} style={{fontSize: '0.8125rem'}}>
+                    {label}
+                </Text>
+            </UnstyledButton>
+            <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                aria-label={isVisible ? `Hide ${label}` : `Show ${label}`}
+                onClick={() => onToggle(fieldKey)}
+            >
+                <Icon lucide={isVisible ? Eye : EyeOff} size={18}/>
+            </ActionIcon>
+        </Group>
     );
 }
 
@@ -89,88 +97,48 @@ interface JobDetailsProps {
     config: MountJobDetailsConfig;
 }
 
-const rootStyles: Record<string, SxProps<Theme>> = {
-    container: {
-        bgcolor: 'grey.50',
-    },
-    mainPaper: {
-        borderRadius: 2,
-        overflow: 'hidden',
-        border: 1,
-        borderColor: 'divider',
-    },
+const rootStyles = {
+    container: (dense: boolean): React.CSSProperties => ({
+        backgroundColor: 'var(--mantine-color-gray-1)',
+        ...(dense ? {fontSize: '0.8125rem'} : {}),
+    }),
     progressBar: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         zIndex: 1,
-    },
+    } as React.CSSProperties,
     metricsWrapper: {
-        bgcolor: 'background.paper',
-        borderBottom: 1,
-        borderColor: 'divider',
-    },
-    contentArea: {
+        backgroundColor: 'var(--dd-surface-container)',
+        borderBottomWidth: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: 'var(--mantine-color-default-border)',
+    } as React.CSSProperties,
+    contentArea: (dense: boolean): React.CSSProperties => ({
         display: 'flex',
         flexDirection: 'column',
-        gap: 2,
-        p: 2,
-    },
-    contentAreaDense: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 1,
-        p: 1.5,
-    },
+        gap: dense ? 8 : 16,
+        padding: dense ? 12 : 16,
+    }),
     readStatusBar: {
+        borderRadius: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 1,
-        mt: 1.5,
-        px: 2,
-        py: 1,
-        borderRadius: 2,
-        border: 1,
-        borderColor: 'divider',
+        gap: 8,
+        marginTop: 12,
+        paddingInline: 16,
+        paddingBlock: 8,
         cursor: 'pointer',
-        transition: (theme) => `all ${theme.transitions.duration.short}ms ease`,
-        '&:hover': {
-            borderColor: 'grey.400',
-            bgcolor: 'action.hover',
-        },
-    },
+    } as React.CSSProperties,
     readChip: {
         fontWeight: 600,
         fontSize: '0.75rem',
         height: 24,
         letterSpacing: '0.03em',
-    },
-    readText: {
-        fontSize: '0.75rem',
-    },
-    photosWrapper: {
-        mt: 1.5,
-    },
-    loadingSkeleton: {
-        p: 1.5,
-    },
-    emptyState: {
-        p: 4,
-        textAlign: 'center',
-    },
-    containerDense: {
-        bgcolor: 'grey.50',
-        fontSize: '0.8125rem',
-    },
-    mainPaperPositioned: {
-        borderRadius: 2,
-        overflow: 'hidden',
-        border: 1,
-        borderColor: 'divider',
-        position: 'relative',
-    },
+    } as React.CSSProperties,
+    readText: {fontSize: '0.75rem'} as React.CSSProperties,
 };
 
 export function JobDetails({config}: JobDetailsProps) {
@@ -217,6 +185,12 @@ export function JobDetails({config}: JobDetailsProps) {
 
     // Track which job tab is selected
     const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+
+    // AI briefing — per-user opt-in via dashboard settings. The card lives
+    // below MetricsGrid and renders in collapsible mode so it stays closed
+    // until the user expands it (first expand triggers summarizeJob).
+    const aiEnabled = useMemo(() => isAiEnabled(), []);
+    const aiAutoOpen = useMemo(() => isAiAutoOpenEnabled(), []);
     // Keep jobRef synchronously current so handlers never read a stale job
     const job: IJob | undefined = sortedRelatedJobs[selectedTabIndex] ?? sortedRelatedJobs[0];
 
@@ -254,7 +228,8 @@ export function JobDetails({config}: JobDetailsProps) {
     // Update mutations
     const {
         updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating, invalidateJobLists,
-        checkForRateChange, pendingRateChange, isApplyingRate, confirmRateChange, dismissRateChange,
+        checkForRateChange, checkForRateChanges, pendingRateChanges, selectedRateJobIds,
+        toggleRateSelection, toggleAllRateSelection, isApplyingRate, confirmRateChange, dismissRateChange,
     } = useJobUpdate(showToast, {
         onPartnerJobBlocked: ({field, value}) => {
             // The user already entered this value via the main edit dialog
@@ -305,14 +280,33 @@ export function JobDetails({config}: JobDetailsProps) {
     }, [refreshNonce]);
     const invalidatePhotos = useCallback(async () => {
         if (!jobId) return;
-        await rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'delivery')});
-        await rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'pickup')});
+        await Promise.all([
+            rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'delivery')}),
+            rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'pickup')}),
+        ]);
     }, [rqClient, jobId]);
 
     // Stable toast wrappers for StickyNotes (showToast is already ref-stabilized)
     const showSuccessToast = useCallback((msg: string) => showToast(msg, 'success'), [showToast]);
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
     const showInfoToast = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
+
+    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    const {openChangeCourier, changeCourierDialogs} = useChangeCourierFlow({
+        showToast,
+        onChanged: refreshAndNotify,
+    });
+
+    // Switches the panel to another job in the same family — e.g. the "view parent
+    // breakdown" link a split child's Price Breakdown shows. Shared with handleTabChange
+    // below, which is the same "select this family member" behaviour driven by tab click
+    // rather than a target job id.
+    const navigateToRelatedJob = useCallback((targetJobId: number) => {
+        const idx = sortedRelatedJobs.findIndex(j => j.id === targetJobId);
+        if (idx < 0) return;
+        setSelectedTabIndex(idx);
+        onRelatedJobChange?.(targetJobId);
+    }, [sortedRelatedJobs, onRelatedJobChange]);
 
     // All job action handlers
     const actions = useJobActions({
@@ -328,6 +322,7 @@ export function JobDetails({config}: JobDetailsProps) {
         invalidateJobLists,
         invalidatePhotos,
         checkForRateChange,
+        checkForRateChanges,
         invalidateAllJobDetails: () => rqClient.invalidateQueries({queryKey: ['jobs', 'detail']}),
         relatedJobs: sortedRelatedJobs,
         onStatusChange: config.onStatusChange,
@@ -338,25 +333,36 @@ export function JobDetails({config}: JobDetailsProps) {
                 value: initialValue ?? '',
                 locked: locked ?? false,
             }),
+        onChangeArchivedCourier: (j) => void openChangeCourier(j),
+        onNavigateToJob: navigateToRelatedJob,
     });
 
-    // Initialize the tab to show the originally-selected job. Only runs once per jobId change —
+    // Initialize the tab to show the originally-selected job. Only runs once per jobId change -
     // subsequent data refetches must not snap the user back if they navigated to a sibling tab.
+    //
+    // The findIndex guard: when the user clicks a sibling in a DIFFERENT family, React Query's
+    // keepPreviousData briefly serves the previous family's sortedRelatedJobs while the new
+    // query is in-flight. Without the guard we'd lock the ref to the new jobId on the stale
+    // data (idx = -1, fallback to 0), then the ref check would block the legitimate
+    // re-initialization once fresh data arrived, leaving the tab stuck on the family parent.
+    // Returning early when idx < 0 keeps the ref un-baked until data matches the requested job.
     useEffect(() => {
         if (jobId && sortedRelatedJobs.length > 0 && tabInitializedForJobRef.current !== jobId) {
             const idx = sortedRelatedJobs.findIndex(j => j.id === jobId);
-            setSelectedTabIndex(idx >= 0 ? idx : 0);
+            if (idx < 0) return;
+            setSelectedTabIndex(idx);
             tabInitializedForJobRef.current = jobId;
         }
     }, [jobId, sortedRelatedJobs]);
 
     const handleTabChange = useCallback((index: number) => {
-        setSelectedTabIndex(index);
         const selectedJob = sortedRelatedJobs[index];
         if (selectedJob?.id) {
-            onRelatedJobChange?.(selectedJob.id);
+            navigateToRelatedJob(selectedJob.id);
+        } else {
+            setSelectedTabIndex(index);
         }
-    }, [sortedRelatedJobs, onRelatedJobChange]);
+    }, [sortedRelatedJobs, navigateToRelatedJob]);
 
     const handleResetFieldVisibility = useCallback(() => {
         resetToDefaults();
@@ -374,14 +380,14 @@ export function JobDetails({config}: JobDetailsProps) {
 
     if (isLoading && !job) {
         return (
-            <Box sx={rootStyles.loadingSkeleton}>
-                <Stack spacing={1.5}>
-                    <Skeleton variant="rectangular" height={44} sx={{borderRadius: 1}}/>
-                    <Skeleton variant="rectangular" height={100} sx={{borderRadius: 1}}/>
-                    <Box sx={{display: 'flex', gap: 1.5}}>
-                        <Skeleton variant="rectangular" height={140} sx={{flex: 1, borderRadius: 1}}/>
-                        <Skeleton variant="rectangular" height={140} sx={{flex: 1, borderRadius: 1}}/>
-                    </Box>
+            <Box p="sm" data-testid="job-detail-loading">
+                <Stack gap="sm">
+                    <Skeleton height={44} radius="xs"/>
+                    <Skeleton height={100} radius="xs"/>
+                    <Group gap="sm" grow>
+                        <Skeleton height={140} radius="xs"/>
+                        <Skeleton height={140} radius="xs"/>
+                    </Group>
                 </Stack>
             </Box>
         );
@@ -392,7 +398,7 @@ export function JobDetails({config}: JobDetailsProps) {
             <NoData
                 title="No Job Selected"
                 message="Select a job to view details"
-                icon="work_outline"
+                icon={<Icon lucide={Briefcase}/>}
             />
         );
     }
@@ -400,23 +406,38 @@ export function JobDetails({config}: JobDetailsProps) {
     const isRead = job.readTrackerInfo?.hasBeenRead;
 
     return (
-        <Box sx={isDense ? rootStyles.containerDense : rootStyles.container}>
+        <Box style={rootStyles.container(isDense)}>
             {/* Main card */}
-            <Paper elevation={0} sx={rootStyles.mainPaperPositioned}>
-                {/* Progress indicator */}
-                {(isLoading || isFetching || isUpdating) && <LinearProgress sx={rootStyles.progressBar}/>}
+            <Paper
+                withBorder
+                data-testid="job-details-card"
+                style={{overflow: 'hidden', position: 'relative', borderRadius: 0}}
+            >
+                {/*
+                  * Progress indicator. Mantine has no indeterminate bar, so the
+                  * activity is carried by an animated full-width section.
+                  */}
+                {(isLoading || isFetching || isUpdating) && (
+                    <Progress.Root size="xs" radius={0} style={rootStyles.progressBar}>
+                        <Progress.Section value={100} animated aria-label="Loading job"/>
+                    </Progress.Root>
+                )}
 
                 <WarningBanner job={job}/>
 
                 {/* Partner-job context banner — slim, dismissible (per-device).
                     Explains the change-request workflow up-front so dispatchers
                     don't discover gated fields by trying them. */}
-                {job.isPartnerJob && <PartnerJobBanner partnerName={job.partnerTenantName ?? undefined}/>}
+                {job.isPartnerJob && (
+                    <PartnerJobBanner
+                        partnerName={job.partnerTenantName ?? undefined}
+                        pairingId={job.partnerPairingId}
+                    />
+                )}
 
                 <RelatedJobTabs
                     sortedRelatedJobs={sortedRelatedJobs}
                     selectedTabIndex={selectedTabIndex}
-                    isRecurringJob={isRecurringJob}
                     onTabChange={handleTabChange}
                 />
 
@@ -435,21 +456,29 @@ export function JobDetails({config}: JobDetailsProps) {
                     onSendPodEmail={actions.handleSendPodEmail}
                     onLockToggle={actions.handleLockToggle}
                     onRouteChange={actions.handleRouteChange}
+                    overlayDocuments={actions.overlayDocuments}
+                    overlayDocumentsLoading={actions.overlayDocumentsLoading}
+                    onOverlayMenuOpen={actions.fetchOverlayDocuments}
+                    onDownloadOverlay={actions.handleDownloadOverlay}
                 />
 
                 {/* Partner-job edit banner. Rated fields (qty, speed, dates, DG, etc.)
                     queue for the other tenant's approval; notes / refs / contacts sync
                     automatically; dispatch state (courier, status, lock) stays local. */}
                 {job.isPartnerJob && isEditMode && (
-                    <Alert severity="info" sx={{mb: 1}}>
+                    <Alert color="reflex" variant="light" icon={<Icon lucide={Info} size={18}/>} mb="xs">
                         Rated fields require {job.partnerTenantName?.trim() || 'the partner'} to
                         approve before they apply. Notes and contact details sync
                         automatically. See the change-request panel below for pending items.
                     </Alert>
                 )}
 
+                {/* Mode 1 rate-acceptance gate. Renders nothing when the gate is open
+                    (Modes 2/3 / Accepted) or this isn't a partner-inbound job. */}
+                {job.isPartnerJob && <RateAcceptanceBanner jobId={job.id}/>}
+
                 {/* Metrics Grid */}
-                <Box sx={rootStyles.metricsWrapper}>
+                <Box style={rootStyles.metricsWrapper}>
                     <MetricsGrid
                         job={job}
                         dense={isDense}
@@ -463,8 +492,36 @@ export function JobDetails({config}: JobDetailsProps) {
                     />
                 </Box>
 
+                {/* AI Job Briefing — collapsible card under the pricing / client
+                    row. key={job.id} resets state when switching related-job tabs;
+                    the card starts collapsed and only calls summarizeJob the first
+                    time the user opens it. */}
+                {aiEnabled && (
+                    <Box mx="sm" mt="xs">
+                        <AiSummaryCard
+                            key={job.id}
+                            title="Auto-mate Job Briefing"
+                            fetchSummary={(signal) => summarizeJob(job.id, {signal})}
+                            collapsible
+                            autoOpen={aiAutoOpen}
+                        />
+                    </Box>
+                )}
+
+                {aiEnabled && (
+                    <Box mx="sm" mt="xs">
+                        <AiBlockersCard
+                            key={job.id}
+                            title="Auto-mate Blockers"
+                            fetchBlockers={(signal) => extractBlockers(job.id, {signal})}
+                            collapsible
+                            autoOpen={aiAutoOpen}
+                        />
+                    </Box>
+                )}
+
                 {/* Main content area */}
-                <Box sx={isDense ? rootStyles.contentAreaDense : rootStyles.contentArea}>
+                <Box style={rootStyles.contentArea(isDense)}>
                     {job.isFlightAssigned && job.assignedFlight && (
                         <FlightInformation flight={job.assignedFlight} jobId={job.id}/>
                     )}
@@ -498,7 +555,7 @@ export function JobDetails({config}: JobDetailsProps) {
                         <CardVisibilityToggle label="Notes" fieldKey="notes"
                                               isVisible={isFieldVisible('notes')} onToggle={toggleField}/>
                     )}
-                    <Collapse in={isFieldVisible('notes')} unmountOnExit>
+                    <Collapse expanded={isFieldVisible('notes')} keepMounted={false}>
                         <StickyNotes
                             jobId={job.id}
                             bulkJobId={job.isBulkJob ? job.id : undefined}
@@ -544,7 +601,7 @@ export function JobDetails({config}: JobDetailsProps) {
                                                       isVisible={isFieldVisible('partnerChangeRequests')}
                                                       onToggle={toggleField}/>
                             )}
-                            <Collapse in={isFieldVisible('partnerChangeRequests')} unmountOnExit>
+                            <Collapse expanded={isFieldVisible('partnerChangeRequests')} keepMounted={false}>
                                 <JobChangeRequestsForJob
                                     jobId={job.id}
                                     pickUpTimezoneText={(job.pickUpTimeZone as {text?: string} | undefined)?.text}
@@ -590,6 +647,9 @@ export function JobDetails({config}: JobDetailsProps) {
                                 onEditFirstDue={actions.handleEditFirstDue}
                                 onEditStopDate={actions.handleEditStopDate}
                                 onEditRestartDate={actions.handleEditRestartDate}
+                                onEditSavedFlight={actions.handleEditSavedFlight}
+                                onAddFlight={actions.handleAddFlight}
+                                onInitialDaysChange={actions.handleInitialDaysChange}
                             />
                         </Suspense>
                     )}
@@ -603,38 +663,40 @@ export function JobDetails({config}: JobDetailsProps) {
                     )}
                 </Box>
             </Paper>
-
             {/* Read Status Bar */}
-            <Paper elevation={0} sx={rootStyles.readStatusBar} onClick={handleToggleReadStatus}>
-                <Chip
-                    icon={isRead ? <MarkEmailReadIcon sx={{fontSize: '16px !important'}}/> :
-                        <MarkEmailUnreadIcon sx={{fontSize: '16px !important'}}/>}
-                    label={isRead ? 'READ' : 'UNREAD'}
-                    size="small"
-                    color={isRead ? 'success' : 'default'}
-                    variant={isRead ? 'filled' : 'outlined'}
-                    sx={rootStyles.readChip}
-                />
+            <Paper
+                data-testid="job-details-read-status"
+                className={classes.readStatusBar}
+                style={rootStyles.readStatusBar}
+                onClick={handleToggleReadStatus}
+            >
+                <Badge
+                    color={isRead ? 'green' : 'gray'}
+                    variant={isRead ? 'filled' : 'outline'}
+                    leftSection={<Icon lucide={isRead ? MailOpen : Mail} size={14}/>}
+                    style={rootStyles.readChip}
+                >
+                    {isRead ? 'READ' : 'UNREAD'}
+                </Badge>
                 {isRead && job.readTrackerInfo?.readBy && (
-                    <Typography variant="body2" sx={rootStyles.readText}>
+                    <Text style={rootStyles.readText}>
                         Read by <strong>{job.readTrackerInfo.readBy}</strong>
                         {(job.readTrackerInfo._readDateStr || job.readTrackerInfo.readDate) && (
-                            <Typography component="span" color="text.secondary" sx={{fontSize: 'inherit', ml: 0.5}}>
+                            <Text component="span" c="dimmed" ml={4} style={{fontSize: 'inherit'}}>
                                 on {job.readTrackerInfo._readDateStr || String(job.readTrackerInfo.readDate)} {getTimezoneAbbreviation(window.TimeZone || '')}
-                            </Typography>
+                            </Text>
                         )}
-                    </Typography>
+                    </Text>
                 )}
                 {!isRead && (
-                    <Typography variant="body2" color="text.secondary" sx={rootStyles.readText}>
+                    <Text c="dimmed" style={rootStyles.readText}>
                         Click to mark as read
-                    </Typography>
+                    </Text>
                 )}
             </Paper>
-
             {/* POD Photos — only mount when there are photos or still loading */}
             {(deliveryPhotos.length > 0 || pickupPhotos.length > 0 || photosLoading) && (
-                <Box sx={rootStyles.photosWrapper}>
+                <Box mt="sm">
                     <Suspense fallback={null}>
                         <PodPhotosSection
                             deliveryPhotos={deliveryPhotos}
@@ -645,19 +707,20 @@ export function JobDetails({config}: JobDetailsProps) {
                             showToast={showToast}
                             onUploadPhotos={actions.handlePodUpload}
                             onSendPod={actions.handleSendPodEmail}
+                            jobId={job.id}
+                            onPhotoDeleted={invalidatePhotos}
                         />
                     </Suspense>
                 </Box>
             )}
-
-            {/* Price Change Modal */}
-            {pendingRateChange && (
+            {/* Price Change Modal — one job keeps the original modal; a family gets the list. */}
+            {pendingRateChanges.length === 1 && (
                 <PriceChangeModal
                     open={true}
-                    jobNumber={pendingRateChange.jobNo}
-                    oldPrice={pendingRateChange.oldPrice}
-                    newPrice={pendingRateChange.newPrice}
-                    description={pendingRateChange.description}
+                    jobNumber={pendingRateChanges[0].jobNo}
+                    oldPrice={pendingRateChanges[0].oldPrice}
+                    newPrice={pendingRateChanges[0].newPrice}
+                    description={pendingRateChanges[0].description}
                     isApplying={isApplyingRate}
                     onAccept={confirmRateChange}
                     onKeep={dismissRateChange}
@@ -667,17 +730,43 @@ export function JobDetails({config}: JobDetailsProps) {
                     }}
                 />
             )}
-
+            {pendingRateChanges.length > 1 && (
+                <FamilyPriceChangeDialog
+                    open={true}
+                    rows={pendingRateChanges.map((r) => ({
+                        jobId: r.jobId,
+                        jobNo: r.jobNo,
+                        oldPrice: r.oldPrice,
+                        newPrice: r.newPrice,
+                        ratedManually: !!r.ratedManually,
+                    }))}
+                    selectedIds={selectedRateJobIds}
+                    isApplying={isApplyingRate}
+                    onToggle={toggleRateSelection}
+                    onToggleAll={toggleAllRateSelection}
+                    onAcceptSelected={confirmRateChange}
+                    onKeepAll={dismissRateChange}
+                />
+            )}
+            {/* Cascade date confirmation */}
+            <CascadeDateConfirmDialog
+                open={actions.cascadeDialog.open}
+                jobNumber={actions.cascadeDialog.jobNumber}
+                newDateLabel={actions.cascadeDialog.newDateLabel}
+                members={actions.cascadeDialog.members}
+                onCancel={actions.handleCascadeCancel}
+                onChoose={actions.handleCascadeChoose}
+            />
             {/* Text Input Dialog */}
             <TextInputDialog
                 open={actions.textDialog.open}
                 title={actions.textDialog.title}
                 label={actions.textDialog.label}
                 initialValue={actions.textDialog.initialValue}
+                allowClear={actions.textDialog.allowClear}
                 onSubmit={actions.handleTextDialogSubmit}
                 onCancel={actions.handleTextDialogCancel}
             />
-
             {/* Inter-tenant Job Change Request dialog — opened when the partner-job
                 gate rejects an inline field edit (or when a click handler knows the
                 edit will be gated, e.g. Pricing). The history panel above
@@ -690,11 +779,70 @@ export function JobDetails({config}: JobDetailsProps) {
                 preInitialValue={changeRequestDialog.value}
                 lockedField={changeRequestDialog.locked}
                 partnerName={job.partnerTenantName}
+                pairingId={job.partnerPairingId}
                 onClose={() => setChangeRequestDialog({open: false})}
                 onSubmitted={() => {
                     setChangeRequestDialog({open: false});
                     void refreshAndNotify();
                 }}
+            />
+            {/* Universal Dispatch Dialog — replaces the legacy AutoCompleteDialog
+                courier picker. Same dialog handles Courier / Agent / NP / DFRNT
+                Partner dispatch; isRecurringJob switches it into recurring mode
+                which disables the DFRNT Partner radio. */}
+            <DispatchDialog
+                open={actions.dispatchDialog.open}
+                mode={(isRecurringJob
+                    ? {kind: 'recurring' as const, jobId: job.id, jobNo: job.jobNo}
+                    : {
+                        kind: 'single' as const,
+                        jobId: job.id,
+                        jobNo: job.jobNo,
+                        flags: {
+                            isArchived: Boolean(job.isArchived),
+                            isBulkJob: Boolean(job.isBulkJob),
+                            preBook: Boolean(job.preBook),
+                        },
+                    }) satisfies DispatchMode}
+                initialType={actions.dispatchDialog.initialType}
+                existingDestination={job.assignedCourier}
+                stopJobCount={stopJobCountFor(job.jobNo, job.relatedJobs)}
+                existingConNote={job.conNote}
+                isNetworkPartner={isNetworkPartnerSession()}
+                onClose={actions.closeDispatchDialog}
+                onDispatchCourier={actions.dispatchDialogConfirmCourier}
+                onUnassignCourier={actions.dispatchDialogUnassignCourier}
+                onSendToPartner={actions.dispatchDialogConfirmPartner}
+                fetchRate={getPartnerRateForJob}
+                getPartnerOptions={getActivePartnerOptions}
+            />
+
+            {/* Change Paid Courier (archived jobs) + its blocked popup */}
+            {changeCourierDialogs}
+
+            {/* Saved-flight picker for recurring flight bookings. */}
+            <EditSavedFlightDialog
+                open={actions.savedFlightDialog.open}
+                bookingId={actions.savedFlightDialog.bookingId}
+                fromAirportId={actions.savedFlightDialog.fromAirportId}
+                toAirportId={actions.savedFlightDialog.toAirportId}
+                currentValue={actions.savedFlightDialog.currentValue}
+                departureDate={actions.savedFlightDialog.departureDate}
+                showAirportPickers={actions.savedFlightDialog.showAirportPickers}
+                onClose={actions.closeSavedFlightDialog}
+                onSubmit={actions.savedFlightDialogConfirm}
+            />
+
+            {/* Create-ahead backfill dialog. Opens when the operator raises
+             *  RecurringInitialDays on the recurring schedule card. */}
+            <CreateAheadBackfillDialog
+                open={actions.createAheadBackfillDialog.open}
+                jobId={actions.createAheadBackfillDialog.jobId}
+                oldValue={actions.createAheadBackfillDialog.oldValue}
+                newValue={actions.createAheadBackfillDialog.newValue}
+                onClose={actions.closeCreateAheadBackfillDialog}
+                onSuccess={() => { void refetch(); }}
+                showToast={showToast}
             />
         </Box>
     );

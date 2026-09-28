@@ -24,6 +24,16 @@ public class CourierRepository(
     : BaseRepository(contextFactory),
         ICourierRepository
 {
+    /// <summary>
+    /// How long an open (never logged out) courier session still counts as "Active". A full day so a
+    /// driver who clocked on last night is still active after midnight, short enough that an
+    /// abandoned session from earlier in the week is not.
+    /// </summary>
+    private const int ActiveSessionWindowHours = 24;
+
+    /// <summary>How far back to look for a courier's most recent completed delivery.</summary>
+    private const int LastDeliveryLookbackDays = 30;
+
     private static readonly IReadOnlyList<ClearListResult> StaticSeparatorRows =
     [
         new()
@@ -78,9 +88,13 @@ public class CourierRepository(
                 .TagWith("TruckCourierStatus - Step 1: Courier Data")
                 .FirstOrDefaultAsync();
 
-            if (courierData == null) return null;
+            if (courierData == null)
+            {
+                return null;
+            }
 
             if (courierData.UccrVehicle != truckVehicleName)
+            {
                 return new TruckCourierStatusViewModel
                 {
                     CourierId = courierData.UccrId,
@@ -94,6 +108,7 @@ public class CourierRepository(
                     AvailablePallets = null,
                     AvailablePalletCapacity = null
                 };
+            }
 
             var jobItemsAggregate = await Context.TucJobs
                 .Where(j => j.UcjbCourierId == courierId &&
@@ -189,14 +204,17 @@ public class CourierRepository(
     public async Task<IReadOnlyList<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
         var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
-        return results.Select(c => new PotentialCouriersViewModel
-        {
-            Code = c.Code,
-            CourierId = c.CourierID ?? 0,
-            FirstName = c.FirstName,
-            Reason = c.Reason,
-            RuleNumber = c.RuleNumber ?? 0
-        }).ToList();
+        return
+        [
+            .. results.Select(c => new PotentialCouriersViewModel
+            {
+                Code = c.Code,
+                CourierId = c.CourierID ?? 0,
+                FirstName = c.FirstName,
+                Reason = c.Reason,
+                RuleNumber = c.RuleNumber ?? 0
+            })
+        ];
     }
 
     public async Task<IReadOnlyList<ActiveCouriersViewModel>> ActiveCouriersAsync()
@@ -204,14 +222,17 @@ public class CourierRepository(
         try
         {
             var results = await GetActiveCouriersAsync(includeJobCount: false);
-            return results.Select(c => new ActiveCouriersViewModel
-            {
-                Code = c.Code,
-                CourierId = c.CourierId,
-                Name = c.Name,
-                DangerousGoods = c.DangerousGoods,
-                DGLicenseExpiry = c.DgLicenseExpiry
-            }).ToList();
+            return
+            [
+                .. results.Select(c => new ActiveCouriersViewModel
+                {
+                    Code = c.Code,
+                    CourierId = c.CourierId,
+                    Name = c.Name,
+                    DangerousGoods = c.DangerousGoods,
+                    DGLicenseExpiry = c.DgLicenseExpiry
+                })
+            ];
         }
         catch (DbException ex)
         {
@@ -251,11 +272,13 @@ public class CourierRepository(
 
             // Filter for DG-certified couriers if dgOnly is true
             if (dgOnly)
+            {
                 query = query.Where(c =>
                     c.UccrDangerousGoods == 1
                     && c.DglicenseExpiry != null
                     && c.DglicenseExpiry >= now.AddDays(-1)
                 );
+            }
 
             // Filter for logged-in couriers if loggedInOnly is true
             if (loggedInOnly)
@@ -334,7 +357,10 @@ public class CourierRepository(
         DateTimeOffset? endDate = null,
         CancellationToken cancellationToken = default)
     {
-        if (despatchViewIds.Count == 0) return new ClearListViewModel();
+        if (despatchViewIds.Count == 0)
+        {
+            return new ClearListViewModel();
+        }
 
         try
         {
@@ -353,10 +379,13 @@ public class CourierRepository(
 
             await Task.WhenAll(clearListsTask, courierDataTask);
 
-            var clearLists = clearListsTask.Result;
-            if (clearLists.Count == 0) return new ClearListViewModel();
+            var clearLists = await clearListsTask;
+            if (clearLists.Count == 0)
+            {
+                return new ClearListViewModel();
+            }
 
-            var allCourierData = courierDataTask.Result;
+            var allCourierData = await courierDataTask;
             var clearListAreaIds = clearLists.Select(cl => cl.ClearListAreaId).ToList();
             var courierIds = allCourierData.Select(c => c.UccrId).ToList();
 
@@ -377,11 +406,11 @@ public class CourierRepository(
             await Task.WhenAll(polygonMappingsTask, hasAreaFiltersTask, displayOrdersTask, jobsTask,
                 courierStatusJobsTask);
 
-            var allValidCourierGpsIds = polygonMappingsTask.Result;
-            var hasAreaFilters = hasAreaFiltersTask.Result;
-            var displayOrders = displayOrdersTask.Result;
-            var allJobs = jobsTask.Result;
-            var courierStatusJobs = courierStatusJobsTask.Result;
+            var allValidCourierGpsIds = await polygonMappingsTask;
+            var hasAreaFilters = await hasAreaFiltersTask;
+            var displayOrders = await displayOrdersTask;
+            var allJobs = await jobsTask;
+            var courierStatusJobs = await courierStatusJobsTask;
 
             Log.Information("Wave 2 complete: {PolygonCount} polygon mappings, {JobCount} jobs",
                 allValidCourierGpsIds.Count, allJobs.Count);
@@ -401,7 +430,11 @@ public class CourierRepository(
             var displayOrderDict = displayOrders.ToDictionary(d => d.CourierId);
             foreach (var courier in allCourierData)
             {
-                if (!displayOrderDict.TryGetValue(courier.UccrId, out var order)) continue;
+                if (!displayOrderDict.TryGetValue(courier.UccrId, out var order))
+                {
+                    continue;
+                }
+
                 courier.DisplayOrder = order.Status;
                 courier.OrderTime = order.OrderTime;
             }
@@ -423,7 +456,9 @@ public class CourierRepository(
 
                 // If a courier has no jobs in the filtered range, move them to the "no jobs" section (3/purple)
                 if (courier.JobCount == 0 && courier.DisplayOrder is 1 or 5)
+                {
                     courier.DisplayOrder = 3;
+                }
             }
 
             var jobsByCourier = allJobs
@@ -447,11 +482,11 @@ public class CourierRepository(
 
                 var coordinateMappingsTask = GetCoordinateMappingsAsync(allCoordinates, cancellationToken);
                 await Task.WhenAll(coordinateMappingsTask, areaRemainingTask);
-                coordinateLookup = coordinateMappingsTask.Result;
+                coordinateLookup = await coordinateMappingsTask;
 
                 Log.Information(
                     "Wave 3 complete (US): {CoordinateCount} coordinate mappings, {AreaCount} area remaining counts",
-                    coordinateLookup.Count, areaRemainingTask.Result.Count);
+                    coordinateLookup.Count, (await areaRemainingTask).Count);
             }
             else
             {
@@ -463,14 +498,14 @@ public class CourierRepository(
 
                 var suburbMappingsTask = GetSuburbMappingsAsync(allSuburbIds, cancellationToken);
                 await Task.WhenAll(suburbMappingsTask, areaRemainingTask);
-                suburbLookup = suburbMappingsTask.Result;
+                suburbLookup = await suburbMappingsTask;
 
                 Log.Information(
                     "Wave 3 complete (NZ): {SuburbCount} suburb mappings, {AreaCount} area remaining counts",
-                    suburbLookup.Count, areaRemainingTask.Result.Count);
+                    suburbLookup.Count, (await areaRemainingTask).Count);
             }
 
-            var areaRemainingCounts = areaRemainingTask.Result;
+            var areaRemainingCounts = await areaRemainingTask;
 
             // ===================================================================
             // IN-MEMORY PROCESSING: Build clear lists for each area
@@ -479,7 +514,7 @@ public class CourierRepository(
             if (isUsTenant)
             {
                 // US: sort by database AreaOrder, distribute round-robin across 4 columns
-                clearLists = clearLists.OrderBy(cl => cl.AreaOrder).ToList();
+                clearLists = [.. clearLists.OrderBy(cl => cl.AreaOrder)];
                 columnDefinitions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < clearLists.Count; i++)
                     columnDefinitions[clearLists[i].AreaName] = i % 4 + 1;
@@ -502,9 +537,11 @@ public class CourierRepository(
                     { "Mangere", 9 }, { "Deep South", 10 }, { "Deep East", 11 }
                 };
 
-                clearLists = clearLists
-                    .OrderBy(cl => areaDisplayOrder.TryGetValue(cl.AreaName, out var order) ? order : 999)
-                    .ToList();
+                clearLists =
+                [
+                    .. clearLists
+                        .OrderBy(cl => areaDisplayOrder.TryGetValue(cl.AreaName, out var order) ? order : 999)
+                ];
             }
 
             var courierLookup = allCourierData
@@ -526,7 +563,9 @@ public class CourierRepository(
                         if (polygonChannel.MatchingId == null ||
                             !couriersByPolygon.TryGetValue(polygonChannel.MatchingId.Value,
                                 out var couriersWithPolygon))
+                        {
                             continue;
+                        }
 
                         // Filter to only couriers whose channel matches the area's channel
                         var matchingCouriers = couriersWithPolygon
@@ -537,10 +576,12 @@ public class CourierRepository(
                     }
 
                     // Remove duplicates (in case a courier matches multiple polygon-channel combos)
-                    areaCouriers = areaCouriers
-                        .GroupBy(c => c.UccrId)
-                        .Select(g => g.First())
-                        .ToList();
+                    areaCouriers =
+                    [
+                        .. areaCouriers
+                            .GroupBy(c => c.UccrId)
+                            .Select(g => g.First())
+                    ];
                 }
 
                 // Build clear list results even if empty
@@ -587,10 +628,14 @@ public class CourierRepository(
                     .ToList();
 
                 foreach (var area in columnAreas)
+                {
                     assignedAreas.Add(area.Name);
+                }
 
                 if (columnAreas.Count != 0)
+                {
                     columns.Add(new ClearListColumn { Areas = columnAreas });
+                }
             }
 
             var unassignedAreas = areas
@@ -599,11 +644,13 @@ public class CourierRepository(
                 .ToList();
 
             if (unassignedAreas.Count == 0)
+            {
                 return new ClearListViewModel
                 {
                     Areas = areas,
                     Columns = columns
                 };
+            }
 
             if (columns.Count != 0)
             {
@@ -718,7 +765,7 @@ public class CourierRepository(
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
 
-        var query = Context.TucCouriers.AsQueryable();
+        var query = Context.TucCouriers.Where(c => c.Active);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -727,7 +774,9 @@ public class CourierRepository(
         }
 
         if (request.Fleet != 0)
+        {
             query = query.Where(c => c.CourierFleetId == request.Fleet);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Type))
         {
@@ -874,7 +923,10 @@ public class CourierRepository(
             && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
         {
             var dayValue = GetDayOfWeekAsInt(request.Day);
-            if (dayValue != 0) query = query.Where(c => c.WeekDay == dayValue);
+            if (dayValue != 0)
+            {
+                query = query.Where(c => c.WeekDay == dayValue);
+            }
         }
 
         var totalActiveDrivers = await query
@@ -943,10 +995,13 @@ public class CourierRepository(
             CourierId = c.CourierId,
             CourierName = c.CourierName,
             CourierCode = c.CourierCode,
-            Days = c.Days.Select(DayOfWeekHelper.SqlIntToDayName)
-                .OrderBy(day =>
-                    Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], day))
-                .ToList(),
+            Days =
+            [
+                .. c.Days.Select(DayOfWeekHelper.SqlIntToDayName)
+                    .OrderBy(day =>
+                        Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                            day))
+            ],
             StartTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.StartTime, tenantTimezone),
             EndTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.EndTime, tenantTimezone),
             Duration = CalculateDuration(c.StartTime, c.EndTime)
@@ -983,7 +1038,9 @@ public class CourierRepository(
         }
 
         if (request.Fleet != 0)
+        {
             query = query.Where(c => c.CourierFleetId == request.Fleet);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Status))
         {
@@ -998,6 +1055,7 @@ public class CourierRepository(
         var totalCount = await query.CountAsync();
 
         if (totalCount == 0)
+        {
             return new TodayActiveDriversPaginatedResponse
             {
                 Items = new List<TodayActiveDriversViewModel>(),
@@ -1008,6 +1066,7 @@ public class CourierRepository(
                 TotalDriversActiveToday = 0,
                 AverageSessionTime = 0.0
             };
+        }
 
         // Compute aggregates in SQL instead of materializing all rows
         var totalActiveDrivers = await query.CountAsync(c => c.CourierLogInOut.LogOutTime == null);
@@ -1061,6 +1120,7 @@ public class CourierRepository(
             .ToListAsync();
 
         if (couriers.Count == 0)
+        {
             return new TodayActiveDriversPaginatedResponse
             {
                 Items = new List<TodayActiveDriversViewModel>(),
@@ -1071,6 +1131,7 @@ public class CourierRepository(
                 TotalDriversActiveToday = totalActiveDrivers,
                 AverageSessionTime = averageSessionTime
             };
+        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
@@ -1204,6 +1265,7 @@ public class CourierRepository(
 
         // Early return if pagination beyond data
         if (couriers.Count == 0)
+        {
             return new CourierDailyEarningsPaginatedResponse
             {
                 Items = new List<CourierDailyEarningsViewModel>(),
@@ -1215,6 +1277,7 @@ public class CourierRepository(
                 TotalActiveDrivers = totalCount,
                 TotalDeliveriesToday = totalDeliveriesToday
             };
+        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
@@ -1408,8 +1471,15 @@ public class CourierRepository(
     {
         try
         {
-            if (!request.StartTime.HasValue) throw new ArgumentNullException(nameof(request), "StartTime is required");
-            if (!request.EndTime.HasValue) throw new ArgumentNullException(nameof(request), "EndTime is required");
+            if (!request.StartTime.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request), "StartTime is required");
+            }
+
+            if (!request.EndTime.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request), "EndTime is required");
+            }
 
             // Delete the original schedule group in a single query
             await Context.TblAfterhoursCouriers
@@ -1445,8 +1515,15 @@ public class CourierRepository(
     {
         try
         {
-            if (!request.StartTime.HasValue) throw new ArgumentNullException(nameof(request), "StartTime is required");
-            if (!request.EndTime.HasValue) throw new ArgumentNullException(nameof(request), "EndTime is required");
+            if (!request.StartTime.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request), "StartTime is required");
+            }
+
+            if (!request.EndTime.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request), "EndTime is required");
+            }
 
             // Add records for each day in batch
             var schedules = request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
@@ -1518,48 +1595,59 @@ public class CourierRepository(
     {
         var now = clock.TenantNow;
 
+        // An open session alone is not enough: drivers routinely never tap log-out, so without a
+        // window a session from last week keeps reading "Active" forever. The window spans a whole
+        // day so the driver who clocked on at 23:00 is still Active at 01:00.
+        var sessionCutoff = now.AddHours(-ActiveSessionWindowHours);
+
         var drivers = await Context.TucCouriers
             .Where(c => c.Active)
+            .OrderBy(c => c.UccrName)
+            .ThenBy(c => c.UccrSurname)
             .Take(500)
             .Select(c => new
             {
                 c.UccrId,
                 CourierName = c.UccrName + " " + c.UccrSurname,
                 c.UccrVehicle,
-                DriverStatusText = c.CourierLogInOut != null && c.CourierLogInOut.LogOutTime == null
+                DriverStatusText = c.CourierLogInOut != null
+                                   && c.CourierLogInOut.LogOutTime == null
+                                   && c.CourierLogInOut.LogInTime > sessionCutoff
                     ? "Active"
                     : "Inactive"
             })
             .TagWith("GetDriverWorkOverview - Step 1: Active Drivers")
             .ToListAsync();
 
-        if (drivers.Count == 0) return [];
+        if (drivers.Count == 0)
+        {
+            return [];
+        }
 
         var driverIds = drivers.Select(d => d.UccrId).ToList();
 
         var jobCounts = await Context.TucJobs
-            .Where(j => j.UcjbCourierId.HasValue &&
-                        driverIds.Contains(j.UcjbCourierId.Value) &&
-                        !j.UcjbVoid &&
-                        j.UcjbStatus != (int)JobStatus.Void &&
-                        j.UcjbDate.Date <= now.Date)
-            .GroupBy(j => j.UcjbCourierId.Value)
+            .Where(j => j.UcjbCourierId.HasValue && driverIds.Contains(j.UcjbCourierId.Value))
+            .Where(BaseJobRepository.CurrentWorkJob(now))
+            .GroupBy(j => j.UcjbCourierId!.Value)
             .Select(g => new { CourierId = g.Key, Count = g.Count() })
             .TagWith("GetDriverWorkOverview - Step 2: Job Counts")
             .ToListAsync();
 
         var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.Count);
 
-        return drivers
-            .Select(d => new DriverWorkOverviewViewModel
-            {
-                CourierId = d.UccrId,
-                Name = d.CourierName,
-                VehicleType = MapVehicleTypeToAbbreviation(d.UccrVehicle) ?? "No Vehicle",
-                JobCount = jobCountDict.GetValueOrDefault(d.UccrId, 0),
-                DriverStatusText = d.DriverStatusText
-            })
-            .ToList();
+        return
+        [
+            .. drivers
+                .Select(d => new DriverWorkOverviewViewModel
+                {
+                    CourierId = d.UccrId,
+                    Name = d.CourierName,
+                    VehicleType = MapVehicleTypeToAbbreviation(d.UccrVehicle) ?? "No Vehicle",
+                    JobCount = jobCountDict.GetValueOrDefault(d.UccrId, 0),
+                    DriverStatusText = d.DriverStatusText
+                })
+        ];
     }
 
     public async Task ResetClearListAreaOrderAsync(int courierId)
@@ -1651,7 +1739,10 @@ public class CourierRepository(
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (courier == null) return null;
+        if (courier == null)
+        {
+            return null;
+        }
 
         // Get polygon name and suburbs
         string polygonName = null;
@@ -1718,7 +1809,7 @@ public class CourierRepository(
             GpsLatitude = courier.GpsLatitude,
             GpsLongitude = courier.GpsLongitude,
             GpsTimestamp = courier.GpsCreated,
-            GpsAgeMinutes = gpsAge.HasValue ? Math.Round(gpsAge.Value, 1) : null,
+            GpsAgeMinutes = gpsAge.HasValue ? Math.Round(gpsAge.Value, 1, MidpointRounding.AwayFromZero) : null,
             AssignedClearListAreaId = courier.AssignedAreaId,
             AssignedClearListAreaName = courier.AssignedAreaName,
             AssignedStatus = courier.AssignedStatus,
@@ -1737,6 +1828,47 @@ public class CourierRepository(
         return $"polygon-mappings:{sortedIds}";
     }
 
+    /// <summary>
+    /// The city and completion time of each courier's most recently completed job, keyed by courier.
+    /// Feeds the "last delivery" line on the map courier flags. Scoped to the last 30 days so the
+    /// descending index on ucjbComplTime carries the scan instead of walking the whole job history;
+    /// a courier who has not delivered in a month reads as having no last delivery, which is the
+    /// same thing as far as the flag is concerned.
+    /// </summary>
+    private async Task<Dictionary<int, (string City, DateTime CompletedAt)>> GetLastDeliveriesAsync(
+        List<int> courierIds, DateTime now, CancellationToken cancellationToken)
+    {
+        var completionCutoff = now.AddDays(-LastDeliveryLookbackDays);
+
+        var lastDeliveries = await Context.TucJobs
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        courierIds.Contains(j.UcjbCourierId.Value) &&
+                        j.UcjbStatus == (int)JobStatus.Completed &&
+                        !j.UcjbVoid &&
+                        j.UcjbComplTime.HasValue &&
+                        j.UcjbComplTime.Value >= completionCutoff)
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new
+            {
+                CourierId = g.Key,
+                // Address line 6 is the city and line 5 the suburb (see JobMappings.Rating); suburban
+                // drops routinely leave the city blank — empty as often as null — and a blank flag
+                // line helps nobody.
+                City = g.OrderByDescending(j => j.UcjbComplTime)
+                    .Select(j => j.DeliveryAddressLine6 == null || j.DeliveryAddressLine6 == ""
+                        ? j.DeliveryAddressLine5
+                        : j.DeliveryAddressLine6)
+                    .FirstOrDefault(),
+                CompletedAt = g.Max(j => j.UcjbComplTime)
+            })
+            .TagWith("GetAvailableCouriers: Last Delivery")
+            .ToListAsync(cancellationToken);
+
+        return lastDeliveries
+            .Where(d => d.CompletedAt.HasValue)
+            .ToDictionary(d => d.CourierId, d => (d.City, d.CompletedAt!.Value));
+    }
+
     private async Task<IReadOnlyList<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
         CourierLocationRequest data, CancellationToken cancellationToken = default)
     {
@@ -1744,16 +1876,24 @@ public class CourierRepository(
         {
             var currentDate = clock.TenantNow;
 
-            var courierData = await Context.TucCouriers
-                .Where(c => c.CourierFleetId != (int)CourierFleet.ClientDriver &&
+            var query = Context.TucCouriers
+                .Where(c => c.Active &&
+                            c.CourierFleetId != (int)CourierFleet.ClientDriver &&
                             c.CourierGps != null &&
                             c.CourierGps.Longitude >= data.MinLng &&
                             c.CourierGps.Longitude <= data.MaxLng &&
                             c.CourierGps.Latitude >= data.MinLat &&
                             c.CourierGps.Latitude <= data.MaxLat &&
                             c.CourierLogInOut != null &&
-                            c.CourierLogInOut.LogOutTime == null)
-                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
+                            c.CourierLogInOut.LogOutTime == null);
+
+            if (data.CourierFleetIds is { Count: > 0 })
+            {
+                query = query.Where(c => c.CourierFleetId.HasValue
+                                         && data.CourierFleetIds.Contains(c.CourierFleetId.Value));
+            }
+
+            var courierData = await query
                 .Select(c => new
                 {
                     c.UccrId,
@@ -1767,20 +1907,23 @@ public class CourierRepository(
                         .Select(x => x.ClearListAreaId).ToList(),
                     c.Code,
                     c.CourierFleetId,
+                    CourierFleetName = c.CourierFleet != null ? c.CourierFleet.UccfName : null,
                     DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
                 })
                 .TagWith("GetUsAvailableCouriers - Step 1: Courier Data")
                 .ToListAsync(cancellationToken);
 
-            if (courierData.Count == 0) return [];
+            if (courierData.Count == 0)
+            {
+                return [];
+            }
 
             var courierIds = courierData.Select(c => c.UccrId).ToList();
 
             var jobData = await Context.TucJobs
                 .Where(j => j.UcjbCourierId.HasValue &&
-                            courierIds.Contains(j.UcjbCourierId.Value) &&
-                            !j.UcjbVoid &&
-                            !j.UcjbJobDone)
+                            courierIds.Contains(j.UcjbCourierId.Value))
+                .Where(BaseJobRepository.CurrentWorkJob(currentDate))
                 .Select(j => new
                 {
                     CourierId = j.UcjbCourierId.Value,
@@ -1802,28 +1945,41 @@ public class CourierRepository(
                     }
                 );
 
-            return courierData.Select(c =>
-            {
-                var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
+            var lastDeliveries = await GetLastDeliveriesAsync(courierIds, currentDate, cancellationToken);
+            var tenantTimeZone = infoService.GetTenantTimeZone();
 
-                return new AvailableCourierPosition
+            return
+            [
+                .. courierData.Select(c =>
                 {
-                    CourierId = c.UccrId,
-                    CourierName = c.UccrName + " " + c.UccrSurname,
-                    Latitude = c.Latitude,
-                    Longitude = c.Longitude,
-                    ChannelId = c.ChannelId,
-                    VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
-                    ClearListAreaIDs = c.ClearListAreaIDs,
-                    Code = c.Code,
-                    IsUrgentArmyDriver = c.CourierFleetId != null &&
-                                         ((CourierFleet)c.CourierFleetId.Value).IsUrgentArmy(),
-                    TotalJobs = jobs?.Count ?? 0,
-                    OverDueJobs = jobs?.TimedJobs.Count(j =>
-                        j.UcjbDate.CombineWithTime(j.UcjbTime).AddMinutes(j.Minutes) < currentDate) ?? 0,
-                    DisplayOrder = c.DisplayOrder
-                };
-            }).ToList();
+                    var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
+                    var hasLastDelivery = lastDeliveries.TryGetValue(c.UccrId, out var lastDelivery);
+
+                    return new AvailableCourierPosition
+                    {
+                        CourierId = c.UccrId,
+                        CourierName = c.UccrName + " " + c.UccrSurname,
+                        Latitude = c.Latitude,
+                        Longitude = c.Longitude,
+                        ChannelId = c.ChannelId,
+                        VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
+                        ClearListAreaIDs = c.ClearListAreaIDs,
+                        Code = c.Code,
+                        IsUrgentArmyDriver = c.CourierFleetId != null &&
+                                             ((CourierFleet)c.CourierFleetId.Value).IsUrgentArmy(),
+                        TotalJobs = jobs?.Count ?? 0,
+                        OverDueJobs = jobs?.TimedJobs.Count(j =>
+                            j.UcjbDate.CombineWithTime(j.UcjbTime).AddMinutes(j.Minutes) < currentDate) ?? 0,
+                        DisplayOrder = c.DisplayOrder,
+                        CourierFleetId = c.CourierFleetId,
+                        CourierFleetName = c.CourierFleetName,
+                        LastDeliveryCity = hasLastDelivery ? lastDelivery.City : null,
+                        LastDeliveryTime = hasLastDelivery
+                            ? TimeZoneHelper.SetDateTimeWithTimeZone(lastDelivery.CompletedAt, tenantTimeZone)
+                            : null
+                    };
+                })
+            ];
         }
         catch (Exception e)
         {
@@ -1841,15 +1997,23 @@ public class CourierRepository(
         {
             var now = clock.TenantNow;
 
-            var courierData = await Context.TucCouriers
-                .Where(c => c.CourierLogInOut != null &&
+            var query = Context.TucCouriers
+                .Where(c => c.Active &&
+                            c.CourierLogInOut != null &&
                             c.CourierLogInOut.LogOutTime == null &&
                             c.CourierGps != null &&
                             c.CourierGps.Longitude >= data.MinLng &&
                             c.CourierGps.Longitude <= data.MaxLng &&
                             c.CourierGps.Latitude >= data.MinLat &&
-                            c.CourierGps.Latitude <= data.MaxLat)
-                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
+                            c.CourierGps.Latitude <= data.MaxLat);
+
+            if (data.CourierFleetIds is { Count: > 0 })
+            {
+                query = query.Where(c => c.CourierFleetId.HasValue
+                                         && data.CourierFleetIds.Contains(c.CourierFleetId.Value));
+            }
+
+            var courierData = await query
                 .Select(c => new
                 {
                     c.UccrId,
@@ -1863,21 +2027,24 @@ public class CourierRepository(
                         .Select(x => x.ClearListAreaId).ToList(),
                     c.Code,
                     c.CourierFleetId,
+                    CourierFleetName = c.CourierFleet != null ? c.CourierFleet.UccfName : null,
                     DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
                 })
                 .TagWith("GetNzAvailableCouriers - Step 1: Courier Data")
                 .ToListAsync(cancellationToken);
 
-            if (courierData.Count == 0) return [];
+            if (courierData.Count == 0)
+            {
+                return [];
+            }
 
             var courierIds = courierData.Select(c => c.UccrId).ToList();
 
             // Single query for all job data
             var jobData = await Context.TucJobs
                 .Where(j => j.UcjbCourierId.HasValue &&
-                            courierIds.Contains(j.UcjbCourierId.Value) &&
-                            !j.UcjbVoid &&
-                            !j.UcjbJobDone)
+                            courierIds.Contains(j.UcjbCourierId.Value))
+                .Where(BaseJobRepository.CurrentWorkJob(now))
                 .Select(j => new
                 {
                     CourierId = j.UcjbCourierId.Value,
@@ -1899,29 +2066,42 @@ public class CourierRepository(
                     }
                 );
 
-            return courierData.Select(c =>
-            {
-                var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
+            var lastDeliveries = await GetLastDeliveriesAsync(courierIds, now, cancellationToken);
+            var tenantTimeZone = infoService.GetTenantTimeZone();
 
-                return new AvailableCourierPosition
+            return
+            [
+                .. courierData.Select(c =>
                 {
-                    CourierId = c.UccrId,
-                    CourierName = c.UccrName + " " + c.UccrSurname,
-                    Latitude = c.Latitude,
-                    Longitude = c.Longitude,
-                    ChannelId = c.ChannelId,
-                    VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
-                    ClearListAreaIDs = c.ClearListAreaIDs,
-                    Code = c.Code,
-                    IsUrgentArmyDriver = c.CourierFleetId != null &&
-                                         ((CourierFleet)c.CourierFleetId.Value).IsUrgentArmy(),
-                    TotalJobs = jobs?.Count ?? 0,
-                    OverDueJobs = jobs?.TimedJobs.Count(j =>
-                        j.UcjbTime != null &&
-                        j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
-                    DisplayOrder = c.DisplayOrder
-                };
-            }).ToList();
+                    var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
+                    var hasLastDelivery = lastDeliveries.TryGetValue(c.UccrId, out var lastDelivery);
+
+                    return new AvailableCourierPosition
+                    {
+                        CourierId = c.UccrId,
+                        CourierName = c.UccrName + " " + c.UccrSurname,
+                        Latitude = c.Latitude,
+                        Longitude = c.Longitude,
+                        ChannelId = c.ChannelId,
+                        VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
+                        ClearListAreaIDs = c.ClearListAreaIDs,
+                        Code = c.Code,
+                        IsUrgentArmyDriver = c.CourierFleetId != null &&
+                                             ((CourierFleet)c.CourierFleetId.Value).IsUrgentArmy(),
+                        TotalJobs = jobs?.Count ?? 0,
+                        OverDueJobs = jobs?.TimedJobs.Count(j =>
+                            j.UcjbTime != null &&
+                            j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
+                        DisplayOrder = c.DisplayOrder,
+                        CourierFleetId = c.CourierFleetId,
+                        CourierFleetName = c.CourierFleetName,
+                        LastDeliveryCity = hasLastDelivery ? lastDelivery.City : null,
+                        LastDeliveryTime = hasLastDelivery
+                            ? TimeZoneHelper.SetDateTimeWithTimeZone(lastDelivery.CompletedAt, tenantTimeZone)
+                            : null
+                    };
+                })
+            ];
         }
         catch (Exception e)
         {
@@ -1937,7 +2117,10 @@ public class CourierRepository(
         var today = clock.TenantToday;
         var results = await Context.GetActiveCouriersAsync(today);
 
-        if (!includeJobCount || results.Count == 0) return results;
+        if (!includeJobCount || results.Count == 0)
+        {
+            return results;
+        }
 
         var courierIds = results.Select(c => c.CourierId).ToList();
 
@@ -1956,7 +2139,9 @@ public class CourierRepository(
 
         // Update job counts in memory
         foreach (var result in results)
+        {
             result.JobCount = jobCountDict.GetValueOrDefault(result.CourierId, 0);
+        }
 
         return results;
     }
@@ -1986,24 +2171,32 @@ public class CourierRepository(
                         if (isUsTenant)
                         {
                             if (job.DeliveryLatitude.HasValue && job.DeliveryLongitude.HasValue)
+                            {
                                 coordinateLookup.TryGetValue(
                                     (job.DeliveryLatitude.Value, job.DeliveryLongitude.Value),
                                     out areaOptions);
+                            }
                         }
                         else
                         {
                             if (job.ToSuburbId.HasValue)
+                            {
                                 suburbLookup.TryGetValue(job.ToSuburbId.Value, out areaOptions);
+                            }
                         }
 
                         if (areaOptions == null)
+                        {
                             return "O";
+                        }
 
                         var matchingSameChannel = areaOptions
                             .FirstOrDefault(sca => sca.ChannelId == courier.UccrChannelId);
 
                         if (matchingSameChannel != null)
+                        {
                             return matchingSameChannel.Code;
+                        }
 
                         var matchingDifferentChannel = areaOptions
                             .FirstOrDefault(sca => sca.ChannelId != courier.UccrChannelId);
@@ -2016,19 +2209,36 @@ public class CourierRepository(
                         JobCount = g.Count()
                     });
 
-                deliverCodes = jobsByArea
-                    .Select(area => area.DeliverCode + (area.JobCount > 0 ? area.JobCount.ToString() : string.Empty))
-                    .ToList();
+                deliverCodes =
+                [
+                    .. jobsByArea
+                        .Select(area =>
+                            area.DeliverCode + (area.JobCount > 0 ? area.JobCount.ToString() : string.Empty))
+                ];
             }
 
             // Build courier code with indicators
             var codeBuilder = courier.Code;
-            if (courier.SendJobsViaSms) codeBuilder += "#";
+            if (courier.SendJobsViaSms)
+            {
+                codeBuilder += "#";
+            }
+
             if (courier.GpsCreated.HasValue &&
                 (currentDate - courier.GpsCreated.Value).TotalMinutes > 3)
+            {
                 codeBuilder += "*";
-            if (!courier.AutoDespatch) codeBuilder += "^";
-            if (courier.UccrVehicle == "Truck") codeBuilder += "T";
+            }
+
+            if (!courier.AutoDespatch)
+            {
+                codeBuilder += "^";
+            }
+
+            if (courier.UccrVehicle == "Truck")
+            {
+                codeBuilder += "T";
+            }
 
             clearListResults.Add(new ClearListResult
             {
@@ -2043,14 +2253,16 @@ public class CourierRepository(
         }
 
         // Add static separator rows and sort
-        return clearListResults
-            .Concat(StaticSeparatorRows)
-            .OrderBy(x => x.DisplayOrder)
-            .ThenBy(x => x.DisplayOrderDesc)
-            .ThenBy(x => x.DisplayOrderAsc)
-            .ThenBy(x => x.Code)
-            .ThenBy(x => x.Deliver)
-            .ToList();
+        return
+        [
+            .. clearListResults
+                .Concat(StaticSeparatorRows)
+                .OrderBy(x => x.DisplayOrder)
+                .ThenBy(x => x.DisplayOrderDesc)
+                .ThenBy(x => x.DisplayOrderAsc)
+                .ThenBy(x => x.Code)
+                .ThenBy(x => x.Deliver)
+        ];
     }
 
     // ===================================================================
@@ -2163,7 +2375,7 @@ public class CourierRepository(
         return await context.TblDespatchViews
             .Where(v => v.ShowOnAssistDespatch == true &&
                         clearListNames.Contains(v.Name) &&
-                        v.WhereCondition != null && v.WhereCondition != "")
+                        v.WhereCondition != null && v.WhereCondition != string.Empty)
             .TagWith("GetClearLists - Wave 2: Has Area Filters")
             .AnyAsync(cancellationToken);
     }
@@ -2220,7 +2432,9 @@ public class CourierRepository(
         CancellationToken cancellationToken = default)
     {
         if (allSuburbIds.Count == 0)
+        {
             return [];
+        }
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var suburbClearListAreas = await context.TblPolygonSuburbs
@@ -2259,7 +2473,9 @@ public class CourierRepository(
             CancellationToken cancellationToken = default)
     {
         if (coordinates.Count == 0)
+        {
             return [];
+        }
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var latitudes = coordinates.Select(c => c.lat).Distinct().ToList();
@@ -2305,7 +2521,9 @@ public class CourierRepository(
         bool hasAreaFilters, CancellationToken cancellationToken = default)
     {
         if (!hasAreaFilters)
+        {
             return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        }
 
         const string cacheKey = "ClearList:AreaRemainingCounts";
 
@@ -2333,24 +2551,29 @@ public class CourierRepository(
         int displayOrder
     )
     {
-        if (data == null) return [];
+        if (data == null)
+        {
+            return [];
+        }
 
-        return data
-            .Where(c => c.DisplayOrder == displayOrder)
-            .Select(x =>
-            {
-                var courier = x.CourierId.HasValue
-                    ? courierLookup.GetValueOrDefault(x.CourierId.Value)
-                    : null;
-                return new ClearListSection
+        return
+        [
+            .. data
+                .Where(c => c.DisplayOrder == displayOrder)
+                .Select(x =>
                 {
-                    CourierNumber = x.Code,
-                    CourierData = BuildCourierData(x, courierLookup),
-                    Destinations = BuildDestinations(x.Deliver),
-                    JobCount = courier?.JobCount ?? 0
-                };
-            })
-            .ToList();
+                    var courier = x.CourierId.HasValue
+                        ? courierLookup.GetValueOrDefault(x.CourierId.Value)
+                        : null;
+                    return new ClearListSection
+                    {
+                        CourierNumber = x.Code,
+                        CourierData = BuildCourierData(x, courierLookup),
+                        Destinations = BuildDestinations(x.Deliver),
+                        JobCount = courier?.JobCount ?? 0
+                    };
+                })
+        ];
     }
 
     private static CourierData BuildCourierData(
@@ -2383,15 +2606,27 @@ public class CourierRepository(
 
     private static string GetComplianceStatus(DateTime now, DateTime? expiryDate)
     {
-        if (!expiryDate.HasValue) return "Not Set";
-        if (now >= expiryDate.Value) return "Expired";
+        if (!expiryDate.HasValue)
+        {
+            return "Not Set";
+        }
+
+        if (now >= expiryDate.Value)
+        {
+            return "Expired";
+        }
+
         var daysUntilExpiry = (expiryDate.Value - now).TotalDays;
         return daysUntilExpiry <= 30 ? "Expiring Soon" : "Valid";
     }
 
     private static string CalculateDaysUntilExpiry(DateTime now, DateTime? expiryDate)
     {
-        if (!expiryDate.HasValue) return "N/A";
+        if (!expiryDate.HasValue)
+        {
+            return "N/A";
+        }
+
         var days = (int)Math.Ceiling((expiryDate.Value - now).TotalDays);
         return days < 0 ? $"{Math.Abs(days)} days overdue" : $"{days} days";
     }
@@ -2403,7 +2638,10 @@ public class CourierRepository(
         var endTimeOnly = endTime.TimeOfDay;
 
         // If end time is earlier than start time, assume it's the next day
-        if (endTimeOnly < startTimeOnly) endTimeOnly = endTimeOnly.Add(TimeSpan.FromDays(1));
+        if (endTimeOnly < startTimeOnly)
+        {
+            endTimeOnly = endTimeOnly.Add(TimeSpan.FromDays(1));
+        }
 
         var duration = endTimeOnly - startTimeOnly;
         return (int)duration.TotalHours + "h " + duration.Minutes + "m";
@@ -2411,7 +2649,10 @@ public class CourierRepository(
 
     private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
     {
-        if (!logoutTime.HasValue) return "Currently Active";
+        if (!logoutTime.HasValue)
+        {
+            return "Currently Active";
+        }
 
         var duration = logoutTime.Value - loginTime;
 
@@ -2438,7 +2679,9 @@ public class CourierRepository(
     private static string MapVehicleTypeToAbbreviation(string vehicleType)
     {
         if (string.IsNullOrEmpty(vehicleType))
+        {
             return null;
+        }
 
         return vehicleType switch
         {
@@ -2471,7 +2714,9 @@ public class CourierRepository(
         lines.Add($"Driver {code}'s GPS places them in polygon {gpsPolygonId} ({suburbList}).");
 
         if (gpsAge is > 3)
+        {
             lines.Add($"WARNING: GPS is {gpsAge:F0} minutes old — location may be stale.");
+        }
 
         if (allMappings.Count == 0)
         {
@@ -2495,8 +2740,10 @@ public class CourierRepository(
         }
 
         if (assignedAreaName != null)
+        {
             lines.Add(
                 $"Admin assigned this driver to \"{assignedAreaName}\" via TblClearListAreaOrder (this controls the row position, not which area column they appear in).");
+        }
 
         return string.Join(" ", lines);
     }
@@ -2521,15 +2768,19 @@ public class CourierRepository(
         }
 
         if (request.Fleet != 0)
+        {
             query = query.Where(c => c.CourierFleetId == request.Fleet);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Status))
+        {
             query = request.Status.ToLower() switch
             {
                 "active" => query.Where(c => c.CourierLogInOut.LogOutTime == null),
                 "inactive" => query.Where(c => c.CourierLogInOut.LogOutTime != null),
                 _ => query
             };
+        }
 
         var couriers = await query
             .OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)
@@ -2547,7 +2798,10 @@ public class CourierRepository(
             .TagWith("GetTodayActiveDriversForExport")
             .ToListAsync();
 
-        if (couriers.Count == 0) return [];
+        if (couriers.Count == 0)
+        {
+            return [];
+        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
@@ -2561,20 +2815,23 @@ public class CourierRepository(
 
         var deliveryCountDict = deliveryCounts.ToDictionary(x => x.CourierId, x => x.Count);
 
-        return couriers.Select(c => new TodayActiveDriversViewModel
-        {
-            CourierId = c.UccrId,
-            Code = c.Code,
-            Name = c.CourierName,
-            Fleet = c.Fleet,
-            LoginTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.LogInTime, tenantTimeZone),
-            LogoutTime = c.LogOutTime.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(c.LogOutTime.Value, tenantTimeZone)
-                : null,
-            Duration = CourierActiveDuration(c.LogInTime, c.LogOutTime ?? now),
-            Deliveries = deliveryCountDict.GetValueOrDefault(c.UccrId, 0),
-            Status = c.Status
-        }).ToList();
+        return
+        [
+            .. couriers.Select(c => new TodayActiveDriversViewModel
+            {
+                CourierId = c.UccrId,
+                Code = c.Code,
+                Name = c.CourierName,
+                Fleet = c.Fleet,
+                LoginTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.LogInTime, tenantTimeZone),
+                LogoutTime = c.LogOutTime.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(c.LogOutTime.Value, tenantTimeZone)
+                    : null,
+                Duration = CourierActiveDuration(c.LogInTime, c.LogOutTime ?? now),
+                Deliveries = deliveryCountDict.GetValueOrDefault(c.UccrId, 0),
+                Status = c.Status
+            })
+        ];
     }
 
     public async Task<IReadOnlyList<CourierComplianceViewModel>> GetCourierComplianceForExportAsync(
@@ -2584,7 +2841,7 @@ public class CourierRepository(
         var tenantTimezone = infoService.GetTenantTimeZone();
         var expiringThreshold = now.AddDays(30);
 
-        var query = Context.TucCouriers.AsQueryable();
+        var query = Context.TucCouriers.Where(c => c.Active);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -2593,7 +2850,9 @@ public class CourierRepository(
         }
 
         if (request.Fleet != 0)
+        {
             query = query.Where(c => c.CourierFleetId == request.Fleet);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Type))
         {
@@ -2637,18 +2896,21 @@ public class CourierRepository(
             .TagWith("GetCourierComplianceForExport")
             .ToListAsync();
 
-        return items.Select(c => new CourierComplianceViewModel
-        {
-            Code = c.Code,
-            Name = c.Name,
-            ComplianceType = c.ComplianceType,
-            ItemNumber = c.ItemNumber,
-            ExpiryDate = c.ExpiryDate.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(c.ExpiryDate.Value, tenantTimezone)
-                : null,
-            Status = c.Status,
-            DaysUntilExpiry = c.DaysUntilExpiry
-        }).ToList();
+        return
+        [
+            .. items.Select(c => new CourierComplianceViewModel
+            {
+                Code = c.Code,
+                Name = c.Name,
+                ComplianceType = c.ComplianceType,
+                ItemNumber = c.ItemNumber,
+                ExpiryDate = c.ExpiryDate.HasValue
+                    ? TimeZoneHelper.SetDateTimeWithTimeZone(c.ExpiryDate.Value, tenantTimezone)
+                    : null,
+                Status = c.Status,
+                DaysUntilExpiry = c.DaysUntilExpiry
+            })
+        ];
     }
 
     public async Task<IReadOnlyList<AfterHoursCourierScheduleViewModel>> GetAfterHoursScheduleForExportAsync(
@@ -2679,7 +2941,10 @@ public class CourierRepository(
             && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
         {
             var dayValue = GetDayOfWeekAsInt(request.Day);
-            if (dayValue != 0) query = query.Where(c => c.WeekDay == dayValue);
+            if (dayValue != 0)
+            {
+                query = query.Where(c => c.WeekDay == dayValue);
+            }
         }
 
         var groupedData = await query
@@ -2702,23 +2967,31 @@ public class CourierRepository(
                 AfterHoursScheduleIds = g.Select(x => x.Id).ToList()
             })
             .OrderBy(c => c.CourierName)
+            .Take(MaxExportRows)
             .TagWith("GetAfterHoursScheduleForExport")
             .ToListAsync();
 
-        return groupedData.Select(c => new AfterHoursCourierScheduleViewModel
-        {
-            AfterHoursScheduleId = c.AfterHoursScheduleIds.FirstOrDefault(),
-            CourierId = c.CourierId,
-            CourierName = c.CourierName,
-            CourierCode = c.CourierCode,
-            Days = c.Days.Select(DayOfWeekHelper.SqlIntToDayName)
-                .OrderBy(day =>
-                    Array.IndexOf(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], day))
-                .ToList(),
-            StartTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.StartTime, tenantTimezone),
-            EndTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.EndTime, tenantTimezone),
-            Duration = CalculateDuration(c.StartTime, c.EndTime)
-        }).ToList();
+        return
+        [
+            .. groupedData.Select(c => new AfterHoursCourierScheduleViewModel
+            {
+                AfterHoursScheduleId = c.AfterHoursScheduleIds.FirstOrDefault(),
+                CourierId = c.CourierId,
+                CourierName = c.CourierName,
+                CourierCode = c.CourierCode,
+                Days =
+                [
+                    .. c.Days.Select(DayOfWeekHelper.SqlIntToDayName)
+                        .OrderBy(day =>
+                            Array.IndexOf(
+                                ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                                day))
+                ],
+                StartTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.StartTime, tenantTimezone),
+                EndTime = TimeZoneHelper.SetDateTimeWithTimeZone(c.EndTime, tenantTimezone),
+                Duration = CalculateDuration(c.StartTime, c.EndTime)
+            })
+        ];
     }
 
     public async Task<IReadOnlyList<CourierEmailViewModel>> GetCourierEmailsForExportAsync(PaginatedRequest request)
@@ -2777,7 +3050,10 @@ public class CourierRepository(
             .TagWith("GetCourierDailyEarningsForExport")
             .ToListAsync();
 
-        if (couriers.Count == 0) return [];
+        if (couriers.Count == 0)
+        {
+            return [];
+        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
@@ -2796,26 +3072,29 @@ public class CourierRepository(
 
         var earningsDict = earningsData.ToDictionary(x => x.CourierId);
 
-        return couriers.Select(c =>
-        {
-            var hoursLogged = (int)((c.LogOutTime ?? now) - c.LogInTime).TotalMinutes;
-            var hasEarnings = earningsDict.TryGetValue(c.UccrId, out var earnings);
-            var deliveries = hasEarnings ? earnings.Deliveries : 0;
-            var totalEarnings = hasEarnings ? earnings.Earnings : 0;
-
-            var hourlyRate = hoursLogged > 0 && totalEarnings > 0
-                ? totalEarnings / (hoursLogged / 60.0m)
-                : 0;
-
-            return new CourierDailyEarningsViewModel
+        return
+        [
+            .. couriers.Select(c =>
             {
-                CourierId = c.UccrId,
-                Name = c.CourierName,
-                HoursLogged = hoursLogged,
-                Deliveries = deliveries,
-                Earnings = totalEarnings,
-                HourlyRate = hourlyRate
-            };
-        }).ToList();
+                var hoursLogged = (int)((c.LogOutTime ?? now) - c.LogInTime).TotalMinutes;
+                var hasEarnings = earningsDict.TryGetValue(c.UccrId, out var earnings);
+                var deliveries = hasEarnings ? earnings.Deliveries : 0;
+                var totalEarnings = hasEarnings ? earnings.Earnings : 0;
+
+                var hourlyRate = hoursLogged > 0 && totalEarnings > 0
+                    ? totalEarnings / (hoursLogged / 60.0m)
+                    : 0;
+
+                return new CourierDailyEarningsViewModel
+                {
+                    CourierId = c.UccrId,
+                    Name = c.CourierName,
+                    HoursLogged = hoursLogged,
+                    Deliveries = deliveries,
+                    Earnings = totalEarnings,
+                    HourlyRate = hourlyRate
+                };
+            })
+        ];
     }
 }

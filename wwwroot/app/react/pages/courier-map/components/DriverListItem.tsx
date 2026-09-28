@@ -1,32 +1,30 @@
 /**
  * DriverListItem Component
  *
- * Individual driver row with status-colored left accent, tinted avatar,
- * overdue badges, vehicle type, and hover-reveal locate action.
+ * One row in the courier-map drivers panel: status keyline, initials avatar,
+ * name, and a compact metadata strip (code, job counts, vehicle, fleet). The
+ * locate arrow reveals on hover.
  */
 
 import React from 'react';
-import {alpha, useTheme} from '@mui/material/styles';
-import Avatar from '@mui/material/Avatar';
-import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
-import ListItemText from '@mui/material/ListItemText';
-import Typography from '@mui/material/Typography';
-import NearMe from '@mui/icons-material/NearMe';
-import WorkOutline from '@mui/icons-material/WorkOutline';
-import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded';
+import {alpha, Avatar, Badge, Box, Group, Text, UnstyledButton, useMantineTheme} from '@mantine/core';
+import {Briefcase, Navigation, TriangleAlert} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
 import type { DriverListItemProps } from '../CourierMapPage.types';
 import { getDriverStatus } from '../CourierMapPage.types';
 import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
-import type {Theme} from '@mui/material/styles';
+import type { MantineTheme } from '@mantine/core';
+import classes from './DriverListItem.module.css';
 
-function getStatusColor(driver: IAvailableCourierPosition, theme: Theme): string {
+/**
+ * Same status → colour mapping the map markers use (see `getMarkerColors`), so a
+ * row and its pin always agree. Index 5 is the theme's named shade.
+ */
+function getStatusColor(driver: IAvailableCourierPosition, theme: MantineTheme): string {
     const status = getDriverStatus(driver);
-    if (status === 'overdue') return theme.palette.error.main;
-    if (status === 'active') return theme.palette.primary.main;
-    return theme.palette.success.main;
+    if (status === 'overdue') return theme.colors.red[5];
+    if (status === 'active') return theme.colors[theme.primaryColor][5];
+    return theme.colors.green[5];
 }
 
 function getDriverInitials(name: string | undefined): string {
@@ -38,160 +36,102 @@ function getDriverInitials(name: string | undefined): string {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function DriverListItem({ driver, onClick }: DriverListItemProps) {
-    const theme = useTheme();
+export function DriverListItem({ driver, onClick, isSelected }: DriverListItemProps) {
+    const theme = useMantineTheme();
     const statusColor = getStatusColor(driver, theme);
     const initials = getDriverInitials(driver.courierName);
     const hasOverdue = driver.overDueJobs > 0;
 
     return (
-        <ListItemButton
+        <UnstyledButton
             onClick={onClick}
-            sx={{
-                borderLeft: `3px solid ${statusColor}`,
-                mx: 1,
-                borderRadius: '0 10px 10px 0',
-                py: 0.875,
-                px: 1.5,
-                gap: 1.25,
-                transition: 'all 150ms cubic-bezier(0.2, 0, 0, 1)',
-                '&:hover': {
-                    bgcolor: alpha(statusColor, 0.06),
-                },
-                '&:hover .locate-icon': {
-                    opacity: 1,
-                    transform: 'translateX(0)',
-                },
-            }}
+            className={classes.row}
+            style={{
+                '--status-color': statusColor,
+                '--status-tint': alpha(statusColor, 0.06),
+                // Inline rather than a CSS-module modifier class: the row needs to stay tinted
+                // after the click, not just on hover, and an inline value is what Jest's
+                // toHaveStyle can actually see (CSS modules resolve to {} under Jest).
+                ...(isSelected ? {
+                    backgroundColor: alpha(statusColor, 0.12),
+                    boxShadow: `inset 3px 0 0 ${statusColor}`,
+                } : {}),
+            } as React.CSSProperties & Record<`--${string}`, string>}
         >
-            <ListItemAvatar sx={{ minWidth: 0 }}>
-                <Avatar
-                    sx={{
-                        bgcolor: alpha(statusColor, 0.1),
-                        color: statusColor,
-                        width: 38,
-                        height: 38,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        border: `2px solid ${alpha(statusColor, 0.25)}`,
-                        transition: 'all 150ms ease',
-                    }}
-                >
-                    {initials}
-                </Avatar>
-            </ListItemAvatar>
-
-            <ListItemText
-                disableTypography
-                primary={
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            fontWeight: 600,
-                            color: 'text.primary',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            lineHeight: 1.3,
-                            fontSize: 13,
-                        }}
-                    >
-                        {driver.courierName}
-                    </Typography>
-                }
-                secondary={
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.75,
-                            mt: 0.375,
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        {driver.code && (
-                            <Chip
-                                label={driver.code}
-                                size="small"
-                                variant="outlined"
-                                sx={{
-                                    height: 18,
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    letterSpacing: '0.02em',
-                                    borderColor: alpha(statusColor, 0.3),
-                                    color: statusColor,
-                                    '& .MuiChip-label': { px: 0.625 },
-                                }}
-                            />
-                        )}
-
-                        {driver.totalJobs > 0 && (
-                            <Box
-                                sx={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 0.25,
-                                    color: 'text.secondary',
-                                }}
-                            >
-                                <WorkOutline sx={{ fontSize: 12 }} />
-                                <Typography
-                                    component="span"
-                                    sx={{ fontSize: 11, lineHeight: 1 }}
-                                >
-                                    {driver.totalJobs}
-                                </Typography>
-                            </Box>
-                        )}
-
-                        {hasOverdue && (
-                            <Box
-                                sx={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 0.25,
-                                    color: 'error.main',
-                                }}
-                            >
-                                <WarningAmberRounded sx={{ fontSize: 12 }} />
-                                <Typography
-                                    component="span"
-                                    sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1 }}
-                                >
-                                    {driver.overDueJobs} late
-                                </Typography>
-                            </Box>
-                        )}
-
-                        {driver.vehicleType && (
-                            <Typography
-                                component="span"
-                                sx={{
-                                    fontSize: 10,
-                                    color: 'text.disabled',
-                                    lineHeight: 1,
-                                }}
-                            >
-                                {driver.vehicleType}
-                            </Typography>
-                        )}
-                    </Box>
-                }
-            />
-
-            <NearMe
-                className="locate-icon"
-                sx={{
-                    fontSize: 16,
-                    color: 'primary.main',
-                    opacity: 0,
-                    transform: 'translateX(-4px)',
-                    transition: 'all 180ms cubic-bezier(0.2, 0, 0, 1)',
-                    ml: 'auto',
-                    flexShrink: 0,
+            <Avatar
+                size={38}
+                radius="xl"
+                style={{
+                    backgroundColor: alpha(statusColor, 0.1),
+                    color: statusColor,
+                    border: `2px solid ${alpha(statusColor, 0.25)}`,
                 }}
+                styles={{placeholder: {fontSize: 13, fontWeight: 700, color: statusColor}}}
+            >
+                {initials}
+            </Avatar>
+
+            <Box style={{minWidth: 0, flex: 1}}>
+                <Text fz={13} fw={600} lh={1.3} truncate>
+                    {driver.courierName}
+                </Text>
+
+                <Group gap={6} mt={3} wrap="wrap">
+                    {driver.code && (
+                        <Badge
+                            variant="outline"
+                            h={18}
+                            fz={10}
+                            fw={700}
+                            px={5}
+                            style={{
+                                letterSpacing: '0.02em',
+                                borderColor: alpha(statusColor, 0.3),
+                                color: statusColor,
+                            }}
+                        >
+                            {driver.code}
+                        </Badge>
+                    )}
+
+                    {driver.totalJobs > 0 && (
+                        <Group gap={2} c="dimmed" wrap="nowrap">
+                            <Icon lucide={Briefcase} size={12} />
+                            <Text component="span" fz={11} lh={1}>
+                                {driver.totalJobs}
+                            </Text>
+                        </Group>
+                    )}
+
+                    {hasOverdue && (
+                        <Group gap={2} c="var(--mantine-color-red-6)" wrap="nowrap">
+                            <Icon lucide={TriangleAlert} size={12} />
+                            <Text component="span" fz={11} fw={600} lh={1}>
+                                {driver.overDueJobs} late
+                            </Text>
+                        </Group>
+                    )}
+
+                    {driver.vehicleType && (
+                        <Text component="span" fz={10} lh={1} c="var(--mantine-color-dimmed)">
+                            {driver.vehicleType}
+                        </Text>
+                    )}
+
+                    {driver.courierFleetName && (
+                        <Text component="span" fz={10} lh={1} c="var(--mantine-color-dimmed)">
+                            {driver.courierFleetName}
+                        </Text>
+                    )}
+                </Group>
+            </Box>
+
+            <Icon
+                lucide={Navigation}
+                size={16}
+                className={classes.locateIcon}
+                color="var(--mantine-primary-color-filled)"
             />
-        </ListItemButton>
+        </UnstyledButton>
     );
 }

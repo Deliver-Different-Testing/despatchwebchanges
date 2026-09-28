@@ -2,6 +2,7 @@ import {IAddressViewModel, IEditAddressDialogViewModel} from "../../../interface
 import {EditAddressDialogViewModel} from "../../../react/interfaces";
 import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
+import {AddressType} from "../../../enums/address-type.enum";
 import angular from 'angular';
 
 export class EditAddressDialogService implements angular.IServiceProvider {
@@ -44,6 +45,18 @@ export class EditAddressDialogService implements angular.IServiceProvider {
 
             const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
 
+            // The island's stylesheet has to be listed alongside its script: an emitted
+            // CSS module is only fetched if it appears here, and a missing one fails
+            // silently — the island just renders unstyled. Mirrors routes.ts's
+            // `islandFiles`.
+            const islandFiles = (entry: string) => {
+                const files = [getAssetPath(`${entry}.js`)];
+                if (manifest[`${entry}.css`]) {
+                    files.push(getAssetPath(`${entry}.css`));
+                }
+                return files;
+            };
+
             // Load vendor-react first (if not already loaded)
             if (!(window as any).React) {
                 await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
@@ -52,7 +65,7 @@ export class EditAddressDialogService implements angular.IServiceProvider {
             // Load the edit address dialog React module
             await this.$ocLazyLoad.load({
                 name: 'uDispatch.editAddressDialogReact',
-                files: [getAssetPath('editAddressDialogReact.js')]
+                files: islandFiles('editAddressDialogReact')
             });
         } catch (error) {
             console.error('[EditAddressDialogService] Failed to load React dialog:', error);
@@ -116,7 +129,8 @@ export class EditAddressDialogService implements angular.IServiceProvider {
         _$event?: MouseEvent,
         title: string = 'Edit Address',
         submitLabel: string = 'Save',
-        showContactInfo: boolean = false
+        showContactInfo: boolean = false,
+        addressType?: AddressType,
     ): Promise<IEditAddressDialogViewModel | undefined> {
         console.debug('EditAddressDialogService: Opening dialog for address:', addressDetails);
 
@@ -155,7 +169,8 @@ export class EditAddressDialogService implements angular.IServiceProvider {
                 submitLabel,
                 showContactInfo,
                 this.isUsTenant,
-                toastService
+                toastService,
+                addressType,
             );
 
             console.debug('EditAddressDialogService: Dialog resolved with:', result);

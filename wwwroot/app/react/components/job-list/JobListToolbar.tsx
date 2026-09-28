@@ -5,42 +5,19 @@
  * Follows the app's standard toolbar pattern (44px minHeight, divider border).
  */
 
-import React, {useCallback, useRef, useEffect, useState} from 'react';
-import Box from '@mui/material/Box';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import Tooltip from '@mui/material/Tooltip';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Popover from '@mui/material/Popover';
-import Autocomplete from '@mui/material/Autocomplete';
-import CircularProgress from '@mui/material/CircularProgress';
-import SearchIcon from '@mui/icons-material/Search';
-import ViewCompactIcon from '@mui/icons-material/ViewCompact';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import DensitySmallIcon from '@mui/icons-material/DensitySmall';
-import ViewWeekIcon from '@mui/icons-material/ViewWeek';
-import CloseIcon from '@mui/icons-material/Close';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import RestoreIcon from '@mui/icons-material/Restore';
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
-import type {SxProps, Theme} from '@mui/material';
+import React, {useCallback, useRef} from 'react';
+import {Box, Group, Text, TextInput} from '@mantine/core';
+import {useDebouncedCallback} from '@mantine/hooks';
+import {ArchiveRestore, Mail, MailOpen, Search, X} from 'lucide-react';
+import {IconTruck} from '@tabler/icons-react';
+
+import {Icon} from '../common/icon/Icon';
+import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../common/action-button';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../common/panel-controls';
+import {SegmentedToggle} from '../common/segmented-toggle';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
-import SendIcon from '@mui/icons-material/Send';
-import {searchActiveCouriersExtended} from '../../services/courierApi';
-import {getActivePartnerOptions} from '../../services/jobListApi';
-
-interface CourierOption {
-    id: number;
-    text: string;
-}
+import {JobListViewOptions} from './JobListViewOptions';
 
 interface JobListToolbarProps {
     selectedCategory: JobCategory;
@@ -52,80 +29,62 @@ interface JobListToolbarProps {
     densityMode: DensityMode;
     onDensityModeChange: (mode: DensityMode) => void;
     onResetColumns: () => void;
+    onEditColumns: () => void;
     appPage?: AppPage | number;
     selectedCount?: number;
     onClearSelection?: () => void;
-    onBulkDispatch?: (courierId: number, courierName: string) => void;
+    /** Opens the universal dispatch dialog in bulk mode. */
+    onBulkDispatchClick?: () => void;
     onBulkRestore?: () => void;
     onBulkMarkRead?: () => void;
     onBulkMarkUnread?: () => void;
-    onBulkSendToPartner?: (partnerId: number, partnerName: string) => void;
-    hideLoggedInSwitch?: boolean;
+    /** Owned by JobListPanel — the switch is live-dispatch-only. */
+    showLoggedInSwitch?: boolean;
+    /**
+     * Render the view options (density / reset columns / logged-in toggle) inline
+     * in the toolbar. Set false when they're relocated to the panel header.
+     * Defaults to true.
+     */
+    renderViewOptions?: boolean;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-const styles: Record<string, SxProps<Theme>> = {
-    container: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.5,
-        px: 2,
-        py: 1,
-        borderBottom: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        minHeight: 44,
-        flexWrap: 'wrap',
-    },
-    categoryToggle: {
-        borderRadius: 1,
-        '& .MuiToggleButton-root': {
-            px: 1.5,
-            py: 0.5,
-            fontSize: '0.75rem',
-            textTransform: 'none',
-            fontWeight: 500,
-        },
-        '& .MuiToggleButton-root[value="needs-dispatch"].Mui-selected': {
-            bgcolor: 'warning.main',
-            color: 'warning.contrastText',
-            '&:hover': {bgcolor: 'warning.dark'},
-        },
-        '& .MuiToggleButton-root[value="in-progress"].Mui-selected': {
-            bgcolor: 'info.main',
-            color: 'info.contrastText',
-            '&:hover': {bgcolor: 'info.dark'},
-        },
-        '& .MuiToggleButton-root[value="delivered"].Mui-selected': {
-            bgcolor: 'success.main',
-            color: 'success.contrastText',
-            '&:hover': {bgcolor: 'success.dark'},
-        },
-        '& .MuiToggleButton-root[value="all"].Mui-selected': {
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            '&:hover': {bgcolor: 'primary.dark'},
-        },
-    },
-    searchField: {
-        flex: '1 1 160px',
-        maxWidth: 280,
-        '& .MuiOutlinedInput-root': {
-            height: 32,
-            borderRadius: 1,
-        },
-        '& .MuiInputBase-input': {
-            fontSize: '0.8125rem',
-            py: 0.5,
-        },
-    },
-    densityToggle: {
-        '& .MuiToggleButton-root': {
-            px: 0.75,
-            py: 0.5,
-        },
-    },
+const CATEGORY_OPTIONS: {value: JobCategory; label: string}[] = [
+    {value: 'needs-dispatch', label: 'Unassigned'},
+    {value: 'in-progress', label: 'Active'},
+    {value: 'delivered', label: 'Done'},
+    {value: 'all', label: 'All'},
+];
+
+/**
+ * The active tab keeps its category's semantic colour — Unassigned/Active/Done
+ * encode real state, so the colour is information, not decoration. Only the
+ * indicator is tinted, so the accent follows the current selection rather than
+ * being set per option.
+ */
+const CATEGORY_COLORS: Record<JobCategory, string> = {
+    'needs-dispatch': 'orange',
+    'in-progress': 'reflex',
+    delivered: 'green',
+    all: 'brand',
+};
+
+// 48 is what both bars measure — 8px padding around the 32px control band. They
+// have to agree: the selection bar replaces the toolbar in place, and a
+// disagreement shifts the whole table down every time a row is ticked.
+const BAR_MIN_HEIGHT = 48;
+
+const containerStyle: React.CSSProperties = {
+    borderBottom: '1px solid var(--mantine-color-default-border)',
+    backgroundColor: 'var(--dd-surface-container)',
+    minHeight: BAR_MIN_HEIGHT,
+};
+
+const selectionBarStyle: React.CSSProperties = {
+    borderBottom: '1px solid var(--mantine-color-default-border)',
+    backgroundColor: 'var(--mantine-color-brand-light)',
+    minHeight: BAR_MIN_HEIGHT,
 };
 
 export const JobListToolbar: React.FC<JobListToolbarProps> = ({
@@ -138,338 +97,113 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     densityMode,
     onDensityModeChange,
     onResetColumns,
+    onEditColumns,
     appPage,
     selectedCount = 0,
     onClearSelection,
-    onBulkDispatch,
+    onBulkDispatchClick,
     onBulkRestore,
     onBulkMarkRead,
     onBulkMarkUnread,
-    onBulkSendToPartner,
-    hideLoggedInSwitch,
+    showLoggedInSwitch,
+    renderViewOptions = true,
 }) => {
-    const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
-    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Every operational page can bulk-dispatch; Nationwide was previously excluded,
+    // which left it with no bulk assignment affordance at all.
+    const allowDispatch = appPage === AppPage.Dispatch
+        || appPage === AppPage.JobSearch
+        || appPage === AppPage.Domestic;
     const localInputRef = useRef(searchQuery);
 
-    // Dispatch popover state
-    const [dispatchAnchor, setDispatchAnchor] = useState<HTMLElement | null>(null);
-    const [courierOptions, setCourierOptions] = useState<CourierOption[]>([]);
-    const [courierLoading, setCourierLoading] = useState(false);
-    const courierDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const courierAbortRef = useRef<AbortController | null>(null);
-
-    useEffect(() => {
-        return () => {
-            if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-            if (courierDebounceRef.current) clearTimeout(courierDebounceRef.current);
-            if (courierAbortRef.current) courierAbortRef.current.abort();
-        };
-    }, []);
+    // useDebouncedCallback owns the timer and clears it on unmount.
+    const emitSearch = useDebouncedCallback(onSearchChange, SEARCH_DEBOUNCE_MS);
 
     const handleSearchInput = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const value = e.target.value;
             localInputRef.current = value;
-
-            if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-            searchTimerRef.current = setTimeout(() => {
-                onSearchChange(value);
-            }, SEARCH_DEBOUNCE_MS);
+            emitSearch(value);
         },
-        [onSearchChange],
+        [emitSearch],
     );
-
-    const handleCategoryChange = useCallback(
-        (_: React.MouseEvent<HTMLElement>, newCategory: JobCategory | null) => {
-            if (newCategory !== null) {
-                onCategoryChange(newCategory);
-            }
-        },
-        [onCategoryChange],
-    );
-
-    const handleDensityChange = useCallback(
-        (_: React.MouseEvent<HTMLElement>, newMode: DensityMode | null) => {
-            if (newMode !== null) {
-                onDensityModeChange(newMode);
-            }
-        },
-        [onDensityModeChange],
-    );
-
-    const handleCourierSearch = useCallback((_event: React.SyntheticEvent, value: string) => {
-        if (courierDebounceRef.current) clearTimeout(courierDebounceRef.current);
-        if (courierAbortRef.current) courierAbortRef.current.abort();
-
-        setCourierLoading(true);
-        courierDebounceRef.current = setTimeout(async () => {
-            const controller = new AbortController();
-            courierAbortRef.current = controller;
-            try {
-                const results = await searchActiveCouriersExtended(value, {
-                    loggedInOnly: loggedInCouriersOnly || undefined,
-                    signal: controller.signal,
-                });
-                setCourierOptions(results.map(r => ({id: r.id, text: r.text})));
-            } catch (err: any) {
-                if (err?.name !== 'AbortError') setCourierOptions([]);
-            } finally {
-                setCourierLoading(false);
-            }
-        }, 300);
-    }, [loggedInCouriersOnly]);
-
-    const handleCourierSelect = useCallback((_event: React.SyntheticEvent, value: CourierOption | null) => {
-        if (value && onBulkDispatch) {
-            onBulkDispatch(value.id, value.text);
-        }
-        setDispatchAnchor(null);
-        setCourierOptions([]);
-    }, [onBulkDispatch]);
-
-    // Partner popover state
-    const [partnerAnchor, setPartnerAnchor] = useState<HTMLElement | null>(null);
-    const [partnerOptions, setPartnerOptions] = useState<CourierOption[]>([]);
-    const [partnerLoading, setPartnerLoading] = useState(false);
-
-    const handlePartnerPopoverOpen = useCallback(async (e: React.MouseEvent<HTMLElement>) => {
-        setPartnerAnchor(e.currentTarget);
-        if (partnerOptions.length > 0) return;
-        setPartnerLoading(true);
-        try {
-            const options = await getActivePartnerOptions();
-            setPartnerOptions(options.map(o => ({id: o.id, text: o.text})));
-        } catch {
-            setPartnerOptions([]);
-        } finally {
-            setPartnerLoading(false);
-        }
-    }, [partnerOptions.length]);
-
-    const handlePartnerSelect = useCallback((_event: React.SyntheticEvent, value: CourierOption | null) => {
-        if (value && onBulkSendToPartner) {
-            onBulkSendToPartner(value.id, value.text);
-        }
-        setPartnerAnchor(null);
-    }, [onBulkSendToPartner]);
 
     // Selection action bar
     if (selectedCount > 0) {
         return (
-            <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                px: 2,
-                py: 1,
-                borderBottom: 1,
-                borderColor: 'divider',
-                bgcolor: 'rgba(25, 118, 210, 0.08)',
-                minHeight: 44,
-            }}>
-                <IconButton size="small" onClick={onClearSelection} sx={{mr: 0.5}}>
-                    <CloseIcon fontSize="small"/>
-                </IconButton>
-                <Typography variant="body2" sx={{fontWeight: 600, mr: 2}}>
+            <Group align="center" gap="xs" px="md" py="xs" wrap="wrap" style={selectionBarStyle}>
+                <HeaderActionIcon label="Clear selection" onClick={onClearSelection}>
+                    <Icon lucide={X} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                </HeaderActionIcon>
+                <Text size="sm" fw={600} mr="md">
                     {selectedCount} job{selectedCount !== 1 ? 's' : ''} selected
-                </Typography>
+                </Text>
 
+                {/*
+                  * Dispatch is the action people select rows for, so it is the
+                  * bar's one filled lozenge; everything else stays a raised chip.
+                  */}
                 {allowDispatch && (
-                    <>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<LocalShippingIcon/>}
-                            onClick={(e) => setDispatchAnchor(e.currentTarget)}
-                        >
-                            Dispatch
-                        </Button>
-                        <Popover
-                            open={Boolean(dispatchAnchor)}
-                            anchorEl={dispatchAnchor}
-                            onClose={() => {
-                                setDispatchAnchor(null);
-                                setCourierOptions([]);
-                            }}
-                            anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
-                        >
-                            <Box sx={{p: 2, width: 300}}>
-                                <Autocomplete
-                                    autoFocus
-                                    openOnFocus
-                                    size="small"
-                                    options={courierOptions}
-                                    getOptionLabel={(o) => o.text}
-                                    loading={courierLoading}
-                                    onInputChange={handleCourierSearch}
-                                    onChange={handleCourierSelect}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label="Search courier..."
-                                            autoFocus
-                                            slotProps={{
-                                                input: {
-                                                    ...params.InputProps,
-                                                    endAdornment: (
-                                                        <>
-                                                            {courierLoading ? <CircularProgress size={18}/> : null}
-                                                            {params.InputProps.endAdornment}
-                                                        </>
-                                                    ),
-                                                },
-                                            }}
-                                        />
-                                    )}
-                                />
-                            </Box>
-                        </Popover>
-                    </>
+                    <ActionButton
+                        variant="filled"
+                        leftSection={<Icon tabler={IconTruck} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                        onClick={onBulkDispatchClick}
+                    >
+                        Dispatch
+                    </ActionButton>
                 )}
 
                 {allowDispatch && (
-                    <>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<SendIcon/>}
-                            onClick={handlePartnerPopoverOpen}
-                        >
-                            Send to DFRNT Partner
-                        </Button>
-                        <Popover
-                            open={Boolean(partnerAnchor)}
-                            anchorEl={partnerAnchor}
-                            onClose={() => setPartnerAnchor(null)}
-                            anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
-                        >
-                            <Box sx={{p: 2, width: 300}}>
-                                <Autocomplete
-                                    autoFocus
-                                    openOnFocus
-                                    size="small"
-                                    options={partnerOptions}
-                                    getOptionLabel={(o) => o.text}
-                                    loading={partnerLoading}
-                                    onChange={handlePartnerSelect}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label="Select partner..."
-                                            autoFocus
-                                            slotProps={{
-                                                input: {
-                                                    ...params.InputProps,
-                                                    endAdornment: (
-                                                        <>
-                                                            {partnerLoading ? <CircularProgress size={18}/> : null}
-                                                            {params.InputProps.endAdornment}
-                                                        </>
-                                                    ),
-                                                },
-                                            }}
-                                        />
-                                    )}
-                                />
-                            </Box>
-                        </Popover>
-                    </>
-                )}
-
-                {allowDispatch && (
-                    <Button size="small" variant="outlined" startIcon={<RestoreIcon/>} onClick={onBulkRestore}>
+                    <ActionButton leftSection={<Icon lucide={ArchiveRestore} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onBulkRestore}>
                         Restore
-                    </Button>
+                    </ActionButton>
                 )}
 
-                <Button size="small" variant="outlined" startIcon={<MarkEmailReadIcon/>} onClick={onBulkMarkRead}>
+                <ActionButton leftSection={<Icon lucide={MailOpen} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onBulkMarkRead}>
                     Mark Read
-                </Button>
-                <Button size="small" variant="outlined" startIcon={<MarkEmailUnreadIcon/>} onClick={onBulkMarkUnread}>
+                </ActionButton>
+                <ActionButton leftSection={<Icon lucide={Mail} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onBulkMarkUnread}>
                     Mark Unread
-                </Button>
-            </Box>
+                </ActionButton>
+            </Group>
         );
     }
 
     return (
-        <Box sx={styles.container}>
+        <Group align="center" gap="sm" px="md" py="xs" wrap="wrap" style={containerStyle}>
             {/* Category filter tabs */}
-            <ToggleButtonGroup
+            <SegmentedToggle<JobCategory>
+                aria-label="Job category"
                 value={selectedCategory}
-                exclusive
-                onChange={handleCategoryChange}
-                size="small"
-                sx={styles.categoryToggle}
-            >
-                <ToggleButton value="needs-dispatch">Unassigned</ToggleButton>
-                <ToggleButton value="in-progress">Active</ToggleButton>
-                <ToggleButton value="delivered">Done</ToggleButton>
-                <ToggleButton value="all">All</ToggleButton>
-            </ToggleButtonGroup>
+                onChange={onCategoryChange}
+                color={CATEGORY_COLORS[selectedCategory]}
+                data={CATEGORY_OPTIONS}
+            />
 
             {/* Search */}
-            <TextField
-                size="small"
+            <TextInput
+                size="xs"
                 placeholder="Search jobs..."
                 defaultValue={searchQuery}
                 onChange={handleSearchInput}
-                slotProps={{
-                    input: {
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon fontSize="small" sx={{color: 'text.disabled'}}/>
-                            </InputAdornment>
-                        ),
-                    },
-                }}
-                sx={styles.searchField}
+                leftSection={<Icon lucide={Search} size={16} color="var(--mantine-color-gray-5)"/>}
+                style={{flex: '1 1 160px', maxWidth: 280}}
             />
 
-            {/* Logged-in couriers only toggle - only shown when dispatching is enabled */}
-            {allowDispatch && !hideLoggedInSwitch && (
-                <FormControlLabel
-                    control={
-                        <Switch
-                            size="small"
-                            checked={loggedInCouriersOnly}
-                            onChange={(_, checked) => onLoggedInCouriersOnlyChange(checked)}
-                        />
-                    }
-                    label="Logged-in only"
-                    slotProps={{typography: {variant: 'body2', sx: {fontSize: '0.75rem', whiteSpace: 'nowrap'}}}}
-                    sx={{ml: 0, mr: 0}}
+            <Box style={{flex: 1}}/>
+
+            {/* View options — relocated to the panel header on the dispatch page
+                (renderViewOptions=false); rendered inline elsewhere. */}
+            {renderViewOptions && (
+                <JobListViewOptions
+                    densityMode={densityMode}
+                    onDensityModeChange={onDensityModeChange}
+                    onResetColumns={onResetColumns}
+                    onEditColumns={onEditColumns}
+                    loggedInCouriersOnly={loggedInCouriersOnly}
+                    onLoggedInCouriersOnlyChange={onLoggedInCouriersOnlyChange}
+                    showLoggedInSwitch={showLoggedInSwitch}
                 />
             )}
-
-            <Box sx={{flex: 1}}/>
-
-            {/* Density toggle */}
-            <ToggleButtonGroup
-                value={densityMode}
-                exclusive
-                onChange={handleDensityChange}
-                size="small"
-                sx={styles.densityToggle}
-            >
-                <ToggleButton value="normal">
-                    <Tooltip title="Normal"><ViewListIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-                <ToggleButton value="dense">
-                    <Tooltip title="Dense"><ViewCompactIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-                <ToggleButton value="ultra-dense">
-                    <Tooltip title="Ultra Dense"><DensitySmallIcon fontSize="small"/></Tooltip>
-                </ToggleButton>
-            </ToggleButtonGroup>
-
-            {/* Reset columns */}
-            <Tooltip title="Reset column widths">
-                <IconButton size="small" onClick={onResetColumns} sx={{color: 'text.secondary'}}>
-                    <ViewWeekIcon fontSize="small"/>
-                </IconButton>
-            </Tooltip>
-        </Box>
+        </Group>
     );
 };

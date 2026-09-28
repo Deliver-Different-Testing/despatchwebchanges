@@ -71,7 +71,6 @@ public class DiCompositionTests
         Assert.NotNull(sp.GetRequiredService<ITenantInfoService>());
         Assert.NotNull(sp.GetRequiredService<ITenantClock>());
         Assert.NotNull(sp.GetRequiredService<IDeliveryJourneyService>());
-        Assert.NotNull(sp.GetRequiredService<IAiAssistantService>());
         Assert.NotNull(sp.GetRequiredService<IAiSummarizationService>());
     }
 }

@@ -6,9 +6,6 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {
     DashboardSettingsDialog,
     DashboardSettingsConfig,
@@ -16,29 +13,22 @@ import {
     DashboardBox,
     RefreshOption,
 } from './DashboardSettingsDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {CustomizePanelsDialog} from '../customize-panels-dialog/CustomizePanelsDialog';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {createDialogHost} from '../../../utils/reactDialogHost';
+import type {CourierDisplayMode} from '../../../interfaces';
 
-// State management for the dialog
-interface DialogState {
-    open: boolean;
+interface DashboardSettingsPayload {
     config: DashboardSettingsConfig;
-    boxes: Record<string, DashboardBox>;
-    selectedRefreshInterval?: RefreshOption;
-    selectedDriverLocationRefreshInterval?: RefreshOption;
+    selectedRefreshInterval: RefreshOption;
+    selectedDriverLocationRefreshInterval: RefreshOption;
+    selectedTaskRefreshInterval: RefreshOption;
     refreshOptions: RefreshOption[];
-    aiEnabled?: boolean;
-    resolve?: (value: DashboardSettingsResult | null) => void;
+    nationwideBetaEnabled?: boolean;
+    selectedCourierDisplayMode?: CourierDisplayMode;
 }
 
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    config: {title: 'Dashboard Settings'},
-    boxes: {},
-    refreshOptions: [],
-};
+const DISABLED_REFRESH: RefreshOption = {id: 0, text: 'Disabled'};
 
 /**
  * Generate refresh interval options
@@ -76,103 +66,75 @@ function formatDuration(seconds: number): string {
     }
 }
 
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
+const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSettingsResult | null>({
+    containerId: 'react-dashboard-settings-dialog-root',
+    render: ({open, payload, close}) => islandTree(
+        <DashboardSettingsDialog
+            open={open}
+            config={payload.config}
+            selectedRefreshInterval={payload.selectedRefreshInterval}
+            selectedDriverLocationRefreshInterval={payload.selectedDriverLocationRefreshInterval}
+            selectedTaskRefreshInterval={payload.selectedTaskRefreshInterval}
+            refreshOptions={payload.refreshOptions}
+            nationwideBetaEnabled={payload.nationwideBetaEnabled}
+            selectedCourierDisplayMode={payload.selectedCourierDisplayMode}
+            onClose={() => close(null)}
+            onSave={(result: DashboardSettingsResult) => close(result)}
+        />
+    ),
+});
 
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSave = (result: DashboardSettingsResult) => {
-        dialogState.open = false;
-        dialogState.resolve?.(result);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
-
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <DashboardSettingsDialog
-                    open={dialogState.open}
-                    config={dialogState.config}
-                    boxes={dialogState.boxes}
-                    selectedRefreshInterval={dialogState.selectedRefreshInterval}
-                    selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
-                    refreshOptions={dialogState.refreshOptions}
-                    aiEnabled={dialogState.aiEnabled}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-dashboard-settings-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
-
-/**
- * Opens the dashboard settings dialog
- *
- * @param config - Dialog configuration (title, which sections to show)
- * @param boxes - Dashboard boxes with their visibility settings
- * @param selectedRefreshInterval - Currently selected job list refresh interval
- * @param selectedDriverLocationRefreshInterval - Currently selected driver location refresh interval
- * @returns Promise that resolves with the settings result, or null if cancelled
- */
 export function openDashboardSettingsDialog(
     config: DashboardSettingsConfig,
-    boxes: Record<string, DashboardBox>,
     selectedRefreshInterval?: RefreshOption,
     selectedDriverLocationRefreshInterval?: RefreshOption,
-    aiEnabled?: boolean
+    selectedTaskRefreshInterval?: RefreshOption,
+    nationwideBetaEnabled?: boolean,
+    selectedCourierDisplayMode?: CourierDisplayMode,
 ): Promise<DashboardSettingsResult | null> {
-    initializeDialogRoot();
-
-    // Generate refresh options (disabled + time intervals)
-    const refreshOptions: RefreshOption[] = [
-        {id: 0, text: 'Disabled'},
-        ...getMinsSelectionOptions(),
-    ];
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            config,
-            boxes: {...boxes}, // Clone the boxes
-            selectedRefreshInterval: selectedRefreshInterval ?? {id: 0, text: 'Disabled'},
-            selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? {id: 0, text: 'Disabled'},
-            refreshOptions,
-            aiEnabled,
-            resolve,
-        };
-        renderDialog();
+    return settingsHost.open({
+        config,
+        selectedRefreshInterval: selectedRefreshInterval ?? DISABLED_REFRESH,
+        selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? DISABLED_REFRESH,
+        selectedTaskRefreshInterval: selectedTaskRefreshInterval ?? DISABLED_REFRESH,
+        refreshOptions: [DISABLED_REFRESH, ...getMinsSelectionOptions()],
+        nationwideBetaEnabled,
+        selectedCourierDisplayMode,
     });
 }
 
 // Expose globally for AngularJS access
 window.ReactDashboardSettingsDialog = {
     open: openDashboardSettingsDialog,
+};
+
+const panelsHost = createDialogHost<
+    {title?: string; boxes: Record<string, DashboardBox>; layoutEditable: boolean},
+    Record<string, DashboardBox> | null
+>({
+    containerId: 'react-customize-panels-dialog-root',
+    render: ({open, payload, close}) => islandTree(
+        <CustomizePanelsDialog
+            open={open}
+            title={payload.title}
+            boxes={payload.boxes}
+            layoutEditable={payload.layoutEditable}
+            onClose={() => close(null)}
+            onSave={close}
+        />
+    ),
+});
+
+export function openCustomizePanelsDialog(
+    boxes: Record<string, DashboardBox>,
+    title?: string,
+    layoutEditable = true,
+): Promise<Record<string, DashboardBox> | null> {
+    return panelsHost.open({title, boxes: {...boxes}, layoutEditable});
+}
+
+window.ReactCustomizePanelsDialog = {
+    open: openCustomizePanelsDialog,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

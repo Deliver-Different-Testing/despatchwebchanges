@@ -3,7 +3,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -14,19 +14,19 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryClientJobsReportTests : IAsyncDisposable
 {
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private readonly FakeTenantClock _clock = new(new DateTime(2024, 6, 15, 10, 0, 0));
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public JobRepositoryClientJobsReportTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
     }
 
     public async ValueTask DisposeAsync()
@@ -37,12 +37,13 @@ public class JobRepositoryClientJobsReportTests : IAsyncDisposable
     }
 
     private JobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        Mock.Of<IJobApiClient>()
+        _clearListEnvelopeServiceMock,
+        _createJobServiceMock,
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
     );
 
     private static ClientJobsReportRequest BuildRequest(IEnumerable<int> clientIds) => new()

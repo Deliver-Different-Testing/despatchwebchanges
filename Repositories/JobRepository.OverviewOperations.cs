@@ -27,16 +27,30 @@ public partial class JobRepository
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        var query = Context.TucJobs
+        // The standalone Overview page has no despatch-view selector, so unlike the Dispatch
+        // page's panels it must keep seeing every job rather than being scoped to (and
+        // potentially emptied by) a view selection it has no way to make.
+        var query = (parameters.ScopeToDespatchViews
+                ? await BuildParentScopedQueryAsync(parameters.DespatchViewIds, isUsCustomer)
+                : Context.TucJobs)
             .Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
 
         // Apply status group - filter early
         query = statusGroup switch
         {
+            // A family counts as Active if the parent itself is Active, or any child leg
+            // still is — a child can remain active after its parent has completed (e.g. a
+            // follow-up leg), and grouping by parent must not make that leg disappear.
             JobStatusGroup.Active => query.Where(j =>
-                j.UcjbStatus.HasValue
-                && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
-                && !j.UcjbVoid
+                (j.UcjbStatus.HasValue
+                    && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
+                    && !j.UcjbVoid)
+                || j.InverseParent.Any(c =>
+                    c.UcjbId != j.UcjbId
+                    && !c.UcjbVoid
+                    && c.UcjbStatus.HasValue
+                    && JobStatusGroups.Active.Contains(c.UcjbStatus.Value)
+                )
             ),
 
             JobStatusGroup.Completed => query.Where(j =>
@@ -52,17 +66,23 @@ public partial class JobRepository
 
         // Apply region filter if provided
         if (parameters.Regions.Count > 0)
+        {
             query = query.Where(j =>
                 j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
             );
+        }
 
         // Apply speed filter if provided
         if (parameters.Speeds.Count > 0)
+        {
             query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
+        }
 
         // Apply courier filter if provided
         if (parameters.Couriers.Count > 0)
+        {
             query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
+        }
 
         // Apply search filter if provided
         if (!string.IsNullOrWhiteSpace(parameters.Search))
@@ -88,9 +108,14 @@ public partial class JobRepository
 
         // Apply date range filter
         if (parameters.StartDate.HasValue)
+        {
             query = query.Where(j => j.UcjbDate >= parameters.StartDate);
+        }
+
         if (parameters.EndDate.HasValue)
+        {
             query = query.Where(j => j.UcjbDate <= parameters.EndDate);
+        }
 
         query = ApplySorting(query, parameters.OrderBy, parameters.OrderDirection);
 
@@ -128,16 +153,18 @@ public partial class JobRepository
                 Driver = j.UcjbCourier != null
                     ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                     : null,
-                Completion = j.InverseParent.Any()
+                Completion = j.InverseParent.Any(c => c.UcjbId != j.UcjbId)
                     ? (int)Math.Round(
                         100.0 * j.InverseParent.Count(c =>
-                            c.UcjbJobDone
-                            || (c.UcjbStatus.HasValue
-                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                        ) / j.InverseParent.Count
+                            c.UcjbId != j.UcjbId
+                            && (c.UcjbJobDone
+                                || (c.UcjbStatus.HasValue
+                                    && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)))
+                        ) / j.InverseParent.Count(c => c.UcjbId != j.UcjbId)
                     )
                     : 0,
                 ChildJobs = j.InverseParent
+                    .Where(c => c.UcjbId != j.UcjbId)
                     .Select(c => new ChildDeliveryJob
                     {
                         JobId = c.UcjbId,
@@ -195,7 +222,8 @@ public partial class JobRepository
                         Lng = j.DeliveryLongitude ?? 0
                     },
                     ChildJobs = j
-                        .InverseParent.Select(c => new OverviewChildJobLocation
+                        .InverseParent.Where(c => c.UcjbId != j.UcjbId)
+                        .Select(c => new OverviewChildJobLocation
                         {
                             Id = c.UcjbId,
                             Pickup = new Coordinates
@@ -233,8 +261,11 @@ public partial class JobRepository
         var tenantTimeZone = _infoService.GetTenantTimeZone();
         var currentDate = now.Date;
         var nextDate = currentDate.AddDays(1);
+        var isUsTenant = _infoService.IsUsTenant();
 
-        var query = Context.TucJobs
+        var query = (parameters.ScopeToDespatchViews
+                ? await BuildBaseQueryAsync(parameters.DespatchViewIds, isUsTenant)
+                : Context.TucJobs)
             .Where(j =>
                 j.UcjbStatus != (int)JobStatus.Completed &&
                 j.UcjbStatus != (int)JobStatus.Rejected &&
@@ -243,23 +274,34 @@ public partial class JobRepository
 
         // Apply date range filter using range comparisons to allow index usage
         if (parameters.StartDate.HasValue)
+        {
             query = query.Where(j => j.UcjbDate >= parameters.StartDate.Value.Date);
+        }
+
         if (parameters.EndDate.HasValue)
+        {
             query = query.Where(j => j.UcjbDate < parameters.EndDate.Value.Date.AddDays(1));
+        }
 
         // Apply region filter if provided
         if (parameters.Regions.Count > 0)
+        {
             query = query.Where(j =>
                 j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
             );
+        }
 
         // Apply speed filter if provided
         if (parameters.Speeds.Count > 0)
+        {
             query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
+        }
 
         // Apply courier filter if provided
         if (parameters.Couriers.Count > 0)
+        {
             query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
+        }
 
         // Order by nullable column directly — EF Core handles null ordering in SQL
         query = query.OrderBy(j => j.PickUpTime);
@@ -304,7 +346,10 @@ public partial class JobRepository
             .TagWith("GetOpenJobs - Step 1: Job Data")
             .ToListAsync();
 
-        if (jobDtos.Count == 0) return new List<OpenJobResponse>();
+        if (jobDtos.Count == 0)
+        {
+            return new List<OpenJobResponse>();
+        }
 
         var courierIds = jobDtos
             .Where(j => j.CourierId.HasValue)
@@ -361,7 +406,7 @@ public partial class JobRepository
         return openJobs;
     }
 
-    internal static IQueryable<TucJob> ApplySorting(
+    private static IQueryable<TucJob> ApplySorting(
         IQueryable<TucJob> query,
         string orderBy,
         string orderDirection
@@ -382,17 +427,19 @@ public partial class JobRepository
             "completion" => isAscending
                 ? query.OrderBy(j =>
                     100.0 * j.InverseParent.Count(c =>
-                        c.UcjbJobDone
-                        || (c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / j.InverseParent.Count
+                        c.UcjbId != j.UcjbId
+                        && (c.UcjbJobDone
+                            || (c.UcjbStatus.HasValue
+                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)))
+                    ) / j.InverseParent.Count(c => c.UcjbId != j.UcjbId)
                 )
                 : query.OrderByDescending(j =>
                     100.0 * j.InverseParent.Count(c =>
-                        c.UcjbJobDone
-                        || (c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / j.InverseParent.Count
+                        c.UcjbId != j.UcjbId
+                        && (c.UcjbJobDone
+                            || (c.UcjbStatus.HasValue
+                                && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value)))
+                    ) / j.InverseParent.Count(c => c.UcjbId != j.UcjbId)
                 ),
 
             "pickup" => isAscending
@@ -473,11 +520,16 @@ public partial class JobRepository
     private static DateTimeOffset? CalculateDeliveryTime(OpenJobDto dto, string tenantTimeZone)
     {
         if (dto.DeliveryTime.HasValue)
+        {
             return TimeZoneHelper.SetDateTimeWithTimeZone(dto.DeliveryTime.Value,
                 dto.DeliveryTimeZone ?? tenantTimeZone);
+        }
+
         if (dto.PickupTime.HasValue && dto.SpeedMinutes.HasValue)
+        {
             return TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value.AddMinutes(dto.SpeedMinutes.Value),
                 dto.PickupTimeZone ?? tenantTimeZone);
+        }
 
         return dto.PickupTime.HasValue
             ? TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value, dto.PickupTimeZone ?? tenantTimeZone)

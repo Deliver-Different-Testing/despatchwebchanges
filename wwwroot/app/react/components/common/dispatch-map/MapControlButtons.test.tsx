@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * MapControlButtons Component Tests
  *
@@ -6,16 +5,12 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {MapControlButtons} from './MapControlButtons';
 import type {MapControlButtonsProps, MapControlState} from './DispatchMap.types';
 
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-};
+const renderWithTheme = renderWithMantine;
 
 const createDefaultControlState = (overrides?: Partial<MapControlState>): MapControlState => ({
     autoZoomEnabled: true,
@@ -211,19 +206,17 @@ describe('MapControlButtons Component', () => {
                 />
             );
 
-            expect(screen.getByTestId('FitScreenIcon')).toBeInTheDocument();
+            expect(document.querySelector('[data-control-icon="auto-zoom-on"]')).toBeInTheDocument();
 
             rerender(
-                <ThemeProvider theme={theme}>
-                    <MapControlButtons
+                <MapControlButtons
                         {...createDefaultProps({
                             controlState: createDefaultControlState({autoZoomEnabled: false}),
                         })}
                     />
-                </ThemeProvider>
             );
 
-            expect(screen.getByTestId('ZoomOutMapIcon')).toBeInTheDocument();
+            expect(document.querySelector('[data-control-icon="auto-zoom-off"]')).toBeInTheDocument();
         });
 
         it('displays correct icon for couriers only based on state', () => {
@@ -235,19 +228,17 @@ describe('MapControlButtons Component', () => {
                 />
             );
 
-            expect(screen.getByTestId('LocalShippingIcon')).toBeInTheDocument();
+            expect(document.querySelector('[data-control-icon="couriers-only"]')).toBeInTheDocument();
 
             rerender(
-                <ThemeProvider theme={theme}>
-                    <MapControlButtons
+                <MapControlButtons
                         {...createDefaultProps({
                             controlState: createDefaultControlState({couriersOnlyEnabled: false}),
                         })}
                     />
-                </ThemeProvider>
             );
 
-            expect(screen.getByTestId('MapIcon')).toBeInTheDocument();
+            expect(document.querySelector('[data-control-icon="pins-and-couriers"]')).toBeInTheDocument();
         });
 
         it('displays correct icon for urgent army based on state', () => {
@@ -259,19 +250,17 @@ describe('MapControlButtons Component', () => {
                 />
             );
 
-            expect(screen.getByTestId('EmergencyIcon')).toBeInTheDocument();
+            expect(document.querySelector('[data-control-icon="fleet-only"]')).toBeInTheDocument();
 
             rerender(
-                <ThemeProvider theme={theme}>
-                    <MapControlButtons
+                <MapControlButtons
                         {...createDefaultProps({
                             controlState: createDefaultControlState({urgentArmyOnlyEnabled: false}),
                         })}
                     />
-                </ThemeProvider>
             );
 
-            expect(screen.getByTestId('VisibilityOffIcon')).toBeInTheDocument();
+            expect(document.querySelector('[data-control-icon="all-couriers"]')).toBeInTheDocument();
         });
 
         it('displays correct icon for large view based on state', () => {
@@ -283,19 +272,17 @@ describe('MapControlButtons Component', () => {
                 />
             );
 
-            expect(screen.getByTestId('FullscreenIcon')).toBeInTheDocument();
+            expect(document.querySelector('[data-control-icon="large-view"]')).toBeInTheDocument();
 
             rerender(
-                <ThemeProvider theme={theme}>
-                    <MapControlButtons
+                <MapControlButtons
                         {...createDefaultProps({
                             controlState: createDefaultControlState({couriersLargeViewEnabled: false}),
                         })}
                     />
-                </ThemeProvider>
             );
 
-            expect(screen.getByTestId('FullscreenExitIcon')).toBeInTheDocument();
+            expect(document.querySelector('[data-control-icon="normal-view"]')).toBeInTheDocument();
         });
     });
 });

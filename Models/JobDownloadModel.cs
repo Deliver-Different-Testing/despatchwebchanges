@@ -15,6 +15,7 @@ public sealed class JobDownloadModel
     public short? Quantity { get; init; }
     public double? Weight { get; init; }
     public int? Size { get; init; }
+    public decimal? Cubic { get; init; }
     public string PickupAddressLine1 { get; init; }
     public string PickupAddressLine2 { get; init; }
     public string PickupAddressLine3 { get; init; }
@@ -49,5 +50,6 @@ public sealed class JobDownloadModel
     public bool Void { get; init; }
     public string OurReference { get; init; }
     public string Speed { get; init; }
+    public string NotifiedSpeed { get; init; }
     public string Notes { get; init; }
 }

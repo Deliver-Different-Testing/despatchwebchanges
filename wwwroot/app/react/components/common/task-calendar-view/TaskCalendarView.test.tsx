@@ -1,12 +1,10 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * TaskCalendarView Component Tests
  */
 
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {renderWithMantine} from '../../../__testUtils__';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekday from 'dayjs/plugin/weekday';
@@ -15,7 +13,8 @@ import timezone from 'dayjs/plugin/timezone';
 import {TaskCalendarView} from './TaskCalendarView';
 import {TaskCalendarViewProps, TasksServiceInterface} from './TaskCalendarView.interfaces';
 import {Task} from '../task-item/TaskItem.interfaces';
-import {suppressConsoleError} from '../../../__testUtils__';
+import { suppressConsoleError } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 
 // Extend dayjs plugins for tests
 dayjs.extend(isoWeek);
@@ -30,10 +29,10 @@ jest.mock('../../../utils/dateUtils', () => ({
     getTimezoneAbbreviation: jest.fn(() => '(EST)'),
 }));
 
-const theme = createTheme();
 
 const renderWithProviders = (ui: React.ReactElement) => {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    // Mantine outside, MUI inside — the view is still MUI, its rows are Mantine.
+    return renderWithMantine(ui);
 };
 
 // Sample task data - use relative dates from today
@@ -103,19 +102,19 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            expect(screen.getByRole('button', {name: /month view/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /week view/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /day view/i})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /month view/i})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /week view/i})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /day view/i})).toBeInTheDocument();
         });
     });
 
     describe('View Mode Switching', () => {
         it('switches to week view when week button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             // Week view shows date range format
             await waitFor(() => {
@@ -125,11 +124,11 @@ describe('TaskCalendarView', () => {
         });
 
         it('switches to day view when day button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /day view/i}));
+            await user.click(screen.getByRole('radio', {name: /day view/i}));
 
             // Day view shows full date format
             await waitFor(() => {
@@ -139,18 +138,42 @@ describe('TaskCalendarView', () => {
         });
 
         it('switches back to month view when month button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
             // Switch to week view first
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             // Then back to month view
-            await user.click(screen.getByRole('button', {name: /month view/i}));
+            await user.click(screen.getByRole('radio', {name: /month view/i}));
 
             const currentMonth = dayjs().format('MMMM YYYY');
             expect(await screen.findByText(currentMonth)).toBeInTheDocument();
+        });
+    });
+
+    // Period navigation had no test and no accessible name; both were added before
+    // the conversion so the arrows stay reachable and provable afterwards.
+    describe('Period Navigation', () => {
+        it('steps forward and back a month, and Today returns to the current one', async () => {
+            const user = setupUser();
+            renderWithProviders(<TaskCalendarView {...createDefaultProps()} />);
+
+            const thisMonth = dayjs().format('MMMM YYYY');
+            expect(screen.getByText(thisMonth)).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /next period/i}));
+            expect(await screen.findByText(dayjs().add(1, 'month').format('MMMM YYYY'))).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /previous period/i}));
+            expect(await screen.findByText(thisMonth)).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /previous period/i}));
+            expect(await screen.findByText(dayjs().subtract(1, 'month').format('MMMM YYYY'))).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /^today$/i}));
+            expect(await screen.findByText(thisMonth)).toBeInTheDocument();
         });
     });
 
@@ -210,7 +233,7 @@ describe('TaskCalendarView', () => {
         afterEach(() => { errorSpy.mockRestore(); });
 
         it('calls onTaskClick when a task is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({title: 'Clickable Task'});
             const props = createDefaultProps({tasks: [task]});
             renderWithProviders(<TaskCalendarView {...props} />);
@@ -221,7 +244,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('calls tasksService.markTaskAsClosed when checkbox is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({id: 42, closed: false});
             const props = createDefaultProps({tasks: [task]});
             renderWithProviders(<TaskCalendarView {...props} />);
@@ -234,7 +257,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('shows success toast after successful task completion', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({closed: false});
             const props = createDefaultProps({tasks: [task]});
             renderWithProviders(<TaskCalendarView {...props} />);
@@ -247,7 +270,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('calls onTaskStatusChange after task completion', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({closed: false});
             const props = createDefaultProps({tasks: [task]});
             renderWithProviders(<TaskCalendarView {...props} />);
@@ -260,7 +283,7 @@ describe('TaskCalendarView', () => {
         });
 
         it('shows error toast when task completion fails', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const task = createMockTask({closed: false});
             const tasksService = createMockTasksService();
             tasksService.markTaskAsClosed = jest.fn().mockRejectedValue(new Error('Network error'));
@@ -277,24 +300,22 @@ describe('TaskCalendarView', () => {
 
     describe('Week View', () => {
         it('renders time slots in week view', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText('12 AM')).toBeInTheDocument();
-                expect(screen.getByText('12 PM')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('12 AM')).toBeInTheDocument();
+            expect(screen.getByText('12 PM')).toBeInTheDocument();
         });
 
         it('shows day headers for the week', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             // Week view should show day column headers
             // Check that time slots are rendered (confirms week view is active)
@@ -304,22 +325,20 @@ describe('TaskCalendarView', () => {
 
     describe('Day View', () => {
         it('renders time slots in day view', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /day view/i}));
+            await user.click(screen.getByRole('radio', {name: /day view/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText('12 AM')).toBeInTheDocument();
-                expect(screen.getByText('6 AM')).toBeInTheDocument();
-                expect(screen.getByText('12 PM')).toBeInTheDocument();
-                expect(screen.getByText('6 PM')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('12 AM')).toBeInTheDocument();
+            expect(screen.getByText('6 AM')).toBeInTheDocument();
+            expect(screen.getByText('12 PM')).toBeInTheDocument();
+            expect(screen.getByText('6 PM')).toBeInTheDocument();
         });
 
         it('shows overdue tasks sidebar when there are overdue tasks', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const overdueTask = createMockTask({
                 id: 1,
                 title: 'Overdue Task',
@@ -329,13 +348,13 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps({tasks: [overdueTask]});
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /day view/i}));
+            await user.click(screen.getByRole('radio', {name: /day view/i}));
 
             expect(await screen.findByText('Overdue Tasks (1)')).toBeInTheDocument();
         });
 
         it('does not show overdue sidebar for completed overdue tasks', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const completedTask = createMockTask({
                 id: 1,
                 title: 'Completed Task',
@@ -345,7 +364,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps({tasks: [completedTask]});
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            await user.click(screen.getByRole('button', {name: /day view/i}));
+            await user.click(screen.getByRole('radio', {name: /day view/i}));
 
             await waitFor(() => {
                 expect(screen.queryByText(/Overdue Tasks/)).not.toBeInTheDocument();
@@ -365,13 +384,13 @@ describe('TaskCalendarView', () => {
         });
 
         it('calls onViewChange when switching view modes', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
             jest.clearAllMocks();
 
-            await user.click(screen.getByRole('button', {name: /week view/i}));
+            await user.click(screen.getByRole('radio', {name: /week view/i}));
 
             await waitFor(() => {
                 expect(props.onViewChange).toHaveBeenCalled();
@@ -408,6 +427,32 @@ describe('TaskCalendarView', () => {
 
             const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
             expect(checkbox).not.toBeChecked();
+        });
+    });
+
+    describe('Layout', () => {
+        // Regression: the calendar root must fill its flex parent so the parent
+        // bounds its height and the inner region scrolls. A fixed viewport height
+        // (calc(100vh - Npx)) overshoots the real flex space, and the ancestor
+        // overflow:hidden clips the bottom with no scrollbar.
+        it('fills its container height instead of a fixed viewport height', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            const root = screen.getByTestId('task-calendar-view');
+
+            expect(root).toHaveStyle({height: '100%'});
+            expect(root).not.toHaveStyle({height: 'calc(100vh - 205px)'});
+        });
+
+        it('makes the view region scrollable', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            const root = screen.getByTestId('task-calendar-view');
+            const scrollRegion = root.lastElementChild as HTMLElement;
+
+            expect(scrollRegion).toHaveStyle({overflow: 'auto'});
         });
     });
 

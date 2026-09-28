@@ -532,6 +532,24 @@ describe('TasksService', () => {
             service.saveStaffFilter('5', AppPage.Tasks);
             expect(spy).not.toHaveBeenCalled();
         });
+
+        it('does not throw when Modernizr is not defined on window', () => {
+            delete (window as any).Modernizr;
+            const {service} = createService();
+
+            expect(() => service.getSavedStaffFilter(AppPage.Tasks)).not.toThrow();
+            expect(() => service.getSavedEventTypeFilter(AppPage.Tasks)).not.toThrow();
+            expect(() => service.saveStaffFilter('5', AppPage.Tasks)).not.toThrow();
+            expect(() => service.saveEventTypeFilter('10', AppPage.Tasks)).not.toThrow();
+        });
+
+        it('falls back to localStorage when Modernizr is not defined on window', () => {
+            delete (window as any).Modernizr;
+            const {service} = createService();
+
+            service.saveStaffFilter('5', AppPage.Tasks);
+            expect(service.getSavedStaffFilter(AppPage.Tasks)).toBe('5');
+        });
     });
 
     // -----------------------------------------------------------------------

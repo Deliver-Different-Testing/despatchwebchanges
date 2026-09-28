@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * jobListApi Tests
  *
@@ -12,6 +13,7 @@ import {
     lateCall,
     reAllocateJobs,
     restoreJobs,
+    getRestorePodImpact,
     setFirstJob,
     releaseBulkJob,
     splitJob,
@@ -108,7 +110,25 @@ describe('jobListApi', () => {
         it('posts job IDs', async () => {
             await restoreJobs([5, 6]);
 
-            expect(mockedPost).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [5, 6]});
+            expect(mockedPost).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [5, 6], removeCapturedImages: false});
+        });
+    });
+
+    describe('getRestorePodImpact', () => {
+        it('posts the job IDs and returns the per-job impact rows', async () => {
+            const rows = [{jobId: 5, podName: 'J. Smith', capturedImageCount: 2, imageCountKnown: true}];
+            mockedPost.mockResolvedValue(rows);
+
+            const result = await getRestorePodImpact([5, 6]);
+
+            expect(mockedPost).toHaveBeenCalledWith('job/GetRestorePodImpact', {jobIds: [5, 6]});
+            expect(result).toEqual(rows);
+        });
+
+        it('returns an empty list when the endpoint returns nothing', async () => {
+            mockedPost.mockResolvedValue(undefined);
+
+            expect(await getRestorePodImpact([5])).toEqual([]);
         });
     });
 
@@ -123,12 +143,15 @@ describe('jobListApi', () => {
     });
 
     describe('releaseBulkJob', () => {
-        it('posts with bulkJobId param', async () => {
-            await releaseBulkJob(77);
+        it('posts with bulkJobId param and returns the released job numbers', async () => {
+            mockedPost.mockResolvedValue({jobNumbers: ['BJR-001', 'BJR-002']});
+
+            const result = await releaseBulkJob(77);
 
             expect(mockedPost).toHaveBeenCalledWith('job/ReleaseBulkJob', null, {
                 params: {bulkJobId: 77},
             });
+            expect(result).toEqual({jobNumbers: ['BJR-001', 'BJR-002']});
         });
     });
 

@@ -1,0 +1,13 @@
+/*
+ * Only the rule a prop cannot express lives here: hiding the scrollbar on the
+ * driver-rows scroller needs a pseudo-element for WebKit. The Firefox and IE
+ * equivalents sit alongside it so all three stay together.
+ */
+.hiddenScrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.hiddenScrollbar::-webkit-scrollbar {
+    display: none;
+}

@@ -1,164 +1,114 @@
 /**
- * AI Assistant API Service
+ * AI Summary API Service
  *
- * Handles communication with the AI assistant backend endpoints.
- * Supports both standard and streaming (NDJSON) responses.
+ * Handles communication with the AI summarization backend endpoints.
+ * Notes/events summaries return free-form markdown; the four briefing-style
+ * summaries (job, task dashboard, operations, compliance) return a structured
+ * shape that the AiSummaryCard component renders directly.
  */
 
-import { apiClient, RequestOptions } from './apiClient';
+import {
+    AiDraftResponse,  AiEmailDraftResponse, AiSummaryResponse,
+    ChangeRequestTriageResponse,
+    DraftEmailRequest, DraftMessageRequest, DraftNoteRequest, ExtractBlockersResponse,
+    PricingAnalysisResponse, StructuredSummaryResponse
+} from "../interfaces/ai";
+import {apiClient} from './apiClient';
+import {RequestOptions} from "./requestOptions";
 
-export interface AiChatMessage {
-    role: 'user' | 'assistant';
-    content: string;
-}
 
-export interface AiChatRequest {
-    messages: AiChatMessage[];
-    conversationId?: string;
-}
+export type SummarySeverity = 'Ok' | 'Info' | 'Caution' | 'Urgent' | 'Critical';
+export type TimelineStatus = 'Ok' | 'Pending' | 'Warning' | 'Late';
 
-export interface AiUsageInfo {
-    inputTokens: number;
-    outputTokens: number;
-}
-
-export interface AiChatResponse {
-    message: string;
-    usage: AiUsageInfo;
-}
-
-export interface AiChatChunk {
-    text: string;
-    isComplete: boolean;
-    usage?: AiUsageInfo;
-}
-
-export interface AiSummaryResponse {
-    summary: string;
-    usage: AiUsageInfo;
-}
-
-export interface SuggestedCourier {
-    courierId: number;
-    code: string;
-    firstName: string;
-}
-
-export interface AiCourierSuggestionResponse {
-    summary: string;
-    usage: AiUsageInfo;
-    couriers: SuggestedCourier[];
-}
-
-/** Standard (non-streaming) chat request */
-export function chat(request: AiChatRequest): Promise<AiChatResponse> {
-    return apiClient.post<AiChatResponse>('/Ai/Chat', request);
-}
-
-/**
- * Streaming chat request using NDJSON.
- * Yields text chunks as they arrive from the server.
- */
-export async function* streamChat(
-    request: AiChatRequest,
-    signal?: AbortSignal
-): AsyncGenerator<AiChatChunk> {
-    const response = await fetch('/Ai/StreamChat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        credentials: 'include',
-        body: JSON.stringify(request),
-        signal,
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `HTTP ${response.status}`);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error('No response body');
-
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    try {
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            // Keep the last (potentially incomplete) line in the buffer
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed) continue;
-
-                try {
-                    const chunk = JSON.parse(trimmed) as AiChatChunk;
-                    yield chunk;
-                } catch {
-                    // Skip malformed lines
-                }
-            }
-        }
-
-        // Process any remaining buffer
-        if (buffer.trim()) {
-            try {
-                const chunk = JSON.parse(buffer.trim()) as AiChatChunk;
-                yield chunk;
-            } catch {
-                // Skip malformed remainder
-            }
-        }
-    } finally {
-        reader.releaseLock();
-    }
-}
-
-/** Summarize notes for a job */
+/** Summarize notes for a job (markdown) */
 export function summarizeJobNotes(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobNotes', null, { params: { jobId } });
+    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobNotes', null, {params: {jobId}});
 }
 
-/** Summarize task dashboard for daily briefing */
-export function summarizeTaskDashboard(): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeTaskDashboard');
+/** Summarize event history for a job (markdown) */
+export function summarizeJobEvents(jobId: number): Promise<AiSummaryResponse> {
+    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobEvents', null, {params: {jobId}});
 }
 
-/** Combined job summary (notes + events + details) */
-export function summarizeJob(jobId: number, options?: RequestOptions): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJob', null, { params: { jobId }, ...options });
+/** Structured task dashboard briefing */
+export function summarizeTaskDashboard(options?: RequestOptions): Promise<StructuredSummaryResponse> {
+    return apiClient.post<StructuredSummaryResponse>('/Ai/SummarizeTaskDashboard', null, options);
 }
 
-/** Operations insight summary for overview dashboard */
-export function summarizeOperations(): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeOperations');
+/** Structured job briefing (verdict + attention + key facts + timeline) */
+export function summarizeJob(jobId: number, options?: RequestOptions): Promise<StructuredSummaryResponse> {
+    return apiClient.post<StructuredSummaryResponse>('/Ai/SummarizeJob', null, {params: {jobId}, ...options});
 }
 
-/** Compliance risk summary for driver management */
-export function summarizeCompliance(): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeCompliance');
+/** Structured operations health summary */
+export function summarizeOperations(options?: RequestOptions): Promise<StructuredSummaryResponse> {
+    return apiClient.post<StructuredSummaryResponse>('/Ai/SummarizeOperations', null, options);
 }
 
-/** Analyze a late-flagged job with recommendations */
-export function analyzeLateAlert(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/AnalyzeLateAlert', null, { params: { jobId } });
+/** Structured compliance risk briefing */
+export function summarizeCompliance(options?: RequestOptions): Promise<StructuredSummaryResponse> {
+    return apiClient.post<StructuredSummaryResponse>('/Ai/SummarizeCompliance', null, options);
 }
 
-/** Get AI-ranked courier suggestions for a job */
-export function suggestCouriers(jobId: number): Promise<AiCourierSuggestionResponse> {
-    return apiClient.post<AiCourierSuggestionResponse>('/Ai/SuggestCouriers', null, { params: { jobId } });
+// ---------------------------------------------------------------------------
+//  Drafting — AI rewrites a rough "seed" into a polished message/note/email.
+//  Body-only drafts fill a single text field; email drafts fill subject + body.
+// ---------------------------------------------------------------------------
+
+/** Draft a courier/staff message body. */
+export function draftCourierMessage(
+    request: DraftMessageRequest,
+    options?: RequestOptions,
+): Promise<AiDraftResponse> {
+    return apiClient.post<AiDraftResponse>('/Ai/DraftMessage', request, options);
 }
 
-/** Check whether AI features are enabled server-side */
-export async function fetchAiEnabled(): Promise<boolean> {
-    const result = await apiClient.get<{ enabled: boolean }>('/Ai/IsEnabled');
-    return result.enabled;
+/** Draft an email subject + body (compose-email dialog). */
+export function draftEmail(
+    request: DraftEmailRequest,
+    options?: RequestOptions,
+): Promise<AiEmailDraftResponse> {
+    return apiClient.post<AiEmailDraftResponse>('/Ai/DraftEmail', request, options);
+}
+
+/** Draft the POD delivery email subject + body for a job. */
+export function draftPodEmail(jobId: number, options?: RequestOptions): Promise<AiEmailDraftResponse> {
+    return apiClient.post<AiEmailDraftResponse>('/Ai/DraftPodEmail', null, {params: {jobId}, ...options});
+}
+
+/** Draft a job note of a chosen type. */
+export function draftNote(request: DraftNoteRequest, options?: RequestOptions): Promise<AiDraftResponse> {
+    return apiClient.post<AiDraftResponse>('/Ai/DraftNote', request, options);
+}
+
+
+/** Extract structured blockers/tags from a job's notes. */
+export function extractBlockers(jobId: number, options?: RequestOptions): Promise<ExtractBlockersResponse> {
+    return apiClient.post<ExtractBlockersResponse>('/Ai/ExtractBlockers', null, {params: {jobId}, ...options});
+}
+
+/** Re-rate anomaly + suggested accessorial charges for a job. */
+export function analyzePricing(
+    jobId: number,
+    accessorialChargeGroupId: number,
+    options?: RequestOptions,
+): Promise<PricingAnalysisResponse> {
+    return apiClient.post<PricingAnalysisResponse>(
+        '/Ai/AnalyzePricing',
+        null,
+        {params: {jobId, accessorialChargeGroupId}, ...options},
+    );
+}
+
+/** Advisory approve/reject/clarify recommendation for a pending change request. */
+export function triageChangeRequest(
+    requestId: number,
+    jobId: number,
+    options?: RequestOptions,
+): Promise<ChangeRequestTriageResponse> {
+    return apiClient.post<ChangeRequestTriageResponse>(
+        '/Ai/TriageChangeRequest',
+        null,
+        {params: {requestId, jobId}, ...options},
+    );
 }

@@ -1,8 +1,7 @@
-/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen, fireEvent, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {MantineTestProvider} from '../../../__testUtils__';
 import {MapDialog} from './MapDialog';
 import {overviewApi} from '../../../services/overviewApi';
 import {configApi} from '../../../services/configApi';
@@ -24,7 +23,6 @@ jest.mock('../../../components/common/here-map/HereMap', () => ({
     HereMap: ({mapId}: {mapId: string}) => <div data-testid={mapId}>HereMap Mock</div>,
 }));
 
-const theme = createTheme();
 const mockOverviewApi = overviewApi as jest.Mocked<typeof overviewApi>;
 const mockConfigApi = configApi as jest.Mocked<typeof configApi>;
 
@@ -37,7 +35,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+            <MantineTestProvider>{ui}</MantineTestProvider>
         </QueryClientProvider>,
     );
 };

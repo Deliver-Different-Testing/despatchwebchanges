@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Date Utilities Unit Tests
  */
@@ -23,8 +22,11 @@ import {
     formatLongDate,
     formatShortDateTime,
     formatShortDate,
+    getInputDateFormat,
+    parseInputDate,
     formatTime,
     formatRelativeDateTime,
+    formatRelativeTime,
     getTimezoneAbbreviation,
     getTimezoneName,
     formatDateForApiWithTzs,
@@ -169,6 +171,57 @@ describe('dateUtils', () => {
         });
     });
 
+    describe('getInputDateFormat', () => {
+        it.each([
+            [true, 'MM/DD/YYYY'],
+            [false, 'DD/MM/YYYY'],
+        ])('returns numeric format for isUs=%s', (isUs, expected) => {
+            expect(getInputDateFormat(isUs)).toBe(expected);
+        });
+
+        it.each([
+            [{isUSCustomer: true}, 'MM/DD/YYYY'],
+            [{isUSCustomer: false}, 'DD/MM/YYYY'],
+            [undefined, 'MM/DD/YYYY'],
+        ])('falls back to tenant setting for serverConfig=%j', (config, expected) => {
+            if (config !== undefined) (window as any).serverConfig = config;
+            expect(getInputDateFormat()).toBe(expected);
+        });
+    });
+
+    describe('parseInputDate', () => {
+        it('parses month-first when US', () => {
+            const result = parseInputDate('03/04/2025', true);
+            expect(result?.isValid()).toBe(true);
+            expect(result?.format('YYYY-MM-DD')).toBe('2025-03-04');
+        });
+
+        it('parses day-first when non-US', () => {
+            const result = parseInputDate('03/04/2025', false);
+            expect(result?.isValid()).toBe(true);
+            expect(result?.format('YYYY-MM-DD')).toBe('2025-04-03');
+        });
+
+        it('accepts single-digit day/month', () => {
+            const result = parseInputDate('3/4/2025', false);
+            expect(result?.format('YYYY-MM-DD')).toBe('2025-04-03');
+        });
+
+        it.each([
+            ['not-a-date'],
+            ['2025-03-04'],
+            ['03/04'],
+            [''],
+        ])('returns null for invalid input %j', (input) => {
+            expect(parseInputDate(input, false)).toBeNull();
+        });
+
+        it('falls back to tenant setting when isUs not specified', () => {
+            (window as any).serverConfig = {isUSCustomer: false};
+            expect(parseInputDate('03/04/2025')?.format('YYYY-MM-DD')).toBe('2025-04-03');
+        });
+    });
+
     describe('formatTime', () => {
         it.each([
             ['2024-01-15T14:30:00', '14:30'],
@@ -191,6 +244,7 @@ describe('dateUtils', () => {
 
         it('formats today as time only and tomorrow with prefix', () => {
             // Use UTC dates with Z suffix since tenant TZ is UTC — avoids local timezone shifting
+            (window as any).serverConfig = {isUSCustomer: false};
             const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00Z';
             const tomorrow = dayjs.utc().add(1, 'day').format('YYYY-MM-DD') + 'T09:00:00Z';
 
@@ -201,8 +255,27 @@ describe('dateUtils', () => {
         it('preserves wall-clock time from offset-bearing API date', () => {
             // An API date with a non-UTC offset should still show the wall-clock time
             // after parseDateFromApi strips and re-applies the offset
+            (window as any).serverConfig = {isUSCustomer: false};
             const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00+00:00';
             expect(formatRelativeDateTime(today)).toBe('14:30');
+        });
+
+        it('formats today/tomorrow time in 12-hour form for US tenants', () => {
+            (window as any).serverConfig = {isUSCustomer: true};
+            const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00Z';
+            const tomorrow = dayjs.utc().add(1, 'day').format('YYYY-MM-DD') + 'T09:00:00Z';
+
+            expect(formatRelativeDateTime(today)).toBe('2:30 PM');
+            expect(formatRelativeDateTime(tomorrow)).toBe('Tomorrow 9:00 AM');
+        });
+
+        it('formats today/tomorrow time in 24-hour form for non-US tenants', () => {
+            (window as any).serverConfig = {isUSCustomer: false};
+            const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00Z';
+            const tomorrow = dayjs.utc().add(1, 'day').format('YYYY-MM-DD') + 'T09:00:00Z';
+
+            expect(formatRelativeDateTime(today)).toBe('14:30');
+            expect(formatRelativeDateTime(tomorrow)).toBe('Tomorrow 09:00');
         });
     });
 
@@ -236,31 +309,34 @@ describe('dateUtils', () => {
     describe('formatRelativeDateTime cross-timezone behavior', () => {
         it('with matching TZ offset works correctly for today', () => {
             (window as any).TimeZone = 'UTC';
+            (window as any).serverConfig = {isUSCustomer: false};
             const today = dayjs().utc().format('YYYY-MM-DD') + 'T14:30:00+00:00';
             // When input offset matches tenant TZ, conversion doesn't change the day
             expect(formatRelativeDateTime(today)).toBe('14:30');
         });
 
-        it('with cross-TZ offset documents conversion behavior', () => {
-            // Known limitation: formatRelativeDateTime converts to tenant TZ before
-            // comparing to "today"/"tomorrow". When the input offset differs from tenant TZ,
-            // the converted time may land on a different day.
-            //
-            // Example: 09:37 PDT (-07:00) displayed to NZ tenant (UTC+12).
-            // dayjs parses this as 16:37 UTC, then .tz('Pacific/Auckland') = 04:37 next day.
-            // So "today's" delivery in PDT may show as "tomorrow" for the NZ tenant.
-            (window as any).TimeZone = 'New Zealand Standard Time';
+        // Regression: formatRelativeDateTime used to re-project the parsed value through
+        // window.TimeZone, so a 16:24 NZ (+12:00) booking viewed by a browser in a
+        // different zone flipped across midnight and rendered "Tomorrow 04:24". The
+        // wall-clock + offset the backend already stamped must win, regardless of
+        // window.TimeZone.
+        it.each([
+            ['UTC'],
+            ['Pacific Standard Time'],
+            ['New Zealand Standard Time'],
+        ])('shows the input-offset wall-clock for a same-day booking (window.TimeZone=%s)', (tz) => {
+            (window as any).TimeZone = tz;
+            (window as any).serverConfig = {isUSCustomer: false};
+            // "Today" expressed in the +12:00 frame, at 16:24.
+            const input = dayjs().utcOffset(12 * 60).format('YYYY-MM-DD') + 'T16:24:00+12:00';
+            expect(formatRelativeDateTime(input)).toBe('16:24');
+        });
 
-            // Use a time that when converted from PDT to NZ crosses midnight
-            const now = dayjs().tz('America/Los_Angeles');
-            const pdtString = now.format('YYYY-MM-DD') + 'T09:00:00-07:00';
-
-            const result = formatRelativeDateTime(pdtString);
-            // The result will show the NZ-converted time, not the original PDT wall-clock.
-            // We don't assert a specific value since it depends on the current date,
-            // but verify it produces a valid formatted string (not an error).
-            expect(result).not.toBe('No date');
-            expect(result).not.toBe('Invalid date');
+        it('labels Tomorrow using the input-offset wall-clock, not window.TimeZone', () => {
+            (window as any).TimeZone = 'UTC';
+            (window as any).serverConfig = {isUSCustomer: false};
+            const input = dayjs().utcOffset(12 * 60).add(1, 'day').format('YYYY-MM-DD') + 'T09:15:00+12:00';
+            expect(formatRelativeDateTime(input)).toBe('Tomorrow 09:15');
         });
     });
 
@@ -333,6 +409,46 @@ describe('dateUtils', () => {
             const result = formatInfoLogDateTimeString(pdtString);
             expect(result).not.toBe('No date');
             expect(result).not.toBe('Invalid date');
+        });
+    });
+
+    describe('formatRelativeTime', () => {
+        // Fixed "now" so each branch is deterministic regardless of when the suite runs.
+        const now = new Date('2024-06-15T12:00:00Z');
+
+        beforeEach(() => {
+            jest.useFakeTimers().setSystemTime(now);
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        const ago = (ms: number) => new Date(now.getTime() - ms);
+
+        it.each([
+            ['just now under 10s', ago(5 * 1000), 'just now'],
+            ['seconds', ago(45 * 1000), '45s ago'],
+            ['minutes', ago(3 * 60 * 1000), '3m ago'],
+            ['hours', ago(5 * 60 * 60 * 1000), '5h ago'],
+            ['days', ago(2 * 24 * 60 * 60 * 1000), '2d ago'],
+        ])('formats %s as %s', (_, date, expected) => {
+            expect(formatRelativeTime(date)).toBe(expected);
+        });
+
+        it.each([
+            ['second/minute boundary (60s)', ago(60 * 1000), '1m ago'],
+            ['minute/hour boundary (60m)', ago(60 * 60 * 1000), '1h ago'],
+            ['hour/day boundary (24h)', ago(24 * 60 * 60 * 1000), '1d ago'],
+        ])('handles %s', (_, date, expected) => {
+            expect(formatRelativeTime(date)).toBe(expected);
+        });
+
+        it('rounds a DST-shortened 2 calendar days (47h elapsed) up to "2d ago" instead of truncating to 1d', () => {
+            // A due date computed as "2 days ago" via calendar-day subtraction can be only
+            // 47 real hours back across a DST spring-forward — truncating hours/24 would
+            // wrongly read "1d ago".
+            expect(formatRelativeTime(ago(47 * 60 * 60 * 1000))).toBe('2d ago');
         });
     });
 });

@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * useJobListData Hook Tests
  *
@@ -8,29 +7,12 @@
 
 import React from 'react';
 import {renderHook, waitFor, act} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClient} from '@tanstack/react-query';
+import {createQueryWrapper, createTestQueryClient} from '../__testUtils__';
 import {useJobListData} from './useJobListData';
 import type {FetchConfig, JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
 
 // ── Helpers ──────────────────────────────────────────────────────────
-
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-                gcTime: 0,
-                staleTime: 0,
-            },
-        },
-    });
-
-const createWrapper = (queryClient?: QueryClient) => {
-    const client = queryClient ?? createTestQueryClient();
-    return ({children}: { children: React.ReactNode }) => (
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-};
 
 const mockJobs = [
     {id: 1, jobNo: 'J001'},
@@ -59,15 +41,15 @@ function createMockFetchConfig(overrides?: Partial<FetchConfig>): FetchConfig {
 
 // ── Tests ────────────────────────────────────────────────────────────
 
+/** Render the hook against the default fetch config and a wrapper of its own. */
+function renderJobListData(config = createMockFetchConfig()) {
+    return {...renderHook(() => useJobListData(config), {wrapper: createQueryWrapper()}), config};
+}
+
 describe('useJobListData', () => {
     describe('initial fetch', () => {
         it('should fetch data on mount with initial params', async () => {
-            const config = createMockFetchConfig();
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createWrapper()},
-            );
+            const {result, config} = renderJobListData();
 
             // Initially loading
             expect(result.current.isLoading).toBe(true);
@@ -93,7 +75,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper()},
+                {wrapper: createQueryWrapper()},
             );
 
             expect(result.current.jobs).toEqual([]);
@@ -105,12 +87,7 @@ describe('useJobListData', () => {
 
     describe('updateSort', () => {
         it('should update sort params and trigger refetch', async () => {
-            const config = createMockFetchConfig();
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createWrapper()},
-            );
+            const {result, config} = renderJobListData();
 
             await waitFor(() => {
                 expect(result.current.isLoading).toBe(false);
@@ -136,12 +113,7 @@ describe('useJobListData', () => {
         });
 
         it('should expose updated params after sort change', async () => {
-            const config = createMockFetchConfig();
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createWrapper()},
-            );
+            const {result} = renderJobListData();
 
             await waitFor(() => {
                 expect(result.current.isLoading).toBe(false);
@@ -158,12 +130,7 @@ describe('useJobListData', () => {
 
     describe('updateParams', () => {
         it('should merge new params and trigger refetch', async () => {
-            const config = createMockFetchConfig();
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createWrapper()},
-            );
+            const {result, config} = renderJobListData();
 
             await waitFor(() => {
                 expect(result.current.isLoading).toBe(false);
@@ -189,12 +156,7 @@ describe('useJobListData', () => {
         });
 
         it('should expose merged params', async () => {
-            const config = createMockFetchConfig();
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createWrapper()},
-            );
+            const {result, config} = renderJobListData();
 
             await waitFor(() => {
                 expect(result.current.isLoading).toBe(false);
@@ -211,12 +173,7 @@ describe('useJobListData', () => {
         });
 
         it('should clear selectedClearListId when updated with undefined', async () => {
-            const config = createMockFetchConfig();
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createWrapper()},
-            );
+            const {result} = renderJobListData();
 
             await waitFor(() => {
                 expect(result.current.isLoading).toBe(false);
@@ -236,12 +193,7 @@ describe('useJobListData', () => {
         });
 
         it('should retain stale selectedClearListId when key is omitted from update', async () => {
-            const config = createMockFetchConfig();
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createWrapper()},
-            );
+            const {result} = renderJobListData();
 
             await waitFor(() => {
                 expect(result.current.isLoading).toBe(false);
@@ -272,7 +224,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper(queryClient)},
+                {wrapper: createQueryWrapper(queryClient)},
             );
 
             await waitFor(() => {
@@ -298,7 +250,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper()},
+                {wrapper: createQueryWrapper()},
             );
 
             await waitFor(() => {
@@ -314,7 +266,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper()},
+                {wrapper: createQueryWrapper()},
             );
 
             await waitFor(() => {
@@ -342,7 +294,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper()},
+                {wrapper: createQueryWrapper()},
             );
 
             await waitFor(() => {
@@ -367,7 +319,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper()},
+                {wrapper: createQueryWrapper()},
             );
 
             await waitFor(() => {
@@ -390,7 +342,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper()},
+                {wrapper: createQueryWrapper()},
             );
 
             await waitFor(() => {
@@ -418,6 +370,93 @@ describe('useJobListData', () => {
             expect(fetchFn.mock.calls[1][0].page).toBe(1);
         });
 
+        it('keeps the first page status counts, which later pages do not repeat', async () => {
+            // The stats header describes the whole result set, so the server answers it once with
+            // the first page — a later page must not blank it out.
+            const counts = {total: 574, active: 300, transit: 260, done: 14};
+            const fetchFn = jest.fn()
+                .mockResolvedValueOnce({jobs: [{id: 1}] as any[], totalCount: 574, hasMore: true, statusCounts: counts})
+                .mockResolvedValueOnce({jobs: [{id: 2}] as any[], totalCount: 574, hasMore: false});
+
+            const {result} = renderHook(
+                () => useJobListData(createMockFetchConfig({fetchFn})),
+                {wrapper: createQueryWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.statusCounts).toEqual(counts);
+            });
+
+            act(() => {
+                result.current.fetchNextPage();
+            });
+
+            await waitFor(() => {
+                expect(result.current.jobs).toHaveLength(2);
+            });
+
+            expect(result.current.statusCounts).toEqual(counts);
+        });
+
+        it('drops the held status counts once the list is disabled', async () => {
+            // Job Search disables the list it is not searching. An emptied list must not keep
+            // showing the numbers it had before.
+            const counts = {total: 4, active: 2, transit: 1, done: 1};
+            const config = createMockFetchConfig({
+                fetchFn: jest.fn().mockResolvedValue(
+                    {jobs: mockJobs, totalCount: 4, hasMore: false, statusCounts: counts}),
+            });
+
+            const {result} = renderHook(() => useJobListData(config), {wrapper: createQueryWrapper()});
+
+            await waitFor(() => {
+                expect(result.current.statusCounts).toEqual(counts);
+            });
+
+            act(() => {
+                result.current.updateParams({disabled: true});
+            });
+
+            expect(result.current.statusCounts).toBeNull();
+        });
+
+        it('reports no status counts when the server sends none', async () => {
+            const {result} = renderJobListData();
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            expect(result.current.statusCounts).toBeNull();
+        });
+
+        it('keeps the first page total when a later page re-counts differently', async () => {
+            // The server re-runs the count on every page fetch, so a job archived mid-scroll used
+            // to make the footer total jump.
+            const fetchFn = jest.fn()
+                .mockResolvedValueOnce({jobs: [{id: 1}] as any[], totalCount: 574, hasMore: true})
+                .mockResolvedValueOnce({jobs: [{id: 2}] as any[], totalCount: 561, hasMore: false});
+
+            const {result} = renderHook(
+                () => useJobListData(createMockFetchConfig({fetchFn})),
+                {wrapper: createQueryWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            act(() => {
+                result.current.fetchNextPage();
+            });
+
+            await waitFor(() => {
+                expect(result.current.jobs).toHaveLength(2);
+            });
+
+            expect(result.current.totalCount).toBe(574);
+        });
+
         it('should expose isFetchingNextPage while loading more', async () => {
             let resolvePage1: (value: JobSearchResult) => void;
             const page1Promise = new Promise<JobSearchResult>((res) => {
@@ -432,7 +471,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper()},
+                {wrapper: createQueryWrapper()},
             );
 
             await waitFor(() => {
@@ -476,7 +515,7 @@ describe('useJobListData', () => {
 
             const {result} = renderHook(
                 () => useJobListData(config),
-                {wrapper: createWrapper()},
+                {wrapper: createQueryWrapper()},
             );
 
             await waitFor(() => {
@@ -489,6 +528,69 @@ describe('useJobListData', () => {
             });
 
             expect(config.fetchFn).toHaveBeenCalledTimes(1); // only initial fetch
+        });
+    });
+    /*
+     * A params change swaps the query key, so the list used to blank out until the
+     * new page landed — which tears down the table's scroll container and loses the
+     * operator's horizontal position. The previous rows are held instead.
+     */
+    describe('holding the previous results', () => {
+        function deferred() {
+            let resolve!: (value: JobSearchResult) => void;
+            const promise = new Promise<JobSearchResult>((res) => { resolve = res; });
+            return {promise, resolve};
+        }
+
+        it('keeps the previous rows visible while a params change refetches', async () => {
+            const next = deferred();
+            const fetchFn = jest.fn()
+                .mockResolvedValueOnce({jobs: mockJobs, totalCount: 2, hasMore: false})
+                .mockReturnValueOnce(next.promise);
+            const {result} = renderHook(
+                () => useJobListData(createMockFetchConfig({fetchFn})),
+                {wrapper: createQueryWrapper()},
+            );
+            await waitFor(() => expect(result.current.jobs).toEqual(mockJobs));
+
+            act(() => {
+                result.current.updateParams({despatchViewIds: [2]});
+            });
+
+            await waitFor(() => expect(result.current.isFetching).toBe(true));
+            expect(result.current.jobs).toEqual(mockJobs);
+            expect(result.current.isLoading).toBe(false);
+
+            const freshJobs = [{id: 9, jobNo: 'J009'}] as any[];
+            act(() => {
+                next.resolve({jobs: freshJobs, totalCount: 1, hasMore: false});
+            });
+
+            await waitFor(() => expect(result.current.jobs).toEqual(freshJobs));
+        });
+
+        it('does not page a list that is still showing the previous results', async () => {
+            const next = deferred();
+            const fetchFn = jest.fn()
+                .mockResolvedValueOnce({jobs: mockJobs, totalCount: 4, hasMore: true})
+                .mockReturnValueOnce(next.promise);
+            const {result} = renderHook(
+                () => useJobListData(createMockFetchConfig({fetchFn})),
+                {wrapper: createQueryWrapper()},
+            );
+            await waitFor(() => expect(result.current.jobs).toEqual(mockJobs));
+
+            act(() => {
+                result.current.updateParams({despatchViewIds: [2]});
+            });
+            await waitFor(() => expect(result.current.isFetching).toBe(true));
+
+            act(() => {
+                result.current.fetchNextPage();
+            });
+
+            // Only the initial fetch and the pending first page of the new query.
+            expect(fetchFn).toHaveBeenCalledTimes(2);
         });
     });
 });

@@ -1,7 +1,8 @@
 <md-content class="md-dense nationwide-view">
     <!-- React App Shell (Toolbar + Side Navigation) -->
     <react-app-shell
-            title="{{ ctrl.isUsCustomer ? 'Domestic' : 'Nationwide' }} Dashboard"
+            section="Dashboards"
+            title="{{ ctrl.isUsCustomer ? 'Domestic' : 'Nationwide' }}"
             messages-count="ctrl.unReadMessageCount"
             on-messages-click="ctrl.openMessagingDialog($event)"
             views="ctrl.views"
@@ -13,6 +14,7 @@
             on-save-layout="ctrl.saveLayout()"
             on-load-layout="ctrl.loadLayout(index)"
             on-delete-layout="ctrl.deleteLayout(index)"
+            on-customize-panels="ctrl.openCustomizePanelsDialog()"
             on-settings-click="ctrl.openSettingsDialog($event)"
             date-filter-data="ctrl.dateFilterData"
             app-page="nationwide"
@@ -24,7 +26,7 @@
     </div>
 
     <div class="dashboard-padding">
-        <div class="columns" ng-class="{'layout-locked': ctrl.isDefaultLayout(), 'us-theme': ctrl.isUsCustomer, 'nz-theme': !ctrl.isUsCustomer}">
+        <div class="columns" ng-class="{'layout-locked': ctrl.isDefaultLayout()}">
             <div
                     class="column"
                     id="co-{{column.id}}"

@@ -492,24 +492,32 @@ function formatFlagValue(value: string): string {
 /**
  * The backend stores the Packages change-request payload as the JSON
  * serialised by EditParcelDimensionsDialog: `{ parcels: ParcelDimensions[],
- * weight?: number }`. We collapse it to a single tidy line so it fits in the
- * locked summary card, the history panel rows, and pending-change badges.
+ * weight?: number, calculateDimsOncePerJob?: boolean }`. We collapse it to a
+ * single tidy line so it fits in the locked summary card, the history panel
+ * rows, and pending-change badges.
  */
 interface PackagesLike {
     parcels?: Array<{itemName?: string; weight?: number}>;
     weight?: number;
+    calculateDimsOncePerJob?: boolean;
 }
 
 function formatPackagesBlob(value: string): string {
     try {
         const parsed = JSON.parse(value) as PackagesLike;
         const count = parsed.parcels?.length ?? 0;
-        const parcelLabel = `${count} parcel${count === 1 ? '' : 's'}`;
+        let label = `${count} parcel${count === 1 ? '' : 's'}`;
         if (parsed.weight != null && Number.isFinite(parsed.weight) && parsed.weight > 0) {
             const unit = isUsCustomer() ? 'lbs' : 'kg';
-            return `${parcelLabel} · ${parsed.weight} ${unit}`;
+            label += ` · ${parsed.weight} ${unit}`;
         }
-        return parcelLabel;
+        // Per Item is the default/implicit mode — only call it out when the
+        // request switches dimensions to Per Job, since that also changes how
+        // the job re-rates on approval.
+        if (parsed.calculateDimsOncePerJob) {
+            label += ' · Per Job';
+        }
+        return label;
     } catch {
         return value;
     }

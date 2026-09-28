@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * JobDetails Component Tests
  *
@@ -12,11 +11,11 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createMockJob, createMockReadTracker} from './__testUtils__/mockJob';
 import type {MountJobDetailsConfig, IJob} from './JobDetails.types';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
@@ -118,7 +117,6 @@ jest.mock('./components/PodPhotosSection', () => ({
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-const theme = createTheme();
 
 function createQueryClient() {
     return new QueryClient({
@@ -143,9 +141,9 @@ function renderJobDetails(configOverrides?: Partial<MountJobDetailsConfig>) {
 
     return render(
         <QueryClientProvider client={createQueryClient()}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <JobDetails config={config} />
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -154,6 +152,9 @@ const defaultActions = {
     textDialog: {open: false, title: '', label: '', initialValue: ''},
     handleTextDialogSubmit: jest.fn(),
     handleTextDialogCancel: jest.fn(),
+    cascadeDialog: {open: false, jobNumber: '', newDateLabel: '', members: []},
+    handleCascadeChoose: jest.fn(),
+    handleCascadeCancel: jest.fn(),
     editDateAndTime: jest.fn(),
     handleEditPickupAddress: jest.fn(),
     handleEditDeliveryAddress: jest.fn(),
@@ -201,6 +202,23 @@ const defaultActions = {
     handleEditFirstDue: jest.fn(),
     handleEditStopDate: jest.fn(),
     handleEditRestartDate: jest.fn(),
+
+    // Universal Dispatch Dialog wiring — JobDetails reads these to render the dialog.
+    dispatchDialog: {open: false, initialType: 'Courier' as const},
+    closeDispatchDialog: jest.fn(),
+    dispatchDialogConfirmCourier: jest.fn().mockResolvedValue(undefined),
+    dispatchDialogConfirmPartner: jest.fn().mockResolvedValue(undefined),
+
+    // Saved-flight dialog wiring.
+    handleEditSavedFlight: jest.fn(),
+    savedFlightDialog: {open: false, bookingId: 0},
+    closeSavedFlightDialog: jest.fn(),
+    savedFlightDialogConfirm: jest.fn().mockResolvedValue(undefined),
+
+    // CreateAheadDays backfill dialog wiring.
+    handleInitialDaysChange: jest.fn().mockResolvedValue(undefined),
+    createAheadBackfillDialog: {open: false, jobId: 0, oldValue: 0, newValue: 0},
+    closeCreateAheadBackfillDialog: jest.fn(),
 };
 
 function setupDefaultMocks(overrides?: {
@@ -227,6 +245,8 @@ function setupDefaultMocks(overrides?: {
         toggleReadStatus: jest.fn().mockResolvedValue(undefined),
         dispatchJob: jest.fn().mockResolvedValue(undefined),
         isUpdating: false,
+        pendingRateChanges: [],
+        selectedRateJobIds: new Set<number>(),
     });
 
     mockUseFieldVisibility.mockReturnValue({
@@ -266,9 +286,9 @@ describe('JobDetails', () => {
     describe('loading and empty states', () => {
         it('renders loading skeletons when loading with no job data', () => {
             setupDefaultMocks({isLoading: true, sortedRelatedJobs: []});
-            const {container} = renderJobDetails();
+            renderJobDetails();
 
-            expect(container.querySelectorAll('.MuiSkeleton-root').length).toBeGreaterThan(0);
+            expect(screen.getByTestId('job-detail-loading')).toBeInTheDocument();
             expect(screen.queryByTestId('job-detail-header')).not.toBeInTheDocument();
         });
 
@@ -277,6 +297,16 @@ describe('JobDetails', () => {
             renderJobDetails();
 
             expect(screen.getByText('Select a job to view details')).toBeInTheDocument();
+        });
+    });
+
+    describe('outer chrome', () => {
+        it('flattens the card and read-status corners so it sits flush inside its host', () => {
+            setupDefaultMocks({job: createMockJob()});
+            renderJobDetails();
+
+            expect(screen.getByTestId('job-details-card')).toHaveStyle({borderRadius: '0'});
+            expect(screen.getByTestId('job-details-read-status')).toHaveStyle({borderRadius: '0'});
         });
     });
 
@@ -306,9 +336,7 @@ describe('JobDetails', () => {
             setupDefaultMocks({photosLoading: true});
             renderJobDetails();
 
-            await waitFor(() => {
-                expect(screen.getByTestId('pod-photos-section')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('pod-photos-section')).toBeInTheDocument();
         });
 
         it('does not render PodPhotosSection when no photos and not loading', () => {
@@ -322,9 +350,7 @@ describe('JobDetails', () => {
             setupDefaultMocks();
             renderJobDetails({isRecurringJob: true});
 
-            await waitFor(() => {
-                expect(screen.getByTestId('recurring-job-fields')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('recurring-job-fields')).toBeInTheDocument();
         });
 
         it('does not render RecurringJobFields for non-recurring jobs', () => {
@@ -373,6 +399,8 @@ describe('JobDetails', () => {
                 toggleReadStatus,
                 dispatchJob: jest.fn().mockResolvedValue(undefined),
                 isUpdating: false,
+        pendingRateChanges: [],
+        selectedRateJobIds: new Set<number>(),
             });
 
             renderJobDetails({onJobReadChanged});
@@ -478,7 +506,7 @@ describe('JobDetails', () => {
             const {JobDetails} = require('./JobDetails');
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
-                    <ThemeProvider theme={theme}>
+                    <MantineTestProvider>
                         <JobDetails config={{
                             jobId: 200,
                             isRecurringJob: false,
@@ -486,7 +514,7 @@ describe('JobDetails', () => {
                             isUsCustomer: false,
                             showToast: jest.fn(),
                         }} />
-                    </ThemeProvider>
+                    </MantineTestProvider>
                 </QueryClientProvider>,
             );
 
@@ -503,14 +531,14 @@ describe('JobDetails', () => {
             setupDefaultMocks({isLoading: true});
             renderJobDetails();
 
-            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+            expect(screen.getByLabelText('Loading job')).toBeInTheDocument();
         });
 
         it('shows linear progress when fetching (background refetch)', () => {
             setupDefaultMocks({isFetching: true});
             renderJobDetails();
 
-            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+            expect(screen.getByLabelText('Loading job')).toBeInTheDocument();
         });
 
         it('shows linear progress when updating', () => {
@@ -521,17 +549,19 @@ describe('JobDetails', () => {
                 toggleReadStatus: jest.fn().mockResolvedValue(undefined),
                 dispatchJob: jest.fn().mockResolvedValue(undefined),
                 isUpdating: true,
+                pendingRateChanges: [],
+                selectedRateJobIds: new Set<number>(),
             });
             renderJobDetails();
 
-            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+            expect(screen.getByLabelText('Loading job')).toBeInTheDocument();
         });
 
         it('hides linear progress when not loading, fetching, or updating', () => {
             setupDefaultMocks();
             renderJobDetails();
 
-            expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
+            expect(screen.queryByLabelText('Loading job')).not.toBeInTheDocument();
         });
     });
 
@@ -565,6 +595,104 @@ describe('JobDetails', () => {
             act(() => {
                 capturedRelatedJobTabsProps.onTabChange(1);
             });
+        });
+
+        it('initializes selectedTabIndex against fresh data, not stale keepPreviousData', () => {
+            // Race scenario: user has family A selected, clicks a child leg in family B.
+            // The bridge swaps config.jobId to family B's child immediately, but React Query
+            // serves family A's sortedRelatedJobs until the new fetch resolves. The
+            // initialization effect must NOT lock the ref to the new jobId on the stale
+            // data - if it does, the ref guard blocks the legitimate re-initialization
+            // once fresh data lands and the tab stays stuck on family A's first entry
+            // (which, after the rootParentId sort fix, is the family parent).
+            const familyAParent  = createMockJob({id: 100, jobNo: 'P1000'});
+            const familyALhp     = createMockJob({id: 101, jobNo: 'P1000LHP'});
+            const familyBParent  = createMockJob({id: 200, jobNo: 'E256HAM'});
+            const familyBLhp     = createMockJob({id: 201, jobNo: 'E256HAMLHP'});
+            const familyBLh1     = createMockJob({id: 202, jobNo: 'E256HAMLH1'});
+
+            // Render 1: jobId points to family B's LHP, but data is still family A (stale).
+            setupDefaultMocks({sortedRelatedJobs: [familyAParent, familyALhp]});
+            const {rerender} = renderJobDetails({jobId: 201});
+
+            // Effect found no match for 201 in family A - selectedTabIndex stays at the
+            // initial 0 and the ref stays uninitialised (this is the bit the fix changes).
+            expect(capturedRelatedJobTabsProps.selectedTabIndex).toBe(0);
+
+            // Render 2: fresh data for family B arrives.
+            setupDefaultMocks({sortedRelatedJobs: [familyBParent, familyBLhp, familyBLh1]});
+            const {JobDetails} = require('./JobDetails');
+            const freshConfig: MountJobDetailsConfig = {
+                jobId: 201,
+                isRecurringJob: false,
+                isBulkJob: false,
+                isUsCustomer: false,
+                showToast: jest.fn(),
+                onJobUpdate: jest.fn(),
+                onJobReadChanged: jest.fn(),
+            };
+            rerender(
+                <QueryClientProvider client={createQueryClient()}>
+                    <MantineTestProvider>
+                        <JobDetails config={freshConfig} />
+                    </MantineTestProvider>
+                </QueryClientProvider>,
+            );
+
+            // Effect runs against fresh data, finds LHP at index 1.
+            expect(capturedRelatedJobTabsProps.selectedTabIndex).toBe(1);
+            expect(capturedRelatedJobTabsProps.sortedRelatedJobs[1].jobNo).toBe('E256HAMLHP');
+        });
+    });
+
+    describe('price change dialogs', () => {
+        function renderWithPendingRates(pendingRateChanges: unknown[]) {
+            setupDefaultMocks();
+            mockUseJobUpdate.mockReturnValue({
+                updateField: jest.fn().mockResolvedValue(undefined),
+                updateAddress: jest.fn().mockResolvedValue(undefined),
+                toggleReadStatus: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                isUpdating: false,
+                pendingRateChanges,
+                selectedRateJobIds: new Set<number>(pendingRateChanges.map((r: any) => r.jobId)),
+                toggleRateSelection: jest.fn(),
+                toggleAllRateSelection: jest.fn(),
+                isApplyingRate: false,
+                confirmRateChange: jest.fn(),
+                dismissRateChange: jest.fn(),
+                checkForRateChange: jest.fn(),
+                checkForRateChanges: jest.fn(),
+                invalidateJobLists: jest.fn(),
+                invalidateJob: jest.fn(),
+            });
+            renderJobDetails();
+        }
+
+        const rateRow = (jobId: number, jobNo: string) => ({
+            jobId, jobNo, oldPrice: 100, newPrice: 120, description: null, isPrebook: false,
+        });
+
+        it('shows the single-job modal for one price change', () => {
+            renderWithPendingRates([rateRow(1, 'J100')]);
+
+            expect(screen.getByText('Price Change')).toBeInTheDocument();
+            expect(screen.queryByText('Prices changed')).not.toBeInTheDocument();
+        });
+
+        it('shows the family list when a cascade changed several prices', () => {
+            renderWithPendingRates([rateRow(1, 'J100'), rateRow(2, 'J100LHP')]);
+
+            expect(screen.getByText('Prices changed')).toBeInTheDocument();
+            expect(screen.getByText('2 jobs affected')).toBeInTheDocument();
+            expect(screen.queryByText('Price Change')).not.toBeInTheDocument();
+        });
+
+        it('shows neither when nothing changed price', () => {
+            renderWithPendingRates([]);
+
+            expect(screen.queryByText('Price Change')).not.toBeInTheDocument();
+            expect(screen.queryByText('Prices changed')).not.toBeInTheDocument();
         });
     });
 });

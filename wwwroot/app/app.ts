@@ -2,46 +2,32 @@ import {IAppConfig} from "./interfaces/app-config.interface";
 import {AppPage} from "./enums/app-pages.enum";
 import "./react/components/common/pod-photo-viewer/pod-photo-viewer-react.module";
 import "./react/components/dialogs/note-management-dialog/note-management-dialog-react.module";
-import {
-    FeatureInDevelopmentDialogController
-} from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
 import ToastrService from "./services/toastr.service";
-import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
 import "./react/components/dialogs/event-group-dialog/event-group-dialog-react.module";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
-import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
+import {resolveDashboardRedirect} from "./react/services/dashboardRouteGuard";
+import {confirmNavigationAllowed} from "./react/services/unsavedChangesGuard";
 import ThemeConfig from "./materialTheme";
-import {bytesFilter, replaceFilter, timezoneShortFilter} from "./filters";
-import EditParcelDimensionsDialogService
-    from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
+import {bytesFilter, momentFormatFilter, replaceFilter, timezoneShortFilter} from "./filters";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobAddStopService from "./services/job-add-stop.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
-import TruckCourierStatusDialogController
-    from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
-import TruckCourierStatusDialogService
-    from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
-import VoidJobConfirmationDialogService
-    from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import SwapPodsDialogService from "./components/dialogs/swap-pods-dialog/swap-pods-dialog.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
-import SimplePriceEditDialogService
-    from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.service";
-import BulkPriceUploadDialogService
-    from "./components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
 import {DriverLocationsReactComponent} from "./react/components/common/driver-locations/driver-locations-react.module";
 import {NoDataReactComponent} from "./react/components/common/no-data/no-data-react.module";
+import {HereMapReactComponent} from "./react/components/common/here-map";
+import {DispatchMapReactComponent} from "./react/components/common/dispatch-map";
 import {
     FlightAgentDataTableReactComponent
 } from "./react/components/common/flight-agent-data-table/flight-agent-data-table-react.module";
@@ -85,23 +71,39 @@ app.config(["$mdThemingProvider", "APP_CONFIG",
     }
 ]);
 
-// Set theme CSS custom properties based on the customer region
+// Publish the tenant's brand primary as CSS custom properties for the legacy
+// stylesheets (udispatch.less drag/drop chrome).
 app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     const root = document.documentElement;
-    if (appConfig.US_Customer) {
-        root.style.setProperty('--theme-primary', '#2196f3');
-        root.style.setProperty('--theme-primary-light', 'rgba(33, 150, 243, 0.15)');
-        root.style.setProperty('--theme-primary-medium', 'rgba(33, 150, 243, 0.3)');
-        root.style.setProperty('--theme-primary-strong', 'rgba(33, 150, 243, 0.5)');
-        document.body.classList.add('theme-us');
-    } else {
-        // Match MUI theme urgentPrimaryPalette[500] - warm amber gold
-        root.style.setProperty('--theme-primary', '#f4c430');
-        root.style.setProperty('--theme-primary-light', 'rgba(244, 196, 48, 0.15)');
-        root.style.setProperty('--theme-primary-medium', 'rgba(244, 196, 48, 0.3)');
-        root.style.setProperty('--theme-primary-strong', 'rgba(244, 196, 48, 0.5)');
-        document.body.classList.add('theme-nz');
-    }
+    // US tenants → DFRNT Cyan #3bc7f4 = rgb(59, 199, 244); non-US (NZ) tenants →
+    // the warm amber-gold "urgent" brand #f4c430 = rgb(244, 196, 48).
+    const primary = appConfig.US_Customer
+        ? {hex: '#3bc7f4', rgb: '59, 199, 244'}
+        : {hex: '#f4c430', rgb: '244, 196, 48'};
+    root.style.setProperty('--theme-primary', primary.hex);
+    root.style.setProperty('--theme-primary-light', `rgba(${primary.rgb}, 0.15)`);
+    root.style.setProperty('--theme-primary-medium', `rgba(${primary.rgb}, 0.3)`);
+    root.style.setProperty('--theme-primary-strong', `rgba(${primary.rgb}, 0.5)`);
+    // Body class also drives the non-US colour overrides in the legacy stylesheets
+    // (.theme-nz blocks) alongside the non-colour tenant differences.
+    document.body.classList.add(appConfig.US_Customer ? 'theme-us' : 'theme-nz');
+}]);
+
+// Enforce the DF-Admin dashboard grant on the router, not just the nav: a hidden
+// dashboard is otherwise still reachable by URL. Ungated sessions resolve to null
+// here and the transition proceeds untouched.
+app.run(["$transitions", ($transitions: any) => {
+    $transitions.onBefore({}, (transition: any) => {
+        const target = transition.to().name;
+        const redirect = resolveDashboardRedirect(target);
+        return redirect ? transition.router.stateService.target(redirect) : true;
+    });
+}]);
+
+// Blocks leaving a page (e.g. Settings) with unsaved edits — the page itself
+// registers the check via registerUnsavedChangesGuard while it has a dirty draft.
+app.run(["$transitions", ($transitions: any) => {
+    $transitions.onBefore({}, () => confirmNavigationAllowed());
 }]);
 
 // Log state transition errors so route resolve failures are visible in the console
@@ -203,6 +205,7 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
 app.filter("bytes", () => bytesFilter);
 app.filter('replace', () => replaceFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
+app.filter('momentFormat', () => momentFormatFilter);
 app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components
@@ -211,32 +214,24 @@ app.component("taskItemReact", TaskItemReactComponent);
 app.component("driverLocationsReact", DriverLocationsReactComponent);
 app.component("noDataReact", NoDataReactComponent);
 app.component("flightAgentDataTableReact", FlightAgentDataTableReactComponent);
+app.component("hereMapReact", HereMapReactComponent);
+app.component("dispatchMapReact", DispatchMapReactComponent);
 
 // Directives
 app.directive("reactAppShell", reactAppShellDirective);
 
 // Dialogs
-app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
-app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 
 // Services
 app.service("configService", ConfigService);
 app.service("DispatchData", DispatchCoreService);
 app.service("toastrService", ToastrService);
-app.service('selectDialogService', SelectDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
-app.service("priceBreakdownDialogService", PriceBreakdownDialogService);
 app.service("jobFileUploadDialogService", JobFileUploadDialogService);
-app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
-app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingDialogService", MessagingDialogService);
-app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
-app.service('swapPodsDialogService', SwapPodsDialogService);
-app.service('simplePriceEditDialogService', SimplePriceEditDialogService);
-app.service('bulkPriceUploadDialogService', BulkPriceUploadDialogService);
 app.service('dispatchJobService', DispatchExecutorService);
 
 export default app;

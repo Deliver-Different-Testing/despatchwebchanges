@@ -1,8 +1,7 @@
-/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {MantineTestProvider} from '../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {OverviewPage} from './OverviewPage';
 
 // ContactID and FirstName are defined in setup.ts as 0 and 'Test'
@@ -20,10 +19,16 @@ jest.mock('./components/StatsTabs', () => ({
     ),
 }));
 
-jest.mock('./components/DeliveriesTable', () => ({
+jest.mock('../../components/common/deliveries-table', () => ({
     DeliveriesTable: (props: any) => (
         <div data-testid="deliveries-table">
             DeliveriesTable: loading={String(props.isLoading)} total={props.total}
+            <button
+                data-testid="open-job-detail"
+                onClick={() => props.onOpenJobDetail({jobId: 123, jobName: 'JOB-123'})}
+            >
+                open
+            </button>
         </div>
     ),
 }));
@@ -70,7 +75,6 @@ const mockUseOverviewSpeeds = useOverviewSpeeds as jest.MockedFunction<typeof us
 const mockUseOverviewStats = useOverviewStats as jest.MockedFunction<typeof useOverviewStats>;
 const mockUseOverviewOpenJobs = useOverviewOpenJobs as jest.MockedFunction<typeof useOverviewOpenJobs>;
 
-const theme = createTheme();
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -94,9 +98,9 @@ function renderOverviewPage(overrides: Partial<React.ComponentProps<typeof Overv
 
     return render(
         <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
+            <MantineTestProvider>
                 <OverviewPage {...defaultProps} />
-            </ThemeProvider>
+            </MantineTestProvider>
         </QueryClientProvider>,
     );
 }
@@ -159,7 +163,8 @@ describe('OverviewPage', () => {
 
         it('renders search input', () => {
             renderOverviewPage();
-            expect(screen.getByPlaceholderText('Search deliveries...')).toBeInTheDocument();
+            // The input carries a real accessible name now, not just a placeholder.
+            expect(screen.getByRole('textbox', {name: 'Search deliveries'})).toBeInTheDocument();
         });
     });
 
@@ -167,7 +172,7 @@ describe('OverviewPage', () => {
         it('saves collapse state when toggled', () => {
             renderOverviewPage();
 
-            const collapseButton = screen.getByText('expand_less').closest('button')!;
+            const collapseButton = screen.getByRole('button', {name: 'Collapse overview'});
             fireEvent.click(collapseButton);
 
             // Verify state was persisted to localStorage
@@ -175,12 +180,11 @@ describe('OverviewPage', () => {
             expect(saved.overview).toBe(true);
         });
 
-        it('shows expand_more icon when collapsed from localStorage', () => {
+        it('shows the expand affordance when collapsed from localStorage', () => {
             localStorage.setItem('cardCollapseStates', JSON.stringify({overview: true}));
             renderOverviewPage();
 
-            // When collapsed, the icon should show expand_more text
-            expect(screen.getByText('expand_more')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Expand overview'})).toBeInTheDocument();
         });
     });
 
@@ -214,6 +218,34 @@ describe('OverviewPage', () => {
             renderOverviewPage();
 
             expect(screen.getByTestId('open-jobs-widget')).toHaveTextContent('loading=true');
+        });
+    });
+
+    describe('View job details confirmation', () => {
+        it('opens a confirmation dialog before opening the job, and only navigates on confirm', () => {
+            const onOpenJobDetail = jest.fn();
+            renderOverviewPage({onOpenJobDetail});
+
+            fireEvent.click(screen.getByTestId('open-job-detail'));
+
+            // Confirmation dialog shown, nothing navigated yet
+            expect(screen.getByText('Open job JOB-123')).toBeInTheDocument();
+            expect(onOpenJobDetail).not.toHaveBeenCalled();
+
+            fireEvent.click(screen.getByRole('button', {name: 'Open Job'}));
+
+            expect(onOpenJobDetail).toHaveBeenCalledWith(123);
+        });
+
+        it('does not navigate when the confirmation is cancelled', () => {
+            const onOpenJobDetail = jest.fn();
+            renderOverviewPage({onOpenJobDetail});
+
+            fireEvent.click(screen.getByTestId('open-job-detail'));
+            fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+
+            expect(onOpenJobDetail).not.toHaveBeenCalled();
+            expect(screen.queryByText('Open job JOB-123')).not.toBeInTheDocument();
         });
     });
 

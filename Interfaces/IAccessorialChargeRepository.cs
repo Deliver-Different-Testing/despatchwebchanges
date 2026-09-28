@@ -12,4 +12,5 @@ public interface IAccessorialChargeRepository
     Task DeleteChargeAsync(int jobAccessorialChargeId);
     Task<decimal> GetJobAmountAsync(int jobId);
     Task<IReadOnlyList<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId);
+    Task<decimal> GetTotalAppliedChargesAsync(int jobId);
 }

@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
@@ -101,13 +102,86 @@ public class JobMappingsTests
         Assert.Equal(archiveResult.TailLiftPu, liveResult.TailLiftPu);
         Assert.Equal(archiveResult.TailLiftDo, liveResult.TailLiftDo);
         Assert.Equal(archiveResult.DeliverToPrivateRes, liveResult.DeliverToPrivateRes);
-        // With inline mapping, empty collections result in empty list
         Assert.Empty(liveResult.ParcelDimensions);
-        Assert.True(archiveResult.ParcelDimensions is null or []); // Either null or empty depending on expression evaluation
+        Assert.Empty(archiveResult.ParcelDimensions);
         Assert.Null(liveResult.PalletInfo);
         Assert.Null(archiveResult.PalletInfo);
         Assert.Null(liveResult.AssignedFlight);
         Assert.Null(archiveResult.AssignedFlight);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_PopulatesDispatcherName_FromUcjbDisp(bool isUsCustomer)
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "JOB-001",
+            UcjbDisp = new TucStaff { UcstFirstName = "Jane", UcstLastName = "Doe" },
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var result = JobMappings.JobMappingCore(isUsCustomer).Compile()(job);
+
+        // Assert
+        Assert.Equal("Jane Doe", result.DispatcherName);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_DispatcherNameNull_WhenNoDispatcher(bool isUsCustomer)
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "JOB-001",
+            UcjbDisp = null,
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var result = JobMappings.JobMappingCore(isUsCustomer).Compile()(job);
+
+        // Assert
+        Assert.Null(result.DispatcherName);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_PopulatesDispatcherName_FromUcjbDisp()
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "ARCH-001",
+            UcjbDisp = new TucStaff { UcstFirstName = "Jane", UcstLastName = "Doe" },
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>()
+        };
+
+        // Act
+        var result = JobMappings.JobArchiveMapping.Compile()(archivedJob);
+
+        // Assert - parity with the live mapping
+        Assert.Equal("Jane Doe", result.DispatcherName);
     }
 
     [Theory]
@@ -554,6 +628,49 @@ public class JobMappingsTests
         Assert.Equal(250m, result.RawBaseAmount);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void LiveJobDownloadMapping_MapsVoidFlag(bool isVoid)
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbVoid = isVoid,
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.LiveJobDownloadMapping.Compile();
+        var result = mapping(job);
+
+        // Assert
+        Assert.Equal(isVoid, result.Void);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ArchivedJobDownloadMapping_MapsVoidFlag(bool isVoid)
+    {
+        // Arrange
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbVoid = isVoid,
+            PricingBreakdowns = new List<PricingBreakdownArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.ArchivedJobDownloadMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        Assert.Equal(isVoid, result.Void);
+    }
+
     [Fact]
     public void ArchivedJobDownloadMapping_NullDate_ReturnsDefault()
     {
@@ -779,7 +896,7 @@ public class JobMappingsTests
         Assert.False(result.TailLiftPu);
         Assert.False(result.TailLiftDo);
         Assert.False(result.DeliverToPrivateRes);
-        Assert.True(result.ParcelDimensions is null or []); // Either null or empty depending on expression evaluation
+        Assert.Empty(result.ParcelDimensions);
         Assert.Null(result.PalletInfo);
         Assert.Null(result.AssignedFlight);
         Assert.False(result.IsFlightAssigned);
@@ -802,6 +919,45 @@ public class JobMappingsTests
 
         // Assert
         Assert.True(result.IsArchived);
+    }
+    
+    [Fact]
+    public void JobDispatchMapping_SetsPreBookFalse()
+    {
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB-1",
+            UcjbDate = new DateTime(2024, 1, 15)
+        };
+
+        var mapping = JobMappings.JobDispatchMapping(isUsCustomer: false).Compile();
+        var result = mapping(liveJob);
+
+        Assert.False(result.PreBook);
+    }
+
+    [Fact]
+    public void JobListMappings_MapClientRefAOntoRefA()
+    {
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB-1",
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbClientRefa = "PO-4471"
+        };
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB-1",
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbClientRefa = "PO-4471"
+        };
+
+        Assert.Equal("PO-4471", JobMappings.JobDispatchMapping(isUsCustomer: false).Compile()(liveJob).RefA);
+        Assert.Equal("PO-4471", JobMappings.PodSearchMapping(isUsCustomer: false).Compile()(liveJob).RefA);
+        Assert.Equal("PO-4471", JobMappings.PodSearchArchivedMapping(isUsCustomer: false).Compile()(archivedJob).RefA);
     }
 
     [Fact]
@@ -879,6 +1035,27 @@ public class JobMappingsTests
         Assert.Equal("Delivered", result.StatusName);
         Assert.True(result.IsArchived);
         Assert.False(result.PreBook);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsJobRelationshipTypeId()
+    {
+        // Mirrors JobMappingCore_MapsJobRelationshipTypeId — an archived split leg's Price
+        // Breakdown must be able to read this after archiving too, not just while live.
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 123,
+            UcjbNumber = "ARCH-123",
+            UcjbDate = new DateTime(2024, 6, 15),
+            UcjbTime = new DateTime(2024, 6, 15, 14, 30, 0),
+            JobRelationshipTypeId = (int)JobRelationshipTypes.SplitChild,
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>()
+        };
+
+        var result = JobMappings.JobArchiveMapping.Compile()(archivedJob);
+
+        Assert.Equal((int)JobRelationshipTypes.SplitChild, result.JobRelationshipTypeId);
     }
 
     [Fact]
@@ -1984,6 +2161,146 @@ public class JobMappingsTests
     }
 
     [Fact]
+    public void JobArchiveMapping_ParcelDimensions_FallsBackToParentItems_WhenChildHasNone()
+    {
+        // Arrange — archived split-child with no items routed to it and no own items;
+        // should inherit dimensions from parent (matches live 3-tier behaviour).
+        var parentJob = new TucJobArchive
+        {
+            UcjbId = 100,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 100, ItemId = 1, ChildJobId = null, Notes = "Parent Parcel", Length = 60, Depth = 40, Height = 50, Barcode = "PARENT-BC" }
+            }
+        };
+
+        var childJob = new TucJobArchive
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(childJob);
+
+        // Assert
+        var parcel = Assert.Single(result.ParcelDimensions);
+        Assert.Equal("Parent Parcel", parcel.ItemName);
+        Assert.Equal("PARENT-BC", parcel.Barcode);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_PalletInfo_FallsBackToParentItems_WhenChildHasNone()
+    {
+        // Arrange — same shape as above but asserting palletInfo + quantity propagation.
+        var parentJob = new TucJobArchive
+        {
+            UcjbId = 100,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 100, ItemId = 1, ChildJobId = null, Items = 7, Weight = 12, Length = 60, Depth = 40, Height = 50, Notes = "Parent Pallet" }
+            }
+        };
+
+        var childJob = new TucJobArchive
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(childJob);
+
+        // Assert
+        Assert.NotNull(result.PalletInfo);
+        var pallet = Assert.Single(result.PalletInfo);
+        Assert.Equal(7, pallet.Quantity);
+        Assert.Equal("Parent Pallet", pallet.Notes);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_Items_ChildJobInheritsParentItemCount()
+    {
+        // Arrange — archived split-child without own items inherits row count from parent
+        // (mirrors JobMappingCore_Items_ChildJobInheritsParentItemCount).
+        var parentJob = new TucJobArchive
+        {
+            UcjbId = 100,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 100, ItemId = 1, ChildJobId = null },
+                new() { JobId = 100, ItemId = 2, ChildJobId = null },
+                new() { JobId = 100, ItemId = 3, ChildJobId = null }
+            }
+        };
+
+        var childJob = new TucJobArchive
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(childJob);
+
+        // Assert
+        Assert.Equal(3, result.Items);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_Items_RegularJobCountsOwnItems()
+    {
+        // Arrange — regression: a normal archived job (no children pointing at it)
+        // must count its own ChildJobId==null items, not zero.
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 50,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 50, ItemId = 1, ChildJobId = null, Items = 4, Notes = "Box A" },
+                new() { JobId = 50, ItemId = 2, ChildJobId = null, Items = 1, Notes = "Box B" }
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        Assert.Equal(2, result.Items);
+        Assert.Equal(2, result.ParcelDimensions.Count);
+        Assert.NotNull(result.PalletInfo);
+        Assert.Equal(5, result.PalletInfo.Sum(p => p.Quantity));
+    }
+
+    [Fact]
     public void JobArchiveMapping_AssignedFlight_AlwaysNullForArchivedJobs()
     {
         // Arrange - Flight info is not loaded inline for archived jobs
@@ -2408,12 +2725,8 @@ public class JobMappingsTests
             UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
             UcjbNumber = "JOB-001",
             PartnerJobGuid = Guid.NewGuid(),
-            JobPartnerDispatch = new JobPartnerDispatch
-            {
-                JobId = 1,
-                PartnerPairingId = 7,
-                PartnerPairing = pairing
-            },
+            PartnerPairingId = 7,
+            PartnerPairing = pairing,
             TucJobChangeRequests = new List<TucJobChangeRequest>(),
             PricingBreakdownJobs = new List<PricingBreakdown>(),
             TucJobItemJobs = new List<TucJobItem>(),
@@ -2427,11 +2740,75 @@ public class JobMappingsTests
     }
 
     [Fact]
+    public void JobMappingCore_MapsPartnerPairingId()
+    {
+        // The Job Details PartnerJobBanner keys the "Stale partner link" warning purely
+        // on pairingId == null. If this mapping drops PartnerPairingId, every partner job
+        // shows the stale banner regardless of the DB column, so assert it flows through.
+        var pairing = new IntMgrPartnerPairing
+        {
+            Id = 7,
+            PartnerTenantId = "200",
+            PartnerTenantName = "Acme Couriers",
+            PartnerBaseUrl = "https://peer.example.com",
+            Status = "Active",
+            OwnerTenantId = "100",
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
+        };
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            PartnerJobGuid = Guid.NewGuid(),
+            PartnerPairingId = 7,
+            PartnerPairing = pairing,
+            TucJobChangeRequests = new List<TucJobChangeRequest>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        var result = JobMappings.JobMappingCore(false).Compile()(job);
+
+        Assert.Equal(7, result.PartnerPairingId);
+    }
+
+    [Fact]
+    public void JobMappingCore_MapsJobRelationshipTypeId()
+    {
+        // The split-parent Price Breakdown grid keys its read-only/edit-mode gating on this
+        // field (SplitParent = 8, SplitChild = 9) — if the mapping drops it, the frontend has
+        // no signal a job is part of a split at all.
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent,
+            TucJobChangeRequests = new List<TucJobChangeRequest>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        var result = JobMappings.JobMappingCore(false).Compile()(job);
+
+        Assert.Equal((int)JobRelationshipTypes.SplitParent, result.JobRelationshipTypeId);
+    }
+
+    [Fact]
     public void JobMappingCore_PartnerTenantName_FromMostRecentChangeRequest_WhenReceiverSide()
     {
-        // Receiver side: no JobPartnerDispatch row, so the mapping falls back to
-        // the most recent change request's pairing. The "most recent" tie-break
-        // matters when multiple historical requests reference different pairings.
+        // Legacy receiver-side mirror: PartnerPairingId never got populated, so the
+        // mapping falls back to the most recent change request's pairing. The
+        // "most recent" tie-break matters when multiple historical requests
+        // reference different pairings.
         var olderPairing = new IntMgrPartnerPairing
         {
             Id = 5,
@@ -2461,7 +2838,6 @@ public class JobMappingsTests
             UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
             UcjbNumber = "JOB-001",
             PartnerJobGuid = Guid.NewGuid(),
-            JobPartnerDispatch = null,
             TucJobChangeRequests = new List<TucJobChangeRequest>
             {
                 new()
@@ -2493,10 +2869,12 @@ public class JobMappingsTests
     }
 
     [Fact]
-    public void JobMappingCore_PartnerTenantName_Null_WhenNoDispatchAndNoChangeRequests()
+    public void JobMappingCore_PartnerTenantName_Null_WhenNoPairingAndNoChangeRequests()
     {
-        // Fresh receiver-side mirror with no change requests yet — UI falls back
-        // to the generic "the partner" wording on a null value.
+        // Legacy receiver-side mirror with no PartnerPairingId and no change
+        // requests yet — UI falls back to the generic "the partner" wording on
+        // a null value. (The stale-link banner in JobDetails fires for this
+        // case to prompt a resend.)
         var job = new TucJob
         {
             UcjbId = 1,
@@ -2504,7 +2882,6 @@ public class JobMappingsTests
             UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
             UcjbNumber = "JOB-001",
             PartnerJobGuid = Guid.NewGuid(),
-            JobPartnerDispatch = null,
             TucJobChangeRequests = new List<TucJobChangeRequest>(),
             PricingBreakdownJobs = new List<PricingBreakdown>(),
             TucJobItemJobs = new List<TucJobItem>(),
@@ -2515,5 +2892,41 @@ public class JobMappingsTests
         var result = JobMappings.JobMappingCore(false).Compile()(job);
 
         Assert.Null(result.PartnerTenantName);
+    }
+
+    // Recurring bookings classify flight jobs by speed grouping, mirroring live
+    // jobs (JobMappingCore): grouping == Flight → flight job, otherwise agent job.
+    // NZ Flight = UrgentSpeedGrouping.Flight (5); US Flight = SpeedGrouping.Flight (2).
+    [Theory]
+    [InlineData(false, (int)UrgentSpeedGrouping.Flight, true, false)]   // NZ flight speed
+    [InlineData(false, (int)UrgentSpeedGrouping.NationwideAgent, false, true)] // NZ non-flight
+    [InlineData(true, (int)SpeedGrouping.Flight, true, false)]          // US flight speed
+    [InlineData(true, (int)SpeedGrouping.Agent, false, true)]           // US non-flight
+    public void JobRecurringMapping_SetsFlightAndAgentFlags_BySpeedGrouping(
+        bool isUsCustomer, int groupingId, bool expectedFlight, bool expectedAgent)
+    {
+        var booking = new TucJobBooking
+        {
+            UcbkId = 1,
+            UcbkSpeedNavigation = new TucJobType { GroupingId = groupingId, UcjtName = "Speed" }
+        };
+
+        var result = JobMappings.JobRecurringMapping(isUsCustomer).Compile()(booking);
+
+        Assert.Equal(expectedFlight, result.IsFlightJob);
+        Assert.Equal(expectedAgent, result.IsAgentJob);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobRecurringMapping_NoSpeed_IsNeitherFlightNorAgent(bool isUsCustomer)
+    {
+        var booking = new TucJobBooking { UcbkId = 1, UcbkSpeedNavigation = null };
+
+        var result = JobMappings.JobRecurringMapping(isUsCustomer).Compile()(booking);
+
+        Assert.False(result.IsFlightJob);
+        Assert.False(result.IsAgentJob);
     }
 }

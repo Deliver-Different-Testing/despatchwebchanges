@@ -1,10 +1,10 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -15,22 +15,22 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class BaseJobRepositoryTests : IAsyncDisposable
 {
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private FakeTenantClock _clock = new(new DateTime(2024, 6, 15, 10, 0, 0));
 
     public BaseJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
     }
 
     public async ValueTask DisposeAsync()
@@ -41,10 +41,10 @@ public class BaseJobRepositoryTests : IAsyncDisposable
     }
 
     private TestableBaseJobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock
     );
 
     [Fact]
@@ -402,7 +402,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         // Arrange
         const int staffId = 42;
         var currentTime = new DateTime(2024, 8, 20, 15, 30, 0);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(staffId);
+        _tenantInfoServiceMock.GetStaffId().Returns(staffId);
         _clock = new FakeTenantClock(currentTime);
 
         _context.TucNoteTypes.Add(new TucNoteType
@@ -463,6 +463,263 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         Assert.All(notes, n => Assert.True(n.IsImportant));
     }
 
+    [Fact]
+    public async Task SaveNoteAsync_WithPricingUpdate_SetsNoteTypeAndUtcTimestamps()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int staffId = 7;
+        var tenantTime = new DateTime(2024, 8, 20, 15, 30, 0);
+        _tenantInfoServiceMock.GetStaffId().Returns(staffId);
+        _clock = new FakeTenantClock(tenantTime);
+
+        _context.TucNoteTypes.Add(new TucNoteType
+        {
+            NoteTypeId = (int)NoteType.PricingUpdate, NoteTypeName = "Pricing Update",
+            IsActive = true, IsPublic = false, IsSystemDefined = true
+        });
+        _context.TucJobs.Add(CreateJob(jobId, "JOB100"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SaveNoteAsync(jobId, "Repriced from 10 to 20", true, noteType: NoteType.PricingUpdate);
+
+        // Assert
+        var note = await _context.TucNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal((int)NoteType.PricingUpdate, note.NoteTypeId);
+        Assert.Equal(_clock.UtcNow, note.CreatedDateUtc);
+        Assert.Equal(_clock.UtcNow, note.UpdatedDateUtc);
+        // Wall-clock column stays tenant-local, not UTC.
+        Assert.Equal(tenantTime, note.CreatedDate);
+    }
+
+    [Fact]
+    public async Task SaveNoteAsync_UnknownNoteType_FallsBackToInternalNote()
+    {
+        // Arrange — PricingUpdate row missing from tucNoteType, so it must fall back.
+        const int jobId = 101;
+        _context.TucNoteTypes.Add(new TucNoteType
+        {
+            NoteTypeId = (int)NoteType.InternalNote, NoteTypeName = "Internal Note",
+            IsActive = true, IsPublic = false, IsSystemDefined = true
+        });
+        _context.TucJobs.Add(CreateJob(jobId, "JOB101"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SaveNoteAsync(jobId, "Repriced", true, noteType: NoteType.PricingUpdate);
+
+        // Assert
+        var note = await _context.TucNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal((int)NoteType.InternalNote, note.NoteTypeId);
+    }
+
+    // ---- Sargable date filters (fix: avoid .Date/.TimeOfDay on the column) ----
+    // These predicates are tested in-memory (LINQ-to-objects) because SQLite cannot translate the
+    // legacy .Date/.TimeOfDay forms; the rewrite must preserve the original calendar-day semantics.
+
+    [Fact]
+    public void JobDateOnOrAfter_IncludesStartDayMidnightAndLater_ExcludesPriorDay()
+    {
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 14, 23, 59, 0)),
+            JobOn(2, new DateTime(2024, 6, 15, 0, 0, 0)),
+            JobOn(3, new DateTime(2024, 6, 15, 9, 0, 0)),
+            JobOn(4, new DateTime(2024, 6, 16, 0, 0, 0))
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.JobDateOnOrAfter(new DateTime(2024, 6, 15)))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([2, 3, 4], result);
+    }
+
+    [Fact]
+    public void JobDateOnOrBefore_IncludesWholeCutoffDay_ExcludesNextDay()
+    {
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 14, 0, 0, 0)),
+            JobOn(2, new DateTime(2024, 6, 15, 0, 0, 0)),
+            // Late on the cutoff day: the old `.Date <=` kept it, the `< nextMidnight` rewrite must too.
+            JobOn(3, new DateTime(2024, 6, 15, 23, 59, 0)),
+            JobOn(4, new DateTime(2024, 6, 16, 0, 0, 0))
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.JobDateOnOrBefore(new DateTime(2024, 6, 15)))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2, 3], result);
+    }
+
+    [Fact]
+    public void JobDateTimeOnOrBefore_FiltersByDateThenTime()
+    {
+        var filter = new DateTime(2024, 6, 15, 14, 30, 0);
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 14), new DateTime(1, 1, 1, 23, 0, 0)), // earlier day, any time
+            JobOn(2, new DateTime(2024, 6, 15), new DateTime(1, 1, 1, 14, 0, 0)), // same day, before
+            JobOn(3, new DateTime(2024, 6, 15), new DateTime(1, 1, 1, 14, 30, 0)), // same day, exact
+            JobOn(4, new DateTime(2024, 6, 15), new DateTime(1, 1, 1, 15, 0, 0)), // same day, after
+            JobOn(5, new DateTime(2024, 6, 15), time: null), // same day, no time
+            JobOn(6, new DateTime(2024, 6, 16), new DateTime(1, 1, 1, 0, 0, 0)) // later day
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.JobDateTimeOnOrBefore(filter))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2, 3, 5], result);
+    }
+
+    // ---- Current-work predicate (fix: count and drill-down list must share one definition) ----
+    // Tested in-memory (LINQ-to-objects) for the same reason as the date filters above.
+
+    [Fact]
+    public void CurrentWorkJob_KeepsUndeliveredTodayAndOverdue_ExcludesDoneVoidAndFuture()
+    {
+        var asOf = new DateTime(2024, 6, 15, 10, 0, 0);
+        var jobs = new List<TucJob>
+        {
+            // kept: not void, not done, dated today or earlier
+            CurrentWorkJobOn(1, new DateTime(2024, 6, 15)), // today, undelivered
+            CurrentWorkJobOn(2, new DateTime(2024, 6, 14)), // overdue (yesterday), undelivered
+            // excluded:
+            CurrentWorkJobOn(3, new DateTime(2024, 6, 15), done: true), // today, done
+            CurrentWorkJobOn(4, new DateTime(2024, 6, 14), done: true), // overdue, done
+            CurrentWorkJobOn(5, new DateTime(2024, 6, 15), isVoid: true), // today, void flag
+            CurrentWorkJobOn(6, new DateTime(2024, 6, 15), status: (int)JobStatus.Void), // today, void status
+            CurrentWorkJobOn(7, new DateTime(2024, 6, 16)) // future prebooking
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.CurrentWorkJob(asOf))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2], result);
+    }
+
+    [Fact]
+    public void CurrentWorkListJob_KeepsDoneWithinWindowAndOverdueUndelivered_ExcludesOlderDoneVoidAndFuture()
+    {
+        var startDate = new DateTime(2024, 6, 10);
+        var endDate = new DateTime(2024, 6, 15, 10, 0, 0);
+        var jobs = new List<TucJob>
+        {
+            // kept: undelivered, unbounded below (overdue) through the end day
+            CurrentWorkJobOn(1, new DateTime(2024, 6, 15)), // today, undelivered
+            CurrentWorkJobOn(2, new DateTime(2024, 6, 5)), // before startDate, undelivered → still kept
+            // kept: done jobs within [startDate, endDate]
+            CurrentWorkJobOn(3, new DateTime(2024, 6, 15), done: true), // today, done
+            CurrentWorkJobOn(4, new DateTime(2024, 6, 10), done: true), // on startDate, done
+            // excluded:
+            CurrentWorkJobOn(5, new DateTime(2024, 6, 9), done: true), // done before startDate
+            CurrentWorkJobOn(6, new DateTime(2024, 6, 15), isVoid: true), // void flag
+            CurrentWorkJobOn(7, new DateTime(2024, 6, 15), status: (int)JobStatus.Void), // void status
+            CurrentWorkJobOn(8, new DateTime(2024, 6, 16)) // future prebooking
+        }.AsQueryable();
+
+        var result = jobs.Where(BaseJobRepository.CurrentWorkListJob(startDate, endDate))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2, 3, 4], result);
+    }
+
+    private static TucJob CurrentWorkJobOn(int id, DateTime date, bool done = false, bool isVoid = false,
+        int status = (int)JobStatus.Dispatched) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = $"JOB{id:000}",
+        UcjbDate = date,
+        UcjbJobDone = done,
+        UcjbVoid = isVoid,
+        UcjbStatus = status
+    };
+
+    // ---- Bounded pagination helper (fix: non-paginated path must not be unbounded) ----
+
+    [Fact]
+    public async Task ResolveJobIdPageAsync_NonPaginatedUnderCap_ReturnsAllAndHasMoreFalse()
+    {
+        await SeedJobIdsAsync(1, 2, 3, 4, 5);
+        var distinctIds = _context.TucJobs.Select(j => j.UcjbId).Distinct();
+
+        var result = await BaseJobRepository.ResolveJobIdPageAsync(
+            distinctIds, requestedPage: 0, pageSize: 500, nonPaginatedCap: 10,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(5, result.JobIds.Count);
+        Assert.Equal(5, result.TotalCount);
+        Assert.False(result.HasMore);
+    }
+
+    [Fact]
+    public async Task ResolveJobIdPageAsync_NonPaginatedOverCap_TruncatesAndReportsTrueTotal()
+    {
+        await SeedJobIdsAsync(1, 2, 3, 4, 5);
+        var distinctIds = _context.TucJobs.Select(j => j.UcjbId).Distinct();
+
+        var result = await BaseJobRepository.ResolveJobIdPageAsync(
+            distinctIds, requestedPage: 0, pageSize: 500, nonPaginatedCap: 3,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal([1, 2, 3], result.JobIds); // capped to the first 3 by id order
+        Assert.Equal(5, result.TotalCount); // true total still reported
+        Assert.True(result.HasMore);
+    }
+
+    [Fact]
+    public async Task ResolveJobIdPageAsync_RequestedPage_ReturnsThatPageAndHasMoreWhenMoreRemain()
+    {
+        await SeedJobIdsAsync(1, 2, 3, 4, 5);
+        var distinctIds = _context.TucJobs.Select(j => j.UcjbId).Distinct();
+
+        var result = await BaseJobRepository.ResolveJobIdPageAsync(
+            distinctIds, requestedPage: 2, pageSize: 2,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal([3, 4], result.JobIds);
+        Assert.Equal(5, result.TotalCount);
+        Assert.True(result.HasMore);
+    }
+
+    [Fact]
+    public async Task ResolveJobIdPageAsync_LastPage_HasMoreFalse()
+    {
+        await SeedJobIdsAsync(1, 2, 3, 4, 5);
+        var distinctIds = _context.TucJobs.Select(j => j.UcjbId).Distinct();
+
+        var result = await BaseJobRepository.ResolveJobIdPageAsync(
+            distinctIds, requestedPage: 3, pageSize: 2,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal([5], result.JobIds);
+        Assert.False(result.HasMore);
+    }
+
+    private async Task SeedJobIdsAsync(params int[] ids)
+    {
+        _context.TucJobs.AddRange(ids.Select(id => CreateJob(id, $"JOB{id:000}")));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static TucJob JobOn(int id, DateTime date, DateTime? time = null) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = $"JOB{id:000}",
+        UcjbDate = date,
+        UcjbTime = time
+    };
+
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
         UcjbId = id,
@@ -510,6 +767,36 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         BulkJobId = id, JobNumber = jobNumber, BulkParentId = parentId
     };
 
+    [Fact]
+    public void CalculateRemainTime_OneHourSpeedFifteenMinutesElapsed_ReturnsTimeLeftNotTheWholeWindow()
+    {
+        var job = new DispatchJobViewModel
+        {
+            Booked = new DateTime(2024, 6, 15, 9, 45, 0), SpeedId = 1, JobTypeMins = 60
+        };
+
+        var remain = TestableBaseJobRepository.CalculateRemainTimeForTest(
+            job, new DateTime(2024, 6, 15, 10, 0, 0), economySpeedId: 99, ecoDeliveryTime: null);
+
+        Assert.Equal(45, remain);
+    }
+
+    [Fact]
+    public void CalculateRemainTime_BookedRebasedToNow_ReturnsTheWholeWindowAgain()
+    {
+        // The split-job symptom expressed as a unit: Booked, and nothing else, decides whether a
+        // leg shows the time actually left or the full speed window as if it had just been booked.
+        var job = new DispatchJobViewModel
+        {
+            Booked = new DateTime(2024, 6, 15, 10, 0, 0), SpeedId = 1, JobTypeMins = 60
+        };
+
+        var remain = TestableBaseJobRepository.CalculateRemainTimeForTest(
+            job, new DateTime(2024, 6, 15, 10, 0, 0), economySpeedId: 99, ecoDeliveryTime: null);
+
+        Assert.Equal(60, remain);
+    }
+
     /// <summary>
     /// Test wrapper that exposes protected methods from BaseJobRepository for unit testing.
     /// </summary>
@@ -537,5 +824,14 @@ public class BaseJobRepositoryTests : IAsyncDisposable
             bool isImportant = false,
             NoteType noteType = NoteType.InternalNote)
             => base.SaveMultipleBulkNotesAsync(bulkJobIds, noteText, isImportant, noteType);
+
+        public new Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
+            bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote, bool saveChanges = true)
+            => base.SaveNoteAsync(jobId, noteText, isImportant, isRecurringJob, noteType, saveChanges);
+
+        // Statics can't be hidden with `new`, so the forwarder takes its own name.
+        public static double? CalculateRemainTimeForTest(DispatchJobViewModel job, DateTime currentTenantTime,
+            int? economySpeedId, DateTime? ecoDeliveryTime)
+            => CalculateRemainTime(job, currentTenantTime, economySpeedId, ecoDeliveryTime);
     }
 }

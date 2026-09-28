@@ -14,7 +14,7 @@ export interface AddressViewModel {
     addressLine5: string;  // City (US) or Suburb (NZ)
     addressLine6: string;  // State (US) or City (NZ)
     addressLine7: string;  // ZIP Code (US) or Post Code (NZ)
-    addressLine8: string;  // Additional Notes
+    addressLine8: string;  // Country
     latitude?: number;
     longitude?: number;
     fullAddress: string;
@@ -40,6 +40,33 @@ export interface ShipmentDetails {
     height?: number;
     quantity?: number;
     jobNotes?: string;
+}
+
+// A tenant/user-configurable address format: an ordered subset of these named
+// fields, each backed by one of the 8 fixed address lines above.
+export type AddressFieldKey =
+    | 'building'
+    | 'unit'
+    | 'streetNumber'
+    | 'streetName'
+    | 'cityOrSuburb'
+    | 'stateOrCity'
+    | 'postcode'
+    | 'country';
+
+// A pickup or delivery format: which fields show, split across the two display
+// lines a job-list cell renders (line 1 = primary, line 2 = dimmed second line).
+export interface AddressLineFormat {
+    line1: AddressFieldKey[];
+    line2: AddressFieldKey[];
+}
+
+// Pickup and delivery are configured independently. `null` on a side means "no
+// override here" — the effective format falls back to the tenant default, then
+// to the legacy hardcoded NZ/US format.
+export interface AddressFormatSides {
+    pickup: AddressLineFormat | null;
+    delivery: AddressLineFormat | null;
 }
 
 // HERE Maps autocomplete result

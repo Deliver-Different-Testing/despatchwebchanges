@@ -4,11 +4,9 @@
  */
 
 import React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import ButtonBase from '@mui/material/ButtonBase';
-import type {SxProps, Theme} from '@mui/material/styles';
-import {metricLabelSx, metricValueSx, getMetricLabelSx, getMetricValueSx} from '../JobDetails.styles';
+import {Box, Text, UnstyledButton} from '@mantine/core';
+import {metricLabelStyle, metricValueStyle} from '../JobDetails.styles';
+import classes from './MetricCard.module.css';
 
 export type MetricCategory = 'pricing' | 'time' | 'pod' | 'info';
 
@@ -30,105 +28,84 @@ interface MetricCardProps {
 }
 
 const categoryAccentMap: Record<MetricCategory, string> = {
-    pricing: 'warning.main',
-    time: 'primary.main',
-    pod: 'success.main',
-    info: 'grey.400',
+    pricing: 'var(--mantine-color-orange-5)',
+    time: 'var(--mantine-primary-color-filled)',
+    pod: 'var(--mantine-color-green-5)',
+    info: 'var(--mantine-color-gray-4)',
 };
 
-const cardSx: SxProps<Theme> = {
+const cardStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    px: 1.5,
-    py: 1.5,
     textAlign: 'center',
     width: '100%',
     height: '100%',
-    bgcolor: 'background.paper',
+    backgroundColor: 'var(--dd-surface-container)',
     position: 'relative',
 };
 
-const clickableCardSx: SxProps<Theme> = {
-    ...cardSx as object,
-    cursor: 'pointer',
-    transition: (theme) => `all ${theme.transitions.duration.short}ms ease`,
-    '&:hover': {
-        bgcolor: 'grey.50',
-        '& .MetricCard-label': {color: 'primary.main'},
-        '& .MetricCard-value': {color: 'primary.main'},
-    },
-};
-
 export const MetricCard = React.memo(({
-                                          label,
-                                          value,
-                                          onClick,
-                                          disabled,
-                                          highlight,
-                                          category = 'info',
-                                          filled,
-                                          dense,
-                                          overlay,
-                                      }: MetricCardProps) => {
+    label,
+    value,
+    onClick,
+    disabled,
+    highlight,
+    category = 'info',
+    filled,
+    dense,
+    overlay,
+}: MetricCardProps) => {
     const isClickable = onClick && !disabled;
     const accentColor = categoryAccentMap[category];
-    const hasValue = !!value && value !== '-' && value !== '\u2014';
-
-    const highlightSx = highlight
-        ? {borderTop: 3, borderTopColor: accentColor}
-        : {};
-
-    const filledIndicatorSx = filled && hasValue ? {
-        '&::after': {
-            content: '""',
-            position: 'absolute',
-            bottom: 0,
-            left: '20%',
-            right: '20%',
-            height: 2,
-            borderRadius: 1,
-            bgcolor: accentColor,
-            opacity: 0.5,
-        },
-    } : {};
-
-    const densePaddingSx = dense ? {py: 0.5, px: 1} : {};
+    const hasValue = !!value && value !== '-' && value !== '—';
 
     const content = (
-        <Box sx={{
-            ...(isClickable ? clickableCardSx : cardSx) as object,
-            ...highlightSx,
-            ...filledIndicatorSx,
-            ...densePaddingSx,
-        }}>
-            <Typography className="MetricCard-label" variant="overline" color="text.secondary" sx={dense ? getMetricLabelSx(true) : metricLabelSx}>
+        <Box
+            className={[
+                isClickable ? classes.clickable : '',
+                filled && hasValue ? classes.filled : '',
+            ].filter(Boolean).join(' ') || undefined}
+            style={{
+                ...cardStyle,
+                paddingInline: dense ? 8 : 12,
+                paddingBlock: dense ? 4 : 12,
+                // Longhands: jsdom drops a `border-top` shorthand carrying a
+                // `var()`, which would make the accent rule untestable.
+                ...(highlight ? {
+                    borderTopWidth: 3,
+                    borderTopStyle: 'solid' as const,
+                    borderTopColor: accentColor,
+                } : {}),
+                '--metric-accent': accentColor,
+            } as React.CSSProperties}
+        >
+            <Text className={classes.label} span style={metricLabelStyle(!!dense)}>
                 {label}
-            </Typography>
-            <Typography
-                className="MetricCard-value"
-                variant="body2"
-                sx={{
-                    ...(dense ? getMetricValueSx(true) : metricValueSx) as object,
-                    color: hasValue ? 'text.primary' : 'text.disabled',
+            </Text>
+            <Text
+                className={hasValue ? classes.value : classes.valueEmpty}
+                span
+                style={{
+                    ...metricValueStyle(!!dense),
                     fontWeight: hasValue ? 700 : 400,
                     wordBreak: 'break-word',
                     overflowWrap: 'break-word',
                     maxWidth: '100%',
                 }}
             >
-                {value || '\u2014'}
-            </Typography>
+                {value || '—'}
+            </Text>
             {overlay}
         </Box>
     );
 
     if (isClickable) {
         return (
-            <ButtonBase onClick={onClick} sx={{width: '100%', height: '100%'}} focusRipple>
+            <UnstyledButton onClick={onClick} style={{width: '100%', height: '100%'}}>
                 {content}
-            </ButtonBase>
+            </UnstyledButton>
         );
     }
 

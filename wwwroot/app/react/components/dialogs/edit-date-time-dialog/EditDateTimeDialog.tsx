@@ -3,35 +3,37 @@
  *
  * React replacement for the AngularJS edit-date-time-dialog.
  * Allows editing date and/or time values with timezone information.
+ *
+ * **Wall-clock, by construction.** Mantine's pickers are string-valued —
+ * `DateInput` speaks `YYYY-MM-DD` and `TimePicker` speaks `HH:mm` — so nothing
+ * here ever builds a `Date`, and there is no instant to convert. The dialog's own
+ * state stays a `Dayjs` because that is what callers submit and receive, and the
+ * pickers only ever set its calendar fields (`.year()/.month()/.date()`,
+ * `.hour()/.minute()`), never re-anchor it to another zone. `selectedTimeZone` is
+ * carried through to the result as a *label* for the value, exactly as before.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import Paper from '@mui/material/Paper';
-import TextField from '@mui/material/TextField';
-import TodayIcon from '@mui/icons-material/Today';
-import CloseIcon from '@mui/icons-material/Close';
-import PublicIcon from '@mui/icons-material/Public';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { Box, Button, Group, Paper, Stack, Text } from '@mantine/core';
+import { DateInput, TimePicker } from '@mantine/dates';
+import { CalendarDays, Globe, Lock } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 
 import { EditDateTimeDialogProps, EditDateTimeDialogResult } from './types';
 import { getIanaTimezone, getTimezoneName } from '../../../utils/dateUtils';
+import { Icon } from '../../common/icon/Icon';
+import {
+    DialogFooter, DialogHeader, DialogShell, dialogContentBg, sectionPaperProps,
+} from '../shared/mantine';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+/** The wire/display format the pickers and the callers agree on. */
+const DATE_FORMAT = 'YYYY-MM-DD';
+const TIME_FORMAT = 'HH:mm';
 
 /**
  * Format timezone for display (e.g., "America/New_York" -> "Eastern Daylight Time")
@@ -56,6 +58,8 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
     showDate = true,
     showTime = true,
     isUSCustomer = false,
+    readOnly = false,
+    allowClear = false,
     onClose,
     onSubmit,
     showToast,
@@ -69,41 +73,49 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         : (defaultTimeZone as unknown as { text?: string })?.text ?? undefined;
     const [selectedTimeZone] = useState(resolvedTz || getIanaTimezone());
 
-
     // Initialize dateTime when dialog opens or initialDateTime changes
     useEffect(() => {
         if (open) {
             if (initialDateTime && initialDateTime.isValid()) {
                 setDateTime(initialDateTime);
             } else {
+                // No incoming value: seed with the wall clock *in the job's zone*, so a
+                // US job opens on its own local time rather than the browser's. This is
+                // not a conversion of stored data — there is no stored value yet — and
+                // the seeded fields are then edited as plain wall-clock numbers.
                 setDateTime(dayjs().tz(selectedTimeZone));
             }
         }
     }, [open, initialDateTime]);
 
-    // Handle date/time change - pass through MUI's value directly to preserve
-    // internal Dayjs state compatibility with MUI X v8's accessible field sections
-    const handleDateTimeChange = useCallback((newValue: Dayjs | null) => {
-        if (newValue) {
-            setDateTime(newValue);
+    /**
+     * Date change. The picker hands over a `YYYY-MM-DD` string (or null while the
+     * user is mid-type); only the calendar fields move, so the time of day and the
+     * zone the value was written in are untouched.
+     */
+    const handleDateChange = useCallback((value: string | null) => {
+        // `YYYY-MM-DD` is the ISO calendar-date form, which dayjs parses natively and
+        // unambiguously — no `customParseFormat` plugin needed, and no zone applied.
+        const parsed = value ? dayjs(value) : null;
+        if (parsed?.isValid()) {
+            setDateTime(prev => prev.year(parsed.year()).month(parsed.month()).date(parsed.date()));
+        } else {
+            // A cleared field marks the value invalid so Save refuses it, rather than
+            // silently keeping the old date.
+            setDateTime(dayjs(NaN));
         }
     }, []);
 
-    // Handle date-only change (preserves existing time)
-    const handleDateChange = useCallback((newValue: Dayjs | null) => {
-        if (newValue && !isNaN(newValue.year()) && !isNaN(newValue.month()) && !isNaN(newValue.date())) {
-            setDateTime(prev => prev.year(newValue.year()).month(newValue.month()).date(newValue.date()));
-        }
-    }, []);
-
-    // Handle native time input change (preserves existing date)
-    const handleNativeTimeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        if (val) {
-            const [h, m] = val.split(':').map(Number);
-            if (!isNaN(h) && !isNaN(m)) {
-                setDateTime(prev => prev.hour(h).minute(m).second(0));
-            }
+    /**
+     * Time change — hours and minutes only. Split rather than parsed: `dayjs('16:30')`
+     * is Invalid Date natively, and the format argument is ignored unless the
+     * `customParseFormat` plugin is loaded, so a parse here would silently drop every
+     * edit.
+     */
+    const handleTimeChange = useCallback((value: string) => {
+        const [hours, minutes] = (value ?? '').split(':').map(Number);
+        if (Number.isFinite(hours) && Number.isFinite(minutes)) {
+            setDateTime(prev => prev.hour(hours).minute(minutes).second(0));
         }
     }, []);
 
@@ -154,214 +166,110 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         }
     }, [dateTime, fieldName, selectedTimeZone, processDateTime, onSubmit, showToast]);
 
-    // Render the appropriate picker based on mode
-    const renderPicker = () => {
-        const commonProps = {
-            value: dateTime,
-            onChange: handleDateTimeChange,
-            disabled: isLoading,
-            slotProps: {
-                textField: {
-                    fullWidth: true,
-                    sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
-                },
-            },
-        };
-
-        if (showDate && !showTime) {
-            return (
-                <DatePicker
-                    {...commonProps}
-                    label="Date"
-                    format="YYYY-MM-DD"
-                />
-            );
-        } else if (showTime && !showDate) {
-            return (
-                <TimePicker
-                    {...commonProps}
-                    label="Time (24-hour)"
-                    ampm={false}
-                    format="HH:mm"
-                    timeSteps={{ minutes: 1 }}
-                />
-            );
+    // Clear the value: resolve with `cleared: true` so the caller removes the
+    // stored value rather than persisting a date. `value` is still supplied to
+    // satisfy the result shape but is ignored by clear-aware callers.
+    const handleClear = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            await onSubmit({
+                fieldName,
+                value: dateTime,
+                timezone: selectedTimeZone,
+                cleared: true,
+            });
+        } catch (error: unknown) {
+            console.error('Error clearing date/time:', error);
+            showToast(error instanceof Error ? error.message : 'Failed to clear date/time', 'error');
+        } finally {
+            setIsLoading(false);
         }
-        return null;
-    };
+    }, [dateTime, fieldName, selectedTimeZone, onSubmit, showToast]);
+
+    const disabled = isLoading || readOnly;
+    const dateValue = dateTime.isValid() ? dateTime.format(DATE_FORMAT) : null;
+    const timeValue = dateTime.isValid() ? dateTime.format(TIME_FORMAT) : '';
+
+    const dateField = (
+        <DateInput
+            label="Date"
+            value={dateValue}
+            onChange={handleDateChange}
+            valueFormat={DATE_FORMAT}
+            disabled={disabled}
+            style={{flex: 1}}
+        />
+    );
+
+    /**
+     * `TimePicker`, not `TimeInput`: a native `<input type="time">` renders AM/PM
+     * under a US browser locale even when the bound value is `HH:mm`, and this app
+     * shows 24-hour times everywhere. `format="24h"` makes that independent of the
+     * browser.
+     */
+    const timeField = (
+        <TimePicker
+            label="Time (24-hour)"
+            format="24h"
+            value={timeValue}
+            onChange={handleTimeChange}
+            hoursInputLabel="Hours"
+            minutesInputLabel="Minutes"
+            withDropdown
+            disabled={disabled}
+            style={{flex: 1}}
+        />
+    );
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Dialog
-                open={open}
+        <DialogShell opened={open} onClose={onClose} label={title} trapFocus={false}>
+            <DialogHeader
+                icon={<Icon lucide={readOnly ? Lock : CalendarDays}/>}
+                title={title}
+                subtitle={readOnly ? 'View only — this job is locked' : 'Update the date and time'}
                 onClose={onClose}
-                maxWidth="sm"
-                fullWidth
-                disableEnforceFocus
-                slotProps={{
-                    paper: {
-                        elevation: 24,
-                        sx: {
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            minWidth: 480,
-                            maxWidth: 600,
-                        },
-                    },
-                }}
-            >
-                {/* Header */}
-                <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                        color: 'white',
-                        px: 3,
-                        py: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                    })}
-                >
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 1.5,
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <TodayIcon sx={{ fontSize: 24 }} />
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight={600}>
-                            {title}
-                        </Typography>
-                        <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                            Update the date and time
-                        </Typography>
-                    </Box>
-                    <IconButton
-                        onClick={onClose}
-                        disabled={isLoading}
-                        sx={{
-                            color: 'white',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
+                closeDisabled={isLoading}
+            />
+            <Box p="lg" bg={dialogContentBg}>
+                <Stack gap="lg">
+                    <Group gap="md" align="flex-start" grow>
+                        {showDate && dateField}
+                        {showTime && timeField}
+                    </Group>
 
-                {/* Content */}
-                <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
-                    <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        {/* Date/Time Picker */}
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                            {showDate && showTime ? (
-                                // Show separate date and time pickers for better UX
-                                <>
-                                    <DatePicker
-                                        value={dateTime}
-                                        onChange={handleDateChange}
-                                        disabled={isLoading}
-                                        label="Date"
-                                        format="YYYY-MM-DD"
-                                        slotProps={{
-                                            textField: {
-                                                fullWidth: true,
-                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
-                                            },
-                                        }}
-                                    />
-                                    <TextField
-                                        label="Time (24-hour)"
-                                        type="time"
-                                        value={dateTime.format('HH:mm')}
-                                        onChange={handleNativeTimeChange}
-                                        disabled={isLoading}
-                                        fullWidth
-                                        slotProps={{
-                                            htmlInput: { step: 60 },
-                                        }}
-                                        sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
-                                    />
-                                </>
-                            ) : (
-                                renderPicker()
-                            )}
-                        </Box>
-
-                        {/* Timezone Information - Only shown for US customers */}
-                        {isUSCustomer && (
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    bgcolor: 'white',
-                                    borderRadius: 3,
-                                    p: 2.5,
-                                    border: '1px solid',
-                                    borderColor: 'grey.200',
-                                }}
-                            >
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <PublicIcon
-                                        sx={{
-                                            fontSize: 24,
-                                            color: 'primary.main',
-                                            mr: 1.5,
-                                        }}
-                                    />
-                                    <Box>
-                                        <Typography
-                                            variant="body2"
-                                            sx={{ color: 'text.secondary', fontWeight: 500 }}
-                                        >
-                                            Job timezone
-                                        </Typography>
-                                        <Typography variant="body1">
-                                            {formatTimezoneDisplay(selectedTimeZone)}
-                                        </Typography>
-                                    </Box>
+                    {/* Timezone Information - Only shown for US customers */}
+                    {isUSCustomer && (
+                        <Paper {...sectionPaperProps}>
+                            <Group gap="sm" wrap="nowrap">
+                                <Icon
+                                    lucide={Globe}
+                                    size={24}
+                                    color="var(--mantine-primary-color-filled)"
+                                    aria-hidden
+                                />
+                                <Box>
+                                    <Text size="sm" c="dimmed" fw={500}>Job timezone</Text>
+                                    <Text>{formatTimezoneDisplay(selectedTimeZone)}</Text>
                                 </Box>
-                            </Paper>
-                        )}
-                    </Box>
-                </DialogContent>
-
-                {/* Actions */}
-                <DialogActions
-                    sx={(theme) => ({
-                        px: 3,
-                        py: 2,
-                        bgcolor: 'white',
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                        gap: 1,
-                    })}
-                >
-                    <Button
-                        onClick={onClose}
-                        variant="outlined"
-                        disabled={isLoading}
-                        sx={{ minWidth: 100 }}
-                    >
-                        Cancel
+                            </Group>
+                        </Paper>
+                    )}
+                </Stack>
+            </Box>
+            <DialogFooter
+                onCancel={onClose}
+                cancelLabel={readOnly ? 'Close' : 'Cancel'}
+                onConfirm={handleSubmit}
+                confirmLabel={isLoading ? 'Saving...' : 'Save'}
+                hideConfirm={readOnly}
+                submitting={isLoading}
+                secondaryAction={!readOnly && allowClear ? (
+                    <Button variant="outline" color="red" onClick={handleClear} disabled={isLoading} miw={100}>
+                        Clear
                     </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        variant="contained"
-                        color="primary"
-                        disabled={isLoading}
-                        startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : null}
-                        sx={{ minWidth: 100 }}
-                    >
-                        {isLoading ? 'Saving...' : 'Save'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </LocalizationProvider>
+                ) : undefined}
+            />
+        </DialogShell>
     );
 };
 

@@ -1,24 +1,13 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for CurrentWorkAllDrivers component
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import { setupUser } from '../../../__testUtils__/setupUser';
+import { screen } from '@testing-library/react';
+import { renderWithMantine } from '../../../__testUtils__';
 import { CurrentWorkAllDrivers } from './CurrentWorkAllDrivers';
 import { IDriverWorkOverview } from './CurrentWorkAllDrivers.types';
-
-const theme = createTheme();
-
-const renderWithTheme = (component: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {component}
-        </ThemeProvider>
-    );
-};
 
 const mockDrivers: IDriverWorkOverview[] = [
     { courierId: 1, name: 'Charlie Driver', vehicleType: 'Van', jobCount: 3, driverStatusText: 'Active' },
@@ -26,10 +15,24 @@ const mockDrivers: IDriverWorkOverview[] = [
     { courierId: 3, name: 'Bob Driver', vehicleType: 'Bike', jobCount: 0, driverStatusText: 'Available' },
 ];
 
+/** The default render, plus the search box every filtering test types into. */
+function renderDriverSearch() {
+    const user = setupUser();
+
+    renderWithMantine(
+        <CurrentWorkAllDrivers
+            drivers={mockDrivers}
+            onDriverSelect={jest.fn()}
+        />
+    );
+
+    return {user, searchInput: screen.getByPlaceholderText('Search courier...')};
+}
+
 describe('CurrentWorkAllDrivers', () => {
     describe('rendering', () => {
         it('should render driver list', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -42,7 +45,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should display job counts for each driver', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -55,7 +58,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should display vehicle types', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -68,7 +71,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should display driver status text', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -81,7 +84,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should show empty state when no drivers', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={[]}
                     onDriverSelect={jest.fn()}
@@ -93,7 +96,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should show loading indicator when loading', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     loading={true}
@@ -101,7 +104,7 @@ describe('CurrentWorkAllDrivers', () => {
                 />
             );
 
-            expect(screen.getByRole('progressbar')).toBeInTheDocument();
+            expect(screen.getByRole('progressbar', { name: 'Loading drivers' })).toBeInTheDocument();
         });
 
         it('should use singular "job" for count of 1', () => {
@@ -109,7 +112,7 @@ describe('CurrentWorkAllDrivers', () => {
                 { courierId: 1, name: 'Single Job', vehicleType: 'Van', jobCount: 1, driverStatusText: 'Active' },
             ];
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={singleJobDriver}
                     onDriverSelect={jest.fn()}
@@ -122,7 +125,7 @@ describe('CurrentWorkAllDrivers', () => {
 
     describe('sorting', () => {
         it('should sort drivers alphabetically by default (A-Z)', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -141,9 +144,9 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should toggle sort order when sort button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -167,16 +170,7 @@ describe('CurrentWorkAllDrivers', () => {
 
     describe('search', () => {
         it('should filter drivers by search text', async () => {
-            const user = userEvent.setup();
-
-            renderWithTheme(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('Alice');
 
@@ -186,16 +180,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should be case insensitive', async () => {
-            const user = userEvent.setup();
-
-            renderWithTheme(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('alice');
 
@@ -203,16 +188,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should show count of filtered results', async () => {
-            const user = userEvent.setup();
-
-            renderWithTheme(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('Driver');
 
@@ -220,16 +196,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should show no results message when search has no matches', async () => {
-            const user = userEvent.setup();
-
-            renderWithTheme(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('NonExistent');
 
@@ -238,23 +205,14 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should clear search when clear button is clicked', async () => {
-            const user = userEvent.setup();
-
-            renderWithTheme(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('Alice');
 
             expect(screen.queryByText('Bob Driver')).not.toBeInTheDocument();
 
             // Click clear button
-            const clearButton = screen.getByRole('button', { name: '' });
+            const clearButton = screen.getByRole('button', { name: 'Clear search' });
             await user.click(clearButton);
 
             expect(screen.getByText('Alice Driver')).toBeInTheDocument();
@@ -265,17 +223,17 @@ describe('CurrentWorkAllDrivers', () => {
 
     describe('selection', () => {
         it('should call onDriverSelect when driver is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onDriverSelect = jest.fn();
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={onDriverSelect}
                 />
             );
 
-            const aliceRow = screen.getByText('Alice Driver').closest('div[role="button"]');
+            const aliceRow = screen.getByText('Alice Driver').closest('button');
             if (aliceRow) {
                 await user.click(aliceRow);
             }
@@ -286,7 +244,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should highlight selected driver', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     selectedCourierId={2}
@@ -294,16 +252,18 @@ describe('CurrentWorkAllDrivers', () => {
                 />
             );
 
-            const aliceRow = screen.getByText('Alice Driver').closest('div[role="button"]');
-            expect(aliceRow).toHaveClass('Mui-selected');
+            const aliceRow = screen.getByText('Alice Driver').closest('button');
+            // Selection rides on a data attribute (see CurrentWorkAllDrivers.module.css),
+            // so a styling refactor cannot break this assertion.
+            expect(aliceRow).toHaveAttribute('data-selected');
         });
     });
 
     describe('combined search and sort', () => {
         it('should maintain sort order when searching', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -337,15 +297,14 @@ describe('CurrentWorkAllDrivers', () => {
                 { courierId: 1, name: 'Zero Jobs', vehicleType: 'Van', jobCount: 0, driverStatusText: 'Available' },
             ];
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={drivers}
                     onDriverSelect={jest.fn()}
                 />
             );
 
-            const chip = screen.getByText('0 jobs').closest('.MuiChip-root');
-            expect(chip).toHaveClass('MuiChip-colorDefault');
+            expect(screen.getByText('0 jobs').closest('[data-tier]')).toHaveAttribute('data-tier', 'none');
         });
 
         it('should show success color for 1-3 jobs', () => {
@@ -353,15 +312,14 @@ describe('CurrentWorkAllDrivers', () => {
                 { courierId: 1, name: 'Few Jobs', vehicleType: 'Van', jobCount: 2, driverStatusText: 'Active' },
             ];
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={drivers}
                     onDriverSelect={jest.fn()}
                 />
             );
 
-            const chip = screen.getByText('2 jobs').closest('.MuiChip-root');
-            expect(chip).toHaveClass('MuiChip-colorSuccess');
+            expect(screen.getByText('2 jobs').closest('[data-tier]')).toHaveAttribute('data-tier', 'light');
         });
 
         it('should show warning color for 4-6 jobs', () => {
@@ -369,15 +327,14 @@ describe('CurrentWorkAllDrivers', () => {
                 { courierId: 1, name: 'Medium Jobs', vehicleType: 'Van', jobCount: 5, driverStatusText: 'Busy' },
             ];
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={drivers}
                     onDriverSelect={jest.fn()}
                 />
             );
 
-            const chip = screen.getByText('5 jobs').closest('.MuiChip-root');
-            expect(chip).toHaveClass('MuiChip-colorWarning');
+            expect(screen.getByText('5 jobs').closest('[data-tier]')).toHaveAttribute('data-tier', 'busy');
         });
 
         it('should show error color for 7+ jobs', () => {
@@ -385,21 +342,20 @@ describe('CurrentWorkAllDrivers', () => {
                 { courierId: 1, name: 'Many Jobs', vehicleType: 'Van', jobCount: 8, driverStatusText: 'Overloaded' },
             ];
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={drivers}
                     onDriverSelect={jest.fn()}
                 />
             );
 
-            const chip = screen.getByText('8 jobs').closest('.MuiChip-root');
-            expect(chip).toHaveClass('MuiChip-colorError');
+            expect(screen.getByText('8 jobs').closest('[data-tier]')).toHaveAttribute('data-tier', 'heavy');
         });
     });
 
     describe('edge cases', () => {
         it('should handle undefined selectedCourierId', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     selectedCourierId={undefined}
@@ -412,21 +368,12 @@ describe('CurrentWorkAllDrivers', () => {
                 item.textContent?.includes('Driver')
             );
             listItems.forEach(item => {
-                expect(item).not.toHaveClass('Mui-selected');
+                expect(item).not.toHaveAttribute('data-selected');
             });
         });
 
         it('should handle partial name matches in search', async () => {
-            const user = userEvent.setup();
-
-            renderWithTheme(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('Char');
 
@@ -441,7 +388,7 @@ describe('CurrentWorkAllDrivers', () => {
                 { courierId: 3, name: 'Driver 1', vehicleType: 'Van', jobCount: 1, driverStatusText: 'Active' },
             ];
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={driversWithNumbers}
                     onDriverSelect={jest.fn()}
@@ -459,16 +406,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should handle whitespace in search', async () => {
-            const user = userEvent.setup();
-
-            renderWithTheme(
-                <CurrentWorkAllDrivers
-                    drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
-                />
-            );
-
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const {user, searchInput} = renderDriverSearch();
             await user.click(searchInput);
             await user.paste('  Alice  ');
 
@@ -476,7 +414,7 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should not show filter count when search is empty', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -497,7 +435,7 @@ describe('CurrentWorkAllDrivers', () => {
                 },
             ];
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={longNameDriver}
                     onDriverSelect={jest.fn()}
@@ -508,9 +446,9 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should handle rapid sort toggling', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={jest.fn()}
@@ -533,17 +471,17 @@ describe('CurrentWorkAllDrivers', () => {
         });
 
         it('should call onDriverSelect with complete driver object', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onDriverSelect = jest.fn();
 
-            renderWithTheme(
+            renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     onDriverSelect={onDriverSelect}
                 />
             );
 
-            const bobRow = screen.getByText('Bob Driver').closest('div[role="button"]');
+            const bobRow = screen.getByText('Bob Driver').closest('button');
             if (bobRow) {
                 await user.click(bobRow);
             }

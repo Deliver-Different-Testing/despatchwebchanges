@@ -1,8 +1,11 @@
 #nullable enable
 using DeliverDifferentReporting.Documents;
+using DeliverDifferentReporting.Helpers;
 using DeliverDifferentReporting.Models;
 using DeliverDifferentReporting.Services;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Exceptions;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
@@ -17,8 +20,11 @@ public sealed class PodReportService(
     IHttpContextAccessor httpContextAccessor,
     ITenantBrandingService tenantBrandingService,
     IJobQueryRepository jobRepository,
-    IJobPhotoService jobPhotoService,
-    IDbContextFactory<DespatchContext> contextFactory
+    INoteRepository noteRepository,
+    IPodMediaService podMediaService,
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantInfoService infoService,
+    IDeliveryJourneyService deliveryJourneyService
 ) : IPodReportService
 {
     private static bool _questPdfInitialized;
@@ -29,20 +35,13 @@ public sealed class PodReportService(
         EnsureQuestPdfInitialized();
 
         var tenantId = GetTenantId();
-        var branding = await tenantBrandingService.GetBrandingAsync(tenantId);
-        var job = await jobRepository.GetSingleJobById(jobId)
-                  ?? throw new InvalidOperationException($"Job {jobId} not found");
+        var branding = await GetBrandingOrDefaultAsync(tenantId);
+        var (job, mediaJobId) = await ResolveJobAsync(jobId);
 
-        // Get S3 photos if the job is completed
-        IReadOnlyList<S3PhotoInfo> s3Photos = [];
-        if (job.CompletedTime.HasValue)
-        {
-            var year = job.CompletedTime.Value.Year;
-            var month = job.CompletedTime.Value.Month;
-            s3Photos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
-        }
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, mediaJobId);
 
-        var podData = MapToPodData(job, s3Photos);
+        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(mediaJobId),
+            infoService.IsUsTenant(), await GetJobHistoryAsync(mediaJobId));
         var document = new PodDocument(podData, branding);
 
         using var stream = new MemoryStream();
@@ -54,19 +53,13 @@ public sealed class PodReportService(
     public async Task<(byte[] Bytes, string FileName)> GeneratePodSpreadsheetAsync(int jobId)
     {
         var tenantId = GetTenantId();
-        var branding = await tenantBrandingService.GetBrandingAsync(tenantId);
-        var job = await jobRepository.GetSingleJobById(jobId)
-                  ?? throw new InvalidOperationException($"Job {jobId} not found");
+        var branding = await GetBrandingOrDefaultAsync(tenantId);
+        var (job, mediaJobId) = await ResolveJobAsync(jobId);
 
-        IReadOnlyList<S3PhotoInfo> s3Photos = [];
-        if (job.CompletedTime.HasValue)
-        {
-            var year = job.CompletedTime.Value.Year;
-            var month = job.CompletedTime.Value.Month;
-            s3Photos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
-        }
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, mediaJobId);
 
-        var podData = MapToPodData(job, s3Photos);
+        var podData = MapToPodData(job, s3Photos, await GetPodNotesAsync(mediaJobId),
+            infoService.IsUsTenant(), await GetJobHistoryAsync(mediaJobId));
         var spreadsheet = new PodSpreadsheet(podData, branding);
 
         using var stream = new MemoryStream();
@@ -75,19 +68,24 @@ public sealed class PodReportService(
         return (stream.ToArray(), $"POD-{job.JobNo}.xlsx");
     }
 
-    public async Task QueuePodEmailAsync(int jobId, List<string> recipients, string subject, string body)
+    // Queued to tucManualMessage rather than sent over SMTP from here: the external message
+    // processor owns delivery (and the from-address) for every other email in the stack, and it
+    // is the only mail path that is actually configured in the deployed environments.
+    public async Task SendPodEmailAsync(int jobId, List<string> recipients, string subject, string? body)
     {
         var (pdfBytes, fileName) = await GeneratePodReportAsync(jobId);
 
         var replyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
                       ?? "support@deliverdifferent.com";
 
+        var htmlBody = (body ?? string.Empty).Replace("\n", "<br>");
+
         var messages = recipients.Select(email => new TucManualMessage
         {
             SendToEmailAddress = email,
             ReplyToEmailAddress = replyTo,
             Subject = subject,
-            UcmmMessage = body.Replace("\n", "<br>"),
+            UcmmMessage = htmlBody,
             JobId = jobId,
             HasAttachment = true,
             FileName = fileName,
@@ -95,25 +93,147 @@ public sealed class PodReportService(
             FileContent = pdfBytes
         }).ToList();
 
-        await using var context = await contextFactory.CreateDbContextAsync();
-        await context.TucManualMessages.AddRangeAsync(messages);
-        await context.SaveChangesAsync();
+        try
+        {
+            await using var context = await contextFactory.CreateDbContextAsync();
+            await context.TucManualMessages.AddRangeAsync(messages);
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new PodEmailException(
+                "The POD report could not be queued for sending. Please try again or contact support.", ex);
+        }
 
         Log.Information("Queued POD email for job {JobId} to {RecipientCount} recipients: {Recipients}",
             jobId, recipients.Count, string.Join(", ", recipients));
+    }
+
+    public async Task<byte[]> AppendDeliveryPhotosAsync(byte[] pdfBytes, int jobId)
+    {
+        var resolved = await TryResolveJobAsync(jobId);
+        if (resolved is null)
+        {
+            return pdfBytes;
+        }
+
+        var (job, mediaJobId) = resolved.Value;
+        var s3Photos = await GetDeliveryPhotosForJobAsync(job, mediaJobId);
+        return PdfImageAppender.Append(pdfBytes, ExtractDeliveryImages(s3Photos));
+    }
+
+    private async Task<(JobViewModel Job, int MediaJobId)> ResolveJobAsync(int jobId) =>
+        await TryResolveJobAsync(jobId)
+        ?? throw new InvalidOperationException($"Job {jobId} not found");
+
+    /// <summary>
+    /// Resolves the job the POD is about and the id its media is keyed by. A bulk ("scheduled")
+    /// row's id is a tblBulkJob id, not a tucJob id, and the courier writes POD media against the
+    /// live job the schedule materialised into — so an id that matches no job is retried as a
+    /// schedule id. tucJob first, always: the two id sequences overlap.
+    /// </summary>
+    private async Task<(JobViewModel Job, int MediaJobId)?> TryResolveJobAsync(int jobId)
+    {
+        var job = await TryGetJobAsync(jobId);
+        if (job is not null)
+        {
+            return (job, jobId);
+        }
+
+        var linkedJobId = await jobRepository.GetLinkedJobIdForBulkJobAsync(jobId);
+        if (linkedJobId is null)
+        {
+            return null;
+        }
+
+        var linkedJob = await TryGetJobAsync(linkedJobId.Value);
+        return linkedJob is null ? null : (linkedJob, linkedJobId.Value);
+    }
+
+    // The archived lookup throws rather than returning null for an id it doesn't know.
+    private async Task<JobViewModel?> TryGetJobAsync(int jobId)
+    {
+        try
+        {
+            return await jobRepository.GetSingleJobById(jobId);
+        }
+        catch (KeyNotFoundException)
+        {
+            return null;
+        }
+    }
+
+    // Delivery photos/signatures live in S3 keyed by the completion month and by the id of the leg
+    // the courier completed — never the parent's. The parent is the number on the POD the client
+    // downloads, so the lookup sweeps the family. Its own completion time is only a fallback for a
+    // leg that carries none: a family whose parent roll-up never ran still has to render its DEL
+    // leg's POD.
+    private Task<IReadOnlyList<S3PhotoInfo>> GetDeliveryPhotosForJobAsync(JobViewModel job, int jobId) =>
+        podMediaService.GetDeliveryMediaAsync(
+            jobId,
+            job.CompletedTime?.Year ?? 0,
+            job.CompletedTime?.Month ?? 0);
+
+    // Decodes the delivery photos then the signature(s) into raw image bytes.
+    // Non-image entries (e.g. PDFs) carry no Data and are skipped.
+    internal static List<byte[]> ExtractDeliveryImages(IReadOnlyList<S3PhotoInfo> s3Photos)
+    {
+        var deliveryPhotos = s3Photos
+            .Where(p => p.S3Key.Contains("DeliveryPhotos/", StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrEmpty(p.Data));
+
+        var signatures = s3Photos
+            .Where(p => p.S3Key.Contains("DeliverySignatures/", StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrEmpty(p.Data));
+
+        // Signatures carry the pad's opaque canvas colour; key it out so the appended page matches
+        // the keyed signature stamped on the overlay itself. A delivery photo's background is real
+        // content and is left alone. PodDocument does this for the built-in report, but the overlay
+        // path never goes near it, so this arm keys them itself.
+        return
+        [
+            .. deliveryPhotos.Select(p => Convert.FromBase64String(p.Data)),
+            .. signatures.Select(p =>
+                SignatureBackgroundRemover.RemoveFlatBackground(Convert.FromBase64String(p.Data)))
+        ];
     }
 
     private static void EnsureQuestPdfInitialized()
     {
         lock (InitLock)
             if (_questPdfInitialized)
+            {
                 return;
+            }
 
         lock (InitLock)
         {
-            if (_questPdfInitialized) return;
+            if (_questPdfInitialized)
+            {
+                return;
+            }
+
             Settings.License = LicenseType.Community;
             _questPdfInitialized = true;
+        }
+    }
+
+    // Tenant branding (logo/colours) is cosmetic and fetched from the Hub. A 404 means the
+    // tenant simply has no branding configured; a connectivity failure is transient. Neither
+    // should block the customer's actual deliverable — the POD — so fall back to default
+    // branding (PodDocument/PodSpreadsheet substitute their own theme for empty values).
+    private async Task<ReportBranding> GetBrandingOrDefaultAsync(int tenantId)
+    {
+        try
+        {
+            return await tenantBrandingService.GetBrandingAsync(tenantId);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            Log.Warning(ex,
+                "No tenant branding available for tenant {TenantId}; falling back to default POD branding",
+                tenantId);
+            return new ReportBranding { TenantId = tenantId };
         }
     }
 
@@ -123,12 +243,35 @@ public sealed class PodReportService(
         var tenantClaim = user?.Claims.FirstOrDefault(c => c.Type == "CurrentTenantID")?.Value;
 
         if (string.IsNullOrEmpty(tenantClaim) || !int.TryParse(tenantClaim, out var tenantId))
+        {
             throw new InvalidOperationException("Unable to determine tenant ID from user claims");
+        }
 
         return tenantId;
     }
 
-    private static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos)
+    private async Task<string?> GetPodNotesAsync(int jobId)
+    {
+        var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
+        return notes.Count > 0 ? notes[0].NoteText : null;
+    }
+
+    private async Task<IReadOnlyList<PodHistoryEntry>> GetJobHistoryAsync(int jobId)
+    {
+        var history = await deliveryJourneyService.GetStatusHistoryForJobAsync(jobId);
+
+        return
+        [
+            .. history.Select(h => new PodHistoryEntry
+            {
+                Status = h.Status,
+                ActionTime = h.ActionTime.DateTime
+            })
+        ];
+    }
+
+    internal static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos,
+        string? podNotes = null, bool isUsTenant = false, IReadOnlyList<PodHistoryEntry>? history = null)
     {
         // Separate signatures from delivery photos
         var signaturePhotos = s3Photos
@@ -139,9 +282,16 @@ public sealed class PodReportService(
             .Where(p => p.S3Key.Contains("DeliveryPhotos/", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        // Get signature bytes from the first signature image
+        // Get signature bytes from the first signature image. S3PhotoInfo is a struct, so
+        // FirstOrDefault yields default(S3PhotoInfo) with a null Data when no signature exists —
+        // decode only when data is present, otherwise leave the (nullable) signature unset so a
+        // POD without a signature still renders instead of throwing.
+        // The pad's opaque canvas colour is keyed out by PodDocument/PodSpreadsheet, not here — the
+        // raw stored bytes are what they expect.
         var firstSignature = signaturePhotos.FirstOrDefault(p => !string.IsNullOrEmpty(p.Data));
-        var signatureBytes = Convert.FromBase64String(firstSignature.Data);
+        var signatureBytes = string.IsNullOrEmpty(firstSignature.Data)
+            ? null
+            : Convert.FromBase64String(firstSignature.Data);
 
         return new PodData
         {
@@ -153,40 +303,95 @@ public sealed class PodReportService(
             Account = job.ClientName,
             ServiceType = job.SpeedName,
             GoodsReady = job.CreatedDate,
-            PickupName = job.From,
+            ItemCount = ResolveItemCount(job),
+            Weight = job.Weight,
+            WeightUnit = isUsTenant ? "lb" : "kg",
+            PickupName = ComposeTopLine(job.From, job.PickupAddress, isUsTenant),
             PickupAddress = job.PickupAddress?.FullAddress,
-            DeliveryName = job.ToAddress,
+            DeliveryName = ComposeTopLine(job.ToAddress, job.DeliveryAddress, isUsTenant),
             DeliveryAddress = job.DeliveryAddress?.FullAddress,
-            CourierName = job.Courier,
-            CourierVehicle = job.Vehicle?.Text,
-            CourierId = job.CourierData?.CourierNumber,
-            GpsLatitude = job.DeliveryLatitude.HasValue ? (double)job.DeliveryLatitude.Value : null,
-            GpsLongitude = job.DeliveryLongitude.HasValue ? (double)job.DeliveryLongitude.Value : null,
             PodName = job.PodName,
             PodDate = job.CompletedTime,
-            PodNotes = job.Notes?.FirstOrDefault()?.NoteText,
+            PodNotes = podNotes,
             SignatureImage = signatureBytes,
             Items = MapItems(job.ParcelDimensions),
+            History = history is null ? [] : [.. history],
             PhotoCategories = MapPhotoCategories(deliveryPhotos)
         };
     }
 
+    // Mirrors the count the job-details panel shows: pallet quantities win, then parcel rows, then
+    // the job's own item count.
+    private static int? ResolveItemCount(JobViewModel job)
+    {
+        var palletQuantity = job.PalletInfo?.Sum(p => p.Quantity) ?? 0;
+        if (palletQuantity > 0)
+        {
+            return palletQuantity;
+        }
+
+        var parcelCount = job.ParcelDimensions?.Count ?? 0;
+        if (parcelCount > 0)
+        {
+            return parcelCount;
+        }
+
+        return job.Items > 0 ? job.Items : null;
+    }
+
+    /// <summary>
+    /// The address card's top line: the place name plus its city. NZ tenants keep the suburb on
+    /// line 5 and the city on line 6; US tenants put the city on line 5 and the state on line 6.
+    /// The POD job projection never populates <see cref="DispatchJobViewModel.From"/>, so a blank
+    /// name falls back to the suburb.
+    /// </summary>
+    private static string? ComposeTopLine(string? name, AddressViewModel? address, bool isUsTenant)
+    {
+        var city = isUsTenant ? address?.AddressLine5 : address?.AddressLine6;
+        var lead = !string.IsNullOrWhiteSpace(name)
+            ? name.Trim()
+            : isUsTenant
+                ? null
+                : address?.AddressLine5?.Trim();
+
+        if (string.IsNullOrWhiteSpace(lead))
+        {
+            return string.IsNullOrWhiteSpace(city) ? null : city.Trim();
+        }
+
+        if (string.IsNullOrWhiteSpace(city)
+            || lead.EndsWith(city.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return lead;
+        }
+
+        return $"{lead}, {city.Trim()}";
+    }
+
     internal static List<PodItem> MapItems(List<ParcelDimensions>? parcels)
     {
-        if (parcels == null || parcels.Count == 0) return [];
-
-        return parcels.Select(p => new PodItem
+        if (parcels == null || parcels.Count == 0)
         {
-            ItemCode = p.ItemId?.ToString(),
-            Barcode = p.Barcode,
-            Description = p.ItemName
-        }).ToList();
+            return [];
+        }
+
+        return
+        [
+            .. parcels.Select(p => new PodItem
+            {
+                ItemCode = p.ItemId?.ToString(),
+                Barcode = p.Barcode,
+                Description = p.ItemName
+            })
+        ];
     }
 
     internal static List<PhotoCategory> MapPhotoCategories(List<S3PhotoInfo> photos)
     {
         if (photos.Count == 0)
+        {
             return [];
+        }
 
         var podPhotos = photos
             .Where(p => !string.IsNullOrEmpty(p.Data))
@@ -198,7 +403,9 @@ public sealed class PodReportService(
             .ToList();
 
         if (podPhotos.Count == 0)
+        {
             return [];
+        }
 
         return
         [

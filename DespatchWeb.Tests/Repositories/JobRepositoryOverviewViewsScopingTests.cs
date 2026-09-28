@@ -1,0 +1,240 @@
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
+using DespatchWeb.Interfaces;
+using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Repositories;
+using Microsoft.EntityFrameworkCore;
+using NSubstitute;
+
+namespace DespatchWeb.Tests.Repositories;
+
+/// <summary>
+/// Covers the dispatch-page Overview boxes' despatch-Views scoping (ScopeToDespatchViews
+/// = true), added so GetJobsForOverviewPageAsync/GetOpenJobsAsync match the main Jobs
+/// List's behaviour when no view is selected, and the standalone Overview page's opt-out
+/// (ScopeToDespatchViews = false, the default), which has no view selector and must keep
+/// seeing all jobs regardless of DespatchViewIds. The "views selected" branch runs a raw
+/// SQL query against a SQL-Server-only view (DESWEB_qry_Despatch_Job_View_Filters /
+/// DESWEB_qryDespatch) that SQLite cannot host, so — same as the pre-existing gap
+/// for the main list's own DespatchQry/BuildBaseQueryAsync — it isn't covered here.
+/// </summary>
+public class JobRepositoryOverviewViewsScopingTests : IAsyncDisposable
+{
+    private readonly SqliteTestDatabase _db = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
+    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
+
+    public JobRepositoryOverviewViewsScopingTests()
+    {
+        _contextFactoryMock = _db.CreateFactoryMock();
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        await _db.DisposeAsync();
+    }
+
+    private JobRepository CreateRepository() => new(
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
+        _clock,
+        _clearListEnvelopeServiceMock,
+        _createJobServiceMock,
+        Substitute.For<ICourierRepository>(),
+        Substitute.For<ISuburbResolver>()
+    );
+
+    [Fact]
+    public async Task GetJobsForOverviewPageAsync_ScopedNonUsTenantWithNoViewsSelected_ReturnsEmpty()
+    {
+        // Arrange — matches the main list's DespatchQry: a non-US tenant with no
+        // despatch view selected must see nothing, not "everything", when the
+        // caller (a Dispatch panel) opts into view scoping.
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+
+        await using var context = _db.CreateContext();
+        context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "JOB100", UcjbStatus = (int)JobStatus.Dispatched });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetJobsForOverviewPageAsync(
+            JobStatusGroup.Active,
+            new OverviewJobsRequest { ScopeToDespatchViews = true, DespatchViewIds = [] },
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(result.Items);
+        Assert.Equal(0, result.Total);
+    }
+
+    [Fact]
+    public async Task GetOpenJobsAsync_ScopedNonUsTenantWithNoViewsSelected_ReturnsEmpty()
+    {
+        // Arrange
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+
+        await using var context = _db.CreateContext();
+        context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "JOB100", UcjbStatus = (int)JobStatus.Dispatched });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetOpenJobsAsync(
+            new OpenJobsRequest { ScopeToDespatchViews = true, DespatchViewIds = [] });
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetJobsForOverviewPageAsync_UnscopedNonUsTenantWithNoViewsSelected_ReturnsAllJobs()
+    {
+        // Arrange — the standalone Overview page has no view selector at all and never
+        // opts into scoping, so it must keep seeing every job regardless of DespatchViewIds.
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+
+        await using var context = _db.CreateContext();
+        context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "JOB100", UcjbStatus = (int)JobStatus.Dispatched });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetJobsForOverviewPageAsync(
+            JobStatusGroup.Active,
+            new OverviewJobsRequest { DespatchViewIds = [] },
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        var item = Assert.Single(result.Items);
+        Assert.Equal(1, result.Total);
+        Assert.Equal("JOB100", item.JobName);
+    }
+
+    [Fact]
+    public async Task GetOpenJobsAsync_UnscopedNonUsTenantWithNoViewsSelected_ReturnsAllJobs()
+    {
+        // Arrange
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+
+        await using var context = _db.CreateContext();
+        context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "JOB100", UcjbStatus = (int)JobStatus.Dispatched });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetOpenJobsAsync(new OpenJobsRequest { DespatchViewIds = [] });
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("JOB100", result[0].Reference);
+    }
+
+    [Fact]
+    public async Task GetJobsForOverviewPageAsync_SelfReferencingParent_ChildJobsExcludesSelf()
+    {
+        // Arrange — SplitJobService marks a split job's parent row by setting
+        // ParentId to its own UcjbId (SplitJobService.cs:105-108), not null. TucJob.Parent/
+        // InverseParent is a plain self-referencing FK on ParentId, so that self-reference
+        // makes the parent match its own InverseParent query alongside its real child leg.
+        await using var context = _db.CreateContext();
+        context.TucJobs.AddRange(
+            new TucJob { UcjbId = 100, UcjbNumber = "JOB100", ParentId = 100, UcjbStatus = (int)JobStatus.Dispatched },
+            new TucJob
+            {
+                UcjbId = 101, UcjbNumber = "JOB100-1", ParentId = 100,
+                UcjbStatus = (int)JobStatus.Completed, UcjbJobDone = true
+            }
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetJobsForOverviewPageAsync(
+            JobStatusGroup.Active,
+            new OverviewJobsRequest { DespatchViewIds = [] },
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        var item = Assert.Single(result.Items);
+        Assert.Equal(100, item.JobId);
+
+        var child = Assert.Single(item.ChildJobs);
+        Assert.Equal(101, child.JobId);
+
+        // One real child, done — not 50% from the parent wrongly counting itself as a
+        // second, incomplete "child".
+        Assert.Equal(100, item.Completion);
+    }
+
+    [Fact]
+    public async Task GetJobsForOverviewPageAsync_ActiveChildOfCompletedParent_FamilyIsVisible()
+    {
+        // Arrange — a family's Active membership must consider every leg, not just the
+        // parent row. A child leg can still be active after its parent has completed
+        // (e.g. a follow-up leg added post-completion), and Job List/Open Jobs — which
+        // don't group by parent — show that leg regardless of the parent's own status.
+        // Deliveries groups by parent, so if it only checked the parent's status such a
+        // family would vanish from Active entirely: not a top-level row (fails the root
+        // test) and not reachable under any expand chevron (the parent row wouldn't be
+        // in the Active result to expand in the first place).
+        await using var context = _db.CreateContext();
+        context.TucJobs.AddRange(
+            new TucJob { UcjbId = 200, UcjbNumber = "JOB200", UcjbStatus = (int)JobStatus.Completed },
+            new TucJob { UcjbId = 201, UcjbNumber = "JOB200-1", ParentId = 200, UcjbStatus = (int)JobStatus.New }
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetJobsForOverviewPageAsync(
+            JobStatusGroup.Active,
+            new OverviewJobsRequest { DespatchViewIds = [] },
+            TestContext.Current.CancellationToken);
+
+        // Assert — the family surfaces under its parent row, with the active child
+        // reachable under the expand chevron.
+        var item = Assert.Single(result.Items);
+        Assert.Equal(200, item.JobId);
+
+        var child = Assert.Single(item.ChildJobs);
+        Assert.Equal(201, child.JobId);
+    }
+
+    [Fact]
+    public async Task ResolveParentScopedJobs_MatchOnChildLeg_ReturnsParent()
+    {
+        // Arrange — a despatch view's WhereCondition is evaluated against the leg-level
+        // DESWEB_qryDespatch view, so a split job's child leg (which carries the courier/
+        // region attributes) can match while the parent row itself does not. The Overview
+        // Deliveries panel groups by parent, so a match on the child must still resolve to
+        // (and surface) its parent rather than being dropped.
+        await using var context = _db.CreateContext();
+        context.TucJobs.AddRange(
+            new TucJob { UcjbId = 100, UcjbNumber = "JOB100", UcjbStatus = (int)JobStatus.Dispatched },
+            new TucJob { UcjbId = 101, UcjbNumber = "JOB100-1", ParentId = 100, UcjbStatus = (int)JobStatus.Dispatched }
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act — the view matched only the child leg's id (101), not the parent's (100).
+        var result = await repository.ResolveParentScopedJobs([101]).ToListAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        var job = Assert.Single(result);
+        Assert.Equal(100, job.UcjbId);
+    }
+}

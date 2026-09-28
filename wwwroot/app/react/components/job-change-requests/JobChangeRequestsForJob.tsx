@@ -18,26 +18,14 @@
  *     value after cancelling the existing row.
  */
 
-import React, {useState, useCallback, useMemo} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import Button from '@mui/material/Button';
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import {alpha} from '@mui/material/styles';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import EditIcon from '@mui/icons-material/Edit';
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import {jobChangeRequestApi, type JobChangeRequestDto} from '../../services/jobChangeRequestApi';
+import {
+    Alert, Avatar, Badge, Box, Button, Divider, Flex, Group, Loader, Paper, Stack, Text, Textarea, Tooltip,
+} from '@mantine/core';
+import {CircleCheck, CircleX, Hourglass, Pencil, Quote, Ban} from 'lucide-react';
+import {Icon} from '../common/icon/Icon';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
 import {useJobChangeRequests} from './useJobChangeRequests';
 import {
     ageLevel,
@@ -46,9 +34,11 @@ import {
     formatChangeRequestValueWithTz,
     formatRequestedAtTooltip,
     getFieldMeta,
-    relativeAgeShort,
     type JobChangeRequestCategory,
+    relativeAgeShort,
 } from './jobChangeRequestFormatting';
+import {ChangeRequestTriage} from './ChangeRequestTriage';
+import type {JobChangeRequestDto} from '../../interfaces/jobChangeRequest';
 
 export interface JobChangeRequestsForJobProps {
     jobId: number;
@@ -69,23 +59,49 @@ export interface JobChangeRequestsForJobProps {
     deliveryTimezoneText?: string;
 }
 
-type StatusColor = 'default' | 'warning' | 'success' | 'error' | 'info';
+/**
+ * The row's lifecycle tone. Exposed on the DOM as `data-tone` wherever it drives a
+ * colour, so tests (and a reader) assert the meaning rather than the palette.
+ */
+type StatusTone = 'pending' | 'approved' | 'applied' | 'closed' | 'neutral';
 
-const statusColor = (status: string): StatusColor => {
+const statusTone = (status: string): StatusTone => {
     switch (status) {
         case 'Pending':
-            return 'warning';
+            return 'pending';
         case 'Approved':
-            return 'info';
+            return 'approved';
         case 'Applied':
-            return 'success';
+            return 'applied';
         case 'Rejected':
         case 'Cancelled':
-            return 'error';
+            return 'closed';
         default:
-            return 'default';
+            return 'neutral';
     }
 };
+
+/** Mantine colour per tone — the one place the lifecycle meets the palette. */
+const toneColors: Record<StatusTone, string> = {
+    pending: 'orange',
+    approved: 'reflex',
+    applied: 'green',
+    closed: 'red',
+    neutral: 'gray',
+};
+
+/**
+ * Shared props for the small status/label badges (status, origin, awaiting,
+ * overdue). `tt="uppercase"` is Mantine's own text-transform prop, so the label
+ * string stays natural case in the DOM and `getByText(...)` / screen readers see
+ * real words. Value-content badges deliberately do NOT use this, so
+ * prices/dates/addresses stay readable.
+ */
+const labelBadgeProps = {
+    size: 'sm',
+    tt: 'uppercase',
+    fw: 600,
+} as const;
 
 export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = ({
     jobId,
@@ -183,37 +199,38 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
 
     // Surface the query's own error (network / 5xx) alongside any action error.
     const effectiveError = error || (queryError as {message?: string} | null)?.message || '';
-    const loading = isLoading;
 
-    if (loading) {
+    if (isLoading) {
         return (
-            <Card variant="outlined">
-                <CardContent sx={{display: 'flex', alignItems: 'center', gap: 1, py: 2}}>
-                    <CircularProgress size={16}/>
-                    <Typography variant="body2" color="text.secondary">Loading change requests…</Typography>
-                </CardContent>
-            </Card>
+            <Paper withBorder radius="md">
+                <Group gap="xs" px="md" py="md">
+                    <Loader size={16}/>
+                    <Text size="sm" c="dimmed">Loading change requests…</Text>
+                </Group>
+            </Paper>
         );
     }
 
     if (effectiveError) {
-        return <Alert severity="error">{effectiveError}</Alert>;
+        return (
+            <Alert color="red" variant="light" icon={<Icon lucide={CircleX} size={18}/>}>
+                {effectiveError}
+            </Alert>
+        );
     }
 
     if (rows.length === 0) {
         return (
-            <Card variant="outlined">
-                <CardContent sx={{py: 2}}>
-                    <Typography variant="body2" color="text.secondary">
-                        No partner change requests for this job.
-                    </Typography>
-                </CardContent>
-            </Card>
+            <Paper withBorder radius="md" px="md" py="md">
+                <Text size="sm" c="dimmed">
+                    No partner change requests for this job.
+                </Text>
+            </Paper>
         );
     }
 
     return (
-        <Stack spacing={1.5}>
+        <Stack gap="sm">
             {rows.map(r => (
                 <ChangeRequestCard
                     key={r.id}
@@ -264,22 +281,20 @@ interface ChangeRequestCardProps {
     deliveryTimezoneText?: string;
 }
 
-type ValueChipColor = 'default' | 'primary' | 'info';
-
 /**
- * Per-category color for the small value chips that wrap non-address
+ * Per-category colour for the small value badges that wrap non-address
  * "current → requested" tokens. Keeps the visual language consistent with
- * MetricCard accents on the job detail (datetime = primary, money = info).
+ * MetricCard accents on the job detail (datetime = brand, money = reflex).
  */
-function valueChipColor(category: JobChangeRequestCategory): ValueChipColor {
+function valueBadgeColor(category: JobChangeRequestCategory): string {
     switch (category) {
         case 'datetime':
-            return 'primary';
+            return 'brand';
         case 'rate':
         case 'commercial':
-            return 'info';
+            return 'reflex';
         default:
-            return 'default';
+            return 'gray';
     }
 }
 
@@ -311,11 +326,11 @@ function ChangeRequestCard({
         : undefined;
     const fromDisplay = useMemo(
         () => formatChangeRequestValueWithTz(row.fieldName, row.currentValue, fieldTimezoneText),
-        [row.fieldName, row.currentValue, fieldTimezoneText],
+        [row.fieldName, row.currentValue],
     );
     const toDisplay = useMemo(
         () => formatChangeRequestValueWithTz(row.fieldName, row.requestedValue, fieldTimezoneText),
-        [row.fieldName, row.requestedValue, fieldTimezoneText],
+        [row.fieldName, row.requestedValue],
     );
     const fromLines = useMemo(
         () => meta.category === 'address' ? formatAddressLines(row.currentValue) : [],
@@ -334,67 +349,46 @@ function ChangeRequestCard({
     const isRejecting = rejectingId === row.id;
     const isCancelling = cancellingId === row.id;
     const aging = row.status === 'Pending' ? ageLevel(row.requestedAt) : 'fresh';
-    const status = statusColor(row.status);
+    const tone = statusTone(row.status);
+    const toneAccent = `var(--mantine-color-${toneColors[tone]}-6)`;
     const isAddress = meta.category === 'address';
-    const chipColor = valueChipColor(meta.category);
-    /** Requested-side label color follows the row's lifecycle so the user can
-     *  see at a glance whether the value is still in flight (warning), already
-     *  approved (info), or live (success). */
-    const requestedAccent: 'warning' | 'success' | 'info' | 'error' | 'default' =
-        row.status === 'Pending' ? 'warning'
-            : row.status === 'Applied' ? 'success'
-            : row.status === 'Approved' ? 'info'
-            : (row.status === 'Rejected' || row.status === 'Cancelled') ? 'error'
-            : 'default';
+    const badgeColor = valueBadgeColor(meta.category);
+    /** Requested-side accent follows the row's lifecycle so the user can see at a
+     *  glance whether the value is still in flight, approved, or live. */
+    const requestedTone: StatusTone = tone;
 
     return (
-        <Card variant="outlined" sx={(theme) => ({
-            borderLeft: 3,
-            borderLeftColor: `${status}.main`,
-            bgcolor: row.status === 'Pending'
-                ? alpha(theme.palette.warning.main, 0.04)
-                : 'background.paper',
-        })}>
-            <CardContent sx={{py: 1.5, '&:last-child': {pb: 1.5}}}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap'}}>
-                    <Typography
-                        component="span"
-                        sx={{display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                             width: 22, height: 22, borderRadius: '50%', bgcolor: 'action.hover',
-                             fontSize: '0.85rem', flexShrink: 0}}
-                    >
-                        {meta.glyph}
-                    </Typography>
-                    <Typography variant="subtitle2" sx={{fontWeight: 600}}>
-                        {meta.label}
-                    </Typography>
-                    <Chip
-                        label={row.status}
-                        size="small"
-                        color={status}
-                        variant={row.status === 'Pending' ? 'filled' : 'outlined'}
-                    />
-                    {row.requiresCommercialRefresh && (
-                        <Tooltip title="Triggers a price re-rate when applied">
-                            <Chip size="small" label="re-rates" color="warning" variant="outlined"/>
-                        </Tooltip>
-                    )}
-                    <Box sx={{ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.5}}>
-                        {row.status === 'Pending' && aging !== 'fresh' && (
-                            <Chip
-                                size="small"
-                                color={aging === 'overdue' ? 'error' : 'warning'}
-                                label={aging === 'overdue' ? 'Overdue' : 'Review soon'}
-                                variant="filled"
-                            />
+        <Paper
+            withBorder
+            radius="md"
+            data-tone={tone}
+            style={{
+                borderLeftWidth: 3,
+                borderLeftStyle: 'solid',
+                borderLeftColor: toneAccent,
+                // Pending rows carry a faint wash of their accent so they stand
+                // out in the list.
+                ...(tone === 'pending'
+                    ? {backgroundColor: `color-mix(in srgb, ${toneAccent} 4%, transparent)`}
+                    : {}),
+            }}
+        >
+            <Box px="md" py="sm">
+                <Group gap="xs" mb="xs" wrap="wrap">
+                    <Avatar size={22} radius="xl" color="gray">{meta.glyph}</Avatar>
+                    <Text size="sm" fw={600}>{meta.label}</Text>
+                    <Badge {...labelBadgeProps} color={toneColors[tone]} data-tone={tone}>
+                        {row.status}
+                    </Badge>
+                    <Group gap={4} ml="auto" wrap="nowrap">
+                        {row.status === 'Pending' && aging === 'overdue' && (
+                            <Badge {...labelBadgeProps} color="red">Overdue</Badge>
                         )}
-                        <Tooltip title={requestedAtTooltip}>
-                            <Typography variant="caption" color="text.secondary">
-                                {relativeAgeShort(row.requestedAt)} ago
-                            </Typography>
+                        <Tooltip label={requestedAtTooltip}>
+                            <Text size="xs" c="dimmed">{relativeAgeShort(row.requestedAt)} ago</Text>
                         </Tooltip>
-                    </Box>
-                </Box>
+                    </Group>
+                </Group>
 
                 {isAddress ? (
                     <AddressDelta
@@ -402,117 +396,143 @@ function ChangeRequestCard({
                         toLines={toLines}
                         fromFallback={fromDisplay}
                         toFallback={toDisplay}
-                        requestedAccent={requestedAccent}
+                        requestedTone={requestedTone}
                     />
                 ) : (
                     <ValueDelta
                         fromDisplay={fromDisplay}
                         toDisplay={toDisplay}
-                        chipColor={chipColor}
-                        requestedAccent={requestedAccent}
+                        badgeColor={badgeColor}
+                        requestedTone={requestedTone}
                     />
                 )}
 
                 {row.reason && (
-                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1, fontStyle: 'italic'}}>
-                        “{row.reason}”
-                    </Typography>
+                    <Paper
+                        withBorder
+                        radius="md"
+                        mt="sm"
+                        p="sm"
+                        bg="var(--mantine-color-gray-1)"
+                        style={{display: 'flex', alignItems: 'flex-start', gap: 8}}
+                    >
+                        <Icon
+                            lucide={Quote}
+                            size={18}
+                            color="var(--mantine-color-dimmed)"
+                            style={{transform: 'scaleX(-1)', marginTop: 1, flexShrink: 0}}
+                            aria-hidden
+                        />
+                        <Box style={{minWidth: 0}}>
+                            <Text c="dimmed" size="xs" fw={700} tt="uppercase" mb={2} style={{letterSpacing: '0.08em'}}>
+                                Reason
+                            </Text>
+                            <Text size="sm" style={{whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
+                                {row.reason}
+                            </Text>
+                        </Box>
+                    </Paper>
                 )}
 
                 {recentlyCancelled && (
                     <Alert
-                        severity="success"
+                        color="green"
+                        variant="light"
+                        icon={<Icon lucide={CircleCheck} size={18}/>}
+                        withCloseButton
+                        closeButtonLabel="Dismiss"
                         onClose={onDismissCancelled}
-                        sx={{mt: 1, py: 0.25}}
+                        mt="xs"
+                        py={2}
                     >
                         Change request cancelled. {row.approvalPartyType === localPartyType ? '' : 'The partner has been notified.'}
                     </Alert>
                 )}
 
                 {isRejecting ? (
-                    <Box sx={{mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1}}>
-                        <TextField
+                    <Stack gap="xs" mt="sm">
+                        <Textarea
                             label="Reason for rejection (optional)"
                             value={rejectReason}
-                            onChange={e => onChangeRejectReason(e.target.value)}
-                            size="small"
-                            fullWidth
-                            multiline
+                            onChange={e => onChangeRejectReason(e.currentTarget.value)}
                             minRows={2}
-                            autoFocus
+                            autosize
+                            data-autofocus
                             disabled={actingOn !== null}
-                            helperText="Shared with the partner so they know why"
+                            description="Shared with the partner so they know why"
                         />
-                        <Box sx={{display: 'flex', gap: 1, justifyContent: 'flex-end'}}>
+                        <Group gap="xs" justify="flex-end">
                             <Button
-                                size="small"
+                                size="xs"
+                                variant="subtle"
                                 onClick={onCancelReject}
                                 disabled={actingOn !== null}
                             >
                                 Back
                             </Button>
                             <Button
-                                size="small"
-                                variant="contained"
-                                color="error"
+                                size="xs"
+                                color="red"
                                 onClick={() => onConfirmReject(row)}
                                 disabled={actingOn !== null}
-                                startIcon={<HighlightOffIcon/>}
+                                leftSection={<Icon lucide={CircleX} size={16}/>}
                             >
                                 Confirm reject
                             </Button>
-                        </Box>
-                    </Box>
+                        </Group>
+                    </Stack>
                 ) : isCancelling ? (
-                    <Box sx={{mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1}}>
-                        <Typography variant="body2" color="text.secondary">
+                    <Stack gap="xs" mt="sm">
+                        <Text size="sm" c="dimmed">
                             Cancel this change request? The partner will be notified the request was retracted.
-                        </Typography>
-                        <Box sx={{display: 'flex', gap: 1, justifyContent: 'flex-end'}}>
+                        </Text>
+                        <Group gap="xs" justify="flex-end">
                             <Button
-                                size="small"
+                                size="xs"
+                                variant="subtle"
                                 onClick={onAbortCancel}
                                 disabled={actingOn !== null}
                             >
                                 Keep request
                             </Button>
                             <Button
-                                size="small"
-                                variant="contained"
-                                color="warning"
+                                size="xs"
+                                color="orange"
                                 onClick={() => onConfirmCancel(row)}
                                 disabled={actingOn !== null}
-                                startIcon={actingOn === row.id ? <CircularProgress size={14} color="inherit"/> : <CancelOutlinedIcon/>}
+                                loading={actingOn === row.id}
+                                leftSection={<Icon lucide={Ban} size={16}/>}
                             >
                                 Confirm cancel
                             </Button>
-                        </Box>
-                    </Box>
+                        </Group>
+                    </Stack>
                 ) : (
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap'}}>
-                        <Chip
-                            size="small"
-                            label={row.origin === 'Local' ? 'You requested' : 'Partner requested'}
-                            color={row.origin === 'Local' ? 'primary' : 'secondary'}
-                            variant={row.origin === 'Local' ? 'outlined' : 'filled'}
-                        />
-                        <Box sx={{ml: 'auto', display: 'flex', gap: 1, alignItems: 'center'}}>
+                    <Group gap="xs" mt="xs" wrap="wrap">
+                        {canApprove && <ChangeRequestTriage requestId={row.id} jobId={row.jobId}/>}
+                        <Badge
+                            {...labelBadgeProps}
+                            color={row.origin === 'Local' ? 'brand' : 'grape'}
+                            data-origin={row.origin === 'Local' ? 'local' : 'partner'}
+                        >
+                            {row.origin === 'Local' ? 'You requested' : 'Partner requested'}
+                        </Badge>
+                        <Group gap="xs" ml="auto" wrap="nowrap">
                             {canApprove && (
                                 <>
                                     <Button
-                                        size="small"
-                                        variant="contained"
-                                        color="success"
+                                        size="xs"
+                                        color="green"
                                         onClick={() => onApprove(row)}
                                         disabled={actingOn !== null}
-                                        startIcon={<CheckCircleOutlineIcon/>}
+                                        leftSection={<Icon lucide={CircleCheck} size={16}/>}
                                     >
                                         Approve
                                     </Button>
                                     <Button
-                                        size="small"
-                                        variant="outlined"
-                                        color="error"
+                                        size="xs"
+                                        variant="outline"
+                                        color="red"
                                         onClick={() => onStartReject(row.id)}
                                         disabled={actingOn !== null}
                                     >
@@ -522,28 +542,22 @@ function ChangeRequestCard({
                             )}
                             {isOwnPending && !canApprove && (
                                 <>
-                                    <Chip
-                                        size="small"
-                                        icon={<HourglassEmptyIcon/>}
-                                        label="Awaiting partner"
-                                        color="info"
-                                        variant="outlined"
-                                    />
+                                    <AwaitingPartnerBadge/>
                                     {onModify && (
                                         <Button
-                                            size="small"
-                                            variant="outlined"
+                                            size="xs"
+                                            variant="outline"
                                             onClick={() => onModify(row)}
                                             disabled={actingOn !== null}
-                                            startIcon={<EditIcon/>}
+                                            leftSection={<Icon lucide={Pencil} size={16}/>}
                                         >
                                             Modify
                                         </Button>
                                     )}
                                     <Button
-                                        size="small"
-                                        variant="outlined"
-                                        color="warning"
+                                        size="xs"
+                                        variant="outline"
+                                        color="orange"
                                         onClick={() => onStartCancel(row.id)}
                                         disabled={actingOn !== null}
                                     >
@@ -552,19 +566,27 @@ function ChangeRequestCard({
                                 </>
                             )}
                             {row.status === 'Pending' && !canApprove && !isOwnPending && (
-                                <Chip
-                                    size="small"
-                                    icon={<HourglassEmptyIcon/>}
-                                    label="Awaiting partner"
-                                    color="info"
-                                    variant="outlined"
-                                />
+                                <AwaitingPartnerBadge/>
                             )}
-                        </Box>
-                    </Box>
+                        </Group>
+                    </Group>
                 )}
-            </CardContent>
-        </Card>
+            </Box>
+        </Paper>
+    );
+}
+
+/** "Awaiting partner" — shown to both parties when the other one owns the decision. */
+function AwaitingPartnerBadge() {
+    return (
+        <Badge
+            {...labelBadgeProps}
+            color={toneColors.approved}
+            data-tone="awaiting"
+            leftSection={<Icon lucide={Hourglass} size={12}/>}
+        >
+            Awaiting partner
+        </Badge>
     );
 }
 
@@ -573,158 +595,113 @@ interface AddressDeltaProps {
     toLines: string[];
     fromFallback: string;
     toFallback: string;
-    requestedAccent: 'warning' | 'success' | 'info' | 'error' | 'default';
+    requestedTone: StatusTone;
 }
 
 /**
- * Side-by-side address comparison. Each side is its own outlined Card with
+ * Side-by-side address comparison. Each side is its own outlined card with
  * an overline label, mirroring the AddressSection layout on the job detail.
  * Collapses to a stacked layout on narrow screens with the arrow rotating
  * to point downward.
  */
-function AddressDelta({fromLines, toLines, fromFallback, toFallback, requestedAccent}: AddressDeltaProps) {
+function AddressDelta({fromLines, toLines, fromFallback, toFallback, requestedTone}: AddressDeltaProps) {
     const renderLines = (lines: string[], fallback: string) => {
         const display = lines.length > 0 ? lines : [fallback];
         return display.map((line, idx) => (
-            <Typography
-                key={`${idx}-${line}`}
-                variant="body2"
-                sx={{lineHeight: 1.4, wordBreak: 'break-word'}}
-            >
+            <Text key={`${idx}-${line}`} size="sm" style={{lineHeight: 1.4, wordBreak: 'break-word'}}>
                 {line}
-            </Typography>
+            </Text>
         ));
     };
 
-    const requestedLabelColor = requestedAccent === 'default' ? 'text.secondary' : `${requestedAccent}.main`;
+    const isNeutral = requestedTone === 'neutral';
+    const accent = `var(--mantine-color-${toneColors[requestedTone]}-6)`;
+
+    /** Both sides share the card shell; only the requested one takes an accent. */
+    const sideProps = {
+        withBorder: true,
+        radius: 'md',
+        p: 10,
+        style: {flex: 1, minWidth: 0},
+    } as const;
+
+    const overlineProps = {size: 'xs', tt: 'uppercase', fw: 600, mb: 4} as const;
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: {xs: 'column', sm: 'row'},
-                alignItems: 'stretch',
-                gap: 1,
-                mb: 0.5,
-            }}
-        >
-            <Box
-                aria-label="Current address"
-                sx={{
-                    flex: 1,
-                    minWidth: 0,
-                    p: 1.25,
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    bgcolor: 'background.paper',
-                }}
-            >
-                <Typography
-                    variant="overline"
-                    sx={{
-                        display: 'block',
-                        color: 'text.secondary',
-                        fontWeight: 600,
-                        letterSpacing: '0.06em',
-                        lineHeight: 1.4,
-                        mb: 0.5,
-                    }}
-                >
-                    Current
-                </Typography>
+        <Flex direction={{base: 'column', sm: 'row'}} align="stretch" gap="xs" mb={4}>
+            <Paper {...sideProps} aria-label="Current address">
+                <Text {...overlineProps} c="dimmed" style={{letterSpacing: '0.06em'}}>Current</Text>
                 {renderLines(fromLines, fromFallback)}
+            </Paper>
+            {/* The arrow turns with the layout: down while the cards are stacked,
+                across once they sit side by side. */}
+            <Box aria-hidden style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <Text c="dimmed" fz="1.1rem" hiddenFrom="sm">↓</Text>
+                <Text c="dimmed" fz="1.1rem" px={4} visibleFrom="sm">→</Text>
             </Box>
-            <Box
-                aria-hidden
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'text.secondary',
-                    fontSize: '1.1rem',
-                    px: {xs: 0, sm: 0.5},
-                    py: {xs: 0.25, sm: 0},
-                    transform: {xs: 'rotate(90deg)', sm: 'none'},
+            <Paper
+                {...sideProps}
+                aria-label="Requested address"
+                data-tone={isNeutral ? undefined : requestedTone}
+                bg={isNeutral ? undefined : `color-mix(in srgb, ${accent} 6%, transparent)`}
+                style={{
+                    ...sideProps.style,
+                    ...(isNeutral ? {} : {borderColor: `color-mix(in srgb, ${accent} 50%, transparent)`}),
                 }}
             >
-                →
-            </Box>
-            <Box
-                aria-label="Requested address"
-                sx={(theme) => ({
-                    flex: 1,
-                    minWidth: 0,
-                    p: 1.25,
-                    border: 1,
-                    borderColor: requestedAccent === 'default'
-                        ? 'divider'
-                        : alpha(theme.palette[requestedAccent].main, 0.5),
-                    borderRadius: 2,
-                    bgcolor: requestedAccent === 'default'
-                        ? 'background.paper'
-                        : alpha(theme.palette[requestedAccent].main, 0.06),
-                })}
-            >
-                <Typography
-                    variant="overline"
-                    sx={{
-                        display: 'block',
-                        color: requestedLabelColor,
-                        fontWeight: 600,
-                        letterSpacing: '0.06em',
-                        lineHeight: 1.4,
-                        mb: 0.5,
-                    }}
+                <Text
+                    {...overlineProps}
+                    c={isNeutral ? 'dimmed' : undefined}
+                    style={{letterSpacing: '0.06em', ...(isNeutral ? {} : {color: accent})}}
                 >
                     Requested
-                </Typography>
+                </Text>
                 {renderLines(toLines, toFallback)}
-            </Box>
-        </Box>
+            </Paper>
+        </Flex>
     );
 }
 
 interface ValueDeltaProps {
     fromDisplay: string;
     toDisplay: string;
-    chipColor: ValueChipColor;
-    requestedAccent: 'warning' | 'success' | 'info' | 'error' | 'default';
+    badgeColor: string;
+    requestedTone: StatusTone;
 }
 
 /**
  * Inline "current → requested" pair for short, atomic values (prices,
- * dates, flags, refs). Each side is wrapped in a small MUI Chip so it
+ * dates, flags, refs). Each side is wrapped in a small badge so it
  * reads as a first-class token instead of bare monospace text.
  */
-function ValueDelta({fromDisplay, toDisplay, chipColor, requestedAccent}: ValueDeltaProps) {
-    /** Requested-side picks up the row's lifecycle accent (Pending = warning,
-     *  Applied = success, etc.) so the user can see at a glance whether the
-     *  proposed value is in flight or live. Pre-Pending the category color
-     *  drives the chip; once a decision is rendered we follow lifecycle. */
-    const requestedColor: ValueChipColor | 'warning' | 'success' | 'error' =
-        requestedAccent === 'default' ? chipColor : requestedAccent;
+function ValueDelta({fromDisplay, toDisplay, badgeColor, requestedTone}: ValueDeltaProps) {
+    /** Requested-side picks up the row's lifecycle accent (Pending = amber,
+     *  Applied = green, etc.) so the user can see at a glance whether the
+     *  proposed value is in flight or live. Pre-Pending the category colour
+     *  drives the badge; once a decision is rendered we follow lifecycle. */
+    const requestedColor = requestedTone === 'neutral' ? badgeColor : toneColors[requestedTone];
+    /**
+     * A value can be a long date or address, so these badges wrap instead of
+     * truncating — Mantine's Styles API reaches the label slot, which is where
+     * the default `nowrap` lives.
+     */
+    const valueBadgeProps = {
+        size: 'sm',
+        tt: 'none',
+        h: 'auto',
+        maw: '100%',
+        styles: {label: {whiteSpace: 'normal' as const}},
+    } as const;
+
     return (
-        <Box sx={{mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap'}}>
-            <Chip
-                size="small"
-                color={chipColor}
-                variant="outlined"
-                label={fromDisplay}
-                sx={{maxWidth: '100%', '& .MuiChip-label': {whiteSpace: 'normal'}}}
-            />
-            <Typography component="span" sx={{color: 'text.secondary'}}>→</Typography>
-            <Chip
-                size="small"
-                color={requestedColor}
-                variant="filled"
-                label={toDisplay}
-                sx={{
-                    maxWidth: '100%',
-                    fontWeight: 600,
-                    '& .MuiChip-label': {whiteSpace: 'normal'},
-                }}
-            />
-        </Box>
+        <Group gap={6} mb={4} wrap="wrap">
+            <Badge {...valueBadgeProps} color="gray">
+                {fromDisplay}
+            </Badge>
+            <Text component="span" c="dimmed">→</Text>
+            <Badge {...valueBadgeProps} color={requestedColor} fw={600} data-tone={requestedTone}>
+                {toDisplay}
+            </Badge>
+        </Group>
     );
 }

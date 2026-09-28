@@ -4,10 +4,16 @@
  * React-native API service for courier-related operations.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {CourierSuggestion, TimeZoneOption} from '../interfaces';
-import type {IAvailableCourierPosition} from '../../interfaces/courier.interface';
+import type {IAvailableCourierPosition, ITruckCourierStatus} from '../../interfaces/courier.interface';
+import type {IClearListViewModel} from '../../interfaces/job.interface';
 import type {ClearListEnvelopeData} from '../components/common/dispatch-map/DispatchMap.types';
+import type {FleetOption} from '../interfaces/driverManagement';
+import type {IDriverWorkOverview} from '../components/common/current-work-all-drivers';
+import {formatDateForApiWithTzs} from '../utils/dateUtils';
+import type {Dayjs} from 'dayjs';
+import {RequestOptions} from "./requestOptions";
 
 /**
  * Search for active couriers
@@ -32,10 +38,60 @@ export async function searchActiveCouriersExtended(
 }
 
 /**
+ * Look a courier up by their exact code. Mirrors the V1
+ * DispatchCoreService.getExactCourierMatch (`GET courier/GetExactCourierByCode`),
+ * which backs typing a code and pressing Enter. Resolves to null when no active
+ * courier has that code.
+ */
+export async function getExactCourierByCode(
+    courierCode: string,
+    options?: RequestOptions,
+): Promise<CourierSuggestion | null> {
+    const courier = await apiClient.get<CourierSuggestion | null>('courier/GetExactCourierByCode', {
+        courierCode,
+    }, options);
+    return courier?.id ? courier : null;
+}
+
+/**
  * Get timezone options
  */
 export async function getTimeZoneOptions(options?: RequestOptions): Promise<TimeZoneOption[]> {
     return apiClient.get<TimeZoneOption[]>('job/GetTimeZoneOptions', undefined, options);
+}
+
+/**
+ * Get the "all drivers" work overview (driver + job count) for the Current Work
+ * panel. Mirrors the V1 DispatchCoreService.getDriverWorkOverview.
+ */
+export async function fetchDriverWorkOverview(options?: RequestOptions): Promise<IDriverWorkOverview[]> {
+    return apiClient.get<IDriverWorkOverview[]>('courier/GetDriverWorkOverview', undefined, options);
+}
+
+/**
+ * Get a courier's truck loading status (pallet/weight capacity). Mirrors V1
+ * DispatchCoreService.truckCourierStatus (`GET courier/TruckCourierStatus`).
+ */
+export async function fetchTruckCourierStatus(
+    courierId: number,
+    options?: RequestOptions,
+): Promise<ITruckCourierStatus> {
+    return apiClient.get<ITruckCourierStatus>('courier/TruckCourierStatus', {courierId}, options);
+}
+
+/**
+ * Get the driver-locations clear list for the given dispatch views and date
+ * range. Mirrors the V1 DispatchCoreService.getDriverLocations (`GET courier`).
+ */
+export async function fetchDriverLocations(
+    params: {despatchViewIds: number[]; startDate?: Dayjs; endDate?: Dayjs},
+    options?: RequestOptions,
+): Promise<IClearListViewModel> {
+    return apiClient.get<IClearListViewModel>('courier', {
+        despatchViewIds: params.despatchViewIds,
+        startDate: params.startDate ? formatDateForApiWithTzs(params.startDate) : undefined,
+        endDate: params.endDate ? formatDateForApiWithTzs(params.endDate) : undefined,
+    }, options);
 }
 
 /**
@@ -46,14 +102,21 @@ export async function getAvailableCourierLocations(
     minLat: number,
     maxLng: number,
     maxLat: number,
+    courierFleetIds?: number[],
     options?: RequestOptions
 ): Promise<IAvailableCourierPosition[]> {
-    return apiClient.get<IAvailableCourierPosition[]>('courier/AvailableCourierLocation', {
-        minLng,
-        minLat,
-        maxLng,
-        maxLat,
-    }, options);
+    const params: Record<string, unknown> = {minLng, minLat, maxLng, maxLat};
+    if (courierFleetIds && courierFleetIds.length > 0) {
+        params.courierFleetIds = courierFleetIds;
+    }
+    return apiClient.get<IAvailableCourierPosition[]>('courier/AvailableCourierLocation', params, options);
+}
+
+/**
+ * Get all courier fleets as id/text options for selectors
+ */
+export async function getAllFleetOptions(options?: RequestOptions): Promise<FleetOption[]> {
+    return apiClient.get<FleetOption[]>('courier/GetAllFleetOptions', undefined, options);
 }
 
 /**
@@ -68,9 +131,11 @@ export async function getClearListEnvelope(clearListId: number, options?: Reques
 export const courierApi = {
     searchActiveCouriers,
     searchActiveCouriersExtended,
+    getExactCourierByCode,
     getTimeZoneOptions,
     getAvailableCourierLocations,
     getClearListEnvelope,
+    getAllFleetOptions,
 };
 
 export default courierApi;

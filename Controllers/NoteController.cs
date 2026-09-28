@@ -12,13 +12,12 @@ namespace DespatchWeb.Controllers;
 public class NoteController(
     INoteRepository noteRepository,
     IRecurringJobRepository recurringJobRepository
-    ) : Controller
+) : Controller
 {
     public async Task<IActionResult> GetNotes(int jobId)
     {
         try
         {
-
             var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
             return Json(notes);
         }
@@ -34,7 +33,6 @@ public class NoteController(
     {
         try
         {
-
             var bulkJobNotes = await noteRepository.GetBulkJobNotesByBulkJobIdAsync(bulkJobId);
             return Json(bulkJobNotes);
         }
@@ -50,7 +48,6 @@ public class NoteController(
     {
         try
         {
-
             var notes = await recurringJobRepository.GetRecurringNotesByJobIdAsync(jobId);
             return Json(notes);
         }
@@ -70,11 +67,17 @@ public class NoteController(
             ArgumentNullException.ThrowIfNull(noteViewModel);
 
             if (noteViewModel.JobBookingId.HasValue)
+            {
                 await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
+            }
             else if (noteViewModel.BulkJobId.HasValue)
+            {
                 await noteRepository.SaveBulkNoteAsync(noteViewModel);
+            }
             else
+            {
                 await noteRepository.SaveNoteAsync(noteViewModel);
+            }
 
             return Ok();
         }
@@ -86,7 +89,7 @@ public class NoteController(
         }
     }
 
-   [HttpPost]
+    [HttpPost]
     public async Task<ActionResult<TucNoteViewModel>> CreateBulkJobNote([FromBody] TucNoteViewModel noteViewModel)
     {
         try
@@ -113,24 +116,30 @@ public class NoteController(
 
             if (noteViewModel.BulkJobId.HasValue)
             {
-                // Bulk notes live in TblBulkJobNotes, not TucNotes
                 var existingBulkNote = await noteRepository.GetBulkNoteByIdAsync(noteViewModel.NoteId);
                 if (existingBulkNote == null)
+                {
                     return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
+                }
 
                 await noteRepository.SaveBulkNoteAsync(noteViewModel);
             }
             else
             {
-                // Check if a note exists in TucNotes / TucNoteArchives
-                var existingNote = await noteRepository.GetNoteByIdAsync(noteViewModel.NoteId);
+                var existingNote = await noteRepository.GetNoteByIdAsync(noteViewModel.NoteId, noteViewModel.JobId);
                 if (existingNote == null)
+                {
                     return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
+                }
 
                 if (noteViewModel.JobBookingId.HasValue)
+                {
                     await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
+                }
                 else
+                {
                     await noteRepository.SaveNoteAsync(noteViewModel);
+                }
             }
 
             return Ok();
@@ -150,10 +159,11 @@ public class NoteController(
         {
             ArgumentNullException.ThrowIfNull(noteViewModel);
 
-            // Check if a bulk note exists (query TblBulkJobNotes, not TucNotes)
             var existingNote = await noteRepository.GetBulkNoteByIdAsync(noteViewModel.NoteId);
             if (existingNote == null)
+            {
                 return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
+            }
 
             await noteRepository.SaveBulkNoteAsync(noteViewModel);
 
@@ -168,14 +178,14 @@ public class NoteController(
     }
 
     [HttpDelete]
-    public async Task<IActionResult> DeleteNote(int noteId)
+    public async Task<IActionResult> DeleteNote(int noteId, int? jobId = null)
     {
         try
         {
-            var note = await noteRepository.GetNoteByIdAsync(noteId);
+            var note = await noteRepository.GetNoteByIdAsync(noteId, jobId);
             ArgumentNullException.ThrowIfNull(note);
 
-            await noteRepository.DeleteNoteAsync(noteId);
+            await noteRepository.DeleteNoteAsync(noteId, jobId);
 
             return Ok();
         }
@@ -192,7 +202,9 @@ public class NoteController(
         try
         {
             if (!Enum.TryParse<NoteHistorySource>(noteSource, ignoreCase: true, out var source))
+            {
                 return BadRequest($"Invalid noteSource: {noteSource}");
+            }
 
             var history = await noteRepository.GetNoteHistoryAsync(noteId, source);
             return Json(history);

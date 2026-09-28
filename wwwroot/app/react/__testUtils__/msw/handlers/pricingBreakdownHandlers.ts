@@ -5,7 +5,9 @@
  */
 
 import { http, HttpResponse } from 'msw';
-import type { PriceBreakdown } from '../../../services/pricingBreakdownApi';
+import {rejectWithoutCsrf} from './requestGuards';
+import {PriceBreakdown} from "../../../interfaces/priceBreakdown";
+
 
 // Mock data
 export const mockPriceBreakdowns: PriceBreakdown[] = [
@@ -47,9 +49,8 @@ export const pricingBreakdownHandlers = [
 
     // Add price component (returns new chargeId)
     http.post('*/job/AddPriceComponent', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -62,9 +63,8 @@ export const pricingBreakdownHandlers = [
 
     // Update price component
     http.post('*/job/UpdatePriceComponent', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -76,9 +76,8 @@ export const pricingBreakdownHandlers = [
 
     // Delete price component
     http.post('*/job/DeletePriceComponent', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {

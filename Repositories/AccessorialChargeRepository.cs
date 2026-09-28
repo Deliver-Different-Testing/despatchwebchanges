@@ -40,7 +40,8 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             Created = jac.Created
         };
 
-    public async Task<IReadOnlyList<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId, int jobId) =>
+    public async Task<IReadOnlyList<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId,
+        int jobId) =>
         await Context.AccessorialChargeGroupMembers
             .Where(acgm => acgm.AccessorialChargeGroupId == accessorialChargeGroupId)
             .Select(acgm => acgm.AccessorialCharge)
@@ -71,12 +72,17 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             })
             .ToListAsync();
 
-    public async Task<IReadOnlyList<JobAccessorialChargeDto>> GetAppliedChargesAsync(int jobId) =>
-        await Context.JobAccessorialCharges
+    public async Task<IReadOnlyList<JobAccessorialChargeDto>> GetAppliedChargesAsync(int jobId)
+    {
+        var charges = await Context.JobAccessorialCharges
             .Where(jac => jac.JobId == jobId)
             .OrderBy(jac => jac.Created)
             .Select(AppliedChargeProjection)
             .ToListAsync();
+
+        var alwaysApplyIds = await GetAlwaysApplyChargeIdsAsync(jobId);
+        return [.. charges.Select(c => c with { AlwaysApply = alwaysApplyIds.Contains(c.AccessorialChargeId) })];
+    }
 
     public async Task AddChargeAsync(int jobId, JobAccessorialChargeCreateRequest request, string userName)
     {
@@ -131,13 +137,55 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             .Select(j => new { j.UcjbId, j.AccessorialChargeGroupId })
             .ToListAsync();
 
-        return children
-            .Select((j, i) => new PortionJobInfoDto
+        return
+        [
+            .. children
+                .Select((j, i) => new PortionJobInfoDto
+                {
+                    JobId = j.UcjbId,
+                    Label = i < labels.Length ? labels[i] : $"Portion {i + 1}",
+                    AccessorialChargeGroupId = j.AccessorialChargeGroupId
+                })
+        ];
+    }
+
+    public async Task<decimal> GetTotalAppliedChargesAsync(int jobId)
+    {
+        var portions = await GetPortionJobsAsync(jobId);
+        if (portions.Count > 0)
+        {
+            decimal total = 0;
+            foreach (var portion in portions)
             {
-                JobId = j.UcjbId,
-                Label = i < labels.Length ? labels[i] : $"Portion {i + 1}",
-                AccessorialChargeGroupId = j.AccessorialChargeGroupId
-            })
-            .ToList();
+                var portionCharges = await GetAppliedChargesAsync(portion.JobId);
+                total += portionCharges.Sum(c => c.OverrideAmount ?? c.CalculatedAmount ?? 0m);
+            }
+
+            return total;
+        }
+
+        var charges = await GetAppliedChargesAsync(jobId);
+        return charges.Sum(c => c.OverrideAmount ?? c.CalculatedAmount ?? 0m);
+    }
+
+    private async Task<HashSet<int>> GetAlwaysApplyChargeIdsAsync(int jobId)
+    {
+        var groupId = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.AccessorialChargeGroupId)
+            .FirstOrDefaultAsync();
+
+        if (groupId == null)
+        {
+            return [];
+        }
+
+        return
+        [
+            .. await Context.AccessorialChargeGroupMembers
+                .Where(m => m.AccessorialChargeGroupId == groupId.Value && m.AlwaysApply)
+                .Select(m => m.AccessorialChargeId)
+                .ToListAsync()
+        ];
     }
 }

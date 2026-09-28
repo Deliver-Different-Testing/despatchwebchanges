@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 import './nationwide.controller.test-setup';
 import {ControllerClass, createController, makeFlightJob, makeDeliveryJob, makeJob, setupWindowMocks} from './nationwide.controller.test-helpers';
 
@@ -71,29 +70,15 @@ describe('updateUIState', () => {
     });
 });
 
-describe('resetAllFlags', () => {
-    it('resets all flags to false', () => {
-        const ctrl = createController({
-            showNoJobSelectedMessage: true,
-            showJobHasAssignedFlightMessage: true,
-            showMissingAirportInfoMessage: true,
-            showNoFlightsAvailableMessage: true,
-            showFlightList: true,
-            showNoAgentJobSelectedMessage: true,
-            showJobHasAssignedAgentMessage: true,
-            showNoAgentsAvailableMessage: true,
-            showAgentList: true,
-        });
-        ctrl.resetAllFlags = ControllerClass.prototype.resetAllFlags;
-
-        ctrl.resetAllFlags();
-
-        expect(ctrl.showNoJobSelectedMessage).toBe(false);
-        expect(ctrl.showJobHasAssignedFlightMessage).toBe(false);
-        expect(ctrl.showFlightList).toBe(false);
-        expect(ctrl.showAgentList).toBe(false);
-    });
-});
+/*
+ * `resetAllFlags` no longer exists: `updateUIState` delegates to
+ * `react/pages/nationwide/lib/widgetUiState.deriveWidgetUiState`, which returns a
+ * fresh flag set spread from `emptyWidgetUiState` on every call, so there is no
+ * separate reset step to get wrong. The guarantee this test protected -- no
+ * stale flag survives an update -- is covered by that module's
+ * "exposes exactly one flag at a time, with the rest reset" test, and the
+ * `updateUIState` cases above still assert it through the controller.
+ */
 
 describe('toggleBoxCollapse', () => {
     function setup(overrides = {}) {

@@ -50,6 +50,7 @@ export interface JobAccessorialChargeDto {
     addedAtStage?: string;
     createdBy?: string;
     created?: string;
+    alwaysApply: boolean;
 }
 
 export interface JobAccessorialChargeCreateRequest {

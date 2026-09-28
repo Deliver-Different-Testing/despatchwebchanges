@@ -9,6 +9,10 @@
     width: 100%;
     height: 100%;
     display: block;
+    /* Contain the map's internal stacking (loading bar / overlay / tooltips use
+       z-index up to 1001) so it can never paint over the surrounding app chrome
+       — e.g. the AngularJS nav menus on the main dispatch page. */
+    isolation: isolate;
 }
 
 .loadingBar {
@@ -23,16 +27,6 @@
     position: relative;
     width: 100%;
     height: 100%;
-}
-
-.mapWrapper {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
 }
 
 .mapContainer {

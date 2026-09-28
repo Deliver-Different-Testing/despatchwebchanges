@@ -10,11 +10,15 @@ variables:
   GITLAB_NUGET_USERNAME: "gitlab-ci-token"
   GITLAB_NUGET_TOKEN: "${CI_JOB_TOKEN}"
   NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget/packages
+  # Opts this project into the per-deploy release notes emitted by ci-templates'
+  # generate-pipeline.sh. Setup and CI variables: docs/release-notes-setup.md
+  RELEASE_NOTES_ENABLED: "true"
 
 # Only run deploy on protected branches, not on MR pipelines
 deploy-dynamic-pipeline:
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH == "develop"
     - if: $CI_COMMIT_TAG
 
 # Workflow rules - prioritize merge request pipelines to block merges on failure
@@ -26,6 +30,7 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     # Run pipeline for protected branches after merge
     - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH == "develop"
     # Run pipeline for tags (releases)
     - if: $CI_COMMIT_TAG
 
@@ -33,7 +38,10 @@ workflow:
 .backend-test-rules:
   interruptible: true
   rules:
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+    # Target-branch agnostic. Routine MRs target develop since the 2026-09-18
+    # branch inversion, and an MR pipeline already diffs source vs target, so
+    # pinning the target branch here meant these jobs silently never ran.
+    - if: $CI_MERGE_REQUEST_IID
       changes:
         paths:
           - "**/*.cs"
@@ -43,16 +51,19 @@ workflow:
           - nuget.config
           - global.json
           - .gitlab-ci.yml
-        compare_to: refs/heads/master
 
 # Path-based rules: only run frontend tests when frontend files change
 .frontend-test-rules:
   interruptible: true
   rules:
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+    # Target-branch agnostic. Routine MRs target develop since the 2026-09-18
+    # branch inversion, and an MR pipeline already diffs source vs target, so
+    # pinning the target branch here meant these jobs silently never ran.
+    - if: $CI_MERGE_REQUEST_IID
       changes:
         paths:
           - "wwwroot/**/*"
+          - "scripts/**/*"
           - package.json
           - package-lock.json
           - jest.config.js
@@ -61,20 +72,56 @@ workflow:
           - tsconfig.test.json
           - eslint.config.mjs
           - .gitlab-ci.yml
-        compare_to: refs/heads/master
 
 # Test jobs - only run on merge requests targeting protected branches
 test:backend:
   stage: .pre
   image: mcr.microsoft.com/dotnet/sdk:10.0
+  # Retry on any non-test failure reason (a dead/evicted K8s pod can be tagged with
+  # several of these). Genuine test failures are `script_failure`, deliberately kept OUT
+  # of the list so failing tests still fail fast and block the merge.
   retry:
     max: 2
-    when: runner_system_failure
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - stuck_or_timeout_failure
+      - api_failure
+      - scheduler_failure
+      - data_integrity_failure
   allow_failure: false
+  variables:
+    # Force workstation GC: Server GC reserves per-core heaps sized off the node's core
+    # count (not the pod cgroup), a classic K8s OOM driver for this in-process test run.
+    DOTNET_gcServer: "0"
+    DOTNET_GCConserveMemory: "9"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    DOTNET_NOLOGO: "1"
+    # Guaranteed pod headroom so it isn't OOMKilled/evicted. Only applied if the runner
+    # allows overwrites (otherwise silently ignored, never a hard failure).
+    KUBERNETES_CPU_REQUEST: "2"
+    KUBERNETES_CPU_LIMIT: "4"
+    KUBERNETES_MEMORY_REQUEST: "4Gi"
+    KUBERNETES_MEMORY_LIMIT: "6Gi"
+    # Disk is the other eviction axis: kubelet ranks pods by usage ABOVE their request,
+    # so a request of 0 made this pod (2.5Gi of extracted NuGet cache) the node's first
+    # victim whenever the cluster crossed its ephemeral-storage threshold. Same "only if
+    # the runner allows overwrites" caveat as the CPU/memory pair above.
+    KUBERNETES_EPHEMERAL_STORAGE_REQUEST: "6Gi"
+    KUBERNETES_EPHEMERAL_STORAGE_LIMIT: "12Gi"
+    # Pull-only by default. `pull-push` re-tarred 17,968 files (~2.5Gi) to the pod's
+    # ephemeral disk on every single MR run for a cache that almost never changes, which
+    # is what tipped the node over. A cold or stale cache is harmless — `dotnet restore`
+    # just fetches the delta from the network. To refresh the cache, run a pipeline with
+    # BACKEND_CACHE_POLICY=pull-push (pipeline variables outrank job variables).
+    # Note it must be refreshed from an MR/non-protected ref: the runner namespaces the
+    # cache as `-non_protected` vs `-protected`, so a master run writes a different key.
+    BACKEND_CACHE_POLICY: "pull"
   cache:
     key: dotnet-packages
     paths:
       - .nuget/packages/
+    policy: $BACKEND_CACHE_POLICY
   script:
     - dotnet restore
     - dotnet run --project DespatchWeb.Tests --no-restore
@@ -121,9 +168,9 @@ test:frontend:unit:
     - .frontend-base
     - .frontend-test-rules
   allow_failure: false
-  parallel: 2
+  parallel: 3
   script:
-    - node --expose-gc ./node_modules/.bin/jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --forceExit --maxWorkers=50%
+    - npx jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=50%
 
 test:frontend:integration:
   stage: .pre
@@ -132,4 +179,4 @@ test:frontend:integration:
     - .frontend-test-rules
   allow_failure: true
   script:
-    - node --expose-gc ./node_modules/.bin/jest --config jest.integration.config.js --ci --forceExit --maxWorkers=50%
+    - npx jest --config jest.integration.config.js --ci --maxWorkers=50%

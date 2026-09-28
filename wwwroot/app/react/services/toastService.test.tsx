@@ -1,191 +1,88 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Toast Service Tests
+ *
+ * The service is standalone — it mounts its own React root and Mantine provider
+ * into `document.body` on first use — so these tests drive the singleton
+ * directly rather than rendering a component tree.
  */
 
-import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {ToastProvider, toastService, useToast} from './toastService';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
+import {notifications} from '@mantine/notifications';
+import {toastService, toastColor} from './toastService';
+import {dfrntTheme} from '../theme/dfrntMantineTheme';
 
-const theme = createTheme();
+/** The service renders into its own root, so every call needs a flush. */
+const show = async (fn: () => void) => {
+    await act(async () => {
+        fn();
+    });
+};
 
-// Test component that uses the toast hook
-const TestComponent: React.FC<{action: 'success' | 'warning' | 'error' | 'info' | 'custom'}> = ({action}) => {
-    const toast = useToast();
+describe('toastColor', () => {
+    it('maps each toast type onto its DFRNT semantic ramp', () => {
+        expect(toastColor('success')).toBe('green');
+        expect(toastColor('warning')).toBe('orange');
+        expect(toastColor('error')).toBe('red');
+        expect(toastColor('info')).toBe('brand');
+    });
 
-    const handleClick = () => {
-        switch (action) {
-            case 'success':
-                toast.showSuccessToast('Success message');
-                break;
-            case 'warning':
-                toast.showWarningToast('Warning message');
-                break;
-            case 'error':
-                toast.showErrorToast('Error message');
-                break;
-            case 'info':
-                toast.showInfoToast('Info message');
-                break;
-            case 'custom':
-                toast.showToast('Custom message', 'success');
-                break;
+    it('only returns colours the theme actually defines', () => {
+        const themeColors = Object.keys(dfrntTheme.colors ?? {});
+        for (const type of ['success', 'warning', 'error', 'info'] as const) {
+            expect(themeColors).toContain(toastColor(type));
         }
-    };
+    });
+});
 
-    return <button onClick={handleClick}>Show Toast</button>;
-};
-
-const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            <ToastProvider>
-                {ui}
-            </ToastProvider>
-        </ThemeProvider>
-    );
-};
-
-describe('ToastProvider', () => {
-    describe('useToast hook', () => {
-        it('should throw error when used outside ToastProvider', () => {
-            // Suppress console.error for this test
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-            expect(() => {
-                render(
-                    <ThemeProvider theme={theme}>
-                        <TestComponent action="success" />
-                    </ThemeProvider>
-                );
-            }).toThrow('useToast must be used within a ToastProvider');
-
-            consoleSpy.mockRestore();
+describe('toastService', () => {
+    afterEach(async () => {
+        await act(async () => {
+            notifications.clean();
         });
     });
 
-    describe('showSuccessToast', () => {
-        it('should display success toast message', async () => {
-            renderWithProviders(<TestComponent action="success" />);
+    describe('mounting', () => {
+        it('lazily mounts a single notifications root and reuses it', async () => {
+            await show(() => toastService.showToast('First', 'info'));
+            await show(() => toastService.showErrorToast('Second'));
 
-            fireEvent.click(screen.getByText('Show Toast'));
-
-            expect(await screen.findByText('Success message')).toBeInTheDocument();
-        });
-
-        it('should display success alert with correct severity', async () => {
-            renderWithProviders(<TestComponent action="success" />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
-
-            await waitFor(() => {
-                const alert = screen.getByRole('alert');
-                expect(alert).toHaveClass('MuiAlert-filledSuccess');
-            });
-        });
-    });
-
-    describe('showWarningToast', () => {
-        it('should display warning toast message', async () => {
-            renderWithProviders(<TestComponent action="warning" />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
-
-            expect(await screen.findByText('Warning message')).toBeInTheDocument();
-        });
-
-        it('should display warning alert with correct severity', async () => {
-            renderWithProviders(<TestComponent action="warning" />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
-
-            await waitFor(() => {
-                const alert = screen.getByRole('alert');
-                expect(alert).toHaveClass('MuiAlert-filledWarning');
-            });
-        });
-    });
-
-    describe('showErrorToast', () => {
-        it('should display error toast message', async () => {
-            renderWithProviders(<TestComponent action="error" />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
-
-            expect(await screen.findByText('Error message')).toBeInTheDocument();
-        });
-
-        it('should display error alert with correct severity', async () => {
-            renderWithProviders(<TestComponent action="error" />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
-
-            await waitFor(() => {
-                const alert = screen.getByRole('alert');
-                expect(alert).toHaveClass('MuiAlert-filledError');
-            });
-        });
-    });
-
-    describe('showInfoToast', () => {
-        it('should display info toast message', async () => {
-            renderWithProviders(<TestComponent action="info" />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
-
-            expect(await screen.findByText('Info message')).toBeInTheDocument();
-        });
-
-        it('should display info alert with correct severity', async () => {
-            renderWithProviders(<TestComponent action="info" />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
-
-            await waitFor(() => {
-                const alert = screen.getByRole('alert');
-                expect(alert).toHaveClass('MuiAlert-filledInfo');
-            });
+            expect(document.querySelectorAll('#mantine-notifications-root')).toHaveLength(1);
         });
     });
 
     describe('showToast', () => {
-        it('should display toast with custom type', async () => {
-            renderWithProviders(<TestComponent action="custom" />);
+        it('displays the message for each type', async () => {
+            await show(() => toastService.showSuccessToast('Success message'));
+            expect(await screen.findByText('Success message')).toBeInTheDocument();
 
-            fireEvent.click(screen.getByText('Show Toast'));
+            await show(() => toastService.showWarningToast('Warning message'));
+            expect(await screen.findByText('Warning message')).toBeInTheDocument();
 
+            await show(() => toastService.showErrorToast('Error message'));
+            expect(await screen.findByText('Error message')).toBeInTheDocument();
+
+            await show(() => toastService.showInfoToast('Info message'));
+            expect(await screen.findByText('Info message')).toBeInTheDocument();
+        });
+
+        it('displays a toast shown through the generic type parameter', async () => {
+            await show(() => toastService.showToast('Custom message', 'warning'));
             expect(await screen.findByText('Custom message')).toBeInTheDocument();
         });
     });
 
     describe('action button', () => {
-        const ActionToastComponent: React.FC = () => {
-            const toast = useToast();
-            const handleClick = () => {
-                toast.showToast('Job sent', 'success', {
-                    label: 'Open',
-                    onClick: () => (window as any).openClicked = true,
-                });
-            };
-            return <button onClick={handleClick}>Show Toast</button>;
-        };
-
-        afterEach(() => {
-            delete (window as any).openClicked;
-        });
-
         it('renders the action button, invokes onClick, and dismisses the toast', async () => {
-            renderWithProviders(<ActionToastComponent />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
+            const onClick = jest.fn();
+            await show(() => toastService.showToast('Job sent', 'success', {label: 'Open', onClick}));
 
             const actionButton = await screen.findByRole('button', {name: 'Open'});
-            expect(actionButton).toBeInTheDocument();
 
-            fireEvent.click(actionButton);
+            await act(async () => {
+                fireEvent.click(actionButton);
+            });
 
-            expect((window as any).openClicked).toBe(true);
+            expect(onClick).toHaveBeenCalledTimes(1);
             await waitFor(() => {
                 expect(screen.queryByText('Job sent')).not.toBeInTheDocument();
             });
@@ -193,84 +90,117 @@ describe('ToastProvider', () => {
     });
 
     describe('toast dismissal', () => {
-        it('should close toast when close button is clicked', async () => {
-            renderWithProviders(<TestComponent action="success" />);
-
-            fireEvent.click(screen.getByText('Show Toast'));
-
+        it('closes the toast when the close button is clicked', async () => {
+            await show(() => toastService.showSuccessToast('Success message'));
             expect(await screen.findByText('Success message')).toBeInTheDocument();
 
-            // Find and click the close button
-            const closeButton = screen.getByRole('button', {name: /close/i});
-            fireEvent.click(closeButton);
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', {name: /close/i}));
+            });
 
             await waitFor(() => {
                 expect(screen.queryByText('Success message')).not.toBeInTheDocument();
             });
         });
     });
-});
 
-describe('StandaloneToastService', () => {
-    describe('console logging', () => {
-        it('should log success message to console', () => {
-            const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    describe('showLoadingToast', () => {
+        it('shows a sticky loading toast that morphs into a closable success toast', async () => {
+            let handle!: ReturnType<typeof toastService.showLoadingToast>;
+            await show(() => {
+                handle = toastService.showLoadingToast('Sending…');
+            });
 
-            toastService.showSuccessToast('Test success');
+            expect(await screen.findByText('Sending…')).toBeInTheDocument();
+            // No close button while loading — the user shouldn't be able to
+            // dismiss feedback for an in-flight operation.
+            expect(screen.queryByRole('button', {name: /close/i})).not.toBeInTheDocument();
 
-            expect(consoleSpy).toHaveBeenCalledWith('[Toast SUCCESS]', 'Test success');
-            consoleSpy.mockRestore();
+            await act(async () => {
+                handle.update('All done', 'success');
+            });
+
+            expect(await screen.findByText('All done')).toBeInTheDocument();
+            expect(screen.queryByText('Sending…')).not.toBeInTheDocument();
+            // ...and the close button comes back once the work has resolved.
+            expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
         });
 
-        it('should log warning message to console', () => {
-            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        it('morphs into an error toast', async () => {
+            let handle!: ReturnType<typeof toastService.showLoadingToast>;
+            await show(() => {
+                handle = toastService.showLoadingToast('Sending…');
+            });
 
-            toastService.showWarningToast('Test warning');
+            await act(async () => {
+                handle.update('Boom', 'error');
+            });
 
-            expect(consoleSpy).toHaveBeenCalledWith('[Toast WARNING]', 'Test warning');
-            consoleSpy.mockRestore();
+            expect(await screen.findByText('Boom')).toBeInTheDocument();
         });
 
-        it('should log error message to console', () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        it('dismiss() removes the loading toast without showing a result', async () => {
+            let handle!: ReturnType<typeof toastService.showLoadingToast>;
+            await show(() => {
+                handle = toastService.showLoadingToast('Sending…');
+            });
 
-            toastService.showErrorToast('Test error');
+            expect(await screen.findByText('Sending…')).toBeInTheDocument();
 
-            expect(consoleSpy).toHaveBeenCalledWith('[Toast ERROR]', 'Test error');
-            consoleSpy.mockRestore();
-        });
+            await act(async () => {
+                handle.dismiss();
+            });
 
-        it('should log info message to console', () => {
-            const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
-            toastService.showInfoToast('Test info');
-
-            expect(consoleSpy).toHaveBeenCalledWith('[Toast INFO]', 'Test info');
-            consoleSpy.mockRestore();
+            await waitFor(() => {
+                expect(screen.queryByText('Sending…')).not.toBeInTheDocument();
+            });
         });
     });
 
-    describe('showToast with type parameter', () => {
-        it('should route to correct method based on type', () => {
-            const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-            const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    describe('console logging', () => {
+        // Toasts are transient, so the console is the only trail of what was shown.
+        it('logs each toast type at the matching console level', async () => {
+            const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-            toastService.showToast('Success', 'success');
-            expect(consoleSpy).toHaveBeenCalledWith('[Toast SUCCESS]', 'Success');
+            await show(() => toastService.showSuccessToast('Test success'));
+            expect(logSpy).toHaveBeenCalledWith('[Toast SUCCESS]', 'Test success');
 
-            toastService.showToast('Warning', 'warning');
-            expect(consoleWarnSpy).toHaveBeenCalledWith('[Toast WARNING]', 'Warning');
+            await show(() => toastService.showWarningToast('Test warning'));
+            expect(warnSpy).toHaveBeenCalledWith('[Toast WARNING]', 'Test warning');
 
-            toastService.showToast('Error', 'error');
-            expect(consoleErrorSpy).toHaveBeenCalledWith('[Toast ERROR]', 'Error');
+            await show(() => toastService.showErrorToast('Test error'));
+            expect(errorSpy).toHaveBeenCalledWith('[Toast ERROR]', 'Test error');
 
-            toastService.showToast('Info', 'info');
-            expect(consoleSpy).toHaveBeenCalledWith('[Toast INFO]', 'Info');
+            await show(() => toastService.showInfoToast('Test info'));
+            expect(logSpy).toHaveBeenCalledWith('[Toast INFO]', 'Test info');
 
-            consoleSpy.mockRestore();
-            consoleWarnSpy.mockRestore();
-            consoleErrorSpy.mockRestore();
+            logSpy.mockRestore();
+            warnSpy.mockRestore();
+            errorSpy.mockRestore();
+        });
+
+        it('routes showToast to the right console level for each type', async () => {
+            const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+            await show(() => toastService.showToast('Success', 'success'));
+            expect(logSpy).toHaveBeenCalledWith('[Toast SUCCESS]', 'Success');
+
+            await show(() => toastService.showToast('Warning', 'warning'));
+            expect(warnSpy).toHaveBeenCalledWith('[Toast WARNING]', 'Warning');
+
+            await show(() => toastService.showToast('Error', 'error'));
+            expect(errorSpy).toHaveBeenCalledWith('[Toast ERROR]', 'Error');
+
+            await show(() => toastService.showToast('Info', 'info'));
+            expect(logSpy).toHaveBeenCalledWith('[Toast INFO]', 'Info');
+
+            logSpy.mockRestore();
+            warnSpy.mockRestore();
+            errorSpy.mockRestore();
         });
     });
 });

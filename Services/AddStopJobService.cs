@@ -1,3 +1,4 @@
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
@@ -11,7 +12,11 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for creating additional stop jobs (extra pickups or deliveries) as child jobs linked to parent jobs.
 /// </summary>
-public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobCommandRepository commandRepository, ITenantInfoService infoService, ITenantClock clock) : IAddStopJobService
+public sealed class AddStopJobService(
+    IJobQueryRepository queryRepository,
+    IJobCommandRepository commandRepository,
+    ITenantInfoService infoService,
+    ITenantClock clock) : IAddStopJobService
 {
     private const decimal ExtraStopAmount = 20m;
     private const decimal ExtraStopCourierPayment = 10m;
@@ -43,7 +48,9 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
             var stopInput = BuildStopJobInputModel(job, newStopJobNumber, request, extras);
             var stopResult = await commandRepository.CreateMinimalTucJobAsync(stopInput);
             if (!stopResult.Success || !stopResult.JobId.HasValue)
+            {
                 throw new InvalidOperationException($"Failed to create stop job: {stopResult.Message}");
+            }
 
             // Load created job to update remaining fields
             var newStopJob = await queryRepository.GetByIdAsync<TucJob>(stopResult.JobId.Value);
@@ -55,16 +62,21 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
             newStopJob.UcjbContact = job.UcjbContact;
             newStopJob.UcjbChargeType = job.UcjbChargeType;
             newStopJob.UcjbFrom = job.UcjbFrom;
-            newStopJob.UcjbFromAddr = AddressFormatter.GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcjbFromAddr);
+            newStopJob.UcjbFromAddr =
+                AddressFormatter.GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcjbFromAddr);
             newStopJob.UcjbTo = AirportSuburbId;
             newStopJob.UcjbToSpecial = null;
-            newStopJob.UcjbToAddr = AddressFormatter.GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcjbFromAddr);
+            newStopJob.UcjbToAddr =
+                AddressFormatter.GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcjbFromAddr);
             newStopJob.UcjbSize = job.UcjbSize;
             newStopJob.UcjbCbd = false;
             newStopJob.UcjbKm = 0;
             newStopJob.UcjbFlightDetails = null;
             newStopJob.UcjbWeight = extras.Weight;
-            newStopJob.UcjbStatus = job.UcjbStatus;
+            // A finished parent status does not carry over onto a leg created not-done.
+            newStopJob.UcjbStatus = JobStatusGroups.Completed.Contains(job.UcjbStatus ?? (int)JobStatus.New)
+                ? (int)JobStatus.New
+                : job.UcjbStatus;
             newStopJob.UcjbCourierId = null;
             newStopJob.UcjbJobDone = false;
             newStopJob.UcjbOpId = job.UcjbOpId;
@@ -133,7 +145,7 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
 
             // Save packages
             await CreateAndAddPackagesToJob(job.ParentId ?? job.UcjbId, newStopJob.UcjbId, extras);
-            
+
             var staffId = infoService.GetStaffId();
             var currentDate = clock.TenantNow;
 
@@ -144,7 +156,7 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
             // Add note
             if (!string.IsNullOrEmpty(extras.JobNotes))
             {
-                var note = CreateNote(job.UcjbId, extras.JobNotes, staffId, currentDate);
+                var note = CreateNote(job.UcjbId, extras.JobNotes, staffId, currentDate, clock.UtcNow);
                 await commandRepository.AddEntityAsync(note);
             }
 
@@ -227,7 +239,6 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
             DeliverToPhone = extras?.ContactMobile ?? job.DeliverToPhone,
             Dgclass = job.Dgclass,
             Dgdocument = job.Dgdocument,
-            // RawAmount = await CalculateRawAmountAsync(job),
             PickUpLatitude = job.PickUpLatitude,
             PickUpLongitude = job.PickUpLongitude,
             DeliveryLatitude = job.DeliveryLatitude,
@@ -280,7 +291,7 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
         // Add note
         if (!string.IsNullOrEmpty(extras.JobNotes))
         {
-            var note = CreateBookingNote(job.UcbkId, extras.JobNotes, staffId, currentDate);
+            var note = CreateBookingNote(job.UcbkId, extras.JobNotes, staffId, currentDate, clock.UtcNow);
             await commandRepository.AddEntityAsync(note);
         }
 
@@ -303,7 +314,10 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
         {
             var newJobNumber = baseJobNumber + letter;
 
-            if (!await queryRepository.JobNumberExistsAsync(newJobNumber)) return newJobNumber;
+            if (!await queryRepository.JobNumberExistsAsync(newJobNumber))
+            {
+                return newJobNumber;
+            }
 
             letter++;
         }
@@ -389,31 +403,37 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
     /// <summary>
     /// Creates a note entity for a live job.
     /// </summary>
-    private static TucNote CreateNote(int jobId, string noteText, int staffId, DateTime currentDate) =>
+    private static TucNote CreateNote(int jobId, string noteText, int staffId, DateTime currentDate,
+        DateTime currentDateUtc) =>
         new()
         {
             JobId = jobId,
             NoteText = noteText,
             CreatedBy = staffId,
             CreatedDate = currentDate,
+            CreatedDateUtc = currentDateUtc,
             NoteTypeId = (int)NoteType.InternalNote,
             UpdatedBy = staffId,
-            UpdatedDate = currentDate
+            UpdatedDate = currentDate,
+            UpdatedDateUtc = currentDateUtc
         };
 
     /// <summary>
     /// Creates a note entity for a recurring job booking.
     /// </summary>
-    private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate) =>
+    private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate,
+        DateTime currentDateUtc) =>
         new()
         {
             JobBookingId = jobBookingId,
             NoteText = noteText,
             CreatedBy = staffId,
             CreatedDate = currentDate,
+            CreatedDateUtc = currentDateUtc,
             NoteTypeId = (int)NoteType.InternalNote,
             UpdatedBy = staffId,
-            UpdatedDate = currentDate
+            UpdatedDate = currentDate,
+            UpdatedDateUtc = currentDateUtc
         };
 
     /// <summary>
@@ -442,20 +462,27 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
         };
 
         if (isRecurring)
+        {
             breakdown.PrebookJobId = stopJobId;
+        }
         else
+        {
             breakdown.JobId = stopJobId;
+        }
 
         return breakdown;
     }
-    
+
     /// <summary>
     /// Creates package entities for the stop job based on the shipment details quantity.
     /// </summary>
     private async Task CreateAndAddPackagesToJob(int effectiveJobId, int stopJobId, ShipmentDetails extras)
     {
         var quantity = extras.Quantity ?? 0;
-        if (quantity <= 0) return;
+        if (quantity <= 0)
+        {
+            return;
+        }
 
         var parcels = new List<TucJobItem>();
         for (var x = 1; x < quantity + 1; x++)

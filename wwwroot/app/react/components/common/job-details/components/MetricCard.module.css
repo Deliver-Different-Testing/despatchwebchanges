@@ -1,0 +1,47 @@
+/*
+ * The label/value colours live here rather than inline because the hover state
+ * has to repaint both of them from the parent — a descendant rule with no
+ * inline-style equivalent. Inline styles beat class rules, so the resting
+ * colours have to be classes too or the hover rule could never win.
+ */
+.label {
+    color: var(--mantine-color-dimmed);
+}
+
+.value {
+    color: var(--mantine-color-text);
+}
+
+.valueEmpty {
+    color: var(--mantine-color-dimmed);
+}
+
+.clickable {
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+.clickable:hover {
+    background-color: var(--mantine-color-gray-1);
+}
+
+.clickable:hover .label,
+.clickable:hover .value,
+.clickable:hover .valueEmpty {
+    color: var(--mantine-primary-color-filled);
+}
+
+/*
+ * The "has a value" underline. `--metric-accent` is set inline per card from the
+ * metric's category.
+ */
+.filled::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 20%;
+    right: 20%;
+    height: 2px;
+    border-radius: 1px;
+    background-color: var(--metric-accent);
+    opacity: 0.5;
+}

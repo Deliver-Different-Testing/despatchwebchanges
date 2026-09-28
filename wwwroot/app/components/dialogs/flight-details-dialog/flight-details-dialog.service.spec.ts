@@ -10,7 +10,7 @@ jest.mock('angular', () => ({
     __esModule: true,
 }));
 
-jest.mock('../../Nationwide/nationwide.interfaces', () => ({}));
+jest.mock('../../../interfaces/nationwideFlight.interfaces', () => ({}));
 
 import FlightDetailsDialogService from './flight-details-dialog.service';
 

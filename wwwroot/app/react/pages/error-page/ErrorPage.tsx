@@ -6,17 +6,9 @@
  */
 
 import React from 'react';
-import {alpha} from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import SearchOffIcon from '@mui/icons-material/SearchOff';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import LockIcon from '@mui/icons-material/Lock';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import HomeIcon from '@mui/icons-material/Home';
+import {Box, Button, Flex, Paper, Text, Title, alpha} from '@mantine/core';
+import {ArrowLeft, CloudOff, House, Lock, SearchX, TriangleAlert} from 'lucide-react';
+import {Icon} from '../../components/common/icon/Icon';
 
 export type ErrorType = 'notFound' | 'error' | 'forbidden' | 'serverError';
 
@@ -35,29 +27,29 @@ export interface ErrorPageProps {
     onGoBack?: () => void;
 }
 
-const iconSx = {fontSize: 48};
+const ICON_SIZE = 48;
 
 const errorConfigs: Record<ErrorType, ErrorConfig> = {
     notFound: {
-        icon: <SearchOffIcon sx={iconSx} />,
+        icon: <Icon lucide={SearchX} size={ICON_SIZE} />,
         title: 'Page Not Found',
         message: 'The page you are looking for does not exist or has been moved.',
         code: '404',
     },
     error: {
-        icon: <ErrorOutlineIcon sx={iconSx} />,
+        icon: <Icon lucide={TriangleAlert} size={ICON_SIZE} />,
         title: 'Something Went Wrong',
         message: 'An unexpected error occurred. Please try again later.',
         code: 'Error',
     },
     forbidden: {
-        icon: <LockIcon sx={iconSx} />,
+        icon: <Icon lucide={Lock} size={ICON_SIZE} />,
         title: 'Access Denied',
         message: 'You do not have permission to access this page.',
         code: '403',
     },
     serverError: {
-        icon: <CloudOffIcon sx={iconSx} />,
+        icon: <Icon lucide={CloudOff} size={ICON_SIZE} />,
         title: 'Server Error',
         message: 'The server encountered an error. Please try again later.',
         code: '500',
@@ -92,132 +84,108 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
 
     return (
         <Box
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '100vh',
-                bgcolor: 'grey.100',
-                p: 3,
-            }}
+            p={24}
+            mih="100vh"
+            bg="var(--mantine-color-gray-1)"
+            style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}
         >
             <Paper
-                elevation={4}
-                sx={{
+                shadow="md"
+                radius="lg"
+                p={{base: 32, sm: 48}}
+                maw={420}
+                w="100%"
+                style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
-                    borderRadius: 3,
-                    p: {xs: 4, sm: 6},
-                    maxWidth: 420,
-                    width: '100%',
                     position: 'relative',
                     overflow: 'hidden',
                 }}
             >
                 {/* Background code watermark */}
                 {config.code && (
-                    <Typography
-                        sx={{
+                    <Text
+                        fz={{base: 80, sm: 120}}
+                        fw={700}
+                        c="var(--mantine-primary-color-filled)"
+                        style={{
                             position: 'absolute',
                             top: -20,
                             right: -10,
-                            fontSize: {xs: 80, sm: 120},
-                            fontWeight: 700,
                             opacity: 0.05,
                             lineHeight: 1,
                             pointerEvents: 'none',
                             userSelect: 'none',
-                            color: 'primary.main',
                         }}
                     >
                         {config.code}
-                    </Typography>
+                    </Text>
                 )}
 
                 {/* Icon container */}
                 <Box
-                    sx={{
+                    w={{base: 72, sm: 88}}
+                    h={{base: 72, sm: 88}}
+                    mb={24}
+                    c="var(--mantine-primary-color-filled)"
+                    bg={alpha('var(--mantine-primary-color-filled)', 0.1)}
+                    style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: {xs: 72, sm: 88},
-                        height: {xs: 72, sm: 88},
                         borderRadius: '50%',
-                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                        mb: 3,
-                        color: 'primary.main',
                     }}
                 >
                     {config.icon}
                 </Box>
 
                 {/* Content */}
-                <Box sx={{mb: 4}}>
-                    <Typography
-                        variant="h5"
-                        component="h1"
-                        sx={{
-                            fontWeight: 600,
-                            color: 'text.primary',
-                            mb: 1.5,
-                            fontSize: {xs: '1.25rem', sm: '1.5rem'},
-                        }}
+                <Box mb={32}>
+                    <Title
+                        order={1}
+                        fw={600}
+                        mb={12}
+                        fz={{base: '1.25rem', sm: '1.5rem'}}
                     >
                         {title}
-                    </Typography>
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            color: 'text.secondary',
-                            lineHeight: 1.6,
-                            maxWidth: 320,
-                            mx: 'auto',
-                        }}
-                    >
+                    </Title>
+                    <Text c="dimmed" maw={320} mx="auto" style={{lineHeight: 1.6}}>
                         {message}
-                    </Typography>
+                    </Text>
                 </Box>
 
-                {/* Actions */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        gap: 1.5,
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                        width: '100%',
-                        flexDirection: {xs: 'column', sm: 'row'},
-                    }}
+                {/* Actions — stacked on the narrowest viewport, side by side above it.
+                    Flex takes the responsive `direction` natively, so this needs no
+                    media query of its own. */}
+                <Flex
+                    w="100%"
+                    gap={12}
+                    wrap="wrap"
+                    justify="center"
+                    direction={{base: 'column', sm: 'row'}}
                 >
                     <Button
-                        variant="outlined"
-                        startIcon={<ArrowBackIcon />}
+                        variant="outline"
+                        leftSection={<Icon lucide={ArrowLeft} />}
                         onClick={handleGoBack}
-                        sx={{
-                            minWidth: 120,
-                            textTransform: 'none',
-                            fontWeight: 500,
-                        }}
+                        miw={120}
+                        fw={500}
                     >
                         Go Back
                     </Button>
                     {onGoHome && (
                         <Button
-                            variant="contained"
-                            startIcon={<HomeIcon />}
+                            leftSection={<Icon lucide={House} />}
                             onClick={handleGoHome}
-                            sx={{
-                                minWidth: 120,
-                                textTransform: 'none',
-                                fontWeight: 500,
-                            }}
+                            miw={120}
+                            fw={500}
                         >
                             Go Home
                         </Button>
                     )}
-                </Box>
+                </Flex>
             </Paper>
         </Box>
     );

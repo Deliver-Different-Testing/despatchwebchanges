@@ -4,7 +4,7 @@
  * Axios-based API service replacing the AngularJS OverviewService.
  */
 
-import {apiClient, RequestOptions} from './apiClient';
+import {apiClient} from './apiClient';
 import {formatDateForApiWithTzs, formatLongDateTime, parseDateFromApi} from '../utils/dateUtils';
 import type {
     OverviewQueryParams,
@@ -16,6 +16,7 @@ import type {
     IOpenJobResponseDto,
     IOpenJobResponse,
 } from '../pages/overview/OverviewPage.interfaces';
+import {RequestOptions} from "./requestOptions";
 
 async function getAllJobs(
     params: OverviewQueryParams,
@@ -35,6 +36,8 @@ async function getAllJobs(
             regions: params.regions,
             speeds: params.speeds,
             couriers: params.couriers,
+            despatchViewIds: params.despatchViewIds,
+            scopeToDespatchViews: params.scopeToDespatchViews,
         } as Record<string, unknown>,
         options,
     );
@@ -57,7 +60,7 @@ async function getParentJobMap(jobId: number, options?: RequestOptions): Promise
 }
 
 async function getOpenJobs(
-    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers'>,
+    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers' | 'despatchViewIds' | 'scopeToDespatchViews'>,
     options?: RequestOptions,
 ): Promise<IOpenJobResponse[]> {
     const dtos = await apiClient.get<IOpenJobResponseDto[]>(
@@ -68,6 +71,8 @@ async function getOpenJobs(
             regions: params.regions,
             speeds: params.speeds,
             couriers: params.couriers,
+            despatchViewIds: params.despatchViewIds,
+            scopeToDespatchViews: params.scopeToDespatchViews,
         } as Record<string, unknown>,
         options,
     );

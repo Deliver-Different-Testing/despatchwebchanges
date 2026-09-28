@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import {rejectWithoutCsrf} from './requestGuards';
 import type { JobNoteDto, NoteType } from '../../../interfaces';
 
 // Mock data
@@ -42,6 +43,7 @@ export const mockNoteTypes: NoteType[] = [
     { id: 1, text: 'General', isPublic: true, description: 'General notes' },
     { id: 2, text: 'Internal', isPublic: false, description: 'Internal staff notes' },
     { id: 3, text: 'Client', isPublic: true, description: 'Client-facing notes' },
+    { id: 4, text: 'Dispatch', isPublic: false, isCourierFacing: true, description: 'Courier-facing notes' },
 ];
 
 export const noteHandlers = [
@@ -88,9 +90,8 @@ export const noteHandlers = [
 
     // Create a note
     http.post('*/note/CreateNote', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -102,9 +103,8 @@ export const noteHandlers = [
 
     // Create a bulk job note
     http.post('*/note/CreateBulkJobNote', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -116,9 +116,8 @@ export const noteHandlers = [
 
     // Update a note
     http.post('*/note/UpdateNote', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -130,9 +129,8 @@ export const noteHandlers = [
 
     // Update a bulk job note
     http.post('*/note/UpdateBulkJobNote', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {
@@ -144,9 +142,8 @@ export const noteHandlers = [
 
     // Delete a note
     http.delete('*/note/DeleteNote', ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const url = new URL(request.url);
         const noteId = url.searchParams.get('noteId');
@@ -160,9 +157,8 @@ export const noteHandlers = [
 
     // Create a note type
     http.post('*/note/CreateNoteType', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const body = await request.json();
         if (!body || typeof body !== 'object') {

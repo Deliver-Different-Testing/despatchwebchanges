@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import {rejectWithoutCsrf} from './requestGuards';
 import type { BulkPricePreviewResponse } from '../../../components/dialogs/bulk-price-upload-dialog';
 
 // Mock data
@@ -36,6 +37,7 @@ export const mockBulkPricePreviewResponse: BulkPricePreviewResponse = {
         },
     ],
     totalJobs: 3,
+    skippedJobs: 0,
     totalOldAmount: 165.0,
     totalNewAmount: 180.0,
 };
@@ -43,9 +45,8 @@ export const mockBulkPricePreviewResponse: BulkPricePreviewResponse = {
 export const bulkPriceHandlers = [
     // Apply bulk price update (FormData upload with pricingMode query param)
     http.post('*/job/ApplyBulkPriceUpdate', async ({ request }) => {
-        if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {
-            return new HttpResponse('Missing CSRF header', { status: 400 });
-        }
+        const rejected = rejectWithoutCsrf(request);
+        if (rejected) return rejected;
 
         const url = new URL(request.url);
         const pricingMode = url.searchParams.get('pricingMode');

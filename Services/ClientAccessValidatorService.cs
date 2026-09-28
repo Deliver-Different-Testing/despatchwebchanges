@@ -15,22 +15,36 @@ public sealed class ClientAccessValidatorService(IClientRepository clientRepo) :
     /// <param name="clientIds">A comma-separated string of client IDs to check access to.</param>
     public async Task ValidateClientAccessAsync(int contactId, string clientIds)
     {
-        if (string.IsNullOrEmpty(clientIds)) return;
+        if (string.IsNullOrEmpty(clientIds))
+        {
+            return;
+        }
 
         var clientContacts = await clientRepo.ClientContactsAsync(contactId);
 
         // Safely parse client IDs with validation to prevent exceptions from malformed input
         var requestedClientIds = new HashSet<int>();
         foreach (var idString in clientIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
-            if (int.TryParse(idString.Trim(), out var id)) requestedClientIds.Add(id);
+        {
+            if (int.TryParse(idString.Trim(), out var id))
+            {
+                requestedClientIds.Add(id);
+            }
+        }
         // Silently ignore non-numeric values to prevent DoS through malformed input
 
-        if (requestedClientIds.Count == 0) return;
+        if (requestedClientIds.Count == 0)
+        {
+            return;
+        }
 
         var hasAccess = clientContacts?
             .Select(c => c.Id)
-            .Any(x => requestedClientIds.Contains(x)) ?? false;
+            .Any(requestedClientIds.Contains) ?? false;
 
-        if (!hasAccess) throw new UnauthorizedAccessException();
+        if (!hasAccess)
+        {
+            throw new UnauthorizedAccessException();
+        }
     }
 }

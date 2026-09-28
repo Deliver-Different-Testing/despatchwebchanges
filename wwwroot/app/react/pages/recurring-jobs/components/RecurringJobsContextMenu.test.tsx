@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * RecurringJobsContextMenu Component Tests
  * Optimised: read-only tests consolidated to reduce render count.
@@ -7,7 +6,7 @@
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
 import {RecurringJobsContextMenu, RecurringJobsContextMenuProps} from './RecurringJobsContextMenu';
-import {renderWithTheme, createProps} from '../../../__testUtils__';
+import {renderWithMantine, createProps} from '../../../__testUtils__';
 import {PrebookListModel} from '../../../interfaces';
 import {AddressViewModel} from '../../../interfaces';
 import dayjs from 'dayjs';
@@ -49,11 +48,17 @@ const createMockProps = (overrides?: Partial<RecurringJobsContextMenuProps>) =>
 
 describe('RecurringJobsContextMenu', () => {
     describe('Rendering', () => {
-        it('renders menu with correct items, icons, divider, and position when anchorPosition and job are provided', () => {
+        it('renders menu with correct items, icons, and position when anchorPosition and job are provided', () => {
+            // Dividers are gated on the Insert-to-Live / SetMode prop
+            // groups (`onInsertToLive`, `onSetMode`) — defaultProps only
+            // wires the always-on Add Pickup / Add Delivery handlers, so
+            // no divider is expected in this base scenario. Divider
+            // presence is covered by the Insert-to-Live + SetMode
+            // describe blocks below.
             const props = createMockProps({
                 anchorPosition: {x: 300, y: 400},
             });
-            renderWithTheme(<RecurringJobsContextMenu {...props} />);
+            renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
             const menu = screen.getByRole('menu');
             expect(menu).toBeInTheDocument();
@@ -64,29 +69,31 @@ describe('RecurringJobsContextMenu', () => {
             expect(screen.getByText('Add Pickup Stop')).toBeInTheDocument();
             expect(screen.getByText('Add Delivery Stop')).toBeInTheDocument();
 
-            // Icons (PinDropIcon for both items)
-            const icons = screen.getAllByTestId('PinDropIcon');
-            expect(icons.length).toBe(2);
+            // Both stop items carry a pin glyph. Lucide emits no test hook of its
+            // own, so each stamps which stop it is — a stronger assertion than the
+            // old testid, which only proved MUI picked that component.
+            expect(document.querySelectorAll('[data-stop-icon]')).toHaveLength(2);
+            expect(document.querySelector('[data-stop-icon="pickup"]')).toBeInTheDocument();
+            expect(document.querySelector('[data-stop-icon="delivery"]')).toBeInTheDocument();
 
-            // Divider between menu items
-            const divider = screen.getByRole('separator');
-            expect(divider).toBeInTheDocument();
+            // No divider when only the always-on actions are wired up.
+            expect(screen.queryByRole('separator')).not.toBeInTheDocument();
         });
 
         it('does not render menu when anchorPosition is null, job is null, or both are null', () => {
-            const { unmount: u1 } = renderWithTheme(
+            const { unmount: u1 } = renderWithMantine(
                 <RecurringJobsContextMenu {...createMockProps({anchorPosition: null})} />
             );
             expect(screen.queryByRole('menu')).not.toBeInTheDocument();
             u1();
 
-            const { unmount: u2 } = renderWithTheme(
+            const { unmount: u2 } = renderWithMantine(
                 <RecurringJobsContextMenu {...createMockProps({job: null})} />
             );
             expect(screen.queryByRole('menu')).not.toBeInTheDocument();
             u2();
 
-            renderWithTheme(
+            renderWithMantine(
                 <RecurringJobsContextMenu {...createMockProps({anchorPosition: null, job: null})} />
             );
             expect(screen.queryByRole('menu')).not.toBeInTheDocument();
@@ -99,7 +106,7 @@ describe('RecurringJobsContextMenu', () => {
             const onAddPickupStop = jest.fn(() => callOrder.push('pickup'));
             const onClose = jest.fn(() => callOrder.push('close'));
             const props = createMockProps({onAddPickupStop, onClose});
-            renderWithTheme(<RecurringJobsContextMenu {...props} />);
+            renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Add Pickup Stop'));
 
@@ -115,7 +122,7 @@ describe('RecurringJobsContextMenu', () => {
             const onAddDeliveryStop = jest.fn(() => callOrder.push('delivery'));
             const onClose = jest.fn(() => callOrder.push('close'));
             const props = createMockProps({onAddDeliveryStop, onClose});
-            renderWithTheme(<RecurringJobsContextMenu {...props} />);
+            renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Add Delivery Stop'));
 
@@ -129,7 +136,7 @@ describe('RecurringJobsContextMenu', () => {
         it('calls onClose when menu is dismissed', async () => {
             const onClose = jest.fn();
             const props = createMockProps({onClose});
-            renderWithTheme(<RecurringJobsContextMenu {...props} />);
+            renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
             // Press Escape to dismiss menu
             fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
@@ -147,7 +154,7 @@ describe('RecurringJobsContextMenu', () => {
                 jobNo: 'RJ-999',
                 client: 'Different Client',
             };
-            const { unmount } = renderWithTheme(
+            const { unmount } = renderWithMantine(
                 <RecurringJobsContextMenu {...createMockProps({onAddPickupStop, job: pickupJob})} />
             );
 
@@ -162,7 +169,7 @@ describe('RecurringJobsContextMenu', () => {
                 jobNo: 'RJ-888',
                 client: 'Another Client',
             };
-            renderWithTheme(
+            renderWithMantine(
                 <RecurringJobsContextMenu {...createMockProps({onAddDeliveryStop, job: deliveryJob})} />
             );
 

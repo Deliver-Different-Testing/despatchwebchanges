@@ -21,4 +21,10 @@ public sealed class JobRecurringViewModel : JobViewModel
     // JobDetailHeader so the current selection pre-populates instead of
     // defaulting to "No route".
     public int? RouteId { get; init; }
+
+    // Create-ahead offset (days). Pass-through from
+    // tucJobBooking.RecurringInitialDays. Drives the "Create bookings X
+    // days ahead" input in the RecurringJobFields card. Null / 0 means
+    // legacy same-day behaviour.
+    public int? RecurringInitialDays { get; init; }
 }

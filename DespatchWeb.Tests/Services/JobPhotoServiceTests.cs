@@ -13,9 +13,10 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobPhotoServiceTests
 {
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
 
-    private JobPhotoService CreateService() => new(_s3ClientMock);
+    private JobPhotoService CreateService() => new(_s3ClientMock, _clock);
 
     [Fact]
     public async Task UploadJobPhotoOrSignatureAsync_NullFile_ReturnsFailure()
@@ -64,7 +65,7 @@ public class JobPhotoServiceTests
         // Assert
         Assert.True(result.Success);
         Assert.Contains(".jpg", result.FileName);
-        Assert.Contains("DeliveryPhotos", result.S3Key);
+        Assert.Matches(@"^DeliveryPhotos/\d{4}/\d{2}/1-\d{14}\.jpg$", result.S3Key);
         await _s3ClientMock.Received().PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -84,7 +85,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Contains("DeliverySignatures", result.S3Key);
+        Assert.Matches(@"^DeliverySignatures/\d{4}/\d{2}/1-\d{14}\.png$", result.S3Key);
     }
 
     [Fact]
@@ -103,7 +104,30 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Contains("PickupPhotos", result.S3Key);
+        Assert.Matches(@"^PickupPhotos/\d{4}/\d{2}/1-\d{14}\.jpg$", result.S3Key);
+    }
+
+    // Pickup signatures belong in PickupSignatures, alongside DeliverySignatures. They were misfiled into
+    // PickupScannedDocuments, which is where the driver app puts documents scanned at pickup — indistinguishable
+    // from a signature to anything reading the bucket, and the reason a pickup scan printed in the BOL's
+    // shipper's-signature box (E1431OTG).
+    [Fact]
+    public async Task UploadJobPhotoOrSignatureAsync_PickupSignature_UploadsToPickupSignaturesFolder()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        var file = CreateMockFile("signature.png", "image/png", 50);
+
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
+
+        // Act
+        var result = await service.UploadJobPhotoOrSignatureAsync(1, file, JobPhotoType.Pickup, isPod: false);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Matches(@"^PickupSignatures/\d{4}/\d{2}/1-\d{14}\.png$", result.S3Key);
     }
 
     [Fact]
@@ -114,7 +138,8 @@ public class JobPhotoServiceTests
         var service = CreateService();
         var file = CreateMockFile("test.jpg", "image/jpeg", 100);
 
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>()).ThrowsAsync(new AmazonS3Exception("S3 Error"));
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AmazonS3Exception("S3 Error"));
 
         // Act
         var result = await service.UploadJobPhotoOrSignatureAsync(1, file, JobPhotoType.Delivery);
@@ -127,52 +152,69 @@ public class JobPhotoServiceTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task DeleteJobPhotoOrSignatureAsync_EmptyKey_ReturnsFalse(string? key)
+    public async Task ArchiveJobPhotoAsync_EmptyKey_ReturnsFalse(string? key)
     {
         // Arrange
         var service = CreateService();
 
         // Act
-        var result = await service.DeleteJobPhotoOrSignatureAsync(1, key);
+        var result = await service.ArchiveJobPhotoAsync(1, key);
 
         // Assert
         Assert.False(result);
+        await _s3ClientMock.DidNotReceive()
+            .CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>());
+        await _s3ClientMock.DidNotReceive()
+            .DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteJobPhotoOrSignatureAsync_ValidKey_DeletesFromS3()
+    public async Task ArchiveJobPhotoAsync_ValidKey_CopiesToArchivePrefixThenDeletesOriginal()
     {
         // Arrange
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
+        const string key = "DeliveryPhotos/2024/01/1-test.jpg";
 
+        _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new CopyObjectResponse());
         _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>())
             .Returns(new DeleteObjectResponse());
 
         // Act
-        var result = await service.DeleteJobPhotoOrSignatureAsync(1, "DeliveryPhotos/2024/01/1-test.jpg");
+        var result = await service.ArchiveJobPhotoAsync(1, key);
 
         // Assert
         Assert.True(result);
-        await _s3ClientMock.Received().DeleteObjectAsync(
-            Arg.Is<DeleteObjectRequest>(r => r.Key == "DeliveryPhotos/2024/01/1-test.jpg"),
+        await _s3ClientMock.Received(1).CopyObjectAsync(
+            Arg.Is<CopyObjectRequest>(r =>
+                r!.SourceKey == key &&
+                r.DestinationKey == $"RestoredArchive/{key}" &&
+                r.SourceBucket == "test-bucket" &&
+                r.DestinationBucket == "test-bucket"),
+            Arg.Any<CancellationToken>());
+        await _s3ClientMock.Received(1).DeleteObjectAsync(
+            Arg.Is<DeleteObjectRequest>(r => r!.Key == key),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteJobPhotoOrSignatureAsync_S3Error_ReturnsFalse()
+    public async Task ArchiveJobPhotoAsync_CopyFails_DoesNotDeleteOriginalAndReturnsFalse()
     {
-        // Arrange
+        // Arrange — the copy throws, so the original must be kept (never soft-delete without a backup).
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
-        _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>()).ThrowsAsync(new AmazonS3Exception("Delete failed"));
+        _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AmazonS3Exception("copy failed"));
 
         // Act
-        var result = await service.DeleteJobPhotoOrSignatureAsync(1, "test-key");
+        var result = await service.ArchiveJobPhotoAsync(1, "DeliveryPhotos/2024/01/1-test.jpg");
 
         // Assert
         Assert.False(result);
+        await _s3ClientMock.DidNotReceive()
+            .DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -235,7 +277,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Contains("JobAttachments", result.S3Key);
+        Assert.Matches(@"^JobAttachments/\d{4}/\d{2}/1-\d{14}\.pdf$", result.S3Key);
     }
 
     [Theory]
@@ -333,6 +375,121 @@ public class JobPhotoServiceTests
         Assert.Empty(result);
     }
 
+    // A job booked/delivered late on the last day of a month can have its POD photo uploaded
+    // (and thus S3-keyed) in that month, while the job's CompletedTime rolls over to the first
+    // of the next month. Retrieval is keyed off CompletedTime, so it must also look back a month.
+    [Fact]
+    public async Task GetDeliveryPhotosAsync_PhotoUploadedInPreviousMonth_IsFound()
+    {
+        // Arrange — photo physically stored under June, completion recorded in July.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string juneKey = "DeliveryPhotos/2024/06/1-20240630235500.jpg";
+        StubSingleObjectForPrefix("DeliveryPhotos/2024/06/1-", juneKey);
+
+        // Act — retrieval anchored on the July completion month.
+        var result = await service.GetDeliveryPhotosAsync(1, 2024, 7);
+
+        // Assert
+        Assert.Contains(result, p => p.S3Key == juneKey);
+    }
+
+    [Fact]
+    public async Task GetDeliveryPhotosAsync_PhotoInPreviousMonthAcrossYearBoundary_IsFound()
+    {
+        // Arrange — photo stored December 2023, completion recorded January 2024.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string decKey = "DeliveryPhotos/2023/12/1-20231231235500.jpg";
+        StubSingleObjectForPrefix("DeliveryPhotos/2023/12/1-", decKey);
+
+        // Act
+        var result = await service.GetDeliveryPhotosAsync(1, 2024, 1);
+
+        // Assert
+        Assert.Contains(result, p => p.S3Key == decKey);
+    }
+
+    [Fact]
+    public async Task GetDeliveryPhotosAsync_SignatureInTheCompletionMonthAndPhotoInTheNext_ReturnsBoth()
+    {
+        // Signatures are searched before photos, so an early exit that tested the shared accumulator
+        // let the first signature hit stop the photo folder before its adjacent months were tried.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string signatureKey = "DeliverySignatures/2026/08/1-20260807083500.jpg";
+        const string photoKey = "DeliveryPhotos/2026/09/1-20260901000200.jpg";
+        StubObjectsByPrefix(
+            ("DeliverySignatures/2026/08/1-", signatureKey),
+            ("DeliveryPhotos/2026/09/1-", photoKey));
+
+        // Act
+        var result = await service.GetDeliveryPhotosAsync(1, 2026, 8);
+
+        // Assert
+        Assert.Contains(result, p => p.S3Key == signatureKey);
+        Assert.Contains(result, p => p.S3Key == photoKey);
+    }
+
+    // Places one object under each given prefix, so media can be spread across folders and months.
+    private void StubObjectsByPrefix(params (string Prefix, string Key)[] placements)
+    {
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                var objects = placements
+                    .Where(p => p.Prefix == req!.Prefix)
+                    .Select(p => new S3Object { Key = p.Key, Size = 3 })
+                    .ToList();
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+
+        _s3ClientMock.GetObjectAsync(Arg.Any<GetObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<GetObjectRequest>();
+                var response = new GetObjectResponse
+                {
+                    Key = req!.Key,
+                    ResponseStream = new MemoryStream([1, 2, 3])
+                };
+                response.Metadata.Add("FileName", Path.GetFileName(req.Key));
+                return response;
+            });
+    }
+
+    // Returns the given object only for the matching prefix (and downloads a small image body
+    // for it), so a photo can be placed in exactly one month folder.
+    private void StubSingleObjectForPrefix(string prefix, string key)
+    {
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                var objects = req!.Prefix == prefix
+                    ? new List<S3Object> { new() { Key = key, Size = 3 } }
+                    : new List<S3Object>();
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+
+        _s3ClientMock.GetObjectAsync(Arg.Any<GetObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<GetObjectRequest>();
+                var response = new GetObjectResponse
+                {
+                    Key = req!.Key,
+                    ResponseStream = new MemoryStream([1, 2, 3])
+                };
+                response.Metadata.Add("FileName", Path.GetFileName(req.Key));
+                return response;
+            });
+    }
+
     [Fact]
     public async Task GetPickupPhotosAsync_NoPhotos_ReturnsEmptyList()
     {
@@ -350,6 +507,299 @@ public class JobPhotoServiceTests
         Assert.Empty(result);
     }
 
+    // Pickup signatures live in the PickupSignatures S3 folder (mirroring DeliverySignatures);
+    // GetPickupPhotosAsync must search it so the signature shows in the job-detail pickup grid.
+    [Fact]
+    public async Task GetPickupPhotosAsync_SignatureInPickupSignaturesFolder_IsFound()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string signatureKey = "PickupSignatures/2024/07/1-20240705120000.png";
+        StubSingleObjectForPrefix("PickupSignatures/2024/07/1-", signatureKey);
+
+        // Act
+        var result = await service.GetPickupPhotosAsync(1, 2024, 7);
+
+        // Assert
+        Assert.Contains(result, p => p.S3Key == signatureKey);
+    }
+
+    [Fact]
+    public async Task GetAttachedFilesAsync_ReturnsLegacyFlatAndDatedObjects()
+    {
+        // Arrange — clock is fixed at 2024-06-15, dated lookup will scan 2024/06 back through 2022/07.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string legacyKey = "JobAttachments/1-20230101120000";
+        const string datedKey = "JobAttachments/2024/06/1-20240615143000.pdf";
+
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                var objects = req!.Prefix switch
+                {
+                    "JobAttachments/1-" => new List<S3Object> { new() { Key = legacyKey, Size = 10 } },
+                    "JobAttachments/2024/06/1-" => new List<S3Object> { new() { Key = datedKey, Size = 20 } },
+                    _ => new List<S3Object>()
+                };
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+
+        _s3ClientMock.GetObjectAsync(Arg.Any<GetObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<GetObjectRequest>();
+                var response = new GetObjectResponse
+                {
+                    Key = req!.Key,
+                    ResponseStream = new MemoryStream()
+                };
+                response.Metadata.Add("FileName", req.Key.EndsWith(".pdf") ? "dated.pdf" : "legacy.bin");
+                return response;
+            });
+
+        // Act
+        var result = await service.GetAttachedFilesAsync(1);
+
+        // Assert — both legacy and dated objects come back, deduped if the mock ever returned them twice.
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, f => f.S3Key == legacyKey);
+        Assert.Contains(result, f => f.S3Key == datedKey);
+    }
+
+    [Fact]
+    public async Task ArchiveJobCapturedMediaAsync_ArchivesCapturedMedia_MovesEachUnderArchivePrefix()
+    {
+        // Arrange — one object in each of the five captured-media folders for the completion month.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        var keysByPrefix = new Dictionary<string, string>
+        {
+            ["DeliverySignatures/2024/07/5-"] = "DeliverySignatures/2024/07/5-20240705120000.png",
+            ["DeliveryPhotos/2024/07/5-"] = "DeliveryPhotos/2024/07/5-20240705120100.jpg",
+            ["PickupScannedDocuments/2024/07/5-"] = "PickupScannedDocuments/2024/07/5-20240705120200.pdf",
+            ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg",
+            ["PickupSignatures/2024/07/5-"] = "PickupSignatures/2024/07/5-20240705120400.png"
+        };
+        StubListByPrefixMap(keysByPrefix);
+        _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new CopyObjectResponse());
+        _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new DeleteObjectResponse());
+
+        // Act
+        var result = await service.ArchiveJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(5, result.TotalFiles);
+        Assert.Equal(5, result.SuccessfulFiles);
+        Assert.Equal(0, result.FailedFiles);
+        Assert.True(result.IsSuccess);
+
+        foreach (var key in keysByPrefix.Values)
+        {
+            await _s3ClientMock.Received(1).CopyObjectAsync(
+                Arg.Is<CopyObjectRequest>(r =>
+                    r!.SourceKey == key &&
+                    r.DestinationKey == $"RestoredArchive/{key}" &&
+                    r.SourceBucket == "test-bucket" &&
+                    r.DestinationBucket == "test-bucket"),
+                Arg.Any<CancellationToken>());
+            await _s3ClientMock.Received(1).DeleteObjectAsync(
+                Arg.Is<DeleteObjectRequest>(r => r!.Key == key),
+                Arg.Any<CancellationToken>());
+        }
+    }
+
+    [Fact]
+    public async Task ArchiveJobCapturedMediaAsync_CopyFails_DoesNotDeleteOriginalAndCountsFailure()
+    {
+        // Arrange — the copy throws, so the original must be kept (never soft-delete without a backup).
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string photoKey = "DeliveryPhotos/2024/07/5-20240705120100.jpg";
+        StubListByPrefixMap(new Dictionary<string, string> { ["DeliveryPhotos/2024/07/5-"] = photoKey });
+
+        _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AmazonS3Exception("copy failed"));
+
+        // Act
+        var result = await service.ArchiveJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(1, result.TotalFiles);
+        Assert.Equal(0, result.SuccessfulFiles);
+        Assert.Equal(1, result.FailedFiles);
+        Assert.False(result.IsSuccess);
+        await _s3ClientMock.DidNotReceive()
+            .DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ArchiveJobCapturedMediaAsync_DoesNotTouchJobAttachments()
+    {
+        // Arrange — only the four captured-media folders are searched; a JobAttachments object,
+        // even though it exists for the job, must never be archived.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string photoKey = "DeliveryPhotos/2024/07/5-20240705120100.jpg";
+        const string attachmentKey = "JobAttachments/2024/07/5-20240705120400.pdf";
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                List<S3Object> objects = req!.Prefix switch
+                {
+                    "DeliveryPhotos/2024/07/5-" => [new S3Object { Key = photoKey, Size = 3 }],
+                    _ when req.Prefix.StartsWith("JobAttachments/") =>
+                        [new S3Object { Key = attachmentKey, Size = 3 }],
+                    _ => []
+                };
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+        _s3ClientMock.CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new CopyObjectResponse());
+        _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new DeleteObjectResponse());
+
+        // Act
+        var result = await service.ArchiveJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(1, result.TotalFiles);
+        await _s3ClientMock.DidNotReceive().CopyObjectAsync(
+            Arg.Is<CopyObjectRequest>(r => r!.SourceKey == attachmentKey), Arg.Any<CancellationToken>());
+        await _s3ClientMock.DidNotReceive().DeleteObjectAsync(
+            Arg.Is<DeleteObjectRequest>(r => r!.Key == attachmentKey), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ArchiveJobCapturedMediaAsync_NoMedia_ReturnsEmptySuccess()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(new ListObjectsV2Response { S3Objects = new List<S3Object>() });
+
+        // Act
+        var result = await service.ArchiveJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(0, result.TotalFiles);
+        Assert.True(result.IsSuccess);
+        await _s3ClientMock.DidNotReceive()
+            .CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CountJobCapturedMediaAsync_CountsEveryCapturedFolderWithoutArchiving()
+    {
+        // Arrange — the same five folders the archive walks, one object in each.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        StubListByPrefixMap(new Dictionary<string, string>
+        {
+            ["DeliverySignatures/2024/07/5-"] = "DeliverySignatures/2024/07/5-20240705120000.png",
+            ["DeliveryPhotos/2024/07/5-"] = "DeliveryPhotos/2024/07/5-20240705120100.jpg",
+            ["PickupScannedDocuments/2024/07/5-"] = "PickupScannedDocuments/2024/07/5-20240705120200.pdf",
+            ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg",
+            ["PickupSignatures/2024/07/5-"] = "PickupSignatures/2024/07/5-20240705120400.png"
+        });
+
+        // Act
+        var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert — the probe is read-only.
+        Assert.Equal(5, count);
+        await _s3ClientMock.DidNotReceive()
+            .CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>());
+        await _s3ClientMock.DidNotReceive()
+            .DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CountJobCapturedMediaAsync_PhotoUploadedNextMonth_IsStillCounted()
+    {
+        // Arrange — photos are keyed by upload instant, the caller passes the completion month.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        StubListByPrefixMap(new Dictionary<string, string>
+        {
+            ["DeliveryPhotos/2024/08/5-"] = "DeliveryPhotos/2024/08/5-20240801090000.jpg"
+        });
+
+        // Act
+        var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task CountJobCapturedMediaAsync_NoMedia_ReturnsZero()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(new ListObjectsV2Response { S3Objects = new List<S3Object>() });
+
+        // Act
+        var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
+    public async Task CountJobCapturedMediaAsync_IgnoresJobAttachments()
+    {
+        // Arrange — attachments are user uploads, never removed by a restore, so they must not be counted.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                List<S3Object> objects = req!.Prefix.StartsWith("JobAttachments/")
+                    ? [new S3Object { Key = "JobAttachments/2024/07/5-20240705120400.pdf", Size = 3 }]
+                    : [];
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+
+        // Act
+        var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Equal(0, count);
+    }
+
+    // Returns a single object for each ListObjectsV2 whose prefix matches a map key (exact match),
+    // so a captured-media object can be placed in a specific folder/month for the archive search.
+    private void StubListByPrefixMap(Dictionary<string, string> keysByPrefix)
+    {
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                var objects = keysByPrefix.TryGetValue(req!.Prefix, out var key)
+                    ? new List<S3Object> { new() { Key = key, Size = 3 } }
+                    : new List<S3Object>();
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+    }
+
     private static IFormFile CreateMockFile(string fileName, string contentType, long size)
     {
         var content = new byte[size];
@@ -364,11 +814,9 @@ public class JobPhotoServiceTests
             .Returns(callInfo =>
             {
                 stream.Position = 0;
-                stream.CopyTo(callInfo.Arg<Stream>());
-                return Task.CompletedTask;
+                return stream.CopyToAsync(callInfo.Arg<Stream>()!);
             });
 
         return fileMock;
     }
-
 }

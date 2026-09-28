@@ -1,4 +1,4 @@
-﻿import {IFlightViewModel, IFlightViewModelDto} from "../components/Nationwide/nationwide.interfaces";
+﻿import {IFlightViewModel, IFlightViewModelDto} from "../interfaces/nationwideFlight.interfaces";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../interfaces/flight-cargo-processing.interface";
@@ -137,6 +137,10 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
         daysOfWeek: dto.daysOfWeek,
         frequency: dto.frequency,
         holidayDeliveryOption: dto.holidayDeliveryOption,
+        // Create-ahead offset (days). Pass-through so the recurring-schedule
+        // card's "Create bookings X days ahead" input pre-populates with the
+        // current tucJobBooking.RecurringInitialDays value on load.
+        recurringInitialDays: dto.recurringInitialDays,
         // Recurring Route assignment — pre-populates the Route dropdown
         // in JobDetailHeader so an already-assigned route is shown
         // rather than defaulting to "No route".

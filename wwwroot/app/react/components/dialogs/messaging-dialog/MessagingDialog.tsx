@@ -1,48 +1,58 @@
 /**
- * React Messaging Dialog
+ * React Messaging Dialogue
  *
  * A modern replacement for the AngularJS messaging-dialog using MUI components.
  * Features real-time messaging, conversation list, quick responses, and multi-recipient support.
  */
 
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {accentPalette, sharedColors} from '../../../theme/muiTheme';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
-import ListItemText from '@mui/material/ListItemText';
-import Avatar from '@mui/material/Avatar';
-import Badge from '@mui/material/Badge';
-import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import FormControl from '@mui/material/FormControl';
-import Checkbox from '@mui/material/Checkbox';
-import InputAdornment from '@mui/material/InputAdornment';
-import CloseIcon from '@mui/icons-material/Close';
-import ChatIcon from '@mui/icons-material/Chat';
-import SendIcon from '@mui/icons-material/Send';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import AddCommentIcon from '@mui/icons-material/AddComment';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SearchIcon from '@mui/icons-material/Search';
-import QuickReplyIcon from '@mui/icons-material/QuickreplyOutlined';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
-import DoneIcon from '@mui/icons-material/Done';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import SearchOffIcon from '@mui/icons-material/SearchOff';
-import PersonSearchIcon from '@mui/icons-material/PersonSearch';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+    ActionIcon,
+    Avatar,
+    Badge,
+    Box,
+    Button,
+    Checkbox,
+    Chip,
+    CloseButton,
+    Drawer,
+    Group,
+    Indicator,
+    Loader,
+    Paper,
+    Select,
+    Stack,
+    Text,
+    Textarea,
+    TextInput,
+    ThemeIcon,
+    Title,
+} from '@mantine/core';
+import {
+    ArrowLeft,
+    Check,
+    CheckCheck,
+    CircleAlert,
+    Clock,
+    MessageCircle,
+    MessageCirclePlus,
+    MessageSquare,
+    RefreshCw,
+    Search,
+    SearchX,
+    Square,
+    SquareCheckBig,
+    Send,
+    UserSearch,
+    Zap,
+} from 'lucide-react';
+import {Icon} from '../../common/icon/Icon';
+import {
+    headerChipProps,
+    headerChromeStyle,
+    headerOnColor,
+} from '../shared/mantine';
+import styles from './MessagingDialog.module.css';
 import {
     ChatMessage,
     MessageContactOption,
@@ -56,6 +66,9 @@ import {
 } from './types';
 import {messagingApi} from '../../../services/messagingApi';
 import {dayjs, parseDateFromApi} from '../../../utils/dateUtils';
+import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {draftCourierMessage} from '../../../services/aiAssistantApi';
 import {
     useAutoRefresh,
     useContactSearch,
@@ -67,23 +80,13 @@ import {
 // Static sx values hoisted to module scope. Hot paths inside .map() loops
 // (conversations list, messages list) and the message bubble re-create these
 // on every render; pinning them avoids redundant emotion cache lookups.
-const SX_WHITE_TEXT = {color: 'white'} as const;
-const SX_FLEX_1 = {flex: 1} as const;
-const SX_MR_1 = {mr: 1} as const;
-const SX_PRIMARY_AVATAR = {bgcolor: 'primary.main'} as const;
-const SX_DIALOG_CONTENT_ROW = {p: 0, display: 'flex', flex: 1, overflow: 'hidden'} as const;
-const SX_DIALOG_CONTENT_COL = {p: 0, display: 'flex', flexDirection: 'column' as const, flex: 1, overflow: 'hidden'} as const;
-const SX_CONV_NAME_ROW = {display: 'flex', justifyContent: 'space-between', alignItems: 'baseline'} as const;
-const SX_CONV_NAME_TEXT = {maxWidth: 140} as const;
-const SX_CONV_SECONDARY_ROW = {display: 'flex', alignItems: 'center', gap: 1} as const;
-const SX_UNREAD_CHIP = {height: 18, fontSize: 11} as const;
-const SX_LIST_CONTAINER = {flex: 1, overflow: 'auto', p: 0} as const;
-const SX_LOADING_BOX = {display: 'flex', justifyContent: 'center', p: 4} as const;
-const SX_LARGE_ICON = {fontSize: 48} as const;
-const SX_MSG_BODY = {whiteSpace: 'pre-wrap' as const, wordBreak: 'break-word' as const} as const;
-const SX_MSG_META_ROW = {display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, justifyContent: 'flex-end'} as const;
-const SX_MSG_TICK_ICON = {fontSize: 14, opacity: 0.8} as const;
-const SX_HEADER_SUBTITLE = {opacity: 0.85, mt: 0.25} as const;
+/*
+ * The MUI version hoisted seventeen `sx` objects to module scope so they were
+ * not rebuilt per render. Mantine props are plain attributes, so nearly all of
+ * them simply disappear; what is left is the two the message bubble reuses.
+ */
+const MESSAGE_BODY_STYLE = {whiteSpace: 'pre-wrap', wordBreak: 'break-word'} as const;
+const EMPTY_GLYPH_SIZE = 48;
 
 export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                                                     open,
@@ -92,6 +95,12 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                                                     currentStaffId,
                                                                 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    // Whether the user is parked at (or near) the bottom of the thread. When
+    // they've scrolled up to read history we must NOT yank them back down on
+    // the 10s auto-refresh — only follow new messages they're already tracking.
+    const isNearBottomRef = useRef(true);
+    const prevConversationKeyRef = useRef<string | null>(null);
 
     const [selectedConversation, setSelectedConversation] = useState<RecentConversation | null>(null);
     const [showNewChatView, setShowNewChatView] = useState(false);
@@ -116,6 +125,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         isLoading: isMessagesLoading,
         loadMessages,
         addOptimisticMessage,
+        updateMessage,
         clearMessages,
     } = useMessages(currentStaffId);
 
@@ -165,12 +175,34 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         open && !!selectedConversation
     );
 
-    // Scroll to bottom when messages change
+    const handleMessagesScroll = useCallback(() => {
+        const el = messagesContainerRef.current;
+        if (el) {
+            isNearBottomRef.current = isNearBottom(el);
+        }
+    }, []);
+
+    // Follow the conversation as messages change, but respect the reader:
+    // jump to the bottom when switching conversations, and on new messages only
+    // when the user is already near the bottom or just sent the latest message.
     useEffect(() => {
-        if (messagesEndRef.current) {
+        const conversationKey = selectedConversation
+            ? `${selectedConversation.otherPartyType}-${selectedConversation.otherPartyId}`
+            : null;
+        const conversationChanged = conversationKey !== prevConversationKeyRef.current;
+        prevConversationKeyRef.current = conversationKey;
+
+        if (!messagesEndRef.current) return;
+
+        const lastMessageIsOwn = messages[messages.length - 1]?.isSender;
+
+        if (conversationChanged) {
+            messagesEndRef.current.scrollIntoView({behavior: 'auto'});
+            isNearBottomRef.current = true;
+        } else if (isNearBottomRef.current || lastMessageIsOwn) {
             messagesEndRef.current.scrollIntoView({behavior: 'smooth'});
         }
-    }, [messages]);
+    }, [messages, selectedConversation]);
 
     const handleSelectConversation = async (conversation: RecentConversation) => {
         if (
@@ -195,58 +227,74 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         }
     };
 
-    const handleSendMessage = async () => {
-        if (!newMessage.trim() || !selectedConversation || isSending) return;
+    // Core send used by both the composer and the failed-message retry. The
+    // bubble appears immediately as 'sending', then resolves to 'sent' or
+    // 'failed' so the user can see progress and retry in place.
+    const sendMessageContent = useCallback(async (content: string, retryMessageId?: number) => {
+        if (!selectedConversation) return;
 
-        const messageContent = newMessage.trim();
-        setIsSending(true);
+        const tempId = retryMessageId ?? -Date.now();
+        const data: SendMessageRequest = {
+            sendToCourierId: selectedConversation.otherPartyType === OtherMessagePartyType.Courier
+                ? selectedConversation.otherPartyId : undefined,
+            sendToStaffId: selectedConversation.otherPartyType === OtherMessagePartyType.Staff
+                ? selectedConversation.otherPartyId : undefined,
+            message: content,
+            messageType: messageDeliveryType,
+        };
 
-        try {
-            const data: SendMessageRequest = {
-                sendToCourierId: selectedConversation.otherPartyType === OtherMessagePartyType.Courier
-                    ? selectedConversation.otherPartyId : undefined,
-                sendToStaffId: selectedConversation.otherPartyType === OtherMessagePartyType.Staff
-                    ? selectedConversation.otherPartyId : undefined,
-                message: messageContent,
-                messageType: messageDeliveryType,
-            };
-
-            await messagingApi.sendMessage(data);
-
-            // Add optimistic message
-            const optimisticMessage: ChatMessage = {
-                messageId: -Date.now(),
+        if (retryMessageId !== undefined) {
+            updateMessage(tempId, {status: 'sending'});
+        } else {
+            addOptimisticMessage({
+                messageId: tempId,
                 sendFromStaffId: currentStaffId,
                 sendToCourierId: data.sendToCourierId,
                 sendToStaffId: data.sendToStaffId,
-                message: messageContent,
+                message: content,
                 messageTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
                 read: false,
-                sent: true,
+                sent: false,
                 isSender: true,
-            };
+                status: 'sending',
+            });
+        }
 
-            addOptimisticMessage(optimisticMessage);
-            setNewMessage('');
-
-            // Update conversation preview
+        try {
+            await messagingApi.sendMessage(data);
+            updateMessage(tempId, {status: 'sent', sent: true});
             updateConversation(
                 selectedConversation.otherPartyId,
                 selectedConversation.otherPartyType,
                 {
-                    lastMessage: messageContent,
+                    lastMessage: content,
                     lastMessageTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
                 }
             );
-
             showToast('Message sent', 'success');
         } catch (err) {
             console.error('Failed to send message:', err);
+            updateMessage(tempId, {status: 'failed'});
             showToast('Failed to send message', 'error');
+        }
+    }, [selectedConversation, messageDeliveryType, currentStaffId, addOptimisticMessage, updateMessage, updateConversation, showToast]);
+
+    const handleSendMessage = async () => {
+        const content = newMessage.trim();
+        if (!content || !selectedConversation || isSending) return;
+
+        setIsSending(true);
+        setNewMessage('');
+        try {
+            await sendMessageContent(content);
         } finally {
             setIsSending(false);
         }
     };
+
+    const handleRetryMessage = useCallback((message: ChatMessage) => {
+        void sendMessageContent(message.message, message.messageId);
+    }, [sendMessageContent]);
 
     const handleSendMultiMessage = async () => {
         if (!newMessage.trim() || selectedContacts.length === 0 || isSending) return;
@@ -365,6 +413,41 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         setShowQuickResponses(false);
     };
 
+    const {runDraft: runMessageDraft, isDrafting: isMessageDrafting} = useAiDraft();
+
+    const handleDraftMessage = async () => {
+        if (!selectedConversation) {
+            return;
+        }
+        const recentMessages = messages
+            .slice(-8)
+            .map((m) => `${m.isSender ? 'Me' : selectedConversation.otherPartyName}: ${m.message}`);
+        const result = await runMessageDraft((signal) =>
+            draftCourierMessage(
+                {
+                    recipientName: selectedConversation.otherPartyName,
+                    recipientType: selectedConversation.otherPartyType,
+                    messageType: messageDeliveryType,
+                    seed: newMessage,
+                    recentMessages,
+                },
+                {signal},
+            ),
+        );
+        if (result) {
+            setNewMessage(result.draft);
+        }
+    };
+
+    const handleMarkConversationRead = useCallback(async (conv: RecentConversation) => {
+        try {
+            await messagingApi.markMessagesAsRead(conv.otherPartyId, conv.otherPartyType);
+            updateConversation(conv.otherPartyId, conv.otherPartyType, {unreadCount: 0});
+        } catch (err) {
+            console.error('Failed to mark conversation as read:', err);
+        }
+    }, [updateConversation]);
+
     const getTotalUnreadCount = (): number => {
         return conversations.reduce((total, conv) => total + conv.unreadCount, 0);
     };
@@ -419,14 +502,14 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                     subtitle="Send and receive messages"
                     onClose={onClose}
                 />
-                <DialogContent sx={SX_DIALOG_CONTENT_ROW}>
+                <Box component="section" style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
                     {conversationsError ? (
                         <ErrorState
                             message={conversationsError}
                             onRetry={() => loadConversations()}
                         />
                     ) : (
-                        <Box sx={{display: 'flex', flex: 1, minHeight: 0}}>
+                        <Box style={{display: 'flex', flex: 1, minHeight: 0}}>
                             {/* Conversations Panel */}
                             <ConversationsPanel
                                 conversations={conversations}
@@ -436,6 +519,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                 onSelectConversation={handleSelectConversation}
                                 onRefresh={() => loadConversations()}
                                 onNewChat={handleShowNewChat}
+                                onMarkRead={handleMarkConversationRead}
                             />
 
                             {/* Chat Panel */}
@@ -459,38 +543,41 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                 onToggleQuickResponses={() => setShowQuickResponses(!showQuickResponses)}
                                 onSelectQuickResponse={handleSelectQuickResponse}
                                 messagesEndRef={messagesEndRef}
+                                messagesContainerRef={messagesContainerRef}
+                                onMessagesScroll={handleMessagesScroll}
+                                onRetryMessage={handleRetryMessage}
+                                onDraft={handleDraftMessage}
+                                isDrafting={isMessageDrafting}
                             />
                         </Box>
                     )}
-                </DialogContent>
+                </Box>
             </>
         );
     };
 
     return (
-        <Dialog
-            open={open}
+        <Drawer
+            opened={open}
             onClose={onClose}
-            maxWidth={false}
-            slotProps={{
-                paper: {
-                    sx: {
-                        width: '90vw',
-                        maxWidth: 1100,
-                        height: '80vh',
-                        maxHeight: 800,
-                        minWidth: 700,
-                        minHeight: 500,
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    },
-                },
+            position="right"
+            withCloseButton={false}
+            padding={0}
+            size={1000}
+            /*
+              * The Message Center is a working surface, not a quick confirm, so an
+              * outside click must not throw away what is being typed. MUI needed a
+              * reason check inside onClose to say this; Mantine says it as a prop.
+              */
+            closeOnClickOutside={false}
+            overlayProps={{'data-testid': 'messaging-overlay'} as React.ComponentProps<typeof Drawer>['overlayProps']}
+            styles={{
+                content: {display: 'flex', flexDirection: 'column', overflow: 'hidden'},
+                body: {display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0},
             }}
         >
             {renderContent()}
-        </Dialog>
+        </Drawer>
     );
 };
 
@@ -504,38 +591,37 @@ interface DialogHeaderProps {
     onClose: () => void;
 }
 
+/**
+ * The drawer's own header bar. Not the shared `<DialogHeader>`: this one swaps
+ * its leading chip for a Back button, which that component has no slot for.
+ * Built from the same style helpers, so the bar itself stays in step.
+ */
 function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: DialogHeaderProps) {
     return (
-        <Box
-            sx={(theme) => ({
-                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                color: 'white',
-                px: 2,
-                py: 1.5,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-            })}
-        >
-            {showBackButton && (
-                <IconButton onClick={onBack} sx={SX_WHITE_TEXT}>
-                    <ArrowBackIcon/>
-                </IconButton>
+        <Box style={{...headerChromeStyle(), gap: 'var(--mantine-spacing-sm)', flexShrink: 0}}>
+            {showBackButton ? (
+                <ActionIcon
+                    variant="subtle"
+                    aria-label="Back"
+                    onClick={onBack}
+                    c={headerOnColor()}
+                >
+                    <Icon lucide={ArrowLeft}/>
+                </ActionIcon>
+            ) : (
+                <ThemeIcon {...headerChipProps('primary', 36)}>
+                    <Icon lucide={MessageCircle}/>
+                </ThemeIcon>
             )}
-            {!showBackButton && <ChatIcon sx={SX_MR_1}/>}
-            <Box sx={SX_FLEX_1}>
-                <Typography variant="h6" fontWeight={600}>
-                    {title}
-                </Typography>
-                {subtitle && (
-                    <Typography variant="body2" sx={SX_HEADER_SUBTITLE}>
-                        {subtitle}
-                    </Typography>
-                )}
+            <Box style={{flex: 1}}>
+                <Title order={5} fw={600}>{title}</Title>
+                {subtitle && <Text fz="sm" opacity={0.85} mt={2}>{subtitle}</Text>}
             </Box>
-            <IconButton onClick={onClose} sx={SX_WHITE_TEXT}>
-                <CloseIcon/>
-            </IconButton>
+            <CloseButton
+                aria-label="Close message center"
+                onClick={onClose}
+                c={headerOnColor()}
+            />
         </Box>
     );
 }
@@ -548,6 +634,7 @@ interface ConversationsPanelProps {
     onSelectConversation: (conv: RecentConversation) => void;
     onRefresh: () => void;
     onNewChat: () => void;
+    onMarkRead: (conv: RecentConversation) => void;
 }
 
 function ConversationsPanel({
@@ -558,151 +645,211 @@ function ConversationsPanel({
                                 onSelectConversation,
                                 onRefresh,
                                 onNewChat,
+                                onMarkRead,
                             }: ConversationsPanelProps) {
+    const [filterText, setFilterText] = useState('');
+    const [unreadOnly, setUnreadOnly] = useState(false);
+
+    const filteredConversations = useMemo(() => {
+        const term = filterText.trim().toLowerCase();
+        return conversations.filter((conv) => {
+            if (unreadOnly && conv.unreadCount === 0) return false;
+            return !(term && !conv.otherPartyName.toLowerCase().includes(term));
+        });
+    }, [conversations, filterText, unreadOnly]);
+
     return (
         <Box
-            sx={{
-                width: 320,
+            w={320}
+            bg="var(--mantine-color-gray-0)"
+            style={{
                 display: 'flex',
                 flexDirection: 'column',
-                borderRight: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.default',
+                borderRight: '1px solid var(--mantine-color-default-border)',
             }}
         >
             {/* Panel Header */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    p: 1.5,
-                    bgcolor: 'background.paper',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                }}
+            <Group
+                gap={8}
+                p={12}
+                wrap="nowrap"
+                bg="var(--mantine-color-body)"
+                style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
             >
-                <Typography variant="subtitle1" fontWeight={600}>
-                    Conversations
-                </Typography>
+                <Text fz="md" fw={600}>Conversations</Text>
                 {totalUnreadCount > 0 && (
-                    <Badge
-                        badgeContent={totalUnreadCount}
-                        color="error"
-                        sx={{ml: 0.5}}
-                    />
+                    <Badge color="red" size="sm" circle>{totalUnreadCount}</Badge>
                 )}
-                <Box sx={SX_FLEX_1}/>
-                <IconButton size="small" onClick={onRefresh} disabled={isLoading}>
-                    <RefreshIcon sx={{animation: isLoading ? 'spin 1s linear infinite' : 'none'}}/>
-                </IconButton>
-                <IconButton size="small" color="primary" onClick={onNewChat}>
-                    <AddCommentIcon/>
-                </IconButton>
-            </Box>
+                <Box style={{flex: 1}}/>
+                <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={onRefresh}
+                    disabled={isLoading}
+                    aria-label="Refresh conversations"
+                >
+                    <Icon lucide={RefreshCw} className={isLoading ? styles.spinning : undefined}/>
+                </ActionIcon>
+                <ActionIcon variant="subtle" onClick={onNewChat} aria-label="New conversation">
+                    <Icon lucide={MessageCirclePlus}/>
+                </ActionIcon>
+            </Group>
+
+            {/* Filter row */}
+            {conversations.length > 0 && (
+                <Group
+                    gap={8}
+                    px={12}
+                    py={8}
+                    wrap="nowrap"
+                    bg="var(--mantine-color-body)"
+                    style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
+                >
+                    <TextInput
+                        size="sm"
+                        radius="xl"
+                        style={{flex: 1}}
+                        placeholder="Filter conversations"
+                        aria-label="Filter conversations"
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.currentTarget.value)}
+                        leftSection={<Icon lucide={Search} size={16}/>}
+                        rightSection={filterText
+                            ? <CloseButton size="sm" aria-label="Clear filter" onClick={() => setFilterText('')}/>
+                            : null}
+                    />
+                    {/* A real toggle: Chip reports aria-checked, where the MUI Chip
+                        was a clickable label wearing a hand-set aria-pressed. */}
+                    <Chip
+                        size="sm"
+                        checked={unreadOnly}
+                        onChange={() => setUnreadOnly((v) => !v)}
+                    >
+                        Unread
+                    </Chip>
+                </Group>
+            )}
 
             {/* Loading indicator */}
             {isLoading && conversations.length === 0 && (
-                <Box sx={SX_LOADING_BOX}>
-                    <CircularProgress size={32}/>
-                </Box>
+                <Group justify="center" p={32}>
+                    <Loader size={32} aria-label="Loading conversations"/>
+                </Group>
             )}
 
             {/* Conversations List */}
-            <List sx={SX_LIST_CONTAINER}>
-                {conversations.map((conv) => (
-                    <ListItem
-                        key={`${conv.otherPartyId}-${conv.otherPartyType}`}
-                        onClick={() => onSelectConversation(conv)}
-                        sx={{
-                            cursor: 'pointer',
-                            borderLeft: '3px solid',
-                            borderLeftColor: selectedConversation?.otherPartyId === conv.otherPartyId &&
-                            selectedConversation?.otherPartyType === conv.otherPartyType
-                                ? 'primary.main' : 'transparent',
-                            bgcolor: selectedConversation?.otherPartyId === conv.otherPartyId &&
-                            selectedConversation?.otherPartyType === conv.otherPartyType
-                                ? 'action.selected' : 'transparent',
-                            '&:hover': {bgcolor: 'action.hover'},
-                        }}
-                    >
-                        <ListItemAvatar>
-                            <Badge
-                                overlap="circular"
-                                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                                badgeContent={
-                                    <Box
-                                        sx={{
-                                            width: 10,
-                                            height: 10,
-                                            borderRadius: '50%',
-                                            bgcolor: getStatusColor(conv.otherPartyStatus),
-                                            border: '2px solid white',
-                                        }}
-                                    />
-                                }
+            {filteredConversations.length > 0 && (
+                <Box component="ul" m={0} p={0} style={{flex: 1, overflow: 'auto', listStyle: 'none'}}>
+                    {filteredConversations.map((conv) => {
+                        const isSelected = selectedConversation?.otherPartyId === conv.otherPartyId
+                            && selectedConversation?.otherPartyType === conv.otherPartyType;
+                        return (
+                            <Box
+                                component="li"
+                                key={`${conv.otherPartyId}-${conv.otherPartyType}`}
+                                className={styles.conversationRow}
+                                onClick={() => onSelectConversation(conv)}
+                                px={12}
+                                py={8}
+                                bg={isSelected ? 'var(--mantine-color-gray-1)' : undefined}
+                                style={{
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                    borderLeft: `3px solid ${isSelected ? 'var(--mantine-primary-color-filled)' : 'transparent'}`,
+                                }}
                             >
-                                <Avatar sx={SX_PRIMARY_AVATAR}>
-                                    {conv.otherPartyInitials || generateInitials(conv.otherPartyName)}
-                                </Avatar>
-                            </Badge>
-                        </ListItemAvatar>
-                        <ListItemText
-                            primary={
-                                <Box sx={SX_CONV_NAME_ROW}>
-                                    <Typography variant="body2" fontWeight={500} noWrap sx={SX_CONV_NAME_TEXT}>
-                                        {conv.otherPartyName}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        {formatLastMessageTime(conv.lastMessageTime)}
-                                    </Typography>
+                                <Indicator
+                                    size={10}
+                                    offset={4}
+                                    position="bottom-end"
+                                    withBorder
+                                    color={getStatusColor(conv.otherPartyStatus)}
+                                >
+                                    <Avatar color="brand" radius="xl">
+                                        {conv.otherPartyInitials || generateInitials(conv.otherPartyName)}
+                                    </Avatar>
+                                </Indicator>
+
+                                <Box style={{flex: 1, minWidth: 0}}>
+                                    <Group justify="space-between" align="baseline" wrap="nowrap" gap={8}>
+                                        <Text fz="sm" fw={500} truncate maw={140}>{conv.otherPartyName}</Text>
+                                        <Text fz="xs" c="dimmed">{formatLastMessageTime(conv.lastMessageTime)}</Text>
+                                    </Group>
+                                    <Group gap={8} wrap="nowrap">
+                                        <Text fz="xs" c="dimmed" truncate style={{flex: 1}}>
+                                            {conv.lastMessage ? (
+                                                <>
+                                                    <Text component="span" fz="xs" fw={500}>
+                                                        {conv.unreadCount > 0 ? `${conv.otherPartyName}: ` : 'You: '}
+                                                    </Text>
+                                                    {conv.lastMessage.substring(0, 40)}
+                                                    {conv.lastMessage.length > 40 ? '...' : ''}
+                                                </>
+                                            ) : null}
+                                        </Text>
+                                        {conv.unreadCount > 0 && (
+                                            <Badge color="red" size="sm">
+                                                {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+                                            </Badge>
+                                        )}
+                                    </Group>
                                 </Box>
-                            }
-                            secondary={
-                                <Box sx={SX_CONV_SECONDARY_ROW}>
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        noWrap
-                                        sx={SX_FLEX_1}
+
+                                {conv.unreadCount > 0 && (
+                                    <ActionIcon
+                                        className={styles.markRead}
+                                        variant="subtle"
+                                        color="gray"
+                                        size="sm"
+                                        aria-label={`Mark conversation with ${conv.otherPartyName} as read`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onMarkRead(conv);
+                                        }}
                                     >
-                                        {conv.lastMessage ? (
-                                            <>
-                                                <Typography component="span" variant="caption" fontWeight={500}>
-                                                    {conv.unreadCount > 0 ? `${conv.otherPartyName}: ` : 'You: '}
-                                                </Typography>
-                                                {conv.lastMessage.substring(0, 40)}
-                                                {conv.lastMessage.length > 40 ? '...' : ''}
-                                            </>
-                                        ) : null}
-                                    </Typography>
-                                    {conv.unreadCount > 0 && (
-                                        <Chip
-                                            label={conv.unreadCount > 99 ? '99+' : conv.unreadCount}
-                                            size="small"
-                                            color="error"
-                                            sx={SX_UNREAD_CHIP}
-                                        />
-                                    )}
-                                </Box>
-                            }
-                        />
-                    </ListItem>
-                ))}
-            </List>
+                                        <Icon lucide={CheckCheck} size={16}/>
+                                    </ActionIcon>
+                                )}
+                            </Box>
+                        );
+                    })}
+                </Box>
+            )}
 
             {/* Empty State */}
             {!isLoading && conversations.length === 0 && (
                 <EmptyState
-                    icon={<ChatBubbleOutlineIcon sx={SX_LARGE_ICON}/>}
+                    icon={<Icon lucide={MessageSquare} size={EMPTY_GLYPH_SIZE}/>}
                     message="No conversations yet"
                     action={
                         <Button
-                            variant="contained"
-                            startIcon={<AddCommentIcon/>}
+                            leftSection={<Icon lucide={MessageCirclePlus} size={16}/>}
                             onClick={onNewChat}
                         >
                             Start Conversation
+                        </Button>
+                    }
+                />
+            )}
+
+            {/* No conversations match the current filter */}
+            {!isLoading && conversations.length > 0 && filteredConversations.length === 0 && (
+                <EmptyState
+                    icon={<Icon lucide={SearchX} size={EMPTY_GLYPH_SIZE}/>}
+                    message={unreadOnly && !filterText.trim()
+                        ? 'No unread conversations'
+                        : 'No matching conversations'}
+                    action={
+                        <Button
+                            variant="subtle"
+                            onClick={() => {
+                                setFilterText('');
+                                setUnreadOnly(false);
+                            }}
+                        >
+                            Clear filters
                         </Button>
                     }
                 />
@@ -728,6 +875,11 @@ interface ChatPanelProps {
     onToggleQuickResponses: () => void;
     onSelectQuickResponse: (response: QuickResponse) => void;
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
+    messagesContainerRef: React.RefObject<HTMLDivElement | null>;
+    onMessagesScroll: () => void;
+    onRetryMessage: (message: ChatMessage) => void;
+    onDraft: () => void;
+    isDrafting: boolean;
 }
 
 function ChatPanel({
@@ -747,102 +899,106 @@ function ChatPanel({
                        onToggleQuickResponses,
                        onSelectQuickResponse,
                        messagesEndRef,
+                       messagesContainerRef,
+                       onMessagesScroll,
+                       onRetryMessage,
+                       onDraft,
+                       isDrafting,
                    }: ChatPanelProps) {
     if (!selectedConversation) {
         return (
-            <Box sx={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <ChatIcon sx={{fontSize: 64, color: 'action.disabled', mb: 2}}/>
-                <Typography color="text.secondary">
-                    Select a conversation or start a new one
-                </Typography>
-            </Box>
+            <Stack flex={1} align="center" justify="center" gap={16}>
+                <Box c="dimmed" opacity={0.5}>
+                    <Icon lucide={MessageCircle} size={64}/>
+                </Box>
+                <Text c="dimmed">Select a conversation or start a new one</Text>
+            </Stack>
         );
     }
 
     return (
-        <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
+        <Box style={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
             {/* Chat Header */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                }}
+            <Group
+                gap={12}
+                p={12}
+                wrap="nowrap"
+                style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
             >
-                <Avatar sx={SX_PRIMARY_AVATAR}>
-                    {selectedConversation.otherPartyInitials}
-                </Avatar>
-                <Box sx={SX_FLEX_1}>
-                    <Typography variant="body1" fontWeight={500}>
-                        {selectedConversation.otherPartyName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{textTransform: 'capitalize'}}>
+                <Avatar color="brand" radius="xl">{selectedConversation.otherPartyInitials}</Avatar>
+                <Box style={{flex: 1, minWidth: 0}}>
+                    <Text fz="md" fw={500} truncate>{selectedConversation.otherPartyName}</Text>
+                    <Text fz="xs" c="dimmed" tt="capitalize">
                         {selectedConversation.otherPartyType === OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}
                         {' · '}{selectedConversation.otherPartyStatus}
-                    </Typography>
+                    </Text>
                 </Box>
-                <IconButton size="small" onClick={onRefreshMessages} disabled={isMessagesLoading}>
-                    <RefreshIcon sx={{animation: isMessagesLoading ? 'spin 1s linear infinite' : 'none'}}/>
-                </IconButton>
-            </Box>
+                <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={onRefreshMessages}
+                    disabled={isMessagesLoading}
+                    aria-label="Refresh messages"
+                >
+                    <Icon lucide={RefreshCw} className={isMessagesLoading ? styles.spinning : undefined}/>
+                </ActionIcon>
+            </Group>
 
             {/* Messages Area */}
             <Box
-                sx={{
-                    flex: 1,
-                    overflow: 'auto',
-                    p: 2,
-                    bgcolor: 'grey.100',
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
+                ref={messagesContainerRef}
+                onScroll={onMessagesScroll}
+                role="log"
+                aria-live="polite"
+                aria-label="Messages"
+                p={16}
+                bg="var(--mantine-color-gray-1)"
+                style={{flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column'}}
             >
                 {isMessagesLoading && messages.length === 0 ? (
-                    <Box sx={SX_LOADING_BOX}>
-                        <CircularProgress size={32}/>
-                    </Box>
+                    <Group justify="center" p={32}>
+                        <Loader size={32} aria-label="Loading messages"/>
+                    </Group>
                 ) : messages.length === 0 ? (
                     <EmptyState
-                        icon={<ChatBubbleOutlineIcon sx={SX_LARGE_ICON}/>}
+                        icon={<Icon lucide={MessageSquare} size={EMPTY_GLYPH_SIZE}/>}
                         message="Start the conversation"
                     />
                 ) : (
                     <>
                         {messages.map((msg, index) => {
-                            const showDateSeparator = index === 0 ||
-                                !isSameDay(messages[index - 1].messageTime, msg.messageTime);
+                            const prevMsg = index > 0 ? messages[index - 1] : null;
+                            const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
+                            const showDateSeparator = !prevMsg ||
+                                !isSameDay(prevMsg.messageTime, msg.messageTime);
+                            // A run ends when the next message is from the other
+                            // party, on a different day, or far enough apart in time
+                            // to read as a separate burst.
+                            const isLastInGroup = !nextMsg ||
+                                nextMsg.isSender !== msg.isSender ||
+                                !isSameDay(nextMsg.messageTime, msg.messageTime) ||
+                                !withinGroupingWindow(msg.messageTime, nextMsg.messageTime);
 
                             return (
                                 <React.Fragment key={msg.messageId}>
                                     {showDateSeparator && (
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                textAlign: 'center',
-                                                color: 'text.secondary',
-                                                my: 2,
-                                                px: 2,
-                                                py: 0.5,
-                                                bgcolor: 'grey.100',
-                                                alignSelf: 'center',
-                                                borderRadius: 2,
-                                                border: '1px solid',
-                                                borderColor: 'divider',
-                                            }}
+                                        <Paper
+                                            withBorder
+                                            radius="md"
+                                            px={16}
+                                            py={4}
+                                            my={16}
+                                            style={{alignSelf: 'center'}}
                                         >
-                                            {formatDateSeparator(msg.messageTime)}
-                                        </Typography>
+                                            <Text fz="xs" c="dimmed">{formatDateSeparator(msg.messageTime)}</Text>
+                                        </Paper>
                                     )}
-                                    <MessageBubble message={msg}/>
+                                    <MessageBubble
+                                        message={msg}
+                                        isLastInGroup={isLastInGroup}
+                                        onRetry={onRetryMessage}
+                                        avatarInitials={selectedConversation.otherPartyInitials || generateInitials(selectedConversation.otherPartyName)}
+                                    />
                                 </React.Fragment>
                             );
                         })}
@@ -854,150 +1010,190 @@ function ChatPanel({
             {/* Quick Responses Panel */}
             {showQuickResponses && (
                 <Box
-                    sx={{
-                        borderTop: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.default',
-                        p: 1.5,
-                    }}
+                    p={12}
+                    bg="var(--mantine-color-gray-0)"
+                    style={{borderTop: '1px solid var(--mantine-color-default-border)'}}
                 >
-                    <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1}}>
-                        <Typography variant="caption" fontWeight={500} color="text.secondary"
-                                    sx={{textTransform: 'uppercase'}}>
-                            Quick Responses
-                        </Typography>
-                        <IconButton size="small" onClick={onToggleQuickResponses}>
-                            <CloseIcon fontSize="small"/>
-                        </IconButton>
-                    </Box>
-                    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
+                    <Group justify="space-between" mb={8}>
+                        <Text fz="xs" fw={500} c="dimmed" tt="uppercase">Quick Responses</Text>
+                        <CloseButton size="sm" aria-label="Hide quick responses" onClick={onToggleQuickResponses}/>
+                    </Group>
+                    <Group gap={8}>
                         {quickResponses.map((response) => (
-                            <Chip
+                            <Button
                                 key={response.id}
-                                label={response.text}
+                                size="compact-sm"
+                                variant="default"
+                                radius="xl"
                                 onClick={() => onSelectQuickResponse(response)}
-                                variant="outlined"
-                                size="small"
-                                sx={{
-                                    '&:hover': {
-                                        bgcolor: 'primary.main',
-                                        color: 'white',
-                                        borderColor: 'primary.main',
-                                    },
-                                }}
-                            />
+                            >
+                                {response.text}
+                            </Button>
                         ))}
-                    </Box>
+                    </Group>
                 </Box>
             )}
 
             {/* Message Input */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    gap: 1,
-                    p: 1.5,
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'background.paper',
-                }}
+            <Group
+                gap={8}
+                p={12}
+                align="flex-end"
+                wrap="nowrap"
+                style={{borderTop: '1px solid var(--mantine-color-default-border)'}}
             >
-                <IconButton onClick={onToggleQuickResponses}>
-                    <QuickReplyIcon/>
-                </IconButton>
-                <TextField
-                    fullWidth
-                    multiline
+                <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="lg"
+                    onClick={onToggleQuickResponses}
+                    aria-label="Quick responses"
+                >
+                    <Icon lucide={Zap}/>
+                </ActionIcon>
+                <Textarea
+                    style={{flex: 1}}
+                    radius="xl"
+                    autosize
                     maxRows={4}
                     placeholder="Type a message..."
+                    aria-label="Type a message"
                     value={newMessage}
-                    onChange={(e) => onMessageChange(e.target.value)}
+                    onChange={(e) => onMessageChange(e.currentTarget.value)}
                     onKeyDown={onKeyPress}
-                    size="small"
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 3,
-                        },
-                    }}
                 />
+                <AiDraftButton onClick={onDraft} isDrafting={isDrafting} />
                 {selectedConversation.otherPartyType === OtherMessagePartyType.Courier && (
-                    <FormControl size="small" sx={{minWidth: 80}}>
-                        <Select
-                            value={messageDeliveryType}
-                            onChange={(e) => onDeliveryTypeChange(e.target.value as MessageDeliveryType)}
-                            sx={{borderRadius: 2, fontSize: 12}}
-                        >
-                            <MenuItem value={MessageDeliveryType.App}>App</MenuItem>
-                            <MenuItem value={MessageDeliveryType.Sms}>SMS</MenuItem>
-                            <MenuItem value={MessageDeliveryType.SmartDelivery}>Smart</MenuItem>
-                        </Select>
-                    </FormControl>
+                    <Select
+                        size="sm"
+                        w={92}
+                        aria-label="Delivery method"
+                        allowDeselect={false}
+                        comboboxProps={{keepMounted: false}}
+                        /* The delivery type is a numeric enum and Select speaks
+                           strings, so the id round-trips through String/Number. */
+                        value={String(messageDeliveryType)}
+                        onChange={(value) => value && onDeliveryTypeChange(Number(value) as MessageDeliveryType)}
+                        data={[
+                            {value: String(MessageDeliveryType.App), label: 'App'},
+                            {value: String(MessageDeliveryType.Sms), label: 'SMS'},
+                            {value: String(MessageDeliveryType.SmartDelivery), label: 'Smart'},
+                        ]}
+                    />
                 )}
-                <IconButton
-                    color="primary"
+                <ActionIcon
+                    size="lg"
                     onClick={onSendMessage}
                     disabled={!newMessage.trim() || isSending}
-                    sx={{
-                        bgcolor: 'primary.main',
-                        color: 'white',
-                        '&:hover': {bgcolor: 'primary.dark'},
-                        '&:disabled': {bgcolor: 'action.disabledBackground'},
-                    }}
+                    aria-label="Send message"
+                    loading={isSending}
                 >
-                    {isSending ? <CircularProgress size={24} color="inherit"/> : <SendIcon/>}
-                </IconButton>
-            </Box>
+                    <Icon lucide={Send}/>
+                </ActionIcon>
+            </Group>
         </Box>
     );
 }
 
 interface MessageBubbleProps {
     message: ChatMessage;
+    // False when another message from the same party follows shortly after —
+    // consecutive messages are grouped: only the last keeps its tail and timestamp.
+    isLastInGroup?: boolean;
+    onRetry?: (message: ChatMessage) => void;
+    // Other party's initials, shown beside the last bubble of a received run.
+    avatarInitials?: string;
 }
 
-function MessageBubble({message}: MessageBubbleProps) {
+function MessageBubble({message, isLastInGroup = true, onRetry, avatarInitials}: MessageBubbleProps) {
     const isSent = message.isSender;
+    const isFailed = message.status === 'failed';
+    const isSending = message.status === 'sending';
+    // Tail (the 4px corner) only on the last bubble of a run; grouped bubbles
+    // stay fully rounded so the run reads as a single block.
+    const borderRadius = isLastInGroup
+        ? (isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px')
+        : '16px';
+    // Timestamp only on the last bubble of a run; ticks stay per-message since
+    // read/sent status is meaningful for each individual message.
+    const showMeta = isSent || isLastInGroup;
+
+    /** Timestamp and delivery ticks, right-aligned under the message. */
+    const meta = (children: React.ReactNode) => (
+        <Group gap={4} mt={4} justify="flex-end" wrap="nowrap">{children}</Group>
+    );
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                justifyContent: isSent ? 'flex-end' : 'flex-start',
-                mb: 1,
-            }}
+        <Group
+            gap={8}
+            align="flex-end"
+            wrap="nowrap"
+            justify={isSent ? 'flex-end' : 'flex-start'}
+            mb={isLastInGroup ? 8 : 2}
         >
+            {!isSent && (
+                isLastInGroup
+                    ? (
+                        <Avatar color="brand" radius="xl" size={28} style={{flexShrink: 0, fontSize: 12}}>
+                            {avatarInitials}
+                        </Avatar>
+                    )
+                    : <Box w={28} style={{flexShrink: 0}}/>
+            )}
             <Box
-                sx={{
+                px={16}
+                py={8}
+                style={{
                     maxWidth: '70%',
-                    px: 2,
-                    py: 1,
-                    borderRadius: isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    bgcolor: isSent ? 'primary.main' : 'background.paper',
-                    color: isSent ? 'white' : 'text.primary',
-                    border: isSent ? 'none' : '1px solid',
-                    borderColor: 'divider',
+                    borderRadius,
+                    /* The filled brand is too light to carry white text, so a sent
+                       bubble uses the darker brand step — the same reason the MUI
+                       version reached past primary.main for primary.dark. */
+                    background: isSent
+                        ? 'var(--mantine-color-brand-8)'
+                        : 'var(--mantine-color-body)',
+                    color: isSent ? 'var(--mantine-color-white)' : undefined,
+                    border: isSent ? 'none' : '1px solid var(--mantine-color-default-border)',
                 }}
             >
-                <Typography variant="body2" sx={SX_MSG_BODY}>
-                    {message.message}
-                </Typography>
-                <Box sx={SX_MSG_META_ROW}>
-                    <Typography
-                        variant="caption"
-                        sx={{opacity: isSent ? 0.8 : 0.6}}
-                    >
-                        {formatMessageTime(message.messageTime)}
-                    </Typography>
-                    {isSent && message.read && (
-                        <DoneAllIcon sx={SX_MSG_TICK_ICON}/>
-                    )}
-                    {isSent && !message.read && message.sent && (
-                        <DoneIcon sx={SX_MSG_TICK_ICON}/>
-                    )}
-                </Box>
+                <Text fz="sm" style={MESSAGE_BODY_STYLE}>{message.message}</Text>
+                {isFailed ? meta(
+                    <>
+                        <Box c="red.5" style={{display: 'flex'}}>
+                            <Icon lucide={CircleAlert} size={14} aria-label="Failed to send"/>
+                        </Box>
+                        <Text fz="xs">Failed</Text>
+                        <Button
+                            variant="transparent"
+                            size="compact-xs"
+                            c="inherit"
+                            onClick={() => onRetry?.(message)}
+                            aria-label="Retry sending message"
+                            style={{textDecoration: 'underline'}}
+                        >
+                            Retry
+                        </Button>
+                    </>
+                ) : showMeta && meta(
+                    <>
+                        {isLastInGroup && (
+                            <Text fz="xs" opacity={isSent ? 0.8 : 0.6}>
+                                {formatMessageTime(message.messageTime)}
+                            </Text>
+                        )}
+                        {isSent && isSending && (
+                            <Icon lucide={Clock} size={14} aria-label="Sending" style={{opacity: 0.8}}/>
+                        )}
+                        {isSent && !isSending && message.read && (
+                            <Icon lucide={CheckCheck} size={14} aria-label="Read" style={{opacity: 0.8}}/>
+                        )}
+                        {isSent && !isSending && !message.read && message.sent && (
+                            <Icon lucide={Check} size={14} aria-label="Sent" style={{opacity: 0.8}}/>
+                        )}
+                    </>
+                )}
             </Box>
-        </Box>
+        </Group>
     );
 }
 
@@ -1040,116 +1236,90 @@ function NewChatView({
                          onSendMultiMessage,
                          isContactSelected,
                      }: NewChatViewProps) {
+    /** The uppercase label above each group of results. */
+    const groupLabel = (text: string) => (
+        <Text fz="xs" fw={600} c="dimmed" px={16} tt="uppercase" style={{letterSpacing: 0.5}}>
+            {text}
+        </Text>
+    );
+
     return (
-        <DialogContent sx={SX_DIALOG_CONTENT_COL}>
+        <Box
+            component="section"
+            style={{display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden'}}
+        >
             {/* Multi-select Header */}
             {isMultiSelectMode && (
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        p: 1.5,
-                        bgcolor: 'primary.light',
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                    }}
+                <Group
+                    justify="space-between"
+                    p={12}
+                    bg="var(--mantine-primary-color-light)"
+                    style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
                 >
-                    <Typography fontWeight={500} color="primary.main">
-                        {selectedContacts.length} selected
-                    </Typography>
-                    <Box sx={{display: 'flex', gap: 1}}>
+                    <Text fw={500}>{selectedContacts.length} selected</Text>
+                    <Group gap={8}>
                         <Button
-                            size="small"
+                            size="xs"
+                            variant="subtle"
                             onClick={onClearSelectedContacts}
                             disabled={selectedContacts.length === 0}
                         >
                             Clear
                         </Button>
-                        <Button
-                            size="small"
-                            color="error"
-                            onClick={onToggleMultiSelect}
-                        >
+                        <Button size="xs" variant="subtle" color="red" onClick={onToggleMultiSelect}>
                             Cancel
                         </Button>
-                    </Box>
-                </Box>
+                    </Group>
+                </Group>
             )}
 
             {/* Search Section */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    p: 2,
-                    bgcolor: 'background.default',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                }}
+            <Group
+                gap={12}
+                p={16}
+                wrap="nowrap"
+                bg="var(--mantine-color-gray-0)"
+                style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
             >
-                <TextField
-                    fullWidth
+                <TextInput
+                    size="sm"
+                    radius="xl"
+                    style={{flex: 1}}
                     placeholder="Search by name or ID..."
+                    aria-label="Search by name or ID"
                     value={searchTerm}
-                    onChange={(e) => onSearch(e.target.value)}
-                    size="small"
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon color="action"/>
-                                </InputAdornment>
-                            ),
-                            endAdornment: searchTerm && (
-                                <InputAdornment position="end">
-                                    <IconButton size="small" onClick={onClearSearch}>
-                                        <CloseIcon fontSize="small"/>
-                                    </IconButton>
-                                </InputAdornment>
-                            ),
-                        },
-                    }}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            borderRadius: 3,
-                            bgcolor: 'background.paper',
-                        },
-                    }}
+                    onChange={(e) => onSearch(e.currentTarget.value)}
+                    leftSection={<Icon lucide={Search} size={16}/>}
+                    rightSection={searchTerm
+                        ? <CloseButton size="sm" aria-label="Clear search" onClick={onClearSearch}/>
+                        : null}
                 />
                 <Button
-                    variant={isMultiSelectMode ? 'contained' : 'outlined'}
-                    size="small"
+                    size="sm"
+                    variant={isMultiSelectMode ? 'filled' : 'default'}
                     onClick={onToggleMultiSelect}
-                    startIcon={isMultiSelectMode ? <CheckBoxIcon/> : <CheckBoxOutlineBlankIcon/>}
+                    aria-pressed={isMultiSelectMode}
+                    leftSection={<Icon lucide={isMultiSelectMode ? SquareCheckBig : Square} size={16}/>}
                 >
                     Multi
                 </Button>
-            </Box>
+            </Group>
 
             {/* Loading */}
             {isSearching && (
-                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, p: 3}}>
-                    <CircularProgress size={24}/>
-                    <Typography color="text.secondary">Searching...</Typography>
-                </Box>
+                <Group justify="center" gap={12} p={24}>
+                    <Loader size={24} aria-label="Searching"/>
+                    <Text c="dimmed">Searching...</Text>
+                </Group>
             )}
 
             {/* Results */}
-            <Box sx={{flex: 1, overflow: 'auto'}}>
+            <Box style={{flex: 1, overflow: 'auto'}}>
                 {/* Recent Conversations */}
                 {!searchTerm && recentConversations.length > 0 && (
-                    <Box sx={{py: 2}}>
-                        <Typography
-                            variant="caption"
-                            fontWeight={600}
-                            color="text.secondary"
-                            sx={{px: 2, textTransform: 'uppercase', letterSpacing: 0.5}}
-                        >
-                            Recent
-                        </Typography>
-                        <List>
+                    <Box py={16}>
+                        {groupLabel('Recent')}
+                        <Box component="ul" m={0} p={0} style={{listStyle: 'none'}}>
                             {recentConversations.map((conv) => (
                                 <ContactListItem
                                     key={`${conv.otherPartyId}-${conv.otherPartyType}`}
@@ -1163,22 +1333,15 @@ function NewChatView({
                                     onToggleSelection={() => onToggleContactSelection(conv)}
                                 />
                             ))}
-                        </List>
+                        </Box>
                     </Box>
                 )}
 
                 {/* Search Results */}
                 {searchTerm && searchResults.length > 0 && (
-                    <Box sx={{py: 2}}>
-                        <Typography
-                            variant="caption"
-                            fontWeight={600}
-                            color="text.secondary"
-                            sx={{px: 2, textTransform: 'uppercase', letterSpacing: 0.5}}
-                        >
-                            Results ({searchResults.length})
-                        </Typography>
-                        <List>
+                    <Box py={16}>
+                        {groupLabel(`Results (${searchResults.length})`)}
+                        <Box component="ul" m={0} p={0} style={{listStyle: 'none'}}>
                             {searchResults.map((contact) => (
                                 <ContactListItem
                                     key={contact.id}
@@ -1193,14 +1356,14 @@ function NewChatView({
                                     highlightTerm={searchTerm}
                                 />
                             ))}
-                        </List>
+                        </Box>
                     </Box>
                 )}
 
                 {/* No Results */}
                 {searchTerm && !isSearching && searchResults.length === 0 && (
                     <EmptyState
-                        icon={<SearchOffIcon sx={SX_LARGE_ICON}/>}
+                        icon={<Icon lucide={SearchX} size={EMPTY_GLYPH_SIZE}/>}
                         message={`No results for "${searchTerm}"`}
                     />
                 )}
@@ -1208,40 +1371,39 @@ function NewChatView({
                 {/* Empty State */}
                 {!searchTerm && recentConversations.length === 0 && (
                     <EmptyState
-                        icon={<PersonSearchIcon sx={SX_LARGE_ICON}/>}
+                        icon={<Icon lucide={UserSearch} size={EMPTY_GLYPH_SIZE}/>}
                         message="Search to start a conversation"
                     />
                 )}
 
                 {/* Multi-select Compose */}
                 {isMultiSelectMode && selectedContacts.length > 0 && (
-                    <Box sx={{m: 2, p: 2, bgcolor: 'grey.100', borderRadius: 2}}>
-                        <Typography fontWeight={500} sx={{mb: 1.5}}>
+                    <Paper m={16} p={16} radius="md" bg="var(--mantine-color-gray-1)">
+                        <Text fw={500} mb={12}>
                             Send to {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}
-                        </Typography>
-                        <TextField
-                            fullWidth
-                            multiline
+                        </Text>
+                        <Textarea
                             rows={3}
+                            mb={12}
                             placeholder="Type your message..."
+                            aria-label="Message to selected contacts"
                             value={newMessage}
-                            onChange={(e) => onMessageChange(e.target.value)}
-                            sx={{mb: 1.5}}
+                            onChange={(e) => onMessageChange(e.currentTarget.value)}
                         />
-                        <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
+                        <Group justify="flex-end">
                             <Button
-                                variant="contained"
-                                startIcon={isSending ? <CircularProgress size={16} color="inherit"/> : <SendIcon/>}
+                                leftSection={<Icon lucide={Send} size={16}/>}
+                                loading={isSending}
                                 onClick={onSendMultiMessage}
                                 disabled={!newMessage.trim() || isSending}
                             >
                                 Send
                             </Button>
-                        </Box>
-                    </Box>
+                        </Group>
+                    </Paper>
                 )}
             </Box>
-        </DialogContent>
+        </Box>
     );
 }
 
@@ -1268,46 +1430,45 @@ function ContactListItem({
     const status = 'otherPartyStatus' in contact ? contact.otherPartyStatus : contact.status;
 
     return (
-        <ListItem
+        <Box
+            component="li"
             onClick={onSelect}
-            sx={{
-                cursor: 'pointer',
-                bgcolor: isSelected ? 'action.selected' : 'transparent',
-                '&:hover': {bgcolor: 'action.hover'},
-            }}
+            px={16}
+            py={8}
+            bg={isSelected ? 'var(--mantine-color-gray-1)' : undefined}
+            style={{cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12}}
         >
             {isMultiSelectMode && (
                 <Checkbox
                     checked={isSelected}
+                    aria-label={`Select ${name}`}
                     onChange={onToggleSelection}
                     onClick={(e) => e.stopPropagation()}
-                    sx={SX_MR_1}
                 />
             )}
-            <ListItemAvatar>
-                <Avatar sx={SX_PRIMARY_AVATAR}>
-                    {initials}
-                </Avatar>
-            </ListItemAvatar>
-            <ListItemText
-                primary={
-                    highlightTerm ? (
-                        <span dangerouslySetInnerHTML={{__html: highlightSearchTerm(name, highlightTerm)}}/>
-                    ) : name
-                }
-                secondary={type === OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}
-            />
+            <Avatar color="brand" radius="xl">{initials}</Avatar>
+            <Box style={{flex: 1, minWidth: 0}}>
+                <Text fz="sm" truncate>
+                    {highlightTerm
+                        ? <span dangerouslySetInnerHTML={{__html: highlightSearchTerm(name, highlightTerm)}}/>
+                        : name}
+                </Text>
+                <Text fz="xs" c="dimmed">
+                    {type === OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}
+                </Text>
+            </Box>
             {status && (
                 <Box
-                    sx={{
-                        width: 10,
-                        height: 10,
+                    w={10}
+                    h={10}
+                    style={{
                         borderRadius: '50%',
-                        bgcolor: getStatusColor(status),
+                        background: `var(--mantine-color-${getStatusColor(status)}-filled)`,
+                        flexShrink: 0,
                     }}
                 />
             )}
-        </ListItem>
+        </Box>
     );
 }
 
@@ -1319,22 +1480,11 @@ interface EmptyStateProps {
 
 function EmptyState({icon, message, action}: EmptyStateProps) {
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                p: 5,
-                color: 'text.secondary',
-            }}
-        >
-            <Box sx={{color: 'action.disabled', mb: 2}}>{icon}</Box>
-            <Typography color="text.secondary" sx={{mb: action ? 2 : 0}}>
-                {message}
-            </Typography>
+        <Stack flex={1} align="center" justify="center" gap={16} p={40}>
+            <Box c="dimmed" opacity={0.5}>{icon}</Box>
+            <Text c="dimmed">{message}</Text>
             {action}
-        </Box>
+        </Stack>
     );
 }
 
@@ -1345,27 +1495,16 @@ interface ErrorStateProps {
 
 function ErrorState({message, onRetry}: ErrorStateProps) {
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flex: 1,
-                p: 5,
-            }}
-        >
-            <ErrorOutlineIcon sx={{fontSize: 64, color: 'error.main', mb: 2}}/>
-            <Typography variant="h6" gutterBottom>
-                Unable to load messages
-            </Typography>
-            <Typography color="text.secondary" sx={{mb: 3}}>
-                {message}
-            </Typography>
-            <Button variant="contained" startIcon={<RefreshIcon/>} onClick={onRetry}>
+        <Stack flex={1} align="center" justify="center" gap={16} p={40}>
+            <Box c="red.6">
+                <Icon lucide={CircleAlert} size={64}/>
+            </Box>
+            <Title order={5}>Unable to load messages</Title>
+            <Text c="dimmed">{message}</Text>
+            <Button leftSection={<Icon lucide={RefreshCw} size={16}/>} onClick={onRetry}>
                 Retry
             </Button>
-        </Box>
+        </Stack>
     );
 }
 
@@ -1391,11 +1530,12 @@ function generateInitials(name: string): string {
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
+/** A Mantine palette key — Indicator takes it directly, the dot builds a var from it. */
 function getStatusColor(status: string): string {
     const normalizedStatus = status?.toLowerCase() || '';
-    if (normalizedStatus === 'online' || normalizedStatus === 'active') return sharedColors.success.main;
-    if (normalizedStatus === 'away' || normalizedStatus === 'busy') return sharedColors.warning.main;
-    return accentPalette[400];
+    if (normalizedStatus === 'online' || normalizedStatus === 'active') return 'green';
+    if (normalizedStatus === 'away' || normalizedStatus === 'busy') return 'yellow';
+    return 'gray';
 }
 
 function formatMessageTime(messageTime: string): string {
@@ -1428,6 +1568,11 @@ function formatLastMessageTime(lastMessageTime: string): string {
 
 function formatDateSeparator(messageTime: string): string {
     const time = parseDateFromApi(messageTime);
+    const now = dayjs();
+    if (time.isSame(now, 'day')) return 'Today';
+    if (time.isSame(now.subtract(1, 'day'), 'day')) return 'Yesterday';
+    if (now.diff(time, 'day') < 7) return time.format('dddd');
+    if (time.isSame(now, 'year')) return time.format('MMM D');
     return time.format('MMM D, YYYY');
 }
 
@@ -1435,6 +1580,26 @@ function isSameDay(time1: string, time2: string): boolean {
     const date1 = parseDateFromApi(time1);
     const date2 = parseDateFromApi(time2);
     return date1.isSame(date2, 'day');
+}
+
+// How close to the bottom (in px) still counts as "following" the thread.
+const NEAR_BOTTOM_THRESHOLD_PX = 80;
+
+export function isNearBottom(
+    el: Pick<HTMLElement, 'scrollHeight' | 'scrollTop' | 'clientHeight'>,
+    threshold = NEAR_BOTTOM_THRESHOLD_PX,
+): boolean {
+    return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+}
+
+// Consecutive messages from the same party within this window are grouped
+// into a single visual run (shared timestamp, tighter spacing).
+const MESSAGE_GROUP_WINDOW_MINUTES = 5;
+
+function withinGroupingWindow(earlier: string, later: string): boolean {
+    const a = parseDateFromApi(earlier);
+    const b = parseDateFromApi(later);
+    return Math.abs(b.diff(a, 'minute')) <= MESSAGE_GROUP_WINDOW_MINUTES;
 }
 
 function highlightSearchTerm(text: string, searchTerm: string): string {
@@ -1449,20 +1614,7 @@ function highlightSearchTerm(text: string, searchTerm: string): string {
     const escapedText = escapeHtml(text);
     const escapedSearchTerm = escapeRegex(searchTerm);
     const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-    return escapedText.replace(regex, '<span style="background: rgba(33, 150, 243, 0.2); padding: 0 2px; border-radius: 2px;">$1</span>');
-}
-
-// Add CSS keyframes for spinning animation
-const styleElement = document.createElement('style');
-styleElement.textContent = `
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-`;
-if (!document.querySelector('style[data-messaging-dialog]')) {
-    styleElement.setAttribute('data-messaging-dialog', 'true');
-    document.head.appendChild(styleElement);
+    return escapedText.replace(regex, '<mark>$1</mark>');
 }
 
 export default MessagingDialog;

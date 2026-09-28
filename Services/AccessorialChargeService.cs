@@ -21,7 +21,9 @@ public sealed class AccessorialChargeService(
         var userName = staffInfo?.Text ?? "Unknown";
 
         foreach (var charge in charges)
+        {
             await repository.AddChargeAsync(jobId, charge, userName);
+        }
     }
 
     public async Task<JobAccessorialChargeDto> UpdateChargeAsync(int jobAccessorialChargeId,
@@ -83,7 +85,9 @@ public sealed class AccessorialChargeService(
 
         amount = Math.Max(amount, jac.MinimumCharge ?? 0);
         if (jac.MaximumCharge.HasValue && amount > jac.MaximumCharge.Value)
+        {
             amount = jac.MaximumCharge.Value;
+        }
 
         return amount;
     }
@@ -99,15 +103,22 @@ public sealed class AccessorialChargeService(
             var freeUnit = jac.FreeAllowanceUnitTypeName ?? string.Empty;
             if (string.Equals(inputUnit, "Hour", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(freeUnit, "Minute", StringComparison.OrdinalIgnoreCase))
+            {
                 freeAllowance /= 60m;
+            }
             else if (string.Equals(inputUnit, "Minute", StringComparison.OrdinalIgnoreCase) &&
                      string.Equals(freeUnit, "Hour", StringComparison.OrdinalIgnoreCase))
+            {
                 freeAllowance *= 60m;
+            }
+
             billable = Math.Max(0, billable - freeAllowance);
         }
 
         if (jac.MinimumQuantity.HasValue && billable < jac.MinimumQuantity.Value)
+        {
             billable = jac.MinimumQuantity.Value;
+        }
 
         return billable * jac.ItemCount * (jac.RatePerUnit ?? 0);
     }

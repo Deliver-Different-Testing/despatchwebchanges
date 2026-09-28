@@ -1,20 +1,18 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * AiMarkdownRenderer Component Tests
  *
  * Verifies the Markdown renderer passes content through ReactMarkdown
- * with the correct plugins and custom MUI component overrides.
+ * with the correct plugins and custom component overrides.
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import { screen } from '@testing-library/react';
 import { AiMarkdownRenderer } from './AiMarkdownRenderer';
+import { renderWithMantine } from '../../../__testUtils__';
 
-const theme = createTheme();
 
 const renderWithTheme = (ui: React.ReactElement) =>
-    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    renderWithMantine(ui);
 
 describe('AiMarkdownRenderer', () => {
     it('renders markdown content via ReactMarkdown', () => {

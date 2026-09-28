@@ -1,6 +1,8 @@
-﻿using System.Diagnostics;
+#nullable enable annotations
+using System.Diagnostics;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using Microsoft.EntityFrameworkCore;
@@ -9,19 +11,33 @@ namespace DespatchWeb.EntityClasses;
 
 public partial class DespatchContext
 {
-    /// <summary>
-    /// Recurring Routes — named clusters of zipcodes visited by rostered drivers.
-    /// Table created by app-configurator (database/032-create-routes-and-roster.sql);
-    /// referenced from tucJobBooking.RouteId via the Routes feature.
-    /// </summary>
-    public virtual DbSet<Route> Routes { get; set; }
+    private readonly IScopeProvider? _scopeProvider;
 
-    // Compiled queries
+    private ScopeContext CurrentScope =>
+        _scopeProvider?.Scope ?? ScopeContext.BackgroundContext;
+
+    public bool CurrentBypassFilters =>
+        CurrentScope.BypassFilters
+        || CurrentScope.IsDfAdmin
+        || CurrentScope.IsTenant
+        || CurrentScope.IsInternal;
+
+    public int? CurrentNpAgentId => CurrentScope.NpAgentId;
+    public bool CurrentIsNetworkPartner => CurrentScope.IsNetworkPartner;
+    public bool CurrentIsCustomerScoped => CurrentScope.IsCustomerScoped;
+    public int? CurrentClientId => CurrentScope.ClientId;
+
+    public DespatchContext(DbContextOptions<DespatchContext> options, IScopeProvider scopeProvider)
+        : this(options)
+    {
+        _scopeProvider = scopeProvider;
+    }
+
     private static readonly Func<DespatchContext, int, Task<bool>> IsLiveJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId));
-    
-    
+
+
     private static readonly Func<DespatchContext, int, Task<bool>> IsLivePartnerJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
@@ -30,13 +46,12 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
 
-    // "Outbound" = this tenant sent the job to a partner. The presence of a
-    // JobPartnerDispatch row is the marker — the receiving tenant's mirror row
-    // has PartnerJobGuid but no dispatch row, so it returns false here.
-    private static readonly Func<DespatchContext, int, Task<bool>> IsOutboundPartnerJobCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
-            context.JobPartnerDispatches.Any(d => d.JobId == jobId));
-    
+    private static readonly Func<DespatchContext, int, string, Task<bool>> IsOutboundPartnerJobCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId, string localTenantId) =>
+            context.TucJobs.Any(j => j.UcjbId == jobId
+                                     && j.PartnerPairing != null
+                                     && j.PartnerPairing.OwnerTenantId == localTenantId));
+
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
@@ -177,24 +192,20 @@ public partial class DespatchContext
                 .Count(m => m.UcmmSendToStaffId == staffId && !m.Read)
         );
 
-
     private static readonly Func<DespatchContext, int, Task<TucNoteViewModel>> GetActiveNoteByIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int noteId) =>
             context.TucNotes
-                .AsNoTracking()
                 .Where(x => x.NoteId == noteId)
                 .Select(NoteMappings.ActiveNoteMap)
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, string, Task<bool>> JobNumberExistsAsyncCompiled =
         EF.CompileAsyncQuery((DespatchContext context, string jobNumber) =>
-            context.TucJobs.AsNoTracking().Any(j => j.UcjbNumber == jobNumber));
+            context.TucJobs.Any(j => j.UcjbNumber == jobNumber));
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
 #if DEBUG
-        // Only enable detailed SQL logging when debugger is attached in DEBUG builds
-        // This prevents sensitive query data from leaking to console in production
         if (Debugger.IsAttached)
         {
             optionsBuilder.LogTo(Console.WriteLine,
@@ -205,7 +216,6 @@ public partial class DespatchContext
 #endif
     }
 
-    // Access compiled queries
     public async Task<bool> JobNumberExistsAsync(string jobNumber) =>
         await JobNumberExistsAsyncCompiled(this, jobNumber);
 
@@ -215,7 +225,7 @@ public partial class DespatchContext
     public async Task<IReadOnlyList<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
         await GetActiveNotesByJobIdCompiled(this, jobId).ToListAsync();
 
-    public async Task<int> GetUnreadMessageCountAsync(int staffId, DespatchContext context = null) =>
+    public async Task<int> GetUnreadMessageCountAsync(int staffId, DespatchContext? context) =>
         await GetUnreadMessageCountCompiled(context ?? this, staffId);
 
     public async Task<IReadOnlyList<Suggestion>> GetAllVehicleSizesAsync() =>
@@ -255,50 +265,30 @@ public partial class DespatchContext
         await DoesAddressMatchAirportComplied(this, jobId, isPickupAddress);
 
     public async Task<bool> IsLiveJobAsync(int jobId) => await IsLiveJobCompiled(this, jobId);
-    
+
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
         await IsLivePartnerJobCompiled(this, jobId)
         || await IsArchivedPartnerJobCompiled(this, jobId);
 
-    public async Task<bool> IsOutboundPartnerJobAsync(int jobId) =>
-        await IsOutboundPartnerJobCompiled(this, jobId);
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string? localTenantId) =>
+        !string.IsNullOrEmpty(localTenantId)
+        && await IsOutboundPartnerJobCompiled(this, jobId, localTenantId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
-        // Recurring Routes table (created in app-configurator: 032-create-routes-and-roster.sql).
-        modelBuilder.Entity<Route>(entity =>
-        {
-            entity.HasKey(e => e.RouteId);
-            entity.ToTable("Routes");
-
-            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Area).HasMaxLength(100);
-            entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
-
-            entity.HasOne(d => d.DefaultCourier)
-                .WithMany()
-                .HasForeignKey(d => d.DefaultCourierId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasIndex(e => new { e.Active, e.Name });
-        });
-
-        // Wire tucJobBooking.RouteId → Routes.RouteId (column added by
-        // dbmigrationsv2/20260519104500_AddRouteIdToTucJobBookingForRecurringRoutes.sql).
         modelBuilder.Entity<TucJobBooking>(entity =>
         {
             entity.HasOne(d => d.Route)
                 .WithMany()
                 .HasForeignKey(d => d.RouteId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasQueryFilter(j =>
+                CurrentBypassFilters
+                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
+                || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcbkClientId == CurrentClientId));
         });
 
-        // TblJob is a keyless view - can only configure relationships where TblJob is dependent
-        // Navigation properties for Nationwide, PricingBreakdowns, Parent/Children require
-        // manual subqueries in LINQ since keyless entities can't be principals
         modelBuilder.Entity<TblJob>(entity =>
         {
             entity.HasOne(d => d.Client)
@@ -334,7 +324,6 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.ToSuburbId);
         });
 
-        // Tuc Job
         modelBuilder.Entity<TucJob>(entity =>
         {
             entity.HasOne(d => d.Parent)
@@ -359,6 +348,11 @@ public partial class DespatchContext
                 .HasForeignKey<TucJobAddressDeatil>(ad => ad.JobId)
                 .HasPrincipalKey<TucJob>(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasQueryFilter(j =>
+                CurrentBypassFilters
+                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
+                || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId));
         });
 
         modelBuilder.Entity<TblBulkJob>(entity =>
@@ -373,12 +367,15 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.LoggedInContactId)
                 .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasQueryFilter(j =>
+                CurrentBypassFilters
+                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
+                || (CurrentIsCustomerScoped && CurrentClientId != null && j.ClientId == CurrentClientId));
         });
 
-        // Tuc Job Archive 
         modelBuilder.Entity<TucJobArchive>(entity =>
         {
-            // Configure foreign key relationships
             entity.HasOne(d => d.UcjbClient)
                 .WithMany()
                 .HasForeignKey(d => d.UcjbClientId)
@@ -509,7 +506,25 @@ public partial class DespatchContext
                 .HasForeignKey(i => i.JobId)
                 .HasPrincipalKey(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.UcjbDisp)
+                .WithMany()
+                .HasForeignKey(d => d.UcjbDispId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasQueryFilter(j =>
+                CurrentBypassFilters
+                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
+                || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId));
         });
+
+        modelBuilder.Entity<TucCourier>().HasQueryFilter(c =>
+            CurrentBypassFilters
+            || (CurrentIsNetworkPartner && CurrentNpAgentId != null && c.NpAgentId == CurrentNpAgentId));
+
+        modelBuilder.Entity<TucNote>().HasQueryFilter(n =>
+            CurrentBypassFilters
+            || (CurrentIsNetworkPartner && CurrentNpAgentId != null && n.NpAgentId == CurrentNpAgentId));
 
         modelBuilder.Entity<TucNoteArchive>(entity =>
         {
@@ -527,9 +542,12 @@ public partial class DespatchContext
                 .WithMany()
                 .HasForeignKey(n => n.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasQueryFilter(n =>
+                CurrentBypassFilters
+                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && n.NpAgentId == CurrentNpAgentId));
         });
 
-        // JobDeliveryJourneyArchive - navigation properties to match JobDeliveryJourney
         modelBuilder.Entity<JobDeliveryJourneyArchive>(entity =>
         {
             entity.HasOne(d => d.Courier).WithMany()

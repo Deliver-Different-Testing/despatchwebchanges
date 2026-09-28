@@ -6,13 +6,9 @@
 
 import React from 'react';
 import { render, RenderOptions, screen } from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-
-// Default MUI theme for tests
-export const testTheme = createTheme();
+import { MantineProvider, type MantineThemeOverride } from '@mantine/core';
+import { dfrntTheme, dfrntCssVariablesResolver } from '../theme/dfrntMantineTheme';
 
 /**
  * Create a QueryClient configured for testing (no retries, immediate GC)
@@ -35,7 +31,6 @@ export function createTestQueryClient(): QueryClient {
 interface WrapperOptions {
     withTheme?: boolean;
     withQueryClient?: boolean;
-    withLocalization?: boolean;
     queryClient?: QueryClient;
 }
 
@@ -46,23 +41,17 @@ export function createWrapper(options: WrapperOptions = {}) {
     const {
         withTheme = true,
         withQueryClient = false,
-        withLocalization = false,
         queryClient,
     } = options;
+
+    // One client per wrapper, not one per render — a fresh client on every render drops
+    // the cache between re-renders, which is exactly what renderHook assertions read.
+    const client = withQueryClient ? queryClient ?? createTestQueryClient() : undefined;
 
     const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         let result = <>{children}</>;
 
-        if (withLocalization) {
-            result = (
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    {result}
-                </LocalizationProvider>
-            );
-        }
-
-        if (withQueryClient) {
-            const client = queryClient ?? createTestQueryClient();
+        if (client) {
             result = (
                 <QueryClientProvider client={client}>
                     {result}
@@ -72,9 +61,9 @@ export function createWrapper(options: WrapperOptions = {}) {
 
         if (withTheme) {
             result = (
-                <ThemeProvider theme={testTheme}>
+                <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
                     {result}
-                </ThemeProvider>
+                </MantineProvider>
             );
         }
 
@@ -85,7 +74,18 @@ export function createWrapper(options: WrapperOptions = {}) {
 }
 
 /**
- * Render with MUI ThemeProvider
+ * Wrapper with only a QueryClient — what a `renderHook` on a data hook needs.
+ */
+export function createQueryWrapper(queryClient?: QueryClient) {
+    return createWrapper({withTheme: false, withQueryClient: true, queryClient});
+}
+
+/**
+ * Render inside the app's theme provider.
+ *
+ * Named for the MUI `ThemeProvider` it used to mount; it is the Mantine provider
+ * now, and equivalent to `renderWithMantine`. Kept because ~75 test files call
+ * it — renaming them is a cosmetic sweep, not a correctness one.
  */
 export function renderWithTheme(ui: React.ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
     return render(ui, {
@@ -95,7 +95,8 @@ export function renderWithTheme(ui: React.ReactElement, options?: Omit<RenderOpt
 }
 
 /**
- * Render with ThemeProvider and QueryClientProvider
+ * Render inside the app's theme provider and a QueryClientProvider. See
+ * `renderWithTheme` on the name.
  */
 export function renderWithProviders(
     ui: React.ReactElement,
@@ -109,7 +110,7 @@ export function renderWithProviders(
 }
 
 /**
- * Render with all providers (Theme, QueryClient, Localization)
+ * Render with all providers (Theme, QueryClient)
  */
 export function renderWithAllProviders(
     ui: React.ReactElement,
@@ -120,11 +121,77 @@ export function renderWithAllProviders(
         wrapper: createWrapper({
             withTheme: true,
             withQueryClient: true,
-            withLocalization: true,
             queryClient,
         }),
         ...renderOptions,
     });
+}
+
+/**
+ * The Mantine provider as a component, for tests that build their own wrapper
+ * element (rather than calling `renderWithMantine`) — typically because they
+ * also need `rerender` with the wrapper inline. The drop-in replacement for
+ * the app's theme provider.
+ */
+export const MantineTestProvider: React.FC<{children: React.ReactNode}> = ({children}) => (
+    <MantineProvider theme={dfrntTheme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+        {children}
+    </MantineProvider>
+);
+
+/**
+ * Render inside the DFRNT Mantine theme provider. The Mantine counterpart to
+ * `renderWithTheme` — use it for components migrated off MUI. `forceColorScheme`
+ * is unnecessary in tests (light is the default), so this stays minimal.
+ *
+ * `env` defaults to `'test'`, which strips Mantine's transitions *and its portals*
+ * — `OptionalPortal` renders inline in that env. Pass `env: 'default'` when the
+ * behaviour under test depends on real portalling (e.g. whether a nested dropdown
+ * lands outside its parent popover and trips click-outside).
+ */
+export function renderWithMantine(
+    ui: React.ReactElement,
+    options?: Omit<RenderOptions, 'wrapper'> & {
+        theme?: MantineThemeOverride;
+        env?: 'default' | 'test';
+        /** Supply a specific client; implies the provider. */
+        queryClient?: QueryClient;
+        /** Wrap in a fresh throwaway client. */
+        withQueryClient?: boolean;
+    }
+) {
+    const {
+        theme = dfrntTheme,
+        env = 'test',
+        queryClient,
+        withQueryClient = false,
+        ...renderOptions
+    } = options ?? {};
+    const client = withQueryClient || queryClient ? (queryClient ?? createTestQueryClient()) : undefined;
+    const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
+        <MantineProvider theme={theme} cssVariablesResolver={dfrntCssVariablesResolver} env={env}>
+            {client ? <QueryClientProvider client={client}>{children}</QueryClientProvider> : children}
+        </MantineProvider>
+    );
+    return render(ui, {wrapper: Wrapper, ...renderOptions});
+}
+
+/**
+ * Render inside the Mantine theme + a fresh test QueryClient — the Mantine
+ * counterpart to `renderWithProviders`.
+ */
+export function renderWithMantineProviders(
+    ui: React.ReactElement,
+    options?: Omit<RenderOptions, 'wrapper'> & { queryClient?: QueryClient; theme?: MantineThemeOverride }
+) {
+    const { queryClient, theme = dfrntTheme, ...renderOptions } = options ?? {};
+    const client = queryClient ?? createTestQueryClient();
+    const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
+        <MantineProvider theme={theme} cssVariablesResolver={dfrntCssVariablesResolver} env="test">
+            <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        </MantineProvider>
+    );
+    return render(ui, {wrapper: Wrapper, ...renderOptions});
 }
 
 /**
@@ -160,25 +227,6 @@ export async function expectErrorPropagation<T>(
  */
 export function createProps<T extends object>(defaults: T, overrides?: Partial<T>): T {
     return { ...defaults, ...overrides };
-}
-
-/**
- * Common test for dialog open/close state
- */
-export function describeDialogOpenClose(
-    renderDialog: (open: boolean) => ReturnType<typeof render>,
-) {
-    describe('Dialog Open/Close', () => {
-        it('renders nothing when not open', () => {
-            renderDialog(false);
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        });
-
-        it('renders when open', () => {
-            renderDialog(true);
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
-        });
-    });
 }
 
 /**

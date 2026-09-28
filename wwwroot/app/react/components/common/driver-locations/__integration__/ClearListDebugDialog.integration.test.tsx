@@ -2,16 +2,16 @@
 
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../../../__testUtils__/msw/setupIntegration';
 import { mockClearListDebug } from '../../../../__testUtils__/msw/handlers';
 import { ClearListDebugButton } from '../ClearListDebugDialog';
-import { renderWithTheme } from '../../../../__testUtils__';
+import { renderWithMantine as renderWithTheme } from '../../../../__testUtils__';
+import { setupUser } from '../../../../__testUtils__/setupUser';
 
 describe('ClearListDebugDialog integration', () => {
     it('fetches and renders debug data via apiClient through MSW', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         renderWithTheme(<ClearListDebugButton courierId={42} />);
 
         await user.click(screen.getByRole('button'));
@@ -24,7 +24,7 @@ describe('ClearListDebugDialog integration', () => {
     });
 
     it('passes courierId as a query parameter', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
         let capturedUrl = '';
 
         server.use(
@@ -42,7 +42,7 @@ describe('ClearListDebugDialog integration', () => {
     });
 
     it('renders the courierId from the response', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
 
         server.use(
             http.get('*/courier/ClearListDebug', () => {
@@ -57,7 +57,7 @@ describe('ClearListDebugDialog integration', () => {
     });
 
     it('shows error alert on server error', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
 
         server.use(
             http.get('*/courier/ClearListDebug', () => {
@@ -75,7 +75,7 @@ describe('ClearListDebugDialog integration', () => {
     });
 
     it('returns 400 when courierId is missing from the default handler', async () => {
-        const user = userEvent.setup();
+        const user = setupUser();
 
         server.use(
             http.get('*/courier/ClearListDebug', ({ request }) => {

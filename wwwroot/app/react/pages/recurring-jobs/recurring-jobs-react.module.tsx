@@ -6,100 +6,52 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {RecurringJobsPage} from './RecurringJobsPage';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
+import {islandTree} from '../../theme/DfrntMantineProvider';
 import {MountRecurringJobsConfig} from "../../interfaces";
 import {ErrorBoundary} from '../../components/common/error-boundary';
-
-let recurringJobsRoot: Root | null = null;
-let recurringJobsContainer: HTMLElement | null = null;
+import {createPageHost} from '../../utils/reactPageHost';
 
 // Store config for refresh functionality
 let refreshCallback: (() => void) | null = null;
 
+// The page is still MUI; Mantine wraps it so the already-migrated
+// DispatchDialog that JobDetails opens inside it finds a provider.
+const host = createPageHost<MountRecurringJobsConfig>({
+    logName: 'RecurringJobsReact',
+    render: (config) => islandTree(
+        <ErrorBoundary>
+            <RecurringJobsPage
+                showToast={config.showToast}
+                isUsCustomer={config.isUsCustomer}
+                onAddStop={config.onAddStop}
+                setRefreshCallback={(cb) => {
+                    refreshCallback = cb;
+                }}
+            />
+        </ErrorBoundary>
+    ),
+});
+
 /**
  * Mounts the recurring jobs page component into a container element
  */
-export function mountRecurringJobsPage(
-    containerId: string,
-    config: MountRecurringJobsConfig
-): void {
-    console.log('[RecurringJobsReact] Mounting to container:', containerId);
-
-    // If there's an existing root for a different container, unmount it first
-    if (recurringJobsRoot && recurringJobsContainer && recurringJobsContainer.id !== containerId) {
-        console.log('[RecurringJobsReact] Unmounting previous page from:', recurringJobsContainer.id);
-        recurringJobsRoot.unmount();
-        recurringJobsRoot = null;
-        recurringJobsContainer = null;
-    }
-
-    // Find the container
-    let container = document.getElementById(containerId);
-    if (!container) {
-        console.error('[RecurringJobsReact] Container not found:', containerId);
-        container = document.createElement('div');
-        container.id = containerId;
-        document.body.appendChild(container);
-        console.log('[RecurringJobsReact] Created fallback container');
-    }
-
-    recurringJobsContainer = container;
-
-    // Create new root if needed
-    if (!recurringJobsRoot) {
-        console.log('[RecurringJobsReact] Creating new React root');
-        recurringJobsRoot = createRoot(container);
-    }
-
-    const currentTheme = getTheme();
-
-    recurringJobsRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <ErrorBoundary>
-                    <RecurringJobsPage
-                        showToast={config.showToast}
-                        isUsCustomer={config.isUsCustomer}
-                        onAddStop={config.onAddStop}
-                        setRefreshCallback={(cb) => {
-                            refreshCallback = cb;
-                        }}
-                    />
-                </ErrorBoundary>
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
-
-    console.log('[RecurringJobsReact] Recurring jobs page rendered');
+export function mountRecurringJobsPage(containerId: string, config: MountRecurringJobsConfig): void {
+    host.mount(containerId, config);
 }
 
 /**
  * Triggers a data refresh in the React component
  */
 export function refreshRecurringJobs(): void {
-    if (refreshCallback) {
-        refreshCallback();
-    }
+    refreshCallback?.();
 }
 
 /**
  * Unmounts the recurring jobs page
  */
 export function unmountRecurringJobsPage(): void {
-    console.log('[RecurringJobsReact] Unmounting recurring jobs page');
-
-    if (recurringJobsRoot) {
-        recurringJobsRoot.unmount();
-        recurringJobsRoot = null;
-    }
-
-    recurringJobsContainer = null;
+    host.unmount();
 }
 
 // Expose globally for AngularJS access (typed via global.d.ts)

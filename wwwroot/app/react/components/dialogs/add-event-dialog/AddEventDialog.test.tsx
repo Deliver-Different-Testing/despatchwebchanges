@@ -1,28 +1,13 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * AddEventDialog Component Tests
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {screen, waitFor} from '@testing-library/react';
 import {fireEvent} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
-import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {AddEventDialog, AddEventJob, EventType} from './AddEventDialog';
-
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                {ui}
-            </LocalizationProvider>
-        </ThemeProvider>
-    );
-};
+import {renderWithMantine} from '../../../__testUtils__';
 
 const mockJob: AddEventJob = {
     id: 123,
@@ -50,11 +35,14 @@ const createMockProps = (overrides = {}) => ({
     ...overrides,
 });
 
+/** Never resolves, so the loading state is guaranteed for as long as the test needs it. */
+const neverResolves = () => jest.fn().mockImplementation(() => new Promise(() => {}));
+
 describe('AddEventDialog', () => {
     describe('Rendering', () => {
         it('renders dialog with title, job number, client field, and action buttons when open', async () => {
             const props = createMockProps();
-            renderWithTheme(<AddEventDialog {...props} />);
+            renderWithMantine(<AddEventDialog {...props} />);
 
             expect(await screen.findByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Add Task')).toBeInTheDocument();
@@ -66,92 +54,68 @@ describe('AddEventDialog', () => {
 
         it('does not render dialog when open is false', () => {
             const props = createMockProps({ open: false });
-            renderWithTheme(<AddEventDialog {...props} />);
+            renderWithMantine(<AddEventDialog {...props} />);
 
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
         it('returns null when job is null', () => {
             const props = createMockProps({ job: null });
-            const { container } = renderWithTheme(<AddEventDialog {...props} />);
+            renderWithMantine(<AddEventDialog {...props} />);
 
-            expect(container.firstChild).toBeNull();
+            // The provider injects its own <style> nodes, so absence is asserted on the
+            // dialog itself rather than on an empty container.
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
     });
 
     describe('Loading Event Types', () => {
-        it('shows loading state while fetching event types after dialog opens', async () => {
-            const props = createMockProps({
-                open: false,
-                onLoadEventTypes: jest.fn().mockImplementation(
-                    () => new Promise(() => {}) // Never resolves — loading state is guaranteed
-                ),
-            });
-            const { rerender } = renderWithTheme(<AddEventDialog {...props} />);
+        // Re-rendered *without* the provider wrapper: re-wrapping remounts the subtree,
+        // which would re-run the open effect.
+        const openDialog = (props: ReturnType<typeof createMockProps>) => {
+            const { rerender } = renderWithMantine(<AddEventDialog {...props} />);
+            rerender(<AddEventDialog {...props} open={true} />);
+        };
 
-            // Open the dialog
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <AddEventDialog {...props} open={true} />
-                    </LocalizationProvider>
-                </ThemeProvider>
-            );
+        it('shows loading state while fetching event types after dialog opens', () => {
+            openDialog(createMockProps({ open: false, onLoadEventTypes: neverResolves() }));
 
-            expect(screen.getByRole('progressbar')).toBeInTheDocument();
+            expect(screen.getByLabelText('Loading task types')).toBeInTheDocument();
         });
 
         it('calls onLoadEventTypes when dialog opens', async () => {
             const props = createMockProps({ open: false });
-            const { rerender } = renderWithTheme(<AddEventDialog {...props} />);
-
-            // Open the dialog
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <AddEventDialog {...props} open={true} />
-                    </LocalizationProvider>
-                </ThemeProvider>
-            );
+            openDialog(props);
 
             await waitFor(() => {
                 expect(props.onLoadEventTypes).toHaveBeenCalled();
             });
         });
+
+        it('renders task type select after loading', async () => {
+            const props = createMockProps({ open: false });
+            openDialog(props);
+
+            expect(await screen.findByRole('combobox', {name: /Task Type/})).toBeInTheDocument();
+        });
     });
 
     describe('Form Validation', () => {
-        it('disables save button while loading', async () => {
-            const props = createMockProps({
-                open: false,
-                onLoadEventTypes: jest.fn().mockImplementation(
-                    () => new Promise(() => {}) // Never resolves — loading state is guaranteed
-                ),
-            });
-            const { rerender } = renderWithTheme(<AddEventDialog {...props} />);
+        it('disables save button while loading', () => {
+            const props = createMockProps({ open: false, onLoadEventTypes: neverResolves() });
+            const { rerender } = renderWithMantine(<AddEventDialog {...props} />);
+            rerender(<AddEventDialog {...props} open={true} />);
 
-            // Open the dialog
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <AddEventDialog {...props} open={true} />
-                    </LocalizationProvider>
-                </ThemeProvider>
-            );
-
-            const saveButton = screen.getByRole('button', { name: /save/i });
-            expect(saveButton).toBeDisabled();
+            expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
         });
     });
 
     describe('Cancel and Close', () => {
         it('calls onClose when Cancel button is clicked', async () => {
             const props = createMockProps();
-            renderWithTheme(<AddEventDialog {...props} />);
+            renderWithMantine(<AddEventDialog {...props} />);
 
-            expect(await screen.findByRole('button', {name: /cancel/i})).toBeInTheDocument();
-
-            fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+            fireEvent.click(await screen.findByRole('button', {name: /cancel/i}));
 
             expect(props.onClose).toHaveBeenCalled();
         });
@@ -160,30 +124,12 @@ describe('AddEventDialog', () => {
     describe('Disabled Fields', () => {
         it('has job number and client fields disabled', async () => {
             const props = createMockProps();
-            renderWithTheme(<AddEventDialog {...props} />);
+            renderWithMantine(<AddEventDialog {...props} />);
 
             await waitFor(() => {
                 expect(screen.getByDisplayValue('JOB-001')).toBeDisabled();
                 expect(screen.getByDisplayValue('Test Client')).toBeDisabled();
             });
-        });
-    });
-
-    describe('Event Type Selection', () => {
-        it('renders task type select after loading', async () => {
-            const props = createMockProps({ open: false });
-            const { rerender } = renderWithTheme(<AddEventDialog {...props} />);
-
-            // Open the dialog
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <AddEventDialog {...props} open={true} />
-                    </LocalizationProvider>
-                </ThemeProvider>
-            );
-
-            expect(await screen.findByRole('combobox')).toBeInTheDocument();
         });
     });
 });

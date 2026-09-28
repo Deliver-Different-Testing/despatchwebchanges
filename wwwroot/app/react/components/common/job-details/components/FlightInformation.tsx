@@ -3,23 +3,18 @@
  */
 
 import React, {useState, useCallback} from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import FlightIcon from '@mui/icons-material/Flight';
-import CellTowerIcon from '@mui/icons-material/CellTower';
-import ScheduleIcon from '@mui/icons-material/Schedule';
+import {Badge, Box, Button, Group, Paper, Text} from '@mantine/core';
+import {RadioTower} from 'lucide-react';
+import {IconClock, IconPlane} from '@tabler/icons-react';
 import type {IAssignedFlight, IFlightSegment} from '../JobDetails.types';
 import type {Dayjs} from 'dayjs';
+import {Icon} from '../../icon/Icon';
 import {
-    cardContainerSx,
-    cardNotesContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
+    cardContainerProps,
+    cardNotesContainerStyle,
+    sectionBorderStyle,
 } from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 import nationwideApi from '../../../../services/nationwideApi';
 
 interface FlightInformationProps {
@@ -44,103 +39,89 @@ function getConnectionTime(first: IFlightSegment, second: IFlightSegment): strin
     return `${mins}m`;
 }
 
+/** The airport code — the one brand-coloured token in a segment row. */
+const airportCodeStyle: React.CSSProperties = {
+    fontWeight: 700,
+    fontSize: '1rem',
+    color: 'var(--mantine-primary-color-filled)',
+};
+
+/** Half of the dashed route line either side of the plane glyph. */
+const routeRuleStyle: React.CSSProperties = {
+    flex: 1,
+    borderBottomWidth: 2,
+    borderBottomStyle: 'dashed',
+    borderBottomColor: 'var(--mantine-color-default-border)',
+};
+
+const terminalBadgeStyle: React.CSSProperties = {marginTop: 4, height: 20, fontSize: '0.625rem'};
+
 function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
     const elapsed = formatElapsedTime(segment.elapsedTime);
 
     return (
-        <Box sx={{px: 2, py: 1.5}}>
+        <Box px="md" py="sm">
             {/* Header: flight number + airline + elapsed time */}
-            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1}}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                    <Typography variant="body2" sx={{fontWeight: 700, fontSize: '0.875rem'}}>
-                        {segment.flightNumber}
-                    </Typography>
+            <Group justify="space-between" mb="xs">
+                <Group gap="xs">
+                    <Text fz="sm" fw={700}>{segment.flightNumber}</Text>
                     {segment.airlineName && (
-                        <Typography variant="caption" color="text.secondary">
-                            {segment.airlineName}
-                        </Typography>
+                        <Text fz="xs" c="dimmed">{segment.airlineName}</Text>
                     )}
-                </Box>
+                </Group>
                 {elapsed && (
-                    <Chip size="small" icon={<ScheduleIcon />} label={elapsed} variant="outlined" />
+                    <Badge size="sm" variant="default" tt="none" leftSection={<Icon tabler={IconClock} size={12}/>}>
+                        {elapsed}
+                    </Badge>
                 )}
-            </Box>
-
+            </Group>
             {/* Route: departure ··· ✈ ··· arrival */}
-            <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1}}>
+            <Group align="flex-start" gap="xs" wrap="nowrap">
                 {/* Departure */}
-                <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="body2" sx={{fontWeight: 700, color: 'primary.main', fontSize: '1rem'}}>
-                        {segment.departureAirportFsCode}
-                    </Typography>
+                <Box style={{flex: 1, minWidth: 0}}>
+                    <Text style={airportCodeStyle}>{segment.departureAirportFsCode}</Text>
                     {segment.departureAirportCity && (
-                        <Typography variant="caption" color="text.secondary" sx={{display: 'block'}}>
-                            {segment.departureAirportCity}
-                        </Typography>
+                        <Text fz="xs" c="dimmed">{segment.departureAirportCity}</Text>
                     )}
-                    <Typography variant="caption" sx={{display: 'block', fontWeight: 500}}>
+                    <Text fz="xs" fw={500}>
                         {segment._departureTimeStr} {segment._departureTimeZoneStr}
-                    </Typography>
+                    </Text>
                     {segment.departureTerminal && (
-                        <Chip
-                            size="small"
-                            label={`Terminal ${segment.departureTerminal}`}
-                            variant="outlined"
-                            sx={{mt: 0.5, height: 20, fontSize: '0.625rem'}}
-                        />
+                        <Badge size="sm" variant="default" tt="none" style={terminalBadgeStyle}>
+                            {`Terminal ${segment.departureTerminal}`}
+                        </Badge>
                     )}
                 </Box>
 
                 {/* Center: dashed line with flight icon */}
-                <Box sx={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    pt: 0.5,
-                    minWidth: 60,
-                }}>
-                    <Box sx={{
-                        flex: 1,
-                        borderBottom: '2px dashed',
-                        borderColor: 'divider',
-                    }} />
-                    <FlightIcon sx={{
-                        fontSize: 18,
-                        color: 'primary.main',
-                        transform: 'rotate(90deg)',
-                        mx: 0.5,
-                    }} />
-                    <Box sx={{
-                        flex: 1,
-                        borderBottom: '2px dashed',
-                        borderColor: 'divider',
-                    }} />
-                </Box>
+                <Group gap={4} wrap="nowrap" pt={4} style={{flex: 1, minWidth: 60}}>
+                    <Box style={routeRuleStyle}/>
+                    <Icon
+                        tabler={IconPlane}
+                        size={18}
+                        color="var(--mantine-primary-color-filled)"
+                        style={{transform: 'rotate(90deg)', flexShrink: 0}}
+                        aria-hidden
+                    />
+                    <Box style={routeRuleStyle}/>
+                </Group>
 
                 {/* Arrival */}
-                <Box sx={{flex: 1, minWidth: 0, textAlign: 'right'}}>
-                    <Typography variant="body2" sx={{fontWeight: 700, color: 'primary.main', fontSize: '1rem'}}>
-                        {segment.arrivalAirportFsCode}
-                    </Typography>
+                <Box style={{flex: 1, minWidth: 0, textAlign: 'right'}}>
+                    <Text style={airportCodeStyle}>{segment.arrivalAirportFsCode}</Text>
                     {segment.arrivalAirportCity && (
-                        <Typography variant="caption" color="text.secondary" sx={{display: 'block'}}>
-                            {segment.arrivalAirportCity}
-                        </Typography>
+                        <Text fz="xs" c="dimmed">{segment.arrivalAirportCity}</Text>
                     )}
-                    <Typography variant="caption" sx={{display: 'block', fontWeight: 500}}>
+                    <Text fz="xs" fw={500}>
                         {segment._arrivalTimeStr} {segment._arrivalTimeZoneStr}
-                    </Typography>
+                    </Text>
                     {segment.arrivalTerminal && (
-                        <Chip
-                            size="small"
-                            label={`Terminal ${segment.arrivalTerminal}`}
-                            variant="outlined"
-                            sx={{mt: 0.5, height: 20, fontSize: '0.625rem'}}
-                        />
+                        <Badge size="sm" variant="default" tt="none" style={terminalBadgeStyle}>
+                            {`Terminal ${segment.arrivalTerminal}`}
+                        </Badge>
                     )}
                 </Box>
-            </Box>
+            </Group>
         </Box>
     );
 }
@@ -162,57 +143,64 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
     if (!segments?.length) return null;
 
     return (
-        <Box sx={cardContainerSx}>
-            <Box sx={sectionToolbarSx}>
-                <FlightIcon sx={sectionToolbarIconSx} />
-                <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                    Flight Information
-                </Typography>
-                <Box sx={{ml: 'auto', display: 'flex', alignItems: 'center', gap: 1}}>
-                    {webhookStatus === 'active' && (
-                        <Chip size="small" label="Webhooks Active" color="success" />
-                    )}
-                    {webhookStatus === 'inactive' && (
-                        <Chip size="small" label="Webhooks Inactive" color="error" />
-                    )}
-                    <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={webhookStatus === 'loading' ? <CircularProgress size={14} /> : <CellTowerIcon sx={{fontSize: 16}} />}
-                        onClick={checkWebhookStatus}
-                        disabled={webhookStatus === 'loading'}
-                        sx={{fontSize: '0.6875rem', py: 0.25, px: 1, minWidth: 0}}
-                    >
-                        {webhookStatus === 'loading' ? 'Checking...' : 'Check Webhooks'}
-                    </Button>
-                </Box>
-            </Box>
+        <Paper {...cardContainerProps}>
+            <SectionHeader
+                tabler={IconPlane}
+                title="Flight Information"
+                subtitle={segments.length > 1 ? `${segments.length} segments` : undefined}
+                endAction={
+                    <>
+                        {webhookStatus === 'active' && (
+                            <Badge size="sm" color="green" tt="none">Webhooks Active</Badge>
+                        )}
+                        {webhookStatus === 'inactive' && (
+                            <Badge size="sm" color="red" tt="none">Webhooks Inactive</Badge>
+                        )}
+                        <Button
+                            size="compact-sm"
+                            variant="default"
+                            leftSection={<Icon lucide={RadioTower} size={16}/>}
+                            onClick={checkWebhookStatus}
+                            loading={webhookStatus === 'loading'}
+                            style={{fontSize: '0.75rem'}}
+                        >
+                            {webhookStatus === 'loading' ? 'Checking...' : 'Check Webhooks'}
+                        </Button>
+                    </>
+                }
+            />
             {segments.map((segment, index) => (
                 <React.Fragment key={index}>
-                    <FlightSegmentRow segment={segment} />
+                    <FlightSegmentRow segment={segment}/>
                     {index < segments.length - 1 && (
-                        <Box sx={{display: 'flex', justifyContent: 'center', py: 0.5, borderTop: 1, borderBottom: 1, borderColor: 'divider'}}>
-                            <Chip
-                                size="small"
-                                icon={<ScheduleIcon />}
-                                label={`${getConnectionTime(segment, segments[index + 1])} connection`}
-                                variant="outlined"
-                                color="warning"
-                            />
-                        </Box>
+                        <Group
+                            justify="center"
+                            py={4}
+                            style={{
+                                ...sectionBorderStyle,
+                                borderBottomWidth: 1,
+                                borderBottomStyle: 'solid',
+                                borderBottomColor: 'var(--mantine-color-default-border)',
+                            }}
+                        >
+                            <Badge
+                                size="sm"
+                                color="orange"
+                                tt="none"
+                                leftSection={<Icon tabler={IconClock} size={12}/>}
+                            >
+                                {`${getConnectionTime(segment, segments[index + 1])} connection`}
+                            </Badge>
+                        </Group>
                     )}
                 </React.Fragment>
             ))}
             {flight.notes && (
-                <Box sx={cardNotesContainerSx}>
-                    <Typography variant="caption" color="text.secondary" sx={{fontWeight: 500}}>
-                        Notes:
-                    </Typography>
-                    <Typography variant="body2">
-                        {flight.notes}
-                    </Typography>
+                <Box style={cardNotesContainerStyle}>
+                    <Text fz="xs" c="dimmed" fw={500}>Notes:</Text>
+                    <Text fz="sm">{flight.notes}</Text>
                 </Box>
             )}
-        </Box>
+        </Paper>
     );
 });

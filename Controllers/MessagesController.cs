@@ -22,8 +22,8 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
             Log.Error(e, "Error getting unread message count: {Error}", e.Message);
             return StatusCode(500, e.Message);
         }
-    }    
-    
+    }
+
     public async Task<IActionResult> GetRecentList()
     {
         try
@@ -71,9 +71,10 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
     {
         try
         {
-            // Validate that exactly one recipient is specified
             if ((request.SendToCourierId.HasValue ? 1 : 0) + (request.SendToStaffId.HasValue ? 1 : 0) != 1)
+            {
                 return BadRequest("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)");
+            }
 
             await messageRepository.SendMessageAsync(request);
             return Ok();
@@ -84,15 +85,18 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
             return StatusCode(500, e.Message);
         }
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> SendMultiMessage([FromBody] SendMultipleMessageRequest request)
     {
         try
         {
-          if(request.SendToCourierIds.Count == 0 && request.SendToStaffIds.Count == 0) return BadRequest("Must specify at least one recipient (either SendToCourierIds or SendToStaffIds)");
+          if(request.SendToCourierIds.Count == 0 && request.SendToStaffIds.Count == 0)
+          {
+              return BadRequest("Must specify at least one recipient (either SendToCourierIds or SendToStaffIds)");
+          }
 
-            await messageRepository.SendMultipleMessagesAsync(request);
+          await messageRepository.SendMultipleMessagesAsync(request);
             return Ok();
         }
         catch (Exception e)
@@ -107,7 +111,10 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
     {
         try
         {
-            if (otherPartyId <= 0) return BadRequest("Invalid otherPartyId");
+            if (otherPartyId <= 0)
+            {
+                return BadRequest("Invalid otherPartyId");
+            }
 
             await messageRepository.MarkMessagesAsReadAsync(otherPartyId, otherPartyType);
             return Ok();
@@ -154,7 +161,10 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
     {
         try
         {
-            if (responseId <= 0) return BadRequest("Invalid otherPartyId");
+            if (responseId <= 0)
+            {
+                return BadRequest("Invalid otherPartyId");
+            }
 
             await messageRepository.DeleteQuickResponseAsync(responseId);
             return Ok();
@@ -170,7 +180,10 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
     {
         try
         {
-            if (string.IsNullOrEmpty(searchTerm)) return Ok();
+            if (string.IsNullOrEmpty(searchTerm))
+            {
+                return Ok();
+            }
 
             var results = await messageRepository.GetNewMessageContactOptionsAsync(searchTerm);
             return Json(results);

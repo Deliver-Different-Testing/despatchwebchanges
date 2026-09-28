@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for the overview-react module (mount/unmount/refresh lifecycle).
  *
@@ -28,9 +27,6 @@ jest.mock('./OverviewPage', () => ({
     OverviewPage: () => null,
 }));
 
-jest.mock('../../theme/muiTheme', () => ({
-    getTheme: jest.fn(() => ({})),
-}));
 
 jest.mock('../../query', () => ({
     ReactQueryProvider: ({children}: {children: any}) => children,

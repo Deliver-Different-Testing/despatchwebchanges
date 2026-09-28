@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * ReactQueryProvider Component Tests
  */

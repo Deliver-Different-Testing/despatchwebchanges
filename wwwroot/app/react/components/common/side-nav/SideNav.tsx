@@ -1,46 +1,88 @@
 /**
  * React Side Nav Component
  *
- * A modern replacement for the AngularJS side-nav component using MUI Drawer.
+ * A modern replacement for the AngularJS side-nav component using a Mantine Drawer.
  */
 
 import React, {useMemo, useCallback} from 'react';
-import {alpha} from '@mui/material/styles';
-import Drawer from '@mui/material/Drawer';
-import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Typography from '@mui/material/Typography';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import TaskAltIcon from '@mui/icons-material/TaskAlt';
-import SearchIcon from '@mui/icons-material/Search';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import MapIcon from '@mui/icons-material/Map';
-import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
-import FavoriteIcon from '@mui/icons-material/Favorite';
+import {Avatar, Badge, Box, Divider, Drawer, em, Group, NavLink, ScrollArea, Stack, Text, useMantineTheme} from '@mantine/core';
+import {useMediaQuery} from '@mantine/hooks';
+import {
+    CalendarDays,
+    CircleUserRound,
+    LayoutDashboard,
+    ChartColumn,
+    CircleCheckBig,
+    Search,
+    Clock,
+    UserCog,
+    Settings as SettingsIcon,
+    Heart,
+} from 'lucide-react';
+import {IconTruck, IconMap} from '@tabler/icons-react';
 import dayjs from 'dayjs';
+import {Icon} from '../icon/Icon';
+import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
+import {getNationwideBetaEnabled} from '../../../pages/nationwide/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
+import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
+import classes from './SideNav.module.css';
 
-const drawerWidth = 280;
+const drawerWidth = 264;
+
+/**
+ * Bigger than the shared `UI_ICON_SIZE` (20), which is the *dense* default for
+ * controls and table rows. A 48px drawer row is not dense UI — this is the classic
+ * drawer's 24px glyph, and with the 20px gap below it rebuilds that drawer's 44px
+ * icon column.
+ */
+const NAV_ICON_SIZE = 24;
+
+/** Below this the panel goes full-bleed, matching the toolbar's compact breakpoint. */
+const COMPACT_QUERY = `(max-width: ${em(768)})`;
+
+const getInitials = (name: string): string =>
+    name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((word) => word.charAt(0).toUpperCase())
+        .join('');
 
 export const SideNav: React.FC<SideNavProps> = ({
     open,
     userName,
     companyName = 'DFRNT',
     isUsCustomer,
+    isNetworkPartner = false,
     currentState,
     onClose,
     onNavigate,
     onMouseEnter,
     onMouseLeave,
 }) => {
+    const theme = useMantineTheme();
+    const shell = theme.other.shell;
+    const scrim = theme.other.scrim;
     const currentYear = dayjs().year();
+    const isCompact = useMediaQuery(COMPACT_QUERY);
+
+    /**
+     * The fixed-size section keeps Lucide and Tabler glyphs on the same axis. The row
+     * chrome itself — rail, hover wash, active wash — lives in `SideNav.module.css`,
+     * since inline styles cannot express a pseudo-state.
+     */
+    const navItemStyles = useMemo(() => ({
+        section: {
+            width: NAV_ICON_SIZE,
+            height: NAV_ICON_SIZE,
+            marginInlineEnd: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        label: {fontSize: 16},
+    }), []);
 
     const currentDate = useMemo(() => {
         const locale = isUsCustomer ? 'en' : 'en-nz';
@@ -52,57 +94,75 @@ export const SideNav: React.FC<SideNavProps> = ({
             {
                 id: 'dashboard',
                 label: 'Dashboard',
-                icon: <DashboardIcon />,
-                state: 'home',
+                icon: <Icon lucide={LayoutDashboard} size={NAV_ICON_SIZE} />,
+                // Link straight at the React page so the nav skips the `home`
+                // state's redirect hop.
+                state: 'dispatch',
+                matchStates: ['home', 'dispatch', 'dispatchV2'],
+                featureKey: dashboardFeatureKeys.dispatch,
             },
             {
                 id: 'shipping',
                 label: isUsCustomer ? 'Domestic' : 'Nationwide',
-                icon: <LocalShippingIcon />,
-                state: 'nw',
+                icon: <Icon tabler={IconTruck} size={NAV_ICON_SIZE} />,
+                // As above: link straight at the React page so the nav skips
+                // the classic route's redirect hop.
+                state: getNationwideBetaEnabled() ? 'nwV2' : 'nw',
+                matchStates: ['nw', 'nwV2'],
+                featureKey: dashboardFeatureKeys.nationwide,
             },
             {
                 id: 'overview',
                 label: 'Overview',
-                icon: <AssessmentIcon />,
+                icon: <Icon lucide={ChartColumn} size={NAV_ICON_SIZE} />,
                 state: 'overview',
+                featureKey: dashboardFeatureKeys.overview,
             },
             {
                 id: 'tasks',
                 label: 'Tasks',
-                icon: <TaskAltIcon />,
+                icon: <Icon lucide={CircleCheckBig} size={NAV_ICON_SIZE} />,
                 state: 'taskDashboard',
+                featureKey: dashboardFeatureKeys.taskDashboard,
             },
             {
                 id: 'jobSearch',
                 label: 'Job Search',
-                icon: <SearchIcon />,
+                icon: <Icon lucide={Search} size={NAV_ICON_SIZE} />,
                 state: 'jobSearch',
+                matchStates: ['jobSearch', 'jobSearchV2'],
+                featureKey: dashboardFeatureKeys.jobSearch,
             },
             {
                 id: 'recurringJobs',
                 label: 'Recurring Jobs',
-                icon: <ScheduleIcon />,
+                icon: <Icon lucide={Clock} size={NAV_ICON_SIZE} />,
                 state: 'recurringJobs',
+                featureKey: dashboardFeatureKeys.recurringJobs,
             },
             {
                 id: 'courierMap',
                 label: 'Courier Map',
-                icon: <MapIcon />,
+                icon: <Icon tabler={IconMap} size={NAV_ICON_SIZE} />,
                 state: 'courierMap',
+                featureKey: dashboardFeatureKeys.courierMap,
             },
             {
                 id: 'driverManagement',
                 label: 'Driver Management',
-                icon: <ManageAccountsIcon />,
+                icon: <Icon lucide={UserCog} size={NAV_ICON_SIZE} />,
                 state: 'driverManagement',
+                featureKey: dashboardFeatureKeys.driverManagement,
                 nzOnly: true,
             },
         ];
 
         return navItems.filter(item => {
             if (item.usOnly && !isUsCustomer) return false;
-            return !(item.nzOnly && isUsCustomer);
+            if (item.nzOnly && isUsCustomer) return false;
+            // DF Admin's grant, on top of the country filter. Ungated sessions
+            // pass everything, so this is inert for every audience but NP.
+            return !item.featureKey || isDashboardVisible(item.featureKey);
         });
     }, [isUsCustomer]);
 
@@ -111,138 +171,172 @@ export const SideNav: React.FC<SideNavProps> = ({
         onClose();
     }, [onNavigate, onClose]);
 
+    const settingsNavItem: NavItem = useMemo(() => ({
+        id: 'settings',
+        label: 'Settings',
+        icon: <Icon lucide={SettingsIcon} size={NAV_ICON_SIZE} />,
+        state: 'settings',
+    }), []);
+
+    const renderNavItem = useCallback((item: NavItem) => {
+        const isActive =
+            currentState === item.state ||
+            (item.matchStates?.includes(currentState) ?? false);
+        return (
+            <NavLink
+                key={item.id}
+                component="button"
+                className={classes.navLink}
+                classNames={{section: classes.section}}
+                active={isActive}
+                aria-current={isActive ? 'page' : undefined}
+                color="brand"
+                variant="subtle"
+                label={item.label}
+                leftSection={item.icon}
+                onClick={() => handleNavClick(item.state)}
+                styles={navItemStyles}
+            />
+        );
+    }, [currentState, handleNavClick, navItemStyles]);
+
+    const initials = getInitials(userName);
+
+    /**
+     * The active row's rail. The 12% wash alone is ~1.05:1 against the panel, so the
+     * rail is what carries WCAG 1.4.11's 3:1 state boundary — hence the darker brand
+     * step (cyan-7 / gold-9) rather than the light primary.
+     */
+    const navAccent = getHeaderSurfaceAccent(isUsCustomer);
+
     return (
-        <Drawer
-            anchor="right"
-            open={open}
+        <Drawer.Root
+            opened={open}
             onClose={onClose}
-            variant="temporary"
-            ModalProps={{
-                keepMounted: true,
-            }}
-            slotProps={{
-                paper: {
-                    onMouseEnter,
-                    onMouseLeave,
-                    sx: {
-                        width: drawerWidth,
-                        bgcolor: 'background.default',
-                    },
-                },
-            }}
+            position="right"
+            size={isCompact ? '100%' : drawerWidth}
+            padding={0}
+            keepMounted
         >
-            {/* User Profile Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    p: 3,
-                })}
+            <Drawer.Overlay />
+            <Drawer.Content
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
+                styles={{
+                    content: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        // Same tier as Modal/Menu — a panel floating over the page —
+                        // and it follows the colour scheme instead of pinning a literal.
+                        backgroundColor: 'var(--dd-surface-container-high)',
+                    },
+                }}
             >
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 2, mb: 2}}>
-                    <Box
-                        sx={{
-                            width: 52,
-                            height: 52,
-                            borderRadius: '50%',
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
+                {/* Account header — carries the app bar's Ink Blue so the two shell
+                    surfaces read as one. The colour change is the separator, so there
+                    is no keyline beneath it. */}
+                <Box
+                    component="header"
+                    data-testid="sidenav-account"
+                    px={20}
+                    pt={24}
+                    pb={20}
+                    ta="center"
+                    style={{backgroundColor: shell.appBar, color: shell.textPrimary}}
+                >
+                    <Avatar
+                        data-testid="sidenav-avatar"
+                        size={56}
+                        mx="auto"
+                        mb={10}
+                        radius="xl"
+                        fz="1.25rem"
+                        style={{backgroundColor: scrim.fillStrong, color: shell.textPrimary, fontWeight: 600}}
                     >
-                        <AccountCircleIcon sx={{fontSize: 36}} />
-                    </Box>
-                    <Box>
-                        <Typography variant="h6" fontWeight={600}>
+                        {initials || <Icon lucide={CircleUserRound} size={36} />}
+                    </Avatar>
+                    <Text fz="0.6875rem" fw={700} lts="0.08em" tt="uppercase" lh={1.4} c={shell.textSecondary}>
+                        {companyName}
+                    </Text>
+                    <Group justify="center" gap={6} wrap="nowrap">
+                        <Text fz="1rem" fw={600} lh={1.3} truncate c={shell.textPrimary}>
                             {userName}
-                        </Typography>
-                        <Typography variant="body2" sx={{opacity: 0.85}}>
-                            {companyName}
-                        </Typography>
-                    </Box>
+                        </Text>
+                        {/* Both brand primaries are too light to read on this bar, so the
+                            chip borrows the avatar's scrim rather than a brand variant. */}
+                        {isNetworkPartner && (
+                            <Badge
+                                data-testid="sidenav-np-chip"
+                                size="sm"
+                                radius="sm"
+                                variant="filled"
+                                style={{
+                                    backgroundColor: scrim.fillStrong,
+                                    color: shell.textPrimary,
+                                    flexShrink: 0,
+                                }}
+                            >
+                                Network Partner
+                            </Badge>
+                        )}
+                    </Group>
+                    {/* `textSecondary`, not `textMuted` — 0.38 white on Ink is unreadable
+                        at 0.7rem, and the old drawer set this line at the same 0.60 as
+                        the company eyebrow above it. */}
+                    <Group justify="center" gap={6} mt={6} c={shell.textSecondary}>
+                        <Icon lucide={CalendarDays} size={13} />
+                        <Text fz="0.7rem" lh={1.2} c="inherit">{currentDate}</Text>
+                    </Group>
                 </Box>
-                <Typography variant="body2" sx={{opacity: 0.8}}>
-                    {currentDate}
-                </Typography>
-            </Box>
 
-            {/* Navigation Menu */}
-            <Box sx={{flex: 1, overflow: 'auto', py: 1}}>
-                <List disablePadding>
-                    {filteredNavItems.map((item) => {
-                        const isActive = currentState === item.state;
-                        return (
-                            <ListItem key={item.id} disablePadding>
-                                <ListItemButton
-                                    onClick={() => handleNavClick(item.state)}
-                                    sx={(theme) => ({
-                                        py: 1.5,
-                                        px: 2,
-                                        borderLeft: isActive
-                                            ? `4px solid ${theme.palette.primary.main}`
-                                            : '4px solid transparent',
-                                        bgcolor: isActive
-                                            ? alpha(theme.palette.primary.main, 0.08)
-                                            : 'transparent',
-                                        '&:hover': {
-                                            bgcolor: alpha(theme.palette.primary.main, 0.04),
-                                        },
-                                    })}
-                                >
-                                    <ListItemIcon
-                                        sx={(theme) => ({
-                                            color: isActive
-                                                ? theme.palette.primary.main
-                                                : theme.palette.text.secondary,
-                                            minWidth: 44,
-                                        })}
-                                    >
-                                        {item.icon}
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary={item.label}
-                                        slotProps={{primary: {
-                                            fontWeight: isActive ? 600 : 400,
-                                            color: isActive ? 'primary.main' : 'text.primary',
-                                        }}}
-                                    />
-                                </ListItemButton>
-                            </ListItem>
-                        );
-                    })}
-                </List>
-            </Box>
-
-            {/* Footer */}
-            <Box
-                sx={(theme) => ({
-                    p: 2,
-                    borderTop: `1px solid ${theme.palette.divider}`,
-                    textAlign: 'center',
-                })}
-            >
-                <Typography variant="caption" color="text.secondary">
-                    &copy; {currentYear} Deliver Different
-                </Typography>
-                {isUsCustomer && (
+                {/* Navigation Menu */}
+                <ScrollArea style={{flex: 1}} type="never">
                     <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 0.5,
-                            mt: 0.5,
-                        }}
+                        component="nav"
+                        aria-label="Main navigation"
+                        pb={8}
+                        style={{'--sidenav-accent': navAccent} as React.CSSProperties}
                     >
-                        <FavoriteIcon sx={{fontSize: 14, color: 'error.main'}} />
-                        <Typography variant="caption" color="text.secondary">
-                            Made with aroha in Aotearoa
-                        </Typography>
+                        {/* Same eyebrow as the company name above it — the two label their
+                            section identically, so they get one treatment rather than the
+                            old drawer's near-miss 0.675rem/0.09em. Aligned to the glyph
+                            column (4px rail + 16px row padding), not the old 18px. */}
+                        <Text
+                            component="h2"
+                            px={20}
+                            pt={16}
+                            pb={4}
+                            fz="0.6875rem"
+                            fw={700}
+                            lts="0.08em"
+                            tt="uppercase"
+                            lh={1.4}
+                            c="dimmed"
+                        >
+                            Menu
+                        </Text>
+                        {filteredNavItems.map((item) => renderNavItem(item))}
+
+                        {/* Settings sits apart from the dashboards above it — a utility
+                            item, not gated by dashboardFeatureKeys — so it gets its own
+                            divider rather than joining the filtered list. */}
+                        <Divider my={8} mx={20}/>
+                        {renderNavItem(settingsNavItem)}
                     </Box>
-                )}
-            </Box>
-        </Drawer>
+                </ScrollArea>
+
+                {/* Footer */}
+                <Stack gap={4} px="md" py={16} ta="center" style={{borderTop: '1px solid var(--mantine-color-default-border)'}}>
+                    <Text fz={12} fw={400} lh={1.3} c="dimmed">&copy; {currentYear} Deliver DFRNT</Text>
+                    {isUsCustomer && (
+                        <Group justify="center" gap={6} align="center" c="dimmed">
+                            <Icon lucide={Heart} size={14} color={theme.colors.red[4]} />
+                            <Text fz={12} fw={400} lh={1.3} c="inherit">Made with aroha in Aotearoa</Text>
+                        </Group>
+                    )}
+                </Stack>
+            </Drawer.Content>
+        </Drawer.Root>
     );
 };
 

@@ -7,25 +7,14 @@
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { EventGroupDialog } from './EventGroupDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import { getIanaTimezone, getTenantTimezone } from '../../../utils/dateUtils';
-import { getEventTypeGroups, addTasks, getActiveStaff } from '../../../services/tasksApi';
+import { getEventTypeGroups, getActiveStaff } from '../../../services/tasksApi';
+import { saveTasks } from './saveTasks';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
-import type { ShowToastFn, ToastService } from '../../../services/toastService';
-
-interface DialogState {
-    open: boolean;
-    events: EventGroupViewModel[];
-    users: StaffSuggestion[];
-    jobId: number;
-    toastService: ToastService | null;
-    resolve?: (value: boolean) => void;
-}
+import type { ToastService } from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 export interface OpenEventGroupDialogOptions {
     eventGroupId: number;
@@ -33,118 +22,38 @@ export interface OpenEventGroupDialogOptions {
     toastService?: ToastService;
 }
 
-/**
- * Event Group Dialog Manager Class
- * Manages the lifecycle and state of the Event Group Dialog.
- */
-class EventGroupDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private dialogState: DialogState = {
-        open: false,
-        events: [],
-        users: [],
-        jobId: 0,
-        toastService: null,
-    };
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-event-group-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(false);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleSave = async (events: EventGroupViewModel[]): Promise<void> => {
-            const { jobId} = this.dialogState;
-
-            await addTasks(jobId, events);
-
-            const taskCount = events.length;
-            handleShowToast(
-                `${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`,
-                'success'
-            );
-
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(true);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleOpenAdminManager = () => {
-            const adminUrl = window.location.href.replace(/adminmanager/g, 'hub');
-            window.open(adminUrl, '_blank');
-        };
-
-        const handleShowToast: ShowToastFn = (message, type) => {
-            if (!this.dialogState.toastService) {
-                console.log(`[Toast ${type}]: ${message}`);
-                return;
-            }
-            this.dialogState.toastService.showToast(message, type);
-        };
-
-        const currentTheme = getTheme();
-        const timezone = getIanaTimezone(getTenantTimezone());
-
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <EventGroupDialog
-                        open={this.dialogState.open}
-                        events={this.dialogState.events}
-                        users={this.dialogState.users}
-                        onClose={handleClose}
-                        onSave={handleSave}
-                        onOpenAdminManager={handleOpenAdminManager}
-                        showToast={handleShowToast}
-                        timezone={timezone}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
-    }
-
-    async open(options: OpenEventGroupDialogOptions): Promise<boolean> {
-        this.initializeDialogRoot();
-
-        const [events, users] = await Promise.all([
-            getEventTypeGroups(options.eventGroupId),
-            getActiveStaff(),
-        ]);
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                events,
-                users,
-                jobId: options.jobId,
-                toastService: options.toastService ?? null,
-                resolve,
-            };
-            this.renderDialog();
-        });
-    }
+function openAdminManager(): void {
+    window.open(window.location.href.replace(/adminmanager/g, 'hub'), '_blank');
 }
 
-const eventGroupDialogManager = new EventGroupDialogManager();
+const host = createDialogHost<{events: EventGroupViewModel[]; users: StaffSuggestion[]; jobId: number}, boolean>({
+    containerId: 'react-event-group-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <EventGroupDialog
+            open={open}
+            events={payload.events}
+            users={payload.users}
+            onClose={() => close(false)}
+            onSave={async (events: EventGroupViewModel[]) => {
+                await saveTasks(payload.jobId, events);
+                const taskCount = events.length;
+                showToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`, 'success');
+                close(true);
+            }}
+            onOpenAdminManager={openAdminManager}
+            showToast={showToast}
+            timezone={getIanaTimezone(getTenantTimezone())}
+        />
+    ),
+});
 
-export function openEventGroupDialog(options: OpenEventGroupDialogOptions): Promise<boolean> {
-    return eventGroupDialogManager.open(options);
+export async function openEventGroupDialog(options: OpenEventGroupDialogOptions): Promise<boolean> {
+    const [events, users] = await Promise.all([
+        getEventTypeGroups(options.eventGroupId),
+        getActiveStaff(),
+    ]);
+
+    return host.open({events, users, jobId: options.jobId}, options.toastService);
 }
 
 // Expose to window for AngularJS access

@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * splitJobFlow Tests
  *
@@ -19,14 +20,31 @@ jest.mock('../components/dialogs/edit-address-dialog/edit-address-dialog-react.m
 jest.mock('../components/dialogs/split-job-courier-dialog/openSplitJobCourierDialog', () => ({
     openSplitJobCourierDialog: jest.fn(),
 }));
+jest.mock('../components/dialogs/split-pricing-dialog/openSplitPricingDialog', () => ({
+    openSplitPricingDialog: jest.fn(),
+}));
 
-import {splitJob} from './splitJobApi';
+import {previewSplitPricing, splitJob} from './splitJobApi';
 import {openEditAddressDialog} from '../components/dialogs/edit-address-dialog/edit-address-dialog-react.module';
 import {openSplitJobCourierDialog} from '../components/dialogs/split-job-courier-dialog/openSplitJobCourierDialog';
+import {openSplitPricingDialog} from '../components/dialogs/split-pricing-dialog/openSplitPricingDialog';
 
 const mockedSplitJob = splitJob as jest.Mock;
+const mockedPreviewSplitPricing = previewSplitPricing as jest.Mock;
 const mockedOpenEditAddressDialog = openEditAddressDialog as jest.Mock;
 const mockedOpenSplitJobCourierDialog = openSplitJobCourierDialog as jest.Mock;
+const mockedOpenSplitPricingDialog = openSplitPricingDialog as jest.Mock;
+
+const CONFIRMED_ALLOCATION = [
+    {sequence: 1, sharePercent: 70},
+    {sequence: 2, sharePercent: 30},
+];
+
+// A congestion charge only leg A incurred, set apart from the overall 70/30.
+const CONFIRMED_LINE_ALLOCATION = [
+    {pricingBreakdownId: 3, sequence: 1, sharePercent: 100},
+    {pricingBreakdownId: 3, sequence: 2, sharePercent: 0},
+];
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -85,6 +103,20 @@ beforeEach(() => {
     });
 
     mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'skip'});
+
+    mockedPreviewSplitPricing.mockResolvedValue({
+        basis: 'RoadMiles',
+        parentTotalRevenue: 89,
+        parentTotalCost: 50,
+        isSynthesised: false,
+        parentLines: [],
+        legs: [],
+    });
+    mockedOpenSplitPricingDialog.mockResolvedValue({
+        action: 'confirm',
+        allocation: CONFIRMED_ALLOCATION,
+        lineAllocation: [],
+    });
 
     mockedSplitJob.mockResolvedValue(undefined);
 });
@@ -182,13 +214,108 @@ describe('executeSplitJobFlow', () => {
         });
 
         it('passes selected courierId when user assigns', async () => {
-            mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'assign', courierId: 42});
+            mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'assign', courierId: 42, courierName: 'Sam Driver'});
             const opts = createOptions();
 
             await executeSplitJobFlow(opts);
 
             expect(mockedSplitJob).toHaveBeenCalledWith(
                 expect.objectContaining({courierIdForLegB: 42}),
+            );
+        });
+
+        it('passes the pickup job\'s current courier and the newly-assigned leg B courier to the pricing dialog', async () => {
+            mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'assign', courierId: 42, courierName: 'Sam Driver'});
+            const opts = createOptions({job: {...createOptions().job, courier: 'Existing Courier'} as DispatchJob});
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedOpenSplitPricingDialog).toHaveBeenCalledWith(
+                'J001', expect.anything(), ['Existing Courier', 'Sam Driver'],
+            );
+        });
+
+        it('passes null for a leg with no known courier', async () => {
+            mockedOpenSplitJobCourierDialog.mockResolvedValue({action: 'skip'});
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedOpenSplitPricingDialog).toHaveBeenCalledWith('J001', expect.anything(), [null, null]);
+        });
+    });
+
+    describe('Pricing Dialog', () => {
+        it('previews the split pricing and opens the dialog after the courier dialog', async () => {
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedPreviewSplitPricing).toHaveBeenCalledWith({
+                jobId: 1,
+                meetingPointAddress: expect.objectContaining({fullAddress: '15 Meeting St, Auckland'}),
+            });
+            expect(mockedOpenSplitPricingDialog).toHaveBeenCalledWith('J001', expect.anything(), expect.anything());
+            expect(mockedSplitJob).toHaveBeenCalledWith(
+                expect.objectContaining({pricingAllocation: CONFIRMED_ALLOCATION}),
+            );
+        });
+
+        it('leaves the job unsplit when the user cancels the pricing dialog', async () => {
+            mockedOpenSplitPricingDialog.mockResolvedValue({action: 'cancel'});
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedSplitJob).not.toHaveBeenCalled();
+            expect(opts.showToast).not.toHaveBeenCalled();
+        });
+
+        it('leaves the job unsplit when the pricing dialog itself fails', async () => {
+            // The user never saw the numbers, so consent is missing — don't split.
+            mockedOpenSplitPricingDialog.mockRejectedValue(new Error('render failed'));
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedSplitJob).not.toHaveBeenCalled();
+            expect(opts.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('has not been split'),
+                'error',
+            );
+        });
+
+        it('still splits with a server-derived division when the preview fails', async () => {
+            mockedPreviewSplitPricing.mockRejectedValue(new Error('boom'));
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedOpenSplitPricingDialog).not.toHaveBeenCalled();
+            expect(opts.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('Could not preview split pricing'),
+                'warning',
+            );
+            expect(mockedSplitJob).toHaveBeenCalledWith(
+                expect.objectContaining({pricingAllocation: null, lineAllocation: null}),
+            );
+        });
+
+        it('forwards the per-line overrides the user set in the dialog', async () => {
+            mockedOpenSplitPricingDialog.mockResolvedValue({
+                action: 'confirm',
+                allocation: CONFIRMED_ALLOCATION,
+                lineAllocation: CONFIRMED_LINE_ALLOCATION,
+            });
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(mockedSplitJob).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    pricingAllocation: CONFIRMED_ALLOCATION,
+                    lineAllocation: CONFIRMED_LINE_ALLOCATION,
+                }),
             );
         });
     });
@@ -203,6 +330,8 @@ describe('executeSplitJobFlow', () => {
                 jobId: 1,
                 meetingPointAddress: expect.objectContaining({fullAddress: '15 Meeting St, Auckland'}),
                 courierIdForLegB: null,
+                pricingAllocation: CONFIRMED_ALLOCATION,
+                lineAllocation: [],
             });
             expect(opts.showToast).toHaveBeenCalledWith('Job J001 successfully split', 'success');
             expect(opts.onComplete).toHaveBeenCalled();
@@ -218,8 +347,45 @@ describe('executeSplitJobFlow', () => {
 
             await executeSplitJobFlow(opts);
 
-            expect(opts.showToast).toHaveBeenCalledWith('Error splitting job', 'error');
+            expect(opts.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('Error splitting job'),
+                'error',
+            );
             expect(opts.setLoading).toHaveBeenCalledWith(false);
+        });
+
+        it('surfaces the server reason so the failure is diagnosable without logs', async () => {
+            // apiClient rejects with an ApiError carrying the response body. Split failures are
+            // otherwise indistinguishable from each other in staging/production.
+            mockedSplitJob.mockRejectedValue({
+                status: 500,
+                statusText: 'Internal Server Error',
+                message: "Job 42 has flights assigned and cannot be split.",
+            });
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(opts.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('flights assigned'),
+                'error',
+            );
+        });
+
+        it('names the reason the pricing preview failed', async () => {
+            mockedPreviewSplitPricing.mockRejectedValue({
+                status: 403,
+                statusText: 'Forbidden',
+                message: 'You do not have permission to view pricing for this job.',
+            });
+            const opts = createOptions();
+
+            await executeSplitJobFlow(opts);
+
+            expect(opts.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('do not have permission'),
+                'warning',
+            );
         });
     });
 });

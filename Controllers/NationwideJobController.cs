@@ -4,6 +4,7 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -14,20 +15,28 @@ namespace DespatchWeb.Controllers;
 public class NationwideJobController(
     INationwideJobRepository repository,
     IFlightStatsService flightService,
+    IFlightAssignmentService flightAssignmentService,
     IClientAccessValidatorService clientAccessValidator,
     ITenantInfoService infoService,
     IFlightRateService flightRateService,
     IClientRepository clientRepository,
-    IAddAgentRecoveryJobService recoveryJobService)
+    IAddAgentRecoveryJobService recoveryJobService,
+    IScopeProvider scopeProvider)
     : Controller
 {
+    private bool CallerIsNetworkPartner => scopeProvider.Scope?.IsNetworkPartner ?? false;
+
     public async Task<IActionResult> NationwideJobListNew([FromQuery] NationwideJobsRequestModel data)
     {
         try
         {
             var clientIds = await RetrieveAndFormatClientIds();
 
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            if (!data.IsInternal)
+            {
+                await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            }
+
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
@@ -50,7 +59,11 @@ public class NationwideJobController(
         {
             var clientIds = await RetrieveAndFormatClientIds();
 
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            if (!data.IsInternal)
+            {
+                await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            }
+
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
@@ -73,7 +86,11 @@ public class NationwideJobController(
         {
             var clientIds = await RetrieveAndFormatClientIds();
 
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            if (!data.IsInternal)
+            {
+                await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            }
+
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
@@ -96,7 +113,8 @@ public class NationwideJobController(
         int? airlineId,
         int? departureAirportId,
         int? arrivalAirportId,
-        int minimumLayoverMinutes = 60) //minimumLayover allowed
+        int minimumLayoverMinutes = 60,
+        bool includeNearbyAirports = false)
     {
         var stopwatch = Stopwatch.StartNew();
 
@@ -114,7 +132,9 @@ public class NationwideJobController(
                 arrivalAirportId,
                 codeType: "FS",
                 extendedOptions: null,
-                minimumLayoverMinutes: minimumLayoverMinutes);
+                minimumLayoverMinutes: minimumLayoverMinutes,
+                allowNearbyDepartures: includeNearbyAirports,
+                allowNearbyArrivals: includeNearbyAirports);
 
             if (flights is null || flights.Count == 0)
             {
@@ -122,14 +142,13 @@ public class NationwideJobController(
                 return Json(new FlightSearchResponse
                 {
                     Flights = [],
-                    Message = "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter."
+                    Message =
+                        "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter."
                 });
             }
 
-            // Get the rates
             foreach (var flight in flights)
             {
-                // Get amount from stored proc
                 var amount = await flightRateService.GetCarrierFlightRateByJobIdAsync(
                     jobId,
                     flight.AirlineCode,
@@ -144,7 +163,7 @@ public class NationwideJobController(
                 "Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights",
                 stopwatch.ElapsedMilliseconds, jobId, flights.Count);
 
-            return Json(new FlightSearchResponse { Flights = flights.ToList() });
+            return Json(new FlightSearchResponse { Flights = [.. flights] });
         }
         catch (ArgumentException e)
         {
@@ -176,6 +195,74 @@ public class NationwideJobController(
         }
     }
 
+    public async Task<IActionResult> GetRecurringFlightOptions(
+        DateTimeOffset departureDate,
+        int bookingId,
+        int? departureAirportId,
+        int? arrivalAirportId,
+        int minimumLayoverMinutes = 60,
+        bool includeNearbyAirports = false)
+    {
+        try
+        {
+            if (departureAirportId is null || arrivalAirportId is null)
+            {
+                return Json(new FlightSearchResponse
+                {
+                    Flights = [],
+                    Message =
+                        "This recurring booking has no departure/arrival airports set, so flights can't be searched."
+                });
+            }
+
+            var flights = await flightService.GetFlightsAsync(
+                bookingId,
+                departureDate,
+                airlineId: null,
+                departureAirportId: departureAirportId,
+                arrivalAirportId: arrivalAirportId,
+                codeType: "FS",
+                extendedOptions: null,
+                minimumLayoverMinutes: minimumLayoverMinutes,
+                allowNearbyDepartures: includeNearbyAirports,
+                allowNearbyArrivals: includeNearbyAirports);
+
+            if (flights is null || flights.Count == 0)
+            {
+                return Json(new FlightSearchResponse
+                {
+                    Flights = [],
+                    Message =
+                        "No flights found for the selected route and date. Try a different date, or enter the flight number manually."
+                });
+            }
+
+            return Json(new FlightSearchResponse { Flights = [.. flights] });
+        }
+        catch (ArgumentException e)
+        {
+            Log.Warning(e, "Recurring flight search validation failed for booking {BookingId}: {Message}", bookingId,
+                e.Message);
+            return Json(new FlightSearchResponse { Flights = [], Message = e.Message });
+        }
+        catch (HttpRequestException e)
+        {
+            Log.Error(e, "FlightStats API error for booking {BookingId}", bookingId);
+            return Json(new FlightSearchResponse
+            {
+                Flights = [],
+                Message = "Flight search service is currently unavailable. Please try again later."
+            });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(GetRecurringFlightOptions)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobRequest request)
     {
@@ -183,11 +270,7 @@ public class NationwideJobController(
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            // Create webhooks for flight segments
-            var webhookIds = await CreateWebhooks(request.FlightSegments);
-
-            // Save job assignment
-            await repository.AddJobNationwideAsync(request, webhookIds);
+            await flightAssignmentService.AssignFlightAsync(request);
 
             return Ok();
         }
@@ -205,33 +288,6 @@ public class NationwideJobController(
         }
     }
 
-    private async Task<List<string>> CreateWebhooks(List<FlightSegmentViewModel> flightSegments)
-    {
-        var webhookIds = new List<string>();
-
-        try
-        {
-            foreach (var segment in flightSegments)
-            {
-                var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
-                    $"{segment.CarrierFsCode}{segment.FlightNumber}",
-                    segment.DepartureTime,
-                    segment.DepartureAirportFsCode) ?? string.Empty;
-
-                if (!string.IsNullOrEmpty(webhookId)) webhookIds.Add(webhookId);
-            }
-
-            return webhookIds;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
-                    nameof(CreateWebhooks)));
-            throw;
-        }
-    }
-
     public async Task<IActionResult> GetFlightWebhookStatus(int jobId)
     {
         try
@@ -239,9 +295,10 @@ public class NationwideJobController(
             var webhookIds = await repository.GetFlightWebhookIdByJobIdAsync(jobId);
 
             if (webhookIds.Count == 0)
+            {
                 return Json(new { active = false });
+            }
 
-            // Check all webhook rules in parallel
             var tasks = webhookIds.Select(flightService.IsFlightRuleActiveAsync);
             var results = await Task.WhenAll(tasks);
 
@@ -261,7 +318,10 @@ public class NationwideJobController(
         try
         {
             var agents = await repository.GetAgentsAsync(jobId);
-            if (agents.Count != 0) return Json(agents);
+            if (agents.Count != 0)
+            {
+                return Json(agents);
+            }
 
             Log.Information("No agents found for job {JobId}", jobId);
             return Json(new List<AgentViewModel>());
@@ -280,13 +340,26 @@ public class NationwideJobController(
     {
         try
         {
+            if (CallerIsNetworkPartner)
+            {
+                return Forbid();
+            }
+
             if (jobRequestModel?.AgentId == null || jobRequestModel.JobId == null)
+            {
                 return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
+            }
 
-            await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value,
-                jobRequestModel.IncludeStopJobs ?? false);
+            var result = await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value,
+                jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false,
+                jobRequestModel.EmailSubject, jobRequestModel.EmailBody);
 
-            return Ok();
+            return Ok(new
+            {
+                status = result.Status.ToString(),
+                agentEmail = result.AgentEmail,
+                willEmail = result.WillEmail
+            });
         }
         catch (Exception ex)
         {
@@ -296,6 +369,106 @@ public class NationwideJobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
+
+    [HttpPost]
+    public async Task<IActionResult> AssignNpAgentToJob([FromBody] AssignNpAgentRequest request)
+    {
+        try
+        {
+            if (CallerIsNetworkPartner)
+            {
+                return Forbid();
+            }
+
+            if (request?.NpAgentId == null || request.JobId == null)
+            {
+                return BadRequest("Oops, no network partner data was provided. Unable to assign to job.");
+            }
+
+            await repository.AssignNpAgentToJobAsync(request.NpAgentId.Value, request.JobId.Value);
+            return Ok(new { success = true });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
+                    nameof(AssignNpAgentToJob)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AssignAgentToJobs([FromBody] AssignAgentToJobsRequest request)
+    {
+        try
+        {
+            if (CallerIsNetworkPartner)
+            {
+                return Forbid();
+            }
+
+            if (request?.AgentId == null || request.JobIds is not {Count: > 0})
+            {
+                return BadRequest("Oops, no agent or jobs were provided. Unable to assign.");
+            }
+
+            var results = await repository.AssignAgentToJobsAsync(request.AgentId.Value, request.JobIds,
+                request.IncludeStopJobs ?? false, request.EmailSubject, request.EmailBody);
+
+            return Ok(BulkAssignmentResponse(results));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
+                    nameof(AssignAgentToJobs)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AssignNpAgentToJobs([FromBody] AssignNpAgentToJobsRequest request)
+    {
+        try
+        {
+            if (CallerIsNetworkPartner)
+            {
+                return Forbid();
+            }
+
+            if (request?.NpAgentId == null || request.JobIds is not {Count: > 0})
+            {
+                return BadRequest("Oops, no network partner or jobs were provided. Unable to assign.");
+            }
+
+            var results = await repository.AssignNpAgentToJobsAsync(request.NpAgentId.Value, request.JobIds);
+            return Ok(BulkAssignmentResponse(results));
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
+                    nameof(AssignNpAgentToJobs)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    private static object BulkAssignmentResponse(IReadOnlyList<BulkAssignmentResult> results) => new
+    {
+        assigned = results.Count(r => r.Succeeded),
+        failed = results.Count(r => !r.Succeeded),
+        results = results.Select(r => new
+        {
+            jobId = r.JobId,
+            succeeded = r.Succeeded,
+            failureReason = r.FailureReason,
+            emailStatus = r.EmailStatus?.ToString()
+        })
+    };
 
     public async Task<IActionResult> GetActiveAirlines()
     {
@@ -319,8 +492,10 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (!data.AgentId.HasValue) throw new ArgumentNullException(nameof(data));
-            if (!data.JobId.HasValue) throw new ArgumentNullException(nameof(data));
+            if (!data.AgentId.HasValue || !data.JobId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
 
             await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value);
             return Ok();
@@ -350,17 +525,17 @@ public class NationwideJobController(
         }
     }
 
-
     [HttpPost]
     public async Task<IActionResult> RestoreJob([FromBody] RestoreJobRequest request)
     {
         try
         {
-            // Step 1: Disconnect from webhook alerts
             var webhookIds = await repository.GetFlightWebhookIdByJobIdAsync(request.JobId);
-            foreach (var webhookId in webhookIds) await flightService.DeleteFlightRuleById(webhookId);
+            foreach (var webhookId in webhookIds)
+            {
+                await flightService.DeleteFlightRuleById(webhookId);
+            }
 
-            // Step 2: Restore Job
             await repository.RestoreNationwideJobAsync(request.JobId);
             return Ok();
         }
@@ -373,11 +548,6 @@ public class NationwideJobController(
         }
     }
 
-    // isNetworkPartner: null = all agents (existing behaviour, no break for
-    // the Nationwide flow), false = regular agents only, true = NPs only.
-    // The 3-way Assign Route picker (HANDOVER-KEVIN-2026-05-26.md) passes
-    // false for the "Agent" radio and true for the "NP" radio so the same
-    // endpoint can drive both filtered lists.
     public async Task<IActionResult> GetAllAgentsSearch(string searchTerm, bool? isNetworkPartner = null)
     {
         try
@@ -475,6 +645,22 @@ public class NationwideJobController(
         }
     }
 
+    public async Task<IActionResult> GetAllActiveAirportSuggestions()
+    {
+        try
+        {
+            var airports = await repository.GetAllActiveAirportSuggestionsAsync();
+            return Json(airports);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(GetAllActiveAirportSuggestions)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> UpdateAgentRecoveryJob([FromBody] UpdateAgentRecoveryRequest request)
     {
@@ -542,6 +728,29 @@ public class NationwideJobController(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
                     nameof(CanAssignAgentToJob)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    public async Task<IActionResult> GetAgentInboundEmailPreview(int agentId, int jobId)
+    {
+        try
+        {
+            var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+            return Json(new
+            {
+                status = preview.Status.ToString(),
+                agentEmail = preview.AgentEmail,
+                willEmail = preview.WillEmail,
+                defaultSubject = AgentEmailTemplates.DefaultSubject,
+                defaultBody = AgentEmailTemplates.DefaultBody
+            });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(GetAgentInboundEmailPreview)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

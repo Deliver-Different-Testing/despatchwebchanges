@@ -1,0 +1,21 @@
+/*
+ * Hover/selected states for the photo carousel. The resting colours sit here
+ * with them because inline styles outrank class rules — an inline border colour
+ * would make the hover and `[data-selected]` rules unreachable.
+ *
+ * The scrim buttons over the photo are NOT here: `ActionIcon` exposes its fill
+ * and hover as `--ai-bg` / `--ai-hover`, so those are set inline.
+ */
+.thumb {
+    border: 2px solid var(--mantine-color-default-border);
+    background-color: var(--mantine-color-gray-2);
+    transition: border-color 150ms ease;
+}
+
+.thumb:hover {
+    border-color: var(--mantine-color-gray-4);
+}
+
+.thumb[data-selected] {
+    border-color: var(--mantine-primary-color-filled);
+}

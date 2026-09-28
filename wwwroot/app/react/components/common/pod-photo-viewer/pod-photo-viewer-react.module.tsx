@@ -7,19 +7,9 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import {PodPhotoViewer, PodPhoto} from './PodPhotoViewer';
-import {getTheme} from '../../../theme/muiTheme';
-
-// State management for the viewer
-interface ViewerState {
-    isOpen: boolean;
-    photos: PodPhoto[];
-    initialPhotoIndex: number;
-    timeZone?: string;
-    onCloseCallback?: () => void;
-}
+import {PodPhoto, PodPhotoViewer} from './PodPhotoViewer';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {ViewerState} from "./viewer.state";
 
 let viewerRoot: Root | null = null;
 let viewerContainer: HTMLDivElement | null = null;
@@ -42,21 +32,15 @@ function renderViewer(): void {
         renderViewer();
     };
 
-    // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
-
-    viewerRoot.render(
-        <ThemeProvider theme={currentTheme}>
-            <CssBaseline />
-            <PodPhotoViewer
-                isOpen={viewerState.isOpen}
-                photos={viewerState.photos}
-                initialPhotoIndex={viewerState.initialPhotoIndex}
-                timeZone={viewerState.timeZone}
-                onClose={handleClose}
-            />
-        </ThemeProvider>
-    );
+    viewerRoot.render(islandTree(
+        <PodPhotoViewer
+            isOpen={viewerState.isOpen}
+            photos={viewerState.photos}
+            initialPhotoIndex={viewerState.initialPhotoIndex}
+            timeZone={viewerState.timeZone}
+            onClose={handleClose}
+        />
+    ));
 }
 
 /**

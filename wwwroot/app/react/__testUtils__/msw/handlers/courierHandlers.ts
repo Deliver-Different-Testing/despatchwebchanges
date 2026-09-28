@@ -31,6 +31,10 @@ export const mockCourierLocations = [
         latitude: 51.5074,
         longitude: -0.1278,
         lastUpdate: '2024-01-15T10:00:00Z',
+        courierFleetId: 32,
+        courierFleetName: 'UA Auckland',
+        lastDeliveryCity: 'Ponsonby',
+        lastDeliveryTime: '2024-01-15T09:48:00Z',
     },
     {
         courierId: 2,
@@ -38,7 +42,19 @@ export const mockCourierLocations = [
         latitude: 51.5080,
         longitude: -0.1290,
         lastUpdate: '2024-01-15T10:05:00Z',
+        courierFleetId: 34,
+        courierFleetName: 'UA Wellington',
+        // No completed delivery yet — the flag stays a single line for this one.
+        lastDeliveryCity: null,
+        lastDeliveryTime: null,
     },
+];
+
+export const mockCourierFleetOptions = [
+    {id: 32, text: 'UA Auckland'},
+    {id: 34, text: 'UA Wellington'},
+    {id: 39, text: 'Regional'},
+    {id: 66, text: 'Auckland Cool'},
 ];
 
 export const mockClearListEnvelope = {
@@ -97,6 +113,13 @@ export const courierHandlers = [
         return HttpResponse.json(filtered);
     }),
 
+    // Exact courier code lookup (returns null when no active courier has that code)
+    http.get('*/courier/GetExactCourierByCode', ({ request }) => {
+        const courierCode = new URL(request.url).searchParams.get('courierCode');
+        const match = mockCourierSuggestions.find(c => c.text.split(/[\s(]/)[0] === courierCode);
+        return HttpResponse.json(match ?? null);
+    }),
+
     // Get available courier locations
     http.get('*/courier/AvailableCourierLocation', ({ request }) => {
         const url = new URL(request.url);
@@ -109,7 +132,19 @@ export const courierHandlers = [
             return new HttpResponse('Missing bounding box parameters', { status: 400 });
         }
 
+        const fleetIds = url.searchParams.getAll('courierFleetIds').map((id) => Number(id));
+        if (fleetIds.length > 0) {
+            return HttpResponse.json(
+                mockCourierLocations.filter((c) => fleetIds.includes(c.courierFleetId)),
+            );
+        }
+
         return HttpResponse.json(mockCourierLocations);
+    }),
+
+    // Get all fleet options
+    http.get('*/courier/GetAllFleetOptions', () => {
+        return HttpResponse.json(mockCourierFleetOptions);
     }),
 
     // Get clear list envelope

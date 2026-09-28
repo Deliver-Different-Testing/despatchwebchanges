@@ -1,22 +1,36 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for FlightAgentConfirmationDialog React component
  */
 
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import { setupUser } from '../../../__testUtils__/setupUser';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
+import {QueryClient} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
 import {AgentSuggestion, FlightCargoProcessing, FlightSegment, FlightViewModel} from './types';
 
-// Create a theme for testing
-const theme = createTheme();
+// The agent-mode pre-flight notice fetches an inbound-email preview via react-query.
+// Keep it inert here (never resolves → renders nothing) so these tests stay focused on
+// the dialog's own content; the notice has its own dedicated tests.
+jest.mock('../../../services/dispatchExecutorApi', () => ({
+    getAgentInboundEmailPreview: jest.fn(() => new Promise(() => { /* never resolves */ })),
+}));
 
-// Helper to render component with theme
+import {getAgentInboundEmailPreview} from '../../../services/dispatchExecutorApi';
+const mockPreview = getAgentInboundEmailPreview as jest.Mock;
+const neverResolves = () => new Promise(() => { /* never resolves */ });
+
+// Create a theme for testing
+
+// Helper to render the dialog with both themes + a QueryClient. Mantine goes outside,
+// MUI inside: the dialog is still MUI but its two date fields are Mantine.
+// (Production mounts this dialog inside ReactQueryProvider via its bridge module.)
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    return renderWithMantine(ui, {
+        queryClient: new QueryClient({defaultOptions: {queries: {retry: false}}}),
+    });
 }
 
 // Create sample flight segment
@@ -91,6 +105,18 @@ const defaultProps = {
     showToast: jest.fn(),
 };
 
+/** The flight-mode render every cargo-time test starts from. */
+function renderFlightWithCargoTimes(onCalculateCargoTimes: jest.Mock) {
+    return renderWithTheme(
+        <FlightAgentConfirmationDialog
+            {...defaultProps}
+            mode="flight"
+            flight={createFlight()}
+            onCalculateCargoTimes={onCalculateCargoTimes}
+        />
+    );
+}
+
 describe('FlightAgentConfirmationDialog', () => {
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
@@ -147,23 +173,14 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('AKL')).toBeInTheDocument();
-                expect(screen.getByText('SYD')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('AKL')).toBeInTheDocument();
+            expect(screen.getByText('SYD')).toBeInTheDocument();
         });
 
         it('calls onCalculateCargoTimes when flight is provided', async () => {
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(createCargoProcessing());
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             await waitFor(() => {
                 expect(onCalculateCargoTimes).toHaveBeenCalledWith(
@@ -318,7 +335,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('allows AWB input when no existingAwb', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -328,9 +345,12 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            const awbInput = screen.getByLabelText('AWB Number');
-            await user.click(awbInput);
-            await user.paste('987-65432109');
+            /*
+             * fireEvent, not user.paste: Mantine's modal moves focus to the first
+             * focusable element on mount, and in jsdom that lands after the first
+             * click — so a paste goes to the close button instead of this field.
+             */
+            fireEvent.change(screen.getByLabelText('AWB Number'), {target: {value: '987-65432109'}});
 
             expect(screen.getByDisplayValue('987-65432109')).toBeInTheDocument();
         });
@@ -377,7 +397,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('allows entering delivery notes', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -387,9 +407,12 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            const notesInput = screen.getByLabelText('Delivery Instructions');
-            await user.click(notesInput);
-            await user.paste('Handle with care');
+            /*
+             * fireEvent, not user.paste: Mantine's modal moves focus to the first
+             * focusable element on mount, and in jsdom that lands after the first
+             * click — so a paste goes to the close button instead of this field.
+             */
+            fireEvent.change(screen.getByLabelText('Delivery Instructions'), {target: {value: 'Handle with care'}});
 
             expect(screen.getByDisplayValue('Handle with care')).toBeInTheDocument();
         });
@@ -397,7 +420,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
     describe('Dialog Actions', () => {
         it('calls onClose when Cancel button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onClose = jest.fn();
 
             renderWithTheme(
@@ -415,7 +438,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('calls onConfirm with correct data when Confirm button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             renderWithTheme(
@@ -428,9 +451,12 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             // Enter AWB
-            const awbInput = screen.getByLabelText('AWB Number');
-            await user.click(awbInput);
-            await user.paste('111-22233344');
+            /*
+             * fireEvent, not user.paste: Mantine's modal moves focus to the first
+             * focusable element on mount, and in jsdom that lands after the first
+             * click — so a paste goes to the close button instead of this field.
+             */
+            fireEvent.change(screen.getByLabelText('AWB Number'), {target: {value: '111-22233344'}});
 
             // Click confirm
             await user.click(screen.getByText('Confirm Assignment'));
@@ -445,7 +471,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('includes stop jobs flag when checkbox is checked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             renderWithTheme(
@@ -484,14 +510,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             expect(await screen.findByText(/Package Available After Cargo Hours/)).toBeInTheDocument();
         });
@@ -505,14 +524,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             expect(await screen.findByText(/Set to.*Cargo Opens/)).toBeInTheDocument();
         });
@@ -526,14 +538,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             expect(await screen.findByText('Baggage Carousel')).toBeInTheDocument();
         });
@@ -656,7 +661,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
     describe('Issue #3: Package Ready Time Calculation', () => {
         it('calculates packageReadyTime as arrival + processing time', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             // Arrival at 10:30, processing time 90 mins = ready at 12:00
@@ -701,7 +706,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('uses cargo opening time if arrival + processing is before opening', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             // Arrival at 04:00, processing time 60 mins = 05:00 (before cargo opens at 06:00)
@@ -747,14 +752,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(invalidCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             // Should display fallback text instead of "Invalid Date"
             expect(await screen.findByText('--:-- - --:--')).toBeInTheDocument();
@@ -768,14 +766,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(validCargoProcessing);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             // Should display properly formatted times
             expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
@@ -792,22 +783,104 @@ describe('FlightAgentConfirmationDialog', () => {
 
             const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoWithTimezone);
 
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                />
-            );
+            renderFlightWithCargoTimes(onCalculateCargoTimes);
 
             expect(await screen.findByText('07:00 - 23:00')).toBeInTheDocument();
         });
     });
 
+    describe('Agent Email Template', () => {
+        const DEFAULT_SUBJECT = 'New job assigned [JobNumber]';
+        const DEFAULT_BODY = 'Hi [AgentName]\n\nYou have been assigned a new job [JobNumber]. [InboundUrl]';
+
+        const willEmailPreview = {
+            status: 'Queued',
+            agentEmail: 'agent@example.com',
+            willEmail: true,
+            defaultSubject: DEFAULT_SUBJECT,
+            defaultBody: DEFAULT_BODY,
+        };
+
+        afterEach(() => {
+            // Restore the never-resolving default the other suites rely on.
+            mockPreview.mockImplementation(neverResolves);
+        });
+
+        it('renders subject and body fields seeded from the server default templates', async () => {
+            mockPreview.mockResolvedValue(willEmailPreview);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog {...defaultProps} mode="agent" agent={createAgent()}/>
+            );
+
+            expect(await screen.findByLabelText('Subject')).toHaveValue(DEFAULT_SUBJECT);
+            expect(screen.getByLabelText('Message')).toHaveValue(DEFAULT_BODY);
+        });
+
+        it('passes the edited subject and body to onConfirm', async () => {
+            const user = setupUser();
+            const onConfirm = jest.fn();
+            mockPreview.mockResolvedValue(willEmailPreview);
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="agent"
+                    agent={createAgent()}
+                    onConfirm={onConfirm}
+                />
+            );
+
+            const bodyInput = await screen.findByLabelText('Message');
+            await user.clear(bodyInput);
+            await user.click(bodyInput);
+            await user.paste('Edited body for the agent');
+
+            await user.click(screen.getByText('Confirm Assignment'));
+
+            expect(onConfirm).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    emailSubject: DEFAULT_SUBJECT,
+                    emailBody: 'Edited body for the agent',
+                })
+            );
+        });
+
+        it('hides the email fields and omits the template when no email will be sent', async () => {
+            const user = setupUser();
+            const onConfirm = jest.fn();
+            mockPreview.mockResolvedValue({
+                status: 'NoAgentEmail',
+                agentEmail: null,
+                willEmail: false,
+                defaultSubject: DEFAULT_SUBJECT,
+                defaultBody: DEFAULT_BODY,
+            });
+
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="agent"
+                    agent={createAgent()}
+                    onConfirm={onConfirm}
+                />
+            );
+
+            // The warning notice resolves; the editable fields must not appear.
+            await waitFor(() => expect(mockPreview).toHaveBeenCalled());
+            expect(screen.queryByLabelText('Message')).not.toBeInTheDocument();
+
+            await user.click(screen.getByText('Confirm Assignment'));
+
+            const result = onConfirm.mock.calls[0][0];
+            expect(result.emailSubject).toBeUndefined();
+            expect(result.emailBody).toBeUndefined();
+        });
+    });
+
     describe('Issue #4: Delivery By Time', () => {
         it('includes deliverByTime from API response in confirmation result', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             const cargoProcessing = createCargoProcessing({
@@ -836,7 +909,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('does not include deliverByTime when not provided by API', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const onConfirm = jest.fn();
 
             // No deliverByTime in the response

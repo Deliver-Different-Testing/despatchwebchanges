@@ -6,129 +6,46 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {VoidJobConfirmationDialog, VoidJobDialogJob, VoidJobResult, RelatedJob} from './VoidJobConfirmationDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {jobApi} from '../../../services/jobApi';
-import type {ShowToastFn, ToastService} from '../../../services/toastService';
+import type {ToastService} from '../../../services/toastService';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-interface DialogState {
-    open: boolean;
-    job: VoidJobDialogJob | null;
-    toastService: ToastService | null;
-    resolve?: (value: VoidJobResult | null) => void;
+async function loadRelatedJobs(jobId: number, isArchived: boolean, isBulkJob: boolean): Promise<RelatedJob[]> {
+    const results = await jobApi.getRelatedJobsMultiSelectList(jobId, isArchived, isBulkJob);
+    return results.map(r => ({
+        id: r.id,
+        text: r.text,
+        selected: r.selected,
+        isBulkJob: r.isBulkJob,
+        isArchived: r.isArchived,
+    }));
 }
 
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    job: null,
-    toastService: null,
-};
-
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleConfirm = (result: VoidJobResult) => {
-        dialogState.open = false;
-        dialogState.resolve?.(result);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleLoadRelatedJobs = async (jobId: number, isArchived: boolean, isBulkJob: boolean): Promise<RelatedJob[]> => {
-        const results = await jobApi.getRelatedJobsMultiSelectList(jobId, isArchived, isBulkJob);
-        return results.map(r => ({
-            id: r.id,
-            text: r.text,
-            selected: r.selected,
-            isBulkJob: r.isBulkJob,
-            isArchived: r.isArchived,
-        }));
-    };
-
-    const handleVoidJob = async (
-        jobId: number,
-        voidSingleJobOnly: boolean,
-        voidReason: string,
-        selectedJobIds?: number[]
-    ): Promise<void> => {
-        await jobApi.voidJob({jobId, voidSingleJobOnly, voidReason, selectedJobIds});
-    };
-
-    const handleVoidBulkJob = async (
-        bulkJobId: number,
-        voidSingleJobOnly: boolean,
-        voidReason: string,
-        selectedJobIds?: number[]
-    ): Promise<void> => {
-        await jobApi.voidBulkJob({bulkJobId, voidSingleJobOnly, voidReason, selectedJobIds});
-    };
-
-    const handleShowToast: ShowToastFn = (message, type) => {
-        if (!dialogState.toastService) {
-            console.log(`[Toast ${type}]: ${message}`);
-            return;
-        }
-        dialogState.toastService.showToast(message, type);
-    };
-
-    const currentTheme = getTheme();
-
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <VoidJobConfirmationDialog
-                    open={dialogState.open}
-                    job={dialogState.job}
-                    onClose={handleClose}
-                    onConfirm={handleConfirm}
-                    onLoadRelatedJobs={handleLoadRelatedJobs}
-                    onVoidJob={handleVoidJob}
-                    onVoidBulkJob={handleVoidBulkJob}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
-}
-
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-void-job-confirmation-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+const host = createDialogHost<{job: VoidJobDialogJob}, VoidJobResult | null>({
+    containerId: 'react-void-job-confirmation-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <VoidJobConfirmationDialog
+            open={open}
+            job={payload.job}
+            onClose={() => close(null)}
+            onConfirm={close}
+            onLoadRelatedJobs={loadRelatedJobs}
+            onVoidJob={(jobId, voidSingleJobOnly, voidReason, selectedJobIds) =>
+                jobApi.voidJob({jobId, voidSingleJobOnly, voidReason, selectedJobIds})}
+            onVoidBulkJob={(bulkJobId, voidSingleJobOnly, voidReason, selectedJobIds) =>
+                jobApi.voidBulkJob({bulkJobId, voidSingleJobOnly, voidReason, selectedJobIds})}
+            showToast={showToast}
+        />
+    ),
+});
 
 export function openVoidJobConfirmationDialog(
     job: VoidJobDialogJob,
     toastService?: ToastService
 ): Promise<VoidJobResult | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            job,
-            toastService: toastService ?? null,
-            resolve,
-        };
-        renderDialog();
-    });
+    return host.open({job}, toastService);
 }
 
 window.ReactVoidJobConfirmationDialog = {

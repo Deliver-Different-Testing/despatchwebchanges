@@ -6,129 +6,45 @@
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import { EditParcelDimensionsDialog } from './EditParcelDimensionsDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
 import {
-    ParcelDimensions,
     EditParcelDimensionsDialogOptions,
     EditParcelDimensionsDialogResult,
 } from './types';
 import type { ToastService } from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-interface DialogState {
-    open: boolean;
-    parcels: ParcelDimensions[];
-    jobId?: number;
-    bulkJobId?: number;
-    isUsCustomer: boolean;
-    jobWeight?: number;
-    partnerMode?: boolean;
-    resolve?: (result: EditParcelDimensionsDialogResult | null) => void;
-}
-
-const defaultToastService: ToastService = {
-    showToast: (message: string, type: string) => {
-        console.log(`[${type.toUpperCase()}] ${message}`);
-    },
-};
-
-class EditParcelDimensionsDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private toastService: ToastService = defaultToastService;
-    private dialogState: DialogState = {
-        open: false,
-        parcels: [],
-        isUsCustomer: false,
-    };
-
-    setToastService(service: ToastService): void {
-        this.toastService = service;
-    }
-
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-edit-parcel-dimensions-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(null);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleSubmit = (result: EditParcelDimensionsDialogResult) => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(result);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const currentTheme = getTheme();
-
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <EditParcelDimensionsDialog
-                        open={this.dialogState.open}
-                        parcels={this.dialogState.parcels}
-                        jobId={this.dialogState.jobId}
-                        bulkJobId={this.dialogState.bulkJobId}
-                        isUsCustomer={this.dialogState.isUsCustomer}
-                        jobWeight={this.dialogState.jobWeight}
-                        partnerMode={this.dialogState.partnerMode}
-                        onClose={handleClose}
-                        onSubmit={handleSubmit}
-                        showToast={this.toastService.showToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
-        );
-    }
-
-    showEditParcelDimensionsDialog(options: EditParcelDimensionsDialogOptions): Promise<EditParcelDimensionsDialogResult | null> {
-        this.initializeDialogRoot();
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                parcels: options.parcels,
-                jobId: options.jobId,
-                bulkJobId: options.bulkJobId,
-                isUsCustomer: options.isUsCustomer,
-                jobWeight: options.jobWeight,
-                partnerMode: options.partnerMode,
-                resolve,
-            };
-            this.renderDialog();
-        });
-    }
-}
-
-const dialogManager = new EditParcelDimensionsDialogManager();
+const host = createDialogHost<EditParcelDimensionsDialogOptions, EditParcelDimensionsDialogResult | null>({
+    containerId: 'react-edit-parcel-dimensions-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <EditParcelDimensionsDialog
+            open={open}
+            parcels={payload.parcels}
+            jobId={payload.jobId}
+            bulkJobId={payload.bulkJobId}
+            jobNumber={payload.jobNumber}
+            isUsCustomer={payload.isUsCustomer}
+            jobWeight={payload.jobWeight}
+            calculateDimsOncePerJob={payload.calculateDimsOncePerJob}
+            partnerMode={payload.partnerMode}
+            readOnly={payload.readOnly ?? false}
+            onClose={() => close(null)}
+            onSubmit={close}
+            showToast={showToast}
+        />
+    ),
+});
 
 export function showEditParcelDimensionsDialog(
     options: EditParcelDimensionsDialogOptions
 ): Promise<EditParcelDimensionsDialogResult | null> {
-    return dialogManager.showEditParcelDimensionsDialog(options);
+    return host.open(options);
 }
 
 export function setToastService(service: ToastService): void {
-    dialogManager.setToastService(service);
+    host.setToastService(service);
 }
 
 // Expose to window for AngularJS access

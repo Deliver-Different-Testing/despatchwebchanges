@@ -1,31 +1,28 @@
 import React, {useState} from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import IconButton from '@mui/material/IconButton';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CarIcon from '@mui/icons-material/DirectionsCar';
-import DownloadIcon from '@mui/icons-material/Download';
-import EditIcon from '@mui/icons-material/Edit';
-import EventNoteIcon from '@mui/icons-material/EventNote';
-import NightsStayIcon from '@mui/icons-material/NightsStay';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks/useDriverManagementApi';
 import {AfterHoursCourierScheduleItem, AfterHoursFilter, PaginatedRequest} from '../../../interfaces';
 import {AfterHoursCourierSchedule} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarButtonSx, toolbarIconButtonSx, getDayChipColor} from './shared';
+import {CalendarDays, Car, Download, Moon, Pencil, Plus, RefreshCw, Trash2} from 'lucide-react';
+import {Icon} from '../../../components/common/icon/Icon';
+import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
+import {ActionIcon, Badge, Box, Button, Group, Select, Stack, Text, Tooltip} from '@mantine/core';
+import {
+    CRITERION_LABEL_GAP,
+    FILTER_CONTROL_HEIGHT,
+    GroupLabel,
+} from '../../../components/common/filter-fields';
+import {
+    DialogFooter,
+    DialogHeader,
+    DialogShell,
+    dialogContentBg,
+    dialogSize,
+} from '../../../components/dialogs/shared/mantine';
+import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, getDayChipColor} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
+import {dataTablePagingProps} from './dataTablePaging';
 
 interface WindowWithAfterhoursDialog {
     ReactEditAfterhoursDialog?: {
@@ -64,11 +61,11 @@ const columns: DataTableColumn<AfterHoursCourierScheduleItem>[] = [
     {key: 'courierName', label: 'Driver Name', sortable: true, render: (row) => row.courierName},
     {key: 'courierCode', label: 'Driver Code', sortable: true, width: '120px', render: (row) => row.courierCode},
     {key: 'days', label: 'Days', sortable: true, render: (row) => (
-        <Box sx={{display: 'flex', gap: 0.5, flexWrap: 'wrap'}}>
+        <Group gap={4}>
             {row.days.map(day => (
-                <Chip key={day} label={day.slice(0, 3)} size="small" color={getDayChipColor(day)} variant="outlined" />
+                <Badge key={day} size="sm" tt="none" color={getDayChipColor(day)}>{day.slice(0, 3)}</Badge>
             ))}
-        </Box>
+        </Group>
     )},
     {key: 'startTime', label: 'Start Time', sortable: true, width: '110px', render: (row) => formatTime(row.startTime)},
     {key: 'endTime', label: 'End Time', sortable: true, width: '110px', render: (row) => formatTime(row.endTime)},
@@ -176,6 +173,13 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
         setScheduleToDelete(null);
     };
 
+    const activeFilterCount = filters.day !== 'all' ? 1 : 0;
+
+    const handleClearFilters = () => {
+        setFilters({day: 'all'});
+        setQuery(q => ({...q, page: 1}));
+    };
+
     const handleExport = async () => {
         try {
             await driverManagementApi.exportAfterHoursScheduleCsv(query, filters);
@@ -189,15 +193,27 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
         col.key === 'actions'
             ? {...col, render: (row: AfterHoursCourierScheduleItem) => (
                 <>
-                    <Tooltip title="Edit">
-                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEditSchedule(row); }}>
-                            <EditIcon fontSize="small" />
-                        </IconButton>
+                    <Tooltip label="Edit">
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            aria-label="Edit schedule"
+                            onClick={(e) => { e.stopPropagation(); handleEditSchedule(row); }}
+                        >
+                            <Icon lucide={Pencil} size={16}/>
+                        </ActionIcon>
                     </Tooltip>
-                    <Tooltip title="Delete">
-                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); setScheduleToDelete(row); setDeleteDialogOpen(true); }}>
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
+                    <Tooltip label="Delete">
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            aria-label="Delete schedule"
+                            onClick={(e) => { e.stopPropagation(); setScheduleToDelete(row); setDeleteDialogOpen(true); }}
+                        >
+                            <Icon lucide={Trash2} size={16}/>
+                        </ActionIcon>
                     </Tooltip>
                 </>
             )}
@@ -205,37 +221,33 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
     );
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+        <Stack gap={16}>
             {/* Stats */}
-            <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
-                <StatCard value={stats.totalAssignments} label="Total Assignments" color="primary.main" icon={<EventNoteIcon />} />
-                <StatCard value={stats.activeDrivers} label="Active Drivers" color="success.main" icon={<CarIcon />} />
-            </Box>
+            <Group gap={16}>
+                <StatCard value={stats.totalAssignments} label="Total Assignments" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={CalendarDays}/>} />
+                <StatCard value={stats.activeDrivers} label="Active Drivers" color="var(--mantine-color-green-6)" icon={<Icon lucide={Car}/>} />
+            </Group>
 
             {/* Filters */}
             <FilterToolbar
+                activeFilterCount={activeFilterCount}
+                onClearAll={handleClearFilters}
                 actions={
                     <>
                         <Button
-                            size="small"
-                            variant="contained"
-                            color="primary"
-                            startIcon={<AddIcon />}
+                            size="compact-sm"
+                            h={FILTER_CONTROL_HEIGHT}
+                            leftSection={<Icon lucide={Plus} size={16}/>}
                             onClick={handleCreateSchedule}
-                            sx={toolbarButtonSx}
                         >
-                            Add Schedule
+                            Add schedule
                         </Button>
-                        <Tooltip title="Refresh">
-                            <IconButton size="small" sx={toolbarIconButtonSx} onClick={() => refetch()}>
-                                <RefreshIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Export CSV">
-                            <IconButton size="small" sx={toolbarIconButtonSx} onClick={handleExport}>
-                                <DownloadIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
+                        <HeaderActionIcon label="Refresh" onClick={() => refetch()}>
+                            <Icon lucide={RefreshCw} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                        </HeaderActionIcon>
+                        <HeaderActionIcon label="Export CSV" onClick={handleExport}>
+                            <Icon lucide={Download} size={PANEL_CONTROL_GLYPH_SIZE}/>
+                        </HeaderActionIcon>
                     </>
                 }
             >
@@ -244,13 +256,26 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                     onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
                     placeholder="Search schedules..."
                 />
-                <TextField select label="Day" size="small" sx={{minWidth: 150}} value={filters.day}
-                    onChange={(e) => { setFilters({day: e.target.value}); setQuery(q => ({...q, page: 1})); }}>
-                    <MenuItem value="all">All Days</MenuItem>
-                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
-                        <MenuItem key={d} value={d.toLowerCase()}>{d}</MenuItem>
-                    ))}
-                </TextField>
+                <Stack gap={CRITERION_LABEL_GAP}>
+                    <GroupLabel selected={filters.day !== 'all' ? 1 : 0}>Day</GroupLabel>
+                    <Select
+                        size="xs"
+                        aria-label="Day"
+                        miw={150}
+                        allowDeselect={false}
+                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
+                        value={filters.day}
+                        onChange={(value) => {
+                            setFilters({day: value ?? 'all'});
+                            setQuery(q => ({...q, page: 1}));
+                        }}
+                        data={[
+                            {value: 'all', label: 'All days'},
+                            ...['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                                .map(d => ({value: d.toLowerCase(), label: d})),
+                        ]}
+                    />
+                </Stack>
             </FilterToolbar>
 
             {/* Table */}
@@ -262,28 +287,41 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
-                page={query.page || 1}
-                pageSize={query.pageSize}
-                onPageChange={(p) => setQuery(q => ({...q, page: p}))}
-                onPageSizeChange={(ps) => setQuery(q => ({...q, pageSize: ps, page: 1}))}
-                emptyIcon={<NightsStayIcon />}
+                {...dataTablePagingProps(query, setQuery)}
+                emptyIcon={<Icon lucide={Moon}/>}
                 emptyTitle="No After Hours Schedules"
                 emptyMessage="No after hours schedules match your criteria."
             />
 
             {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-                <DialogTitle>Delete Schedule</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to delete this schedule for {scheduleToDelete?.courierName}?
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleDeleteConfirm} variant="contained" color="error">Delete</Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+            {/* A raw MUI <Dialog> before; composed from the shared Mantine
+                primitives per CLAUDE.md, which is where the destructive variant,
+                the confirm/cancel shape and the accessible name come from. */}
+            <DialogShell
+                opened={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                size={dialogSize.sm}
+                label="Delete schedule"
+            >
+                <DialogHeader
+                    icon={<Icon lucide={Trash2}/>}
+                    title="Delete schedule"
+                    onClose={() => setDeleteDialogOpen(false)}
+                    variant="error"
+                />
+                <Box p={24} bg={dialogContentBg}>
+                    <Text>
+                        Delete this schedule for <strong>{scheduleToDelete?.courierName}</strong>? This cannot be undone.
+                    </Text>
+                </Box>
+                <DialogFooter
+                    onCancel={() => setDeleteDialogOpen(false)}
+                    onConfirm={handleDeleteConfirm}
+                    confirmLabel="Delete schedule"
+                    confirmColor="red"
+                    confirmIcon={<Icon lucide={Trash2}/>}
+                />
+            </DialogShell>
+        </Stack>
     );
 };

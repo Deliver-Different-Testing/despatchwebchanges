@@ -1,10 +1,10 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Repositories;
@@ -15,22 +15,26 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class NationwideJobRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteTestDatabase _db = new();
+    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock =
+        Substitute.For<IClearListEnvelopeService>();
+
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly SqliteTestDatabase _db = new();
+    private readonly IInboundAgentLinkService _inboundAgentLinkServiceMock = Substitute.For<IInboundAgentLinkService>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private FakeTenantClock _clock = new(TestDates.Now);
 
     public NationwideJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns(1);
     }
 
     public async ValueTask DisposeAsync()
@@ -41,10 +45,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     private NationwideJobRepository CreateRepository() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _clock,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock,
+        _inboundAgentLinkServiceMock
     );
 
     [Fact]
@@ -86,8 +91,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineOptionsAsync();
 
         // Assert
-        Assert.Single(result);
-        Assert.Equal("NZ", result[0].Text);
+        var item = Assert.Single(result);
+        Assert.Equal("NZ", item.Text);
     }
 
     [Fact]
@@ -118,60 +123,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert
         Assert.Single(result);
         Assert.Equal(42, result[0].Id);
-    }
-
-    [Fact]
-    public async Task GetActiveAirlineCodesAsync_WithActiveAirlines_ReturnsCodes()
-    {
-        // Arrange
-        _context.FlightCarriers.AddRange(
-            CreateFlightCarrier(1, "NZ", "Air New Zealand", true),
-            CreateFlightCarrier(2, "QF", "Qantas", true)
-        );
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetActiveAirlineCodesAsync();
-
-        // Assert
-        Assert.Equal(2, result.Count);
-        Assert.Contains("NZ", result);
-        Assert.Contains("QF", result);
-    }
-
-    [Fact]
-    public async Task GetActiveAirlineCodesAsync_OnlyReturnsActiveCodes()
-    {
-        // Arrange
-        _context.FlightCarriers.AddRange(
-            CreateFlightCarrier(1, "NZ", "Air New Zealand", true),
-            CreateFlightCarrier(2, "QF", "Qantas", false) // Inactive
-        );
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetActiveAirlineCodesAsync();
-
-        // Assert
-        Assert.Single(result);
-        Assert.Equal("NZ", result[0]);
-    }
-
-    [Fact]
-    public async Task GetActiveAirlineCodesAsync_WithNoAirlines_ReturnsEmptyList()
-    {
-        // Arrange
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetActiveAirlineCodesAsync();
-
-        // Assert
-        Assert.Empty(result);
     }
 
     [Fact]
@@ -233,7 +184,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Create airports - one nearby, one far away
         _context.TblAirports.AddRange(
             CreateAirport(1, "Auckland Airport", -37.0082m, 174.7850m, true), // Close
-            CreateAirport(2, "Sydney Airport", -33.9399m, 151.1753m, true)   // Far
+            CreateAirport(2, "Sydney Airport", -33.9399m, 151.1753m, true) // Far
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
@@ -310,7 +261,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Create job with delivery coordinates in Auckland, pickup far away
         _context.TucJobs.Add(CreateJobWithCoordinates(jobId, "JOB001",
-            pickupLat: 40.7128m, pickupLong: -74.0060m,    // New York (far)
+            pickupLat: 40.7128m, pickupLong: -74.0060m, // New York (far)
             deliveryLat: -36.8485m, deliveryLong: 174.7633m)); // Auckland
 
         _context.TblAirports.Add(CreateAirport(1, "Auckland Airport", -37.0082m, 174.7850m, true));
@@ -556,6 +507,485 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task AddAgentToJobAsync_WithInboundUrlAndAgentEmail_QueuesAgentMessageWithLink()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
+        Assert.Equal("agent@example.com", result.AgentEmail);
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("agent@example.com", message.SendToEmailAddress);
+        Assert.Equal("New job assigned JOB001", message.Subject);
+        var expectedReplyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
+                              ?? "support@deliverdifferent.com";
+        Assert.Equal(expectedReplyTo, message.ReplyToEmailAddress);
+        Assert.Contains("https://inbound.example.com/TOKEN123", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_SubstitutesTemplateTokensFromJobAndFinalArrivalLeg()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        var job = CreateJob(jobId, "JOB001");
+        job.DeliveryAddressLine1 = "ACME Freight";
+        job.DeliveryAddressLine3 = "12";
+        job.DeliveryAddressLine4 = "Queen Street";
+        job.DeliveryAddressLine6 = "Auckland";
+        job.DeliverToContact = "Jane Doe";
+        job.DeliverToPhone = "021 555 1234";
+        job.UcjbQty = 3;
+        job.UcjbWeight = 25.5;
+        _context.TucJobs.Add(job);
+
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+
+        // One arrival leg (the SQLite test schema has a unique constraint on UcnwJobId, so a
+        // single leg per job; the "final leg = latest ETA" ordering is plain LINQ over legs).
+        _context.TucJobNationwides.Add(new TucJobNationwide
+        {
+            UcnwId = 1, UcnwJobId = jobId, WebhookAlertId = "w1", UcnwLegNumber = 1,
+            UcnwFlightNo = "NZ200", UcnwEtd = TestDates.Now.AddHours(2), UcnwEta = TestDates.Now.AddHours(4),
+            DepartureAirportCity = "Auckland"
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _tenantInfoServiceMock.FormatDateForTenant(Arg.Any<DateTime?>()).Returns("FORMATTED_ETA");
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        var body = message.UcmmMessage;
+        Assert.Contains("Hi Test Agent", body);
+        Assert.Contains("new job JOB001", body);
+        Assert.Contains("ACME Freight 12 Queen Street Auckland", body);
+        Assert.Contains("https://inbound.example.com/TOKEN123", body);
+        Assert.Contains("arriving on NZ200 at FORMATTED_ETA from Auckland", body);
+        Assert.Contains("with 3 items weighing 25.5", body);
+        Assert.Contains("contact name is Jane Doe and you can call them on 021 555 1234", body);
+    }
+
+    [Fact]
+    public async Task SendAgentRequestMessageAsync_FlightLegOnSiblingJob_FillsFlightTokensFromFamily()
+    {
+        // Arrange — the agent is assigned to the delivery child job, but the flight legs live on a
+        // sibling flight job under the same parent. The email must still resolve the flight details
+        // from the family rather than leaving them blank.
+        const int parentJobId = 1;
+        const int deliveryJobId = 100;
+        const int flightJobId = 200;
+        const int agentId = 1;
+
+        var parentJob = CreateJob(parentJobId, "JOB001");
+
+        var deliveryJob = CreateJob(deliveryJobId, "JOB001d");
+        deliveryJob.ParentId = parentJobId;
+        deliveryJob.DeliveryAddressLine1 = "ACME Freight";
+        deliveryJob.DeliveryAddressLine3 = "12";
+        deliveryJob.DeliveryAddressLine4 = "Queen Street";
+        deliveryJob.DeliveryAddressLine6 = "Auckland";
+        deliveryJob.DeliverToContact = "Jane Doe";
+        deliveryJob.DeliverToPhone = "021 555 1234";
+        deliveryJob.UcjbQty = 3;
+        deliveryJob.UcjbWeight = 25.5;
+
+        var flightJob = CreateJob(flightJobId, "JOB001f");
+        flightJob.ParentId = parentJobId;
+
+        _context.TucJobs.AddRange(parentJob, deliveryJob, flightJob);
+
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+
+        // The only flight leg is on the sibling flight job, not the delivery job the agent is on.
+        _context.TucJobNationwides.Add(new TucJobNationwide
+        {
+            UcnwId = 1, UcnwJobId = flightJobId, WebhookAlertId = "w1", UcnwLegNumber = 1,
+            UcnwFlightNo = "NZ200", UcnwEtd = TestDates.Now.AddHours(2), UcnwEta = TestDates.Now.AddHours(4),
+            DepartureAirportCity = "Auckland"
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _tenantInfoServiceMock.FormatDateForTenant(Arg.Any<DateTime?>()).Returns("FORMATTED_ETA");
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(deliveryJobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act — send for the delivery child job (the one the agent is assigned to)
+        await repository.SendAgentRequestMessageAsync(agentId, deliveryJobId);
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("arriving on NZ200 at FORMATTED_ETA from Auckland", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task SendAgentRequestMessageAsync_NonUsTenant_WeightShownInKg()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        var job = CreateJob(jobId, "JOB001");
+        job.UcjbQty = 2;
+        job.UcjbWeight = 23;
+        _context.TucJobs.Add(job);
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SendAgentRequestMessageAsync(agentId, jobId);
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("weighing 23 kg", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task SendAgentRequestMessageAsync_UsTenant_WeightShownInLb()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        var job = CreateJob(jobId, "JOB001");
+        job.UcjbQty = 2;
+        job.UcjbWeight = 23;
+        _context.TucJobs.Add(job);
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.SendAgentRequestMessageAsync(agentId, jobId);
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("weighing 23 lb", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WithProvidedSubjectAndBody_UsesOverrideAndSubstitutes()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act — dispatcher-edited template overrides the hardcoded default
+        await repository.AddAgentToJobAsync(agentId, jobId, false,
+            "Custom subject [JobNumber]", "Custom body for [AgentName]");
+
+        // Assert
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Custom subject JOB001", message.Subject);
+        // Body is rendered to branded HTML at send time; the substituted text is inside it.
+        Assert.Contains("Custom body for Test Agent", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_CustomBodyWithoutInboundUrlToken_StillIncludesAcceptButton()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act — dispatcher-edited body that drops the [InboundUrl] token entirely
+        await repository.AddAgentToJobAsync(agentId, jobId, false,
+            null, "Please accept, pick up, and complete the job in the portal.");
+
+        // Assert — the accept-job CTA is structural, so it renders from the resolved
+        // inbound link even though the body copy never mentions [InboundUrl].
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("Your next step", message.UcmmMessage);
+        Assert.Contains("https://inbound.example.com/TOKEN123", message.UcmmMessage);
+        Assert.Contains("Accept job &amp; upload POD", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_UnknownTokenInEditedTemplate_LeftIntactWithoutThrowing()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act — a token with no matching field must survive verbatim, not throw
+        var result = await repository.AddAgentToJobAsync(agentId, jobId, false,
+            null, "Ref [NotARealField] for [JobNumber]");
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        // Unknown token survives verbatim inside the rendered HTML body.
+        Assert.Contains("Ref [NotARealField] for JOB001", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_QueuesMessageUsingHardcodedDefaultsAndEnvReplyTo()
+    {
+        // Arrange — the template is hardcoded and reply-to comes from the env var, not the DB.
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("New job assigned JOB001", message.Subject);
+        var expectedReplyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
+                              ?? "support@deliverdifferent.com";
+        Assert.Equal(expectedReplyTo, message.ReplyToEmailAddress);
+        Assert.Contains("Hi Test Agent", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WithoutAgentEmail_AssignsButQueuesNoMessage()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        _context.TucAgents.Add(CreateAgent(agentId, "Test Agent")); // UcagFax null
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.NoAgentEmail, result.Status);
+        Assert.Empty(await _context.TucManualMessages.ToListAsync(TestContext.Current.CancellationToken));
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(agentId, job.AgentId);
+        Assert.Equal((int)JobStatus.OutboundAgentAssigned, job.UcjbStatus);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WhenInboundUrlNotConfigured_AssignsButQueuesNoMessage()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns((string?)null); // no InboundUrl configured — nothing to link, so no email
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.NoInboundUrl, result.Status);
+        Assert.Empty(await _context.TucManualMessages.ToListAsync(TestContext.Current.CancellationToken));
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(agentId, job.AgentId);
+    }
+
+    [Fact]
+    public async Task AddAgentToJobAsync_WhenLinkServiceThrows_StillAssignsAgentAndReportsFailed()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns<Task<string?>>(_ => throw new InvalidOperationException("boom"));
+
+        var repository = CreateRepository();
+
+        // Act — the best-effort email failure must not unwind the assignment
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Failed, result.Status);
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(agentId, job.AgentId);
+        Assert.Equal((int)JobStatus.OutboundAgentAssigned, job.UcjbStatus);
+    }
+
+    [Fact]
+    public async Task GetAgentInboundEmailPreviewAsync_WithEmailAndInboundUrl_ReturnsQueuedWithNoSideEffects()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        var repository = CreateRepository();
+
+        // Act
+        var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.Queued, preview.Status);
+        Assert.True(preview.WillEmail);
+        Assert.Equal("agent@example.com", preview.AgentEmail);
+        // Preview has no side effects: the job is not assigned and nothing is queued.
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Null(job.AgentId);
+        Assert.Empty(await _context.TucManualMessages.ToListAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task GetAgentInboundEmailPreviewAsync_WithoutAgentEmail_ReturnsNoAgentEmail()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        _context.TucAgents.Add(CreateAgent(agentId, "Test Agent")); // UcagFax null
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.NoAgentEmail, preview.Status);
+        Assert.False(preview.WillEmail);
+    }
+
+    [Fact]
+    public async Task GetAgentInboundEmailPreviewAsync_WhenInboundUrlNotConfigured_ReturnsNoInboundUrl()
+    {
+        // Arrange
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns((string?)null);
+
+        var repository = CreateRepository();
+
+        // Act
+        var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+
+        // Assert
+        Assert.Equal(AgentInboundEmailStatus.NoInboundUrl, preview.Status);
+        Assert.False(preview.WillEmail);
+        Assert.Equal("agent@example.com", preview.AgentEmail);
+    }
+
+    [Fact]
     public async Task GetFlightWebhookIdByJobIdAsync_WithWebhooks_ReturnsIds()
     {
         // Arrange
@@ -674,6 +1104,69 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetAllActiveAirportSuggestionsAsync_IncludesAirportsWithoutAgents()
+    {
+        // Arrange
+        _context.TblAirports.AddRange(
+            CreateAirport(1, "Airport With Agents", -37.0082m, 174.7850m, true),
+            CreateAirport(2, "Airport Without Agents", -33.9399m, 151.1753m, true)
+        );
+
+        _context.TucAgents.Add(CreateAgent(1, "Test Agent"));
+        _context.AgentVehicles.Add(new AgentVehicle
+        {
+            AgentVehicleId = 1,
+            AgentId = 1,
+            AirportId = 1,
+            VehicleSizeId = 1
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAllActiveAirportSuggestionsAsync();
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, a => a.Text == "Airport With Agents");
+        Assert.Contains(result, a => a.Text == "Airport Without Agents");
+    }
+
+    [Fact]
+    public async Task GetAllActiveAirportSuggestionsAsync_ExcludesInactiveAirports()
+    {
+        // Arrange
+        _context.TblAirports.AddRange(
+            CreateAirport(1, "Active Airport", -37.0082m, 174.7850m, true),
+            CreateAirport(2, "Inactive Airport", -33.9399m, 151.1753m, false)
+        );
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAllActiveAirportSuggestionsAsync();
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Active Airport", result[0].Text);
+    }
+
+    [Fact]
+    public async Task GetAllActiveAirportSuggestionsAsync_WithNoAirports_ReturnsEmptyList()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAllActiveAirportSuggestionsAsync();
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async Task RestoreNationwideJobAsync_WithExistingJob_DoesNotThrow()
     {
         // Arrange
@@ -728,7 +1221,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.RestoreNationwideJobAsync(jobId);
 
         // Assert
-        var flights = await _context.TucJobNationwides.Where(f => f.UcnwJobId == jobId).ToListAsync(TestContext.Current.CancellationToken);
+        var flights = await _context.TucJobNationwides.Where(f => f.UcnwJobId == jobId)
+            .ToListAsync(TestContext.Current.CancellationToken);
         Assert.Empty(flights);
     }
 
@@ -770,7 +1264,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var queryParams = new JobQueryParams();
 
         // Act
-        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false, clientIds: string.Empty, NationwideWidget.JobList, [], cancellationToken: TestContext.Current.CancellationToken);
+        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false,
+            clientIds: string.Empty, NationwideWidget.JobList, [],
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result);
@@ -806,7 +1302,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
         Assert.Equal("NZ123", flightRecord.UcnwFlightNo);
         Assert.Equal("JOB001-F", flightRecord.UcnwJobNumber);
@@ -929,7 +1427,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_UpdatesPickupJobDeliverByTime()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -969,7 +1467,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_UpdatesDeliveryJobProperties()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1104,7 +1602,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var journeyRecord = await _context.JobDeliveryJourneys
-            .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment", TestContext.Current.CancellationToken);
+            .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment",
+                TestContext.Current.CancellationToken);
         Assert.NotNull(journeyRecord);
         Assert.Equal(1, journeyRecord.StaffId);
         Assert.Equal("Staff", journeyRecord.UpdatedByType);
@@ -1147,7 +1646,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var note = await _context.TucNotes
-            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)NoteType.FlightUpdate, TestContext.Current.CancellationToken);
+            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)NoteType.FlightUpdate,
+                TestContext.Current.CancellationToken);
         Assert.NotNull(note);
         Assert.Contains("Flight", note.NoteText);
         Assert.Contains("123", note.NoteText); // Flight number from segment
@@ -1175,7 +1675,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - no flight record should be created
-        var flightRecords = await _context.TucJobNationwides.Where(f => f.UcnwJobId == 100).ToListAsync(TestContext.Current.CancellationToken);
+        var flightRecords = await _context.TucJobNationwides.Where(f => f.UcnwJobId == 100)
+            .ToListAsync(TestContext.Current.CancellationToken);
         Assert.Empty(flightRecords);
     }
 
@@ -1262,8 +1763,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - both flight record and journey record should exist (atomic save)
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
-        var journeyRecord = await _context.JobDeliveryJourneys.FirstOrDefaultAsync(j => j.JobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
+        var journeyRecord =
+            await _context.JobDeliveryJourneys.FirstOrDefaultAsync(j => j.JobId == 100,
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(flightRecord);
         Assert.NotNull(journeyRecord);
@@ -1274,7 +1779,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_UsesPickupJobSuffixConstant()
     {
         // Arrange - verifies the '1' suffix is used for pickup jobs
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1322,7 +1827,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_UsesDeliveryJobSuffixConstant()
     {
         // Arrange - verifies the '3' suffix is used for delivery jobs
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1401,7 +1906,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - primary flight should have leg number 1 (constant value)
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
         Assert.Equal(1, flightRecord.UcnwLegNumber);
     }
@@ -1473,12 +1980,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     /// When no PackageReadyTime is provided, the delivery (final mile) job's start time should be
     /// calculated as: arrival time + airport processing time (default 60 minutes).
     /// </summary>
-
     [Fact]
     public async Task AddJobNationwideAsync_WhenNoPackageReadyTime_SetsDeliveryJobStartTimeToArrivalPlusProcessingTime()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1524,11 +2030,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WhenPackageReadyTimeProvided_UsesProvidedTimeInsteadOfCalculated()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
-        var customPackageReadyTime = new DateTimeOffset(2024, 6, 15, 16, 30, 0, TimeSpan.Zero); // 2.5 hours after arrival
+        var customPackageReadyTime =
+            new DateTimeOffset(2024, 6, 15, 16, 30, 0, TimeSpan.Zero); // 2.5 hours after arrival
 
         var parentJob = CreateJobWithParent(1, "JOB001");
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
@@ -1568,7 +2075,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WithCustomAirportProcessingTime_UsesAirportSpecificProcessingTime()
     {
         // Arrange - Test with a non-default processing time (90 minutes)
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1582,7 +2089,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
-        var arrivalAirport = CreateAirportWithProcessingTime(2, "Los Angeles Airport", "LAX", true, customProcessingTime);
+        var arrivalAirport =
+            CreateAirportWithProcessingTime(2, "Los Angeles Airport", "LAX", true, customProcessingTime);
         _context.TblAirports.AddRange(departureAirport, arrivalAirport);
 
         var timeZone1 = CreateTimeZone(1, "Pacific/Auckland", "NZST");
@@ -1591,7 +2099,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var request = CreateFlightRequest(100, 1, 2, departureTime, arrivalTime); // PackageReadyTime defaults to null, forcing calculation
+        var request =
+            CreateFlightRequest(100, 1, 2, departureTime,
+                arrivalTime); // PackageReadyTime defaults to null, forcing calculation
         var webhookIds = new List<string> { "webhook-123" };
 
         var repository = CreateRepository();
@@ -1611,7 +2121,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WhenAirportHasNoProcessingTime_DefaultsTo60Minutes()
     {
         // Arrange - Airport without processing time set (should default to 60)
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1668,7 +2178,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_MultiSegmentFlight_UsesLastSegmentArrivalTimeForFinalMileStart()
     {
         // Arrange - Multi-segment flight where last leg arrival time matters
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime1 = new DateTimeOffset(2024, 6, 15, 8, 0, 0, TimeSpan.Zero);
         var arrivalTime1 = new DateTimeOffset(2024, 6, 15, 11, 0, 0, TimeSpan.Zero); // First leg arrival
@@ -1720,7 +2230,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             .FirstOrDefault(e => e.Entity.UcjbId == 102)?.Entity;
 
         if (trackedDeliveryJob != null)
+        {
             Assert.Equal(expectedStartTime.DateTime, trackedDeliveryJob.UcjbTime);
+        }
     }
 
     [Fact]
@@ -1729,7 +2241,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Arrange - This test verifies that when both job '2' and job '3' exist,
         // the query specifically selects job '3' (the drop-off job) for the delivery time update.
         // Previously, the OR condition would find job '2' first due to ordering.
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -1784,12 +2296,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     /// When assigning a flight, the pickup job's DeliverByTime should be set to:
     /// departure time - airport processing time (so the package arrives at the airport on time).
     /// </summary>
-
     [Fact]
     public async Task AddJobNationwideAsync_SetsPickupJobDeliverByTime_ToDepartureMinusProcessingTime()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 18, 0, 0, TimeSpan.Zero);
@@ -1802,7 +2313,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, pickupJob);
 
-        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, departureAirportProcessingTime);
+        var airport =
+            CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, departureAirportProcessingTime);
         _context.TblAirports.Add(airport);
 
         var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
@@ -1830,7 +2342,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WithCustomDepartureAirportProcessingTime_AppliesCorrectProcessingTime()
     {
         // Arrange - Departure airport with 90 minute processing time
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 18, 0, 0, TimeSpan.Zero);
@@ -1871,7 +2383,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_WhenNoPickupJob_DoesNotThrowAndFlightAssignmentSucceeds()
     {
         // Arrange - Flight job without associated pickup job
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 18, 0, 0, TimeSpan.Zero);
@@ -1900,7 +2412,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         Assert.Null(exception);
 
         // Verify flight was assigned
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
         return;
 
@@ -1912,7 +2426,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_SetsPickupJobDeliverByTimeZone_ToFirstSegmentDepartureTimeZone()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 18, 0, 0, TimeSpan.Zero);
@@ -1952,7 +2466,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task AddJobNationwideAsync_BothPickupAndDeliveryJobs_SetsBothDeliverByTimes()
     {
         // Arrange - Complete nationwide job with pickup, flight, and delivery
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2011,7 +2525,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     /// The flight record (TucJobNationwide) should store the correct ETD (Estimated Time of Departure)
     /// and ETA (Estimated Time of Arrival) from the flight segments.
     /// </summary>
-
     [Fact]
     public async Task AddJobNationwideAsync_StoresCorrectFlightETDAndETA()
     {
@@ -2040,7 +2553,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Flight record should have exact ETD and ETA from segment
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord =
+            await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100,
+                TestContext.Current.CancellationToken);
 
         Assert.NotNull(flightRecord);
         Assert.Equal(departureTime.DateTime, flightRecord.UcnwEtd);
@@ -2147,7 +2662,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     /// Issue #3: The processing time must default to 60 minutes (1 hour) when not set,
     /// consistent with AddJobNationwideAsync.
     /// </summary>
-
     [Fact]
     public async Task CalculateCargoReadyTimeAsync_WhenAirportHasProcessingTime_ReturnsConfiguredProcessingTime()
     {
@@ -2455,6 +2969,260 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         Assert.Equal(45, result.CargoClosingTime.Minute);
     }
 
+    [Fact]
+    public async Task AssignNpAgentToJobAsync_WithNetworkPartnerAgent_SetsNpAgentIdAndWritesAudit()
+    {
+        // Arrange
+        const int jobId = 700;
+        const int npAgentId = 70;
+        var job = CreateJob(jobId, "JOB700");
+        job.UcjbStatus = (int)JobStatus.Dispatched;
+        job.InternalStatus = (int)InternalJobStatus.AwaitingPod;
+        _context.TucJobs.Add(job);
+
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignNpAgentToJobAsync(npAgentId, jobId);
+
+        // Assert
+        var saved = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(npAgentId, saved.NpAgentId);
+
+        // Handing a job to a network partner is a visibility change, not a dispatch —
+        // the courier-facing status and the disp stamps must be left exactly as found.
+        Assert.Null(saved.AgentId);
+        Assert.Equal((int)JobStatus.Dispatched, saved.UcjbStatus);
+        Assert.Equal((int)InternalJobStatus.AwaitingPod, saved.InternalStatus);
+        Assert.Null(saved.UcjbDispDate);
+
+        var note = await _context.TucNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(jobId, note.JobId);
+        Assert.Equal((int)NoteType.AgentUpdate, note.NoteTypeId);
+        Assert.Contains("Partner Co", note.NoteText);
+
+        var journey = await _context.JobDeliveryJourneys.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment), journey.ChangeType);
+        Assert.Equal(npAgentId, journey.NewAgentId);
+        Assert.Equal(1, journey.StaffId);
+        Assert.Equal(nameof(DeliveryJourneyUpdatedByType.Staff), journey.UpdatedByType);
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobAsync_WithNoStaffContext_WritesJourneyEntryAsSystem()
+    {
+        // Arrange — CK_JobDeliveryJourney_UserID_Required rejects a Staff row with no
+        // StaffID, so an unattributed assignment must be recorded as System.
+        const int jobId = 702;
+        const int npAgentId = 73;
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns((int?)null);
+        _tenantInfoServiceMock.GetStaffId().Returns(0);
+
+        _context.TucJobs.Add(CreateJob(jobId, "JOB702"));
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignNpAgentToJobAsync(npAgentId, jobId);
+
+        // Assert
+        var journey = await _context.JobDeliveryJourneys.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Null(journey.StaffId);
+        Assert.Equal(nameof(DeliveryJourneyUpdatedByType.System), journey.UpdatedByType);
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobAsync_WithNonNetworkPartnerAgent_ThrowsAndLeavesJobUntouched()
+    {
+        // Arrange — a plain agent must not be assignable down the NP lane, otherwise
+        // the Agent and NP pickers become interchangeable on a crafted request.
+        const int jobId = 701;
+        const int agentId = 71;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB701"));
+        _context.TucAgents.Add(CreateAgent(agentId, "Plain Agent"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            repository.AssignNpAgentToJobAsync(agentId, jobId));
+
+        var saved = await _context.TucJobs.SingleAsync(j => j.UcjbId == jobId,
+            TestContext.Current.CancellationToken);
+        Assert.Null(saved.NpAgentId);
+        Assert.Empty(await _context.JobDeliveryJourneys.ToListAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobAsync_WithUnknownJob_Throws()
+    {
+        // Arrange
+        const int npAgentId = 72;
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            repository.AssignNpAgentToJobAsync(npAgentId, 999));
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobsAsync_AssignsEveryJobAndReportsPerJob()
+    {
+        // Arrange
+        const int npAgentId = 80;
+        _context.TucJobs.AddRange(CreateJob(800, "JOB800"), CreateJob(801, "JOB801"));
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var results = await repository.AssignNpAgentToJobsAsync(npAgentId, [800, 801]);
+
+        // Assert
+        Assert.Equal(2, results.Count);
+        Assert.All(results, r => Assert.True(r.Succeeded));
+        var jobs = await _context.TucJobs.ToListAsync(TestContext.Current.CancellationToken);
+        Assert.All(jobs, j => Assert.Equal(npAgentId, j.NpAgentId));
+    }
+
+    [Fact]
+    public async Task AssignNpAgentToJobsAsync_OneBadJobDoesNotAbortTheRest()
+    {
+        // Arrange — a missing job id must be reported, not thrown, or a single stale
+        // row in the operator's selection loses the whole batch.
+        const int npAgentId = 81;
+        _context.TucJobs.Add(CreateJob(810, "JOB810"));
+        var agent = CreateAgent(npAgentId, "Partner Co");
+        agent.IsNetworkPartner = true;
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var results = await repository.AssignNpAgentToJobsAsync(npAgentId, [999, 810]);
+
+        // Assert
+        Assert.Equal(2, results.Count);
+        var failed = Assert.Single(results, r => !r.Succeeded);
+        Assert.Equal(999, failed.JobId);
+        Assert.False(string.IsNullOrWhiteSpace(failed.FailureReason));
+
+        var succeeded = Assert.Single(results, r => r.Succeeded);
+        Assert.Equal(810, succeeded.JobId);
+        var job = await _context.TucJobs.SingleAsync(j => j.UcjbId == 810,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(npAgentId, job.NpAgentId);
+    }
+
+    [Fact]
+    public async Task AssignAgentToJobsAsync_AssignsEachJobAndCarriesTheEmailStatus()
+    {
+        // Arrange
+        const int agentId = 82;
+        _context.TucJobs.AddRange(CreateJob(820, "JOB820"), CreateJob(821, "JOB821"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        _inboundAgentLinkServiceMock.BuildJobLinkAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN");
+
+        var repository = CreateRepository();
+
+        // Act
+        var results = await repository.AssignAgentToJobsAsync(agentId, [820, 821]);
+
+        // Assert
+        Assert.Equal(2, results.Count);
+        Assert.All(results, r =>
+        {
+            Assert.True(r.Succeeded);
+            Assert.Equal(AgentInboundEmailStatus.Queued, r.EmailStatus);
+        });
+
+        var jobs = await _context.TucJobs.ToListAsync(TestContext.Current.CancellationToken);
+        Assert.All(jobs, j => Assert.Equal(agentId, j.AgentId));
+
+        // One inbound-link email per job, not one for the batch.
+        var messages = await _context.TucManualMessages.ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(2, messages.Count);
+    }
+
+    [Fact]
+    public async Task AssignAgentToJobsAsync_JobFailingTheFlightGateIsReportedAndTheRestProceed()
+    {
+        // Arrange — job 831 has a flight-speed sibling with no flight booked, so it
+        // fails the same gate the single-job UI enforces before assigning.
+        const int agentId = 83;
+        var parent = CreateJobWithParent(8300, "JOB830");
+        _context.TucJobs.Add(parent);
+        _context.TucJobs.Add(CreateJob(830, "JOB830a"));
+
+        var gatedParent = CreateJobWithParent(8310, "JOB831");
+        _context.TucJobs.Add(gatedParent);
+        var gated = CreateJob(831, "JOB831a");
+        gated.ParentId = 8310;
+        _context.TucJobs.Add(gated);
+
+        var flightSibling = CreateJob(8311, "JOB831b");
+        flightSibling.ParentId = 8310;
+        flightSibling.UcjbSpeed = 1;
+        _context.TucJobs.Add(flightSibling);
+        _context.TucJobTypes.Add(new TucJobType
+        {
+            UcjtId = 1,
+            UcjtName = "Flight",
+            ShortName = "FLT",
+            UcjtDescription = "Flight",
+            UcjtCode = "FLT",
+            JobLetter = "F",
+            GroupingId = (int)SpeedGrouping.Flight,
+            CreatedBy = "Test",
+            LastModifiedBy = "Test"
+        });
+
+        _context.TucAgents.Add(CreateAgent(agentId, "Test Agent"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        var results = await repository.AssignAgentToJobsAsync(agentId, [830, 831]);
+
+        // Assert
+        Assert.Equal(2, results.Count);
+        Assert.True(Assert.Single(results, r => r.JobId == 830).Succeeded);
+
+        var gatedResult = Assert.Single(results, r => r.JobId == 831);
+        Assert.False(gatedResult.Succeeded);
+        Assert.Contains("flight", gatedResult.FailureReason!, StringComparison.OrdinalIgnoreCase);
+
+        var untouched = await _context.TucJobs.SingleAsync(j => j.UcjbId == 831,
+            TestContext.Current.CancellationToken);
+        Assert.Null(untouched.AgentId);
+    }
+
     private static FlightCarrier CreateFlightCarrier(int id, string code, string name, bool isActive) => new()
     {
         FlightCarrierId = id,
@@ -2581,7 +3349,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         return job;
     }
 
-    private static TucJob CreateAgentJobWithGrouping(int id, string jobNumber, TucJob parent, TucJobTypeGrouping grouping)
+    private static TucJob CreateAgentJobWithGrouping(int id, string jobNumber, TucJob parent,
+        TucJobTypeGrouping grouping)
     {
         var jobType = new TucJobType
         {
@@ -2609,7 +3378,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         return job;
     }
 
-    private static TblAirport CreateAirportWithProcessingTime(int id, string name, string code, bool active, int processingTime) => new()
+    private static TblAirport CreateAirportWithProcessingTime(int id, string name, string code, bool active,
+        int processingTime) => new()
     {
         AirportId = id,
         Name = name,
@@ -2774,7 +3544,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_WhenToAirportIdSet_DeliveryJobIsUpdated()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2822,7 +3592,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_WhenDeliveryJobHasWrongGrouping_DeliveryJobNotUpdated()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2869,7 +3639,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_WhenOnlyRequestToAirportIdSet_DeliveryJobIsUpdated()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2917,7 +3687,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_NZTenant_UsesNationwideAgentGrouping()
     {
         // Arrange - NZ tenant
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -2989,8 +3759,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken));
         Assert.Contains("already has a flight assigned", ex.Message);
     }
 
@@ -3041,7 +3811,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async Task DiagnosticTest_NZTenant_WithUSGrouping_DeliveryJobNotFound()
     {
         // Arrange - NZ tenant
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
         var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
@@ -3079,5 +3849,4 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         Assert.NotEqual(packageReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
     }
-
 }

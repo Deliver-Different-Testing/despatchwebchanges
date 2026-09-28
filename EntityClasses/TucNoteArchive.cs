@@ -28,4 +28,10 @@ public partial class TucNoteArchive
     public int? UpdatedBy { get; set; }
 
     public int? NpAgentId { get; set; }
+
+    public DateTime? CreatedDateUtc { get; set; }
+
+    public DateTime? UpdatedDateUtc { get; set; }
+
+    public DateTime? ProcessedNotificationDateUtc { get; set; }
 }

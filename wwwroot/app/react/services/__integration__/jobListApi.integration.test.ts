@@ -350,7 +350,7 @@ describe('jobListApi integration', () => {
 
             await restoreJobs([10, 20]);
 
-            expect(capturedBody).toEqual({ jobIds: [10, 20] });
+            expect(capturedBody).toEqual({ jobIds: [10, 20], removeCapturedImages: false });
         });
     });
 
@@ -392,19 +392,20 @@ describe('jobListApi integration', () => {
     // ── Bulk Job ────────────────────────────────────────────────────
 
     describe('releaseBulkJob', () => {
-        it('sends bulkJobId as query param', async () => {
+        it('sends bulkJobId as query param and returns the released job numbers', async () => {
             let capturedUrl = '';
 
             server.use(
                 http.post('*/job/ReleaseBulkJob', ({ request }) => {
                     capturedUrl = request.url;
-                    return new HttpResponse(null, { status: 200 });
+                    return HttpResponse.json({ jobNumbers: ['BJR-001', 'BJR-002'] });
                 })
             );
 
-            await releaseBulkJob(77);
+            const result = await releaseBulkJob(77);
 
             expect(capturedUrl).toContain('bulkJobId=77');
+            expect(result).toEqual({ jobNumbers: ['BJR-001', 'BJR-002'] });
         });
     });
 

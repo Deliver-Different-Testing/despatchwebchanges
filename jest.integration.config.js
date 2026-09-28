@@ -33,20 +33,13 @@ const config = {
 
     // MSW and its dependencies use ESM - need to transform them
     transformIgnorePatterns: [
-        'node_modules[\\\\/](?!(msw|@mswjs|until-async)[\\\\/])',
+        'node_modules[\\\\/](?!(msw|@mswjs|until-async|rettime|@open-draft)[\\\\/])',
     ],
 
     moduleNameMapper: {
         '^angular$': '<rootDir>/node_modules/angular/angular.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/wwwroot/app/tests/mocks/styleMock.ts',
         '\\.html$': '<rootDir>/wwwroot/app/tests/mocks/templateMock.ts',
-        '^@mui/x-date-pickers/DateTimePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
-        '^@mui/x-date-pickers/DatePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
-        '^@mui/x-date-pickers/TimePicker$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
-        '^@mui/x-date-pickers/DateCalendar$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
-        '^@mui/x-date-pickers/TimeClock$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
-        '^@mui/x-date-pickers/LocalizationProvider$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
-        '^@mui/x-date-pickers/AdapterDayjs$': '<rootDir>/wwwroot/app/tests/mocks/muiDatePickerMocks.ts',
     },
 
     setupFilesAfterEnv: [
@@ -59,6 +52,11 @@ const config = {
     cache: true,
     cacheDirectory: '<rootDir>/.jest-cache',
     verbose: false,
+
+    reporters: [
+        'default',
+        ['jest-slow-test-reporter', { numTests: 15, warnOnSlowerThan: 1000, color: true }],
+    ],
 
     // Integration tests need longer timeouts
     testTimeout: 30000,

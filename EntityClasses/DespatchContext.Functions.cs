@@ -11,6 +11,12 @@ namespace DespatchWeb.EntityClasses
     public partial class DespatchContext
     {
 
+        [DbFunction("EncryptJobIdReversible", "dbo")]
+        public static string EncryptJobIdReversible(int? JobId)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         [DbFunction("UTL_fncClearList_Other", "dbo")]
         public IQueryable<UTL_fncClearList_OtherResult> UTL_fncClearList_Other()
         {
@@ -24,9 +30,9 @@ namespace DespatchWeb.EntityClasses
         }
 
         [DbFunction("UTL_fncJob_ExtraRate", "dbo")]
-        public IQueryable<UTL_fncJob_ExtraRateResult> UTL_fncJob_ExtraRate(decimal? TotalWeight, int? Quantity, decimal? Cubic, int? TotalPallets, int? ExtraStopOffs, int? VehicleSizeID, bool? DangerousGoods, decimal? DryIceWeight, int? WaitTime, int? ExtraChargeID, bool? Holiday, bool? Afterhours, int? FromZoneCongestionID, int? ToZoneCongestionID, decimal? MFV, decimal? PPD)
+        public IQueryable<UTL_fncJob_ExtraRateResult> UTL_fncJob_ExtraRate(decimal? TotalWeight, int? Quantity, decimal? Cubic, int? TotalPallets, int? ExtraStopOffs, int? VehicleSizeID, bool? DangerousGoods, decimal? DryIceWeight, int? PickupWaitTime, int? DeliveryWaitTime, int? ExtraChargeID, bool? Holiday, bool? Afterhours, int? FromZoneCongestionID, int? ToZoneCongestionID, decimal? MFV, decimal? PPD, int? FuelSurchargeId, int? ClientID, DateTime? Date, string CubicList)
         {
-            return FromExpression(() => UTL_fncJob_ExtraRate(TotalWeight, Quantity, Cubic, TotalPallets, ExtraStopOffs, VehicleSizeID, DangerousGoods, DryIceWeight, WaitTime, ExtraChargeID, Holiday, Afterhours, FromZoneCongestionID, ToZoneCongestionID, MFV, PPD));
+            return FromExpression(() => UTL_fncJob_ExtraRate(TotalWeight, Quantity, Cubic, TotalPallets, ExtraStopOffs, VehicleSizeID, DangerousGoods, DryIceWeight, PickupWaitTime, DeliveryWaitTime, ExtraChargeID, Holiday, Afterhours, FromZoneCongestionID, ToZoneCongestionID, MFV, PPD, FuelSurchargeId, ClientID, Date, CubicList));
         }
 
         [DbFunction("UTL_fncJob_RawBaseToAmount", "dbo")]
@@ -35,8 +41,20 @@ namespace DespatchWeb.EntityClasses
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }
 
+        [DbFunction("UTL_fncMFV_FAF_Rates", "dbo")]
+        public static decimal? UTL_fncMFV_FAF_Rates(int? ClientID, DateTime? Date, int? SpeedID, int? VehicleSizeID)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
         [DbFunction("UTL_fncS_GetNationwideService_RawPrice", "dbo")]
         public static decimal? UTL_fncS_GetNationwideService_RawPrice(int? ClientID, int? FromSuburbID, int? ToSuburbID, int? Speed, int? Size, double? Weight, int? Quantity, int? Type)
+        {
+            throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
+        }
+
+        [DbFunction("UTL_fncSuburb_FromNameWithPostCode", "dbo")]
+        public static int? UTL_fncSuburb_FromNameWithPostCode(string Suburb, int? SiteID, int? PostCode)
         {
             throw new NotSupportedException("This method can only be called from Entity Framework Core queries");
         }

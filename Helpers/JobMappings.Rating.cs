@@ -43,7 +43,8 @@ public static partial class JobMappings
             TotalPallets = job.TucJobItemJobs.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = 0,
+            PickupWaitTime = job.WaitedPickUp ?? 0,
+            DeliveryWaitTime = job.WaitedDelivery ?? 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -52,7 +53,8 @@ public static partial class JobMappings
 
             ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
             Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
-            IsManuallyRated = job.RatedManually
+            IsManuallyRated = job.RatedManually,
+            CalculateDimsOncePerJob = job.DimensionsType == 2
         };
 
     /// <summary>
@@ -96,7 +98,8 @@ public static partial class JobMappings
             TotalPallets = job.TucJobItemJobs.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = job.WaitedPickUp ?? 0,
+            PickupWaitTime = job.WaitedPickUp ?? 0,
+            DeliveryWaitTime = job.WaitedDelivery ?? 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -106,6 +109,7 @@ public static partial class JobMappings
             ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
             Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
+            CalculateDimsOncePerJob = job.DimensionsType == 2,
             IsPrebook = job.IsRecurringJob,
             BulkScheduleId = job.ScheduleId,
             CreatedTime = job.CreatedTime,
@@ -193,7 +197,8 @@ public static partial class JobMappings
             TotalPallets = 0,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = job.WaitedPickUp ?? 0,
+            PickupWaitTime = job.WaitedPickUp ?? 0,
+            DeliveryWaitTime = job.WaitedDelivery ?? 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -203,6 +208,7 @@ public static partial class JobMappings
             ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
             Cubic = job.TucJobItemsArchives.Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
+            CalculateDimsOncePerJob = job.DimensionsType == 2,
             IsPrebook = job.IsRecurringJob,
             BulkScheduleId = job.ScheduleId,
             CreatedTime = job.CreatedTime,
@@ -285,7 +291,8 @@ public static partial class JobMappings
             TotalPallets = job.TucJobBookingItemBookings.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = 0,
+            PickupWaitTime = 0,
+            DeliveryWaitTime = 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -294,7 +301,7 @@ public static partial class JobMappings
 
             ClientDiscount = job.UcbkClient != null ? job.UcbkClient.Discount : 0,
             Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
-            CalculateDimsOncePerJob = job.DimensionsType == 1,
+            CalculateDimsOncePerJob = job.DimensionsType == 2,
             IsPrebook = true
         };
 
@@ -345,7 +352,8 @@ public static partial class JobMappings
             TotalPallets = job.TucJobBookingItemBookings.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
-            WaitTime = 0,
+            PickupWaitTime = 0,
+            DeliveryWaitTime = 0,
 
             FromAirportId = job.FromAirportId,
             ToAirportId = job.ToAirportId,
@@ -356,7 +364,7 @@ public static partial class JobMappings
             Cubic = job.TucJobBookingItemBookings.Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
             IsPrebook = true,
-            CalculateDimsOncePerJob = job.DimensionsType == 1,
+            CalculateDimsOncePerJob = job.DimensionsType == 2,
 
             FromCompanyName = job.PickupAddressLine1,
             FromBuildingName = job.PickupAddressLine2,

@@ -1,6 +1,9 @@
 using System.Globalization;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
+using DespatchWeb.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -22,7 +25,9 @@ public partial class JobRepository
     {
         // Try to use ExecuteUpdateAsync for simple single-field updates (no entity loading required)
         if (await TryExecuteDirectBulkUpdateAsync(bulkJobId, property, value))
+        {
             return;
+        }
 
         // Fall back to entity-based updates for complex cases requiring includes or business logic
         await UpdateBulkJobWithEntityAsync(bulkJobId, property, value);
@@ -32,7 +37,9 @@ public partial class JobRepository
     {
         // Try to use ExecuteUpdateAsync for simple single-field updates (no entity loading required)
         if (await TryExecuteDirectUpdateAsync(jobId, property, value))
+        {
             return;
+        }
 
         // Fall back to entity-based updates for complex cases requiring includes or business logic
         await UpdateTucJobWithEntityAsync(jobId, property, value);
@@ -46,6 +53,39 @@ public partial class JobRepository
     {
         var baseQuery = Context.TucJobs.Where(j => j.UcjbId == jobId);
         int rowsAffected;
+
+        // For date-field edits we capture the pre-update state so the log line shows
+        // what was overwritten. Cheap single-row read, only when diagnostics are useful.
+        if (IsDateProperty(property))
+        {
+            var before = await baseQuery
+                .Select(j => new
+                {
+                    j.UcjbVoid,
+                    j.JobRelationshipTypeId,
+                    j.ParentId,
+                    j.RootParentId,
+                    j.UcjbDate,
+                    j.UcjbTime,
+                    j.PickUpTime,
+                    j.DeliverByTime,
+                    j.PickupArrivalTime,
+                    j.DeliveryArrivalTime,
+                    j.UcjbComplTime,
+                    j.FollowupTime
+                })
+                .FirstOrDefaultAsync();
+
+            Log.Information(
+                "Edit-date snapshot before: job {JobId}, property {Property}, newValue {Value}, "
+                + "void={IsVoid}, relType={RelType}, parentId={ParentId}, rootParentId={RootParentId}, "
+                + "ucjbDate={UcjbDate}, ucjbTime={UcjbTime}, puTime={PuTime}, deliverBy={DeliverBy}, "
+                + "puArrival={PuArrival}, doArrival={DoArrival}, complTime={ComplTime}, followup={Followup}",
+                jobId, property, value,
+                before?.UcjbVoid, before?.JobRelationshipTypeId, before?.ParentId, before?.RootParentId,
+                before?.UcjbDate, before?.UcjbTime, before?.PickUpTime, before?.DeliverByTime,
+                before?.PickupArrivalTime, before?.DeliveryArrivalTime, before?.UcjbComplTime, before?.FollowupTime);
+        }
 
         switch (property)
         {
@@ -118,7 +158,10 @@ public partial class JobRepository
                 break;
 
             case JobProperty.CompletedTime:
-                var complTime = DateTimeOffset.Parse(value).DateTime;
+                // An empty value clears the POD time (nullable column); a value parses as usual.
+                DateTime? complTime = string.IsNullOrWhiteSpace(value)
+                    ? null
+                    : DateTimeOffset.Parse(value).DateTime;
                 rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbComplTime, complTime));
                 break;
 
@@ -233,17 +276,112 @@ public partial class JobRepository
                     await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbClientCode, clientCode));
                 break;
 
+            case JobProperty.Truck:
+                var truck = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.Truck, truck)
+                    .SetProperty(j => j.UcjbVan, false));
+                break;
+
+            case JobProperty.Van:
+                var van = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.UcjbVan, van)
+                    .SetProperty(j => j.Truck, false));
+                break;
+
+            case JobProperty.VanOK:
+                var vanOk = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.VanOk, vanOk));
+                break;
+
             default:
                 // Property requires entity-based update
                 return false;
         }
 
         if (rowsAffected == 0)
+        {
             throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
+        }
 
-        Log.Debug("ExecuteUpdateAsync: Updated {Property} for job {JobId}", property, jobId);
+        if (IsDateProperty(property))
+        {
+            Log.Information(
+                "Edit-date direct write: job {JobId}, property {Property}, value {Value}, rowsAffected {RowsAffected}",
+                jobId, property, value, rowsAffected);
+        }
+        else
+        {
+            Log.Debug("ExecuteUpdateAsync: Updated {Property} for job {JobId}", property, jobId);
+        }
+
         return true;
     }
+
+    /// <inheritdoc cref="IJobCommandRepository.UpdateWaitedMinutesFromArrivalAsync" />
+    public async Task<int?> UpdateWaitedMinutesFromArrivalAsync(int jobId, JobProperty property)
+    {
+        var baseQuery = Context.TucJobs.Where(j => j.UcjbId == jobId);
+
+        // DATEDIFF runs on the server so the stored minutes match SQL Server's
+        // DATEDIFF(MINUTE, start, end) exactly. The null guards give "no basis, no write",
+        // and the conditional clamps a negative gap to zero.
+        // ReSharper disable EntityFramework.ClientSideDbFunctionCall — a SetProperty value
+        // selector is translated to SQL, which the inspection does not recognise.
+        var rowsAffected = property switch
+        {
+            JobProperty.PickupArrivalTime => await baseQuery
+                .Where(j => j.PickupArrivalTime != null && j.PickUpTime != null)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.WaitedPickUp,
+                    j => EF.Functions.DateDiffMinute(j.PickupArrivalTime, j.PickUpTime) < 0
+                        ? 0
+                        : EF.Functions.DateDiffMinute(j.PickupArrivalTime, j.PickUpTime))),
+
+            JobProperty.DeliveryArrivalTime => await baseQuery
+                .Where(j => j.DeliveryArrivalTime != null && j.UcjbComplTime != null)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.WaitedDelivery,
+                    j => EF.Functions.DateDiffMinute(j.DeliveryArrivalTime, j.UcjbComplTime) < 0
+                        ? 0
+                        : EF.Functions.DateDiffMinute(j.DeliveryArrivalTime, j.UcjbComplTime))),
+
+            _ => 0
+        };
+        // ReSharper restore EntityFramework.ClientSideDbFunctionCall
+
+        if (rowsAffected == 0)
+        {
+            Log.Information(
+                "No waiting-time basis for job {JobId} on {Property}; waited minutes left unchanged",
+                jobId, property);
+            return null;
+        }
+
+        var waitedMinutes = await baseQuery
+            .Select(j => property == JobProperty.PickupArrivalTime ? j.WaitedPickUp : j.WaitedDelivery)
+            .FirstOrDefaultAsync();
+
+        Log.Information(
+            "Derived waiting minutes from {Property} edit: job {JobId}, minutes {WaitedMinutes}",
+            property, jobId, waitedMinutes);
+
+        return waitedMinutes;
+    }
+
+    /// <summary>
+    /// Properties that represent a date/time edit. Used to enable extra diagnostic
+    /// logging on the date-edit flow without polluting logs for every field.
+    /// </summary>
+    private static bool IsDateProperty(JobProperty property) =>
+        property is JobProperty.Date
+            or JobProperty.Time
+            or JobProperty.BookedTime
+            or JobProperty.PuTime
+            or JobProperty.DeliverBy
+            or JobProperty.PickupArrivalTime
+            or JobProperty.DeliveryArrivalTime
+            or JobProperty.CompletedTime
+            or JobProperty.FollowupTime;
 
     /// <summary>
     /// Updates a job using entity tracking for complex cases requiring includes,
@@ -268,41 +406,65 @@ public partial class JobRepository
         switch (property)
         {
             case JobProperty.ConNote:
-                if (job.ParentId != null) job.Parent.Connote = value;
-                else job.Connote = value;
+                if (job.ParentId != null)
+                {
+                    job.Parent.Connote = value;
+                }
+                else
+                {
+                    job.Connote = value;
+                }
+
                 break;
             case JobProperty.AirportOnly:
                 var airportOnly = bool.Parse(value);
                 job.TucJobNationwides.First().UcnwAirportOnly = airportOnly;
                 break;
             case JobProperty.Size:
-                UpdateJobSize(value, job);
+                UpdateJobSize(value, job, _infoService.IsUsTenant());
                 break;
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
-                if (voidJob) throw new ApplicationException("Voiding a job is not allowed here");
+                if (voidJob)
+                {
+                    throw new ApplicationException("Voiding a job is not allowed here");
+                }
+
+                // Clear the status alongside the flag - leaving it on Void would keep the job
+                // reporting as voided (RestoreJobsCore resets the same pair).
                 job.UcjbVoid = false;
+                job.UcjbStatus = (int)JobStatus.New;
                 break;
             case JobProperty.SpeedID:
                 job.UcjbSpeed = short.Parse(value);
                 break;
             case JobProperty.Weight:
                 if (!double.TryParse(value?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var weight))
+                {
                     throw new ArgumentException($"Invalid weight value: '{value}'", nameof(value));
+                }
 
                 if (job.Parent != null)
                 {
                     job.Parent.UcjbWeight = weight;
                     if (job.Parent.InverseParent.Count != 0)
+                    {
                         foreach (var siblingJob in job.Parent.InverseParent)
+                        {
                             siblingJob.UcjbWeight = weight;
+                        }
+                    }
                 }
                 else
                 {
                     job.UcjbWeight = weight;
                     if (job.InverseParent != null && job.InverseParent.Count != 0)
+                    {
                         foreach (var childJob in job.InverseParent)
+                        {
                             childJob.UcjbWeight = weight;
+                        }
+                    }
                 }
 
                 break;
@@ -333,11 +495,30 @@ public partial class JobRepository
                 job.UcjbContact = job.Contact?.UserName;
                 break;
             case JobProperty.Status:
+                // A voided job keeps the Void status - moving it would report the job as live
+                // revenue in the job-search export, which reads the status column.
+                if (job.UcjbVoid)
+                {
+                    Log.Warning("Ignoring status change on voided job {JobId}", job.UcjbId);
+                    break;
+                }
+
                 var newStatus = int.Parse(value);
                 job.UcjbStatus = newStatus;
 
                 if (newStatus == (int)JobStatus.PickedUp)
+                {
                     job.PickUpTime = _infoService.GetCurrentTimeFromTimeZone(job.PickupTimeZone);
+                }
+
+                // Keep the completion flag and timestamp with the status, the way the
+                // UndeliverableLocationID branch below already does. Setting the status alone left a
+                // job reading Completed on the grid and not-delivered in job properties.
+                var closesTheJob = JobStatusGroups.Completed.Contains(newStatus);
+                job.UcjbJobDone = closesTheJob;
+                job.UcjbComplTime = closesTheJob
+                    ? job.UcjbComplTime ?? _infoService.GetCurrentTimeFromTimeZone(job.DeliverByTimeZone)
+                    : null;
 
                 break;
             case JobProperty.UndeliverableLocationID:
@@ -357,6 +538,18 @@ public partial class JobRepository
                 {
                     job.UcjbStatus = (int)JobStatus.Completed;
                     job.UcjbComplTime = _infoService.GetCurrentTimeFromTimeZone(job.DeliverByTimeZone);
+                }
+                else if (JobStatusGroups.Completed.Contains(job.UcjbStatus ?? (int)JobStatus.New))
+                {
+                    // Un-ticking Delivered used to leave the status on Completed with its completion
+                    // time still set, which every surface then read as delivered. A voided job keeps
+                    // its Void status — that is the void flag's to own, not this edit's.
+                    if (!job.UcjbVoid)
+                    {
+                        job.UcjbStatus = (int)JobStatus.New;
+                    }
+
+                    job.UcjbComplTime = null;
                 }
 
                 break;
@@ -382,17 +575,93 @@ public partial class JobRepository
 
                 break;
             case JobProperty.TailLiftPu:
-                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
-                foreach (var item in job.TucJobItemJobs) item.Pu = bool.Parse(value);
+                if (job.TucJobItemJobs == null)
+                {
+                    throw new NullReferenceException("TucJobItemJobs is null");
+                }
+
+                foreach (var item in job.TucJobItemJobs)
+                {
+                    item.Pu = bool.Parse(value);
+                }
+
                 break;
             case JobProperty.TailLiftDo:
-                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
-                foreach (var item in job.TucJobItemJobs) item.Do = bool.Parse(value);
+                if (job.TucJobItemJobs == null)
+                {
+                    throw new NullReferenceException("TucJobItemJobs is null");
+                }
+
+                foreach (var item in job.TucJobItemJobs)
+                {
+                    item.Do = bool.Parse(value);
+                }
+
                 break;
             case JobProperty.DeliverToPrivateRes:
-                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
-                foreach (var item in job.TucJobItemJobs) item.PrivateRes = bool.Parse(value);
+                if (job.TucJobItemJobs == null)
+                {
+                    throw new NullReferenceException("TucJobItemJobs is null");
+                }
+
+                foreach (var item in job.TucJobItemJobs)
+                {
+                    item.PrivateRes = bool.Parse(value);
+                }
+
                 break;
+            case JobProperty.Time:
+            case JobProperty.Date:
+            case JobProperty.Items:
+            case JobProperty.AcceptedJobTypeID:
+            case JobProperty.ClientCode:
+            case JobProperty.Pedal:
+            case JobProperty.Attention:
+            case JobProperty.Reprice:
+            case JobProperty.Truck:
+            case JobProperty.Van:
+            case JobProperty.VanOK:
+            case JobProperty.InternalStatusID:
+            case JobProperty.RefA:
+            case JobProperty.RefB:
+            case JobProperty.OurRef:
+            case JobProperty.FromContactName:
+            case JobProperty.ToContactName:
+            case JobProperty.FromContactPhone:
+            case JobProperty.ToContactPhone:
+            case JobProperty.DeliverToLeaveID:
+            case JobProperty.CompletedTime:
+            case JobProperty.DGClass:
+            case JobProperty.DGDocumentation:
+            case JobProperty.TrackingMethod:
+            case JobProperty.Direct:
+            case JobProperty.TrackingMobile:
+            case JobProperty.TrackingEmail:
+            case JobProperty.PODName:
+            case JobProperty.PodName:
+            case JobProperty.Amount:
+            case JobProperty.Locked:
+            case JobProperty.PuTime:
+            case JobProperty.DeliverBy:
+            case JobProperty.BookedTime:
+            case JobProperty.FollowupTime:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
+            case JobProperty.Active:
+            case JobProperty.CustomJobName:
+            case JobProperty.Barcode:
+            case JobProperty.CourierId:
+            case JobProperty.InactiveBy:
+            case JobProperty.PickupArrivalTime:
+            case JobProperty.DeliveryArrivalTime:
+            case JobProperty.RouteId:
+            case JobProperty.AgentId:
+            case JobProperty.NpAgentId:
+            case JobProperty.RecurringMode:
+            case JobProperty.SavedFlightNumber:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
@@ -420,7 +689,9 @@ public partial class JobRepository
 
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && job.UndeliverableLocation?.Message != null)
+        {
             await JobUpdateAddNoteAsync(jobId, true, job.UndeliverableLocation.Message);
+        }
     }
 
     private async Task UpdateTucJobArchiveAsync(int jobId, JobProperty property, string value)
@@ -448,15 +719,20 @@ public partial class JobRepository
                 archive.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Size:
-                UpdateArchiveJobSize(value, archive);
+                UpdateArchiveJobSize(value, archive, _infoService.IsUsTenant());
                 break;
             case JobProperty.Items:
                 archive.UcjbQty = short.Parse(value);
                 break;
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
-                if (voidJob) throw new ApplicationException("Voiding a job is not allowed here");
+                if (voidJob)
+                {
+                    throw new ApplicationException("Voiding a job is not allowed here");
+                }
+
                 archive.UcjbVoid = false;
+                archive.UcjbStatus = (int)JobStatus.New;
                 break;
             case JobProperty.SpeedID:
                 archive.UcjbSpeed = short.Parse(value);
@@ -467,15 +743,23 @@ public partial class JobRepository
                 {
                     archive.Parent.UcjbWeight = weight;
                     if (archive.InverseParent.Count != 0)
+                    {
                         foreach (var siblingJob in archive.InverseParent)
+                        {
                             siblingJob.UcjbWeight = weight;
+                        }
+                    }
                 }
                 else
                 {
                     archive.UcjbWeight = weight;
                     if (archive.InverseParent.Count != 0)
+                    {
                         foreach (var childJob in archive.InverseParent)
+                        {
                             childJob.UcjbWeight = weight;
+                        }
+                    }
                 }
 
                 break;
@@ -507,12 +791,22 @@ public partial class JobRepository
                 archive.Reprice = bool.Parse(value);
                 break;
             case JobProperty.Truck:
-                archive.Truck = bool.Parse(value);
-                archive.UcjbVan = false; // Set van to false when truck is selected
+                var isTruck = bool.Parse(value);
+                archive.Truck = isTruck;
+                if (isTruck)
+                {
+                    archive.UcjbVan = false; // Set van to false when truck is selected
+                }
+
                 break;
             case JobProperty.Van:
-                archive.UcjbVan = bool.Parse(value);
-                archive.Truck = false; // Set truck to false when a van is selected
+                var isVan = bool.Parse(value);
+                archive.UcjbVan = isVan;
+                if (isVan)
+                {
+                    archive.Truck = false; // Set truck to false when a van is selected
+                }
+
                 break;
             case JobProperty.VanOK:
                 archive.VanOk = bool.Parse(value);
@@ -529,15 +823,20 @@ public partial class JobRepository
                         (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
+                {
                     archive.FollowupTime = _clock.TenantNow.AddMinutes(
                         archive.InternalStatusNavigation.DefaultMinutes ?? 0
                     );
+                }
                 else
+                {
                     archive.FollowupTime = null;
+                }
 
                 archive.UcjbStatus = internalStatusId switch
                 {
-                    // Handle status changes
+                    // Handle status changes - a voided job keeps the Void status
+                    _ when archive.UcjbVoid => archive.UcjbStatus,
                     (int)InternalJobStatus.AwaitingPod when archive.UcjbStatus != (int)JobStatus.AwaitingPod =>
                         (int)JobStatus.AwaitingPod,
                     (int)InternalJobStatus.NewJobs when archive.UcjbStatus != (int)JobStatus.Dispatched =>
@@ -548,6 +847,12 @@ public partial class JobRepository
                 };
                 break;
             case JobProperty.Status:
+                if (archive.UcjbVoid)
+                {
+                    Log.Warning("Ignoring status change on voided archived job {JobId}", archive.UcjbId);
+                    break;
+                }
+
                 archive.UcjbStatus = int.Parse(value);
                 break;
             case JobProperty.RefA:
@@ -588,6 +893,14 @@ public partial class JobRepository
                 break;
             case JobProperty.Delivered:
                 var delivered = bool.Parse(value);
+                // Restore only touches live rows, so a half-undone archive can never be put
+                // right: refuse rather than leave the job done=false, status=Completed.
+                if (!delivered && archive.UcjbJobDone)
+                {
+                    throw new ArchivedJobCompletionException(
+                        $"Job {archive.UcjbNumber} is archived and completed, so it can't be marked not done.");
+                }
+
                 archive.UcjbJobDone = delivered;
                 if (delivered)
                 {
@@ -597,7 +910,17 @@ public partial class JobRepository
 
                 break;
             case JobProperty.CompletedTime:
-                archive.UcjbComplTime = DateTimeOffset.Parse(value).DateTime;
+                // An empty value clears the POD time (nullable column); a value parses as usual.
+                // Clearing it on a completed archive is the same un-completion as above.
+                if (string.IsNullOrWhiteSpace(value) && archive.UcjbJobDone)
+                {
+                    throw new ArchivedJobCompletionException(
+                        $"Job {archive.UcjbNumber} is archived and completed, so its POD time can't be cleared.");
+                }
+
+                archive.UcjbComplTime = string.IsNullOrWhiteSpace(value)
+                    ? null
+                    : DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.DGClass:
                 archive.Dgclass = int.Parse(value);
@@ -651,7 +974,7 @@ public partial class JobRepository
                 archive.AcceptedJobTypeId = short.Parse(value);
                 break;
             case JobProperty.Locked:
-                archive.UcjbLocked = int.Parse(value);
+                archive.UcjbLocked = bool.Parse(value) ? 1 : 0;
                 break;
             case JobProperty.PuTime:
                 archive.PickUpTime = DateTimeOffset.Parse(value).DateTime;
@@ -673,13 +996,33 @@ public partial class JobRepository
             case JobProperty.Barcode:
                 archive.Barcode = value[..Math.Min(value.Length, 20)];
                 break;
+            case JobProperty.FollowupTime:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
+            case JobProperty.Active:
+            case JobProperty.CustomJobName:
+            case JobProperty.TailLiftPu:
+            case JobProperty.TailLiftDo:
+            case JobProperty.DeliverToPrivateRes:
+            case JobProperty.CourierId:
+            case JobProperty.InactiveBy:
+            case JobProperty.RouteId:
+            case JobProperty.AgentId:
+            case JobProperty.NpAgentId:
+            case JobProperty.RecurringMode:
+            case JobProperty.SavedFlightNumber:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
 
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && archive.UndeliverableLocation?.Message != null)
+        {
             await JobUpdateAddNoteAsync(jobId, false, archive.UndeliverableLocation.Message);
+        }
 
         await Context.SaveChangesAsync();
     }
@@ -796,16 +1139,72 @@ public partial class JobRepository
 
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
-                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.Void, voidJob));
+                rowsAffected = voidJob
+                    ? await baseQuery.ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.Void, true)
+                        .SetProperty(j => j.JobStatus, (int)JobStatus.Void))
+                    : await baseQuery.ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.Void, false)
+                        .SetProperty(j => j.JobStatus, (int)JobStatus.New));
                 break;
 
+            case JobProperty.ConNote:
+            case JobProperty.AirportOnly:
+            case JobProperty.AcceptedJobTypeID:
+            case JobProperty.ClientCode:
+            case JobProperty.ContactID:
+            case JobProperty.Pedal:
+            case JobProperty.Attention:
+            case JobProperty.Reprice:
+            case JobProperty.Truck:
+            case JobProperty.Van:
+            case JobProperty.VanOK:
+            case JobProperty.InternalStatusID:
+            case JobProperty.Status:
+            case JobProperty.FromContactPhone:
+            case JobProperty.UndeliverableLocationID:
+            case JobProperty.Delivered:
+            case JobProperty.CompletedTime:
+            case JobProperty.DGClass:
+            case JobProperty.DGDocumentation:
+            case JobProperty.Direct:
+            case JobProperty.PODName:
+            case JobProperty.PodName:
+            case JobProperty.NotifiedJobTypeID:
+            case JobProperty.Locked:
+            case JobProperty.PuTime:
+            case JobProperty.DeliverBy:
+            case JobProperty.BookedTime:
+            case JobProperty.FollowupTime:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
+            case JobProperty.Active:
+            case JobProperty.CustomJobName:
+            case JobProperty.TailLiftPu:
+            case JobProperty.TailLiftDo:
+            case JobProperty.DeliverToPrivateRes:
+            case JobProperty.Barcode:
+            case JobProperty.CourierId:
+            case JobProperty.InactiveBy:
+            case JobProperty.PickupArrivalTime:
+            case JobProperty.DeliveryArrivalTime:
+            case JobProperty.RouteId:
+            case JobProperty.AgentId:
+            case JobProperty.NpAgentId:
+            case JobProperty.RecurringMode:
+            case JobProperty.SavedFlightNumber:
             default:
                 // Property requires entity-based update
                 return false;
         }
 
         if (rowsAffected == 0)
+        {
             throw new ArgumentException($"Bulk job with ID {bulkJobId} not found", nameof(bulkJobId));
+        }
 
         Log.Debug("ExecuteUpdateAsync: Updated {Property} for bulk job {BulkJobId}", property, bulkJobId);
         return true;
@@ -825,6 +1224,72 @@ public partial class JobRepository
                 bulkJob.ClientCode = value[..Math.Min(value.Length, 5)];
                 bulkJob.Client.UcclCode = value[..Math.Min(value.Length, 50)];
                 break;
+            case JobProperty.ConNote:
+            case JobProperty.AirportOnly:
+            case JobProperty.Time:
+            case JobProperty.Date:
+            case JobProperty.Size:
+            case JobProperty.Items:
+            case JobProperty.SpeedID:
+            case JobProperty.AcceptedJobTypeID:
+            case JobProperty.Weight:
+            case JobProperty.ClientID:
+            case JobProperty.ContactID:
+            case JobProperty.Pedal:
+            case JobProperty.Attention:
+            case JobProperty.Reprice:
+            case JobProperty.Truck:
+            case JobProperty.Van:
+            case JobProperty.VanOK:
+            case JobProperty.InternalStatusID:
+            case JobProperty.Status:
+            case JobProperty.RefA:
+            case JobProperty.RefB:
+            case JobProperty.OurRef:
+            case JobProperty.FromContactName:
+            case JobProperty.ToContactName:
+            case JobProperty.FromContactPhone:
+            case JobProperty.ToContactPhone:
+            case JobProperty.DeliverToLeaveID:
+            case JobProperty.UndeliverableLocationID:
+            case JobProperty.Delivered:
+            case JobProperty.CompletedTime:
+            case JobProperty.DGClass:
+            case JobProperty.DGDocumentation:
+            case JobProperty.TrackingMethod:
+            case JobProperty.Direct:
+            case JobProperty.Void:
+            case JobProperty.TrackingMobile:
+            case JobProperty.TrackingEmail:
+            case JobProperty.PODName:
+            case JobProperty.PodName:
+            case JobProperty.Amount:
+            case JobProperty.NotifiedJobTypeID:
+            case JobProperty.Locked:
+            case JobProperty.PuTime:
+            case JobProperty.DeliverBy:
+            case JobProperty.BookedTime:
+            case JobProperty.FollowupTime:
+            case JobProperty.StopDate:
+            case JobProperty.RestartDate:
+            case JobProperty.DaysOfWeek:
+            case JobProperty.Frequency:
+            case JobProperty.HolidayDelivery:
+            case JobProperty.Active:
+            case JobProperty.CustomJobName:
+            case JobProperty.TailLiftPu:
+            case JobProperty.TailLiftDo:
+            case JobProperty.DeliverToPrivateRes:
+            case JobProperty.Barcode:
+            case JobProperty.CourierId:
+            case JobProperty.InactiveBy:
+            case JobProperty.PickupArrivalTime:
+            case JobProperty.DeliveryArrivalTime:
+            case JobProperty.RouteId:
+            case JobProperty.AgentId:
+            case JobProperty.NpAgentId:
+            case JobProperty.RecurringMode:
+            case JobProperty.SavedFlightNumber:
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
         }
@@ -851,17 +1316,65 @@ public partial class JobRepository
         Log.Debug("Changes saved: {ChangeCount}", changeCount);
     }
 
+    public async Task ChangeArchivedJobCourierAsync(int jobId, int newCourierId)
+    {
+        var archive = await Context.TucJobArchives.AsTracking()
+            .Include(j => j.InvoiceProcess)
+            .Include(j => j.UcjbCourier)
+            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
+
+        if (archive == null)
+        {
+            throw new ArchivedCourierChangeException($"Job {jobId} was not found in the archive.");
+        }
+
+        if (archive.UcjbInvoiceNo.HasValue || archive.InvoiceProcess is { UcipDone: true })
+        {
+            throw new ArchivedCourierChangeException(
+                "This job has already been invoiced and the courier can no longer be changed.");
+        }
+
+        if (archive.CourierSettlementBatchId != null)
+        {
+            throw new ArchivedCourierChangeException(
+                "The courier on this job has already been paid in a settlement run and can no longer be changed.");
+        }
+
+        var newCourierCode = await Context.TucCouriers
+            .Where(c => c.UccrId == newCourierId && c.Active)
+            .Select(c => c.Code)
+            .FirstOrDefaultAsync();
+
+        if (newCourierCode == null)
+        {
+            throw new ArchivedCourierChangeException("The selected courier was not found or is inactive.");
+        }
+
+        var oldCourierCode = archive.UcjbCourier?.Code ?? "unassigned";
+        archive.UcjbCourierId = newCourierId;
+
+        await JobUpdateAddNoteAsync(jobId, false,
+            $"Paid courier changed from {oldCourierCode} to {newCourierCode}");
+        await Context.SaveChangesAsync();
+
+        Log.Information("Archived job {JobId} paid courier changed from {OldCourier} to {NewCourier}",
+            jobId, oldCourierCode, newCourierCode);
+    }
+
     private async Task JobUpdateAddNoteAsync(int jobId, bool isLiveJob, string updateNote)
     {
         var staffId = _infoService.GetStaffId();
         var currentDate = _clock.TenantNow;
+        var currentDateUtc = _clock.UtcNow;
 
         var newNote = new TucNote
         {
             CreatedBy = staffId,
             CreatedDate = currentDate,
+            CreatedDateUtc = currentDateUtc,
             UpdatedBy = staffId,
             UpdatedDate = currentDate,
+            UpdatedDateUtc = currentDateUtc,
             JobId = isLiveJob ? jobId : null,
             JobBookingId = !isLiveJob ? jobId : null,
             NoteText = updateNote,
@@ -895,7 +1408,8 @@ public partial class JobRepository
 
         job.UcjbStatus = newInternalStatusId switch
         {
-            // Handle status changes
+            // Handle status changes - a voided job keeps the Void status
+            _ when job.UcjbVoid => job.UcjbStatus,
             (int)InternalJobStatus.AwaitingPod when job.UcjbStatus != (int)JobStatus.AwaitingPod => (int)JobStatus
                 .AwaitingPod,
             (int)InternalJobStatus.NewJobs when job.UcjbStatus != (int)JobStatus.Dispatched =>
@@ -907,37 +1421,71 @@ public partial class JobRepository
         await Context.SaveChangesAsync();
     }
 
-    private static void UpdateJobSize(string value, TucJob job)
+    private static void UpdateJobSize(string value, TucJob job, bool isUsTenant)
     {
         var sizeId = int.Parse(value);
-        job.UcjbSize = sizeId;
 
-        switch (sizeId)
+        if (job.Parent != null)
         {
-            case (int)VehicleType.Truck or (int)UrgentVehicleType.Truck:
-                job.Truck = true;
-                job.UcjbVan = false;
-                break;
-            case (int)VehicleType.Van or (int)UrgentVehicleType.Van:
-                job.UcjbVan = true;
-                job.Truck = false;
-                break;
+            ApplySize(job.Parent, sizeId, isUsTenant);
+            foreach (var sibling in job.Parent.InverseParent)
+            {
+                ApplySize(sibling, sizeId, isUsTenant);
+            }
+        }
+        else
+        {
+            ApplySize(job, sizeId, isUsTenant);
+            if (job.InverseParent == null)
+            {
+                return;
+            }
+
+            foreach (var child in job.InverseParent)
+            {
+                ApplySize(child, sizeId, isUsTenant);
+            }
         }
     }
 
-    private static void UpdateArchiveJobSize(string value, TucJobArchive job)
+    // VehicleSize IDs are tenant-local and the standard vs Urgent enums collide
+    // (e.g. id 2 is Truck on standard, Car on Urgent), so the tenant decides
+    // which enum to interpret the id against. Non-Van / non-Truck sizes leave
+    // the legacy flags untouched.
+    private static void ApplySize(TucJob job, int sizeId, bool isUsTenant)
+    {
+        job.UcjbSize = sizeId;
+
+        var truckId = isUsTenant ? (int)VehicleType.Truck : (int)UrgentVehicleType.Truck;
+        var vanId = isUsTenant ? (int)VehicleType.Van : (int)UrgentVehicleType.Van;
+
+        if (sizeId == truckId)
+        {
+            job.Truck = true;
+            job.UcjbVan = false;
+        }
+        else if (sizeId == vanId)
+        {
+            job.UcjbVan = true;
+            job.Truck = false;
+        }
+    }
+
+    private static void UpdateArchiveJobSize(string value, TucJobArchive job, bool isUsTenant)
     {
         var sizeId = int.Parse(value);
         job.UcjbSize = sizeId;
 
-        switch (sizeId)
+        var truckId = isUsTenant ? (int)VehicleType.Truck : (int)UrgentVehicleType.Truck;
+        var vanId = isUsTenant ? (int)VehicleType.Van : (int)UrgentVehicleType.Van;
+
+        if (sizeId == truckId)
         {
-            case (int)VehicleType.Truck or (int)UrgentVehicleType.Truck:
-                job.Truck = true;
-                break;
-            case (int)VehicleType.Van or (int)UrgentVehicleType.Van:
-                job.UcjbVan = true;
-                break;
+            job.Truck = true;
+        }
+        else if (sizeId == vanId)
+        {
+            job.UcjbVan = true;
         }
     }
 
@@ -952,6 +1500,9 @@ public partial class JobRepository
             JobProperty.ConNote => query.Include(j => j.Parent),
             JobProperty.AirportOnly => query.Include(j => j.TucJobNationwides),
             JobProperty.Weight => query.Include(j => j.Parent)
+                .ThenInclude(p => p.InverseParent)
+                .Include(j => j.InverseParent),
+            JobProperty.Size => query.Include(j => j.Parent)
                 .ThenInclude(p => p.InverseParent)
                 .Include(j => j.InverseParent),
             JobProperty.ClientID => query.Include(j => j.UcjbClient).Include(j => j.InverseParent),

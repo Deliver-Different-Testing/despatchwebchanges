@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * JobListTable Tests
  *
@@ -6,25 +5,19 @@
  */
 
 import React from 'react';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {renderWithTheme} from '../../__testUtils__';
+import {act, screen, waitFor} from '@testing-library/react';
+import { renderWithMantine } from '../../__testUtils__';
+import { setupUser } from '../../__testUtils__/setupUser';
+import {availableColumns, orderColumns} from './jobListColumns';
 import {JobListTable} from './JobListTable';
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
-import {suggestCouriers} from '../../services/aiAssistantApi';
-import {isAiEnabled} from '../../../functions/aiSettings';
+import {createMockDispatchJob, STALE_ADDRESS_DEVICE, STALE_ADDRESS_LINES} from '../../__testUtils__/mockData';
 
 jest.mock('../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn(),
-}));
-jest.mock('../../services/aiAssistantApi', () => ({
-    suggestCouriers: jest.fn(),
-}));
-jest.mock('../../../functions/aiSettings', () => ({
-    isAiEnabled: jest.fn().mockReturnValue(false),
 }));
 // Mock @tanstack/react-virtual so rows render in jsdom (zero-height containers)
 jest.mock('@tanstack/react-virtual', () => ({
@@ -42,62 +35,15 @@ jest.mock('@tanstack/react-virtual', () => ({
     }),
 }));
 
-jest.mock('../../utils/dateUtils', () => ({
-    formatMins: jest.fn((d: any) => d?.format?.('HH:mm') || ''),
-    formatShortDate: jest.fn((d: any) => d?.format?.('DD/MMM') || ''),
-    getIanaTimezone: jest.fn(() => 'Pacific/Auckland'),
-    getTenantTimezone: jest.fn(() => 'New Zealand Standard Time'),
-    getTimezoneAbbreviation: jest.fn(() => 'NZST'),
-    isUsCustomer: jest.fn(() => false),
-}));
+jest.mock('../../utils/dateUtils', () =>
+    require('../../../tests/mocks/dateUtilsMock').nzDateUtilsMock());
 
 const mockedSearch = searchActiveCouriersExtended as jest.Mock;
-const mockedSuggestCouriers = suggestCouriers as jest.Mock;
-const mockedIsAiEnabled = isAiEnabled as jest.Mock;
-
-function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
-    return {
-        angularId: 'job-1',
-        id: 1,
-        jobNo: 'J001',
-        hasBeenRead: true,
-        showCourierSearch: false,
-        isParentOrSingle: true,
-        parentId: 0,
-        isFlightJob: false,
-        isAgentJob: false,
-        isBulkJob: false,
-        isArchived: false,
-        statusId: 0,
-        statusName: 'New',
-        status: 'New',
-        booked: dayjs('2025-03-15T09:00:00'),
-        time: dayjs('2025-03-15T17:00:00'),
-        remain: 120,
-        courierSearchLoading: false,
-        pickupAddress: {
-            addressLine1: '', addressLine2: '', addressLine3: '10',
-            addressLine4: 'Queen St', addressLine5: 'Auckland CBD',
-            addressLine6: 'Auckland', addressLine7: '1010', addressLine8: '',
-            fullAddress: '10 Queen St, Auckland',
-        } as any,
-        deliveryAddress: {
-            addressLine1: '', addressLine2: '', addressLine3: '20',
-            addressLine4: 'High St', addressLine5: 'Newmarket',
-            addressLine6: 'Auckland', addressLine7: '1023', addressLine8: '',
-            fullAddress: '20 High St, Auckland',
-        } as any,
-        speed: 'Standard',
-        vehicle: {id: 1, text: 'Car'},
-        client: 'Test Client',
-        pickUpTimeZone: {id: 1, text: 'NZST'},
-        deliveryTimeZone: {id: 1, text: 'NZST'},
-        ...overrides,
-    } as DispatchJob;
-}
 
 function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobListTable>>) {
+    const resolved = {isUsCustomer: false, isJobSearchPage: false, ...overrides};
     return {
+        columns: orderColumns(availableColumns(resolved.isUsCustomer, resolved.isJobSearchPage)),
         jobs: [createMockDispatchJob()],
         selectedJobId: null,
         relatedJobIds: new Set<number>(),
@@ -120,19 +66,100 @@ function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobL
 describe('JobListTable', () => {
     beforeEach(() => {
         mockedSearch.mockResolvedValue([]);
-        mockedSuggestCouriers.mockResolvedValue({couriers: [], summary: '', usage: {inputTokens: 0, outputTokens: 0}});
-        mockedIsAiEnabled.mockReturnValue(false);
     });
 
     it('renders "No jobs to display" when jobs array is empty', () => {
-        renderWithTheme(<JobListTable {...createDefaultProps({jobs: []})}/>);
+        renderWithMantine(<JobListTable {...createDefaultProps({jobs: []})}/>);
         expect(screen.getByText('No jobs to display')).toBeInTheDocument();
+    });
+
+    // ── Stale delivery address ──────────────────────────────────────
+    describe('stale delivery address', () => {
+        // UC30028239 - the address was changed upstream on the free-text copy only, so the
+        // grid kept showing the previous destination while the driver had the new one.
+        it('marks the delivery cell when the free-text address disagrees with the address lines', () => {
+            const job = createMockDispatchJob({
+                toAddress: STALE_ADDRESS_DEVICE,
+                deliveryAddress: {
+                    addressLine1: 'ALLEVIA HOSPITAL EPSOM', addressLine2: '15-17', addressLine3: 'GILGIT ROAD',
+                    addressLine4: 'GATE 4 - LOADING DOCK', addressLine5: 'Newmarket',
+                    addressLine6: 'Auckland', addressLine7: '1050', addressLine8: 'New Zealand',
+                    fullAddress: STALE_ADDRESS_LINES,
+                } as any,
+            });
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+            expect(container.querySelector('[data-testid="stale-delivery-address"]')).toBeInTheDocument();
+        });
+
+        it('leaves the cell unmarked when the two copies agree', () => {
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+            expect(container.querySelector('[data-testid="stale-delivery-address"]')).not.toBeInTheDocument();
+        });
+    });
+
+    // ── Configurable address format ───────────────────────────────────
+    describe('addressFormat', () => {
+        it('renders pickup and delivery using the configured format instead of NZ/US defaults', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                addressFormat: {
+                    pickup: {line1: ['streetNumber', 'streetName'], line2: []},
+                    delivery: {line1: ['streetNumber', 'streetName'], line2: []},
+                },
+            })}/>);
+
+            expect(screen.getByText('10, Queen St')).toBeInTheDocument(); // pickup
+            expect(screen.getByText('20, High St')).toBeInTheDocument(); // delivery
+        });
+
+        it('takes precedence over isUsCustomer when both are set', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                isUsCustomer: true,
+                addressFormat: {
+                    pickup: {line1: ['cityOrSuburb'], line2: []},
+                    delivery: {line1: ['cityOrSuburb'], line2: []},
+                },
+            })}/>);
+
+            expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // pickup
+            expect(screen.getByText('Newmarket')).toBeInTheDocument(); // delivery
+        });
+
+        it('renders line 2 as a dimmed second line when fields are assigned to it', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                addressFormat: {
+                    pickup: {line1: ['streetNumber', 'streetName'], line2: ['cityOrSuburb']},
+                    delivery: undefined,
+                },
+            })}/>);
+
+            expect(screen.getByText('10, Queen St')).toBeInTheDocument();
+            expect(screen.getByText('Auckland CBD')).toBeInTheDocument();
+        });
+
+        it('resolves pickup and delivery independently — one side configured, the other legacy', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                addressFormat: {
+                    pickup: {line1: ['cityOrSuburb'], line2: []},
+                    delivery: undefined,
+                },
+            })}/>);
+
+            expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // pickup: configured
+            expect(screen.getByText('Newmarket, 20, High St')).toBeInTheDocument(); // delivery: NZ legacy
+        });
+
+        it('falls back to the NZ/US default when no format is configured', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+
+            expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // NZ pickup: suburb only
+        });
     });
 
     // ── Table Rendering (single render) ─────────────────────────────
     describe('Table Rendering', () => {
         it('renders table headers, job data, resize handles and correct column visibility', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps()}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
 
             // Headers
             expect(screen.getByText('Date')).toBeInTheDocument();
@@ -148,8 +175,10 @@ describe('JobListTable', () => {
             expect(screen.getByText('New')).toBeInTheDocument();
             expect(screen.getByText('Standard')).toBeInTheDocument();
 
-            // No Archived column when not job search page
+            // No Archived or Ref A columns when not job search page
             expect(screen.queryByText('Archived')).not.toBeInTheDocument();
+            expect(screen.queryByText('Ref A')).not.toBeInTheDocument();
+            expect(screen.queryByText('PO-4471')).not.toBeInTheDocument();
 
             // Resize handles
             expect(screen.getByTestId('resize-handle-priority')).toBeInTheDocument();
@@ -160,29 +189,94 @@ describe('JobListTable', () => {
             expect(screen.queryByTestId('resize-handle-status')).not.toBeInTheDocument();
         });
 
-        it('hides Client column for US customers and shows Archived on search page', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps({isUsCustomer: true, isJobSearchPage: true})}/>);
+        it('hides Client column for US customers and shows Archived and Ref A on search page', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({isUsCustomer: true, isJobSearchPage: true})}/>);
 
             expect(screen.queryByText('Client')).not.toBeInTheDocument();
             expect(screen.getByText('Archived')).toBeInTheDocument();
+            expect(screen.getByText('Ref A')).toBeInTheDocument();
+            expect(screen.getByText('PO-4471')).toBeInTheDocument();
         });
 
         it('renders the partner-job icon in the priority column when isPartnerJob is true', async () => {
             const partnerJob = createMockDispatchJob({id: 2, jobNo: 'P001', isPartnerJob: true});
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [partnerJob]})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [partnerJob]})}/>);
 
             const row = screen.getByText('P001').closest('tr')!;
-            await userEvent.setup().hover(row.querySelector('svg[data-testid="HandshakeIcon"]')!);
+            await setupUser().hover(row.querySelector('[data-testid="indicator-partner"]')!);
             expect(await screen.findByText('Partner Job')).toBeInTheDocument();
+        });
+    });
+
+    // ── Priority-column status dots ──────────────────────────────────
+    describe('Priority status dots', () => {
+        // Each dot mirrors a top stats-header category. Hovering shows the meaning.
+        const cases: Array<{label: string; overrides: Partial<DispatchJob>; tooltip: string}> = [
+            {label: 'in-transit (amber)', overrides: {jobNo: 'D-TRANSIT', statusId: 11}, tooltip: 'In Transit'},
+            {
+                label: 'dispatched → in-transit (amber)',
+                overrides: {jobNo: 'D-DISPATCHED', statusId: 1, assignedCourier: {id: 5, text: '5 - R'}},
+                tooltip: 'In Transit',
+            },
+            {label: 'delivered (green)', overrides: {jobNo: 'D-DONE', statusId: 6}, tooltip: 'Done'},
+            {
+                label: 'active (blue)',
+                overrides: {jobNo: 'D-DISPATCH', statusId: 0, assignedCourier: undefined},
+                tooltip: 'Active',
+            },
+            {
+                label: 'urgent (red)',
+                overrides: {jobNo: 'D-URGENT', statusId: 1, assignedCourier: {id: 5, text: '5 - R'}, booked: dayjs().add(15, 'minute')},
+                tooltip: 'Urgent',
+            },
+        ];
+
+        it.each(cases)('shows a tooltip on the $label dot', async ({overrides, tooltip}) => {
+            const job = createMockDispatchJob({id: 1, ...overrides});
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+            await setupUser().hover(screen.getByTestId('priority-dot'));
+            expect(await screen.findByText(tooltip)).toBeInTheDocument();
+        });
+
+        it('does not show an in-transit dot for Warning-status jobs', () => {
+            // Warning (7) previously rendered an amber dot; amber now means In Transit only.
+            const warningJob = createMockDispatchJob({id: 1, jobNo: 'D-WARN', statusId: 7, assignedCourier: {id: 5, text: '5 - R'}});
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [warningJob]})}/>);
+
+            expect(screen.queryByTestId('priority-dot')).not.toBeInTheDocument();
+        });
+    });
+
+    // ── Priority-column header: legend and sort side by side ─────────
+    describe('Priority column header', () => {
+        it('opens the legend dialog from its info button without sorting', async () => {
+            const props = createDefaultProps();
+            renderWithMantine(<JobListTable {...props}/>);
+
+            await setupUser().click(screen.getByRole('button', {name: 'Column legend'}));
+
+            // Dialog opened, sorting not triggered
+            expect(props.onSortChange).not.toHaveBeenCalled();
+            expect(await screen.findByText('Job type')).toBeInTheDocument();
+            expect(screen.getByText('Needs attention')).toBeInTheDocument();
+        });
+
+        it('offers no sort control — the gutter holds icons, not a value to order by', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+
+            const header = document.querySelector('th[data-column-key="priority"]')!;
+            expect(header.querySelector('[data-sort-column]')).toBeNull();
+            expect(screen.queryByRole('button', {name: 'Sort by priority'})).not.toBeInTheDocument();
         });
     });
 
     // ── Row Interaction & Sort ───────────────────────────────────────
     describe('Row Interaction', () => {
         it('fires onJobClick and onContextMenu', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             await user.click(screen.getByText('J001'));
             expect(props.onJobClick).toHaveBeenCalledWith(expect.objectContaining({id: 1}), expect.any(Object));
@@ -193,12 +287,18 @@ describe('JobListTable', () => {
         });
 
         it('fires onSortChange when column header is clicked', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            const user = setupUser();
+            const props = createDefaultProps({isJobSearchPage: true});
+            renderWithMantine(<JobListTable {...props}/>);
 
             await user.click(screen.getByText('Job No'));
             expect(props.onSortChange).toHaveBeenCalledWith('jobNo');
+
+            await user.click(screen.getByText('Ref A'));
+            expect(props.onSortChange).toHaveBeenCalledWith('refA');
+
+            await user.click(screen.getByText('Remaining'));
+            expect(props.onSortChange).toHaveBeenCalledWith('remaining');
         });
     });
 
@@ -231,7 +331,7 @@ describe('JobListTable', () => {
                     },
                 }),
             ];
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs})}/>);
 
             expect(screen.getByText('JS01 - John Smith')).toBeInTheDocument();
             expect(screen.getByText('NZ123')).toBeInTheDocument();
@@ -243,7 +343,7 @@ describe('JobListTable', () => {
                 assignedCourier: {id: 10, text: 'John Smith'},
                 courierData: {courier: 'JS01', courierName: 'John Smith', courierNumber: '101'},
             });
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job], isUsCustomer: true})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job], isUsCustomer: true})}/>);
 
             expect(screen.getByText('John Smith')).toBeInTheDocument();
             expect(screen.getByText('JS01')).toBeInTheDocument();
@@ -254,7 +354,7 @@ describe('JobListTable', () => {
                 id: 4, jobNo: 'J004',
                 sentToPartnerName: 'Acme Couriers',
             });
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
 
             expect(screen.getByText('Acme Couriers')).toBeInTheDocument();
         });
@@ -262,28 +362,37 @@ describe('JobListTable', () => {
 
     // ── CourierCell Assign Button ────────────────────────────────────
     describe('CourierCell — Assign Button', () => {
-        it('renders Assign button on Dispatch and JobSearch pages but not Domestic', () => {
+        it('renders the inline courier Assign button on every operational page', () => {
+            // Nationwide (Domestic) used to be excluded, leaving its rows with no
+            // assignment affordance at all.
             const job = createMockDispatchJob();
 
-            // Dispatch page
-            const {unmount: u1} = renderWithTheme(<JobListTable {...createDefaultProps({
-                jobs: [job],
-                appPage: AppPage.Dispatch
-            })}/>);
-            expect(screen.getByText('Assign')).toBeInTheDocument();
-            u1();
+            for (const appPage of [AppPage.Dispatch, AppPage.JobSearch, AppPage.Domestic]) {
+                const {unmount} = renderWithMantine(
+                    <JobListTable {...createDefaultProps({jobs: [job], appPage})}/>
+                );
+                expect(screen.getByText('Assign')).toBeInTheDocument();
+                unmount();
+            }
+        });
 
-            // JobSearch page
-            const {unmount: u2} = renderWithTheme(<JobListTable {...createDefaultProps({
-                jobs: [job],
-                appPage: AppPage.JobSearch
+        it('fills its cell — paints the row band and the full column, without growing the row', () => {
+            renderWithMantine(<JobListTable {...createDefaultProps({
+                jobs: [createMockDispatchJob()],
+                appPage: AppPage.Dispatch,
             })}/>);
-            expect(screen.getByText('Assign')).toBeInTheDocument();
-            u2();
 
-            // Domestic page
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job], appPage: AppPage.Domestic})}/>);
-            expect(screen.queryByText('Assign')).not.toBeInTheDocument();
+            const assign = screen.getByRole('button', {name: 'Assign'});
+            expect(assign).toHaveAttribute('data-ab-size', 'compact');
+
+            // The chip itself only hugs its label; its wrapper is the hit target
+            // that fills the cell.
+            const wrapper = assign.parentElement as HTMLElement;
+            // Paints the 22px band plus the cell padding above and below it...
+            expect(wrapper.style.height).toBe('calc(22px + 2 * var(--jl-cell-py))');
+            // ...then gives that padding back, so the row height is unchanged.
+            expect(wrapper.style.marginBlock).toBe('calc(-1 * var(--jl-cell-py))');
+            expect(wrapper.style.width).toBe('100%');
         });
 
         it('does not render Assign button for flight or agent assigned jobs', () => {
@@ -308,7 +417,7 @@ describe('JobListTable', () => {
                     },
                 }),
             ];
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs})}/>);
             expect(screen.queryByText('Assign')).not.toBeInTheDocument();
         });
     });
@@ -316,10 +425,10 @@ describe('JobListTable', () => {
     // ── CourierCell — Autocomplete Search ────────────────────────────
     describe('CourierCell — Autocomplete Search', () => {
         it('shows autocomplete and calls search on input', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockedSearch.mockResolvedValue([{id: 1, text: '101 - John Smith'}]);
 
-            renderWithTheme(<JobListTable {...createDefaultProps()}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
 
             await user.click(screen.getByText('Assign'));
             expect(screen.getByPlaceholderText('Search courier...')).toBeInTheDocument();
@@ -333,10 +442,10 @@ describe('JobListTable', () => {
         });
 
         it('passes dgOnly=true for DG jobs', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockedSearch.mockResolvedValue([]);
 
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob({dgClass: 3})]})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob({dgClass: 3})]})}/>);
 
             await user.click(screen.getByText('Assign'));
             await user.click(screen.getByPlaceholderText('Search courier...'));
@@ -347,12 +456,42 @@ describe('JobListTable', () => {
             });
         });
 
+        it('closes the search and restores Assign when the click lands outside the cell', async () => {
+            const user = setupUser();
+            mockedSearch.mockResolvedValue([]);
+
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+
+            await user.click(screen.getByRole('button', {name: 'Assign'}));
+            expect(screen.getByPlaceholderText('Search courier...')).toBeInTheDocument();
+
+            await user.click(document.body);
+
+            expect(screen.queryByPlaceholderText('Search courier...')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Assign'})).toBeInTheDocument();
+        });
+
+        it('cancels the search on Escape and puts focus back on Assign', async () => {
+            const user = setupUser();
+            mockedSearch.mockResolvedValue([]);
+
+            renderWithMantine(<JobListTable {...createDefaultProps()}/>);
+
+            await user.click(screen.getByRole('button', {name: 'Assign'}));
+            await user.keyboard('{Escape}');
+
+            const assign = screen.getByRole('button', {name: 'Assign'});
+            expect(screen.queryByPlaceholderText('Search courier...')).not.toBeInTheDocument();
+            // Escape is a keyboard gesture, so the keyboard must not be stranded.
+            expect(assign).toHaveFocus();
+        });
+
         it('fires onJobDispatch when a courier is selected', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockedSearch.mockResolvedValue([{id: 42, text: '101 - John Smith'}]);
 
             const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             await user.click(screen.getByText('Assign'));
             await user.click(screen.getByPlaceholderText('Search courier...'));
@@ -365,37 +504,38 @@ describe('JobListTable', () => {
         });
     });
 
-    // ── CourierCell — AI Suggestions ─────────────────────────────────
-    describe('CourierCell — AI Suggestions', () => {
-        it('fetches and displays AI suggestions when enabled', async () => {
-            const user = userEvent.setup();
-            mockedIsAiEnabled.mockReturnValue(true);
-            mockedSuggestCouriers.mockResolvedValue({
-                couriers: [{courierId: 99, code: 'AI01', firstName: 'AI Courier'}],
-                summary: '',
-                usage: {inputTokens: 0, outputTokens: 0},
-            });
+    // ── Dispatch confirmation flash ────────────────────────────────────
+    describe('Dispatch confirmation flash', () => {
+        it('flashes the row when a job gains a courier, then clears the flash', () => {
+            jest.useFakeTimers();
+            try {
+                const job = createMockDispatchJob({id: 1, jobNo: 'J100', assignedCourier: undefined});
+                const {rerender} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
 
-            renderWithTheme(<JobListTable {...createDefaultProps()}/>);
+                const row = screen.getByText('J100').closest('tr')!;
+                expect(row).not.toHaveAttribute('data-dispatched');
 
-            await user.click(screen.getByText('Assign'));
+                const dispatchedJob = {...job, assignedCourier: {id: 5, text: '5 - Runner'}};
+                act(() => {
+                    rerender(<JobListTable {...createDefaultProps({jobs: [dispatchedJob]})}/>);
+                });
+                expect(row).toHaveAttribute('data-dispatched', 'true');
 
-            await waitFor(() => {
-                expect(mockedSuggestCouriers).toHaveBeenCalledWith(1);
-            });
-            expect(await screen.findByText('AI01 - AI Courier')).toBeInTheDocument();
+                act(() => {
+                    jest.advanceTimersByTime(1500);
+                });
+                expect(row).not.toHaveAttribute('data-dispatched');
+            } finally {
+                jest.useRealTimers();
+            }
         });
 
-        it('does not fetch AI suggestions when disabled', async () => {
-            const user = userEvent.setup();
-            mockedIsAiEnabled.mockReturnValue(false);
+        it('does not flash a job that already had a courier on first render', () => {
+            const job = createMockDispatchJob({id: 1, jobNo: 'J101', assignedCourier: {id: 5, text: '5 - Runner'}});
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
 
-            renderWithTheme(<JobListTable {...createDefaultProps()}/>);
-            await user.click(screen.getByText('Assign'));
-
-            await waitFor(() => {
-                expect(mockedSuggestCouriers).not.toHaveBeenCalled();
-            });
+            const row = screen.getByText('J101').closest('tr')!;
+            expect(row).not.toHaveAttribute('data-dispatched');
         });
     });
 
@@ -407,7 +547,7 @@ describe('JobListTable', () => {
                 createMockDispatchJob({id: 2, jobNo: 'J002'}),
                 createMockDispatchJob({id: 3, jobNo: 'J003'}),
             ];
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs})}/>);
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs})}/>);
 
             expect(screen.getByText('J001')).toBeInTheDocument();
             expect(screen.getByText('J002')).toBeInTheDocument();
@@ -428,12 +568,12 @@ describe('JobListTable', () => {
                 alertLatePickup: 0, // alerts enabled
             });
 
-            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
 
             expect(screen.getByText('ASAP-001')).toBeInTheDocument();
             // No ScheduleIcon (late pickup) or LocalShippingIcon (late delivery)
-            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
-            expect(container.querySelector('[data-testid="LocalShippingIcon"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-pickup"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-delivery"]')).not.toBeInTheDocument();
         });
 
         it('does not show late delivery icon for ASAP jobs with null time in transit', () => {
@@ -447,12 +587,12 @@ describe('JobListTable', () => {
                 alertLateDelivery: 0, // alerts enabled
             });
 
-            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
 
             expect(screen.getByText('ASAP-002')).toBeInTheDocument();
             // No late delivery icon
-            expect(container.querySelector('[data-testid="LocalShippingIcon"]')).not.toBeInTheDocument();
-            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-delivery"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-pickup"]')).not.toBeInTheDocument();
         });
 
         it('does not show late pickup icon for ASAP jobs in Accepted status', () => {
@@ -466,10 +606,10 @@ describe('JobListTable', () => {
                 alertLatePickup: null as any, // null = default (alerts enabled)
             });
 
-            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
 
             expect(screen.getByText('ASAP-003')).toBeInTheDocument();
-            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="indicator-late-pickup"]')).not.toBeInTheDocument();
         });
 
     });
@@ -483,46 +623,46 @@ describe('JobListTable', () => {
         ];
 
         it('selected row does not show link icon even when in relatedJobIds', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps({
+            renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: selectionJobs,
                 selectedJobId: 1,
                 relatedJobIds: new Set([1, 2]),
             })}/>);
 
             const selectedRow = screen.getByText('SEL-001').closest('tr')!;
-            expect(selectedRow.querySelector('[data-testid="LinkIcon"]')).not.toBeInTheDocument();
+            expect(selectedRow.querySelector('[data-testid="indicator-related"]')).not.toBeInTheDocument();
         });
 
         it('related (non-selected) row shows link icon in first cell', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps({
+            renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: selectionJobs,
                 selectedJobId: 1,
                 relatedJobIds: new Set([1, 2]),
             })}/>);
 
             const relatedRow = screen.getByText('REL-002').closest('tr')!;
-            expect(relatedRow.querySelector('[data-testid="LinkIcon"]')).toBeInTheDocument();
+            expect(relatedRow.querySelector('[data-testid="indicator-related"]')).toBeInTheDocument();
         });
 
         it('non-selected, non-related rows do not show link icon', () => {
-            renderWithTheme(<JobListTable {...createDefaultProps({
+            renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: selectionJobs,
                 selectedJobId: 1,
                 relatedJobIds: new Set([1, 2]),
             })}/>);
 
             const otherRow = screen.getByText('OTHER-003').closest('tr')!;
-            expect(otherRow.querySelector('[data-testid="LinkIcon"]')).not.toBeInTheDocument();
+            expect(otherRow.querySelector('[data-testid="indicator-related"]')).not.toBeInTheDocument();
         });
 
         it('no link icons appear when there are no related jobs', () => {
-            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({
+            const {container} = renderWithMantine(<JobListTable {...createDefaultProps({
                 jobs: selectionJobs,
                 selectedJobId: 1,
                 relatedJobIds: new Set<number>(),
             })}/>);
 
-            expect(container.querySelectorAll('[data-testid="LinkIcon"]')).toHaveLength(0);
+            expect(container.querySelectorAll('[data-testid="indicator-related"]')).toHaveLength(0);
         });
     });
 
@@ -530,7 +670,7 @@ describe('JobListTable', () => {
     describe('Column Resize', () => {
         it('does not trigger sort on resize handle mousedown', () => {
             const props = createDefaultProps();
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             const handle = screen.getByTestId('resize-handle-jobNo');
             handle.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 100}));
@@ -539,7 +679,7 @@ describe('JobListTable', () => {
 
         it('calls onColumnWidthsChange with updated width after drag', () => {
             const props = createDefaultProps({columnWidths: {jobNo: 130}});
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             const handle = screen.getByTestId('resize-handle-jobNo');
             handle.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 200}));
@@ -551,7 +691,7 @@ describe('JobListTable', () => {
 
         it('enforces minimum column width of 50px', () => {
             const props = createDefaultProps({columnWidths: {jobNo: 80}});
-            renderWithTheme(<JobListTable {...props}/>);
+            renderWithMantine(<JobListTable {...props}/>);
 
             const handle = screen.getByTestId('resize-handle-jobNo');
             handle.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 200}));

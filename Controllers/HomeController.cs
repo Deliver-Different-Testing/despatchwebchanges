@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿#nullable enable
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
@@ -14,7 +15,9 @@ public partial class HomeController(
     IClientRepository clientRepository,
     IDfrntViewsRepository viewsRepository,
     ITenantInfoService infoService,
-    IConnectionStringManager connectionStringManager) : Controller
+    IConnectionStringManager connectionStringManager,
+    IFeatureVisibilityService featureVisibilityService,
+    INetworkPartnerContextService networkPartnerContextService) : Controller
 {
     [Authorize]
     public async Task<IActionResult> Index()
@@ -36,7 +39,7 @@ public partial class HomeController(
             {
                 var hubUrl = Environment.GetEnvironmentVariable("HubUrl");
 
-                Log.Error("Connection string or tenant ID is missing.");
+                Log.Error("Connection string or tenant ID is missing");
                 return Redirect(hubUrl ?? "https://deliverdifferent.com/");
             }
 
@@ -48,7 +51,7 @@ public partial class HomeController(
                     "Could not find a environment variable string named 'SQLCredentials'.");
             }
 
-            await connectionStringManager.SetConnectionStringAsync($"{tenantId}-ClientManager-Connection",
+            await connectionStringManager.SetConnectionStringAsync(TenantConnectionCache.Key(tenantId),
                 connectionString + credentials);
 
             var maskedConnectionString = MaskSensitiveInfo(connectionString + credentials);
@@ -57,13 +60,27 @@ public partial class HomeController(
             if (int.TryParse(contactId, out var parsedContactId))
             {
                 var clientDetail = await clientRepository.ValidateClientAsync(parsedContactId);
+                if (clientDetail == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Contact {parsedContactId} has no tucClientContact row in this tenant's database.");
+                }
+
                 ViewBag.FirstName = clientDetail.FirstName;
                 ViewBag.FullName = clientDetail.FullName;
                 ViewBag.Email = clientDetail.Email;
                 ViewBag.ClientInternal = clientDetail.Internal;
+                ViewBag.IsNetworkPartner = clientDetail.IsNetworkPartner;
                 ViewBag.ContactID = clientDetail.StaffID ?? parsedContactId;
                 ViewBag.IsUsTenant = isUsTenantFlag ?? false;
                 ViewBag.TimeZone = tenantTimeZone;
+
+                var visibleDashboards = await TryResolveAsync(
+                    featureVisibilityService.GetVisibleDashboardsAsync, "Dashboard visibility lookup");
+                ViewBag.VisibleFeatures = visibleDashboards?.ToArray();
+
+                ViewBag.NpMapCenter = await TryResolveAsync(
+                    networkPartnerContextService.GetMapCentreAsync, "Network partner map centre lookup");
             }
             else
             {
@@ -89,12 +106,23 @@ public partial class HomeController(
         return Json(viewOptions);
     }
 
+    private static async Task<T?> TryResolveAsync<T>(Func<Task<T?>> resolve, string description)
+    {
+        try
+        {
+            return await resolve();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "{Description} failed; continuing without it", description);
+            return default;
+        }
+    }
+
     private static string MaskSensitiveInfo(string connectionString)
     {
-        // Mask password
         var maskedString = PasswordRegex().Replace(connectionString, "$1=********");
 
-        // Mask user id if present
         maskedString = UserIdRegex().Replace(maskedString, "$1=********");
 
         return maskedString;

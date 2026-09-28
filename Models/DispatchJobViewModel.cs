@@ -1,3 +1,5 @@
+using DespatchWeb.Helpers;
+
 namespace DespatchWeb.Models;
 
 public class DispatchJobViewModel
@@ -15,6 +17,13 @@ public class DispatchJobViewModel
     public bool HasBeenRead { get; set; }
     public bool IsParentOrSingle { get; set; }
     public int? ParentId { get; set; }
+    public int? JobRelationshipTypeId { get; set; }
+
+    /// <summary>
+    /// The live tucJob id behind this row when <see cref="Id"/> is not one — a bulk row carries a
+    /// BulkJobId, which matches nothing in S3, where POD media is keyed by the job id.
+    /// </summary>
+    public int? LinkedJobId { get; set; }
 
     // Status and timing information
     public int? InternalStatusId { get; set; }
@@ -22,6 +31,29 @@ public class DispatchJobViewModel
     public int? StatusId { get; set; }
     public string StatusName { get; set; }
     public string Status { get; set; }
+    public bool? Void { get; set; }
+    public DateTime? CompletedTime { get; set; }
+
+    /// <summary>
+    /// Whether a bulk row has been pushed to live dispatch. Distinct from <see cref="Done"/>, which
+    /// means the freight was delivered — <c>tblBulkJob.Done</c> records the former, so projecting it
+    /// as the latter made a released bulk row read as delivered.
+    /// </summary>
+    public bool? Released { get; set; }
+
+    /// <summary>
+    /// The one status every surface should render and every eligibility check should test. Resolved
+    /// from the competing status fields by <see cref="JobStatusResolver"/> rather than re-derived per
+    /// screen, so the grid and the detail dialog can never disagree.
+    /// </summary>
+    public int ResolvedStatusId => Resolved.StatusId;
+
+    public bool ResolvedIsVoid => Resolved.IsVoid;
+
+    public bool ResolvedIsComplete => Resolved.IsComplete;
+
+    private ResolvedJobStatus Resolved => JobStatusResolver.Resolve(StatusId, Done, Void, CompletedTime);
+
     public DateTime? Time { get; set; }
     public DateTime? Booked { get; set; }
     public double? Remain { get; set; }
@@ -55,6 +87,7 @@ public class DispatchJobViewModel
     public string Client { get; set; }
     public int? ClientId { get; set; }
     public string ClientName { get; set; }
+    public string RefA { get; set; }
     public int? JobType { get; set; }
     public string JobTypeDescription { get; set; }
 
@@ -87,6 +120,10 @@ public class DispatchJobViewModel
     public int? ToAirportId { get; set; }
     public int? FromAirportId { get; set; }
 
+    // Recurring flight: the complete flight number (e.g. "NZ123") saved against
+    // a recurring booking so the same flight auto-assigns each push-to-live.
+    public string SavedFlightNumber { get; set; }
+
     public AssignedFlight AssignedFlight { get; set; }
     public AgentViewModel AssignedAgent { get; set; }
     public bool IsAgentAssigned { get; set; }
@@ -98,6 +135,14 @@ public class DispatchJobViewModel
     // change-request pairing) so the UI can substitute the actual tenant name
     // for the generic "counterparty" / "partner" copy.
     public string PartnerTenantName { get; set; }
+
+    // IntMgrPartnerPairing.Id for the pairing this job belongs to. Set at
+    // SendToPartner time for outbound jobs and by IntegrationManager at
+    // mirror ingestion for inbound jobs, so the frontend can disambiguate
+    // when filing a JobChangeRequest on a tenant with multiple active
+    // pairings. Falls back to JobPartnerDispatch / most-recent CR pairing
+    // for jobs that pre-date the column.
+    public int? PartnerPairingId { get; set; }
 
     // UI helper fields
     public List<Suggestion> RelatedJobs { get; set; }

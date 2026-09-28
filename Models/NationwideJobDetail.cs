@@ -16,7 +16,9 @@ namespace DespatchWeb.Models;
         public decimal? DryIceWeight { get; init; }
         public int? Quantity { get; init; }
         public decimal? Cubic { get; init; }
+        public string CubicList { get; init; }
         public int? TotalPallets { get; init; }
         public bool ExtraStopOffs { get; init; }
-        public int? WaitTime { get; init; }
+        public int? PickupWaitTime { get; init; }
+        public int? DeliveryWaitTime { get; init; }
 }

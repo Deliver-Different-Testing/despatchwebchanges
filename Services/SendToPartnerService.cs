@@ -1,3 +1,4 @@
+#nullable enable
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
@@ -19,6 +20,12 @@ public sealed class SendToPartnerService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService tenantInfoService) : ISendToPartnerService
 {
+    private static readonly JsonSerializerOptions CaseInsensitiveJsonOptions =
+        new() { PropertyNameCaseInsensitive = true };
+
+    private static readonly JsonSerializerOptions WebJsonOptions =
+        new(JsonSerializerDefaults.Web);
+
     public async Task<SendToPartnerResponse> SendAsync(SendToPartnerRequest request)
     {
         var (baseUrl, bearerToken) = ResolveUrlAndToken();
@@ -45,15 +52,7 @@ public sealed class SendToPartnerService(
             })
         };
         httpRequest.Headers.Add("Authorization", $"Bearer {bearerToken}");
-        // Sent in addition to Authorization so that an upstream proxy stripping the Bearer token
-        // doesn't trip Integration Manager's CSRF middleware — without this the rejection looks
-        // like a missing-header bug rather than the auth failure it actually is.
         httpRequest.Headers.Add("X-Requested-With", "XMLHttpRequest");
-        // Fallback transport for the JWT. The IM staging ingress strips the standard
-        // Authorization header before it reaches the upstream pod (proven via diagnostic
-        // logging — AuthorizationHeader=absent on every despatchweb→IM call). Until the
-        // ingress is fixed to forward Authorization, IM's JWT bearer auth also accepts the
-        // token from this header. Same JWT, same validation; only the transport differs.
         httpRequest.Headers.Add("X-IM-Authorization", $"Bearer {bearerToken}");
 
         try
@@ -91,7 +90,7 @@ public sealed class SendToPartnerService(
                     request.JobId, result.TrackingNumber);
 
                 await RecordOutboundPartnerDispatchAsync(request.JobId, request.PartnerId);
-                await RecordPartnerDispatchJourneyAsync(request.JobId, result.TrackingNumber);
+                await RecordPartnerDispatchJourneyAsync(request.JobId, result.TrackingNumber ?? string.Empty);
             }
             else
             {
@@ -120,36 +119,22 @@ public sealed class SendToPartnerService(
             };
         }
     }
-
-    // Persists the outbound job→pairing link so the dispatch UI can surface the partner
-    // name in the courier column. Idempotent: re-sending an already-linked job updates the
-    // pairing reference instead of failing on the PK.
+    
     private async Task RecordOutboundPartnerDispatchAsync(int jobId, int pairingId)
     {
         try
         {
             await using var ctx = await contextFactory.CreateDbContextAsync();
-            var existing = await ctx.JobPartnerDispatches.FindAsync(jobId);
-            if (existing is null)
-            {
-                ctx.JobPartnerDispatches.Add(new JobPartnerDispatch
-                {
-                    JobId = jobId,
-                    PartnerPairingId = pairingId
-                });
-            }
-            else
-            {
-                existing.PartnerPairingId = pairingId;
-            }
-            await ctx.SaveChangesAsync();
+            await ctx.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerPairingId, pairingId));
         }
         catch (Exception ex)
         {
             // Partner already accepted upstream — log and continue so the success path
             // isn't unwound by a local persistence hiccup.
             Log.Error(ex,
-                "Job {JobId}: failed to persist JobPartnerDispatch link to pairing {PairingId}",
+                "Job {JobId}: failed to stamp TucJob.PartnerPairingId = {PairingId}",
                 jobId, pairingId);
         }
     }
@@ -165,19 +150,22 @@ public sealed class SendToPartnerService(
         try
         {
             await using var ctx = await contextFactory.CreateDbContextAsync();
-            ctx.JobDeliveryJourneys.Add(new JobDeliveryJourney
+            var staffId = tenantInfoService.GetStaffIdOrNull();
+            var dispatchedToPartnerRecord = new JobDeliveryJourney
             {
                 JobId = jobId,
                 ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
                 FieldName = "partnerJobGuid",
                 NewValue = trackingNumber,
-                StaffId = ResolveStaffIdOrNull(),
+                StaffId = staffId,
                 UpdatedAt = DateTime.UtcNow,
-                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff),
+                UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId),
                 Comments = string.IsNullOrWhiteSpace(trackingNumber)
                     ? "Job sent to partner"
                     : $"Job sent to partner; tracking {trackingNumber}"
-            });
+            };
+            
+            await ctx.JobDeliveryJourneys.AddAsync(dispatchedToPartnerRecord);
             await ctx.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -187,31 +175,17 @@ public sealed class SendToPartnerService(
         }
     }
 
-    // ITenantInfoService.GetStaffId throws when there's no HTTP user context (background calls,
-    // tests without a mocked tenant). Audit columns prefer "we don't know" (null) over a misleading
-    // staff #0, so swallow and return null.
-    private int? ResolveStaffIdOrNull()
-    {
-        try
-        {
-            var id = tenantInfoService.GetStaffId();
-            return id > 0 ? id : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static SendToPartnerResponse TryDeserialize(string body)
+    private static SendToPartnerResponse? TryDeserialize(string body)
     {
         if (string.IsNullOrWhiteSpace(body))
+        {
             return null;
+        }
 
         try
         {
             return JsonSerializer.Deserialize<SendToPartnerResponse>(body,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                CaseInsensitiveJsonOptions);
         }
         catch (JsonException)
         {
@@ -226,7 +200,9 @@ public sealed class SendToPartnerService(
     {
         var prefix = $"Integration Manager returned {(int)statusCode} {statusCode}";
         if (string.IsNullOrWhiteSpace(body))
+        {
             return prefix;
+        }
 
         var snippet = body.Length > 200 ? body[..200] + "…" : body;
         return $"{prefix}: {snippet.Trim()}";
@@ -246,21 +222,20 @@ public sealed class SendToPartnerService(
         {
             Content = JsonContent.Create(new { jobId })
         };
-        httpRequest.Headers.Add("Authorization", $"Bearer {bearerToken}");
-        httpRequest.Headers.Add("X-Requested-With", "XMLHttpRequest");
-        httpRequest.Headers.Add("X-IM-Authorization", $"Bearer {bearerToken}");
+        AttachBearer(httpRequest, bearerToken);
 
         try
         {
             var response = await httpClient.SendAsync(httpRequest);
             if (response.IsSuccessStatusCode)
+            {
                 return await response.Content.ReadFromJsonAsync<PartnerRateForJobResponse>()
                        ?? new PartnerRateForJobResponse { Source = "none" };
-           
+            }
+
             Log.Warning("Rate lookup failed for pairing {PairingId}, job {JobId}: {StatusCode}",
                 pairingId, jobId, response.StatusCode);
             return new PartnerRateForJobResponse { Source = "none" };
-
         }
         catch (Exception ex)
         {
@@ -269,7 +244,126 @@ public sealed class SendToPartnerService(
         }
     }
 
-    private (string BaseUrl, string BearerToken) ResolveUrlAndToken()
+    public async Task<PartnerInboundJobAcceptanceStateResponse?> GetInboundJobAcceptanceStateAsync(int jobId)
+    {
+        var (baseUrl, bearerToken) = ResolveUrlAndToken();
+        if (baseUrl is null || bearerToken is null)
+        {
+            return null;
+        }
+
+        var url = $"{baseUrl}/api/v1/admin/partner/inbound-jobs/by-job/{jobId}";
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+        AttachBearer(httpRequest, bearerToken);
+
+        try
+        {
+            var response = await httpClient.SendAsync(httpRequest);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<PartnerInboundJobAcceptanceStateResponse>();
+            }
+
+            Log.Warning("Acceptance-state lookup failed for job {JobId}: {StatusCode}",
+                jobId, response.StatusCode);
+            return null;
+
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error fetching acceptance state for job {JobId}", jobId);
+            return null;
+        }
+    }
+
+    public Task<PartnerInboundJobActionResponse> AcceptInboundJobAsync(int jobId) =>
+        PostInboundJobActionAsync(jobId, "accept", payload: null);
+
+    public Task<PartnerInboundJobActionResponse> RejectInboundJobAsync(int jobId, string reason) =>
+        PostInboundJobActionAsync(jobId, "reject", payload: new { reason });
+
+    private async Task<PartnerInboundJobActionResponse> PostInboundJobActionAsync(int jobId, string action,
+        object? payload)
+    {
+        var (baseUrl, bearerToken) = ResolveUrlAndToken();
+        if (baseUrl is null || bearerToken is null)
+        {
+            return new PartnerInboundJobActionResponse
+            {
+                Success = false,
+                ErrorMessage = baseUrl is null
+                    ? "Integration Manager is not configured"
+                    : "Unable to authenticate with Integration Manager"
+            };
+        }
+
+        var url = $"{baseUrl}/api/v1/admin/partner/inbound-jobs/by-job/{jobId}/{action}";
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
+        if (payload is not null)
+        {
+            httpRequest.Content = JsonContent.Create(payload);
+        }
+
+        AttachBearer(httpRequest, bearerToken);
+
+        try
+        {
+            var response = await httpClient.SendAsync(httpRequest);
+            var body = await response.Content.ReadAsStringAsync();
+            var result = TryDeserializeAction(body);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return result ?? new PartnerInboundJobActionResponse { Success = true };
+            }
+
+            Log.Warning("Acceptance {Action} failed for job {JobId}: {StatusCode} {Body}",
+                action, jobId, response.StatusCode, body);
+            return result ?? new PartnerInboundJobActionResponse
+            {
+                Success = false,
+                ErrorMessage = BuildFallbackErrorMessage(response.StatusCode, body)
+            };
+
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error posting acceptance {Action} for job {JobId}", action, jobId);
+            return new PartnerInboundJobActionResponse { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
+    private static void AttachBearer(HttpRequestMessage request, string bearerToken)
+    {
+        request.Headers.Add("Authorization", $"Bearer {bearerToken}");
+        request.Headers.Add("X-Requested-With", "XMLHttpRequest");
+        request.Headers.Add("X-IM-Authorization", $"Bearer {bearerToken}");
+    }
+
+    private static PartnerInboundJobActionResponse? TryDeserializeAction(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<PartnerInboundJobActionResponse>(body,
+                WebJsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private (string? BaseUrl, string? BearerToken) ResolveUrlAndToken()
     {
         var baseUrl = ResolveBaseUrl();
         if (string.IsNullOrEmpty(baseUrl))
@@ -302,14 +396,18 @@ public sealed class SendToPartnerService(
         return (baseUrl.TrimEnd('/'), bearerToken);
     }
 
-    private string ResolveBaseUrl()
+    private string? ResolveBaseUrl()
     {
         if (environment.IsDevelopment())
+        {
             return Environment.GetEnvironmentVariable("IntegrationManagerUrl");
+        }
 
         var httpContext = contextAccessor.HttpContext;
         if (httpContext is null)
+        {
             return null;
+        }
 
         var req = httpContext.Request;
         var host = req.Host.Value?.Replace("despatch", "integrationmanager", StringComparison.OrdinalIgnoreCase);

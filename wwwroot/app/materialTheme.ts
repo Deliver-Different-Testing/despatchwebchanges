@@ -1,5 +1,72 @@
 import { IAppConfig } from "./interfaces/app-config.interface";
 import angular from 'angular';
+import {
+    dfrntPrimaryPalette,
+    urgentPrimaryPalette,
+    accentPalette,
+} from './react/theme/palettes';
+
+/**
+ * Build an AngularJS Material palette from a shared hex palette plus the
+ * contrast metadata Material needs. The hex values come from the same
+ * framework-free source the MUI theme uses, so the two can't drift.
+ */
+function toMdPalette(
+    base: Record<string, string>,
+    contrast: Pick<
+        angular.material.IPalette,
+        'contrastDefaultColor' | 'contrastDarkColors' | 'contrastLightColors'
+    >,
+): angular.material.IPalette {
+    return {...base, ...contrast} as unknown as angular.material.IPalette;
+}
+
+/** Warm-gray accent — shared 50–900 ramp plus the A-keys Material expects. */
+export const accentMdPalette = toMdPalette(
+    {
+        ...(accentPalette as unknown as Record<string, string>),
+        A100: '#ffffff',
+        A200: '#f5f5f4',
+        A400: '#a8a29e',
+        A700: '#57534e',
+    },
+    {
+        contrastDefaultColor: 'light',
+        contrastDarkColors: ['50', '100', '200', '300', 'A100', 'A200'],
+        contrastLightColors: ['400', '500', '600', '700', '800', '900', 'A400', 'A700'],
+    },
+);
+
+// US (professional) primary = Cyan. Cyan is a light hue, so only its darkest shades
+// (700–900) carry white text; everything else (incl. the 500 main) takes dark Ink text.
+const cyanContrast = {
+    contrastDefaultColor: 'dark' as const,
+    contrastDarkColors: ['50', '100', '200', '300', '400', '500', '600', 'A100', 'A200', 'A400', 'A700'],
+    contrastLightColors: ['700', '800', '900'],
+};
+
+// Non-US (urgent) primary = warm amber-gold. Gold stays light across the whole ramp,
+// so every shade takes dark text — white would be illegible even on 700–900.
+const goldContrast = {
+    contrastDefaultColor: 'dark' as const,
+    contrastDarkColors: ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', 'A100', 'A200', 'A400', 'A700'],
+    contrastLightColors: [] as string[],
+};
+
+export const urgentPrimaryMdPalette = toMdPalette(
+    accentValues(urgentPrimaryPalette),
+    goldContrast,
+);
+
+export const professionalPrimaryMdPalette = toMdPalette(
+    accentValues(dfrntPrimaryPalette),
+    cyanContrast,
+);
+
+/** Coerce a palette's numeric keys to the string-keyed record Material wants. */
+function accentValues(palette: Record<string | number, string>): Record<string, string> {
+    return palette as unknown as Record<string, string>;
+}
 
 class ThemeConfig {
     private readonly isUsCustomer: boolean;
@@ -16,25 +83,7 @@ class ThemeConfig {
      * Matches MUI urgentPrimaryPalette for consistency
      */
     private defineUrgentPrimaryPalette(): void {
-        this.$mdThemingProvider.definePalette("urgentPrimary", {
-            '50': "#fef9e7",
-            '100': "#fcefc4",
-            '200': "#fae49d",
-            '300': "#f8d976",
-            '400': "#f6d058",
-            '500': "#f4c430",
-            '600': "#e5b52a",
-            '700': "#d4a324",
-            '800': "#c3911e",
-            '900': "#a87614",
-            'A100': "#fff8e1",
-            'A200': "#ffecb3",
-            'A400': "#ffd54f",
-            'A700': "#ffc107",
-            'contrastDefaultColor': "light",
-            'contrastDarkColors': ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "A100", "A200", "A400", "A700"],
-            'contrastLightColors': []
-        });
+        this.$mdThemingProvider.definePalette("urgentPrimary", urgentPrimaryMdPalette);
     }
 
     /**
@@ -42,69 +91,24 @@ class ThemeConfig {
      * Provides subtle contrast without competing with primary colors
      */
     private defineAccentPalette(){
-        this.$mdThemingProvider.definePalette("accent", {
-            '50': "#fafaf9",    // Warm white
-            '100': "#f5f5f4",   // Very light warm gray
-            '200': "#e7e5e4",   // Light warm gray  
-            '300': "#d6d3d1",   // Medium-light warm gray
-            '400': "#a8a29e",   // Medium warm gray
-            '500': "#78716c",   // Balanced warm gray - MAIN COLOR
-            '600': "#57534e",   // Dark warm gray - TOOLBAR COLOR
-            '700': "#44403c",   // Darker warm gray
-            '800': "#292524",   // Very dark warm gray
-            '900': "#1c1917",   // Deepest warm gray
-            'A100': "#ffffff",
-            'A200': "#f5f5f4",
-            'A400': "#a8a29e",
-            'A700': "#57534e",
-            'contrastDefaultColor': "light",
-            'contrastDarkColors': ["50", "100", "200", "300", "A100", "A200"],
-            'contrastLightColors': ["400", "500", "600", "700", "800", "900", "A400", "A700"]
-        });
+        this.$mdThemingProvider.definePalette("accent", accentMdPalette);
     }
 
     /**
-     * Defines a professional blue primary palette for standard branding
-     * Inspired by modern corporate design systems
+     * Defines the DFRNT cyan primary palette — the US tenant brand primary.
      */
     private defineProfessionalPrimaryPalette(): void {
-        this.$mdThemingProvider.definePalette("professionalPrimary", {
-            '50': "#e3f2fd",
-            '100': "#bbdefb",
-            '200': "#90caf9",
-            '300': "#64b5f6",
-            '400': "#42a5f5",
-            '500': "#2196f3",
-            '600': "#1e88e5",
-            '700': "#1976d2",
-            '800': "#1565c0",
-            '900': "#0d47a1",
-            'A100': "#82b1ff",
-            'A200': "#448aff",
-            'A400': "#2979ff",
-            'A700': "#2962ff",
-            'contrastDefaultColor': "light",
-            'contrastDarkColors': ["50", "100", "200", "300", "400", "A100"],
-            'contrastLightColors': ["500", "600", "700", "800", "900", "A200", "A400", "A700"]
-        });
+        this.$mdThemingProvider.definePalette("professionalPrimary", professionalPrimaryMdPalette);
     }
 
     /**
      * Configures the default theme based on customer region
-     * US customers receive a professional blue theme, others receive an urgent yellow theme
+     * US customers receive the DFRNT cyan theme, others the urgent gold theme
      */
     private configureDefaultTheme(): void {
-        const themeBuilder = this.$mdThemingProvider.theme("default");
-
-        if (this.isUsCustomer) {
-            themeBuilder
-                .primaryPalette("professionalPrimary")
-                .accentPalette("accent");
-        } else {
-            themeBuilder
-                .primaryPalette("urgentPrimary")
-                .accentPalette("accent");
-        }
+        this.$mdThemingProvider.theme("default")
+            .primaryPalette(this.isUsCustomer ? "professionalPrimary" : "urgentPrimary")
+            .accentPalette("accent");
     }
 
     /**

@@ -5,74 +5,124 @@
  * Supports multiple density modes for different viewing preferences.
  */
 
-import React, {useState, useMemo, useEffect, useCallback} from 'react';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import LinearProgress from '@mui/material/LinearProgress';
-import Typography from '@mui/material/Typography';
-import SyncIcon from '@mui/icons-material/Sync';
-import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
-import ViewCompactIcon from '@mui/icons-material/ViewCompact';
-import ViewCompactAltIcon from '@mui/icons-material/ViewCompactAlt';
-import NotesIcon from '@mui/icons-material/Notes';
-import CircleIcon from '@mui/icons-material/Circle';
-import SelectAllIcon from '@mui/icons-material/SelectAll';
-import PackageIcon from '@mui/icons-material/Inventory2';
-import {useTheme, type Theme} from '@mui/material';
-import {alpha} from '@mui/material/styles';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {
+    ActionIcon,
+    Alert,
+    Badge,
+    Box,
+    Group,
+    Paper,
+    Progress,
+    Stack,
+    Text,
+    Timeline,
+    Tooltip,
+    UnstyledButton
+} from '@mantine/core';
+import {LayoutList, NotebookPen, RefreshCw, Rows2, Rows4, SquareDashedMousePointer} from 'lucide-react';
+import {IconPackage} from '@tabler/icons-react';
+import {Icon} from '../icon/Icon';
+import classes from './TaskHistory.module.css';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import {
-    TaskHistoryProps,
-    DeliveryJourney,
-    DensityMode,
-    DeliveryHistoryConfig,
-} from './TaskHistory.interfaces';
+import {DeliveryHistoryConfig, DeliveryJourney, DensityMode, TaskHistoryProps,} from './TaskHistory.interfaces';
+import {type EventColorTone, EventIcon, getEventColorTone} from './eventIcons';
+import {DeliveryEventDetailsDialog} from './DeliveryEventDetailsDialog';
 import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
+import {formatCurrency} from '../../../utils/currencyUtils';
 import {useDeliveryJourney} from '../../../hooks/useTasksApi';
 
 dayjs.extend(relativeTime);
 
-// Icon color classes mapped to actual colors
-// These are intentional design data for differentiating user avatars/icons, not a theme concern.
-const ICON_COLORS = [
-    '#3b82f6', // Blue
-    '#10b981', // Emerald
-    '#f59e0b', // Amber
-    '#ef4444', // Red
-    '#8b5cf6', // Violet
-    '#06b6d4', // Cyan
-    '#84cc16', // Lime
-    '#ec4899', // Pink
-];
-
-// Status colors derived from theme palette
-function getStatusColors(theme: Theme) {
-    return {
-        completed: {main: theme.palette.success.main, light: alpha(theme.palette.success.main, 0.12)},
-        current: {main: theme.palette.info.main, light: alpha(theme.palette.info.main, 0.12)},
-        todo: {main: theme.palette.error.main, light: alpha(theme.palette.error.main, 0.08)},
-        pending: {main: theme.palette.warning.main, light: alpha(theme.palette.warning.main, 0.12)},
-        waiting: {main: theme.palette.text.disabled, light: theme.palette.grey[100]},
-    };
+interface DensitySpec {
+    rowGap: number;
+    contentPad: number;
+    cardPad: number;
+    markerSize: number;
+    iconFontSize: number;
+    showNotes: boolean;
+    tagLimit: number;
+    /** Mantine font-size key for the row title. */
+    titleSize: 'sm' | 'xs';
 }
+
+const DENSITY: Record<DensityMode, DensitySpec> = {
+    [DensityMode.Normal]: {
+        rowGap: 16,
+        contentPad: 16,
+        cardPad: 12,
+        markerSize: 36,
+        iconFontSize: 20,
+        showNotes: true,
+        tagLimit: 10,
+        titleSize: 'sm',
+    },
+    [DensityMode.Dense]: {
+        rowGap: 10,
+        contentPad: 12,
+        cardPad: 8,
+        markerSize: 28,
+        iconFontSize: 16,
+        showNotes: false,
+        tagLimit: 4,
+        titleSize: 'sm',
+    },
+    [DensityMode.UltraDense]: {
+        rowGap: 6,
+        contentPad: 8,
+        cardPad: 6,
+        markerSize: 22,
+        iconFontSize: 13,
+        showNotes: false,
+        tagLimit: 2,
+        titleSize: 'xs',
+    },
+};
 
 const defaultConfig: DeliveryHistoryConfig = {
     showSummaryStats: false,
     densityMode: DensityMode.Normal,
 };
 
-function getIconColor(index: number): string {
-    return ICON_COLORS[index % ICON_COLORS.length];
-}
-
-function getStatusColor(theme: Theme, status: string): { main: string; light: string } {
-    const statusColors = getStatusColors(theme);
-    return statusColors[status as keyof typeof statusColors] || statusColors.waiting;
-}
-
 const POLLING_INTERVAL_MS = 120_000; // 2 minutes
+
+/**
+ * The event's accent, as theme colour names. The tone keys are MUI's semantic
+ * names, so they map once here rather than at every use. `info` is `reflex`
+ * (the theme's declared info/links ramp) rather than Mantine's stock `blue`,
+ * which the theme does not register.
+ */
+const TONE_COLOR: Record<EventColorTone, string> = {
+    success: 'green',
+    info: 'reflex',
+    warning: 'orange',
+    error: 'red',
+    secondary: 'gray',
+};
+
+/** The same token Mantine resolves `Timeline.Item color` to, for the card's keyline. */
+function eventAccent(tone: EventColorTone): string {
+    return `var(--mantine-color-${TONE_COLOR[tone]}-filled)`;
+}
+
+/** The two empty states differ only by glyph and copy. */
+const EmptyState: React.FC<{icon: React.ReactNode; title: string; message: string}> = ({icon, title, message}) => (
+    <Stack align="center" justify="center" gap="xs" p="xl" ta="center" style={{flex: 1}}>
+        <Box c="var(--mantine-color-dimmed)" mb="xs">{icon}</Box>
+        <Text fw={600} size="lg">{title}</Text>
+        <Text size="sm" c="dimmed">{message}</Text>
+    </Stack>
+);
+
+const containerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    backgroundColor: 'var(--dd-surface-container)',
+    borderRadius: 'var(--mantine-radius-md)',
+    overflow: 'hidden',
+};
 
 export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                                             jobId,
@@ -82,23 +132,21 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                                             showSuccessToast,
                                                             onDeliveryEventClick,
                                                         }) => {
-    const theme = useTheme();
     const config = useMemo(() => ({...defaultConfig, ...propConfig}), [propConfig]);
 
     const [densityMode, setDensityMode] = useState<DensityMode>(config.densityMode || DensityMode.Normal);
     const [shouldAnimate, setShouldAnimate] = useState(false);
+    const [detailsEvent, setDetailsEvent] = useState<DeliveryJourney | null>(null);
 
     const timeZoneShort = useMemo(() => {
         const ianaTimeZone = getIanaTimezone(getTenantTimezone());
         return getTimezoneAbbreviation(ianaTimeZone);
     }, []);
 
-    // Use React Query for data fetching with automatic 2-minute polling (client-swr-dedup)
     const {data: deliveryEvents = [], isLoading: loading, error: fetchError, refetch} = useDeliveryJourney(jobId, {
         refetchInterval: POLLING_INTERVAL_MS,
     });
 
-    // Show error toast on fetch failure
     useEffect(() => {
         if (fetchError) {
             console.error('Error loading delivery journey:', fetchError);
@@ -106,456 +154,304 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
         }
     }, [fetchError, showErrorToast]);
 
-    // Start animation timer on mount
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setShouldAnimate(true);
-        }, 100);
+        const timer = setTimeout(() => setShouldAnimate(true), 100);
         return () => clearTimeout(timer);
     }, []);
+
+    const spec = DENSITY[densityMode];
 
     const cycleDensityMode = (): void => {
         setDensityMode(prev => {
             const modes = [DensityMode.Normal, DensityMode.Dense, DensityMode.UltraDense];
-            const currentIndex = modes.indexOf(prev);
-            return modes[(currentIndex + 1) % modes.length];
+            return modes[(modes.indexOf(prev) + 1) % modes.length];
         });
     };
 
-    const getDensityModeIcon = (): React.ReactNode => {
+    const densityIcon = useMemo((): React.ReactNode => {
         switch (densityMode) {
-            case DensityMode.Normal:
-                return <ViewAgendaIcon/>;
-            case DensityMode.Dense:
-                return <ViewCompactIcon/>;
-            case DensityMode.UltraDense:
-                return <ViewCompactAltIcon/>;
-            default:
-                return <ViewAgendaIcon/>;
+            case DensityMode.Dense: return <Icon lucide={Rows2}/>;
+            case DensityMode.UltraDense: return <Icon lucide={Rows4}/>;
+            default: return <Icon lucide={LayoutList}/>;
         }
-    };
+    }, [densityMode]);
 
-    const getDensityModeLabel = (): string => {
+    const densityLabel = useMemo((): string => {
         switch (densityMode) {
-            case DensityMode.Normal:
-                return 'Normal View';
-            case DensityMode.Dense:
-                return 'Dense View';
-            case DensityMode.UltraDense:
-                return 'Ultra-Dense View';
-            default:
-                return 'Normal View';
+            case DensityMode.Dense: return 'Dense view';
+            case DensityMode.UltraDense: return 'Ultra-dense view';
+            default: return 'Normal view';
         }
-    };
+    }, [densityMode]);
 
     const handleRefresh = useCallback(async (): Promise<void> => {
         showInfoToast?.('Refreshing delivery journey...');
         setShouldAnimate(false);
-
         await refetch();
         setShouldAnimate(true);
         showSuccessToast?.('Delivery journey updated');
     }, [refetch, showInfoToast, showSuccessToast]);
 
-    const handleEventClick = (event: React.MouseEvent, deliveryEvent: DeliveryJourney): void => {
-        event.preventDefault();
-        event.stopPropagation();
+    const handleEventClick = (deliveryEvent: DeliveryJourney): void => {
+        // Always open the built-in details dialog so users can read full
+        // content (long addresses, all tags, notes). Parents that wired
+        // onDeliveryEventClick still receive the event — the two are
+        // intentionally additive, not exclusive.
+        setDetailsEvent(deliveryEvent);
         onDeliveryEventClick?.(deliveryEvent);
     };
 
-    const sizes = useMemo(() => {
-        switch (densityMode) {
-            case DensityMode.Dense:
-                return {
-                    padding: 12,
-                    eventGap: 12,
-                    markerSize: 24,
-                    iconSize: 14,
-                    titleSize: '0.875rem',
-                    timeSize: '10px',
-                    tagSize: '10px',
-                    trackLeft: 11,
-                    cardPadding: '8px 10px',
-                    tagLimit: 3,
-                };
-            case DensityMode.UltraDense:
-                return {
-                    padding: 8,
-                    eventGap: 8,
-                    markerSize: 18,
-                    iconSize: 10,
-                    titleSize: '0.75rem',
-                    timeSize: '9px',
-                    tagSize: '9px',
-                    trackLeft: 8,
-                    cardPadding: '6px 8px',
-                    tagLimit: 2,
-                };
-            default:
-                return {
-                    padding: 16,
-                    eventGap: 16,
-                    markerSize: 32,
-                    iconSize: 18,
-                    titleSize: '0.875rem',
-                    timeSize: '0.75rem',
-                    tagSize: '0.75rem',
-                    trackLeft: 15,
-                    cardPadding: '12px',
-                    tagLimit: 10,
-                };
-        }
-    }, [densityMode]);
-
-    // No job selected state
     if (!jobId) {
         return (
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                    backgroundColor: 'background.paper',
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                }}
-            >
-                <Box
-                    sx={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 4,
-                        textAlign: 'center',
-                    }}
-                >
-                    <SelectAllIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}}/>
-                    <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
-                        Select a Job
-                    </Typography>
-                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                        Select a job to view its delivery journey.
-                    </Typography>
-                </Box>
+            <Box data-testid="task-history-root" style={containerStyle}>
+                <EmptyState
+                    icon={<Icon lucide={SquareDashedMousePointer} size={48}/>}
+                    title="Select a Job"
+                    message="Select a job to view its delivery journey."
+                />
             </Box>
         );
     }
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                backgroundColor: 'background.paper',
-                borderRadius: 2,
-                overflow: 'hidden',
-            }}
-        >
+        <Box data-testid="task-history-root" style={containerStyle}>
             {/* Header */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    alignItems: 'center',
-                    padding: '6px 12px',
-                    backgroundColor: 'primary.main',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                }}
-            >
-                <Box sx={{display: 'flex', gap: 0.25}}>
-                    <Tooltip title={getDensityModeLabel()}>
-                        <IconButton
-                            size="small"
+            <Group justify="flex-end" px="sm" py={6}>
+                <Group gap={2}>
+                    <Tooltip label={densityLabel}>
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
                             onClick={cycleDensityMode}
-                            sx={{
-                                color: 'primary.contrastText',
-                                '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.15)},
-                            }}
+                            aria-label={`Toggle density: currently ${densityLabel}`}
                         >
-                            {getDensityModeIcon()}
-                        </IconButton>
+                            {densityIcon}
+                        </ActionIcon>
                     </Tooltip>
-                    <Tooltip title="Refresh">
-                        <IconButton
-                            size="small"
+                    <Tooltip label="Refresh">
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
                             onClick={handleRefresh}
                             disabled={loading}
-                            sx={{
-                                color: 'primary.contrastText',
-                                '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.15)},
-                                '@keyframes spin': {
-                                    from: {transform: 'rotate(0deg)'},
-                                    to: {transform: 'rotate(360deg)'},
-                                },
-                                '& svg': loading ? {animation: 'spin 1s linear infinite'} : {},
-                            }}
+                            aria-label="Refresh delivery journey"
+                            className={loading ? classes.spinning : undefined}
                         >
-                            <SyncIcon/>
-                        </IconButton>
+                            <Icon lucide={RefreshCw}/>
+                        </ActionIcon>
                     </Tooltip>
-                </Box>
-            </Box>
+                </Group>
+            </Group>
 
-            {/* Main Content */}
-            <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'}}>
-                {/* Loading Bar */}
+            {/* Body */}
+            <Box style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'}}>
                 {loading && (
-                    <LinearProgress
-                        sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            zIndex: 10,
-                        }}
+                    // Mantine has no indeterminate bar; an animated full-width track is
+                    // the busy affordance, named for assistive tech.
+                    <Progress
+                        value={100}
+                        animated
+                        size="xs"
+                        aria-label="Loading delivery journey"
+                        style={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10}}
                     />
                 )}
 
-                {/* Journey Events */}
                 {deliveryEvents.length > 0 ? (
-                    <Box
-                        sx={{
-                            flex: 1,
-                            overflowY: 'auto',
-                            padding: `${sizes.padding}px`,
-                        }}
-                    >
-                        <Box sx={{position: 'relative'}}>
-                            {/* Timeline Track */}
-                            <Box
-                                sx={{
-                                    position: 'absolute',
-                                    left: `${sizes.trackLeft}px`,
-                                    top: 0,
-                                    bottom: 0,
-                                    width: densityMode === DensityMode.UltraDense ? 1 : 2,
-                                    backgroundColor: 'divider',
-                                }}
-                            />
-
-                            {/* Events */}
+                    <Box style={{flex: 1, overflowY: 'auto', padding: spec.contentPad}}>
+                        <Timeline
+                            // A bullet is only filled with its own tone while active, and the
+                            // tone encodes what the event *is*, not how far the job has got —
+                            // so every item is active. That also marks every rail segment
+                            // active, which the stylesheet pins back to the neutral border.
+                            active={deliveryEvents.length}
+                            // The theme's autoContrast would derive the glyph colour from the
+                            // light brand primary and hand every bullet a black glyph; opting
+                            // out leaves Mantine's white, which all five tones are dark enough for.
+                            autoContrast={false}
+                            bulletSize={spec.markerSize}
+                            lineWidth={2}
+                            classNames={{item: classes.item}}
+                            style={{'--journey-row-gap': `${spec.rowGap}px`} as React.CSSProperties}
+                            role="list"
+                            aria-label="Delivery journey events"
+                        >
+                            {/* Timeline.Item has to be the direct child: Timeline clones its
+                                children to inject the private prop that fills a bullet, so a
+                                wrapper component would swallow it. */}
                             {deliveryEvents.map((event, index) => {
-                                const statusColor = getStatusColor(theme, event.status);
-                                const iconColor = getIconColor(index);
-                                const isLast = index === deliveryEvents.length - 1;
-                                const tagsToShow = event.tags?.slice(0, sizes.tagLimit) || [];
-                                const remainingTags = (event.tags?.length || 0) - sizes.tagLimit;
-
+                                const tone = getEventColorTone(event.icon);
                                 return (
-                                    <Box
+                                    <Timeline.Item
                                         key={event.id}
-                                        onClick={(e) => handleEventClick(e, event)}
-                                        sx={{
-                                            display: 'flex',
-                                            gap: `${sizes.eventGap}px`,
-                                            marginBottom: isLast ? 0 : `${sizes.eventGap}px`,
-                                            cursor: 'pointer',
+                                        color={TONE_COLOR[tone]}
+                                        bullet={<EventIcon name={event.icon} size={spec.iconFontSize}/>}
+                                        role="listitem"
+                                        data-event-tone={tone}
+                                        style={{
                                             opacity: shouldAnimate ? 1 : 0,
-                                            transform: shouldAnimate ? 'translateX(0)' : 'translateX(-16px)',
-                                            transition: 'opacity 0.4s ease, transform 0.4s ease',
-                                            transitionDelay: `${index * 0.08}s`,
-                                            '&:hover .event-card': {
-                                                borderColor: 'primary.main',
-                                                boxShadow: 2,
-                                            },
+                                            transform: shouldAnimate ? 'translateX(0)' : 'translateX(-12px)',
+                                            transition: 'opacity 300ms ease, transform 300ms ease',
+                                            // Staggered entrance, capped so a long journey still finishes promptly.
+                                            transitionDelay: `${Math.min(index * 0.06, 0.6)}s`,
                                         }}
                                     >
-                                        {/* Event Marker */}
-                                        <Box
-                                            sx={{
-                                                position: 'relative',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                zIndex: 5,
-                                            }}
-                                        >
-                                            <Box
-                                                sx={{
-                                                    width: sizes.markerSize,
-                                                    height: sizes.markerSize,
-                                                    borderRadius: '50%',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    backgroundColor: iconColor,
-                                                    border: `${densityMode === DensityMode.UltraDense ? 2 : 3}px solid white`,
-                                                    boxShadow: 1,
-                                                    '& svg': {
-                                                        color: 'white',
-                                                        fontSize: sizes.iconSize,
-                                                    },
-                                                }}
-                                            >
-                                                <CircleIcon sx={{fontSize: sizes.iconSize}}/>
-                                            </Box>
-                                            {!isLast && (
-                                                <Box
-                                                    sx={{
-                                                        width: densityMode === DensityMode.UltraDense ? 1 : 2,
-                                                        flex: 1,
-                                                        minHeight: densityMode === DensityMode.UltraDense ? 8 : 16,
-                                                        backgroundColor: 'divider',
-                                                        marginTop: '-2px',
-                                                    }}
-                                                />
-                                            )}
-                                        </Box>
-
-                                        {/* Event Card */}
-                                        <Box
-                                            className="event-card"
-                                            sx={{
-                                                flex: 1,
-                                                backgroundColor: 'background.paper',
-                                                border: 1,
-                                                borderColor: 'divider',
-                                                borderLeft: `3px solid ${statusColor.main}`,
-                                                borderRadius: 2,
-                                                padding: sizes.cardPadding,
-                                                background: `linear-gradient(to right, ${statusColor.light}, white 20%)`,
-                                                transition: 'all 0.2s ease',
-                                            }}
-                                        >
-                                            {/* Event Header */}
-                                            <Box
-                                                sx={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'flex-start',
-                                                    flexDirection: densityMode === DensityMode.UltraDense ? 'column' : 'row',
-                                                    gap: densityMode === DensityMode.UltraDense ? '2px' : '8px',
-                                                    marginBottom: '6px',
-                                                }}
-                                            >
-                                                <Typography
-                                                    sx={{
-                                                        fontSize: sizes.titleSize,
-                                                        fontWeight: densityMode === DensityMode.UltraDense ? 500 : 600,
-                                                        color: 'text.primary',
-                                                        lineHeight: 1.3,
-                                                    }}
-                                                >
-                                                    {event.title}
-                                                </Typography>
-                                                {densityMode !== DensityMode.UltraDense && (
-                                                    <Typography
-                                                        sx={{
-                                                            fontSize: sizes.timeSize,
-                                                            color: 'text.secondary',
-                                                            backgroundColor: 'grey.50',
-                                                            padding: densityMode === DensityMode.Dense ? '1px 6px' : '2px 8px',
-                                                            borderRadius: 1,
-                                                            whiteSpace: 'nowrap',
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        {event._dateStr}
-                                                        {densityMode === DensityMode.Normal && (
-                                                            <Box component="span" sx={{
-                                                                color: 'text.disabled',
-                                                                ml: 0.25
-                                                            }}>{timeZoneShort}</Box>
-                                                        )}
-                                                    </Typography>
-                                                )}
-                                            </Box>
-
-                                            {/* Tags */}
-                                            {tagsToShow.length > 0 && (
-                                                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: '4px'}}>
-                                                    {tagsToShow.map((tag, tagIndex) => (
-                                                        <Box
-                                                            key={tagIndex}
-                                                            component="span"
-                                                            sx={{
-                                                                fontSize: sizes.tagSize,
-                                                                color: 'text.secondary',
-                                                                backgroundColor: 'grey.50',
-                                                                padding: densityMode === DensityMode.UltraDense ? '0 3px' : '2px 6px',
-                                                                borderRadius: 1,
-                                                                border: 1,
-                                                                borderColor: 'divider',
-                                                            }}
-                                                        >
-                                                            {tag}
-                                                        </Box>
-                                                    ))}
-                                                    {remainingTags > 0 && densityMode !== DensityMode.Normal && (
-                                                        <Box
-                                                            component="span"
-                                                            sx={{
-                                                                fontSize: sizes.tagSize,
-                                                                color: 'text.disabled',
-                                                                backgroundColor: 'grey.50',
-                                                                padding: densityMode === DensityMode.UltraDense ? '0 3px' : '2px 6px',
-                                                                borderRadius: 1,
-                                                                border: 1,
-                                                                borderColor: 'divider',
-                                                                fontStyle: 'italic',
-                                                            }}
-                                                        >
-                                                            +{remainingTags}
-                                                        </Box>
-                                                    )}
-                                                </Box>
-                                            )}
-
-                                            {/* Notes - only in Normal mode */}
-                                            {event.notes && densityMode === DensityMode.Normal && (
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'flex-start',
-                                                        gap: '6px',
-                                                        marginTop: '8px',
-                                                        padding: '8px',
-                                                        backgroundColor: 'grey.50',
-                                                        borderRadius: 1,
-                                                        fontSize: '0.75rem',
-                                                        color: 'text.secondary',
-                                                        fontStyle: 'italic',
-                                                    }}
-                                                >
-                                                    <NotesIcon
-                                                        sx={{color: 'text.disabled', fontSize: 16, flexShrink: 0}}/>
-                                                    <span>{event.notes}</span>
-                                                </Box>
-                                            )}
-                                        </Box>
-                                    </Box>
+                                        <EventCard
+                                            event={event}
+                                            accent={eventAccent(tone)}
+                                            spec={spec}
+                                            densityMode={densityMode}
+                                            timeZoneShort={timeZoneShort}
+                                            onClick={() => handleEventClick(event)}
+                                        />
+                                    </Timeline.Item>
                                 );
                             })}
-                        </Box>
+                        </Timeline>
                     </Box>
                 ) : !loading ? (
-                    /* Empty State */
-                    <Box
-                        sx={{
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 4,
-                            textAlign: 'center',
-                        }}
-                    >
-                        <PackageIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}}/>
-                        <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
-                            No Journey Events
-                        </Typography>
-                        <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                            No delivery journey events found for this job.
-                        </Typography>
-                    </Box>
+                    <EmptyState
+                        icon={<Icon tabler={IconPackage} size={48}/>}
+                        title="No Journey Events"
+                        message="No delivery journey events found for this job."
+                    />
                 ) : null}
             </Box>
+
+            <DeliveryEventDetailsDialog
+                open={detailsEvent !== null}
+                event={detailsEvent}
+                timeZoneShort={timeZoneShort}
+                onClose={() => setDetailsEvent(null)}
+            />
         </Box>
+    );
+};
+
+interface EventCardProps {
+    event: DeliveryJourney;
+    /** The event's tone as a colour token, for the card's left keyline. */
+    accent: string;
+    spec: DensitySpec;
+    densityMode: DensityMode;
+    timeZoneShort: string;
+    onClick?: () => void;
+}
+
+const EventCard: React.FC<EventCardProps> = ({event, accent, spec, densityMode, timeZoneShort, onClick}) => {
+    const ultraDense = densityMode === DensityMode.UltraDense;
+
+    const tagsToShow = event.tags?.slice(0, spec.tagLimit) ?? [];
+    const remainingTags = (event.tags?.length ?? 0) - spec.tagLimit;
+
+    const cardBody = (
+        <Stack gap={6} p={spec.cardPad} style={{width: '100%', minWidth: 0}}>
+            {/* Title row */}
+            <Group gap="xs" align="flex-start" wrap="wrap">
+                <Text
+                    size={spec.titleSize}
+                    fw={ultraDense ? 500 : 600}
+                    lh={1.3}
+                    style={{flex: '1 1 auto', minWidth: 0}}
+                >
+                    {event.title}
+                </Text>
+
+                {event.grandTotalAfter != null && !ultraDense && (
+                    <Badge color="green" variant="filled" h={20} fw={600} tt="none" style={{fontSize: '0.7rem'}}>
+                        {`Total: ${formatCurrency(event.grandTotalAfter)}`}
+                    </Badge>
+                )}
+
+                {!ultraDense && (
+                    <Text size="xs" c="dimmed" lh={1.3} style={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                        {event._dateStr}
+                        {densityMode === DensityMode.Normal && (
+                            <Box component="span" c="var(--mantine-color-dimmed)" ml={4}>
+                                {timeZoneShort}
+                            </Box>
+                        )}
+                    </Text>
+                )}
+            </Group>
+
+            {/* Who made the change — omitted entirely when unrecorded */}
+            {event.performedBy && !ultraDense && (
+                <Text size="xs" c="dimmed" lh={1.3} truncate mt={-2}>
+                    by {event.performedBy}
+                </Text>
+            )}
+
+            {/* Tags */}
+            {tagsToShow.length > 0 && (
+                <Group gap={4} wrap="wrap">
+                    {tagsToShow.map((tag, tagIndex) => (
+                        <Tooltip key={tagIndex} label={tag} position="top" openDelay={400}>
+                            <Badge
+                                variant="default"
+                                tt="none"
+                                h={ultraDense ? 16 : 20}
+                                maw={ultraDense ? 120 : 220}
+                                px={ultraDense ? 4 : 6}
+                                style={{fontSize: ultraDense ? '0.65rem' : '0.7rem'}}
+                            >
+                                {tag}
+                            </Badge>
+                        </Tooltip>
+                    ))}
+                    {remainingTags > 0 && densityMode !== DensityMode.Normal && (
+                        <Badge
+                            variant="default"
+                            tt="none"
+                            c="dimmed"
+                            h={ultraDense ? 16 : 20}
+                            px={ultraDense ? 4 : 6}
+                            style={{fontSize: ultraDense ? '0.65rem' : '0.7rem', fontStyle: 'italic'}}
+                        >
+                            {`+${remainingTags}`}
+                        </Badge>
+                    )}
+                </Group>
+            )}
+
+            {/* Notes */}
+            {event.notes && spec.showNotes && (
+                <Alert
+                    color="reflex"
+                    variant="outline"
+                    py={4}
+                    px="xs"
+                    icon={<Icon lucide={NotebookPen} size={16}/>}
+                    styles={{message: {fontSize: '0.75rem', fontStyle: 'italic', color: 'var(--mantine-color-dimmed)'}}}
+                >
+                    {event.notes}
+                </Alert>
+            )}
+        </Stack>
+    );
+
+    // The left keyline carries the event's accent, so it is set with longhands — the
+    // hover rule in the stylesheet repaints the other three sides only.
+    return (
+        <Paper
+            withBorder
+            radius="md"
+            className={onClick ? classes.clickableCard : undefined}
+            style={{
+                minWidth: 0,
+                borderLeftWidth: 3,
+                borderLeftStyle: 'solid',
+                borderLeftColor: accent,
+            }}
+        >
+            {onClick ? (
+                <UnstyledButton onClick={onClick} display="block" w="100%">
+                    {cardBody}
+                </UnstyledButton>
+            ) : (
+                cardBody
+            )}
+        </Paper>
     );
 };
 

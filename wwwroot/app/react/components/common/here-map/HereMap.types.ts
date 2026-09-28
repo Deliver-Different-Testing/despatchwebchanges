@@ -94,8 +94,19 @@ export const MAP_CONSTANTS = {
 export const US_MAP_CENTER = {lat: 39.8097343, lng: -98.5556199};
 export const NZ_MAP_CENTER = {lat: -41.2865, lng: 174.7762};
 
+/**
+ * The signed-in network partner's own address, when the server resolved one.
+ * Only ever set for NP sessions, and only when their agent record is geocoded.
+ */
+export function getNetworkPartnerMapCenter(): { lat: number; lng: number } | null {
+    return window.serverConfig?.npMapCenter ?? null;
+}
+
 export function getDefaultMapCenter(): { lat: number; lng: number } {
-    return window.serverConfig?.isUSCustomer ? US_MAP_CENTER : NZ_MAP_CENTER;
+    // A network partner works one address, not a country, so their own address is
+    // a better opening view than the geographic centre of the tenant's country.
+    return getNetworkPartnerMapCenter()
+        ?? (window.serverConfig?.isUSCustomer ? US_MAP_CENTER : NZ_MAP_CENTER);
 }
 
 export const DEFAULT_MAP_CONFIG: HereMapConfig = {
@@ -104,8 +115,8 @@ export const DEFAULT_MAP_CONFIG: HereMapConfig = {
 };
 
 export const MARKER_ICONS = {
-    FROM: 'https://img.icons8.com/ios-filled/50/39e75f/marker.png',
-    TO: 'https://img.icons8.com/ios-filled/50/ff6863/marker.png',
+    FROM: 'https://img.icons8.com/ios-filled/50/2196f3/marker.png',
+    TO: 'https://img.icons8.com/ios-filled/50/4caf50/marker.png',
     EXTRA: 'https://img.icons8.com/ios-filled/50/000000/marker.png',
 } as const;
 

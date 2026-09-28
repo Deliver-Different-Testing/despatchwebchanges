@@ -68,7 +68,7 @@ public sealed class JobReportService(
         // Fire and forget S3 upload to avoid blocking the response
         _ = Task.Run(async () =>
         {
-            try { await UploadToS3Async(csvBytes, $"Jobs/{currentDate:yyyyMM}/Jobs-{currentDate:yyyyMMddHHmmss}", "S3Bucket"); }
+            try { await UploadToS3Async(csvBytes, $"Jobs/{currentDate:yyyy}/{currentDate:MM}/Jobs-{currentDate:yyyyMMddHHmmss}", "S3BucketMars"); }
             catch (Exception ex) { Log.Error(ex, "Background S3 upload failed for jobs report"); }
         });
 
@@ -117,6 +117,7 @@ public sealed class JobReportService(
         ["Quantity"] = x => x.Quantity?.ToString(),
         ["Weight"] = x => x.Weight?.ToString(),
         ["Size"] = x => x.Size?.ToString(),
+        ["Cubic"] = x => x.Cubic?.ToString(),
         ["StatusName"] = x => x.StatusName?.ToString(),
         ["PickupAddressLine1"] = x => FormatCsvField(x.PickupAddressLine1),
         ["PickupAddressLine2"] = x => FormatCsvField(x.PickupAddressLine2),
@@ -139,6 +140,7 @@ public sealed class JobReportService(
         ["ClientReferenceC"] = x => FormatCsvField(x.ClientReferenceC),
         ["OurReference"] = x => FormatCsvField(x.OurReference),
         ["Speed"] = x => x.Speed?.ToString(),
+        ["NotifiedSpeed"] = x => x.NotifiedSpeed?.ToString(),
         ["Notes"] = x => FormatCsvField(x.Notes),
         ["InvoiceNumber"] = x => x.InvoiceNumber?.ToString(),
         ["InvoiceDate"] = x => ((DateTime?)x.InvoiceDate)?.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -172,7 +174,7 @@ public sealed class JobReportService(
                     {
                         await UploadToS3Async(
                             csvBytes,
-                            $"ClientJobsReports/{currentDate:yyyyMM}/ClientJobsReport_{clientCode}_{currentDate:yyyyMMddHHmmss}.csv",
+                            $"ClientJobsReports/{currentDate:yyyy}/{currentDate:MM}/ClientJobsReport_{clientCode}_{currentDate:yyyyMMddHHmmss}.csv",
                             "S3BucketMars");
                     }
                     catch (Exception ex) { Log.Error(ex, "Background S3 upload failed for client jobs report {ClientCode}", clientCode); }
@@ -296,7 +298,9 @@ public sealed class JobReportService(
 
         var parsedData = await ParseBulkPriceFileAsync(file);
         if (parsedData.Count > 0)
+        {
             await jobCommandRepository.UpdateManualPriceAsync(parsedData);
+        }
     }
 
     /// <summary>
@@ -310,7 +314,11 @@ public sealed class JobReportService(
             var data = await recurringJobRepository.GetAllRecurringJobsForExportAsync(request);
 
             var csvBytes = await GenerateRecurringJobsCsvBytesAsync(data);
-            var statusText = request.Active ? "active" : "inactive";
+            // Filename suffix honours the new RecurringMode filter when
+            // present, falling back to the legacy bool for old clients.
+            var statusText = request.RecurringMode.HasValue
+                ? request.RecurringMode.Value.ToString().ToLowerInvariant()
+                : request.Active ? "active" : "inactive";
             var filename = $"recurring-jobs-{statusText}-{currentDate:yyyy-MM-dd-HHmm}.csv";
 
             return (csvBytes, filename);
@@ -341,10 +349,15 @@ public sealed class JobReportService(
 
     private static string FormatAddress(AddressViewModel addr)
     {
-        if (addr == null) return string.Empty;
+        if (addr == null)
+        {
+            return string.Empty;
+        }
 
         if (!string.IsNullOrEmpty(addr.FullAddress))
+        {
             return FormatCsvField(addr.FullAddress);
+        }
 
         var addressLines = new[]
         {
@@ -364,7 +377,15 @@ public sealed class JobReportService(
         ["Courier"] = x => FormatCsvField(x.Courier),
         ["Speed"] = x => FormatCsvField(x.Speed),
         ["Pickup Address"] = x => FormatAddress(x.PickupAddress),
-        ["Delivery Address"] = x => FormatAddress(x.DeliveryAddress)
+        ["Delivery Address"] = x => FormatAddress(x.DeliveryAddress),
+        // Mode + pricing audit columns (Steve 2026-06-09): lets ops eyeball
+        // RawBaseAmount vs headline so fuel drift is visible row-by-row,
+        // and surfaces Manual rows that are intentionally held back from
+        // the nightly auto-materialiser.
+        ["Mode"] = x => x.RecurringMode.ToString(),
+        ["Raw Base Amount"] = x => x.RawBaseAmount.HasValue ? x.RawBaseAmount.Value.ToString("0.00") : string.Empty,
+        ["Fuel Surcharge"] = x => x.FuelSurchargeAmount.HasValue ? x.FuelSurchargeAmount.Value.ToString("0.00") : string.Empty,
+        ["Amount"] = x => x.UcbkAmount.HasValue ? x.UcbkAmount.Value.ToString("0.00") : string.Empty
     };
 
     /// <summary>
@@ -373,28 +394,40 @@ public sealed class JobReportService(
     private static void ValidateUploadedFile(IFormFile file)
     {
         if (file == null || string.IsNullOrWhiteSpace(file.FileName))
+        {
             throw new ArgumentException("No file provided.", nameof(file));
+        }
 
         var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
         if (!ValidFileExtensions.Contains(fileExtension))
+        {
             throw new ArgumentException("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.", nameof(file));
+        }
     }
 
     /// <summary>
-    /// Formats a field value for CSV, escaping quotes and handling special characters.
+    /// Formats a field value for CSV, stripping commas so they can never break the
+    /// column structure, escaping quotes, and handling special characters.
     /// </summary>
     private static string FormatCsvField(object value)
     {
-        if (value == null) return string.Empty;
+        if (value == null)
+        {
+            return string.Empty;
+        }
 
         var str = value.ToString();
-        if (string.IsNullOrEmpty(str)) return string.Empty;
+        if (string.IsNullOrEmpty(str))
+        {
+            return string.Empty;
+        }
 
-        var escaped = str.Replace("\"", "\"\"").Replace("\n", "\\n").Replace("\r", string.Empty);
+        var escaped = str.Replace(",", string.Empty)
+            .Replace("\"", "\"\"")
+            .Replace("\n", "\\n")
+            .Replace("\r", string.Empty);
 
-        return escaped.Contains('"') || escaped.Contains(',')
-            ? $"\"{escaped}\""
-            : escaped;
+        return escaped.Contains('"') ? $"\"{escaped}\"" : escaped;
     }
 
     /// <summary>
@@ -402,13 +435,18 @@ public sealed class JobReportService(
     /// </summary>
     private static string SanitizeFilename(string filename)
     {
-        if (string.IsNullOrEmpty(filename)) return "Unknown";
+        if (string.IsNullOrEmpty(filename))
+        {
+            return "Unknown";
+        }
 
         var invalidChars = new HashSet<char>(Path.GetInvalidFileNameChars());
         var sanitized = new string(filename.Where(c => !invalidChars.Contains(c)).ToArray());
 
         if (sanitized.Length > 50)
+        {
             sanitized = sanitized[..50];
+        }
 
         return string.IsNullOrWhiteSpace(sanitized) ? "Unknown" : sanitized;
     }
@@ -421,7 +459,7 @@ public sealed class JobReportService(
         var bucketName = Environment.GetEnvironmentVariable(bucketEnvVar);
         if (string.IsNullOrEmpty(bucketName))
         {
-            Log.Warning("{BucketEnvVar} environment variable not set. Skipping S3 upload.", bucketEnvVar);
+            Log.Warning("{BucketEnvVar} environment variable not set. Skipping S3 upload", bucketEnvVar);
             return;
         }
 
@@ -448,9 +486,8 @@ public sealed class JobReportService(
     /// </summary>
     private async Task ArchiveUploadedFileToS3Async(IFormFile file, DateTimeOffset currentDate)
     {
-        var folder = currentDate.ToString("yyyyMM");
         var timestamp = currentDate.ToString("yyyyMMddHHmmss");
-        var key = $"Jobs/{folder}/Jobs-{timestamp}";
+        var key = $"Jobs/{currentDate:yyyy}/{currentDate:MM}/Jobs-{timestamp}";
 
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream);
@@ -458,7 +495,7 @@ public sealed class JobReportService(
 
         try
         {
-            var bucketName = Environment.GetEnvironmentVariable("S3Bucket")?.Replace("downloads", "uploads");
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
             var putRequest = new PutObjectRequest
             {
                 BucketName = bucketName,

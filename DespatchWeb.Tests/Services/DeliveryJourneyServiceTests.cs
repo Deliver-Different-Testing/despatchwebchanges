@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
 using NSubstitute;
@@ -777,6 +778,358 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
+    private async Task SeedCouriersAsync(params TucCourier[] couriers)
+    {
+        await using var context = _db.CreateContext();
+        context.TucCouriers.AddRange(couriers);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static TucStaff Staff(int id, string first, string last) =>
+        new() { UcstId = id, UcstFirstName = first, UcstLastName = last, CreatedBy = "test", LastModifiedBy = "test" };
+
+    private async Task SeedAgentsAsync(params TucAgent[] agents)
+    {
+        await using var context = _db.CreateContext();
+        context.TucAgents.AddRange(agents);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static TucAgent Agent(int id, string name) =>
+        new() { UcagId = id, UcagName = name, CreatedBy = "test", LastModifiedBy = "test" };
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_NetworkPartnerAssignment_RendersPartnerTitleAndIcon()
+    {
+        // Arrange — a network partner hand-off is its own event, not a generic job update.
+        await SeedAgentsAsync(Agent(70, "Partner Co"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment),
+            NewAgentId = 70,
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        // Assert
+        Assert.Equal("Assigned to Network Partner Partner Co", entry.Title);
+        Assert.Equal("hub", entry.Icon);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_NetworkPartnerAssignmentWithoutAgentName_RendersGenericPartnerTitle()
+    {
+        // Arrange
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment),
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        // Assert
+        Assert.Equal("Network Partner Assignment Changed", entry.Title);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedNetworkPartnerAssignment_RendersPartnerTitleAndIcon()
+    {
+        // Arrange — the archive path has its own GetTitle switch, so it needs its own guard.
+        await SeedAgentsAsync(Agent(70, "Partner Co"));
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment),
+            NewAgentId = 70,
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        // Assert
+        Assert.Equal("Assigned to Network Partner Partner Co", entry.Title);
+        Assert.Equal("hub", entry.Icon);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromStaffOnStatusRow()
+    {
+        // Arrange
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Jane Doe", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromCourierWhenNoStaff()
+    {
+        // Arrange
+        await SeedCouriersAsync(new TucCourier
+        {
+            UccrId = 9, Code = "C9", UccrName = "Sam", UccrSurname = "Rider",
+            UccrEmail = "sam@test.com", UccrMobile = "1",
+            Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T"
+        });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Courier",
+            CourierId = 9,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Sam Rider", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_LeavesPerformedByNull_ForSystemRow()
+    {
+        // Arrange - trigger-written rows carry no actor. The UI renders nothing
+        // rather than claiming "System" performed the change.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "SYSTEM",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Null(Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_PrefersStaffOverCourier_WithinTimestampGroup()
+    {
+        // Arrange - rows sharing an UpdatedAt collapse into one card; a named
+        // staff member outranks a courier as the actor.
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedCouriersAsync(new TucCourier
+        {
+            UccrId = 9, Code = "C9", UccrName = "Sam", UccrSurname = "Rider",
+            UccrEmail = "sam@test.com", UccrMobile = "1",
+            Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T"
+        });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        var sharedTimestamp = new DateTime(2024, 1, 15, 14, 0, 0);
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1, JobId = 1, ChangeType = "JobStatus",
+                UpdatedByType = "Courier", CourierId = 9, UpdatedAt = sharedTimestamp
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2, JobId = 1, ChangeType = "JobStatus",
+                UpdatedByType = "Staff", StaffId = 5, UpdatedAt = sharedTimestamp
+            });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Jane Doe", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_PicksLowestJourneyId_WhenGroupHasTwoStaffActors()
+    {
+        // Arrange - the query has no ORDER BY, so the actor must be chosen
+        // deterministically by JourneyID rather than by row arrival order.
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"), Staff(6, "John", "Roe"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        var sharedTimestamp = new DateTime(2024, 1, 15, 14, 0, 0);
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 20, JobId = 1, ChangeType = "JobStatus",
+                UpdatedByType = "Staff", StaffId = 6, UpdatedAt = sharedTimestamp
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 10, JobId = 1, ChangeType = "JobStatus",
+                UpdatedByType = "Staff", StaffId = 5, UpdatedAt = sharedTimestamp
+            });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Jane Doe", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_DoesNotEmitByActorTag_OnStatusRows()
+    {
+        // Arrange - attribution moved to its own field, so the duplicate
+        // "By <name>" chip must be gone.
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.DoesNotContain(Assert.Single(result).Tags, t => t.StartsWith("By ", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_OnJobCreatedRow()
+    {
+        // Arrange - once the trigger stamps StaffID, a JobCreated card shows both
+        // the inserting SP and the person whose action triggered it.
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobCreated",
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            FieldName = "CreatedBySp",
+            NewValue = "uspPrebookSet",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var entry = Assert.Single(result);
+        Assert.Equal("Jane Doe", entry.PerformedBy);
+        Assert.Contains("Created by uspPrebookSet", entry.Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromArchivedStatusRow()
+    {
+        // Arrange
+        await SeedStaffAsync(Staff(5, "Jane", "Doe"));
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobStatus",
+            UpdatedByType = "Staff",
+            StaffId = 5,
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act — no TucJob row, so the service takes the archived path.
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var entry = Assert.Single(result);
+        Assert.Equal("Jane Doe", entry.PerformedBy);
+        Assert.DoesNotContain(entry.Tags, t => t.StartsWith("By ", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromNoteEditor()
+    {
+        // Arrange
+        await SeedStaffAsync(Staff(1, "Alice", "Smith"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1, JobId = 1, NoteText = "Note body",
+            CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0), CreatedBy = 1, NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedBy = 1,
+            EditedAtUtc = new DateTime(2024, 1, 15, 16, 0, 0),
+            OldNoteText = "Old body", NewNoteText = "Note body"
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal("Alice Smith", Assert.Single(result).PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_LeavesPerformedByNull_ForUnattributedNote_ButTitleStillSaysSystem()
+    {
+        // Arrange - an unknown editor keeps the existing "by System" wording in
+        // the title while the dedicated attribution field stays empty.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1, JobId = 1, NoteText = "Note body",
+            CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0), CreatedBy = 1, NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedBy = 999,
+            EditedAtUtc = new DateTime(2024, 1, 15, 16, 0, 0),
+            OldNoteText = "", NewNoteText = "Note body"
+        });
+
+        // Act
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var entry = Assert.Single(result);
+        Assert.Null(entry.PerformedBy);
+        Assert.Equal("Note added by System", entry.Title);
+    }
+
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithJobStatusChange_ReturnsStatusUpdateEntry()
     {
@@ -872,6 +1225,66 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         Assert.Single(result);
         Assert.Equal("Status Updated", result[0].Title);
         Assert.Contains("Status: Booked → Dispatched", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobCreated_ReturnsCreatedTitleSourceAndDate()
+    {
+        // Arrange - the tucJob_InsertJob trigger writes this row on insert.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobCreated",
+            UpdatedByType = "SYSTEM",
+            FieldName = "CreatedBySp",
+            NewValue = "uspPrebookSet",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Job Created", result[0].Title);
+        Assert.Equal("add_circle", result[0].Icon);
+        // Creator (the inserting SP) is surfaced, plus the creation date — the US
+        // tenant default formats as MM/dd/yyyy HH:mm.
+        Assert.Contains("Created by uspPrebookSet", result[0].Tags);
+        Assert.Contains("Created on 01/15/2024 14:00", result[0].Tags);
+        // The raw "CreatedBySp" field-tag style must not leak through.
+        Assert.DoesNotContain(result[0].Tags, t => t.Contains("Created By Sp"));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobCreated_UnknownSourceRendersAsUnknown()
+    {
+        // Arrange - inserter SP didn't tag the session context, so the trigger
+        // stored the "(unknown)" fallback.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobCreated",
+            UpdatedByType = "SYSTEM",
+            FieldName = "CreatedBySp",
+            NewValue = "(unknown)",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Job Created", result[0].Title);
+        Assert.Contains("Created by Unknown", result[0].Tags);
+        Assert.Contains("Created on 01/15/2024 14:00", result[0].Tags);
     }
 
     [Fact]
@@ -979,6 +1392,125 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // Assert
         Assert.Single(result);
         Assert.Contains("Connote: CON-456", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithDispatcherAssigned_ResolvesStaffName()
+    {
+        // Arrange - dispatch sets ucjbDispID null -> 5; the trigger journals the
+        // raw staff id, which the service should resolve to the staff name.
+        await SeedStaffAsync(new TucStaff
+        {
+            UcstId = 5, UcstFirstName = "Jane", UcstLastName = "Doe", CreatedBy = "test", LastModifiedBy = "test"
+        });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "SYSTEM",
+            FieldName = "ucjbDispID",
+            OldValue = null,
+            NewValue = "5",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Dispatcher Updated", result[0].Title);
+        Assert.Contains("Dispatcher: Jane Doe", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithDispatcherChanged_ResolvesBothStaffNames()
+    {
+        // Arrange - re-dispatch changes ucjbDispID 5 -> 8; both ids resolve to names.
+        await SeedStaffAsync(
+            new TucStaff { UcstId = 5, UcstFirstName = "Jane", UcstLastName = "Doe", CreatedBy = "test", LastModifiedBy = "test" },
+            new TucStaff { UcstId = 8, UcstFirstName = "John", UcstLastName = "Roe", CreatedBy = "test", LastModifiedBy = "test" });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "SYSTEM",
+            FieldName = "ucjbDispID",
+            OldValue = "5",
+            NewValue = "8",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Contains("Dispatcher: Jane Doe → John Roe", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithUnknownDispatcherId_FallsBackToRawId()
+    {
+        // Arrange - staff id has no matching tucStaff row (e.g. deleted staff);
+        // the service should keep the raw id rather than dropping the value.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "SYSTEM",
+            FieldName = "ucjbDispID",
+            OldValue = null,
+            NewValue = "999",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Contains("Dispatcher: 999", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedDispatcherAssigned_ResolvesStaffName()
+    {
+        // Arrange - no live job seeded, so the archived path runs; it must resolve
+        // the dispatcher id to a name the same way the live path does.
+        await SeedStaffAsync(new TucStaff
+        {
+            UcstId = 7, UcstFirstName = "Amy", UcstLastName = "Lee", CreatedBy = "test", LastModifiedBy = "test"
+        });
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "SYSTEM",
+            FieldName = "ucjbDispID",
+            OldValue = null,
+            NewValue = "7",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Dispatcher Updated", result[0].Title);
+        Assert.Contains("Dispatcher: Amy Lee", result[0].Tags);
     }
 
     [Fact]
@@ -1230,5 +1762,612 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         Assert.Single(result);
         // ConvertToTitleCase should split camelCase: "CustomNewField" -> "Custom New Field"
         Assert.Equal("Custom New Field Updated", result[0].Title);
+    }
+
+    private async Task SeedPricingBreakdownsAsync(params PricingBreakdown[] lines)
+    {
+        await using var context = _db.CreateContext();
+        context.PricingBreakdowns.AddRange(lines);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task SeedArchivedStatusUpdatesAsync(params JobDeliveryJourneyArchive[] updates)
+    {
+        await using var context = _db.CreateContext();
+        context.JobDeliveryJourneyArchives.AddRange(updates);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task SeedArchivedPricingBreakdownsAsync(params PricingBreakdownArchive[] lines)
+    {
+        await using var context = _db.CreateContext();
+        context.PricingBreakdownArchives.AddRange(lines);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SinglePricingEvent_GrandTotalEqualsCurrent()
+    {
+        // Arrange - one pricing event (+$15 fuel surcharge) and current breakdown sum = $115.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedPricingBreakdownsAsync(
+            new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 100m },
+            new PricingBreakdown { PricingBreakdownId = 2, JobId = 1, ChargeName = "Fuel", ChargeAmount = 15m });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "PricingFuelSurcharge",
+            OldValue = "0",
+            NewValue = "15",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var pricingEvent = Assert.Single(result);
+        Assert.Equal(115m, pricingEvent.GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_MultiplePricingEvents_RollsBackToOriginalTotal()
+    {
+        // Arrange - two pricing events. Current total = $75.
+        // Newest event raised fuel from $50 -> $75 (delta +$25) → before that the total was $50.
+        // The earlier event introduced the fuel line at $50 (0 -> 50) → before that the total was $0.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedPricingBreakdownsAsync(
+            new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Fuel", ChargeAmount = 75m });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingFuelSurcharge",
+                OldValue = "0",
+                NewValue = "50",
+                UpdatedAt = new DateTime(2024, 1, 15, 12, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingFuelSurcharge",
+                OldValue = "50",
+                NewValue = "75",
+                UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+            });
+        var service = CreateService();
+
+        // Act - results are sorted descending by date, so [0]=newest event (14:00), [1]=oldest (12:00).
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Equal(75m, result[0].GrandTotalAfter);
+        Assert.Equal(50m, result[1].GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_AddedAndRemovedPricingLines_ComputesTotal()
+    {
+        // Arrange - older event added a $20 line (null -> 20); newer event removed it (20 -> null).
+        // Current breakdown total = $0.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingAccessorial",
+                OldValue = null,
+                NewValue = "20",
+                UpdatedAt = new DateTime(2024, 1, 15, 12, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingAccessorial",
+                OldValue = "20",
+                NewValue = null,
+                UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+            });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        // Newest (removal): total after = current ($0)
+        Assert.Equal(0m, result[0].GrandTotalAfter);
+        // Older (addition): total after = $20 (before the removal undid it)
+        Assert.Equal(20m, result[1].GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_NonPricingEventMixedIn_LeavesGrandTotalNull()
+    {
+        // Arrange - a pricing event and a non-pricing status event. Only the pricing event gets a total.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedPricingBreakdownsAsync(
+            new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 80m });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingBase",
+                OldValue = "0",
+                NewValue = "80",
+                UpdatedAt = new DateTime(2024, 1, 15, 12, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobStatus",
+                UpdatedByType = "Staff",
+                UpdatedAt = new DateTime(2024, 1, 15, 13, 0, 0)
+            });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        // Newest is the status change → no grand total
+        Assert.Null(result[0].GrandTotalAfter);
+        // Older is the pricing event → grand total = current ($80)
+        Assert.Equal(80m, result[1].GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedJob_ComputesGrandTotalFromArchive()
+    {
+        // Arrange - archived job path: no TucJob row, use JobDeliveryJourneyArchive + PricingBreakdownArchive.
+        await SeedArchivedPricingBreakdownsAsync(
+            new PricingBreakdownArchive { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 60m });
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "PricingBase",
+            OldValue = "40",
+            NewValue = "60",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var pricingEvent = Assert.Single(result);
+        Assert.Equal(60m, pricingEvent.GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedJob_WithJobCreated_ReturnsCreatedTitleSourceAndDate()
+    {
+        // Arrange - archived job path: no TucJob row. The JobCreated row is
+        // carried over from the live table when the job is archived.
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobCreated",
+            UpdatedByType = "SYSTEM",
+            FieldName = "CreatedBySp",
+            NewValue = "uspPrebookSet",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Job Created", result[0].Title);
+        Assert.Equal("add_circle", result[0].Icon);
+        Assert.Contains("Created by uspPrebookSet", result[0].Tags);
+        Assert.Contains("Created on 01/15/2024 14:00", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_UnparseablePricingValue_TreatedAsZero()
+    {
+        // Arrange - malformed pricing value should not throw; ParseDecimal returns 0.
+        // Single pricing event with non-numeric values, current total = $50.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedPricingBreakdownsAsync(
+            new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 50m });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "PricingWeird",
+            OldValue = "abc",
+            NewValue = "xyz",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert - no crash; grand total resolves to current ($50) since the delta parses to 0 - 0.
+        var pricingEvent = Assert.Single(result);
+        Assert.Equal(50m, pricingEvent.GrandTotalAfter);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetDeliveryJourneyForRecurringBookingAsync
+    // -------------------------------------------------------------------------
+
+    private async Task SeedBookingsAsync(params TucJobBooking[] bookings)
+    {
+        await using var context = _db.CreateContext();
+        context.TucJobBookings.AddRange(bookings);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_WithUnknownBooking_ReturnsEmpty()
+    {
+        var service = CreateService();
+
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(999);
+
+        Assert.NotNull(result);
+        Assert.Equal(0, result.Breakdown.Total);
+        Assert.Empty(result.Runs);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_WithStandaloneRuns_ReturnsRunsWithNoChildren()
+    {
+        // Parent booking 100, no child templates. Three spawned tucJob rows
+        // (ParentID = NULL — the common standalone case from the SQL sample).
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 100 });
+        await SeedJobsAsync(
+            new TucJob
+            {
+                UcjbId = 3963, UcjbNumber = "KT409VANS",
+                UcjbDate = new DateTime(2025, 10, 27),
+                UcjbTime = new DateTime(1899, 12, 30, 20, 20, 0),
+                UcjbStatus = 0, // New → Pending
+                BookingParentId = 100,
+                TotalDistance = 9m
+            },
+            new TucJob
+            {
+                UcjbId = 3965, UcjbNumber = "KT411VANS",
+                UcjbDate = new DateTime(2025, 10, 29),
+                UcjbTime = new DateTime(1899, 12, 30, 20, 20, 0),
+                UcjbStatus = 1, // Despatched → InProgress
+                BookingParentId = 100,
+                TotalDistance = 9m
+            },
+            new TucJob
+            {
+                UcjbId = 3967, UcjbNumber = "KT413VANS",
+                UcjbDate = new DateTime(2025, 10, 31),
+                UcjbTime = new DateTime(1899, 12, 30, 20, 20, 0),
+                UcjbStatus = 6, // Completed
+                UcjbComplTime = new DateTime(2026, 3, 25, 1, 46, 13),
+                UcjbPodname = "Test POD",
+                BookingParentId = 100,
+                TotalDistance = 9m
+            });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(100);
+
+        Assert.Equal(3, result.Breakdown.Total);
+        Assert.Equal(1, result.Breakdown.Completed);
+        Assert.Equal(2, result.Breakdown.Pending); // 1 Pending + 1 InProgress collapse
+        Assert.Equal(0, result.Breakdown.Voided);
+        Assert.Equal(3, result.Runs.Count);
+
+        // Sorted newest-first by ServiceDate.
+        Assert.Equal(3967, result.Runs[0].ParentJobId);
+        Assert.Equal(3965, result.Runs[1].ParentJobId);
+        Assert.Equal(3963, result.Runs[2].ParentJobId);
+        Assert.All(result.Runs, run => Assert.Empty(run.Children));
+
+        var completed = result.Runs[0];
+        Assert.Equal(RecurringJourneyStatus.Completed, completed.Status);
+        Assert.NotNull(completed.Pod);
+        Assert.Equal("Test POD", completed.Pod.SignedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_WithMultiLegRun_ReturnsChildren()
+    {
+        // Mirror SQL #3 row 3966: parent ParentID = ucjbID = self, two children
+        // KT412VANSA / KT412VANSB pointing at the parent via ParentID = 3966.
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 108 });
+        await SeedJobsAsync(
+            new TucJob
+            {
+                UcjbId = 3966, UcjbNumber = "KT412VANS",
+                ParentId = 3966, // self-ref → root
+                UcjbDate = new DateTime(2025, 10, 30),
+                UcjbTime = new DateTime(1899, 12, 30, 20, 20, 0),
+                UcjbStatus = 0,
+                BookingParentId = 108,
+                TotalDistance = 9m
+            },
+            new TucJob
+            {
+                UcjbId = 29481, UcjbNumber = "KT412VANSA",
+                ParentId = 3966,
+                UcjbDate = new DateTime(2025, 10, 30),
+                UcjbStatus = 0,
+                BookingParentId = 108
+            },
+            new TucJob
+            {
+                UcjbId = 29482, UcjbNumber = "KT412VANSB",
+                ParentId = 3966,
+                UcjbDate = new DateTime(2025, 10, 30),
+                UcjbStatus = 0,
+                BookingParentId = 108
+            });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(108);
+
+        var run = Assert.Single(result.Runs);
+        Assert.Equal(3966, run.ParentJobId);
+        Assert.Equal("KT412VANS", run.ParentJobNumber);
+        Assert.Equal(2, run.Children.Count);
+        Assert.Equal("KT412VANSA", run.Children[0].JobNumber);
+        Assert.Equal("KT412VANSB", run.Children[1].JobNumber);
+    }
+
+    [Theory]
+    [InlineData(0, RecurringJourneyStatus.Pending)]      // New
+    [InlineData(16, RecurringJourneyStatus.Pending)]     // Awaiting Processing
+    [InlineData(100, RecurringJourneyStatus.Pending)]    // On Hold
+    [InlineData(6, RecurringJourneyStatus.Completed)]    // Completed
+    [InlineData(13, RecurringJourneyStatus.Completed)]   // Assuming Completed
+    [InlineData(1000, RecurringJourneyStatus.Voided)]    // Void
+    [InlineData(3, RecurringJourneyStatus.Voided)]       // Rejected
+    [InlineData(10, RecurringJourneyStatus.Voided)]      // Undeliverable
+    [InlineData(1001, RecurringJourneyStatus.Voided)]    // Missing
+    [InlineData(1, RecurringJourneyStatus.InProgress)]   // Despatched
+    [InlineData(11, RecurringJourneyStatus.InProgress)]  // In Transit
+    [InlineData(17, RecurringJourneyStatus.InProgress)]  // Out for Delivery
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_MapsStatusBuckets(int ucjbStatus, RecurringJourneyStatus expected)
+    {
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 200 });
+        await SeedJobsAsync(new TucJob
+        {
+            UcjbId = 1, UcjbNumber = "JOB1",
+            UcjbDate = new DateTime(2025, 11, 1),
+            UcjbStatus = ucjbStatus,
+            BookingParentId = 200
+        });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(200);
+
+        var run = Assert.Single(result.Runs);
+        Assert.Equal(expected, run.Status);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_AppliesLimitToParentRuns()
+    {
+        // Seed 5 standalone parent runs, ask for limit=2 — service should
+        // return the 2 newest by ucjbDate (then ucjbTime, then ucjbId).
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 400 });
+        await SeedJobsAsync(
+            Enumerable.Range(0, 5).Select(i => new TucJob
+            {
+                UcjbId = 100 + i,
+                UcjbNumber = $"JOB{i}",
+                UcjbDate = new DateTime(2025, 11, 1 + i),
+                UcjbStatus = 0,
+                BookingParentId = 400
+            }).ToArray());
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(400, limit: 2);
+
+        Assert.Equal(2, result.Runs.Count);
+        Assert.Equal("JOB4", result.Runs[0].ParentJobNumber);
+        Assert.Equal("JOB3", result.Runs[1].ParentJobNumber);
+        // Breakdown reflects the loaded slice, not all 5 rows.
+        Assert.Equal(2, result.Breakdown.Total);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_LimitZeroOrNegative_ReturnsEmpty()
+    {
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 500 });
+        await SeedJobsAsync(new TucJob
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB",
+            UcjbDate = new DateTime(2025, 11, 1),
+            UcjbStatus = 0,
+            BookingParentId = 500
+        });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(500, limit: 0);
+
+        Assert.Empty(result.Runs);
+        Assert.Equal(0, result.Breakdown.Total);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_WhenIdIsChild_ResolvesParentFamily()
+    {
+        // Family: parent template 300 + one child template 301. Both spawn
+        // tucJob rows. Caller passes the CHILD id (301) — we should still
+        // return jobs spawned from the whole family.
+        await SeedBookingsAsync(
+            new TucJobBooking { UcbkId = 300 },
+            new TucJobBooking { UcbkId = 301, BookingParentId = 300 });
+
+        await SeedJobsAsync(
+            new TucJob
+            {
+                UcjbId = 10, UcjbNumber = "JOB-A",
+                UcjbDate = new DateTime(2025, 11, 1),
+                UcjbStatus = 6,
+                BookingParentId = 300
+            },
+            new TucJob
+            {
+                UcjbId = 11, UcjbNumber = "JOB-B",
+                UcjbDate = new DateTime(2025, 11, 2),
+                UcjbStatus = 6,
+                BookingParentId = 301
+            });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(301);
+
+        Assert.Equal(2, result.Runs.Count);
+        Assert.Contains(result.Runs, r => r.ParentJobNumber == "JOB-A");
+        Assert.Contains(result.Runs, r => r.ParentJobNumber == "JOB-B");
+    }
+
+    // ── POD job history ──
+
+    private async Task SeedJobStatusesAsync(params TucJobStatus[] statuses)
+    {
+        await using var context = _db.CreateContext();
+        context.TucJobStatuses.AddRange(statuses);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static TucJobStatus JobStatus(int id, string name) =>
+        new() { UcjsId = id, UcjsName = name, UcjsCode = name[..1], UcjsReplyCode = name[..1] };
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_ReturnsStatusChangesOldestFirst()
+    {
+        await SeedJobStatusesAsync(JobStatus(1, "Booked"), JobStatus(2, "Picked Up"), JobStatus(3, "Delivered"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 3, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+                NewJobStatusId = 3, UpdatedAt = new DateTime(2026, 8, 12, 9, 42, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 1, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+                NewJobStatusId = 1, UpdatedAt = new DateTime(2026, 8, 11, 14, 5, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+                NewJobStatusId = 2, UpdatedAt = new DateTime(2026, 8, 11, 17, 20, 0)
+            });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(1);
+
+        Assert.Equal(["Booked", "Picked Up", "Delivered"], result.Select(r => r.Status));
+        Assert.Equal(new DateTime(2026, 8, 11, 14, 5, 0), result[0].ActionTime.DateTime);
+    }
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_IgnoresNonStatusChanges()
+    {
+        await SeedJobStatusesAsync(JobStatus(1, "Booked"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+                NewJobStatusId = 1, UpdatedAt = new DateTime(2026, 8, 11, 14, 5, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.CourierAssignment),
+                UpdatedAt = new DateTime(2026, 8, 11, 15, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 3, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                FieldName = "ucjbWeight", NewValue = "12.5", UpdatedAt = new DateTime(2026, 8, 11, 16, 0, 0)
+            });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(1);
+
+        Assert.Equal("Booked", Assert.Single(result).Status);
+    }
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_ArchivedJob_ResolvesStatusNames()
+    {
+        // The archive table carries no navigation properties, so the status name is joined by hand.
+        await SeedJobStatusesAsync(JobStatus(3, "Delivered"));
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1, JobId = 77, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+            NewJobStatusId = 3, UpdatedAt = new DateTime(2026, 8, 12, 9, 42, 0)
+        });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(77);
+
+        Assert.Equal("Delivered", Assert.Single(result).Status);
+    }
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_JobWithNoJourney_ReturnsEmpty()
+    {
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(1);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetStatusHistoryForJobAsync_ConvertsTimesToTheTenantTimeZone()
+    {
+        _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(callInfo => new DateTimeOffset(callInfo.Arg<DateTime>().AddHours(12), TimeSpan.FromHours(12)));
+        await SeedJobStatusesAsync(JobStatus(1, "Booked"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1, JobId = 1, UpdatedByType = "SYSTEM", ChangeType = nameof(DeliveryJourneyChangeType.JobStatus),
+            NewJobStatusId = 1, UpdatedAt = new DateTime(2026, 8, 11, 2, 5, 0)
+        });
+
+        var result = await CreateService().GetStatusHistoryForJobAsync(1);
+
+        Assert.Equal(new DateTime(2026, 8, 11, 14, 5, 0), Assert.Single(result).ActionTime.DateTime);
     }
 }

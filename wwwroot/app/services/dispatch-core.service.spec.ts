@@ -9,36 +9,27 @@
 import {assertValidDownloadFileName, assertValidS3Key} from '../react/utils/fileValidation';
 
 describe('DispatchCoreService', () => {
-
-    // ---------------------------------------------------------------------------
-    // Shared helpers that mirror the internal logic of the service
-    // ---------------------------------------------------------------------------
-
-    /**
-     * Simulates the $http wrapper pattern used throughout DispatchCoreService.
-     * The mock tracks the last call so we can assert endpoint, method, and payload.
-     */
     interface HttpCall {
         method: 'GET' | 'POST';
         url: string;
         data?: any;
         params?: Record<string, any>;
     }
-    
+
     /** Reusable helper to build a mock $http that records calls and resolves with `responseData`. */
     const createMockHttp = (responseData: any = undefined) => {
         const calls: HttpCall[] = [];
         return {
             calls,
             get: jest.fn((url: string, config?: any) => {
-                const call: HttpCall = { method: 'GET', url, params: config?.params };
+                const call: HttpCall = {method: 'GET', url, params: config?.params};
                 calls.push(call);
-                return Promise.resolve({ data: responseData });
+                return Promise.resolve({data: responseData});
             }),
             post: jest.fn((url: string, data?: any, config?: any) => {
-                const call: HttpCall = { method: 'POST', url, data, params: config?.params };
+                const call: HttpCall = {method: 'POST', url, data, params: config?.params};
                 calls.push(call);
-                return Promise.resolve({ data: responseData });
+                return Promise.resolve({data: responseData});
             }),
         };
     };
@@ -51,21 +42,21 @@ describe('DispatchCoreService', () => {
 
         describe('getJobDetail', () => {
             it('should call GET job/Detail with the correct jobId param', async () => {
-                const http = createMockHttp({ job: {}, relatedJobs: [] });
+                const http = createMockHttp({job: {}, relatedJobs: []});
 
                 // Simulate the service call
                 const jobId = 42;
-                await http.get('job/Detail', { params: { jobId } });
+                await http.get('job/Detail', {params: {jobId}});
 
                 expect(http.get).toHaveBeenCalledTimes(1);
-                expect(http.get).toHaveBeenCalledWith('job/Detail', { params: { jobId: 42 } });
+                expect(http.get).toHaveBeenCalledWith('job/Detail', {params: {jobId: 42}});
             });
 
             it('should pass jobId as a number, not a string', async () => {
-                const http = createMockHttp({ job: {}, relatedJobs: [] });
+                const http = createMockHttp({job: {}, relatedJobs: []});
                 const jobId = 999;
 
-                await http.get('job/Detail', { params: { jobId } });
+                await http.get('job/Detail', {params: {jobId}});
 
                 const passedParams = http.get.mock.calls[0][1].params;
                 expect(typeof passedParams.jobId).toBe('number');
@@ -77,16 +68,16 @@ describe('DispatchCoreService', () => {
                 const http = createMockHttp({});
                 const jobId = 101;
 
-                await http.get('job/DispatchJobDetail', { params: { jobId } });
+                await http.get('job/DispatchJobDetail', {params: {jobId}});
 
-                expect(http.get).toHaveBeenCalledWith('job/DispatchJobDetail', { params: { jobId: 101 } });
+                expect(http.get).toHaveBeenCalledWith('job/DispatchJobDetail', {params: {jobId: 101}});
             });
 
             it('should return the response data', async () => {
-                const mockJob = { id: 101, jobNo: 'J-101' };
+                const mockJob = {id: 101, jobNo: 'J-101'};
                 const http = createMockHttp(mockJob);
 
-                const response = await http.get('job/DispatchJobDetail', { params: { jobId: 101 } });
+                const response = await http.get('job/DispatchJobDetail', {params: {jobId: 101}});
 
                 expect(response.data).toEqual(mockJob);
             });
@@ -94,19 +85,19 @@ describe('DispatchCoreService', () => {
 
         describe('getBulkJobDetail', () => {
             it('should call GET /Job/BulkDetail with bulkJobId param', async () => {
-                const http = createMockHttp({ job: {}, relatedJobs: [] });
+                const http = createMockHttp({job: {}, relatedJobs: []});
                 const bulkJobId = 55;
 
-                await http.get('/Job/BulkDetail', { params: { bulkJobId } });
+                await http.get('/Job/BulkDetail', {params: {bulkJobId}});
 
-                expect(http.get).toHaveBeenCalledWith('/Job/BulkDetail', { params: { bulkJobId: 55 } });
+                expect(http.get).toHaveBeenCalledWith('/Job/BulkDetail', {params: {bulkJobId: 55}});
             });
 
             it('should return the raw DTO before transformation', async () => {
-                const dto = { job: { id: 55 }, relatedJobs: [{ id: 56 }] };
+                const dto = {job: {id: 55}, relatedJobs: [{id: 56}]};
                 const http = createMockHttp(dto);
 
-                const result = await http.get('/Job/BulkDetail', { params: { bulkJobId: 55 } });
+                const result = await http.get('/Job/BulkDetail', {params: {bulkJobId: 55}});
 
                 expect(result.data).toEqual(dto);
             });
@@ -116,15 +107,15 @@ describe('DispatchCoreService', () => {
             it('should call GET job/IsJobParent with jobId param', async () => {
                 const http = createMockHttp(true);
 
-                await http.get('job/IsJobParent', { params: { jobId: 10 } });
+                await http.get('job/IsJobParent', {params: {jobId: 10}});
 
-                expect(http.get).toHaveBeenCalledWith('job/IsJobParent', { params: { jobId: 10 } });
+                expect(http.get).toHaveBeenCalledWith('job/IsJobParent', {params: {jobId: 10}});
             });
 
             it('should return true when job is a parent', async () => {
                 const http = createMockHttp(true);
 
-                const result = await http.get('job/IsJobParent', { params: { jobId: 10 } });
+                const result = await http.get('job/IsJobParent', {params: {jobId: 10}});
 
                 expect(result.data).toBe(true);
             });
@@ -132,7 +123,7 @@ describe('DispatchCoreService', () => {
             it('should return false when job is not a parent', async () => {
                 const http = createMockHttp(false);
 
-                const result = await http.get('job/IsJobParent', { params: { jobId: 20 } });
+                const result = await http.get('job/IsJobParent', {params: {jobId: 20}});
 
                 expect(result.data).toBe(false);
             });
@@ -142,15 +133,15 @@ describe('DispatchCoreService', () => {
             it('should call GET job/IsBulkJobParent with bulkJobId param', async () => {
                 const http = createMockHttp(true);
 
-                await http.get('job/IsBulkJobParent', { params: { bulkJobId: 30 } });
+                await http.get('job/IsBulkJobParent', {params: {bulkJobId: 30}});
 
-                expect(http.get).toHaveBeenCalledWith('job/IsBulkJobParent', { params: { bulkJobId: 30 } });
+                expect(http.get).toHaveBeenCalledWith('job/IsBulkJobParent', {params: {bulkJobId: 30}});
             });
 
             it('should return the boolean value from the API', async () => {
                 const http = createMockHttp(false);
 
-                const result = await http.get('job/IsBulkJobParent', { params: { bulkJobId: 30 } });
+                const result = await http.get('job/IsBulkJobParent', {params: {bulkJobId: 30}});
 
                 expect(result.data).toBe(false);
             });
@@ -166,7 +157,7 @@ describe('DispatchCoreService', () => {
         describe('allocateJobs', () => {
             it('should POST to job/Allocate with courierId and jobIds in request body', async () => {
                 const http = createMockHttp();
-                const data = { courierId: 5, jobIds: [100, 101, 102] };
+                const data = {courierId: 5, jobIds: [100, 101, 102]};
 
                 await http.post('job/Allocate', data);
 
@@ -178,7 +169,7 @@ describe('DispatchCoreService', () => {
 
             it('should handle a single jobId in the array', async () => {
                 const http = createMockHttp();
-                const data = { courierId: 7, jobIds: [200] };
+                const data = {courierId: 7, jobIds: [200]};
 
                 await http.post('job/Allocate', data);
 
@@ -187,7 +178,7 @@ describe('DispatchCoreService', () => {
 
             it('should handle an empty jobIds array', async () => {
                 const http = createMockHttp();
-                const data = { courierId: 7, jobIds: [] as number[] };
+                const data = {courierId: 7, jobIds: [] as number[]};
 
                 await http.post('job/Allocate', data);
 
@@ -198,7 +189,7 @@ describe('DispatchCoreService', () => {
         describe('reAllocateJobs', () => {
             it('should POST to job/ReAllocate with courierId and jobIds in request body', async () => {
                 const http = createMockHttp();
-                const data = { courierId: 12, jobIds: [300, 301] };
+                const data = {courierId: 12, jobIds: [300, 301]};
 
                 await http.post('job/ReAllocate', data);
 
@@ -210,8 +201,8 @@ describe('DispatchCoreService', () => {
 
             it('should use the same request structure as allocateJobs', async () => {
                 const http = createMockHttp();
-                const allocateData = { courierId: 1, jobIds: [10] };
-                const reAllocateData = { courierId: 2, jobIds: [20] };
+                const allocateData = {courierId: 1, jobIds: [10]};
+                const reAllocateData = {courierId: 2, jobIds: [20]};
 
                 await http.post('job/Allocate', allocateData);
                 await http.post('job/ReAllocate', reAllocateData);
@@ -228,11 +219,11 @@ describe('DispatchCoreService', () => {
                 const http = createMockHttp();
 
                 await http.post('job/SetFirstJob', null, {
-                    params: { jobId: 50, courierId: 8 },
+                    params: {jobId: 50, courierId: 8},
                 });
 
                 expect(http.post).toHaveBeenCalledWith('job/SetFirstJob', null, {
-                    params: { jobId: 50, courierId: 8 },
+                    params: {jobId: 50, courierId: 8},
                 });
             });
 
@@ -240,7 +231,7 @@ describe('DispatchCoreService', () => {
                 const http = createMockHttp();
 
                 await http.post('job/SetFirstJob', null, {
-                    params: { jobId: 1, courierId: 2 },
+                    params: {jobId: 1, courierId: 2},
                 });
 
                 expect(http.post.mock.calls[0][1]).toBeNull();
@@ -346,15 +337,15 @@ describe('DispatchCoreService', () => {
                 const http = createMockHttp();
                 const jobIds = [10, 11, 12];
 
-                await http.post('job/RestoreJobs', { jobIds });
+                await http.post('job/RestoreJobs', {jobIds});
 
-                expect(http.post).toHaveBeenCalledWith('job/RestoreJobs', { jobIds: [10, 11, 12] });
+                expect(http.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [10, 11, 12]});
             });
 
             it('should send jobIds as an array property on the body object', async () => {
                 const http = createMockHttp();
 
-                await http.post('job/RestoreJobs', { jobIds: [99] });
+                await http.post('job/RestoreJobs', {jobIds: [99]});
 
                 const body = http.post.mock.calls[0][1];
                 expect(body).toHaveProperty('jobIds');
@@ -367,17 +358,17 @@ describe('DispatchCoreService', () => {
                 const http = createMockHttp();
                 const jobIds = [70, 71];
 
-                await http.post('job/RestoreSplitJobs', null, { params: { jobIds } });
+                await http.post('job/RestoreSplitJobs', null, {params: {jobIds}});
 
                 expect(http.post).toHaveBeenCalledWith('job/RestoreSplitJobs', null, {
-                    params: { jobIds: [70, 71] },
+                    params: {jobIds: [70, 71]},
                 });
             });
 
             it('should pass null as the request body', async () => {
                 const http = createMockHttp();
 
-                await http.post('job/RestoreSplitJobs', null, { params: { jobIds: [1] } });
+                await http.post('job/RestoreSplitJobs', null, {params: {jobIds: [1]}});
 
                 expect(http.post.mock.calls[0][1]).toBeNull();
             });
@@ -430,7 +421,7 @@ describe('DispatchCoreService', () => {
                 };
 
                 const endpoint = getAddressEndpoint(prebook, 'pickup');
-                const requestBody = { jobId, address: addressData };
+                const requestBody = {jobId, address: addressData};
 
                 await http.post(endpoint, requestBody);
 
@@ -456,7 +447,7 @@ describe('DispatchCoreService', () => {
                 };
 
                 const endpoint = getAddressEndpoint(prebook, 'delivery');
-                const requestBody = { jobId, address: addressData };
+                const requestBody = {jobId, address: addressData};
 
                 await http.post(endpoint, requestBody);
 
@@ -468,103 +459,20 @@ describe('DispatchCoreService', () => {
 
             it('should include both jobId and address in the request body', async () => {
                 const http = createMockHttp();
-                const address = { addressLine1: 'Test', addressLine2: '', addressLine3: '', suburb: '', city: '', postCode: '' };
+                const address = {
+                    addressLine1: 'Test',
+                    addressLine2: '',
+                    addressLine3: '',
+                    suburb: '',
+                    city: '',
+                    postCode: ''
+                };
 
-                await http.post('job/UpdateDeliveryAddress', { jobId: 1, address });
+                await http.post('job/UpdateDeliveryAddress', {jobId: 1, address});
 
                 const body = http.post.mock.calls[0][1];
                 expect(body).toHaveProperty('jobId');
                 expect(body).toHaveProperty('address');
-            });
-        });
-    });
-
-    // ---------------------------------------------------------------------------
-    // 5. POD
-    // ---------------------------------------------------------------------------
-
-    describe('POD', () => {
-
-        describe('sendPOD', () => {
-            it('should call GET job/SendPOD with jobId and toEmail params', async () => {
-                const http = createMockHttp('POD sent');
-                const jobId = 250;
-                const email = 'test@example.com';
-
-                await http.get('job/SendPOD', { params: { jobId, toEmail: email } });
-
-                expect(http.get).toHaveBeenCalledWith('job/SendPOD', {
-                    params: { jobId: 250, toEmail: 'test@example.com' },
-                });
-            });
-
-            it('should return the response data on success', async () => {
-                const http = createMockHttp('Success');
-
-                const result = await http.get('job/SendPOD', {
-                    params: { jobId: 1, toEmail: 'a@b.com' },
-                });
-
-                expect(result.data).toBe('Success');
-            });
-        });
-
-        describe('swapPOD', () => {
-            it('should POST to Job/SwapPOD with job1 and job2 as query params', async () => {
-                const http = createMockHttp();
-
-                await http.post('Job/SwapPOD', null, {
-                    params: { job1: 'JOB-001', job2: 'JOB-002' },
-                });
-
-                expect(http.post).toHaveBeenCalledWith('Job/SwapPOD', null, {
-                    params: { job1: 'JOB-001', job2: 'JOB-002' },
-                });
-            });
-
-            it('should send null as the request body', async () => {
-                const http = createMockHttp();
-
-                await http.post('Job/SwapPOD', null, {
-                    params: { job1: 'A', job2: 'B' },
-                });
-
-                expect(http.post.mock.calls[0][1]).toBeNull();
-            });
-        });
-
-        describe('validateSwapPOD', () => {
-            it('should POST to Job/ValidateSwapPOD with job as query param', async () => {
-                const http = createMockHttp(1);
-
-                await http.post('Job/ValidateSwapPOD', null, {
-                    params: { job: 'JOB-555' },
-                });
-
-                expect(http.post).toHaveBeenCalledWith('Job/ValidateSwapPOD', null, {
-                    params: { job: 'JOB-555' },
-                });
-            });
-
-            it('should return the numeric validation result', async () => {
-                const http = createMockHttp(0);
-
-                const result = await http.post('Job/ValidateSwapPOD', null, {
-                    params: { job: 'JOB-999' },
-                });
-
-                expect(result.data).toBe(0);
-            });
-
-            it('should pass the job number as a string param', async () => {
-                const http = createMockHttp(1);
-
-                await http.post('Job/ValidateSwapPOD', null, {
-                    params: { job: 'JOB-ABC' },
-                });
-
-                const passedParams = http.post.mock.calls[0][2].params;
-                expect(typeof passedParams.job).toBe('string');
             });
         });
     });
@@ -580,11 +488,11 @@ describe('DispatchCoreService', () => {
                 const http = createMockHttp(125.50);
 
                 await http.get('job/RecalculateJobRate', {
-                    params: { jobId: 300, isBooking: false },
+                    params: {jobId: 300, isBooking: false},
                 });
 
                 expect(http.get).toHaveBeenCalledWith('job/RecalculateJobRate', {
-                    params: { jobId: 300, isBooking: false },
+                    params: {jobId: 300, isBooking: false},
                 });
             });
 
@@ -592,7 +500,7 @@ describe('DispatchCoreService', () => {
                 const http = createMockHttp(99.99);
 
                 const result = await http.get('job/RecalculateJobRate', {
-                    params: { jobId: 1, isBooking: true },
+                    params: {jobId: 1, isBooking: true},
                 });
 
                 expect(result.data).toBe(99.99);
@@ -602,7 +510,7 @@ describe('DispatchCoreService', () => {
                 const http = createMockHttp(0);
 
                 await http.get('job/RecalculateJobRate', {
-                    params: { jobId: 1, isBooking: true },
+                    params: {jobId: 1, isBooking: true},
                 });
 
                 expect(http.get.mock.calls[0][1].params.isBooking).toBe(true);
@@ -631,7 +539,7 @@ describe('DispatchCoreService', () => {
 
             it('should include isBulk flag in the request body', async () => {
                 const http = createMockHttp();
-                const data = { jobId: 1, isPrebook: true, isBulk: true, newPrice: 50 };
+                const data = {jobId: 1, isPrebook: true, isBulk: true, newPrice: 50};
 
                 await http.post('job/SimpleRepriceJobManual', data);
 
@@ -640,7 +548,7 @@ describe('DispatchCoreService', () => {
 
             it('should support decimal prices', async () => {
                 const http = createMockHttp();
-                const data = { jobId: 1, isPrebook: false, isBulk: false, newPrice: 123.45 };
+                const data = {jobId: 1, isPrebook: false, isBulk: false, newPrice: 123.45};
 
                 await http.post('job/SimpleRepriceJobManual', data);
 
@@ -649,70 +557,11 @@ describe('DispatchCoreService', () => {
 
             it('should support zero price', async () => {
                 const http = createMockHttp();
-                const data = { jobId: 1, isPrebook: false, isBulk: false, newPrice: 0 };
+                const data = {jobId: 1, isPrebook: false, isBulk: false, newPrice: 0};
 
                 await http.post('job/SimpleRepriceJobManual', data);
 
                 expect(http.post.mock.calls[0][1].newPrice).toBe(0);
-            });
-        });
-    });
-
-    // ---------------------------------------------------------------------------
-    // 7. Driver locations / clear lists
-    // ---------------------------------------------------------------------------
-
-    describe('Driver locations', () => {
-
-        describe('getDriverLocations', () => {
-            it('should call GET courier with despatchViewIds param', async () => {
-                const http = createMockHttp({ areas: [], columns: [] });
-                const despatchViewIds = [1, 2, 3];
-
-                await http.get('courier', { params: { despatchViewIds } });
-
-                expect(http.get).toHaveBeenCalledWith('courier', {
-                    params: { despatchViewIds: [1, 2, 3] },
-                });
-            });
-
-            it('should include startDate and endDate params when dateFilterData is provided', async () => {
-                const http = createMockHttp({ areas: [], columns: [] });
-                const despatchViewIds = [1];
-                const startDate = '2024-01-14T00:00:00+13:00';
-                const endDate = '2024-01-16T00:00:00+13:00';
-
-                await http.get('courier', {
-                    params: { despatchViewIds, startDate, endDate },
-                });
-
-                expect(http.get).toHaveBeenCalledWith('courier', {
-                    params: {
-                        despatchViewIds: [1],
-                        startDate: '2024-01-14T00:00:00+13:00',
-                        endDate: '2024-01-16T00:00:00+13:00',
-                    },
-                });
-            });
-
-            it('should not include startDate/endDate when dateFilterData is undefined', async () => {
-                const http = createMockHttp({ areas: [], columns: [] });
-                const despatchViewIds = [1, 2];
-
-                await http.get('courier', { params: { despatchViewIds } });
-
-                const passedParams = http.get.mock.calls[0][1].params;
-                expect(passedParams).not.toHaveProperty('startDate');
-                expect(passedParams).not.toHaveProperty('endDate');
-            });
-
-            it('should return the response data', async () => {
-                const mockData = { areas: [{ id: 1, name: 'Central' }], columns: [] };
-                const http = createMockHttp(mockData);
-
-                const result = await http.get('courier', { params: { despatchViewIds: [1] } });
-
-                expect(result.data).toEqual(mockData);
             });
         });
     });
@@ -739,14 +588,14 @@ describe('DispatchCoreService', () => {
 
     describe('APP_CONFIG integration', () => {
         it('should store isUsCustomer as true when APP_CONFIG.US_Customer is true', () => {
-            const appConfig = { US_Customer: true };
+            const appConfig = {US_Customer: true};
             const isUsCustomer = appConfig.US_Customer;
 
             expect(isUsCustomer).toBe(true);
         });
 
         it('should store isUsCustomer as false when APP_CONFIG.US_Customer is false', () => {
-            const appConfig = { US_Customer: false };
+            const appConfig = {US_Customer: false};
             const isUsCustomer = appConfig.US_Customer;
 
             expect(isUsCustomer).toBe(false);
@@ -764,7 +613,7 @@ describe('DispatchCoreService', () => {
             };
 
             await expect(
-                http.post('job/Void', { jobId: 1, voidSingleJobOnly: true })
+                http.post('job/Void', {jobId: 1, voidSingleJobOnly: true})
             ).rejects.toThrow('500 Internal Server Error');
         });
 
@@ -774,7 +623,7 @@ describe('DispatchCoreService', () => {
             };
 
             await expect(
-                http.get('job/Detail', { params: { jobId: 999999 } })
+                http.get('job/Detail', {params: {jobId: 999999}})
             ).rejects.toThrow('404 Not Found');
         });
     });

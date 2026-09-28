@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * NoteManagementDialog Component Tests
  *
@@ -6,13 +5,15 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {NoteManagementDialog} from './NoteManagementDialog';
 import {NoteManagementDialogProps} from './types';
 import {JobNote, NoteType} from '../../../interfaces/notes';
+import {renderWithMantineProviders} from '../../../__testUtils__';
+import {setupUser} from '../../../__testUtils__/setupUser';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 // Mock the dateUtils module
 jest.mock('../../../utils/dateUtils', () => ({
@@ -29,30 +30,14 @@ jest.mock('../../../hooks/useNotesApi', () => ({
     })),
 }));
 
-const theme = createTheme();
-
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {retry: false, gcTime: 0},
-        },
-    });
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider theme={theme}>
-                {ui}
-            </ThemeProvider>
-        </QueryClientProvider>
-    );
-};
+// renderWithMantineProviders supplies a fresh no-retry, zero-gcTime QueryClient.
+const renderWithTheme = (ui: React.ReactElement) => renderWithMantineProviders(ui);
 
 const mockNoteTypes: NoteType[] = [
     {id: 1, text: 'General', isPublic: false, description: 'General notes'},
     {id: 2, text: 'Customer', isPublic: true, description: 'Customer-visible notes'},
     {id: 3, text: 'Internal', isPublic: false},
+    {id: 4, text: 'Dispatch', isPublic: false, isCourierFacing: true, description: 'Courier-visible notes'},
 ];
 
 const mockNote: JobNote = {
@@ -81,6 +66,23 @@ const createMockProps = (overrides: Partial<NoteManagementDialogProps> = {}): No
     ...overrides,
 });
 
+async function CreateNewNoteTypeTest(props: any) {
+    await act(async () => {
+        renderWithTheme(<NoteManagementDialog {...props} />);
+    });
+
+    await waitFor(() => {
+        expect(props.onLoadNoteTypes).toHaveBeenCalled();
+    });
+
+    // Open the "Create New Note Type" sub-form
+    await act(async () => {
+        await userEvent.click(screen.getByRole('button', {name: 'Add note type'}));
+    });
+
+    expect(await screen.findByText('Create New Note Type')).toBeInTheDocument();
+}
+
 describe('NoteManagementDialog', () => {
     // ── New note render: dialog, title, note types loaded, no metadata, char count, save disabled (single render) ─
     it('renders new note dialog with correct initial state', async () => {
@@ -89,11 +91,9 @@ describe('NoteManagementDialog', () => {
             renderWithTheme(<NoteManagementDialog {...props} />);
         });
 
-        await waitFor(() => {
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Add Note')).toBeInTheDocument();
-            expect(props.onLoadNoteTypes).toHaveBeenCalled();
-        });
+        expect(await screen.findByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Add Note')).toBeInTheDocument();
+        expect(props.onLoadNoteTypes).toHaveBeenCalled();
 
         // No metadata section for new notes
         expect(screen.queryByText('Note Information')).not.toBeInTheDocument();
@@ -125,14 +125,12 @@ describe('NoteManagementDialog', () => {
         expect(await screen.findByText('Edit Note')).toBeInTheDocument();
         expect(screen.getByDisplayValue('This is an existing note')).toBeInTheDocument();
 
-        await waitFor(() => {
-            expect(screen.getByText('Note Information')).toBeInTheDocument();
-            expect(screen.getByText('John Doe')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Note Information')).toBeInTheDocument();
+        expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
 
-    // ── Note type selection: public warning + description toggle (single render) ─
-    it('shows public note warning and toggles description visibility', async () => {
+    // ── Note type selection: public + courier warnings + description toggle (single render) ─
+    it('shows public and courier note warnings and toggles description visibility', async () => {
         const props = createMockProps();
         await act(async () => {
             renderWithTheme(<NoteManagementDialog {...props} />);
@@ -159,6 +157,60 @@ describe('NoteManagementDialog', () => {
             await userEvent.click(customerOption);
         });
         expect(await screen.findByText(/public note that will be visible to clients/)).toBeInTheDocument();
+        expect(screen.queryByText(/courier note that will be visible to couriers/)).not.toBeInTheDocument();
+
+        // Select courier-facing type
+        await act(async () => {
+            await userEvent.click(screen.getByRole('combobox'));
+        });
+        const dispatchOption = await screen.findByText('Dispatch');
+        await act(async () => {
+            await userEvent.click(dispatchOption);
+        });
+        expect(await screen.findByText(/courier note that will be visible to couriers/)).toBeInTheDocument();
+        expect(screen.queryByText(/public note that will be visible to clients/)).not.toBeInTheDocument();
+    });
+
+    // ── Create note type: courier-facing checkbox reveals warning and flows to onCreateNoteType ─
+    it('creates a courier-facing note type with a warning shown while ticked', async () => {
+        const props = createMockProps();
+
+        await CreateNewNoteTypeTest(props);
+
+        // Name the new type
+        const nameField = screen.getByRole('textbox', {name: /note type name/i});
+        fireEvent.change(nameField, {target: {value: 'Dispatch'}});
+
+        // Tick courier-facing → warning appears
+        const courierCheckbox = screen.getByRole('checkbox', {name: /is courier facing note type/i});
+        await act(async () => {
+            await userEvent.click(courierCheckbox);
+        });
+        expect(await screen.findByText(/courier note types are visible to couriers/i)).toBeInTheDocument();
+
+        // Submit the new type
+        await act(async () => {
+            await userEvent.click(screen.getByRole('button', {name: 'Create Note Type'}));
+        });
+
+        await waitFor(() => {
+            expect(props.onCreateNoteType).toHaveBeenCalledWith(
+                expect.objectContaining({text: 'Dispatch', isCourierFacing: true})
+            );
+        });
+    });
+
+    // ── Tall content must not strand the footer (the shell's scroll container) ─
+    it('keeps Save Note reachable once the note-type creator expands the dialog', async () => {
+        const props = createMockProps();
+
+        await CreateNewNoteTypeTest(props);
+
+        // jsdom does no layout, so this asserts the wiring rather than the pixels:
+        // the body scrolls and the footer sits outside it, always on screen.
+        const scrollRegion = screen.getByRole('dialog').querySelector<HTMLElement>('[data-dialog-scroll]')!;
+        expect(scrollRegion.style.overflowY).toBe('auto');
+        expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Save Note'}));
     });
 
     // ── Note content: type text, toggle important, save enabled (single render) ─

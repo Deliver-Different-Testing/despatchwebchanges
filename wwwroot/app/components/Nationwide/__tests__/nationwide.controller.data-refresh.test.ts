@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 import './nationwide.controller.test-setup';
 import {ControllerClass, createController, makeJob, setupWindowMocks, JobDataType} from './nationwide.controller.test-helpers';
 
@@ -13,9 +12,26 @@ describe('handleStatusChange', () => {
 
     it('computes lists from STATUS_TO_LIST_MAP and refreshes', async () => {
         const ctrl = setup();
-        await ctrl.handleStatusChange({jobId: 1, previousStatusId: 0, newStatusId: 3});
-        // 0 → [NEW], 3 → [POD] → refreshes [NEW, POD]
+        // Real statuses: 1 → [NEW], 3 → [POD], so a job moving from one to the
+        // other refreshes both lists. (This previously used status 0, which the
+        // helper's fabricated map claimed was [NEW]; production maps nothing to 0.)
+        await ctrl.handleStatusChange({jobId: 1, previousStatusId: 1, newStatusId: 3});
         expect(ctrl.getJobList).toHaveBeenCalledWith(expect.arrayContaining([JobDataType.NEW, JobDataType.POD]));
+    });
+
+    it('refreshes the reprice list when a job moves into status 4', async () => {
+        // The reprice list was unreachable under the helper's fabricated map.
+        const ctrl = setup();
+        await ctrl.handleStatusChange({jobId: 1, previousStatusId: 1, newStatusId: 4});
+        expect(ctrl.getJobList).toHaveBeenCalledWith(
+            expect.arrayContaining([JobDataType.NEW, JobDataType.REPRICE]),
+        );
+    });
+
+    it('refreshes nothing when neither status appears on this page', async () => {
+        const ctrl = setup();
+        await ctrl.handleStatusChange({jobId: 1, previousStatusId: 2, newStatusId: 6});
+        expect(ctrl.getJobList).toHaveBeenCalledWith([]);
     });
 
     it('re-selects job if found after refresh', async () => {

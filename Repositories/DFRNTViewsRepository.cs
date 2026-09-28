@@ -7,7 +7,9 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFactory)
+public class DfrntViewsRepository(
+    IDbContextFactory<DespatchContext> contextFactory,
+    IScopeProvider scopeProvider)
     : BaseRepository(contextFactory), IDfrntViewsRepository
 {
     public async Task<IReadOnlyList<DfrntPageViewModel>> GetViewsByUserAndPageAsync(int userId, AppPage page)
@@ -16,8 +18,14 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
         try
         {
             var pageInt = (int)page;
+            
+            var audienceClientTypeId = scopeProvider.Scope?.IsNetworkPartner == true
+                ? (int?)ClientType.NetworkPartner
+                : null;
+
             var views = await Context.DfrntpageViews
-                .Where(pv => pv.PageId == pageInt && pv.View != null)
+                .Where(pv => pv.PageId == pageInt && pv.View != null
+                             && pv.View.ClientTypeId == audienceClientTypeId)
                 .Select(dv => new DfrntPageViewModel
                 {
                     Id = dv.View.DespatchViewId,

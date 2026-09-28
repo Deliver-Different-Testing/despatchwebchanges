@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Bulk Price Upload Dialog React Module Tests
  *
@@ -14,9 +13,6 @@ jest.mock('react-dom/client', () => ({
 }));
 
 // Mock the theme
-jest.mock('../../../theme/muiTheme', () => ({
-    getTheme: jest.fn(() => ({})),
-}));
 
 // Mock the API service
 jest.mock('../../../services/bulkPriceApi', () => ({

@@ -3,120 +3,67 @@
  */
 
 import React from 'react';
+import {Badge, Box, Group, Paper, Text} from '@mantine/core';
+import {Award, Headset, Mail, Phone, Star} from 'lucide-react';
 import {formatCurrency} from '../../../../utils/currencyUtils';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import PhoneIcon from '@mui/icons-material/Phone';
-import EmailIcon from '@mui/icons-material/Email';
-import StarRateIcon from '@mui/icons-material/StarRate';
-import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
-import type {SxProps, Theme} from '@mui/material';
+import {Icon, type LucideIcon} from '../../icon/Icon';
 import type {IAgent} from '../JobDetails.types';
 import {
-    cardContainerSx,
-    cardContentSx,
-    cardNotesContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
+    cardContainerProps,
+    cardContentStyle,
+    cardNotesContainerStyle,
 } from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 
 interface AgentInformationProps {
     agent: IAgent;
 }
 
-const styles: Record<string, SxProps<Theme>> = {
-    nameRow: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        mb: 1.5,
-    },
-    name: {
-        fontWeight: 600,
-        fontSize: '1rem',
-        color: 'primary.main',
-    },
-    detailRow: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.75,
-        py: 0.5,
-    },
-    detailIcon: {
-        fontSize: 16,
-        color: 'text.secondary',
-    },
-};
-
-function AgentDetailRow({icon: IconComp, value}: {icon: React.ComponentType<any>; value: string}) {
+function AgentDetailRow({icon, value}: {icon: LucideIcon; value: string}) {
     return (
-        <Box sx={styles.detailRow}>
-            <IconComp sx={styles.detailIcon} />
-            <Typography variant="body2">
-                {value}
-            </Typography>
-        </Box>
+        <Group gap={6} style={{paddingBlock: 4}}>
+            <Icon lucide={icon} size={16} color="var(--mantine-color-dimmed)" aria-hidden/>
+            <Text size="sm">{value}</Text>
+        </Group>
     );
 }
 
-export const AgentInformation = React.memo(function AgentInformation({agent}: AgentInformationProps) {
+export const AgentInformation = React.memo(({agent}: AgentInformationProps) => {
     if (!agent) return null;
 
     return (
-        <Box sx={cardContainerSx}>
-            <Box sx={sectionToolbarSx}>
-                <SupportAgentIcon sx={sectionToolbarIconSx} />
-                <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                    Agent Information
-                </Typography>
-            </Box>
-            <Box sx={cardContentSx}>
+        <Paper {...cardContainerProps}>
+            <SectionHeader lucide={Headset} title="Agent Information"/>
+            <Box style={cardContentStyle(false)}>
                 {/* Agent name + ranking/rate chips */}
-                <Box sx={styles.nameRow}>
-                    <Typography sx={styles.name}>
+                <Group justify="space-between" mb={12}>
+                    <Text style={{fontWeight: 600, fontSize: '1rem'}} c="var(--mantine-primary-color-filled)">
                         {agent.agentName}
-                    </Typography>
-                    <Box sx={{display: 'flex', gap: 0.5}}>
+                    </Text>
+                    <Group gap={4}>
                         {agent.agentRanking && (
-                            <Chip
-                                size="small"
-                                icon={<MilitaryTechIcon />}
-                                label={agent.agentRanking}
-                                variant="outlined"
-                            />
+                            <Badge size="sm" variant="default" tt="none" leftSection={<Icon lucide={Award} size={14}/>}>
+                                {agent.agentRanking}
+                            </Badge>
                         )}
                         {agent.agentRate != null && (
-                            <Chip
-                                size="small"
-                                icon={<StarRateIcon />}
-                                label={formatCurrency(agent.agentRate)}
-                                variant="outlined"
-                            />
+                            <Badge size="sm" variant="default" tt="none" leftSection={<Icon lucide={Star} size={14}/>}>
+                                {formatCurrency(agent.agentRate)}
+                            </Badge>
                         )}
-                    </Box>
-                </Box>
+                    </Group>
+                </Group>
 
                 {/* Contact details */}
-                {agent.agentPhone && (
-                    <AgentDetailRow icon={PhoneIcon} value={agent.agentPhone} />
-                )}
-                {agent.agentEmail && (
-                    <AgentDetailRow icon={EmailIcon} value={agent.agentEmail} />
-                )}
+                {agent.agentPhone && <AgentDetailRow icon={Phone} value={agent.agentPhone}/>}
+                {agent.agentEmail && <AgentDetailRow icon={Mail} value={agent.agentEmail}/>}
             </Box>
             {agent.agentNotes && (
-                <Box sx={cardNotesContainerSx}>
-                    <Typography variant="caption" color="text.secondary" sx={{fontWeight: 500}}>
-                        Notes:
-                    </Typography>
-                    <Typography variant="body2">
-                        {agent.agentNotes}
-                    </Typography>
+                <Box style={cardNotesContainerStyle}>
+                    <Text size="xs" c="dimmed" fw={500}>Notes:</Text>
+                    <Text size="sm">{agent.agentNotes}</Text>
                 </Box>
             )}
-        </Box>
+        </Paper>
     );
 });

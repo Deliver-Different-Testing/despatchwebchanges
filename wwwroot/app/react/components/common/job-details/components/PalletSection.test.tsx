@@ -1,27 +1,23 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * PalletSection Component Tests
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
 import {PalletSection} from './PalletSection';
 import {createMockPallet} from '../__testUtils__/mockJob';
-
-const theme = createTheme();
-
-function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
-}
+import {renderWithMantine as renderWithTheme} from '../../../../__testUtils__';
 
 describe('PalletSection', () => {
     it('renders nothing when pallets array is empty or null', () => {
-        const {container: c1} = renderWithTheme(<PalletSection pallets={[]} isUsCustomer={false} />);
-        expect(c1.firstChild).toBeNull();
+        // `MantineProvider` injects a <style> element, so an empty container is no
+        // longer the signal — assert the table is absent instead.
+        const {unmount} = renderWithTheme(<PalletSection pallets={[]} isUsCustomer={false} />);
+        expect(screen.queryByRole('table')).not.toBeInTheDocument();
+        unmount();
 
-        const {container: c2} = renderWithTheme(<PalletSection pallets={null as any} isUsCustomer={false} />);
-        expect(c2.firstChild).toBeNull();
+        renderWithTheme(<PalletSection pallets={null as any} isUsCustomer={false} />);
+        expect(screen.queryByRole('table')).not.toBeInTheDocument();
     });
 
     it('renders pallet table with data', () => {
@@ -29,7 +25,7 @@ describe('PalletSection', () => {
         renderWithTheme(<PalletSection pallets={pallets} isUsCustomer={false} />);
 
         expect(screen.getByText('Pallet Information')).toBeInTheDocument();
-        expect(screen.getByText('(1)')).toBeInTheDocument();
+        expect(screen.getByText('1 pallet')).toBeInTheDocument();
         expect(screen.getByText('120 x 80 x 100')).toBeInTheDocument();
         expect(screen.getByText('Fragile')).toBeInTheDocument();
     });
@@ -87,14 +83,13 @@ describe('PalletSection', () => {
             createMockPallet({itemId: 10, quantity: 5, notes: 'Pallet B1'}),
         ];
 
-        rerender(
-            <ThemeProvider theme={theme}>
-                <PalletSection pallets={palletsB} isUsCustomer={false} />
-            </ThemeProvider>,
-        );
+        // `renderWithMantine` supplies the provider as RTL's `wrapper`, so the
+        // rerender must NOT re-wrap it — a second provider at that position
+        // remounts the subtree and detaches the tbody captured above.
+        rerender(<PalletSection pallets={palletsB} isUsCustomer={false} />);
 
         // Should now show only 1 data row + 1 summary row
-        expect(tableBody.querySelectorAll('tr')).toHaveLength(2);
+        expect(document.querySelector('tbody')!.querySelectorAll('tr')).toHaveLength(2);
         expect(screen.getByText('Pallet B1')).toBeInTheDocument();
         expect(screen.queryByText('Pallet A1')).not.toBeInTheDocument();
         expect(screen.queryByText('Pallet A2')).not.toBeInTheDocument();
@@ -114,6 +109,6 @@ describe('PalletSection', () => {
         expect(screen.getByText('First')).toBeInTheDocument();
         expect(screen.getByText('Second')).toBeInTheDocument();
         expect(screen.getByText('Third')).toBeInTheDocument();
-        expect(screen.getByText('(3)')).toBeInTheDocument();
+        expect(screen.getByText('3 pallets')).toBeInTheDocument();
     });
 });

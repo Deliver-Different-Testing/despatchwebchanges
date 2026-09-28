@@ -6,9 +6,6 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import dayjs, {Dayjs} from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -16,20 +13,18 @@ import isBetween from 'dayjs/plugin/isBetween';
 import duration from 'dayjs/plugin/duration';
 
 import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
 import {formatDateForApi, getIanaTimezone, getTenantTimezone} from '../../../utils/dateUtils';
 import {nationwideApi} from '../../../services/nationwideApi';
 import {AgentSuggestion, FlightAgentDialogResult, FlightCargoProcessing, FlightViewModel, ToastService,} from './types';
-import type {ShowToastFn} from '../../../services/toastService';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(isBetween);
 dayjs.extend(duration);
 
-interface DialogState {
-    open: boolean;
+interface FlightAgentPayload {
     mode: 'flight' | 'agent';
     jobId: number;
     jobNumber: string;
@@ -38,168 +33,52 @@ interface DialogState {
     existingAwb?: string;
     dgClass?: number;
     stopJobCount?: number;
-    toastService: ToastService | null;
-    resolve?: (value: FlightAgentDialogResult) => void;
 }
 
-/**
- * Flight Agent Confirmation Dialog Manager
- * Manages the lifecycle and state of the dialog.
- */
-class FlightAgentConfirmationDialogManager {
-    private dialogRoot: Root | null = null;
-    private dialogContainer: HTMLDivElement | null = null;
-    private dialogState: DialogState = {
-        open: false,
-        mode: 'flight',
-        jobId: 0,
-        jobNumber: '',
-        toastService: null,
-    };
+const DISMISSED: FlightAgentDialogResult = {
+    shouldAssign: false,
+    shouldAssignToStopJobs: false,
+};
 
-    private initializeDialogRoot(): void {
-        if (this.dialogRoot) return;
-
-        this.dialogContainer = document.createElement('div');
-        this.dialogContainer.id = 'react-flight-agent-confirmation-dialog-root';
-        document.body.appendChild(this.dialogContainer);
-        this.dialogRoot = createRoot(this.dialogContainer);
-    }
-
-    private renderDialog(): void {
-        if (!this.dialogRoot) return;
-
-        const handleClose = () => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.({
-                shouldAssign: false,
-                shouldAssignToStopJobs: false,
-            });
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleConfirm = (result: FlightAgentDialogResult) => {
-            this.dialogState.open = false;
-            this.dialogState.resolve?.(result);
-            this.dialogState.resolve = undefined;
-            this.renderDialog();
-        };
-
-        const handleCalculateCargoTimes = async (
-            jobId: number,
-            carrierFsCode: string,
-            arrivalTime: Dayjs,
-            tz: string
-        ): Promise<FlightCargoProcessing | null> => {
-            try {
-                const formattedArrivalTime = formatDateForApi(arrivalTime, tz);
-                return await nationwideApi.calculateCargoReadyTime(
-                    jobId,
-                    carrierFsCode,
-                    formattedArrivalTime
-                );
-            } catch (error) {
-                console.error('Error calculating cargo times:', error);
-                return null;
-            }
-        };
-
-        const handleShowToast: ShowToastFn = (message, type) => {
-            if (!this.dialogState.toastService) {
-                console.log(`[Toast ${type}]: ${message}`);
-                return;
-            }
-            this.dialogState.toastService.showToast(message, type);
-        };
-
-        const currentTheme = getTheme();
-        const tz = getIanaTimezone(getTenantTimezone());
-
-        this.dialogRoot.render(
-            <ReactQueryProvider>
-                <ThemeProvider theme={currentTheme}>
-                    <CssBaseline />
-                    <FlightAgentConfirmationDialog
-                        open={this.dialogState.open}
-                        mode={this.dialogState.mode}
-                        jobId={this.dialogState.jobId}
-                        jobNumber={this.dialogState.jobNumber}
-                        flight={this.dialogState.flight}
-                        agent={this.dialogState.agent}
-                        existingAwb={this.dialogState.existingAwb}
-                        dgClass={this.dialogState.dgClass}
-                        stopJobCount={this.dialogState.stopJobCount}
-                        timezone={tz}
-                        onClose={handleClose}
-                        onConfirm={handleConfirm}
-                        onCalculateCargoTimes={handleCalculateCargoTimes}
-                        showToast={handleShowToast}
-                    />
-                </ThemeProvider>
-            </ReactQueryProvider>
+async function calculateCargoTimes(
+    jobId: number,
+    carrierFsCode: string,
+    arrivalTime: Dayjs,
+    tz: string
+): Promise<FlightCargoProcessing | null> {
+    try {
+        return await nationwideApi.calculateCargoReadyTime(
+            jobId,
+            carrierFsCode,
+            formatDateForApi(arrivalTime, tz)
         );
-    }
-
-    openFlightDialog(options: {
-        jobId: number;
-        jobNumber: string;
-        flight: FlightViewModel;
-        existingAwb?: string;
-        dgClass?: number;
-        toastService?: ToastService;
-    }): Promise<FlightAgentDialogResult> {
-        this.initializeDialogRoot();
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                mode: 'flight',
-                jobId: options.jobId,
-                jobNumber: options.jobNumber,
-                flight: options.flight,
-                agent: undefined,
-                existingAwb: options.existingAwb,
-                dgClass: options.dgClass,
-                stopJobCount: undefined,
-                toastService: options.toastService ?? null,
-                resolve,
-            };
-            this.renderDialog();
-        });
-    }
-
-    openAgentDialog(options: {
-        jobId: number;
-        jobNumber: string;
-        agent: AgentSuggestion;
-        existingAwb?: string;
-        dgClass?: number;
-        stopJobCount?: number;
-        toastService?: ToastService;
-    }): Promise<FlightAgentDialogResult> {
-        this.initializeDialogRoot();
-
-        return new Promise((resolve) => {
-            this.dialogState = {
-                open: true,
-                mode: 'agent',
-                jobId: options.jobId,
-                jobNumber: options.jobNumber,
-                flight: undefined,
-                agent: options.agent,
-                existingAwb: options.existingAwb,
-                dgClass: options.dgClass,
-                stopJobCount: options.stopJobCount,
-                toastService: options.toastService ?? null,
-                resolve,
-            };
-            this.renderDialog();
-        });
+    } catch (error) {
+        console.error('Error calculating cargo times:', error);
+        return null;
     }
 }
 
-const dialogManager = new FlightAgentConfirmationDialogManager();
+const host = createDialogHost<FlightAgentPayload, FlightAgentDialogResult>({
+    containerId: 'react-flight-agent-confirmation-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <FlightAgentConfirmationDialog
+            open={open}
+            mode={payload.mode}
+            jobId={payload.jobId}
+            jobNumber={payload.jobNumber}
+            flight={payload.flight}
+            agent={payload.agent}
+            existingAwb={payload.existingAwb}
+            dgClass={payload.dgClass}
+            stopJobCount={payload.stopJobCount}
+            timezone={getIanaTimezone(getTenantTimezone())}
+            onClose={() => close(DISMISSED)}
+            onConfirm={close}
+            onCalculateCargoTimes={calculateCargoTimes}
+            showToast={showToast}
+        />
+    ),
+});
 
 export function openFlightConfirmationDialog(options: {
     jobId: number;
@@ -209,7 +88,14 @@ export function openFlightConfirmationDialog(options: {
     dgClass?: number;
     toastService?: ToastService;
 }): Promise<FlightAgentDialogResult> {
-    return dialogManager.openFlightDialog(options);
+    return host.open({
+        mode: 'flight',
+        jobId: options.jobId,
+        jobNumber: options.jobNumber,
+        flight: options.flight,
+        existingAwb: options.existingAwb,
+        dgClass: options.dgClass,
+    }, options.toastService);
 }
 
 export function openAgentConfirmationDialog(options: {
@@ -221,7 +107,15 @@ export function openAgentConfirmationDialog(options: {
     stopJobCount?: number;
     toastService?: ToastService;
 }): Promise<FlightAgentDialogResult> {
-    return dialogManager.openAgentDialog(options);
+    return host.open({
+        mode: 'agent',
+        jobId: options.jobId,
+        jobNumber: options.jobNumber,
+        agent: options.agent,
+        existingAwb: options.existingAwb,
+        dgClass: options.dgClass,
+        stopJobCount: options.stopJobCount,
+    }, options.toastService);
 }
 
 // Expose to window for AngularJS access

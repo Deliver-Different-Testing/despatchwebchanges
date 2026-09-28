@@ -63,7 +63,10 @@ public class AppStartupTests(AppStartupTests.TestApp factory) : IClassFixture<Ap
         private static void RemoveService<T>(IServiceCollection services)
         {
             var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(T));
-            if (descriptor is not null) services.Remove(descriptor);
+            if (descriptor is not null)
+            {
+                services.Remove(descriptor);
+            }
         }
     }
 }

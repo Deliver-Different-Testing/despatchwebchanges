@@ -1,4 +1,4 @@
-/** @jest-environment jest-environment-jsdom */
+/** @jest-environment node */
 /**
  * Bulk Price API Service Tests
  */
@@ -41,6 +41,7 @@ describe('BulkPriceApiService', () => {
                 },
             ],
             totalJobs: 2,
+            skippedJobs: 0,
             totalOldAmount: 300.00,
             totalNewAmount: 400.00,
         };

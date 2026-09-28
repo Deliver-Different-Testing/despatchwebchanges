@@ -103,5 +103,7 @@ public partial class UtlQryContactLookup
 
     public string AccessCode { get; set; }
 
+    public int? RelationshipTypeId { get; set; }
+
     public string Name { get; set; }
 }

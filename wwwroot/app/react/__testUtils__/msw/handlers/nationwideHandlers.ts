@@ -5,7 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
-import type { FlightViewModelDto } from '../../../services/nationwideApi';
+import type {FlightViewModelDto} from '../../../interfaces/nationwideJobs';
 
 // Mock data
 export const mockFlightCargoProcessingDto = {
@@ -29,6 +29,9 @@ export const mockFlightViewModelDtos: FlightViewModelDto[] = [
         aircraft: 'Boeing 787',
         serviceClasses: ['Economy', 'Business'],
         isCodeShare: false,
+        serviceType: 'J',
+        isCharter: false,
+        serviceTypeDescription: 'Scheduled Passenger',
         amount: 350.0,
         codeShareAirline: '',
         airlineId: 1,
@@ -75,6 +78,9 @@ export const mockFlightViewModelDtos: FlightViewModelDto[] = [
         aircraft: 'Airbus A330',
         serviceClasses: ['Economy', 'Business', 'First'],
         isCodeShare: false,
+        serviceType: 'J',
+        isCharter: false,
+        serviceTypeDescription: 'Scheduled Passenger',
         amount: 420.0,
         codeShareAirline: '',
         airlineId: 2,

@@ -1,10 +1,9 @@
-/** @jest-environment jest-environment-jsdom */
 
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { ClearListDebugButton } from './ClearListDebugDialog';
-import { renderWithTheme } from '../../../__testUtils__';
+import { renderWithMantine as renderWithTheme } from '../../../__testUtils__';
+import { setupUser } from '../../../__testUtils__/setupUser';
 import type { IClearListDebugViewModel, IPolygonAreaMapping } from '../../../../interfaces/job.interface';
 import { apiClient } from '../../../services/apiClient';
 
@@ -58,7 +57,7 @@ afterEach(() => {
 describe('ClearListDebugButton', () => {
     describe('Trigger Button', () => {
         it('renders the info icon button with tooltip', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
             const button = screen.getByRole('button');
@@ -76,7 +75,7 @@ describe('ClearListDebugButton', () => {
 
     describe('Loading State', () => {
         it('shows loading spinner after clicking the button', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockReturnValue(new Promise(() => {}));
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -89,7 +88,7 @@ describe('ClearListDebugButton', () => {
 
     describe('Successful Data Load', () => {
         it('renders the dialog header and calls apiClient.get with correct params', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData());
             renderWithTheme(<ClearListDebugButton courierId={99} />);
 
@@ -101,7 +100,7 @@ describe('ClearListDebugButton', () => {
         });
 
         it('renders the explanation alert', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData());
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -111,7 +110,7 @@ describe('ClearListDebugButton', () => {
         });
 
         it('renders all four section cards', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData());
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -126,7 +125,7 @@ describe('ClearListDebugButton', () => {
 
     describe('Courier Section', () => {
         async function openWithData(data?: Partial<IClearListDebugViewModel>) {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData(data));
             renderWithTheme(<ClearListDebugButton courierId={42} />);
             await user.click(screen.getByRole('button'));
@@ -171,7 +170,7 @@ describe('ClearListDebugButton', () => {
 
     describe('GPS Section', () => {
         async function openWithData(data?: Partial<IClearListDebugViewModel>) {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData(data));
             renderWithTheme(<ClearListDebugButton courierId={42} />);
             await user.click(screen.getByRole('button'));
@@ -227,7 +226,7 @@ describe('ClearListDebugButton', () => {
 
     describe('Admin Assignment Section', () => {
         it('displays assigned area and status', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData());
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -241,7 +240,7 @@ describe('ClearListDebugButton', () => {
 
     describe('Polygon Area Mappings Section', () => {
         it('displays mappings with channel match/no match chips', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData());
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -258,7 +257,7 @@ describe('ClearListDebugButton', () => {
         });
 
         it('shows warning alert when no mappings exist', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData({ polygonAreaMappings: [] }));
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -271,7 +270,7 @@ describe('ClearListDebugButton', () => {
 
     describe('Error Handling', () => {
         it('shows error message when API rejects', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockRejectedValue({ status: 404, statusText: 'Not Found', message: 'Not Found' });
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -281,7 +280,7 @@ describe('ClearListDebugButton', () => {
         });
 
         it('shows Error.message when API throws an Error', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockRejectedValue(new Error('Network error'));
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -291,7 +290,7 @@ describe('ClearListDebugButton', () => {
         });
 
         it('does not show content when there is an error', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockRejectedValue(new Error('fail'));
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
@@ -304,18 +303,16 @@ describe('ClearListDebugButton', () => {
 
     describe('Close Functionality', () => {
         it('closes dialog when close button is clicked', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData());
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
             await user.click(screen.getByRole('button'));
             await screen.findByText('Clear List Debug');
 
-            const closeButton = screen.getAllByRole('button').find(
-                btn => btn.querySelector('[data-testid="CloseIcon"]')
-            );
-            expect(closeButton).toBeDefined();
-            await user.click(closeButton!);
+            // The shared <DialogHeader> names its close button, so this no longer
+            // has to hunt for an icon's generated test id.
+            await user.click(screen.getByRole('button', {name: 'Close dialog'}));
 
             await waitFor(() => {
                 expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -325,7 +322,7 @@ describe('ClearListDebugButton', () => {
 
     describe('Event Propagation', () => {
         it('stops click propagation when opening', async () => {
-            const user = userEvent.setup();
+            const user = setupUser();
             const parentClick = jest.fn();
             mockGet.mockResolvedValue(mockDebugData());
 

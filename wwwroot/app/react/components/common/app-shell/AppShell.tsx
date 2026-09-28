@@ -5,25 +5,29 @@
  * that manages the interaction between them.
  */
 
-import React, {useState, useRef, useCallback, useEffect} from 'react';
-import Box from '@mui/material/Box';
+import React, {useRef, useCallback, useEffect} from 'react';
+import {Stack} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
 import {AppToolbar} from '../app-toolbar/AppToolbar';
 import {SideNav} from '../side-nav/SideNav';
 import {AppShellProps} from './app-shell.types';
 
 export const AppShell: React.FC<AppShellProps> = ({
     title,
+    breadcrumbs,
     firstName,
     fullName,
     isUsCustomer,
+    isNetworkPartner,
     currentState,
     logoUrl,
     companyName,
     children,
     onLogoClick,
     onNavigate,
+    beta,
 }) => {
-    const [sidenavOpen, setSidenavOpen] = useState(false);
+    const [sidenavOpen, {open: openSidenav, close: closeSidenav}] = useDisclosure(false);
     const closeTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
@@ -39,12 +43,10 @@ export const AppShell: React.FC<AppShellProps> = ({
             window.clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
         }
-        setSidenavOpen(true);
-    }, []);
+        openSidenav();
+    }, [openSidenav]);
 
-    const handleSidenavClose = useCallback(() => {
-        setSidenavOpen(false);
-    }, []);
+    const handleSidenavClose = closeSidenav;
 
     const handleSidenavMouseEnter = useCallback(() => {
         if (closeTimeoutRef.current) {
@@ -54,19 +56,20 @@ export const AppShell: React.FC<AppShellProps> = ({
     }, []);
 
     const handleSidenavMouseLeave = useCallback(() => {
-        closeTimeoutRef.current = window.setTimeout(() => {
-            setSidenavOpen(false);
-        }, 300);
-    }, []);
+        closeTimeoutRef.current = window.setTimeout(closeSidenav, 300);
+    }, [closeSidenav]);
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column'}}>
+        <Stack gap={0}>
             <AppToolbar
                 title={title}
+                breadcrumbs={breadcrumbs}
                 firstName={firstName}
                 logoUrl={logoUrl}
                 onLogoClick={onLogoClick}
                 onMenuHover={handleMenuHover}
+                onMenuClick={handleMenuHover}
+                beta={beta}
             >
                 {children}
             </AppToolbar>
@@ -76,13 +79,14 @@ export const AppShell: React.FC<AppShellProps> = ({
                 userName={fullName}
                 companyName={companyName}
                 isUsCustomer={isUsCustomer}
+                isNetworkPartner={isNetworkPartner}
                 currentState={currentState}
                 onClose={handleSidenavClose}
                 onNavigate={onNavigate}
                 onMouseEnter={handleSidenavMouseEnter}
                 onMouseLeave={handleSidenavMouseLeave}
             />
-        </Box>
+        </Stack>
     );
 };
 

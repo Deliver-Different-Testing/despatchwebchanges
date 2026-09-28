@@ -1,7 +1,5 @@
-using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using DespatchWeb.Services.JobApi;
 
 namespace DespatchWeb.Extensions;
 
@@ -11,6 +9,8 @@ public static class JobServiceCollectionExtensions
     {
         services.AddScoped<ICreateJobService, CreateJobService>();
         services.AddScoped<ISplitJobService, SplitJobService>();
+        services.AddScoped<ISplitPricingPreviewService, SplitPricingPreviewService>();
+        services.AddScoped<IPricingBreakdownAllocationService, PricingBreakdownAllocationService>();
         services.AddScoped<IAddStopJobService, AddStopJobService>();
         services.AddScoped<IDispatchJobService, DispatchJobService>();
         services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
@@ -22,11 +22,8 @@ public static class JobServiceCollectionExtensions
         services.AddScoped<IJobChangeRequestService, JobChangeRequestService>();
         services.AddScoped<IJobChangeRequestPartnerClient, JobChangeRequestPartnerClient>();
         services.AddScoped<IPartnerJobGate, PartnerJobGate>();
-
-        services.Configure<JobApiOptions>(configuration.GetSection("JobApi"));
-        services.AddScoped<IDespatchApiBaseUrlResolver, DespatchApiBaseUrlResolver>();
-        services.AddHttpClient<IDespatchApiClient, DespatchApiClient>();
-        services.AddScoped<IJobApiClient, JobApiClient>();
+        services.AddScoped<IArrivalWaitRerateService, ArrivalWaitRerateService>();
+        services.AddScoped<ISuburbResolver, SuburbResolver>();
 
         return services;
     }

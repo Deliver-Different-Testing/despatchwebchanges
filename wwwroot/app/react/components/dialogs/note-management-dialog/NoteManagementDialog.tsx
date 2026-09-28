@@ -6,48 +6,69 @@
  */
 
 import React, {useEffect, useMemo, useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import CircularProgress from '@mui/material/CircularProgress';
-import Collapse from '@mui/material/Collapse';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import Divider from '@mui/material/Divider';
-import FormControl from '@mui/material/FormControl';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Paper from '@mui/material/Paper';
-import Select from '@mui/material/Select';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import CloseIcon from '@mui/icons-material/Close';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import InfoIcon from '@mui/icons-material/Info';
-import NoteAltIcon from '@mui/icons-material/NoteAlt';
-import PersonIcon from '@mui/icons-material/Person';
-import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
-import SaveIcon from '@mui/icons-material/Save';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import NoteIcon from '@mui/icons-material/StickyNote2';
-import UpdateIcon from '@mui/icons-material/Update';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import WarningIcon from '@mui/icons-material/Warning';
+import {
+    ActionIcon,
+    Alert,
+    Box,
+    Button,
+    Checkbox,
+    Collapse,
+    Group,
+    Paper,
+    Select,
+    Stack,
+    Text,
+    Textarea,
+    TextInput,
+} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {
+    ChevronDown,
+    ChevronUp,
+    CirclePlus,
+    Clock,
+    Eye,
+    Info,
+    NotebookPen,
+    RefreshCw,
+    Save,
+    StickyNote,
+    TriangleAlert,
+    User,
+} from 'lucide-react';
+import {IconTruck} from '@tabler/icons-react';
+import {DialogShell, DialogHeader, DialogFooter, dialogSize} from '../shared/mantine';
 import {CreateNoteRequest, NoteType, UpdateNoteRequest} from '../../../interfaces';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {NoteManagementDialogProps} from "./types";
 import {useNoteHistory} from '../../../hooks/useNotesApi';
 import {NoteHistory} from './NoteHistory';
+import {Icon} from '../../common/icon/Icon';
+import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
+import {useAiDraft} from '../../../hooks/useAiDraft';
+import {draftNote} from '../../../services/aiAssistantApi';
 
 const MAX_NOTE_LENGTH = 1000;
 const MAX_DESCRIPTION_LENGTH = 500;
+
+const captionProps = {size: 'xs', c: 'dimmed', tt: 'uppercase', style: {letterSpacing: 0.5}} as const;
+
+/** One icon + label + value row in the "Note Information" panel. */
+function MetadataRow({icon, label, children}: {
+    icon: React.ReactNode;
+    label: string;
+    children: React.ReactNode;
+}): React.ReactElement {
+    return (
+        <Group gap="sm" align="flex-start" wrap="nowrap">
+            <Box c="dimmed" mt={2} style={{display: 'flex'}}>{icon}</Box>
+            <Box>
+                <Text {...captionProps}>{label}</Text>
+                <Text size="sm">{children}</Text>
+            </Box>
+        </Group>
+    );
+}
 
 export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     open,
@@ -64,20 +85,40 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     const [noteText, setNoteText] = useState('');
     const [noteTypeId, setNoteTypeId] = useState<number>(0);
     const [isImportant, setIsImportant] = useState(false);
+    const {runDraft, isDrafting} = useAiDraft();
+
+    const handleDraftNote = async () => {
+        const result = await runDraft((signal) =>
+            draftNote(
+                {
+                    jobId: note?.jobId,
+                    jobBookingId: note?.jobBookingId,
+                    bulkJobId: note?.bulkJobId,
+                    noteTypeId,
+                    seed: noteText,
+                },
+                {signal},
+            ),
+        );
+        if (result) {
+            setNoteText(result.draft.slice(0, MAX_NOTE_LENGTH));
+        }
+    };
 
     // Note types state
     const [noteTypes, setNoteTypes] = useState<NoteType[]>([]);
     const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
     // Note type creator state
-    const [showNoteTypeCreator, setShowNoteTypeCreator] = useState(false);
+    const [showNoteTypeCreator, {close: closeNoteTypeCreator, toggle: toggleNoteTypeCreator}] = useDisclosure(false);
     const [newNoteTypeName, setNewNoteTypeName] = useState('');
     const [newNoteTypeDescription, setNewNoteTypeDescription] = useState('');
     const [newNoteTypeIsPublic, setNewNoteTypeIsPublic] = useState(false);
+    const [newNoteTypeIsCourierFacing, setNewNoteTypeIsCourierFacing] = useState(false);
     const [isCreatingNoteType, setIsCreatingNoteType] = useState(false);
 
     // Description toggle
-    const [showDescription, setShowDescription] = useState(false);
+    const [showDescription, {close: closeDescription, toggle: toggleDescription}] = useDisclosure(false);
 
     // Submit state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,7 +142,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     // Load note types when dialog opens
     useEffect(() => {
         if (open) {
-            loadNoteTypes();
+            void loadNoteTypes();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loadNoteTypes is inline; only load on dialog open
     }, [open]);
@@ -118,8 +159,8 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                 setNoteTypeId(0);
                 setIsImportant(false);
             }
-            setShowNoteTypeCreator(false);
-            setShowDescription(false);
+            closeNoteTypeCreator();
+            closeDescription();
             resetNoteTypeForm();
         }
     }, [open, note]);
@@ -148,6 +189,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
         setNewNoteTypeName('');
         setNewNoteTypeDescription('');
         setNewNoteTypeIsPublic(false);
+        setNewNoteTypeIsCourierFacing(false);
     };
 
     const selectedNoteType = useMemo(() => {
@@ -155,6 +197,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     }, [noteTypes, noteTypeId]);
 
     const isSelectedNoteTypePublic = selectedNoteType?.isPublic ?? false;
+    const isSelectedNoteTypeCourierFacing = selectedNoteType?.isCourierFacing ?? false;
 
     const validate = (): boolean => {
         if (!noteText.trim()) {
@@ -218,6 +261,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             const newType: NoteType = {
                 text: newNoteTypeName.trim(),
                 isPublic: newNoteTypeIsPublic,
+                isCourierFacing: newNoteTypeIsCourierFacing,
                 description: newNoteTypeDescription.trim() || undefined,
             };
 
@@ -233,7 +277,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                 setNoteTypeId(createdType.id);
             }
 
-            setShowNoteTypeCreator(false);
+            closeNoteTypeCreator();
             resetNoteTypeForm();
         } catch (error) {
             console.error('Error creating note type:', error);
@@ -245,132 +289,59 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
     const isFormValid = noteText.trim() && noteTypeId > 0;
 
+    const noteTypeOptions = noteTypes.map((type) => ({
+        value: String(type.id),
+        label: type.text ?? '',
+    }));
+
     return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                        minWidth: {xs: 'auto', sm: 500},
-                        maxWidth: 700,
-                    },
-                },
-            }}
-        >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <NoteIcon sx={{fontSize: 24}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>
-                        {title}
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        {isNew ? 'Create a new note for this job' : 'Update an existing note'}
-                    </Typography>
-                </Box>
-                <IconButton
-                    onClick={onClose}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-
-            <DialogContent sx={{p: 3}}>
+        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label={title}>
+            <DialogHeader
+                icon={<Icon lucide={StickyNote}/>}
+                title={title}
+                subtitle={isNew ? 'Create a new note for this job' : 'Update an existing note'}
+                onClose={onClose}
+            />
+            <Box p="lg">
                 {/* Note Type Section */}
-                <Box sx={{mb: 3}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5}}>
-                        <Typography variant="subtitle1" fontWeight={600}>
-                            Note Type
-                        </Typography>
-                        <IconButton
-                            size="small"
-                            onClick={() => setShowNoteTypeCreator(!showNoteTypeCreator)}
-                            sx={(theme) => ({
-                                color: theme.palette.text.secondary,
-                                '&:hover': {bgcolor: alpha(theme.palette.primary.main, 0.08)},
-                            })}
+                <Box mb="lg">
+                    <Group justify="space-between" mb="sm" wrap="nowrap">
+                        <Text fw={600}>Note Type</Text>
+                        <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            aria-label="Add note type"
+                            onClick={toggleNoteTypeCreator}
                         >
-                            <AddCircleIcon />
-                        </IconButton>
-                    </Box>
+                            <Icon lucide={CirclePlus}/>
+                        </ActionIcon>
+                    </Group>
 
-                    <FormControl fullWidth size="small">
-                        <InputLabel>Select Note Type</InputLabel>
-                        <Select
-                            value={noteTypeId}
-                            onChange={(e) => setNoteTypeId(e.target.value as number)}
-                            label="Select Note Type"
-                            disabled={isLoadingTypes}
-                        >
-                            {noteTypes.map((type) => (
-                                <MenuItem key={type.id} value={type.id}>
-                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                        <NoteAltIcon fontSize="small" color="action" />
-                                        {type.text}
-                                    </Box>
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <Select
+                        label="Select Note Type"
+                        data={noteTypeOptions}
+                        value={noteTypeId ? String(noteTypeId) : null}
+                        onChange={(value) => setNoteTypeId(Number(value) || 0)}
+                        disabled={isLoadingTypes}
+                        size="sm"
+                        leftSection={<Icon lucide={NotebookPen} size={16}/>}
+                    />
 
                     {/* Note Type Description */}
                     {selectedNoteType?.description && (
-                        <Box sx={{mt: 1.5}}>
+                        <Box mt="sm">
                             <Button
-                                size="small"
-                                onClick={() => setShowDescription(!showDescription)}
-                                startIcon={showDescription ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                                sx={{
-                                    textTransform: 'none',
-                                    color: 'text.secondary',
-                                }}
+                                variant="subtle"
+                                color="gray"
+                                size="compact-sm"
+                                onClick={toggleDescription}
+                                leftSection={<Icon lucide={showDescription ? ChevronUp : ChevronDown} size={16}/>}
                             >
                                 View Description
                             </Button>
-                            <Collapse in={showDescription}>
-                                <Paper
-                                    variant="outlined"
-                                    sx={{
-                                        mt: 1,
-                                        p: 2,
-                                        bgcolor: 'grey.50',
-                                        borderRadius: 2,
-                                    }}
-                                >
-                                    <Typography variant="body2" color="text.secondary">
-                                        {selectedNoteType.description}
-                                    </Typography>
+                            <Collapse expanded={showDescription} keepMounted={false}>
+                                <Paper withBorder radius="md" mt="xs" p="md" bg="var(--mantine-color-gray-0)">
+                                    <Text size="sm" c="dimmed">{selectedNoteType.description}</Text>
                                 </Paper>
                             </Collapse>
                         </Box>
@@ -378,88 +349,88 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
                     {/* Public Note Warning */}
                     {isSelectedNoteTypePublic && (
-                        <Alert
-                            severity="info"
-                            icon={<VisibilityIcon />}
-                            sx={{mt: 1.5, borderRadius: 2}}
-                        >
+                        <Alert color="reflex" icon={<Icon lucide={Eye}/>} mt="sm" radius="md">
                             This is a public note that will be visible to clients
+                        </Alert>
+                    )}
+
+                    {/* Courier Note Warning */}
+                    {isSelectedNoteTypeCourierFacing && (
+                        <Alert color="reflex" icon={<Icon tabler={IconTruck}/>} mt="sm" radius="md">
+                            This is a courier note that will be visible to couriers
                         </Alert>
                     )}
                 </Box>
 
                 {/* Note Type Creator */}
-                <Collapse in={showNoteTypeCreator}>
-                    <Paper
-                        variant="outlined"
-                        sx={{
-                            mb: 3,
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                        }}
-                    >
-                        <Box sx={{p: 2, bgcolor: 'grey.50', borderBottom: 1, borderColor: 'divider'}}>
-                            <Typography variant="subtitle1" fontWeight={600}>
-                                Create New Note Type
-                            </Typography>
+                <Collapse expanded={showNoteTypeCreator} keepMounted={false}>
+                    <Paper withBorder radius="md" mb="lg" style={{overflow: 'hidden'}}>
+                        <Box
+                            p="md"
+                            style={{
+                                backgroundColor: 'var(--mantine-color-gray-0)',
+                                borderBottom: '1px solid var(--mantine-color-default-border)',
+                            }}
+                        >
+                            <Text fw={600}>Create New Note Type</Text>
                         </Box>
-                        <Box sx={{p: 2}}>
-                            <TextField
+                        <Stack p="md" gap="md">
+                            <TextInput
                                 label="Note Type Name"
                                 value={newNoteTypeName}
-                                onChange={(e) => setNewNoteTypeName(e.target.value)}
-                                fullWidth
-                                size="small"
+                                onChange={(e) => setNewNoteTypeName(e.currentTarget.value)}
+                                size="sm"
                                 required
-                                sx={{mb: 2}}
                             />
-                            <TextField
+                            <Textarea
                                 label="Description (Optional)"
                                 value={newNoteTypeDescription}
-                                onChange={(e) => setNewNoteTypeDescription(e.target.value)}
-                                fullWidth
-                                size="small"
-                                multiline
+                                onChange={(e) => setNewNoteTypeDescription(e.currentTarget.value)}
+                                size="sm"
                                 rows={2}
-                                slotProps={{htmlInput: {maxLength: MAX_DESCRIPTION_LENGTH}}}
-                                helperText={`${newNoteTypeDescription.length}/${MAX_DESCRIPTION_LENGTH}`}
+                                maxLength={MAX_DESCRIPTION_LENGTH}
+                                description={`${newNoteTypeDescription.length}/${MAX_DESCRIPTION_LENGTH}`}
                                 placeholder="Provide a brief explanation of when to use this note type"
-                                sx={{mb: 2}}
                             />
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={newNoteTypeIsPublic}
-                                        onChange={(e) => setNewNoteTypeIsPublic(e.target.checked)}
-                                        color="primary"
-                                    />
-                                }
-                                label="Is Public Note Type"
-                            />
-                            {newNoteTypeIsPublic && (
-                                <Alert
-                                    severity="warning"
-                                    icon={<WarningIcon />}
-                                    sx={{mt: 1, borderRadius: 2}}
-                                >
-                                    Public note types are visible to clients
-                                </Alert>
-                            )}
-                        </Box>
-                        <Box
-                            sx={{
-                                p: 2,
-                                bgcolor: 'grey.50',
-                                borderTop: 1,
-                                borderColor: 'divider',
-                                display: 'flex',
-                                justifyContent: 'flex-end',
-                                gap: 1,
+                            <Box>
+                                <Checkbox
+                                    checked={newNoteTypeIsPublic}
+                                    onChange={(e) => setNewNoteTypeIsPublic(e.currentTarget.checked)}
+                                    label="Is Public Note Type"
+                                />
+                                {newNoteTypeIsPublic && (
+                                    <Alert color="orange" icon={<Icon lucide={TriangleAlert}/>} mt="xs" radius="md">
+                                        Public note types are visible to clients
+                                    </Alert>
+                                )}
+                            </Box>
+                            <Box>
+                                <Checkbox
+                                    checked={newNoteTypeIsCourierFacing}
+                                    onChange={(e) => setNewNoteTypeIsCourierFacing(e.currentTarget.checked)}
+                                    label="Is Courier Facing Note Type"
+                                />
+                                {newNoteTypeIsCourierFacing && (
+                                    <Alert color="orange" icon={<Icon tabler={IconTruck}/>} mt="xs" radius="md">
+                                        Courier note types are visible to couriers
+                                    </Alert>
+                                )}
+                            </Box>
+                        </Stack>
+                        <Group
+                            justify="flex-end"
+                            gap="xs"
+                            p="md"
+                            style={{
+                                backgroundColor: 'var(--mantine-color-gray-0)',
+                                borderTop: '1px solid var(--mantine-color-default-border)',
                             }}
                         >
                             <Button
+                                variant="subtle"
+                                color="gray"
                                 onClick={() => {
-                                    setShowNoteTypeCreator(false);
+                                    closeNoteTypeCreator();
                                     resetNoteTypeForm();
                                 }}
                                 disabled={isCreatingNoteType}
@@ -467,114 +438,72 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 Cancel
                             </Button>
                             <Button
-                                variant="contained"
                                 onClick={handleCreateNoteType}
-                                disabled={!newNoteTypeName.trim() || isCreatingNoteType}
-                                startIcon={isCreatingNoteType ? <CircularProgress size={18} color="inherit" /> : null}
+                                disabled={!newNoteTypeName.trim()}
+                                loading={isCreatingNoteType}
                             >
                                 Create Note Type
                             </Button>
-                        </Box>
+                        </Group>
                     </Paper>
                 </Collapse>
 
                 {/* Note Content Section */}
-                <Box sx={{mb: 3}}>
-                    <Typography variant="subtitle1" fontWeight={600} sx={{mb: 1.5}}>
-                        Note Content
-                    </Typography>
-                    <TextField
+                <Box mb="lg">
+                    <Group justify="space-between" mb="sm" wrap="nowrap">
+                        <Text fw={600}>Note Content</Text>
+                        <AiDraftButton
+                            onClick={handleDraftNote}
+                            isDrafting={isDrafting}
+                            disabled={noteTypeId <= 0}
+                        />
+                    </Group>
+                    <Textarea
                         label="Write your note"
                         value={noteText}
-                        onChange={(e) => setNoteText(e.target.value)}
-                        fullWidth
-                        multiline
+                        onChange={(e) => setNoteText(e.currentTarget.value)}
                         rows={5}
                         required
-                        slotProps={{htmlInput: {maxLength: MAX_NOTE_LENGTH}}}
-                        helperText={`${noteText.length}/${MAX_NOTE_LENGTH} characters`}
+                        maxLength={MAX_NOTE_LENGTH}
+                        description={`${noteText.length}/${MAX_NOTE_LENGTH} characters`}
                         placeholder="Enter your note content here..."
-                        sx={{mb: 2}}
+                        mb="md"
                     />
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={isImportant}
-                                onChange={(e) => setIsImportant(e.target.checked)}
-                                color="warning"
-                                icon={<PriorityHighIcon color="action" />}
-                                checkedIcon={<PriorityHighIcon color="warning" />}
-                            />
-                        }
-                        label={
-                            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                                Mark as Important
-                            </Box>
-                        }
+                    <Checkbox
+                        checked={isImportant}
+                        onChange={(e) => setIsImportant(e.currentTarget.checked)}
+                        color="orange"
+                        label="Mark as Important"
                     />
                 </Box>
 
                 {/* Metadata Section for existing notes */}
                 {!isNew && note && (
-                    <Paper
-                        variant="outlined"
-                        sx={{
-                            p: 2.5,
-                            borderRadius: 2,
-                            bgcolor: 'grey.50',
-                        }}
-                    >
-                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
-                            <InfoIcon fontSize="small" color="action" />
-                            <Typography variant="subtitle2" color="text.secondary">
-                                Note Information
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5}}>
-                            {/* Created By */}
-                            <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
-                                <PersonIcon fontSize="small" color="action" sx={{mt: 0.25}} />
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
-                                        Created by
-                                    </Typography>
-                                    <Typography variant="body2">
-                                        {note.createdByName || 'System'}
-                                    </Typography>
-                                </Box>
+                    <Paper withBorder radius="md" p="md" bg="var(--mantine-color-gray-0)">
+                        <Group gap="xs" mb="md" wrap="nowrap">
+                            <Box c="dimmed" style={{display: 'flex'}}>
+                                <Icon lucide={Info} size={16}/>
                             </Box>
+                            <Text size="sm" c="dimmed" fw={500}>Note Information</Text>
+                        </Group>
 
-                            {/* Created Date */}
+                        <Stack gap="sm">
+                            <MetadataRow icon={<Icon lucide={User} size={16}/>} label="Created by">
+                                {note.createdByName || 'System'}
+                            </MetadataRow>
+
                             {note._createdDateStr && (
-                                <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
-                                    <ScheduleIcon fontSize="small" color="action" sx={{mt: 0.25}} />
-                                    <Box>
-                                        <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
-                                            Created on
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            {note._createdDateStr} {formattedTimeZone}
-                                        </Typography>
-                                    </Box>
-                                </Box>
+                                <MetadataRow icon={<Icon lucide={Clock} size={16}/>} label="Created on">
+                                    {note._createdDateStr} {formattedTimeZone}
+                                </MetadataRow>
                             )}
 
-                            {/* Updated Date */}
                             {note._updatedDateStr && (
-                                <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
-                                    <UpdateIcon fontSize="small" color="action" sx={{mt: 0.25}} />
-                                    <Box>
-                                        <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
-                                            Last updated
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            {note.updatedByName} on {note._updatedDateStr} {formattedTimeZone}
-                                        </Typography>
-                                    </Box>
-                                </Box>
+                                <MetadataRow icon={<Icon lucide={RefreshCw} size={16}/>} label="Last updated">
+                                    {note.updatedByName} on {note._updatedDateStr} {formattedTimeZone}
+                                </MetadataRow>
                             )}
-                        </Box>
+                        </Stack>
 
                         {/* Edit History */}
                         <NoteHistory
@@ -584,24 +513,16 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                         />
                     </Paper>
                 )}
-            </DialogContent>
-
-            <Divider />
-
-            <DialogActions sx={{p: 2, gap: 1}}>
-                <Button onClick={onClose} disabled={isSubmitting}>
-                    Cancel
-                </Button>
-                <Button
-                    variant="contained"
-                    onClick={handleSave}
-                    disabled={!isFormValid || isSubmitting}
-                    startIcon={isSubmitting ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
-                >
-                    Save Note
-                </Button>
-            </DialogActions>
-        </Dialog>
+            </Box>
+            <DialogFooter
+                onCancel={onClose}
+                onConfirm={handleSave}
+                confirmLabel="Save Note"
+                confirmIcon={<Icon lucide={Save}/>}
+                confirmDisabled={!isFormValid}
+                submitting={isSubmitting}
+            />
+        </DialogShell>
     );
 };
 

@@ -1,0 +1,22 @@
+/*
+ * The dropzone is a button you can also drop a file onto, so it needs a hover
+ * and a drag-over state — neither of which is expressible as a Mantine prop.
+ * The drag state is a data attribute rather than an inline style so the resting
+ * colours stay in this file, where the hover rule can still reach them.
+ */
+.dropzone {
+    border: 2px dashed var(--mantine-color-gray-4);
+    border-radius: var(--mantine-radius-lg);
+    background-color: var(--mantine-color-gray-0);
+    transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.dropzone:hover {
+    border-color: var(--mantine-color-gray-5);
+    background-color: var(--mantine-color-gray-1);
+}
+
+.dropzone[data-drag-over] {
+    border-color: var(--mantine-primary-color-filled);
+    background-color: var(--mantine-primary-color-light);
+}

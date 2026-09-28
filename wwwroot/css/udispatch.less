@@ -269,6 +269,14 @@ html, body {
   align-self: center;
 }
 
+/*
+ * The Razor error page's headings. Was Bootstrap's `.text-danger`; Bootstrap has
+ * been removed, so the colour comes from the brand ramp instead.
+ */
+.text-error {
+  color: @error-red;
+}
+
 .md-drag-button {
   color: inherit;
 }
@@ -489,11 +497,11 @@ table.table {
     }
 
     &.related-job {
-      background: #e3f2fd !important;
-      border-left: 4px solid #2196f3 !important;
+      background: #e7f8fe !important;
+      border-left: 4px solid var(--theme-primary, #3bc7f4) !important;
 
       &:hover {
-        background-color: #bbdefb !important;
+        background-color: #d8f4fd !important;
       }
 
       td {

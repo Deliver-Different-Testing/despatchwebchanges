@@ -1,58 +1,54 @@
 /**
  * Job List Context Menu
  *
- * MUI Menu positioned at mouse coordinates, built dynamically based on job state.
- * Self-contained React context menu with all action handlers.
- * Uses @mui/icons-material for all icons (no font Icon component).
+ * A Mantine Menu positioned at mouse coordinates, built dynamically from job
+ * state. Self-contained: it owns all of its action handlers.
+ * Icons come from the shared <Icon> wrapper (Lucide/Tabler).
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
+import {Box, Menu, NumberInput, Paper, Stack, Text, Tooltip} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {
+    ArrowLeftRight,
+    Ban,
+    BadgeDollarSign,
+    Calendar,
+    ChevronFirst,
+    ChevronRight,
+    CircleHelp,
+    Clock,
+    Mail,
+    MailOpen,
+    Plus,
+    Redo2,
+    Send,
+    Split,
+    UserMinus,
+    UserPlus,
+} from 'lucide-react';
+import {IconPinned, IconPlaneOff, IconTruck} from '@tabler/icons-react';
 
-// MUI Icons
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
-import AirplanemodeInactiveIcon from '@mui/icons-material/AirplanemodeInactive';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import PinDropIcon from '@mui/icons-material/PinDrop';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import PriceCheckIcon from '@mui/icons-material/PriceCheck';
-import AddIcon from '@mui/icons-material/Add';
-import EventIcon from '@mui/icons-material/Event';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import SendIcon from '@mui/icons-material/Send';
-import CancelIcon from '@mui/icons-material/Cancel';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import CallSplitIcon from '@mui/icons-material/CallSplit';
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import RedoIcon from '@mui/icons-material/Redo';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-
-import LinearProgress from '@mui/material/LinearProgress';
+import {Icon} from '../common/icon/Icon';
 
 import type {AppPage, DispatchJob} from '../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../services/toastService';
 import * as api from '../../services/jobListApi';
+import {executeDispatchConfirmation} from '../dialogs/dispatch-dialog/executeDispatch';
 import {queryClient, queryKeys} from '../../query/queryClient';
-import {isAiEnabled} from '../../../functions/aiSettings';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
-import {SendToPartnerDialog} from '../dialogs/send-to-partner-dialog';
+import {DispatchDialog, type DispatchConfirmation, type DispatchType} from '../dialogs/dispatch-dialog';
+import {isNetworkPartnerSession, stopJobCountFor} from '../dialogs/dispatch-dialog/dispatchSession';
+import {SendToLiveConfirmationDialog} from '../dialogs/send-to-live-confirmation-dialog';
+import {RestoreConfirmationDialog} from '../dialogs/restore-confirmation-dialog';
+import {useChangeCourierFlow} from '../dialogs/change-courier-dialog';
+import type {RestorePodImpactSummary} from '../dialogs/restore-confirmation-dialog';
+import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
+import {SplitJobProgressDialog} from '../dialogs/split-job-progress-dialog';
+import {DialogFooter, DialogHeader, DialogShell, dialogContentBg, sectionPaperProps} from '../dialogs/shared/mantine';
+import {type HeaderVariant} from '../dialogs/shared/mantine/styles';
 import {openJobInSearch} from '../../services/navigationService';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
@@ -80,10 +76,6 @@ interface JobListContextMenuProps {
 let eventGroupsCache: api.EventGroupItem[] = [];
 let eventGroupsLoading = false;
 
-// Static cache for partner options
-let partnerOptionsCache: api.EventGroupItem[] = [];
-let partnerOptionsLoading = false;
-
 export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     job,
     position,
@@ -93,25 +85,27 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     onRefresh,
     onAddStop,
 }) => {
-    const [lateDialogOpen, setLateDialogOpen] = useState(false);
+    const [lateDialogOpen, {open: openLateDialog, close: closeLateDialog}] = useDisclosure(false);
     const [lateType, setLateType] = useState<'pickup' | 'delivery'>('pickup');
     const [lateMinutes, setLateMinutes] = useState('');
-    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [confirmDialogOpen, {open: openConfirmDialog, close: closeConfirmDialog}] = useDisclosure(false);
+    const [restoreConfirm, setRestoreConfirm] = useState<RestorePodImpactSummary | null>(null);
+    const [restoreChecking, setRestoreChecking] = useState(false);
     const [confirmDialogConfig, setConfirmDialogConfig] = useState<{
         title: string;
         message: string;
         onConfirm: () => Promise<void>;
+        icon?: React.ReactNode;
+        variant?: HeaderVariant;
     } | null>(null);
+    const [sendToLiveTarget, setSendToLiveTarget] = useState<{id: number; jobNo: string} | null>(null);
     const [splitJobLoading, setSplitJobLoading] = useState(false);
     const [eventGroups, setEventGroups] = useState<api.EventGroupItem[]>(eventGroupsCache);
-    const [eventGroupsAnchor, setEventGroupsAnchor] = useState<HTMLElement | null>(null);
-    const [partnerOptions, setPartnerOptions] = useState<api.EventGroupItem[]>(partnerOptionsCache);
-    const [partnerOptionsAnchor, setPartnerOptionsAnchor] = useState<HTMLElement | null>(null);
-    const [sendToPartnerDialog, setSendToPartnerDialog] = useState<{
+    const [eventGroupsAnchor, setEventGroupsAnchor] = useState<{top: number; left: number} | null>(null);
+    const [dispatchDialog, setDispatchDialog] = useState<{
         open: boolean;
-        partnerId: number;
-        partnerName: string;
-    }>({open: false, partnerId: 0, partnerName: ''});
+        initialType: DispatchType;
+    }>({open: false, initialType: 'Courier'});
 
     // Capture job reference for dialogs that outlive the context menu
     const dialogJobRef = useRef<DispatchJob | null>(null);
@@ -136,34 +130,22 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             });
     }, []);
 
-    // Preload partner options
-    useEffect(() => {
-        if (partnerOptionsCache.length > 0 || partnerOptionsLoading) return;
-        partnerOptionsLoading = true;
-        api.getActivePartnerOptions()
-            .then((options) => {
-                partnerOptionsCache = options;
-                setPartnerOptions(options);
-            })
-            .catch(() => {
-                partnerOptionsCache = [];
-            })
-            .finally(() => {
-                partnerOptionsLoading = false;
-            });
-    }, []);
-
     const closeAll = useCallback(() => {
         onClose();
         setEventGroupsAnchor(null);
-        setPartnerOptionsAnchor(null);
     }, [onClose]);
 
     const refresh = useCallback(() => {
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || sendToPartnerDialog.open;
+    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    const {openChangeCourier, changeCourierDialogs, changeCourierActive} = useChangeCourierFlow({
+        showToast,
+        onChanged: refresh,
+    });
+
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || restoreConfirm !== null || splitJobLoading || dispatchDialog.open || sendToLiveTarget !== null || changeCourierActive;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -188,6 +170,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogConfig({
             title: 'Unassign Flight?',
             message: `Are you sure you wish to unassign flight ${activeJob.assignedFlight?.flightNumber} from ${activeJob.jobNo}?`,
+            icon: <Icon tabler={IconPlaneOff}/>,
+            variant: 'warning',
             onConfirm: async () => {
                 try {
                     await api.restoreNationwideJob(activeJob.id);
@@ -198,7 +182,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 }
             },
         });
-        setConfirmDialogOpen(true);
+        openConfirmDialog();
     };
 
     const handleUnassignAgent = () => {
@@ -206,6 +190,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogConfig({
             title: 'Unassign Agent?',
             message: `Are you sure you wish to unassign agent ${activeJob.assignedAgent?.agentName} from ${activeJob.jobNo}?`,
+            icon: <Icon lucide={UserMinus}/>,
+            variant: 'warning',
             onConfirm: async () => {
                 try {
                     await api.restoreNationwideJob(activeJob.id);
@@ -216,7 +202,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 }
             },
         });
-        setConfirmDialogOpen(true);
+        openConfirmDialog();
     };
 
     const handleAddStop = () => {
@@ -228,18 +214,18 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         setLateType('pickup');
         setLateMinutes('');
-        setLateDialogOpen(true);
+        openLateDialog();
     };
 
     const handleLateDelivery = () => {
         closeAll();
         setLateType('delivery');
         setLateMinutes('');
-        setLateDialogOpen(true);
+        openLateDialog();
     };
 
     const handleLateSubmit = async () => {
-        setLateDialogOpen(false);
+        closeLateDialog();
         const mins = parseInt(lateMinutes, 10);
         const targetJob = dialogJobRef.current;
         if (isNaN(mins) || mins <= 0 || !targetJob) return;
@@ -255,28 +241,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             refresh();
         } catch {
             showToast(`Error applying late ${lateType}`, 'error');
-        }
-    };
-
-    const handleAiLateAlert = async () => {
-        closeAll();
-        try {
-            showToast('Analyzing late alert...', 'info');
-            // Lazy load AI assistant
-            if (!(window as any).ReactAiAssistant) return;
-            const response = await (window as any).ReactAiAssistant.analyzeLateAlert(activeJob.id);
-            if (response?.summary) {
-                setConfirmDialogConfig({
-                    title: `AI Late Alert Analysis (Beta) - ${activeJob.jobNo}`,
-                    message: response.summary,
-                    onConfirm: async () => {},
-                });
-                setConfirmDialogOpen(true);
-            } else {
-                showToast('No analysis data returned', 'warning');
-            }
-        } catch (error) {
-            showToast(error instanceof Error ? error.message : 'Failed to analyze late alert', 'error');
         }
     };
 
@@ -320,58 +284,100 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         }
     };
 
-    const handleSendToPartner = (partnerId: number, partnerName: string) => {
-        setPartnerOptionsAnchor(null);
+    const openDispatchDialog = (initialType: DispatchType) => {
         closeAll();
-        setSendToPartnerDialog({open: true, partnerId, partnerName});
+        setDispatchDialog({open: true, initialType});
     };
 
-    const handleSendToPartnerConfirm = async (agreedRate: number) => {
-        const {partnerId, partnerName} = sendToPartnerDialog;
-        const sentJobId = activeJob.id;
-        const sentJobNo = activeJob.jobNo;
-        const result = await api.sendToPartner(sentJobId, partnerId, agreedRate);
-        if (result.success) {
-            setSendToPartnerDialog(prev => ({...prev, open: false}));
-            try {
-                await navigator.clipboard.writeText(sentJobNo);
-            } catch {
-                const textarea = document.createElement('textarea');
-                textarea.value = sentJobNo;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-            }
-            showToast(
-                `Job ${sentJobNo} sent to ${partnerName} — tracking: ${result.trackingNumber} (job number copied)`,
-                'success',
-                {label: 'Open', onClick: () => openJobInSearch(sentJobId)},
+    // Assign an agent from the dispatch dialog: gate on a flight being assigned, then
+    // assign and report whether the agent was emailed the inbound-agent link.
+    const handleDispatchDialogConfirmCourier = async (confirmation: DispatchConfirmation) => {
+        // Single-job dispatch from the context menu. The shared executor routes each
+        // target to its own endpoint and re-allocates when a courier already exists.
+        const targetJob = activeJob;
+        try {
+            const {message, severity} = await executeDispatchConfirmation(
+                {
+                    id: targetJob.id,
+                    jobNo: targetJob.jobNo,
+                    assignedCourierId: targetJob.assignedCourier?.id,
+                },
+                confirmation,
             );
+            showToast(message, severity);
+            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
+            setDispatchDialog((s) => ({...s, open: false}));
             refresh();
-        } else {
-            throw new Error(result.message || 'Failed to send job to partner');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Error dispatching job';
+            throw new Error(message, {cause: err});
         }
     };
 
+    const handleDispatchDialogConfirmPartner = async (
+        partner: {id: number; text: string},
+        agreedRate: number,
+    ) => {
+        const sentJobId = activeJob.id;
+        const sentJobNo = activeJob.jobNo;
+        const result = await api.sendToPartner(sentJobId, partner.id, agreedRate);
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to send job to partner');
+        }
+        setDispatchDialog((s) => ({...s, open: false}));
+        let copied = false;
+        try {
+            await navigator.clipboard.writeText(sentJobNo);
+            copied = true;
+        } catch {
+            // navigator.clipboard rejects when the document loses focus or runs
+            // in an insecure context; to send succeeded, so just skip the copy.
+        }
+        
+        const copySuffix = copied ? ' (job number copied)' : '';
+        showToast(
+            `Job ${sentJobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}${copySuffix}`,
+            'success',
+            {label: 'Open', onClick: () => openJobInSearch(sentJobId)},
+        );
+        refresh();
+    };
+
     const handleSendToLive = () => {
+        const target = {id: activeJob.id, jobNo: activeJob.jobNo};
         closeAll();
-        setConfirmDialogConfig({
-            title: 'Send to Live?',
-            message: `Are you sure you want to send bulk job ${activeJob.jobNo} to the live dispatch screen?`,
-            onConfirm: async () => {
-                try {
-                    await api.releaseBulkJob(activeJob.id);
-                    showToast(`Bulk job ${activeJob.jobNo} sent to live successfully`, 'success');
-                    refresh();
-                } catch {
-                    showToast('Failed to send bulk job to live', 'error');
-                }
-            },
-        });
-        setConfirmDialogOpen(true);
+        setSendToLiveTarget(target);
+    };
+
+    const handleSendToLiveConfirm = async (): Promise<void> => {
+        if (!sendToLiveTarget) return;
+        const {id, jobNo} = sendToLiveTarget;
+        try {
+            const {jobNumbers} = await api.releaseBulkJob(id);
+            const joined = jobNumbers.join(', ');
+
+            let copied = false;
+            try {
+                await navigator.clipboard.writeText(joined);
+                copied = true;
+            } catch {
+                // clipboard.writeText rejects in insecure contexts or when the
+                // document loses focus; release succeeded, so just skip the copy.
+            }
+
+            const copySuffix = copied ? ' (copied to clipboard)' : '';
+            showToast(
+                `Bulk job ${jobNo} sent to live — ${joined}${copySuffix}`,
+                'success',
+            );
+            refresh();
+        } catch (err) {
+            // Surface the server's message so operators see the real reason
+            // ("Bulk job not found", "no releasable rows", SP/trigger mismatch, …)
+            // rather than a generic failure string that hides the cause.
+            const message = (err as {message?: string})?.message ?? 'Failed to send bulk job to live';
+            showToast(message, 'error');
+        }
     };
 
     const handleVoidJob = async () => {
@@ -388,7 +394,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 }
             }
         } catch {
-            // User cancelled
+            // User canceled
         }
     };
 
@@ -400,7 +406,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 if (result) refresh();
             }
         } catch {
-            // User cancelled
+            // User canceled
         }
     };
 
@@ -410,6 +416,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogConfig({
             title: 'Split Job',
             message: 'Are you sure you wish to split this job?',
+            icon: <Icon lucide={Split}/>,
+            variant: 'primary',
             onConfirm: async () => {
                 await executeSplitJobFlow({
                     job: targetJob,
@@ -419,7 +427,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 });
             },
         });
-        setConfirmDialogOpen(true);
+        openConfirmDialog();
     };
 
     const handleSetFirstJob = () => {
@@ -427,6 +435,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogConfig({
             title: 'Set First Job?',
             message: 'Are you sure you wish to set this as the First Job?',
+            icon: <Icon lucide={ChevronFirst}/>,
+            variant: 'primary',
             onConfirm: async () => {
                 if (activeJob.courierData?.courierId) {
                     try {
@@ -439,30 +449,51 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 }
             },
         });
-        setConfirmDialogOpen(true);
+        openConfirmDialog();
     };
 
-    const handleRedispatch = async () => {
-        closeAll();
-        if (!activeJob.assignedCourier?.id) return;
+    const handleRedispatch = () => {
+        // Opens the universal dispatch dialog so the operator can pick any
+        // destination (or keep the existing courier). Replaces the previous
+        // straight re-allocate so dispatchers can switch destination types.
+        openDispatchDialog('Courier');
+    };
+
+    const performRestore = async (removeCapturedImages = false) => {
         try {
-            await api.reAllocateJobs(activeJob.assignedCourier.id, [activeJob.id]);
-            showToast(`Job ${activeJob.jobNo} re-dispatched successfully`, 'success');
+            await api.addRestoreEvent(activeJob.id);
+            await api.restoreJobs([activeJob.id], removeCapturedImages);
+            showToast(`Job ${activeJob.jobNo} restored`, 'success');
+            // Invalidate job detail (and related/photos) so an open detail panel reflects the
+            // reset status, then refresh the list.
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             refresh();
         } catch {
-            showToast('Error re-dispatching job', 'error');
+            showToast('Error restoring job', 'error');
         }
     };
 
     const handleRestore = async () => {
         closeAll();
+        if (restoreChecking) return;
+
+        // Restoring re-opens a completed job and always clears the POD name, so find out what it
+        // would cost before doing it. A failed check falls back to confirming completed jobs only.
+        setRestoreChecking(true);
+        let summary: RestorePodImpactSummary = {jobsWithPodName: 0, imageCount: 0};
         try {
-            await api.restoreJobs([activeJob.id]);
-            refresh();
+            summary = summarisePodImpact(await api.getRestorePodImpact([activeJob.id]));
         } catch {
-            showToast('Error restoring job', 'error');
+            // Never block a restore on the pre-check.
+        } finally {
+            setRestoreChecking(false);
         }
+
+        if (needsRestoreConfirmation(!!activeJob.done, summary)) {
+            setRestoreConfirm(summary);
+            return;
+        }
+        void performRestore();
     };
 
     const handleMarkMissing = async () => {
@@ -495,325 +526,382 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const partnerDisabledTooltip = 'This job is managed by a partner';
     const outboundPartnerDisabledTooltip = 'This job has already been sent to a partner';
 
+    /**
+     * Mantine's Menu positions against a target element, but a context menu is
+     * anchored to a pointer coordinate — so an empty, fixed-position node is
+     * parked where the user right-clicked and used as the target.
+     */
+    const menuTargetStyle: React.CSSProperties = position
+        ? {position: 'fixed', top: position.mouseY, left: position.mouseX, width: 0, height: 0}
+        : {display: 'none'};
+
+    /**
+     * A menu row, optionally explained by a tooltip. `Menu.Sub` opens on hover
+     * rather than click, so the Task Groups submenu keeps its own `Menu` anchored
+     * to the row's rect instead — the click-to-open behaviour dispatchers expect.
+     */
+    const menuItem = (
+        key: string,
+        {icon, label, onClick, disabled, tooltip, rightSection, closeMenuOnClick}: {
+            icon: React.ReactNode;
+            label: React.ReactNode;
+            onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+            disabled?: boolean;
+            tooltip?: string;
+            rightSection?: React.ReactNode;
+            closeMenuOnClick?: boolean;
+        },
+    ) => {
+        const item = (
+            <Menu.Item
+                leftSection={icon}
+                rightSection={rightSection}
+                disabled={disabled}
+                closeMenuOnClick={closeMenuOnClick}
+                onClick={onClick}
+            >
+                {label}
+            </Menu.Item>
+        );
+        if (!tooltip) return <React.Fragment key={key}>{item}</React.Fragment>;
+        return (
+            <Tooltip key={key} label={tooltip} position="right" withArrow>
+                <div>{item}</div>
+            </Tooltip>
+        );
+    };
+
     return (
         <>
-            <Menu
-                open={open}
-                onClose={closeAll}
-                anchorReference="anchorPosition"
-                anchorPosition={position ? {top: position.mouseY, left: position.mouseX} : undefined}
-                slotProps={{
-                    paper: {
-                        sx: {minWidth: 200, maxWidth: 320},
-                    },
-                }}
-            >
-                {/* Mark Read / Unread */}
-                <MenuItem onClick={handleMarkReadUnread}>
-                    <ListItemIcon>
-                        {activeJob.hasBeenRead
-                            ? <MarkEmailUnreadIcon fontSize="small"/>
-                            : <MarkEmailReadIcon fontSize="small"/>
-                        }
-                    </ListItemIcon>
-                    <ListItemText>{activeJob.hasBeenRead ? 'Mark as Unread' : 'Mark as Read'}</ListItemText>
-                </MenuItem>
+            <Menu opened={open} onClose={closeAll} position="bottom-start" withinPortal shadow="md" width={240}>
+                <Menu.Target>
+                    <div style={menuTargetStyle} aria-hidden="true"/>
+                </Menu.Target>
+                <Menu.Dropdown style={{minWidth: 200, maxWidth: 320}}>
+                    {/* Mark Read / Unread */}
+                    {menuItem('read', {
+                        icon: <Icon lucide={activeJob.hasBeenRead ? Mail : MailOpen} size={16}/>,
+                        label: activeJob.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
+                        onClick: handleMarkReadUnread,
+                    })}
 
-                <Divider/>
+                    <Menu.Divider/>
 
-                {/* Unassign Flight (Domestic only) */}
-                {appPage === AppPageDomestic && activeJob.assignedFlight && activeJob.isFlightJob && (
-                    <MenuItem onClick={handleUnassignFlight}>
-                        <ListItemIcon><AirplanemodeInactiveIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Unassign Flight</ListItemText>
-                    </MenuItem>
-                )}
+                    {/* Unassign Flight (Domestic only) */}
+                    {appPage === AppPageDomestic && activeJob.assignedFlight && activeJob.isFlightJob && menuItem('unassign-flight', {
+                        icon: <Icon tabler={IconPlaneOff} size={16}/>,
+                        label: 'Unassign Flight',
+                        onClick: handleUnassignFlight,
+                    })}
 
-                {/* Unassign Agent (Domestic only) */}
-                {appPage === AppPageDomestic && activeJob.assignedAgent && (
-                    <MenuItem onClick={handleUnassignAgent}>
-                        <ListItemIcon><PersonRemoveIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Unassign Agent</ListItemText>
-                    </MenuItem>
-                )}
+                    {/* Unassign Agent (Domestic only) */}
+                    {appPage === AppPageDomestic && activeJob.assignedAgent && menuItem('unassign-agent', {
+                        icon: <Icon lucide={UserMinus} size={16}/>,
+                        label: 'Unassign Agent',
+                        onClick: handleUnassignAgent,
+                    })}
 
-                {/* Add Stop (Agent jobs) */}
-                {activeJob.isAgentJob && (
-                    <MenuItem onClick={handleAddStop}>
-                        <ListItemIcon><PinDropIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>
-                            {activeJob.toAirportId && !activeJob.fromAirportId ? 'Add Pickup Stop' : 'Add Delivery Stop'}
-                        </ListItemText>
-                    </MenuItem>
-                )}
+                    {/* Add Stop (Agent jobs) */}
+                    {activeJob.isAgentJob && menuItem('add-stop', {
+                        icon: <Icon tabler={IconPinned} size={16}/>,
+                        label: activeJob.toAirportId && !activeJob.fromAirportId ? 'Add Pickup Stop' : 'Add Delivery Stop',
+                        onClick: handleAddStop,
+                    })}
 
-                {/* Late Pickup / Delivery (Dispatch or JobSearch) */}
-                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && [
-                    <Tooltip key="late-pickup" title={isPartnerJob ? partnerDisabledTooltip : ''} placement="right">
-                        <span>
-                            <MenuItem disabled={isPartnerJob} onClick={handleLatePickup}>
-                                <ListItemIcon><ScheduleIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>Late Pickup</ListItemText>
-                            </MenuItem>
-                        </span>
-                    </Tooltip>,
-                    <Tooltip key="late-delivery" title={isPartnerJob ? partnerDisabledTooltip : ''} placement="right">
-                        <span>
-                            <MenuItem disabled={isPartnerJob} onClick={handleLateDelivery}>
-                                <ListItemIcon><LocalShippingIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>Late Delivery</ListItemText>
-                            </MenuItem>
-                        </span>
-                    </Tooltip>,
-                ]}
+                    {/* Late Pickup / Delivery (Dispatch or JobSearch) */}
+                    {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && [
+                        menuItem('late-pickup', {
+                            icon: <Icon lucide={Clock} size={16}/>,
+                            label: 'Late Pickup',
+                            onClick: handleLatePickup,
+                            disabled: isPartnerJob,
+                            tooltip: isPartnerJob ? partnerDisabledTooltip : undefined,
+                        }),
+                        menuItem('late-delivery', {
+                            icon: <Icon tabler={IconTruck} size={16}/>,
+                            label: 'Late Delivery',
+                            onClick: handleLateDelivery,
+                            disabled: isPartnerJob,
+                            tooltip: isPartnerJob ? partnerDisabledTooltip : undefined,
+                        }),
+                    ]}
 
-                {/* AI Late Alert Analysis */}
-                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && isAiEnabled() && (
-                    <MenuItem onClick={handleAiLateAlert}>
-                        <ListItemIcon><AutoAwesomeIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>AI Late Alert Analysis (Beta)</ListItemText>
-                    </MenuItem>
-                )}
+                    {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && <Menu.Divider/>}
 
-                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && <Divider/>}
+                    {/* Reprice (Nationwide only) */}
+                    {isNationwideSpeed && notReprice && !activeJob.preBook && menuItem('reprice', {
+                        icon: <Icon lucide={BadgeDollarSign} size={16}/>,
+                        label: 'Reprice Job',
+                        onClick: handleReprice,
+                        disabled: isPartnerJob,
+                        tooltip: isPartnerJob ? partnerDisabledTooltip : undefined,
+                    })}
 
-                {/* Reprice (Nationwide only) */}
-                {isNationwideSpeed && notReprice && !activeJob.preBook && (
-                    <Tooltip title={isPartnerJob ? partnerDisabledTooltip : ''} placement="right">
-                        <span>
-                            <MenuItem disabled={isPartnerJob} onClick={handleReprice}>
-                                <ListItemIcon><PriceCheckIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>Reprice Job</ListItemText>
-                            </MenuItem>
-                        </span>
-                    </Tooltip>
-                )}
+                    {/* Add Task / Task Groups */}
+                    {menuItem('add-task', {
+                        icon: <Icon lucide={Plus} size={16}/>,
+                        label: 'Add Task - Other',
+                        onClick: handleAddTaskOther,
+                    })}
+                    {menuItem('task-groups', {
+                        icon: <Icon lucide={Calendar} size={16}/>,
+                        label: 'Task Groups',
+                        // Opening the submenu must not close the parent — closing it
+                        // runs `closeAll`, which clears the anchor we just set.
+                        closeMenuOnClick: false,
+                        rightSection: <Icon lucide={ChevronRight} size={16} color="var(--mantine-color-dimmed)"/>,
+                        onClick: (event) => {
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            setEventGroupsAnchor({top: rect.top, left: rect.right});
+                        },
+                    })}
 
-                {/* Add Task / Task Groups */}
-                <MenuItem onClick={handleAddTaskOther}>
-                    <ListItemIcon><AddIcon fontSize="small"/></ListItemIcon>
-                    <ListItemText>Add Task - Other</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={(e) => setEventGroupsAnchor(e.currentTarget)}>
-                    <ListItemIcon><EventIcon fontSize="small"/></ListItemIcon>
-                    <ListItemText>Task Groups</ListItemText>
-                    <ChevronRightIcon fontSize="small" sx={{ml: 1, color: 'text.disabled'}}/>
-                </MenuItem>
+                    <Menu.Divider/>
 
-                <Divider/>
+                    {/* Send to Live (bulk jobs not done) */}
+                    {activeJob.isBulkJob && !activeJob.released && menuItem('send-to-live', {
+                        icon: <Icon lucide={Send} size={16}/>,
+                        label: 'Send to Live',
+                        onClick: handleSendToLive,
+                    })}
 
-                {/* Send to Live (bulk jobs not done) */}
-                {activeJob.isBulkJob && !activeJob.done && (
-                    <MenuItem onClick={handleSendToLive}>
-                        <ListItemIcon><SendIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Send to Live</ListItemText>
-                    </MenuItem>
-                )}
+                    {/* Send to DFRNT Partner — opens the universal dispatch dialog with
+                        the DFRNT Partner radio pre-selected. */}
+                    {menuItem('send-to-partner', {
+                        icon: <Icon lucide={Send} size={16}/>,
+                        label: 'Send to Partner',
+                        onClick: () => openDispatchDialog('DfrntPartner'),
+                        disabled: Boolean(activeJob.assignedCourier) || isOutboundPartnerJob,
+                        tooltip: isOutboundPartnerJob
+                            ? outboundPartnerDisabledTooltip
+                            : activeJob.assignedCourier ? 'Restore job before sending to partner' : undefined,
+                    })}
 
-                {/* Send to DFRNT Partner (dispatch/jobsearch only) */}
-                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && (
-                    <Tooltip
-                        title={isOutboundPartnerJob ? outboundPartnerDisabledTooltip : activeJob.assignedCourier ? 'Restore job before sending to partner' : ''}
-                        placement="right"
-                    >
-                        <span>
-                            <MenuItem
-                                disabled={Boolean(activeJob.assignedCourier) || isOutboundPartnerJob}
-                                onClick={(e) => setPartnerOptionsAnchor(e.currentTarget)}
-                            >
-                                <ListItemIcon><SendIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>Send to DFRNT Partner</ListItemText>
-                                <ChevronRightIcon fontSize="small" sx={{ml: 1, color: 'text.disabled'}}/>
-                            </MenuItem>
-                        </span>
-                    </Tooltip>
-                )}
+                    {/* Void Job */}
+                    {menuItem('void', {
+                        icon: <Icon lucide={Ban} size={16}/>,
+                        label: 'Void Job',
+                        onClick: handleVoidJob,
+                        disabled: isOutboundPartnerJob,
+                        tooltip: isOutboundPartnerJob ? outboundPartnerDisabledTooltip : undefined,
+                    })}
 
-                {/* Void Job */}
-                <Tooltip title={isOutboundPartnerJob ? outboundPartnerDisabledTooltip : ''} placement="right">
-                    <span>
-                        <MenuItem disabled={isOutboundPartnerJob} onClick={handleVoidJob}>
-                            <ListItemIcon><CancelIcon fontSize="small"/></ListItemIcon>
-                            <ListItemText>Void Job</ListItemText>
-                        </MenuItem>
-                    </span>
-                </Tooltip>
+                    {/* Swap PODs (completed non-bulk non-prebook) */}
+                    {activeJob.done && !activeJob.isBulkJob && !activeJob.preBook && menuItem('swap-pods', {
+                        icon: <Icon lucide={ArrowLeftRight} size={16}/>,
+                        label: 'Swap PODs',
+                        onClick: handleSwapPods,
+                    })}
 
-                {/* Swap PODs (completed non-bulk non-prebook) */}
-                {activeJob.done && !activeJob.isBulkJob && !activeJob.preBook && (
-                    <MenuItem onClick={handleSwapPods}>
-                        <ListItemIcon><SwapHorizIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Swap PODs</ListItemText>
-                    </MenuItem>
-                )}
+                    {/* Split Job */}
+                    {activeJob.allowSplit && !hasChildren && !isPartnerJob && menuItem('split', {
+                        icon: <Icon lucide={Split} size={16}/>,
+                        label: 'Split Job',
+                        onClick: handleSplitJob,
+                    })}
 
-                {/* Split Job */}
-                {activeJob.allowSplit && !hasChildren && !isPartnerJob && (
-                    <MenuItem onClick={handleSplitJob}>
-                        <ListItemIcon><CallSplitIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Split Job</ListItemText>
-                    </MenuItem>
-                )}
+                    <Menu.Divider/>
 
-                <Divider/>
+                    {/* Set First Job */}
+                    {!isOutboundPartnerJob && menuItem('set-first', {
+                        icon: <Icon lucide={ChevronFirst} size={16}/>,
+                        label: 'Set First Job',
+                        onClick: handleSetFirstJob,
+                    })}
 
-                {/* Set First Job */}
-                {!isOutboundPartnerJob && (
-                    <MenuItem onClick={handleSetFirstJob}>
-                        <ListItemIcon><FirstPageIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Set First Job</ListItemText>
-                    </MenuItem>
-                )}
+                    {/* Assign… — the unbiased way into the shared modal. Re-Dispatch below
+                        only appears once a courier exists, so without this a job that has
+                        never been assigned has no route to the dialog from the row. */}
+                    {!isOutboundPartnerJob && menuItem('assign', {
+                        icon: <Icon lucide={UserPlus} size={16}/>,
+                        label: 'Assign…',
+                        onClick: () => openDispatchDialog('Courier'),
+                    })}
 
-                {/* Re-Dispatch */}
-                {activeJob.assignedCourier && !isOutboundPartnerJob && (
-                    <MenuItem onClick={handleRedispatch}>
-                        <ListItemIcon><RedoIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Re-Dispatch</ListItemText>
-                    </MenuItem>
-                )}
+                    {/* Re-Dispatch */}
+                    {activeJob.assignedCourier && !isOutboundPartnerJob && menuItem('redispatch', {
+                        icon: <Icon lucide={Redo2} size={16}/>,
+                        label: 'Re-Dispatch',
+                        onClick: handleRedispatch,
+                    })}
 
-                {/* Restore */}
-                <MenuItem onClick={handleRestore}>
-                    <ListItemIcon><RedoIcon fontSize="small"/></ListItemIcon>
-                    <ListItemText>Restore</ListItemText>
-                </MenuItem>
+                    {/* Change Paid Courier — archived, completed jobs only. Invoiced/settled
+                        jobs are refused by the eligibility pre-check, which explains why. */}
+                    {activeJob.isArchived && activeJob.done && !activeJob.isBulkJob && menuItem('change-courier', {
+                        icon: <Icon tabler={IconTruck} size={16}/>,
+                        label: 'Change Paid Courier',
+                        onClick: () => void openChangeCourier({id: activeJob.id, jobNo: activeJob.jobNo}),
+                    })}
 
-                {/* Mark Missing */}
-                <MenuItem onClick={handleMarkMissing}>
-                    <ListItemIcon><HelpOutlineIcon fontSize="small"/></ListItemIcon>
-                    <ListItemText>Mark Missing</ListItemText>
-                </MenuItem>
+                    {/* Restore — disabled for archived jobs: restore only operates on live
+                        (tucJob) rows, so restoring an archived job silently does nothing. */}
+                    {menuItem('restore', {
+                        icon: <Icon lucide={Redo2} size={16}/>,
+                        label: 'Restore',
+                        onClick: () => void handleRestore(),
+                        disabled: activeJob.isArchived,
+                        tooltip: activeJob.isArchived ? 'Archived jobs cannot be restored' : undefined,
+                    })}
+
+                    {/* Mark Missing */}
+                    {menuItem('mark-missing', {
+                        icon: <Icon lucide={CircleHelp} size={16}/>,
+                        label: 'Mark Missing',
+                        onClick: handleMarkMissing,
+                    })}
+                </Menu.Dropdown>
             </Menu>
 
             {/* Task Groups Submenu */}
             <Menu
-                open={Boolean(eventGroupsAnchor)}
-                anchorEl={eventGroupsAnchor}
+                opened={Boolean(eventGroupsAnchor)}
                 onClose={() => setEventGroupsAnchor(null)}
-                anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'left'}}
+                position="bottom-start"
+                withinPortal
+                shadow="md"
             >
-                {eventGroups.length === 0 ? (
-                    <MenuItem disabled>
-                        <ListItemText>
-                            <Typography variant="body2" color="text.secondary">No task groups</Typography>
-                        </ListItemText>
-                    </MenuItem>
-                ) : (
-                    eventGroups.map((group) => (
-                        <MenuItem key={group.id} onClick={() => handleEventGroup(group.id)}>
-                            <ListItemText>{group.text}</ListItemText>
-                        </MenuItem>
-                    ))
-                )}
-            </Menu>
-
-            {/* Partner Options Submenu */}
-            <Menu
-                open={Boolean(partnerOptionsAnchor)}
-                anchorEl={partnerOptionsAnchor}
-                onClose={() => setPartnerOptionsAnchor(null)}
-                anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'left'}}
-            >
-                {partnerOptions.length === 0 ? (
-                    <MenuItem disabled>
-                        <ListItemText>
-                            <Typography variant="body2" color="text.secondary">No active partners</Typography>
-                        </ListItemText>
-                    </MenuItem>
-                ) : (
-                    partnerOptions.map((partner) => (
-                        <MenuItem key={partner.id} onClick={() => handleSendToPartner(partner.id, partner.text)}>
-                            <ListItemText>{partner.text}</ListItemText>
-                        </MenuItem>
-                    ))
-                )}
+                <Menu.Target>
+                    <div
+                        style={eventGroupsAnchor
+                            ? {position: 'fixed', top: eventGroupsAnchor.top, left: eventGroupsAnchor.left, width: 0, height: 0}
+                            : {display: 'none'}}
+                        aria-hidden="true"
+                    />
+                </Menu.Target>
+                <Menu.Dropdown>
+                    {eventGroups.length === 0 ? (
+                        <Menu.Item disabled>
+                            <Text size="sm" c="dimmed">No task groups</Text>
+                        </Menu.Item>
+                    ) : (
+                        eventGroups.map((group) => (
+                            <Menu.Item key={group.id} onClick={() => handleEventGroup(group.id)}>
+                                {group.text}
+                            </Menu.Item>
+                        ))
+                    )}
+                </Menu.Dropdown>
             </Menu>
 
             {/* Late Call Dialog */}
-            <Dialog open={lateDialogOpen} onClose={() => setLateDialogOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle>Late {lateType === 'pickup' ? 'Pickup' : 'Delivery'}</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" sx={{mb: 2}}>
-                        Enter the number of minutes the courier is running late for{' '}
-                        {lateType === 'pickup' ? 'pickup' : 'delivery'}:
-                    </Typography>
-                    <TextField
-                        autoFocus
-                        fullWidth
-                        type="number"
-                        label="Minutes"
-                        value={lateMinutes}
-                        onChange={(e) => setLateMinutes(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') return handleLateSubmit();
-                        }}
-                        slotProps={{htmlInput: {min: 1}}}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setLateDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleLateSubmit} variant="contained" disabled={!lateMinutes}>
-                        Save
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Generic Confirmation Dialog */}
-            <Dialog
-                open={confirmDialogOpen}
-                onClose={() => setConfirmDialogOpen(false)}
-                maxWidth="xs"
-                fullWidth
+            <DialogShell
+                opened={lateDialogOpen}
+                onClose={closeLateDialog}
+                label={`Late ${lateType === 'pickup' ? 'Pickup' : 'Delivery'}`}
             >
-                <DialogTitle>{confirmDialogConfig?.title}</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2">{confirmDialogConfig?.message}</Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setConfirmDialogOpen(false)}>Cancel</Button>
-                    <Button
-                        onClick={async () => {
-                            setConfirmDialogOpen(false);
-                            if (confirmDialogConfig?.onConfirm) {
-                                await confirmDialogConfig.onConfirm();
-                            }
-                        }}
-                        variant="contained"
-                    >
-                        OK
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                <DialogHeader
+                    icon={<Icon lucide={Clock}/>}
+                    title={`Late ${lateType === 'pickup' ? 'Pickup' : 'Delivery'}`}
+                    onClose={closeLateDialog}
+                />
+                <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                    <Paper {...sectionPaperProps}>
+                        <Stack gap="sm">
+                            <Text size="sm">
+                                Enter the number of minutes the courier is running late for{' '}
+                                {lateType === 'pickup' ? 'pickup' : 'delivery'}:
+                            </Text>
+                            <NumberInput
+                                data-autofocus
+                                label="Minutes"
+                                min={1}
+                                value={lateMinutes}
+                                onChange={(value) => setLateMinutes(value === '' || value === null ? '' : String(value))}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') void handleLateSubmit();
+                                }}
+                            />
+                        </Stack>
+                    </Paper>
+                </Box>
+                <DialogFooter
+                    onCancel={closeLateDialog}
+                    onConfirm={handleLateSubmit}
+                    confirmLabel="Save"
+                    confirmDisabled={!lateMinutes}
+                />
+            </DialogShell>
 
-            {/* Split Job Loading Dialog */}
-            <Dialog
-                open={splitJobLoading}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogContent sx={{textAlign: 'center', py: 3}}>
-                    <LinearProgress sx={{mb: 2}}/>
-                    <Typography variant="body2">
-                        Splitting job {activeJob.jobNo}...
-                    </Typography>
-                </DialogContent>
-            </Dialog>
-
-            {/* Send to Partner Dialog */}
-            <SendToPartnerDialog
-                open={sendToPartnerDialog.open}
-                partnerId={sendToPartnerDialog.partnerId}
-                partnerName={sendToPartnerDialog.partnerName}
-                jobId={activeJob.id}
-                jobNo={activeJob.jobNo}
-                onClose={() => setSendToPartnerDialog(prev => ({...prev, open: false}))}
-                onConfirm={handleSendToPartnerConfirm}
-                fetchRate={api.getPartnerRateForJob}
+            {/* Restore Completed Job Confirmation */}
+                <RestoreConfirmationDialog
+                    open={restoreConfirm !== null}
+                    count={activeJob.done ? 1 : 0}
+                    podImpact={restoreConfirm ?? undefined}
+                    onClose={() => setRestoreConfirm(null)}
+                    onSwapPod={async () => {
+                        setRestoreConfirm(null);
+                        await handleSwapPods();
+                    }}
+                    onConfirm={async (removeCapturedImages) => {
+                        setRestoreConfirm(null);
+                        await performRestore(removeCapturedImages);
+                    }}
+                />
+                {/* Send to Live Confirmation Dialog */}
+                <SendToLiveConfirmationDialog
+                    open={sendToLiveTarget !== null}
+                    jobNo={sendToLiveTarget?.jobNo ?? ''}
+                    onClose={() => setSendToLiveTarget(null)}
+                    onConfirm={handleSendToLiveConfirm}
+                />
+                {/* Split Job Loading Dialog */}
+                <SplitJobProgressDialog open={splitJobLoading} jobNo={activeJob.jobNo}/>
+                {/* Change Paid Courier (archived jobs) + its blocked popup */}
+                {changeCourierDialogs}
+                {/* Universal Dispatch Dialog */}
+                <DispatchDialog
+                    open={dispatchDialog.open}
+                    mode={{
+                        kind: 'single',
+                        jobId: activeJob.id,
+                        jobNo: activeJob.jobNo,
+                        flags: {
+                            isArchived: Boolean(activeJob.isArchived),
+                            isBulkJob: Boolean(activeJob.isBulkJob),
+                            preBook: Boolean(activeJob.preBook),
+                        },
+                    }}
+                    initialType={dispatchDialog.initialType}
+                    existingDestination={activeJob.assignedCourier}
+                    stopJobCount={stopJobCountFor(activeJob.jobNo, activeJob.relatedJobs)}
+                    existingConNote={activeJob.conNote}
+                    isNetworkPartner={isNetworkPartnerSession()}
+                    onClose={() => setDispatchDialog((s) => ({...s, open: false}))}
+                    onDispatchCourier={handleDispatchDialogConfirmCourier}
+                    onSendToPartner={handleDispatchDialogConfirmPartner}
+                    fetchRate={api.getPartnerRateForJob}
+                getPartnerOptions={api.getActivePartnerOptions}
             />
 
+            {/* Generic Confirmation Dialog */}
+            <DialogShell
+                opened={confirmDialogOpen}
+                onClose={closeConfirmDialog}
+                label={confirmDialogConfig?.title}
+            >
+                <DialogHeader
+                    icon={confirmDialogConfig?.icon ?? <Icon lucide={CircleHelp}/>}
+                    title={confirmDialogConfig?.title}
+                    variant={confirmDialogConfig?.variant ?? 'primary'}
+                    onClose={closeConfirmDialog}
+                />
+                <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                    <Paper {...sectionPaperProps}>
+                        <Text size="sm">{confirmDialogConfig?.message}</Text>
+                    </Paper>
+                </Box>
+                <DialogFooter
+                    onCancel={closeConfirmDialog}
+                    onConfirm={async () => {
+                        closeConfirmDialog();
+                        if (confirmDialogConfig?.onConfirm) {
+                            await confirmDialogConfig.onConfirm();
+                        }
+                    }}
+                    confirmLabel="OK"
+                    confirmColor={confirmDialogConfig?.variant === 'warning' ? 'orange' : undefined}
+                />
+            </DialogShell>
         </>
     );
 };

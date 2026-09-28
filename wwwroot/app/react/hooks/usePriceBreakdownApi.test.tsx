@@ -1,11 +1,9 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * usePriceBreakdownApi Hooks Tests
  */
 
 import React from 'react';
 import {renderHook, waitFor, act} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
     usePriceBreakdowns,
     useAddPriceBreakdown,
@@ -14,6 +12,7 @@ import {
     PriceBreakdown,
 } from './usePriceBreakdownApi';
 import {pricingBreakdownApi} from '../services/pricingBreakdownApi';
+import {createQueryWrapper} from '../__testUtils__';
 
 // Mock the pricingBreakdownApi
 jest.mock('../services/pricingBreakdownApi', () => ({
@@ -27,28 +26,6 @@ jest.mock('../services/pricingBreakdownApi', () => ({
 
 const mockPricingApi = pricingBreakdownApi as jest.Mocked<typeof pricingBreakdownApi>;
 
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-                gcTime: 0,
-            },
-            mutations: {
-                retry: false,
-            },
-        },
-    });
-
-// Wrapper component for providing QueryClient
-const createWrapper = () => {
-    const queryClient = createTestQueryClient();
-    return ({children}: {children: React.ReactNode}) => (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-};
-
 // Sample test data
 const mockBreakdowns: PriceBreakdown[] = [
     {chargeId: 1, name: 'Base Charge', amount: 100.00, jobId: 100},
@@ -60,7 +37,7 @@ describe('usePriceBreakdowns', () => {
     it('should fetch price breakdowns for a regular job', async () => {
         mockPricingApi.getPriceBreakdowns.mockResolvedValueOnce(mockBreakdowns);
 
-        const {result} = renderHook(() => usePriceBreakdowns(100, false, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => usePriceBreakdowns(100, false, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -73,7 +50,7 @@ describe('usePriceBreakdowns', () => {
     it('should fetch price breakdowns for a prebook job', async () => {
         mockPricingApi.getPriceBreakdowns.mockResolvedValueOnce(mockBreakdowns);
 
-        const {result} = renderHook(() => usePriceBreakdowns(200, true, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => usePriceBreakdowns(200, true, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -85,7 +62,7 @@ describe('usePriceBreakdowns', () => {
     it('should fetch price breakdowns for an archived job', async () => {
         mockPricingApi.getPriceBreakdowns.mockResolvedValueOnce(mockBreakdowns);
 
-        const {result} = renderHook(() => usePriceBreakdowns(300, false, true), {wrapper: createWrapper()});
+        const {result} = renderHook(() => usePriceBreakdowns(300, false, true), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -95,7 +72,7 @@ describe('usePriceBreakdowns', () => {
     });
 
     it('should not fetch when jobId is undefined', async () => {
-        renderHook(() => usePriceBreakdowns(undefined, false, false), {wrapper: createWrapper()});
+        renderHook(() => usePriceBreakdowns(undefined, false, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockPricingApi.getPriceBreakdowns).not.toHaveBeenCalled();
@@ -103,7 +80,7 @@ describe('usePriceBreakdowns', () => {
     });
 
     it('should not fetch when enabled is false', async () => {
-        renderHook(() => usePriceBreakdowns(100, false, false, {enabled: false}), {wrapper: createWrapper()});
+        renderHook(() => usePriceBreakdowns(100, false, false, {enabled: false}), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(mockPricingApi.getPriceBreakdowns).not.toHaveBeenCalled();
@@ -113,7 +90,7 @@ describe('usePriceBreakdowns', () => {
     it('should handle empty results', async () => {
         mockPricingApi.getPriceBreakdowns.mockResolvedValueOnce([]);
 
-        const {result} = renderHook(() => usePriceBreakdowns(100, false, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => usePriceBreakdowns(100, false, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true);
@@ -126,7 +103,7 @@ describe('usePriceBreakdowns', () => {
         const error = new Error('Failed to fetch breakdowns');
         mockPricingApi.getPriceBreakdowns.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => usePriceBreakdowns(100, false, false), {wrapper: createWrapper()});
+        const {result} = renderHook(() => usePriceBreakdowns(100, false, false), {wrapper: createQueryWrapper()});
 
         await waitFor(() => {
             expect(result.current.isError).toBe(true);
@@ -140,7 +117,7 @@ describe('useAddPriceBreakdown', () => {
     it('should add a price breakdown successfully', async () => {
         mockPricingApi.addPriceBreakdown.mockResolvedValueOnce(4);
 
-        const {result} = renderHook(() => useAddPriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useAddPriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -167,7 +144,7 @@ describe('useAddPriceBreakdown', () => {
     it('should add a price breakdown with cost amount', async () => {
         mockPricingApi.addPriceBreakdown.mockResolvedValueOnce(5);
 
-        const {result} = renderHook(() => useAddPriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useAddPriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -189,7 +166,7 @@ describe('useAddPriceBreakdown', () => {
         const error = new Error('Failed to add breakdown');
         mockPricingApi.addPriceBreakdown.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useAddPriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useAddPriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -210,7 +187,7 @@ describe('useUpdatePriceBreakdown', () => {
     it('should update a price breakdown successfully', async () => {
         mockPricingApi.updatePriceBreakdown.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useUpdatePriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpdatePriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -232,7 +209,7 @@ describe('useUpdatePriceBreakdown', () => {
     it('should update a price breakdown with cost amount', async () => {
         mockPricingApi.updatePriceBreakdown.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useUpdatePriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpdatePriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -255,7 +232,7 @@ describe('useUpdatePriceBreakdown', () => {
         const error = new Error('Failed to update breakdown');
         mockPricingApi.updatePriceBreakdown.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useUpdatePriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useUpdatePriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -277,7 +254,7 @@ describe('useDeletePriceBreakdown', () => {
     it('should delete a price breakdown successfully', async () => {
         mockPricingApi.deletePriceBreakdown.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useDeletePriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useDeletePriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -299,7 +276,7 @@ describe('useDeletePriceBreakdown', () => {
     it('should delete an archived breakdown', async () => {
         mockPricingApi.deletePriceBreakdown.mockResolvedValueOnce(undefined);
 
-        const {result} = renderHook(() => useDeletePriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useDeletePriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({
@@ -324,7 +301,7 @@ describe('useDeletePriceBreakdown', () => {
         const error = new Error('Failed to delete breakdown');
         mockPricingApi.deletePriceBreakdown.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useDeletePriceBreakdown(), {wrapper: createWrapper()});
+        const {result} = renderHook(() => useDeletePriceBreakdown(), {wrapper: createQueryWrapper()});
 
         await act(async () => {
             result.current.mutate({

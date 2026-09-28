@@ -13,8 +13,14 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for managing job photos, signatures, and file attachments stored in Amazon S3.
 /// </summary>
-public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
+public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJobPhotoService
 {
+    /// <summary>S3 key prefix under which archived (soft-deleted) captured media is retained.</summary>
+    private const string ArchivePrefix = "RestoredArchive/";
+
+    private static readonly HashSet<string> AllowedTypes =
+        ["image/jpeg", "image/png", "image/gif", "image/heic", "image/heif", "application/pdf"];
+
     /// <summary>
     /// Retrieves delivery photos and signatures for a job from S3 storage.
     /// </summary>
@@ -28,10 +34,13 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         var key = $"{jobId}-";
 
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Delivery);
-    
+
         // Add defensive check
-        if (s3Objects != null && s3Objects.Count != 0) return await GetPhotoInfoFromS3ObjectsAsync(s3Objects, bucketName);
-        
+        if (s3Objects != null && s3Objects.Count != 0)
+        {
+            return await GetPhotoInfoFromS3ObjectsAsync(s3Objects, bucketName);
+        }
+
         // No data
         Log.Debug("No delivery photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
         return [];
@@ -50,10 +59,13 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         var key = $"{jobId}-";
 
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Pickup);
-    
+
         // Add defensive check
-        if (s3Objects != null && s3Objects.Count != 0) return await GetPhotoInfoFromS3ObjectsAsync(s3Objects, bucketName);
-        
+        if (s3Objects != null && s3Objects.Count != 0)
+        {
+            return await GetPhotoInfoFromS3ObjectsAsync(s3Objects, bucketName);
+        }
+
         // No data
         Log.Debug("No pickup photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
         return [];
@@ -76,7 +88,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         string podDescription = null)
     {
         if (file == null || file.Length == 0)
+        {
             return new AwsUploadResult { Success = false, ErrorMessage = "No file was uploaded" };
+        }
 
         try
         {
@@ -84,7 +98,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             var folder = GetUploadFolder(photoType, isPod);
 
             // Create the file path in format: [folder]/[year]/[month]/[jobId]-[timestamp]-[filename]
-            var now = DateTime.UtcNow;
+            var now = clock.TenantNow;
             var monthFolder = $"{now.Year}/{now:MM}/";
 
             // Extract the file extension
@@ -114,7 +128,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
             // Add metadata properly using the metadata dictionary
             if (isPod && !string.IsNullOrEmpty(podDescription))
+            {
                 putRequest.Metadata.Add("pod-description", podDescription);
+            }
 
             Log.Debug("Uploading {Type} file for job {JobId} to S3 path: {Key}",
                 isPod ? $"{photoType} POD photo" : $"{photoType} signature", jobId, key);
@@ -153,16 +169,19 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     }
 
     /// <summary>
-    /// Deletes a photo or signature file from S3.
+    /// Soft-deletes a single captured photo/signature by copying the S3 object under the
+    /// <see cref="ArchivePrefix"/> prefix and then deleting the original. The copy runs first, so a
+    /// failure never loses data — the bytes remain recoverable and are no longer returned by the
+    /// photo getters. Reused by both the whole-job archiver and the single-image delete endpoint.
     /// </summary>
-    /// <param name="jobId">The job ID the file belongs to.</param>
-    /// <param name="key">The S3 key of the file to delete.</param>
-    /// <returns>True if deletion was successful, false otherwise.</returns>
-    public async Task<bool> DeleteJobPhotoOrSignatureAsync(int jobId, string key)
+    /// <param name="jobId">The job ID the file belongs to (for logging).</param>
+    /// <param name="key">The S3 key of the file to archive.</param>
+    /// <returns>True if the object was archived, false otherwise.</returns>
+    public async Task<bool> ArchiveJobPhotoAsync(int jobId, string key)
     {
         if (string.IsNullOrEmpty(key))
         {
-            Log.Warning("Attempted to delete file for job {JobId} with empty key", jobId);
+            Log.Warning("Attempted to archive file for job {JobId} with empty key", jobId);
             return false;
         }
 
@@ -170,17 +189,21 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
 
-            var deleteRequest = new DeleteObjectRequest
+            await s3Client.CopyObjectAsync(new CopyObjectRequest
+            {
+                SourceBucket = bucketName,
+                SourceKey = key,
+                DestinationBucket = bucketName,
+                DestinationKey = $"{ArchivePrefix}{key}"
+            });
+
+            await s3Client.DeleteObjectAsync(new DeleteObjectRequest
             {
                 BucketName = bucketName,
                 Key = key
-            };
+            });
 
-            Log.Debug("Deleting file with key {Key} for job {JobId}", key, jobId);
-
-            await s3Client.DeleteObjectAsync(deleteRequest);
-
-            Log.Information("Successfully deleted file with key {Key} for job {JobId}", key, jobId);
+            Log.Information("Archived (soft-deleted) file with key {Key} for job {JobId}", key, jobId);
 
             return true;
         }
@@ -188,9 +211,74 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
-                    nameof(DeleteJobPhotoOrSignatureAsync)));
+                    nameof(ArchiveJobPhotoAsync)));
             return false;
         }
+    }
+
+    /// <summary>
+    /// Soft-deletes a job's captured photos and signatures by copying each S3 object under the
+    /// <see cref="ArchivePrefix"/> prefix and then deleting the original. Reuses the same
+    /// month-window prefix search the photo getters use, so exactly the objects shown against the
+    /// job are archived. The copy runs first; the original is only deleted once the copy succeeds,
+    /// so a failure never loses data.
+    /// </summary>
+    public async Task<AwsBatchOperationResult> ArchiveJobCapturedMediaAsync(int jobId, int year, int month)
+    {
+        var keys = await ListCapturedMediaKeysAsync(jobId, year, month);
+
+        var successful = 0;
+        var errors = new List<string>();
+
+        foreach (var key in keys)
+        {
+            if (await ArchiveJobPhotoAsync(jobId, key))
+            {
+                successful++;
+            }
+            else
+            {
+                errors.Add(key);
+            }
+        }
+
+        Log.Information("Archived {Successful}/{Total} captured media object(s) for job {JobId}",
+            successful, keys.Count, jobId);
+
+        return new AwsBatchOperationResult
+        {
+            TotalFiles = keys.Count,
+            SuccessfulFiles = successful,
+            FailedFiles = keys.Count - successful,
+            ErrorMessages = errors
+        };
+    }
+
+    /// <summary>
+    /// Counts the captured photos and signatures a restore would archive, without touching them.
+    /// Shares its discovery with <see cref="ArchiveJobCapturedMediaAsync"/> so the number shown to
+    /// the operator can never disagree with what archiving actually removes.
+    /// </summary>
+    public async Task<int> CountJobCapturedMediaAsync(int jobId, int year, int month) =>
+        (await ListCapturedMediaKeysAsync(jobId, year, month)).Count;
+
+    /// <summary>
+    /// The distinct S3 keys of a job's captured delivery and pickup media for the given anchor
+    /// month. User-uploaded job attachments live under a different prefix and are never included.
+    /// </summary>
+    private async Task<List<string>> ListCapturedMediaKeysAsync(int jobId, int year, int month)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var pattern = $"{jobId}-";
+
+        var objects = new List<S3Object>();
+        objects.AddRange(await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Delivery));
+        objects.AddRange(await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Pickup));
+
+        return objects
+            .Select(o => o.Key)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 
     /// <summary>
@@ -205,11 +293,10 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         try
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var key = $"JobAttachments/{jobId}-";
 
-            Log.Debug("Getting attached files with pattern {Key}", key);
+            Log.Debug("Getting attached files for job {JobId}", jobId);
 
-            var s3List = await SearchAttachmentFilesByPatternAsync(bucketName, key);
+            var s3List = await ListJobAttachmentObjectsAsync(bucketName, jobId);
 
             foreach (var s3Object in s3List)
             {
@@ -254,8 +341,6 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return s3Files;
     }
 
-    private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/gif", "image/heic", "image/heif", "application/pdf"];
-
     /// <summary>
     /// Uploads a file attachment for a job to S3. Only allows images and PDFs up to 10MB.
     /// </summary>
@@ -278,14 +363,18 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
         // Validate file size (10MB max)
         if (file.Length > 10 * 1024 * 1024)
+        {
             return new AwsUploadResult { Success = false, ErrorMessage = "File size exceeds the limit of 10MB." };
+        }
 
         try
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var currentDate = DateTime.UtcNow; // You might want to inject a time service for this
+            var currentDate = clock.TenantNow;
+            var monthFolder = $"{currentDate.Year}/{currentDate:MM}/";
             var timestamp = currentDate.ToString("yyyyMMddHHmmss");
-            var key = $"JobAttachments/{jobId}-{timestamp}";
+            var fileExtension = Path.GetExtension(file.FileName);
+            var key = $"JobAttachments/{monthFolder}{jobId}-{timestamp}{fileExtension}";
 
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);
@@ -337,7 +426,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     public async Task<AwsFileDownloadResult> DownloadFileAsync(string key)
     {
         if (string.IsNullOrEmpty(key))
+        {
             return new AwsFileDownloadResult { Success = false, ErrorMessage = "File key is required" };
+        }
 
         try
         {
@@ -347,7 +438,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             using var response = await s3Client.GetObjectAsync(request);
 
             if (response.HttpStatusCode != HttpStatusCode.OK)
+            {
                 return new AwsFileDownloadResult { Success = false, ErrorMessage = $"File {key} not found." };
+            }
 
             var originalFileName = response.Metadata["FileName"];
             var contentType = response.Headers.ContentType;
@@ -437,10 +530,13 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             do
             {
                 response = await s3Client.ListObjectsV2Async(request);
-                
+
                 var objects = response?.S3Objects;
-                if (objects is { Count: > 0 }) allResults.AddRange(objects);
-            
+                if (objects is { Count: > 0 })
+                {
+                    allResults.AddRange(objects);
+                }
+
                 request.ContinuationToken = response?.NextContinuationToken;
             } while (response?.IsTruncated ?? false);
         }
@@ -457,7 +553,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
     /// <summary>
     /// Searches for S3 objects matching a pattern within specific year/month folders based on photo type.
-    /// Searches both the specified month and the following month to handle edge cases.
+    /// Photos are S3-keyed by their upload instant, whereas callers pass the job's completion month, so
+    /// the search spans the specified month plus the adjacent months (previous and following) to cover
+    /// jobs whose upload and completion fall on opposite sides of a month boundary.
     /// </summary>
     /// <param name="bucketName">The S3 bucket to search in.</param>
     /// <param name="pattern">The key prefix pattern to match.</param>
@@ -474,34 +572,52 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     )
     {
         var allResults = new List<S3Object>();
-        // Calculate next month and year (handling December rollover)
+        // Calculate the adjacent months/years (handling year rollover in both directions)
         var nextMonth = month == 12 ? 1 : month + 1;
         var nextYear = month == 12 ? year + 1 : year;
+        var prevMonth = month == 1 ? 12 : month - 1;
+        var prevYear = month == 1 ? year - 1 : year;
 
         try
         {
-            var monthPrefixes = new[] { $"{year}/{month:D2}/", $"{nextYear}/{nextMonth:D2}/" };
+            var monthPrefixes = new[]
+            {
+                $"{year}/{month:D2}/",
+                $"{prevYear}/{prevMonth:D2}/",
+                $"{nextYear}/{nextMonth:D2}/"
+            };
             var folders = GetFoldersByPhotoType(photoType);
 
             foreach (var folder in folders)
             {
+                // Each folder gets its own adjacent-month sweep. Sharing one accumulator across the
+                // folders let a signature found in the completion month stop the photo folder before
+                // its adjacent months were tried, so a photo uploaded either side of a month
+                // boundary vanished from the POD.
                 foreach (var monthPrefix in monthPrefixes)
                 {
+                    var prefix = $"{folder}/{monthPrefix}{pattern}";
                     var request = new ListObjectsV2Request
                     {
                         BucketName = bucketName,
-                        Prefix = $"{folder}/{monthPrefix}{pattern}",
+                        Prefix = prefix,
                         MaxKeys = 1000
                     };
 
                     var response = await s3Client.ListObjectsV2Async(request);
-                
                     var objects = response?.S3Objects;
-                    if (objects is { Count: > 0 }) allResults.AddRange(objects);
 
-                    if (allResults.Count > 0) break;
+                    if (objects is { Count: > 0 })
+                    {
+                        allResults.AddRange(objects);
+                        break;
+                    }
                 }
             }
+
+            Log.Debug(
+                "[PhotoSearch] type={PhotoType} pattern={Pattern}: {Total} object(s): {Keys}",
+                photoType, pattern, allResults.Count, allResults.Select(o => o.Key));
         }
         catch (AmazonS3Exception e)
         {
@@ -522,6 +638,36 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     }
 
     /// <summary>
+    /// Lists S3 objects for a job's attachments across both the legacy flat layout
+    /// (<c>JobAttachments/{jobId}-...</c>) and the dated layout
+    /// (<c>JobAttachments/{yyyy}/{MM}/{jobId}-...</c>). The dated layout is scanned
+    /// across the last 24 calendar months so attachments uploaded any time during
+    /// a job's active period are still discoverable.
+    /// </summary>
+    private async Task<IReadOnlyList<S3Object>> ListJobAttachmentObjectsAsync(string bucketName, int jobId)
+    {
+        var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+        var combined = new List<S3Object>();
+
+        await AppendAsync($"JobAttachments/{jobId}-");
+
+        var month = clock.TenantNow;
+        for (var i = 0; i < 24; i++)
+        {
+            await AppendAsync($"JobAttachments/{month.Year}/{month:MM}/{jobId}-");
+            month = month.AddMonths(-1);
+        }
+
+        return combined;
+
+        async Task AppendAsync(string prefix)
+        {
+            var hits = await SearchAttachmentFilesByPatternAsync(bucketName, prefix);
+            combined.AddRange(hits.Where(s3Object => seenKeys.Add(s3Object.Key)));
+        }
+    }
+
+    /// <summary>
     /// Searches for attachment files matching a pattern prefix.
     /// </summary>
     private async Task<IReadOnlyList<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
@@ -538,10 +684,13 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             };
 
             var response = await s3Client.ListObjectsV2Async(request);
-        
+
             // Fix: Add defensive null checking
             var objects = response?.S3Objects;
-            if (objects is { Count: > 0 }) allResults.AddRange(objects);
+            if (objects is { Count: > 0 })
+            {
+                allResults.AddRange(objects);
+            }
         }
         catch (Exception e)
         {
@@ -553,12 +702,13 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
         return allResults;
     }
-    
-    
+
+
     /// <summary>
     /// Retrieves detailed photo information from S3 objects including base64 encoded image data.
     /// </summary>
-    private async Task<IReadOnlyList<S3PhotoInfo>> GetPhotoInfoFromS3ObjectsAsync(IReadOnlyList<S3Object> s3Objects, string bucketName)
+    private async Task<IReadOnlyList<S3PhotoInfo>> GetPhotoInfoFromS3ObjectsAsync(IReadOnlyList<S3Object> s3Objects,
+        string bucketName)
     {
         var photoInfos = new List<S3PhotoInfo>();
 
@@ -573,10 +723,10 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                 };
 
                 using var response = await s3Client.GetObjectAsync(getObjectRequest);
-            
+
                 var fileName = response.Metadata["FileName"] ?? Path.GetFileName(s3Object.Key);
                 var contentType = response.Headers.ContentType ?? DetermineContentType(Path.GetExtension(fileName));
-            
+
                 // Only load data for images, not for PDFs or other files
                 string data = null;
                 var displayContentType = contentType;
@@ -626,18 +776,25 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         photoType switch
         {
             JobPhotoType.Delivery => ["DeliverySignatures", "DeliveryPhotos"],
-            JobPhotoType.Pickup => ["PickupScannedDocuments", "PickupPhotos"],
+            JobPhotoType.Pickup => ["PickupScannedDocuments", "PickupPhotos", "PickupSignatures"],
             _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
         };
 
     /// <summary>
     /// Gets the appropriate upload folder based on photo type and whether it's a POD photo or signature.
+    /// Mapped explicitly rather than indexed out of <see cref="GetFoldersByPhotoType"/>: that list is the
+    /// read-side sweep and its pickup arm leads with PickupScannedDocuments, so positional lookup filed
+    /// pickup signatures in with the driver's scanned documents.
     /// </summary>
-    private static string GetUploadFolder(JobPhotoType photoType, bool isPod)
-    {
-        var folders = GetFoldersByPhotoType(photoType);
-        return isPod ? folders[1] : folders[0];
-    }
+    private static string GetUploadFolder(JobPhotoType photoType, bool isPod) =>
+        (photoType, isPod) switch
+        {
+            (JobPhotoType.Delivery, true) => "DeliveryPhotos",
+            (JobPhotoType.Delivery, false) => "DeliverySignatures",
+            (JobPhotoType.Pickup, true) => "PickupPhotos",
+            (JobPhotoType.Pickup, false) => "PickupSignatures",
+            _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
+        };
 
     /// <summary>
     /// Determines the MIME content type based on file extension.

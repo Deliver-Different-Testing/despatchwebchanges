@@ -1,0 +1,123 @@
+/*
+ * TaskItem row chrome.
+ *
+ * This stylesheet exists for what props cannot express: `:hover`/`:focus-within` that
+ * repaint a *descendant*, the two control tones as `[data-*]` state selectors, the
+ * container query that re-scales the row for the narrow dispatch Supports box, and
+ * the reduced-motion opt-out. Everything static or per-task stays on the component.
+ *
+ * The type scale is published as custom properties rather than set with Mantine's
+ * `fz` prop, because `fz` lands as an inline style and an inline style cannot be
+ * overridden by a container query. The component reads them as
+ * `fz="var(--task-fz-chip, …)"`, with the fallback covering Jest (CSS modules are
+ * mocked to `{}` there, so none of these rules apply).
+ */
+
+.row {
+    display: flex;
+    container-type: inline-size;
+    border: 1px solid var(--mantine-color-default-border);
+    border-radius: var(--mantine-radius-md);
+    transition:
+        background-color 200ms cubic-bezier(0.2, 0, 0, 1),
+        border-color 200ms cubic-bezier(0.2, 0, 0, 1);
+
+    --task-fz-title: var(--mantine-font-size-sm);
+    --task-fz-body: var(--mantine-font-size-sm);
+    --task-fz-chip: var(--mantine-font-size-xs);
+}
+
+.title {
+    transition: color 200ms ease;
+}
+
+/*
+ * Flat on the surface: no per-row shadow or lift — hover is a neutral state layer.
+ * Neutral, not a brand tint: both tenant primaries are light hues that would wash
+ * the whole row. Only clickable rows get it.
+ */
+.row[data-clickable]:hover {
+    background-color: var(--mantine-color-gray-0);
+    border-color: var(--mantine-color-gray-4);
+}
+
+.row[data-clickable]:hover .title {
+    color: var(--mantine-primary-color-filled);
+}
+
+/* Only the headline, the due button and the assignee take focus, so the row itself
+   has to say which one a keyboard operator is inside. */
+.row:focus-within {
+    border-color: var(--mantine-primary-color-filled);
+}
+
+/*
+ * The two editable facts are the only controls in the row, so they are the only
+ * things that repaint on approach. Resting colours live here beside their hover
+ * rules — an inline resting colour would make its own hover rule unreachable.
+ */
+.due,
+.assignee {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--mantine-radius-sm);
+    transition: background-color 150ms ease, filter 150ms ease;
+}
+
+.due[data-due-state='open'],
+.due[data-due-state='unset'],
+.assignee {
+    background-color: var(--mantine-color-gray-3);
+    color: var(--mantine-color-gray-8);
+}
+
+/* Every chip is filled; this is the only one filled at full saturation. Late is the
+   row's one loud note, and it sits in the same column on every row. */
+.due[data-due-state='overdue'] {
+    background-color: var(--mantine-color-red-filled);
+    color: var(--mantine-color-white);
+}
+
+.due[data-due-state='done'] {
+    background-color: var(--mantine-color-green-2);
+    color: var(--mantine-color-green-9);
+}
+
+.due:hover,
+.due:focus-visible,
+.assignee:hover,
+.assignee:focus-visible {
+    filter: brightness(0.94);
+}
+
+/*
+ * The dispatch Supports box is roughly half the width of the task dashboard's list
+ * column. Nothing is dropped there — operators need the description and the courier
+ * as much as anywhere else — so the row re-scales and grows taller instead: a step
+ * smaller on every size, and the assignee's key word gives way to its icon.
+ */
+@container (max-width: 380px) {
+    .row {
+        --task-fz-title: 13px;
+        --task-fz-body: 12px;
+        --task-fz-chip: 11px;
+    }
+
+    .assigneeKey {
+        display: none;
+    }
+
+    /* A one-line metadata row would clip mid-chip; let the facts stack instead. */
+    .factLine {
+        flex-wrap: wrap;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .row,
+    .title,
+    .due,
+    .assignee {
+        transition: none;
+    }
+}

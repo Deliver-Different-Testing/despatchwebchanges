@@ -3,6 +3,7 @@ import {EditAddressDialogService} from "../components/dialogs/edit-address-dialo
 import {IAddressViewModel, IDispatchJob} from "../interfaces/job.interface";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
+import {AddressType} from "../enums/address-type.enum";
 import angular from 'angular';
 
 class JobAddStopService implements angular.IServiceProvider {
@@ -28,7 +29,7 @@ class JobAddStopService implements angular.IServiceProvider {
         const newAddress = this.generateBlankAddress();
         const title = isPickup ? "Add Pick Up Stop" : "Add Delivery Stop";
         const address = await this.editAddressDialogService.openEditAddressDialog(newAddress,
-            undefined, title, "Add Stop", true);
+            undefined, title, "Add Stop", true, isPickup ? AddressType.Pickup : AddressType.Delivery);
         if (!address) return;
 
         return isPickup
@@ -45,7 +46,7 @@ class JobAddStopService implements angular.IServiceProvider {
             case JobSuffix.Delivery:
                 return await this.addDeliveryStop(job, $event);
             default:
-                this.toastrService.showWarningToast("Cannot add stop to this job");
+                await this.toastrService.showWarningToast("Cannot add stop to this job");
                 return;
         }
     }
@@ -59,7 +60,7 @@ class JobAddStopService implements angular.IServiceProvider {
 
         const newAddress = this.generateBlankAddress();
         const newPickUpAddress = await this.editAddressDialogService.openEditAddressDialog(newAddress,
-            $event, "Add Pick Up Stop", "Add Stop", true);
+            $event, "Add Pick Up Stop", "Add Stop", true, AddressType.Pickup);
         if (!newPickUpAddress) return;
 
         return await this.DispatchData.addStopToJob(job.id, newPickUpAddress, undefined);
@@ -70,7 +71,7 @@ class JobAddStopService implements angular.IServiceProvider {
 
         const newAddress = this.generateBlankAddress();
         const newDeliveryAddress = await this.editAddressDialogService.openEditAddressDialog(newAddress,
-            $event, "Add Delivery Stop", "Add Stop", true);
+            $event, "Add Delivery Stop", "Add Stop", true, AddressType.Delivery);
         if (!newDeliveryAddress) return;
 
         return await this.DispatchData.addStopToJob(job.id, undefined, newDeliveryAddress);

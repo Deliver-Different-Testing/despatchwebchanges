@@ -9,13 +9,25 @@
  */
 
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../services/jobChangeRequestApi';
+import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
+import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
 
-export function useApproverInbox(): UseQueryResult<JobChangeRequestInboxItem[]> {
+export interface UseApproverInboxOptions {
+    /**
+     * When false, the query is suspended — used by the app-bar badge to skip
+     * polling for tenants with no active partnerships. Defaults to true.
+     */
+    enabled?: boolean;
+}
+
+export function useApproverInbox(
+    options: UseApproverInboxOptions = {},
+): UseQueryResult<JobChangeRequestInboxItem[]> {
     return useQuery({
         queryKey: ['jobChangeRequests', 'inbox'],
         queryFn: () => jobChangeRequestApi.pendingForApproval(200),
         refetchInterval: 60_000,
         staleTime: 30_000,
+        enabled: options.enabled ?? true,
     });
 }

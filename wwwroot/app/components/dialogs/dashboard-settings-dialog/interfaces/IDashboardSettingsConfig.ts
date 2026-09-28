@@ -2,8 +2,7 @@
     title: string;
     showRefreshInterval?: boolean;
     showDriverLocationRefresh?: boolean;
-    showDashboards?: boolean;
-    showAiToggle?: boolean;
+    showNationwideBetaToggle?: boolean;
 }
 
 export default IDashboardSettingsConfig;

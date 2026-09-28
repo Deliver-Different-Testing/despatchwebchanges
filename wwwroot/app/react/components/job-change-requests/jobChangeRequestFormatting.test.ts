@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for the formatChangeRequestValue helper. Covers the per-category
  * rendering branches and the Packages JSON summariser added when parcel

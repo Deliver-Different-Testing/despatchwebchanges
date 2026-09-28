@@ -1,9 +1,9 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import TextField from '@mui/material/TextField';
-import ClearIcon from '@mui/icons-material/Clear';
-import SearchIcon from '@mui/icons-material/Search';
+import React, {useCallback, useEffect, useState} from 'react';
+import {ActionIcon, TextInput} from '@mantine/core';
+import {useDebouncedCallback} from '@mantine/hooks';
+import {Search, X} from 'lucide-react';
+import {Icon} from '../../../../components/common/icon/Icon';
+import {FILTER_CONTROL_HEIGHT} from '../../../../components/common/filter-fields';
 
 interface SearchFieldProps {
     value: string;
@@ -15,62 +15,52 @@ const DEBOUNCE_DELAY = 300;
 
 export const SearchField: React.FC<SearchFieldProps> = ({value, onChange, placeholder = 'Search...'}) => {
     const [localValue, setLocalValue] = useState(value);
-    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         setLocalValue(value);
     }, [value]);
 
-    useEffect(() => {
-        return () => {
-            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-        };
-    }, []);
+    // Replaces a hand-rolled setTimeout plus its unmount teardown.
+    const emitChange = useDebouncedCallback(onChange, DEBOUNCE_DELAY);
 
     const handleChange = useCallback(
         (event: React.ChangeEvent<HTMLInputElement>) => {
-            const val = event.target.value;
+            const val = event.currentTarget.value;
             setLocalValue(val);
-            if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-            debounceTimerRef.current = setTimeout(() => {
-                onChange(val);
-            }, DEBOUNCE_DELAY);
+            emitChange(val);
         },
-        [onChange]
+        [emitChange]
     );
 
+    // Clearing is deliberately immediate: the debounce exists to ride out typing,
+    // and there is nothing to ride out when the field is emptied in one action.
     const handleClear = useCallback(() => {
         setLocalValue('');
-        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        emitChange.flush();
         onChange('');
-    }, [onChange]);
+    }, [emitChange, onChange]);
 
     return (
-        <TextField
-            size="small"
+        <TextInput
+            size="xs"
+            miw={200}
             placeholder={placeholder}
+            aria-label={placeholder}
             value={localValue}
             onChange={handleChange}
-            sx={{
-                minWidth: 200,
-                '& .MuiOutlinedInput-root': {bgcolor: 'white'},
-            }}
-            slotProps={{
-                input: {
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon sx={{color: 'text.secondary', fontSize: 20}} />
-                        </InputAdornment>
-                    ),
-                    endAdornment: localValue ? (
-                        <InputAdornment position="end">
-                            <IconButton size="small" onClick={handleClear} edge="end">
-                                <ClearIcon sx={{fontSize: 18}} />
-                            </IconButton>
-                        </InputAdornment>
-                    ) : null,
-                },
-            }}
+            styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
+            leftSection={<Icon lucide={Search} size={20}/>}
+            rightSection={localValue ? (
+                <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    size="sm"
+                    onClick={handleClear}
+                    aria-label="Clear search"
+                >
+                    <Icon lucide={X} size={18}/>
+                </ActionIcon>
+            ) : null}
         />
     );
 };

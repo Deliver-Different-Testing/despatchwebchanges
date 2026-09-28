@@ -4,11 +4,13 @@
  * Query and mutation hooks for task-related operations.
  */
 
+import {useMemo} from 'react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {tasksApi} from '../services/tasksApi';
 import {EventTypeSuggestion, StaffSuggestion, Task, TaskFiltersRequest} from '../interfaces';
 import type {DeliveryJourney} from '../components/common/task-history/TaskHistory.interfaces';
+import type {DispatchServiceInterface, TasksServiceInterface} from '../components/common/task-item/TaskItem.interfaces';
 import {Dayjs} from 'dayjs';
 
 /**
@@ -31,12 +33,18 @@ export function useTasks(
     filters?: TaskFiltersRequest,
     options?: {
         enabled?: boolean;
+        refetchInterval?: number | false;
     }
 ) {
     return useQuery<Task[], Error>({
         queryKey: queryKeys.tasks.list(filters || {}),
         queryFn: ({signal}) => tasksApi.getAllTasks(filters, {signal}),
         enabled: options?.enabled ?? true,
+        refetchInterval: options?.refetchInterval ?? false,
+        // Overrides the app-wide `refetchOnWindowFocus: false`. Tasks arrive from other
+        // dispatchers with no push channel, and polling pauses while the tab is hidden,
+        // so returning to the tab must re-sync the list.
+        refetchOnWindowFocus: true,
     });
 }
 
@@ -147,4 +155,62 @@ export function useReassignTask() {
             await queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
         },
     });
+}
+
+/**
+ * Hook to unassign a task, clearing its assigned staff member
+ *
+ * @returns Mutation for unassigning tasks
+ */
+export function useUnassignTask() {
+    const queryClient = useQueryClient();
+
+    return useMutation<void, Error, {eventId: number}>({
+        mutationFn: ({eventId}) => tasksApi.unassignTask(eventId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
+        },
+    });
+}
+
+/**
+ * Builds the `tasksService`/`dispatchService` adapters that `TaskItem` and the
+ * task calendar expect, wired to the shared mutation hooks. Shared by every
+ * page/panel that renders `TaskItem` (TaskDashboardPage, TasksBox) so they
+ * don't each redeclare the same two `useMemo` blocks.
+ */
+export function useTaskComponentServices(): {
+    tasksService: TasksServiceInterface;
+    dispatchService: DispatchServiceInterface & {getDeliveryJourney: (jobId: number) => Promise<DeliveryJourney[]>};
+} {
+    const markTaskAsClosedMutation = useMarkTaskAsClosed();
+    const updateTaskDateMutation = useUpdateTaskDate();
+    const updateTaskTimeMutation = useUpdateTaskTime();
+    const reassignTaskMutation = useReassignTask();
+    const unassignTaskMutation = useUnassignTask();
+
+    const tasksService = useMemo(() => ({
+        markTaskAsClosed: async (eventId: number, closed: boolean) => {
+            await markTaskAsClosedMutation.mutateAsync({eventId, closed});
+        },
+        updateTaskDate: async (eventId: number, date: Dayjs, timezone?: string) => {
+            await updateTaskDateMutation.mutateAsync({eventId, date, timezone});
+        },
+        updateTaskTime: async (eventId: number, time: Dayjs, timezone?: string) => {
+            await updateTaskTimeMutation.mutateAsync({eventId, time, timezone});
+        },
+        reassignTaskToStaff: async (eventId: number, staffId: number) => {
+            await reassignTaskMutation.mutateAsync({eventId, staffId});
+        },
+        unassignTask: async (eventId: number) => {
+            await unassignTaskMutation.mutateAsync({eventId});
+        },
+    }), [markTaskAsClosedMutation, updateTaskDateMutation, updateTaskTimeMutation, reassignTaskMutation, unassignTaskMutation]);
+
+    const dispatchService = useMemo(() => ({
+        getActiveStaff: () => tasksApi.getActiveStaff(),
+        getDeliveryJourney: (jobId: number) => tasksApi.getDeliveryJourney(jobId),
+    }), []);
+
+    return {tasksService, dispatchService};
 }

@@ -353,8 +353,8 @@ healthchecksdb
 /CROSSROADS_SOLUTION.md
 /logs-insights-results (1).csv
 /logs-insights-results.csv
+/logs/
 /.claude/settings.local.json
-/.husky
 .jest-cache
 .tsbuildinfo
 nul
@@ -367,3 +367,5 @@ nul
 
 # Markdown files (project-specific docs, Claude instructions, etc.)
 *.md
+/docs/
+/bin_ttest/

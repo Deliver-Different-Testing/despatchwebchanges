@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * DispatchMap Component Tests
  *
@@ -9,10 +8,10 @@
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {DispatchMap} from './DispatchMap';
 import type {DispatchMapProps, ClearListEnvelopeData} from './DispatchMap.types';
 import * as courierApi from '../../../services/courierApi';
+import {MantineTestProvider} from '../../../__testUtils__';
 
 // Mock the courier API
 jest.mock('../../../services/courierApi', () => ({
@@ -72,7 +71,6 @@ jest.mock('./useMapPreferences', () => ({
     })),
 }));
 
-const theme = createTheme();
 
 function createTestQueryClient(): QueryClient {
     return new QueryClient({
@@ -90,7 +88,7 @@ const renderWithProviders = (ui: React.ReactElement, queryClient?: QueryClient) 
     const client = queryClient ?? createTestQueryClient();
     return render(
         <QueryClientProvider client={client}>
-            <ThemeProvider theme={theme}>{ui}</ThemeProvider>
+            <MantineTestProvider>{ui}</MantineTestProvider>
         </QueryClientProvider>
     );
 };
@@ -100,6 +98,35 @@ const createDefaultProps = (overrides?: Partial<DispatchMapProps>): DispatchMapP
     showAvailableCouriers: false,
     ...overrides,
 });
+
+const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+
+// Stub useHereMap with a ready map. Pass overrides (e.g. `{map: mockMap}`) for
+// the bits a test actually cares about; everything else gets a sensible default.
+function mockHereMap(overrides: Record<string, unknown> = {}): void {
+    useHereMapMock.mockReturnValue({
+        mapContainerRef: {current: document.createElement('div')},
+        map: {},
+        platform: {},
+        ui: {},
+        isLoading: false,
+        isReady: true,
+        error: null,
+        ...overrides,
+    });
+}
+
+// Stub useHereMap before the map has initialised (isReady: false, null refs).
+function mockHereMapNotReady(overrides: Record<string, unknown> = {}): void {
+    mockHereMap({
+        mapContainerRef: {current: null},
+        map: null,
+        platform: null,
+        ui: null,
+        isReady: false,
+        ...overrides,
+    });
+}
 
 describe('DispatchMap Component', () => {
     beforeEach(() => {
@@ -113,81 +140,15 @@ describe('DispatchMap Component', () => {
     });
 
     describe('Rendering', () => {
-        it('renders without crashing', () => {
-            const props = createDefaultProps();
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
-        });
-
-        it('renders map container', () => {
-            const props = createDefaultProps();
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            // The component renders a Box which creates a div - check container has children
-            expect(container.firstChild).toBeInTheDocument();
-        });
-
-        it('renders with jobs prop', () => {
-            const mockJobs = [
-                {
-                    jobId: 1,
-                    pickupAddress: {latitude: 40.7128, longitude: -74.006},
-                    deliveryAddress: {latitude: 40.7589, longitude: -73.9851},
-                },
-            ];
-            const props = createDefaultProps({jobs: mockJobs as any});
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
-        });
-
-        it('renders with currentJob prop', () => {
-            const currentJob = {
-                jobId: 1,
-                pickupAddress: {latitude: 40.7128, longitude: -74.006},
-                deliveryAddress: {latitude: 40.7589, longitude: -73.9851},
-            };
-            const props = createDefaultProps({currentJob: currentJob as any});
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
-        });
-
-        it('renders with mapCenter prop', () => {
-            const props = createDefaultProps({mapCenter: {lat: 40.7128, lng: -74.006}});
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
-        });
-
-        it('renders with mapZoom prop', () => {
-            const props = createDefaultProps({mapZoom: 15});
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
-        });
-    });
-
-    describe('Props', () => {
-        it('accepts showAvailableCouriers prop', () => {
-            const props = createDefaultProps({showAvailableCouriers: true});
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
-        });
-
-        it('accepts clearListId prop', () => {
-            const props = createDefaultProps({clearListId: 123});
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
-        });
-
-        it('accepts onEnvelopeUpdate callback prop', () => {
-            const onEnvelopeUpdate = jest.fn();
-            const props = createDefaultProps({onEnvelopeUpdate});
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
-        });
-
-        it('accepts onMarkerClick callback prop', () => {
-            const onMarkerClick = jest.fn();
-            const props = createDefaultProps({onMarkerClick});
-            const {container} = renderWithProviders(<DispatchMap {...props} />);
-            expect(container).toBeInTheDocument();
+        // A single mount sanity check. The previous per-prop "renders without
+        // crashing" tests (jobs, currentJob, mapCenter, mapZoom, showAvailableCouriers,
+        // clearListId, onEnvelopeUpdate, onMarkerClick) were tautological — each did a
+        // full render and asserted only that the container existed. The real
+        // behaviour for those props is exercised with meaningful assertions in the
+        // focused describes below (envelope, courier data, map-ready states).
+        it('mounts the map container', () => {
+            renderWithProviders(<DispatchMap {...createDefaultProps()} />);
+            expect(screen.getByTestId('dispatch-map-wrapper')).toBeInTheDocument();
         });
     });
 });
@@ -201,16 +162,7 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
             })),
         };
 
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: mockMap,
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap({map: mockMap});
 
         const mockEnvelope: ClearListEnvelopeData = {
             minimumLatitude: 33.5,
@@ -234,16 +186,7 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
     });
 
     it('does not call getClearListEnvelope when clearListId is undefined', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: {},
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap();
 
         const props = createDefaultProps({clearListId: undefined});
         renderWithProviders(<DispatchMap {...props} />);
@@ -252,16 +195,7 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
     });
 
     it('does not call getClearListEnvelope when map is not ready', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: null},
-            map: null,
-            platform: null,
-            ui: null,
-            isLoading: true,
-            isReady: false,
-            error: null,
-        });
+        mockHereMapNotReady({isLoading: true});
 
         const props = createDefaultProps({clearListId: 123});
         renderWithProviders(<DispatchMap {...props} />);
@@ -276,16 +210,7 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
             })),
         };
 
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: mockMap,
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap({map: mockMap});
 
         (courierApi.getClearListEnvelope as jest.Mock).mockRejectedValue(new Error('API Error'));
 
@@ -310,16 +235,7 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
             })),
         };
 
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: mockMap,
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap({map: mockMap});
 
         const mockEnvelope: ClearListEnvelopeData = {
             minimumLatitude: 33.5,
@@ -345,16 +261,7 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
 
 describe('DispatchMap Loading State', () => {
     it('shows loading indicator when map is loading', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: null},
-            map: null,
-            platform: null,
-            ui: null,
-            isLoading: true,
-            isReady: false,
-            error: null,
-        });
+        mockHereMapNotReady({isLoading: true});
 
         const props = createDefaultProps();
         renderWithProviders(<DispatchMap {...props} />);
@@ -364,16 +271,7 @@ describe('DispatchMap Loading State', () => {
     });
 
     it('hides loading indicator when map is ready', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: {},
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap();
 
         const props = createDefaultProps();
         renderWithProviders(<DispatchMap {...props} />);
@@ -383,17 +281,29 @@ describe('DispatchMap Loading State', () => {
 });
 
 describe('DispatchMap Control Buttons', () => {
+    it('portals the control rails into an isolated host inside the map container', () => {
+        mockHereMap();
+
+        const props = createDefaultProps();
+        renderWithProviders(<DispatchMap {...props} />);
+
+        // HERE Maps renders info bubbles / tooltips inside the map container at a very
+        // high z-index (~1001). Rather than fighting that with an external sibling
+        // overlay (which the absolute-wrapper approach failed to contain), the control
+        // rails are portalled into a host element mounted *inside* the map container —
+        // the documented best practice for custom map controls. The container isolates
+        // its stacking context so its high z-indexes never leak over the app chrome.
+        const wrapper = screen.getByTestId('dispatch-map-wrapper');
+        expect(wrapper).toHaveStyle({isolation: 'isolate'});
+
+        // The control host lives inside the map container, and the rails render into it.
+        const host = screen.getByTestId('dispatch-map-controls-host');
+        expect(wrapper).toContainElement(host);
+        expect(host).toContainElement(screen.getByLabelText('Toggle Auto Zoom'));
+    });
+
     it('shows control buttons when map is ready', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: {},
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap();
 
         const props = createDefaultProps();
         renderWithProviders(<DispatchMap {...props} />);
@@ -403,16 +313,7 @@ describe('DispatchMap Control Buttons', () => {
     });
 
     it('hides control buttons when map is not ready', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: null},
-            map: null,
-            platform: null,
-            ui: null,
-            isLoading: false,
-            isReady: false,
-            error: null,
-        });
+        mockHereMapNotReady();
 
         const props = createDefaultProps();
         renderWithProviders(<DispatchMap {...props} />);
@@ -428,16 +329,7 @@ describe('DispatchMap Courier Data', () => {
     });
 
     it('does not fetch couriers when showAvailableCouriers is false', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: {},
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap();
 
         const props = createDefaultProps({showAvailableCouriers: false});
         renderWithProviders(<DispatchMap {...props} />);
@@ -457,16 +349,7 @@ describe('DispatchMap Courier Data', () => {
             removeEventListener: jest.fn(),
         };
 
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: mockMap,
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap({map: mockMap});
 
         const props = createDefaultProps({showAvailableCouriers: true});
         renderWithProviders(<DispatchMap {...props} />);
@@ -487,7 +370,6 @@ describe('DispatchMap Map Ready Callback', () => {
         const mockPlatform = {};
         const mockUI = {};
 
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
         useHereMapMock.mockImplementation(({onMapReady}) => {
             // Simulate calling onMapReady
             if (onMapReady) {
@@ -537,16 +419,7 @@ describe('DispatchMap Default Map Center', () => {
             removeEventListener: jest.fn(),
         };
 
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: mockMap,
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap({map: mockMap});
 
         const props = createDefaultProps({showAvailableCouriers: true});
         renderWithProviders(<DispatchMap {...props} />);
@@ -578,16 +451,7 @@ describe('DispatchMap Default Map Center', () => {
             removeEventListener: jest.fn(),
         };
 
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: mockMap,
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
+        mockHereMap({map: mockMap});
 
         const props = createDefaultProps({showAvailableCouriers: true});
         renderWithProviders(<DispatchMap {...props} />);
@@ -603,100 +467,5 @@ describe('DispatchMap Default Map Center', () => {
         expect(maxLat).toBeCloseTo(40.31, 1);
         expect(minLng).toBeCloseTo(-99.06, 1);
         expect(maxLng).toBeCloseTo(-98.06, 1);
-    });
-});
-
-describe('DispatchMap with Different Control States', () => {
-    it('renders with couriersOnlyEnabled state', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: {},
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
-
-        const useMapPreferencesMock = require('./useMapPreferences').useMapPreferences as jest.Mock;
-        useMapPreferencesMock.mockReturnValue({
-            controlState: {
-                autoZoomEnabled: true,
-                couriersOnlyEnabled: true,
-                urgentArmyOnlyEnabled: false,
-                couriersLargeViewEnabled: false,
-            },
-            toggleAutoZoom: jest.fn(),
-            toggleCouriersOnly: jest.fn(),
-            toggleUrgentArmyOnly: jest.fn(),
-            toggleCouriersLargeView: jest.fn(),
-        });
-
-        const props = createDefaultProps();
-        const {container} = renderWithProviders(<DispatchMap {...props} />);
-        expect(container).toBeInTheDocument();
-    });
-
-    it('renders with couriersLargeViewEnabled state', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: {},
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
-
-        const useMapPreferencesMock = require('./useMapPreferences').useMapPreferences as jest.Mock;
-        useMapPreferencesMock.mockReturnValue({
-            controlState: {
-                autoZoomEnabled: true,
-                couriersOnlyEnabled: false,
-                urgentArmyOnlyEnabled: false,
-                couriersLargeViewEnabled: true,
-            },
-            toggleAutoZoom: jest.fn(),
-            toggleCouriersOnly: jest.fn(),
-            toggleUrgentArmyOnly: jest.fn(),
-            toggleCouriersLargeView: jest.fn(),
-        });
-
-        const props = createDefaultProps();
-        const {container} = renderWithProviders(<DispatchMap {...props} />);
-        expect(container).toBeInTheDocument();
-    });
-
-    it('renders with urgentArmyOnlyEnabled state', () => {
-        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
-        useHereMapMock.mockReturnValue({
-            mapContainerRef: {current: document.createElement('div')},
-            map: {},
-            platform: {},
-            ui: {},
-            isLoading: false,
-            isReady: true,
-            error: null,
-        });
-
-        const useMapPreferencesMock = require('./useMapPreferences').useMapPreferences as jest.Mock;
-        useMapPreferencesMock.mockReturnValue({
-            controlState: {
-                autoZoomEnabled: false,
-                couriersOnlyEnabled: false,
-                urgentArmyOnlyEnabled: true,
-                couriersLargeViewEnabled: false,
-            },
-            toggleAutoZoom: jest.fn(),
-            toggleCouriersOnly: jest.fn(),
-            toggleUrgentArmyOnly: jest.fn(),
-            toggleCouriersLargeView: jest.fn(),
-        });
-
-        const props = createDefaultProps();
-        const {container} = renderWithProviders(<DispatchMap {...props} />);
-        expect(container).toBeInTheDocument();
     });
 });

@@ -3,16 +3,14 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
-/// <summary>
-/// Unit tests for MessagesController - tests all messaging endpoints.
-/// These tests use mocks to isolate controller logic for debugging and validation.
-/// </summary>
+[TestSubject(typeof(MessagesController))]
 public class MessagesControllerTests
 {
     private readonly IMessageRepository _messageRepositoryMock = Substitute.For<IMessageRepository>();

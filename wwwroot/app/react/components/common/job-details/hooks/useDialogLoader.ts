@@ -14,10 +14,12 @@ type DialogName =
     | 'editAddressDialogReact'
     | 'voidJobConfirmationDialogReact'
     | 'priceBreakdownDialogReact'
+    | 'splitPricingBreakdownDialogReact'
     | 'simplePriceEditDialogReact'
     | 'editParcelDimensionsDialogReact'
     | 'sendPodDialogReact'
-    | 'jobFileUploadDialogReact';
+    | 'jobFileUploadDialogReact'
+    | 'dateRangeDialogReact';
 
 /** Map dialog name to its window global check */
 const DIALOG_GLOBALS: Record<DialogName, () => boolean> = {
@@ -27,10 +29,12 @@ const DIALOG_GLOBALS: Record<DialogName, () => boolean> = {
     editAddressDialogReact: () => !!window.ReactEditAddressDialog,
     voidJobConfirmationDialogReact: () => !!window.ReactVoidJobConfirmationDialog,
     priceBreakdownDialogReact: () => !!window.ReactPriceBreakdownDialog,
+    splitPricingBreakdownDialogReact: () => !!window.ReactSplitPricingBreakdownDialog,
     simplePriceEditDialogReact: () => !!window.ReactSimplePriceEditDialog,
     editParcelDimensionsDialogReact: () => !!window.ReactEditParcelDimensionsDialog,
     sendPodDialogReact: () => !!window.ReactSendPodDialog,
     jobFileUploadDialogReact: () => !!window.ReactJobFileUploadDialog,
+    dateRangeDialogReact: () => !!window.ReactDateRangeDialog,
 };
 
 let manifestCache: Record<string, string> | null = null;
@@ -64,6 +68,26 @@ function loadScript(src: string): Promise<void> {
     });
 }
 
+/**
+ * Injects the bundle's stylesheet, if the manifest has one — a dialog's own `.module.css`
+ * only ever ships via the script bundle's paired CSS asset. Never throws: a missing
+ * stylesheet fails the dialog silently-unstyled rather than blocking it from opening.
+ */
+function loadStylesheet(href: string): Promise<void> {
+    return new Promise((resolve) => {
+        if (document.querySelector(`link[href="${href}"]`)) {
+            resolve();
+            return;
+        }
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        link.onload = () => resolve();
+        link.onerror = () => resolve();
+        document.head.appendChild(link);
+    });
+}
+
 async function ensureVendorReact(): Promise<void> {
     if ((window as any).React) return;
     const manifest = await fetchManifest();
@@ -85,6 +109,12 @@ async function loadDialogBundle(name: DialogName): Promise<void> {
             const manifest = await fetchManifest();
             const filename = `${name}.js`;
             const assetPath = `dist/${manifest[filename] || filename}`;
+
+            const cssKey = `${name}.css`;
+            if (manifest[cssKey]) {
+                await loadStylesheet(`dist/${manifest[cssKey]}`);
+            }
+
             await loadScript(assetPath);
 
             if (!DIALOG_GLOBALS[name]()) {
@@ -125,6 +155,10 @@ export function useDialogLoader() {
         await loadDialogBundle('priceBreakdownDialogReact');
     }, []);
 
+    const ensureSplitPricingBreakdownDialog = useCallback(async () => {
+        await loadDialogBundle('splitPricingBreakdownDialogReact');
+    }, []);
+
     const ensureSimplePriceEditDialog = useCallback(async () => {
         await loadDialogBundle('simplePriceEditDialogReact');
     }, []);
@@ -141,6 +175,10 @@ export function useDialogLoader() {
         await loadDialogBundle('jobFileUploadDialogReact');
     }, []);
 
+    const ensureDateRangeDialog = useCallback(async () => {
+        await loadDialogBundle('dateRangeDialogReact');
+    }, []);
+
     return {
         ensureSelectDialog,
         ensureDateTimeDialog,
@@ -148,9 +186,11 @@ export function useDialogLoader() {
         ensureAddressDialog,
         ensureVoidDialog,
         ensurePriceBreakdownDialog,
+        ensureSplitPricingBreakdownDialog,
         ensureSimplePriceEditDialog,
         ensureParcelDimensionsDialog,
         ensureSendPodDialog,
         ensureJobFileUploadDialog,
+        ensureDateRangeDialog,
     };
 }

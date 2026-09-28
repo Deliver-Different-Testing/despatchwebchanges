@@ -8,12 +8,17 @@
 import {useState, useCallback, useRef} from 'react';
 import type {Dayjs} from 'dayjs';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
-import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS} from '../JobDetails.types';
+import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS, podMediaJobId} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
+import JobRelationshipType from '../../../../../enums/job-relationship-type.enum';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
+import {AddressType} from '../../../../../enums/address-type.enum';
 import {useDialogLoader} from './useDialogLoader';
-import {formatDateForApi} from '../../../../utils/dateUtils';
+import {formatDateForApi, formatLongDate} from '../../../../utils/dateUtils';
+import type {DateCascadeFamilyMember} from '../../../../services/jobDetailApi';
+import type {CascadeChoice} from '../../../dialogs/cascade-date-confirm-dialog';
 import {getPriceBreakdowns} from '../../../../services/pricingBreakdownApi';
+import {getSplitPricingBreakdown} from '../../../../services/splitPriceBreakdownApi';
 import {
     getSpeedList,
     getVehicleSizes,
@@ -26,12 +31,18 @@ import {
     autocompleteSearch,
     getPodReportUrl,
     getPodSpreadsheetUrl,
+    getOverlayDocumentUrl,
+    getJobOverlayDocuments,
+    saveRecurringFlight,
 } from '../../../../services/jobDetailApi';
-// 3-way Assign picker — needs apiClient for the per-type agent/NP search
-// callbacks (autocompleteSearch only handles single-param ?searchTerm= calls;
-// the agent endpoint also takes ?isNetworkPartner=true|false).
-import {apiClient} from '../../../../services/apiClient';
+import type {OverlayDocument} from '../../../../services/jobDetailApi';
+import {
+    sendToPartner,
+} from '../../../../services/jobListApi';
+import type {DispatchConfirmation, DispatchType} from '../../../dialogs/dispatch-dialog';
 import type {ISuggestion} from '../../../../../interfaces/job.interface';
+import {toastService} from '../../../../services/toastService';
+import {executeDispatchConfirmation} from '../../../dialogs/dispatch-dialog/executeDispatch';
 
 interface TextDialogState {
     open: boolean;
@@ -40,6 +51,7 @@ interface TextDialogState {
     initialValue: string;
     field: string;
     okLabel?: string;
+    allowClear?: boolean;
     onSubmitExtra?: () => void;
 }
 
@@ -104,6 +116,23 @@ const emptyTextDialog: TextDialogState = {
     field: '',
 };
 
+/** Date fields that can cascade across a job family (mirrors JobController.IsDateCascadeField). */
+const DATE_CASCADE_FIELDS = new Set<string>([JobProperty.Date, JobProperty.BookedTime]);
+
+interface CascadeDialogState {
+    open: boolean;
+    jobNumber: string;
+    newDateLabel: string;
+    members: DateCascadeFamilyMember[];
+}
+
+const emptyCascadeDialog: CascadeDialogState = {
+    open: false,
+    jobNumber: '',
+    newDateLabel: '',
+    members: [],
+};
+
 interface UseJobActionsOptions {
     job: IJob | undefined;
     isRecurringJob: boolean;
@@ -117,6 +146,8 @@ interface UseJobActionsOptions {
     invalidateJobLists: () => Promise<void[]>;
     invalidatePhotos: () => Promise<void>;
     checkForRateChange: (job: IJob) => Promise<void>;
+    /** Batch price probe run after a date cascade, over every job that actually moved. */
+    checkForRateChanges: (jobIds: number[]) => Promise<void>;
     invalidateAllJobDetails: () => Promise<void>;
     relatedJobs: IJob[];
     onStatusChange?: (statusId: number) => void;
@@ -132,6 +163,17 @@ interface UseJobActionsOptions {
      * a read-only summary and the user only fills in the reason.
      */
     onRequestPartnerChange?: (field: string, initialValue?: string, locked?: boolean) => void;
+    /**
+     * Open the change-paid-courier flow for an archived job. The dispatch/allocate
+     * path only touches live rows, so the courier click routes here instead of the
+     * dispatch dialog when the job is archived.
+     */
+    onChangeArchivedCourier?: (job: {id: number; jobNo: string}) => void;
+    /**
+     * Switch the Job Details panel to another job in the same family (e.g. the
+     * "view parent breakdown" link a split child's Price Breakdown shows).
+     */
+    onNavigateToJob?: (jobId: number) => void;
 }
 
 export function useJobActions({
@@ -147,10 +189,13 @@ export function useJobActions({
     invalidateJobLists,
     invalidatePhotos,
     checkForRateChange,
+    checkForRateChanges,
     invalidateAllJobDetails,
     relatedJobs,
     onStatusChange,
     onRequestPartnerChange,
+    onChangeArchivedCourier,
+    onNavigateToJob,
 }: UseJobActionsOptions) {
     const {
         ensureSelectDialog,
@@ -159,11 +204,51 @@ export function useJobActions({
         ensureAddressDialog,
         ensureVoidDialog,
         ensurePriceBreakdownDialog,
+        ensureSplitPricingBreakdownDialog,
         ensureSimplePriceEditDialog,
         ensureParcelDimensionsDialog,
         ensureSendPodDialog,
         ensureJobFileUploadDialog,
     } = useDialogLoader();
+
+    // Universal dispatch dialog state. JobDetails renders the dialog inline and
+    // wires its callbacks back through `dispatchDialogConfirmCourier` /
+    // `dispatchDialogConfirmPartner`.
+    const [dispatchDialog, setDispatchDialog] = useState<{open: boolean; initialType: DispatchType}>(
+        {open: false, initialType: 'Courier'},
+    );
+    const closeDispatchDialog = useCallback(() => {
+        setDispatchDialog((s) => ({...s, open: false}));
+    }, []);
+
+    // Saved-flight dialog state (recurring flight bookings only). JobDetails
+    // renders the dialog inline and wires `closeSavedFlightDialog` /
+    // `savedFlightDialogConfirm` back to the hook.
+    const [savedFlightDialog, setSavedFlightDialog] = useState<{
+        open: boolean;
+        bookingId: number;
+        fromAirportId?: number;
+        toAirportId?: number;
+        currentValue?: string;
+        departureDate?: Dayjs;
+        showAirportPickers?: boolean;
+    }>({open: false, bookingId: 0});
+    const closeSavedFlightDialog = useCallback(() => {
+        setSavedFlightDialog((s) => ({...s, open: false}));
+    }, []);
+
+    // Create-ahead backfill dialog state. Opened by handleInitialDaysChange
+    // when the operator raises RecurringInitialDays. JobDetails renders the
+    // dialog inline and wires closeCreateAheadBackfillDialog back to us.
+    const [createAheadBackfillDialog, setCreateAheadBackfillDialog] = useState<{
+        open: boolean;
+        jobId: number;
+        oldValue: number;
+        newValue: number;
+    }>({open: false, jobId: 0, oldValue: 0, newValue: 0});
+    const closeCreateAheadBackfillDialog = useCallback(() => {
+        setCreateAheadBackfillDialog((s) => ({...s, open: false}));
+    }, []);
 
     // Stable ref for job so callbacks don't recreate on every job change.
     // Assigned synchronously (not via useEffect) so it's never one render behind.
@@ -189,6 +274,23 @@ export function useJobActions({
         return true;
     }, [onRequestPartnerChange]);
 
+    // ── Cascade Date Confirm Dialog ────────────────────────────────
+
+    const [cascadeDialog, setCascadeDialog] = useState<CascadeDialogState>(emptyCascadeDialog);
+    // Same promise-resolver pattern as the text dialog below — keeps the flow inline in
+    // editDateAndTime rather than routing through a window-level dialog registry.
+    const cascadeResolveRef = useRef<((choice: CascadeChoice | null) => void) | null>(null);
+
+    const resolveCascade = useCallback((choice: CascadeChoice | null) => {
+        const resolve = cascadeResolveRef.current;
+        cascadeResolveRef.current = null;
+        setCascadeDialog(emptyCascadeDialog);
+        resolve?.(choice);
+    }, []);
+
+    const handleCascadeChoose = useCallback((choice: CascadeChoice) => resolveCascade(choice), [resolveCascade]);
+    const handleCascadeCancel = useCallback(() => resolveCascade(null), [resolveCascade]);
+
     // ── Text Dialog ────────────────────────────────────────────────
 
     const [textDialog, setTextDialog] = useState<TextDialogState>(emptyTextDialog);
@@ -205,6 +307,7 @@ export function useJobActions({
         initialValue: string | number | undefined,
         okLabel?: string,
         onSubmitExtra?: () => void,
+        allowClear?: boolean,
     ) => {
         setTextDialog({
             open: true,
@@ -214,6 +317,7 @@ export function useJobActions({
             field,
             okLabel,
             onSubmitExtra,
+            allowClear,
         });
     }, []);
 
@@ -271,7 +375,7 @@ export function useJobActions({
 
     // ── Dialog Primitives ──────────────────────────────────────────
 
-    const editDateAndTime = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
+    const editDateAndTime = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown, allowClear?: boolean) => {
         const j = jobRef.current;
         if (!j) return;
         await ensureDateTimeDialog();
@@ -280,8 +384,25 @@ export function useJobActions({
             fieldName: field,
             dateTime: dateTime as any,
             defaultTimeZone: timezone as any,
+            readOnly: !!j.locked,
+            allowClear,
         });
         if (!result) return;
+        // Clear: persist an empty value so the backend nulls the field (works on
+        // active and archived jobs alike). No partner-gating — CompletedTime is
+        // never a partner-managed field.
+        if (result.cleared) {
+            if (j.isBulkJob) {
+                const {updateBulkJobDetail} = await import('../../../../services/jobDetailApi');
+                await updateBulkJobDetail(j.id, result.fieldName, '', result.timezone);
+            } else {
+                const {updateJobDetail} = await import('../../../../services/jobDetailApi');
+                await updateJobDetail(j.id, result.fieldName, '', j.preBook, result.timezone);
+            }
+            showToast(`${j.jobNo} updated`, 'success');
+            await refreshAndNotify();
+            return;
+        }
         // Partner-job rated datetimes (Date / PuTime / DeliverBy / BookedTime)
         // never persist locally — forward to the locked change-request dialog
         // with the chosen value serialised to an offset-aware ISO string so
@@ -294,13 +415,66 @@ export function useJobActions({
         if (j.isBulkJob) {
             const {updateBulkJobDetail} = await import('../../../../services/jobDetailApi');
             await updateBulkJobDetail(j.id, result.fieldName, result.value, result.timezone);
-        } else {
-            const {updateJobDetail} = await import('../../../../services/jobDetailApi');
-            await updateJobDetail(j.id, result.fieldName, result.value, j.preBook, result.timezone);
+            showToast(`${j.jobNo} updated`, 'success');
+            await refreshAndNotify();
+            return;
         }
-        showToast(`${j.jobNo} updated`, 'success');
+
+        const {updateJobDetail, getFamilyForDateChange} = await import('../../../../services/jobDetailApi');
+
+        // Date edits on a family parent ask before moving the linked jobs. The family comes from
+        // the server (not the cached related-jobs list) so what the user approves is exactly what
+        // gets written, void/locked/partner legs already accounted for.
+        let cascadeToChildren = false;
+        if (DATE_CASCADE_FIELDS.has(result.fieldName)) {
+            let family: DateCascadeFamilyMember[] = [];
+            try {
+                family = (await getFamilyForDateChange(j.id)).members;
+            } catch {
+                // Family lookup is advisory — fall through to a plain single-job edit.
+            }
+
+            if (family.some(m => m.cascadable)) {
+                const choice = await new Promise<CascadeChoice | null>((resolve) => {
+                    cascadeResolveRef.current = resolve;
+                    setCascadeDialog({
+                        open: true,
+                        jobNumber: j.jobNo,
+                        newDateLabel: formatLongDate(result.value as Dayjs, isUsCustomer),
+                        members: family,
+                    });
+                });
+                if (choice === null) return;
+                cascadeToChildren = choice === 'all';
+            }
+        }
+
+        const response = await updateJobDetail(
+            j.id, result.fieldName, result.value, j.preBook, result.timezone, {cascadeToChildren});
+
+        const updatedJobIds = response?.updatedJobIds ?? [j.id];
+        const failedCount = response?.failedJobIds?.length ?? 0;
+        if (failedCount > 0) {
+            showToast(
+                `Date applied to ${updatedJobIds.length} of ${updatedJobIds.length + failedCount} jobs`,
+                'warning');
+        } else if (cascadeToChildren && updatedJobIds.length > 1) {
+            showToast(`${j.jobNo} and ${updatedJobIds.length - 1} linked jobs updated`, 'success');
+        } else {
+            showToast(`${j.jobNo} updated`, 'success');
+        }
+
         await refreshAndNotify();
-    }, [ensureDateTimeDialog, showToast, refreshAndNotify, onRequestPartnerChange]);
+
+        // Nothing re-prices itself any more — surface every resulting price change for the user
+        // to accept or decline. Silently swallowed when they lack the recalculate permission.
+        // Manually-priced jobs are filtered out per-job, so a hand-priced parent must not
+        // suppress the probe for its children.
+        if (DATE_CASCADE_FIELDS.has(result.fieldName)) {
+            await checkForRateChanges(updatedJobIds);
+        }
+    }, [ensureDateTimeDialog, showToast, refreshAndNotify, onRequestPartnerChange, isUsCustomer,
+        checkForRateChanges]);
 
     const editDate = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
         const j = jobRef.current;
@@ -311,6 +485,7 @@ export function useJobActions({
             fieldName: field,
             dateTime: dateTime as any,
             defaultTimeZone: timezone as any,
+            readOnly: !!j.locked,
         });
         if (!result) return;
         // Partner-job rated dates route through the locked change-request
@@ -345,19 +520,25 @@ export function useJobActions({
         });
         if (!result) return;
 
+        // FromContactName writes to PickupFromContact, a free-text column on
+        // TucJob — we want the contact's display name, not the lookup id the
+        // dropdown surfaces by default. Every other select field routes an
+        // id-typed FK column, so the default `result.value` is correct.
+        const payload = fieldName === JobProperty.FromContactName ? result.text : result.value;
+
         // Partner-job manual fields (e.g. Speed, DG Class, Job Type) never
         // persist locally. The DG documentation side-effect drops off here —
         // a follow-up change request would need to be filed separately if
         // the counterparty wants both at once.
-        if (tryRoutePartnerEdit(fieldName, result.value)) return;
+        if (tryRoutePartnerEdit(fieldName, payload)) return;
 
         if (fieldName === JobProperty.DGClass && result.checkboxValue !== undefined) {
-            await updateField({job: j, field: fieldName, value: result.value, isRecurring: j.preBook});
+            await updateField({job: j, field: fieldName, value: payload, isRecurring: j.preBook});
             if (j.dgDocumentation !== result.checkboxValue) {
                 await updateField({job: j, field: JobProperty.DGDocumentation, value: result.checkboxValue, isRecurring: j.preBook});
             }
         } else {
-            await updateField({job: j, field: fieldName, value: result.value, isRecurring: j.preBook});
+            await updateField({job: j, field: fieldName, value: payload, isRecurring: j.preBook});
         }
         await refreshAndNotify();
     }, [ensureSelectDialog, updateField, refreshAndNotify, tryRoutePartnerEdit]);
@@ -392,7 +573,16 @@ export function useJobActions({
         if (!j) return;
         await ensureAddressDialog();
         const existing = isDelivery ? j.deliveryAddress : j.pickupAddress;
-        const result = await window.ReactEditAddressDialog?.open(existing as any, undefined, undefined, undefined, isUsCustomer);
+        const result = await window.ReactEditAddressDialog?.open(
+            existing as any,
+            undefined,
+            undefined,
+            undefined,
+            isUsCustomer,
+            undefined,
+            isDelivery ? AddressType.Delivery : AddressType.Pickup,
+            !!j.locked,
+        );
         if (!result) return;
         // Partner-job address edits never write locally — forward the captured
         // address (as the JSON shape the change-request dialog expects) to
@@ -482,48 +672,62 @@ export function useJobActions({
     }, [updateField, refreshAndNotify]);
 
     /**
-     * Guided "mark as done" flow — replicates the AngularJS markJobAsDone behaviour.
-     * Prompts for any missing POD fields, offers file upload, then completes.
+     * Guided "mark as done" flow. Confirms the POD time and POD name, completes the
+     * job in a single call, then offers an optional POD photo upload.
+     *
+     * Both fields are always confirmed rather than reused when already populated: a
+     * job materialised from a recurring booking inherits the template's POD name (a
+     * whitespace value renders as blank but is truthy), which silently skipped the
+     * prompt and left the operator unable to record who actually signed.
+     *
      * @param startWith - which field to prompt for first ('time' = default, 'name' = POD Name first)
      */
     const markJobAsDone = useCallback(async (startWith: 'time' | 'name' = 'time') => {
         const j = jobRef.current;
         if (!j) return;
 
+        // Completion is written by job/UpdatePODDetails, which only knows tucJob and
+        // tucJobArchive rows. A recurring booking id or a bulk-schedule id would be
+        // written nowhere at all, so refuse up front instead of failing invisibly.
+        if (j.preBook || isRecurringJob) {
+            showToast('Recurring bookings cannot be completed here. Open the live job for this run.', 'warning');
+            return;
+        }
+        if (j.isBulkJob) {
+            showToast('Completing a job is not currently available for scheduled jobs.', 'warning');
+            return;
+        }
+
         const collectPodTime = async (): Promise<string | null> => {
-            let podTime = j._completedTimeLongStr;
-            if (!j.completedTime) {
-                await ensureDateTimeDialog();
-                const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
-                    title: 'POD Time',
-                    fieldName: JobProperty.CompletedTime,
-                    dateTime: j.completedTime,
-                    defaultTimeZone: (j.deliveryTimeZone as any)?.text,
-                });
-                if (!result?.value) {
-                    showToast('A POD time needs to be provided to close this job.', 'warning');
-                    return null;
-                }
-                await updateField({job: j, field: JobProperty.CompletedTime, value: result.value, isRecurring: j.preBook, timezone: result.timezone});
-                podTime = formatDateForApi(result.value, (j.deliveryTimeZone as any)?.text);
-                await refreshAndNotify();
+            const current = jobRef.current ?? j;
+            await ensureDateTimeDialog();
+            const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
+                title: 'POD Time',
+                fieldName: JobProperty.CompletedTime,
+                dateTime: current.completedTime,
+                defaultTimeZone: (current.deliveryTimeZone as any)?.text,
+            });
+            if (!result?.value) {
+                showToast('A POD time needs to be provided to close this job.', 'warning');
+                return null;
             }
-            return podTime ?? null;
+            return formatDateForApi(result.value, (current.deliveryTimeZone as any)?.text);
         };
 
         const collectPodName = async (): Promise<string | null> => {
-            let podName = j.podName;
-            if (!podName) {
-                const name = await openTextDialogAsync('POD Name', 'POD Name...', JobProperty.PodName, '', 'Complete Job');
-                if (!name) {
-                    showToast('A POD name needs to be provided to close this job.', 'warning');
-                    return null;
-                }
-                podName = name;
-                await updateField({job: j, field: JobProperty.PodName, value: podName, isRecurring: j.preBook});
-                await refreshAndNotify();
+            const current = jobRef.current ?? j;
+            const name = await openTextDialogAsync(
+                'POD Name',
+                'POD Name...',
+                JobProperty.PodName,
+                current.podName?.trim() ?? '',
+                'Complete Job',
+            );
+            if (!name?.trim()) {
+                showToast('A POD name needs to be provided to close this job.', 'warning');
+                return null;
             }
-            return podName;
+            return name.trim();
         };
 
         let podTime: string | null | undefined;
@@ -541,15 +745,10 @@ export function useJobActions({
             if (podName === null) return;
         }
 
-        // POD file upload (optional — user can skip by closing the dialog)
-        try {
-            await ensureJobFileUploadDialog();
-            await window.ReactJobFileUploadDialog?.open?.(j.id, 'POD');
-        } catch {
-            // Upload dialog not available or user cancelled — continue
-        }
-
-        // Mark as done
+        // Complete first. UpdatePODDetails persists the POD name, POD time, done flag
+        // and status in one call, so the job cannot be left active if the operator
+        // walks away from the optional photo dialog below (that dialog blocks Escape
+        // and backdrop clicks, so its promise can stay pending indefinitely).
         await updatePod({
             jobId: j.id,
             jobStatus: '6',
@@ -558,21 +757,34 @@ export function useJobActions({
         });
         showToast(`${j.jobNo} Completed`, 'success');
         await refreshAndNotify();
+
+        // POD file upload (optional — user can skip by closing the dialog)
+        try {
+            await ensureJobFileUploadDialog();
+            await window.ReactJobFileUploadDialog?.open?.(j.id, 'POD');
+        } catch {
+            // Upload dialog not available or user cancelled — the job is already completed
+        }
         await invalidatePhotos();
-    }, [ensureDateTimeDialog, ensureJobFileUploadDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, invalidatePhotos, showToast]);
+    }, [isRecurringJob, ensureDateTimeDialog, ensureJobFileUploadDialog, openTextDialogAsync, updatePod, refreshAndNotify, invalidatePhotos, showToast]);
 
     const handleDoneClick = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
-        // Uncompleted: toggle done off
+        // Uncompleted: toggle done off. Not on an archive — Restore only touches live rows,
+        // so there is nothing that could put a half-undone archive right again.
         if (j.done) {
+            if (j.isArchived) {
+                showToast(`${j.jobNo} is archived and completed, so it cannot be marked not done.`, 'warning');
+                return;
+            }
             await updateField({job: j, field: JobProperty.Delivered, value: false, isRecurring: j.preBook});
             await refreshAndNotify();
             return;
         }
         // Completing: enter guided flow
         await markJobAsDone();
-    }, [updateField, refreshAndNotify, markJobAsDone]);
+    }, [updateField, refreshAndNotify, markJobAsDone, showToast]);
 
     const handleTailLiftPuClick = useCallback(async () => {
         const j = jobRef.current;
@@ -617,83 +829,139 @@ export function useJobActions({
 
     // ── Field-Specific Handlers ────────────────────────────────────
 
-    const handleCourierClick = useCallback(async () => {
+    const handleCourierClick = useCallback(() => {
+        // Archived jobs can't be re-dispatched — the allocate path only touches
+        // live rows — so the courier click routes to the change-paid-courier flow.
+        const j = jobRef.current;
+        if (j?.isArchived && onChangeArchivedCourier) {
+            onChangeArchivedCourier({id: j.id, jobNo: j.jobNo});
+            return;
+        }
+        // Opens the universal DispatchDialog. JobDetails owns the render —
+        // we just toggle state and supply the confirm callbacks below.
+        setDispatchDialog({open: true, initialType: 'Courier'});
+    }, [onChangeArchivedCourier]);
+
+    // Confirm: Courier / Agent / NP picked in the dispatch dialog. Routes the
+    // write to the right server path:
+    //   - Recurring tucJobBooking → updateField on CourierID / AgentId / NpAgentId
+    //   - Non-recurring tucJob, type=Courier → dispatchJob (allocateJobs API)
+    //   - Non-recurring tucJob, type=Agent → assignAgentToJob (flight gate + email)
+    //   - Non-recurring tucJob, type=NP → assignNpAgentToJob (stamps NpAgentId)
+    const dispatchDialogConfirmCourier = useCallback(async (
+        {type, destination, emailSubject, emailBody, includeStopJobs, awb}: DispatchConfirmation,
+    ) => {
         const j = jobRef.current;
         if (!j) return;
-        if (isRecurringJob) {
-            // 3-way Assign Route picker (Steve 2026-05-26, HANDOVER-KEVIN-2026-05-26.md).
-            // Same modal as the legacy courier-only picker — adds a Type radio
-            // row above the dropdown so the operator can choose Courier / Agent
-            // / NP without leaving the modal. Save behaviour writes to the
-            // matching JobProperty on tucJobBooking (CourierId / AgentId /
-            // NpAgentId — the NP case writes BOTH AgentId AND NpAgentId
-            // server-side in RecurringJobRepository.UpdateSimplePropertyAsync).
-            await ensureAutoCompleteDialog();
-            const result = await window.ReactAutoCompleteDialog?.openWithTypes(
-                'Assign',
-                [
-                    {
-                        value: 'Courier',
-                        label: 'Courier',
-                        placeholder: 'Search courier...',
-                        onSearch: (s) => autocompleteSearch(s, '/courier/AllActiveSearch'),
-                    },
-                    {
-                        value: 'Agent',
-                        label: 'Agent',
-                        placeholder: 'Search agent...',
-                        onSearch: (s) =>
-                            apiClient.get<ISuggestion[]>('/NationwideJob/GetAllAgentsSearch', {
-                                searchTerm: s,
-                                isNetworkPartner: false,
-                            }),
-                    },
-                    {
-                        value: 'NP',
-                        label: 'NP',
-                        placeholder: 'Search Network Partner...',
-                        onSearch: (s) =>
-                            apiClient.get<ISuggestion[]>('/NationwideJob/GetAllAgentsSearch', {
-                                searchTerm: s,
-                                isNetworkPartner: true,
-                            }),
-                    },
-                ],
-                {
-                    existingItem: j.assignedCourier,
-                    initialTypeValue: 'Courier',
-                },
-            );
-            if (!result) return;
 
-            // Route to the right JobProperty based on which radio the operator
-            // picked. The bridge always returns selectedType when openWithTypes
-            // was used; fall back to Courier defensively.
-            const targetField =
-                result.selectedType === 'Agent' ? JobProperty.AgentId :
-                result.selectedType === 'NP' ? JobProperty.NpAgentId :
-                JobProperty.CourierID;
-
-            await updateField({job: j, field: targetField, value: result.item.id, isRecurring: j.preBook});
-            await refreshAndNotify();
-        } else {
-            await ensureAutoCompleteDialog();
-            const result = await window.ReactAutoCompleteDialog?.open(
-                'Courier',
-                'Start typing to search courier...',
-                (s: string) => autocompleteSearch(s, '/courier/AllActiveSearch'),
-            );
-            if (!result) return;
-            await dispatchJob({job: j, courierId: result.item.id});
-            await refreshAndNotify();
+        // Live jobs take the dedicated endpoints via the shared executor — neither
+        // JobProperty.AgentId nor JobProperty.NpAgentId is accepted for a tucJob, so a
+        // field write here is exactly what used to make job-detail assignment fail.
+        // Recurring bookings genuinely do support both fields and keep the field write.
+        if ((type === 'Agent' || type === 'NP') && !isRecurringJob) {
+            try {
+                const {message, severity} = await executeDispatchConfirmation(
+                    {id: j.id, jobNo: j.jobNo, assignedCourierId: j.assignedCourier?.id},
+                    {type, destination, emailSubject, emailBody, includeStopJobs, awb},
+                );
+                await refreshAndNotify();
+                setDispatchDialog((s) => ({...s, open: false}));
+                if (severity === 'warning') {
+                    toastService.showWarningToast(message);
+                } else {
+                    toastService.showSuccessToast(message);
+                }
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Dispatch failed';
+                throw new Error(message, {cause: err});
+            }
+            return;
         }
-    }, [isRecurringJob, ensureAutoCompleteDialog, dispatchJob, updateField, refreshAndNotify]);
+
+        const targetField =
+            type === 'Agent' ? JobProperty.AgentId :
+            type === 'NP' ? JobProperty.NpAgentId :
+            JobProperty.CourierID;
+
+        try {
+            if (!isRecurringJob && type === 'Courier') {
+                await dispatchJob({job: j, courierId: destination.id});
+            } else {
+                await updateField({job: j, field: targetField, value: destination.id, isRecurring: j.preBook});
+            }
+            await refreshAndNotify();
+            setDispatchDialog((s) => ({...s, open: false}));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Dispatch failed';
+            throw new Error(message, {cause: err});
+        }
+    }, [isRecurringJob, dispatchJob, updateField, refreshAndNotify]);
+
+    // Unassign: clear the courier on a recurring job booking. Mirrors the
+    // recurring branch of dispatchDialogConfirmCourier but sends an empty value,
+    // which the server maps to a NULL CourierId (same clear-by-empty-string idiom
+    // as the route field). Only wired for recurring jobs; the dialog gates the
+    // affordance so this never runs for a live tucJob.
+    const dispatchDialogUnassignCourier = useCallback(async () => {
+        const j = jobRef.current;
+        if (!j) return;
+        try {
+            await updateField({job: j, field: JobProperty.CourierID, value: '', isRecurring: j.preBook});
+            await refreshAndNotify();
+            setDispatchDialog((s) => ({...s, open: false}));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unassign failed';
+            throw new Error(message, {cause: err});
+        }
+    }, [updateField, refreshAndNotify]);
+
+    // Confirm: DFRNT Partner picked in the dispatch dialog. Sends the job to the
+    // partner with the agreed rate. Recurring + bulk + archived jobs disable
+    // this radio at the dialog level — this callback only fires for standard
+    // active non-archived tucJobs.
+    //
+    // The IM round-trip can take several seconds, so we close the dialog
+    // synchronously and surface progress via a sticky loading toast that morphs
+    // into success/error when the call resolves. The dispatcher is free to
+    // continue working in the meantime.
+    const dispatchDialogConfirmPartner = useCallback(async (
+        partner: ISuggestion,
+        agreedRate: number,
+    ): Promise<void> => {
+        const j = jobRef.current;
+        if (!j) return;
+        setDispatchDialog((s) => ({...s, open: false}));
+        const toast = toastService.showLoadingToast(
+            `Sending job ${j.jobNo} to ${partner.text}…`,
+        );
+        sendToPartner(j.id, partner.id, agreedRate)
+            .then(async (result) => {
+                if (!result.success) {
+                    toast.update(
+                        result.message || `Failed to send job ${j.jobNo} to ${partner.text}`,
+                        'error',
+                    );
+                    return;
+                }
+                toast.update(
+                    `Job ${j.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`,
+                    'success',
+                );
+                await refreshAndNotify();
+            })
+            .catch((err: unknown) => {
+                const message = err instanceof Error && err.message
+                    ? err.message
+                    : `Failed to send job ${j.jobNo} to ${partner.text}`;
+                toast.update(message, 'error');
+            });
+    }, [refreshAndNotify]);
 
     const handleEditPodName = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
         if (j.done) {
-            openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, j.podName);
+            openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, j.podName, undefined, undefined, true);
             return;
         }
         await markJobAsDone('name');
@@ -703,7 +971,9 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (j.done) {
-            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone);
+            // Clearing the POD time on an archived completed job is the same un-completion the
+            // Done toggle refuses, so the dialog doesn't offer Clear there.
+            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone, !j.isArchived);
             return;
         }
         await markJobAsDone('time');
@@ -723,6 +993,13 @@ export function useJobActions({
         // change-request dialog with the field + value locked so the user only
         // adds a reason for the counterparty.
         if (j.isPartnerJob) {
+            // A locked partner job is view-only; the partner mirror carries no
+            // local breakdown to display, so surface the state rather than
+            // opening the editable agreed-rate flow.
+            if (j.locked) {
+                showToast(`${j.jobNo} is locked — pricing is read-only.`, 'info');
+                return;
+            }
             if (!onRequestPartnerChange) {
                 showToast(`${j.jobNo} is managed by a partner. Use Request Change to negotiate the agreed rate.`, 'info');
                 return;
@@ -738,6 +1015,35 @@ export function useJobActions({
             onRequestPartnerChange('PartnerAgreedRate', newRate.trim(), true);
             return;
         }
+        // Every split job — parent or child — shares one price breakdown view: the per-leg grid,
+        // fetched from the parent. A split child's pricing is derived from the parent (docs/pricing/
+        // job-splitting-price-breakdown.md §6), so it opens the same grid read-only with its own
+        // leg highlighted rather than a separate flat dialog.
+        const isSplitParent = j.jobRelationshipTypeId === JobRelationshipType.SplitParent;
+        const isSplitChild = j.jobRelationshipTypeId === JobRelationshipType.SplitChild;
+        if (isSplitParent || isSplitChild) {
+            const parentJob = isSplitChild && j.rootParentId != null
+                ? relatedJobs.find(rj => rj.id === j.rootParentId)
+                : undefined;
+            const splitParentId = isSplitChild ? parentJob?.id : j.id;
+            const splitParentIsArchived = isSplitChild
+                ? (parentJob?.isArchived ?? j.isArchived ?? false)
+                : (j.isArchived ?? false);
+            const splitBreakdown = splitParentId != null
+                ? await getSplitPricingBreakdown(splitParentId, splitParentIsArchived)
+                : undefined;
+            if (splitBreakdown) {
+                await ensureSplitPricingBreakdownDialog();
+                window.ReactSplitPricingBreakdownDialog?.setToastService({showToast});
+                await window.ReactSplitPricingBreakdownDialog?.open(splitBreakdown, {
+                    readOnly: isSplitChild || splitParentIsArchived,
+                    highlightLegId: isSplitChild ? j.id : undefined,
+                });
+                await refreshAndNotify();
+                return;
+            }
+        }
+
         const breakdowns = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
         const isUsingOldAmountMethod = !isUsCustomer && breakdowns.length === 0;
         if (isUsingOldAmountMethod) {
@@ -750,13 +1056,28 @@ export function useJobActions({
                 isPrebook: j.preBook,
                 isBulk: j.isBulkJob,
                 hideRecalculate: hideRecalculate === true,
+                readOnly: !!j.locked,
             });
         } else {
+            // Reached only when the split-breakdown lookup above found nothing to show (e.g. no
+            // pricing items or no live legs at all) — an unusual fallback, not the normal split path.
+            const parentJob = isSplitChild && j.rootParentId != null
+                ? relatedJobs.find(rj => rj.id === j.rootParentId)
+                : undefined;
+            const managedElsewhere = parentJob
+                ? {parentJobNumber: parentJob.jobNo, onNavigateToParent: () => onNavigateToJob?.(parentJob.id)}
+                : undefined;
+
             await ensurePriceBreakdownDialog();
-            await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived);
+            window.ReactPriceBreakdownDialog?.setToastService({showToast});
+            await window.ReactPriceBreakdownDialog?.open(
+                breakdowns, j.id, j.preBook, j.isArchived, isUsCustomer,
+                isSplitChild ? true : !!j.locked,
+                managedElsewhere,
+            );
         }
         await refreshAndNotify();
-    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync]);
+    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, ensureSplitPricingBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync, relatedJobs, onNavigateToJob]);
 
     const handleStatusClick = useCallback(async () => {
         const j = jobRef.current;
@@ -836,16 +1157,20 @@ export function useJobActions({
         const result = await window.ReactEditParcelDimensionsDialog?.showEditParcelDimensionsDialog({
             jobId: j.isBulkJob ? undefined : j.id,
             bulkJobId: j.isBulkJob ? j.id : undefined,
+            jobNumber: j.jobNo,
             parcels: j.parcelDimensions || [],
             isUsCustomer: isUsCustomer,
             jobWeight: j.weight,
+            calculateDimsOncePerJob: j.calculateDimsOncePerJob,
             partnerMode,
+            readOnly: !!j.locked,
         });
         if (!result) return;
         if (partnerMode && onRequestPartnerChange) {
             const payload = JSON.stringify({
                 parcels: result.parcels,
                 weight: result.totalWeight > 0 ? result.totalWeight : undefined,
+                calculateDimsOncePerJob: result.calculateDimsOncePerJob,
             });
             onRequestPartnerChange('Packages', payload, true);
             return;
@@ -914,19 +1239,45 @@ export function useJobActions({
     const handlePodUpload = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        (window as any).ReactJobFileUploadDialog?.open?.(j.id, 'POD');
+        (window as any).ReactJobFileUploadDialog?.open?.(podMediaJobId(j), 'POD');
     }, []);
 
     const handlePodReport = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        window.open(getPodReportUrl(j.id), '_blank');
+        window.open(getPodReportUrl(podMediaJobId(j)), '_blank');
     }, []);
 
     const handlePodSpreadsheet = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        window.open(getPodSpreadsheetUrl(j.id), '_blank');
+        window.open(getPodSpreadsheetUrl(podMediaJobId(j)), '_blank');
+    }, []);
+
+    // Extra overlay documents (invoices, manifests, etc.) offered in the export menu. Fetched lazily the
+    // first time the menu opens for a job — avoids an HTTP call on every job-detail open.
+    const [overlayDocuments, setOverlayDocuments] = useState<OverlayDocument[]>([]);
+    const [overlayDocumentsLoading, setOverlayDocumentsLoading] = useState(false);
+    const overlayFetchedForJob = useRef<number | null>(null);
+
+    const fetchOverlayDocuments = useCallback(async () => {
+        const j = jobRef.current;
+        if (!j || overlayFetchedForJob.current === j.id) return;
+        overlayFetchedForJob.current = j.id;
+        setOverlayDocumentsLoading(true);
+        try {
+            setOverlayDocuments(await getJobOverlayDocuments(podMediaJobId(j)));
+        } catch {
+            setOverlayDocuments([]);
+        } finally {
+            setOverlayDocumentsLoading(false);
+        }
+    }, []);
+
+    const handleDownloadOverlay = useCallback((documentType: string) => {
+        const j = jobRef.current;
+        if (!j) return;
+        window.open(getOverlayDocumentUrl(podMediaJobId(j), documentType), '_blank');
     }, []);
 
     const handleSendPodEmail = useCallback(async () => {
@@ -934,7 +1285,7 @@ export function useJobActions({
         if (!j) return;
         await ensureSendPodDialog();
         const result = await window.ReactSendPodDialog?.open({
-            jobId: j.id,
+            jobId: podMediaJobId(j),
             jobNo: j.jobNo,
             clientName: j.clientName,
             driverName: j.courierData?.courierName || '',
@@ -944,7 +1295,7 @@ export function useJobActions({
             trackingEmail: j.trackingEmail || undefined,
         });
         if (result) {
-            showToast('POD report email sent successfully', 'success');
+            showToast('POD report queued for sending', 'success');
         }
     }, [ensureSendPodDialog, showToast]);
 
@@ -984,6 +1335,36 @@ export function useJobActions({
         await refreshAndNotify();
     }, [updateField, refreshAndNotify]);
 
+    // Persist a new RecurringInitialDays value on the parent recurring
+    // template. When the value goes up, open the CreateAheadBackfillDialog
+    // to plug the interim gap (dates from today + oldN + 1 through today +
+    // newN that would have been materialised had the higher offset been in
+    // force yesterday). When it goes down / stays, no dialog — we never
+    // delete future jobs (per the README non-goal).
+    const handleInitialDaysChange = useCallback(async (initialDays: number) => {
+        const j = jobRef.current;
+        if (!j) return;
+        const oldValue = j.recurringInitialDays ?? 0;
+        if (initialDays === oldValue) return;
+
+        await updateField({
+            job: j,
+            field: JobProperty.RecurringInitialDays,
+            value: initialDays,
+            isRecurring: j.preBook,
+        });
+        await refreshAndNotify();
+
+        if (initialDays > oldValue) {
+            setCreateAheadBackfillDialog({
+                open: true,
+                jobId: j.id,
+                oldValue,
+                newValue: initialDays,
+            });
+        }
+    }, [updateField, refreshAndNotify]);
+
     const handleEditFirstDue = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
@@ -1001,6 +1382,54 @@ export function useJobActions({
         if (!j) return;
         return editDate(JobProperty.RestartDate, 'Restart Date', j.restartDate);
     }, [editDate]);
+
+    // ── Saved Flight (recurring flight bookings) ───────────────────
+
+    const handleEditSavedFlight = useCallback(() => {
+        const j = jobRef.current;
+        if (!j) return;
+        setSavedFlightDialog({
+            open: true,
+            bookingId: j.id,
+            fromAirportId: j.fromAirportId,
+            toAirportId: j.toAirportId,
+            currentValue: j.savedFlightNumber,
+            departureDate: j.nextDue ?? j.firstDue,
+        });
+    }, []);
+
+    // Opens the add-flight dialog for a recurring booking with no route yet.
+    // The dialog collects From/To airports + flight number; on confirm we
+    // persist all three so push-to-live auto-assign can match.
+    const handleAddFlight = useCallback(() => {
+        const j = jobRef.current;
+        if (!j) return;
+        setSavedFlightDialog({
+            open: true,
+            bookingId: j.id,
+            fromAirportId: j.fromAirportId,
+            toAirportId: j.toAirportId,
+            currentValue: j.savedFlightNumber,
+            departureDate: j.nextDue ?? j.firstDue,
+            showAirportPickers: true,
+        });
+    }, []);
+
+    const savedFlightDialogConfirm = useCallback(async (
+        flightNumber: string,
+        airports?: {fromAirportId: number; toAirportId: number},
+    ) => {
+        const j = jobRef.current;
+        setSavedFlightDialog((s) => ({...s, open: false}));
+        if (!j) return;
+        if (airports) {
+            // Route + flight saved together via the dedicated atomic endpoint.
+            await saveRecurringFlight(j.id, airports.fromAirportId, airports.toAirportId, flightNumber);
+        } else {
+            await updateField({job: j, field: JobProperty.SavedFlightNumber, value: flightNumber, isRecurring: true});
+        }
+        await refreshAndNotify();
+    }, [updateField, refreshAndNotify]);
 
     // ── Missing Field Edit Handlers ────────────────────────────────
 
@@ -1070,9 +1499,26 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         const {releaseBulkJob} = await import('../../../../services/jobListApi');
-        await releaseBulkJob(j.id);
-        showToast(`Bulk job ${j.jobNo} sent to live successfully`, 'success');
-        await refreshAndNotify();
+        try {
+            const {jobNumbers} = await releaseBulkJob(j.id);
+            const joined = jobNumbers.join(', ');
+
+            let copied = false;
+            try {
+                await navigator.clipboard.writeText(joined);
+                copied = true;
+            } catch {
+                // clipboard.writeText rejects in insecure contexts or when the
+                // document loses focus; release succeeded, so just skip the copy.
+            }
+
+            const copySuffix = copied ? ' (copied to clipboard)' : '';
+            showToast(`Bulk job ${j.jobNo} sent to live — ${joined}${copySuffix}`, 'success');
+            await refreshAndNotify();
+        } catch (err) {
+            const message = (err as {message?: string})?.message ?? 'Failed to send bulk job to live';
+            showToast(message, 'error');
+        }
     }, [showToast, refreshAndNotify]);
 
     // ── Pallet CRUD ────────────────────────────────────────────────
@@ -1096,6 +1542,9 @@ export function useJobActions({
         textDialog,
         handleTextDialogSubmit,
         handleTextDialogCancel,
+        cascadeDialog,
+        handleCascadeChoose,
+        handleCascadeCancel,
 
         // Dialog primitives (exposed for MetricsGrid)
         editDateAndTime,
@@ -1148,6 +1597,12 @@ export function useJobActions({
         handlePodSpreadsheet,
         handleSendPodEmail,
 
+        // Overlay export documents
+        overlayDocuments,
+        overlayDocumentsLoading,
+        fetchOverlayDocuments,
+        handleDownloadOverlay,
+
         // Recurring
         handleDaysOfWeekChange,
         handleFrequencyChange,
@@ -1156,6 +1611,18 @@ export function useJobActions({
         handleEditFirstDue,
         handleEditStopDate,
         handleEditRestartDate,
+        handleEditSavedFlight,
+        handleAddFlight,
+        handleInitialDaysChange,
+
+        // Saved-flight dialog — JobDetails renders the dialog and wires these back.
+        savedFlightDialog,
+        closeSavedFlightDialog,
+        savedFlightDialogConfirm,
+
+        // Create-ahead backfill dialog — JobDetails renders it inline.
+        createAheadBackfillDialog,
+        closeCreateAheadBackfillDialog,
 
         // Missing field editors
         handleEditAmount,
@@ -1181,5 +1648,13 @@ export function useJobActions({
         // Pallet CRUD
         handleNewPallet,
         handleEditPallet,
+
+        // Universal dispatch dialog — JobDetails renders the dialog and wires
+        // these callbacks back to the hook so this hook still owns dispatch logic.
+        dispatchDialog,
+        closeDispatchDialog,
+        dispatchDialogConfirmCourier,
+        dispatchDialogUnassignCourier,
+        dispatchDialogConfirmPartner,
     };
 }

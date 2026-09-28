@@ -6,112 +6,59 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
+import type {ToastService} from '../../../services/toastService';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
 // API interface for making requests
 interface ApiService {
     addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
     deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
+    getSuggestedFuelCharge: (jobId: number, chargeAmount: number, isPrebook: boolean, isArchived: boolean) => Promise<{ fuelChargeAmount: number; fuelCostAmount: number }>;
 }
 
-// State management for the dialog
-interface DialogState {
-    open: boolean;
+interface PriceBreakdownPayload {
     priceBreakdowns: PriceBreakdown[];
     jobId: number;
     isPrebook: boolean;
     isArchived: boolean;
-    apiService: ApiService | null;
-    resolve?: (value: number | null) => void;
+    isUsCustomer: boolean;
+    readOnly: boolean;
+    managedElsewhere?: {parentJobNumber: string; onNavigateToParent: () => void};
+    apiService: ApiService;
 }
 
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    priceBreakdowns: [],
-    jobId: 0,
-    isPrebook: false,
-    isArchived: false,
-    apiService: null,
-};
+const host = createDialogHost<PriceBreakdownPayload, number | null>({
+    containerId: 'react-price-breakdown-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <PriceBreakdownDialog
+            open={open}
+            priceBreakdowns={payload.priceBreakdowns}
+            jobId={payload.jobId}
+            isPrebook={payload.isPrebook}
+            isArchived={payload.isArchived}
+            isUsCustomer={payload.isUsCustomer}
+            readOnly={payload.readOnly}
+            managedElsewhere={payload.managedElsewhere}
+            onClose={() => close(null)}
+            onSave={close}
+            onAddItem={(item) => payload.apiService.addPriceBreakdown(item)}
+            onUpdateItem={(item) => payload.apiService.updatePriceBreakdown(item)}
+            onDeleteItem={(chargeId, jobId, isArchived) =>
+                payload.apiService.deletePriceBreakdown(chargeId, jobId, isArchived)}
+            onGetSuggestedFuelCharge={(chargeAmount) => payload.apiService.getSuggestedFuelCharge(
+                payload.jobId, chargeAmount, payload.isPrebook, payload.isArchived
+            )}
+            showToast={showToast}
+        />
+    ),
+});
 
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSave = (totalAmount: number) => {
-        dialogState.open = false;
-        dialogState.resolve?.(totalAmount);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleAddItem = async (item: Omit<PriceBreakdown, 'chargeId'>): Promise<number> => {
-        if (!dialogState.apiService) throw new Error('API service not available');
-        return dialogState.apiService.addPriceBreakdown(item);
-    };
-
-    const handleUpdateItem = async (item: PriceBreakdown): Promise<void> => {
-        if (!dialogState.apiService) throw new Error('API service not available');
-        return dialogState.apiService.updatePriceBreakdown(item);
-    };
-
-    const handleDeleteItem = async (chargeId: number, jobId: number, isArchived: boolean): Promise<void> => {
-        if (!dialogState.apiService) throw new Error('API service not available');
-        return dialogState.apiService.deletePriceBreakdown(chargeId, jobId, isArchived);
-    };
-
-    // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
-
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <PriceBreakdownDialog
-                    open={dialogState.open}
-                    priceBreakdowns={dialogState.priceBreakdowns}
-                    jobId={dialogState.jobId}
-                    isPrebook={dialogState.isPrebook}
-                    isArchived={dialogState.isArchived}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                    onAddItem={handleAddItem}
-                    onUpdateItem={handleUpdateItem}
-                    onDeleteItem={handleDeleteItem}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-price-breakdown-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
+export function setToastService(service: ToastService): void {
+    host.setToastService(service);
 }
 
 /**
@@ -123,45 +70,40 @@ function createDefaultApiService(): ApiService {
         updatePriceBreakdown: (breakdown) => pricingBreakdownApi.updatePriceBreakdown(breakdown),
         deletePriceBreakdown: (chargeId, jobId, isArchived) =>
             pricingBreakdownApi.deletePriceBreakdown({chargeId, jobId, isArchived}),
+        getSuggestedFuelCharge: (jobId, chargeAmount, isPrebook, isArchived) =>
+            pricingBreakdownApi.getSuggestedFuelCharge(jobId, chargeAmount, isPrebook, isArchived),
     };
 }
 
 /**
- * Opens the price breakdown dialog
- *
- * @param priceBreakdowns - Initial price breakdown items
- * @param jobId - The job ID
- * @param isPrebook - Whether this is a prebook job
- * @param isArchived - Whether this is an archived job
- * @param apiService - Optional API service for CRUD operations (uses default React service if not provided)
- * @returns Promise that resolves with the total amount, or null if cancelled
+ * Opens the price breakdown dialogue
  */
 export function openPriceBreakdownDialog(
     priceBreakdowns: PriceBreakdown[],
     jobId: number,
     isPrebook: boolean,
     isArchived: boolean,
+    isUsCustomer: boolean = false,
+    readOnly: boolean = false,
+    managedElsewhere?: {parentJobNumber: string; onNavigateToParent: () => void},
     apiService?: ApiService
 ): Promise<number | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            priceBreakdowns: [...priceBreakdowns], // Clone the array
-            jobId,
-            isPrebook,
-            isArchived,
-            apiService: apiService ?? createDefaultApiService(),
-            resolve,
-        };
-        renderDialog();
+    return host.open({
+        priceBreakdowns: [...priceBreakdowns], // Clone the array
+        jobId,
+        isPrebook,
+        isArchived,
+        isUsCustomer,
+        readOnly,
+        managedElsewhere,
+        apiService: apiService ?? createDefaultApiService(),
     });
 }
 
 // Expose globally for AngularJS access
 window.ReactPriceBreakdownDialog = {
     open: openPriceBreakdownDialog,
+    setToastService,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
@@ -175,18 +117,15 @@ priceBreakdownDialogReactModule.service('priceBreakdownDialogReactService', [
     () => ({
         /**
          * Opens the React price breakdown dialog
-         * @param priceBreakdowns - Initial price breakdown items
-         * @param jobId - The job ID
-         * @param isPrebook - Whether this is a prebook job
-         * @param isArchived - Whether this is an archived job
-         * @returns Promise resolving to total amount or null if cancelled
          */
         openPriceBreakdownDialog: (
             priceBreakdowns: PriceBreakdown[],
             jobId: number,
             isPrebook: boolean,
-            isArchived: boolean = false
-        ) => openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, isArchived)
+            isArchived: boolean = false,
+            isUsCustomer: boolean = false,
+            readOnly: boolean = false
+        ) => openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, isArchived, isUsCustomer, readOnly)
     })
 ]);
 

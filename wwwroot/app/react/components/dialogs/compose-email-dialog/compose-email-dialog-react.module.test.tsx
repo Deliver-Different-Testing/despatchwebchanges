@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Compose Email Dialog React Module Tests
  *
@@ -16,14 +15,11 @@ jest.mock('react-dom/client', () => ({
     createRoot: mockCreateRoot,
 }));
 
-// Mock the theme
-jest.mock('../../../theme/muiTheme', () => ({
-    getTheme: jest.fn(() => ({})),
-}));
-
-// Mock ReactQueryProvider
-jest.mock('../../../query', () => ({
-    ReactQueryProvider: ({children}: any) => children,
+// Mock the provider stack — this test is about the module's mount/open plumbing,
+// not the theme.
+jest.mock('../../../theme/DfrntMantineProvider', () => ({
+    DfrntMantineProvider: ({children}: {children: React.ReactNode}) => children,
+    islandTree: (node: React.ReactNode) => node,
 }));
 
 // Capture whether angular.module was called with the correct args during module load

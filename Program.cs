@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.FileProviders;
 using Newtonsoft.Json;
 using Serilog;
 using StackExchange.Redis;
@@ -185,18 +184,29 @@ var provider = new FileExtensionContentTypeProvider
     }
 };
 
+var distDir = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist");
+Directory.CreateDirectory(distDir);
+
+// build.ts pre-compresses every bundle to .br/.gz and content-hashes the filenames, so
+// the bundles can be served already-compressed and cached indefinitely. Dev builds do
+// neither, hence the environment switch.
+var distStaticFiles = new PrecompressedStaticFileOptions
+{
+    RequestPath = "/dist",
+    PhysicalPath = distDir,
+    ServeSourceMaps = app.Environment.IsDevelopment(),
+    ImmutableCaching = !app.Environment.IsDevelopment()
+};
+
+// Order matters: wwwroot/dist sits inside the web root, so the general static-file
+// handler below can serve /dist itself. It has to come last, or it answers bundle
+// requests with the uncompressed file before negotiation ever runs.
+app.UsePrecompressedStaticFiles(distStaticFiles);
+app.UseStaticFiles(distStaticFiles.CreateStaticFileOptions());
+
 app.UseStaticFiles(new StaticFileOptions
 {
     ContentTypeProvider = provider
-});
-
-var distDir = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist");
-Directory.CreateDirectory(distDir);
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(distDir),
-    RequestPath = "/dist",
-    ContentTypeProvider = provider // Make sure to use the same provider here
 });
 
 app.UseCsrfProtection();
@@ -205,11 +215,15 @@ app.UseSecurityHeaders();
 app.UseCookiePolicy();
 app.UseRouting();
 app.UseAuthentication();
+app.UseConnectedTenantRejection();
 app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-if (string.IsNullOrEmpty(builder.Configuration["S3BucketMars"])) Log.Warning("S3BucketMars environment variable is not set");
+if (string.IsNullOrEmpty(builder.Configuration["S3BucketMars"]))
+{
+    Log.Warning("S3BucketMars environment variable is not set");
+}
 
 app.Run();

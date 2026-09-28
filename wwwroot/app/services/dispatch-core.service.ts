@@ -1,8 +1,6 @@
 import {
-    ClientItemsViewModel,
     IAddressViewModel,
     IBulkReadUpdateRequest,
-    IClearListViewModel,
     IDispatchJob,
     IDispatchJobDto,
     IEditAddressDialogViewModel,
@@ -25,12 +23,8 @@ import {
     VoidBulkJobRequest,
     VoidJobRequest,
 } from "../interfaces/job.interface";
-import {IPaginatedResponse} from "../interfaces/paginated-response.interface";
 import {
     ActiveCourierViewModel,
-    IAvailableCourierPosition,
-    IDriverWorkOverview,
-    IPotentialCouriers,
     ITruckCourierStatus,
 } from "../interfaces/courier.interface";
 import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interface";
@@ -38,16 +32,12 @@ import {DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface
 import {ITask, ITaskDto, TaskTableFiltersRequest,} from "../interfaces/task.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
 import {assertValidDownloadFileName, assertValidS3Key} from "../react/utils/fileValidation";
-import {
-    IAllocateJobsToCourierRequest,
-    UpdatePodDetailsRequest
-} from "../interfaces/requests.interfaces";
+import {IAllocateJobsToCourierRequest} from "../interfaces/requests.interfaces";
 import {JobEventData} from "../react/interfaces";
 import {IDeliveryJourney, IDeliveryJourneyDto} from "../react/components/common/task-history/TaskHistory.interfaces";
 import {formatDateForApiWithTzs} from "../react/utils/dateUtils";
-import IDateFilterData from "../interfaces/date-filter-data.interface";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
-import dayjs, {Dayjs} from "dayjs";
+import dayjs from "dayjs";
 import {
     transformDeliveryJourneyDTO,
     transformDispatchJobDTO,
@@ -217,31 +207,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async validateSwapPOD(jobNumber: string): Promise<number> {
-        const response = await this.$http.post<number>(
-            `Job/ValidateSwapPOD`,
-            null, {
-                params: {
-                    job: jobNumber,
-                },
-            }
-        );
-
-        return response.data;
-    }
-
-    async swapPOD(jobNumber1: string, jobNumber2: string): Promise<void> {
-        await this.$http.post(
-            `Job/SwapPOD`,
-            null, {
-                params: {
-                    job1: jobNumber1,
-                    job2: jobNumber2,
-                },
-            }
-        );
-    }
-
     async voidJob(jobId: number, voidSingleJobOnly: boolean, voidReason?: string, selectedJobIds?: number[]): Promise<void> {
         const data: VoidJobRequest = {
             jobId,
@@ -272,8 +237,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         });
     }
 
-    async restoreJobs(jobIds: number[]): Promise<void> {
-        await this.$http.post(`job/RestoreJobs`, {jobIds});
+    async restoreJobs(jobIds: number[], removeCapturedImages = false): Promise<void> {
+        await this.$http.post(`job/RestoreJobs`, {jobIds, removeCapturedImages});
     }
 
     async restoreSplitJobs(jobIds: number[]): Promise<void> {
@@ -290,30 +255,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             null, {
                 params: {
                     jobIds,
-                },
-            }
-        );
-        return response.data;
-    }
-
-    async sendPOD(jobId: number, email: string): Promise<any> {
-        const response = await this.$http.get(
-            `job/SendPOD`, {
-                params: {
-                    jobId,
-                    toEmail: email,
-                },
-            }
-        );
-        return response.data;
-    }
-
-    async hasClientItemsAvailable(clientId: number, speedId: number): Promise<any> {
-        const response = await this.$http.get(
-            `job/HasClientItemsAvailable`, {
-                params: {
-                    clientId,
-                    speedId,
                 },
             }
         );
@@ -352,80 +293,11 @@ class DispatchCoreService implements angular.IServiceProvider {
         return transformJobGroupDTO(response.data, this.isUsCustomer);
     }
 
-    async getJobsCurrent(courierId: number,
-                         startDate: Dayjs,
-                         endDate: Dayjs): Promise<IJobSearchResult> {
-        const response = await this.$http.get<IJobSearchResultDto>(
-            `job/GetCurrentWorkList`, {
-                params: {
-                    courierId,
-                    startDate: formatDateForApiWithTzs(startDate),
-                    endDate: formatDateForApiWithTzs(endDate),
-                },
-            }
-        );
-
-        return {
-            ...response.data,
-            jobs: response.data.jobs.map(transformDispatchJobDTO)
-        }
-    }
-
-    async getDriverLocations(
-        selectedViews: DfrntPageViewModel[],
-        dateFilterData?: IDateFilterData
-    ): Promise<IClearListViewModel> {
-        const filteredViews = selectedViews.filter((view) => view.selected);
-        const despatchViewIds = filteredViews.map(view => view.id);
-
-        const params: Record<string, any> = { despatchViewIds };
-        if (dateFilterData) {
-            params.startDate = formatDateForApiWithTzs(dateFilterData.startDate);
-            params.endDate = formatDateForApiWithTzs(dateFilterData.endDate);
-        }
-
-        const response = await this.$http.get<IClearListViewModel>(
-            `courier`, { params }
-        );
-        return response.data;
-    }
-    
-    async getPotentialCouriers(jobId: number): Promise<IPotentialCouriers[]> {
-        const response = await this.$http.get<IPotentialCouriers[]>(
-            `courier/PotentialCouriers`, {
-                params: {
-                    jobId
-                }
-            }
-        );
-
-        return response.data;
-    }
-
     async getCourierById(courierId: number): Promise<ActiveCourierViewModel> {
         const response = await this.$http.get<ActiveCourierViewModel>(
             `courier/GetCourier`, {
                 params: {
                     courierId,
-                }
-            }
-        );
-        return response.data;
-    }
-
-    async getAvailableCourierLocation(
-        minLng: number,
-        minLat: number,
-        maxLng: number,
-        maxLat: number
-    ): Promise<IAvailableCourierPosition[]> {
-        const response = await this.$http.get<IAvailableCourierPosition[]>(
-            `courier/AvailableCourierLocation`, {
-                params: {
-                    minLng,
-                    minLat,
-                    maxLng,
-                    maxLat,
                 }
             }
         );
@@ -476,55 +348,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         }
     }
 
-    async ppdExclusiveAmount(clientId: number, amount: number): Promise<number> {
-        const response = await this.$http.get<number>(
-            `job/PPDExclusiveAmount`, {
-                params: {
-                    clientId,
-                    amount,
-                },
-            }
-        );
-        return response.data;
-    }
-
-    async getServices(
-        clientId: number,
-        speedId: number,
-        jobId: number
-    ): Promise<IPaginatedResponse<ClientItemsViewModel>> {
-        const url = "job/GetAllClientItems";
-        const response = await this.$http.get<IPaginatedResponse<ClientItemsViewModel>>(
-            url,
-            {
-                params: {
-                    clientId: clientId,
-                    speedId: speedId,
-                    jobId: jobId
-                }
-            }
-        );
-
-        return response.data;
-    }
-
-    async addServicesToJob(
-        jobId: number,
-        serviceIds: number[],
-        totalCost: number
-    ): Promise<void> {
-        const url = "job/AddClientItemsToJob";
-
-        await this.$http.post(url, {
-            serviceIds,
-            totalCost,
-        }, {
-            params: {
-                jobId,
-            }
-        });
-    }
-
     async splitJob(
         jobId: number,
         meetingPointAddress: IAddressViewModel
@@ -543,10 +366,6 @@ class DispatchCoreService implements angular.IServiceProvider {
             params: { taskId }
         });
         return response.data;
-    }
-
-    async updatePODDetail(data: UpdatePodDetailsRequest): Promise<void> {
-        await this.$http.post("job/UpdatePODDetails", data);
     }
 
     private async updateAddress(
@@ -794,21 +613,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getJobDeliveryPhotosAndSignature(jobId: number, year: number, month: number): Promise<Is3PhotoInfo[]> {
-        const response = await this.$http.get<Is3PhotoInfo[]>(
-            '/Job/GetJobDeliveryPhotosAndSignature',
-            {
-                params: {
-                    jobId,
-                    year,
-                    month
-                }
-            }
-        );
-
-        return response.data;
-    }
-
     async getAllTasks(filters?: TaskTableFiltersRequest): Promise<ITask[]> {
         try {
             const params = filters
@@ -933,8 +737,8 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async quickCreateJob(job: JobCreateViewModelDto): Promise<number> {
-        const response = await this.$http.post<number>('/job/QuickCreateJob', job);
+    async quickCreateJob(job: JobCreateViewModelDto): Promise<{jobId: number; jobNumber: string}> {
+        const response = await this.$http.post<{jobId: number; jobNumber: string}>('/job/QuickCreateJob', job);
         return response.data;
     }
 
@@ -991,7 +795,7 @@ class DispatchCoreService implements angular.IServiceProvider {
             link.click();
 
             // Cleanup
-            this.$timeout(() => {
+            await this.$timeout(() => {
                 angular.element(link).remove();
                 this.$window.URL.revokeObjectURL(url);
             }, 100);
@@ -1034,15 +838,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }
 
-    async getExactCourierMatch(courierCode: string): Promise<ISuggestion> {
-        const response = await this.$http.get<ISuggestion>('courier/GetExactCourierByCode', {
-            params: {
-                courierCode
-            }
-        });
-        return response.data;
-    }
-
     async searchSpeedOptions(searchTerm: string): Promise<ISuggestion[]> {
         const response = await this.$http.get<ISuggestion[]>('job/SearchSpeedOptions', {
             params: {
@@ -1052,11 +847,6 @@ class DispatchCoreService implements angular.IServiceProvider {
         return response.data;
     }  
     
-    async getDriverWorkOverview(): Promise<IDriverWorkOverview[]> {
-        const response = await this.$http.get<IDriverWorkOverview[]>('courier/GetDriverWorkOverview');
-        return response.data;
-    }
-
     getPodReportUrl(jobId: number): string {
         return `/job/PodReport?jobId=${jobId}`;
     }

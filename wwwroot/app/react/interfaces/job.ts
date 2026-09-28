@@ -37,6 +37,14 @@ export interface CreateJobRequest {
     toLong: number;
     speedId: number;
     vehicleId: number;
+    weightKg: number | null;
+    weightLb: number | null;
+}
+
+/** What job/QuickCreateJob returns: the new job's id plus the job number generated for it. */
+export interface QuickCreateJobResult {
+    jobId: number;
+    jobNumber: string;
 }
 
 export interface RelatedJobDto {

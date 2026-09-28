@@ -8,7 +8,8 @@ namespace DespatchWeb.Helpers;
 
 public static partial class JobMappings
 {
-    public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(bool isUsCustomer) =>
+    public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(
+        bool isUsCustomer, string localTenantId = null) =>
         j => new DispatchJobViewModel
         {
             Id = j.UcjbId,
@@ -103,6 +104,7 @@ public static partial class JobMappings
             Client = j.UcjbClientCode ?? Defaults.NotAvailable,
             ClientId = j.UcjbClientId,
             ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : Defaults.NotAvailable,
+            RefA = j.UcjbClientRefa,
 
             JobType = (int)(j.UcjbType ?? 0),
             PickupTime = null,
@@ -114,7 +116,7 @@ public static partial class JobMappings
             Ld = j.UcjbLateDel,
 
             Done = j.UcjbJobDone,
-            PreBook = true,
+            PreBook = false,
             IsArchived = false,
 
             PickupFrom = j.UcjbPickUpFrom,
@@ -135,17 +137,29 @@ public static partial class JobMappings
                     : null,
             IsAgentAssigned = j.Agent != null,
 
-            SentToPartnerName = j.JobPartnerDispatch != null && j.JobPartnerDispatch.PartnerPairing != null
-                ? j.JobPartnerDispatch.PartnerPairing.PartnerTenantName
+            // SentToPartnerName is OUR outbound discriminator — populated only when
+            // the linked pairing's OwnerTenantId matches the local tenant (we sent the
+            // job out). Inbound mirrors leave it null; the frontend uses this to
+            // distinguish "courier column says: sent to Acme" from "this is Acme's job
+            // we received".
+            SentToPartnerName = j.PartnerPairing != null
+                                && j.PartnerPairing.OwnerTenantId == localTenantId
+                ? j.PartnerPairing.PartnerTenantName
                 : null,
 
-            PartnerTenantName = j.JobPartnerDispatch != null && j.JobPartnerDispatch.PartnerPairing != null
-                ? j.JobPartnerDispatch.PartnerPairing.PartnerTenantName
+            // PartnerTenantName surfaces the OTHER tenant on the pairing for both
+            // outbound and inbound. Falls back to the most-recent change request's
+            // pairing when TucJob.PartnerPairingId is unset (legacy mirrors created
+            // before IM started stamping the column).
+            PartnerTenantName = j.PartnerPairing != null
+                ? j.PartnerPairing.PartnerTenantName
                 : j.TucJobChangeRequests
                     .Where(r => r.UjcrPairing != null && r.UjcrPairing.PartnerTenantName != null)
                     .OrderByDescending(r => r.UjcrRequestedAtUtc)
                     .Select(r => r.UjcrPairing.PartnerTenantName)
                     .FirstOrDefault(),
+
+            PartnerPairingId = j.PartnerPairingId,
 
             Locked = j.UcjbLocked ?? false,
             IsPartnerJob = j.PartnerJobGuid.HasValue,
@@ -198,6 +212,7 @@ public static partial class JobMappings
             ClientId = j.UcjbClientId,
             Client = j.UcjbClientCode,
             ClientName = j.UcjbClient != null ? j.UcjbClient.UcclName : string.Empty,
+            RefA = j.UcjbClientRefa,
 
             From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
             ToSuburbId = j.UcjbTo,

@@ -128,10 +128,10 @@
 
   // Info variant
   &.badge-info {
-    background-color: #2196f3;
+    background-color: #2a4eff; // DFRNT Reflex Blue
 
     &:hover {
-      background-color: #1976d2;
+      background-color: #233fd6;
     }
   }
 
@@ -145,8 +145,8 @@
   }
 }
 
-// NZ tenant theme overrides
-.nz-tenant .custom-badge {
+// Non-US tenant overrides (see autocomplete.less for the scope rationale).
+.theme-nz .custom-badge {
   &.badge-warning {
     background-color: @nz-primary;
     color: black;

@@ -167,6 +167,34 @@ export function formatShortDate(date: Date | Dayjs | string, isUs?: boolean): st
 }
 
 /**
+ * Numeric date-input format (locale-aware): US MM/DD/YYYY vs NZ DD/MM/YYYY.
+ * @param isUs - Whether to use US format (defaults to tenant setting)
+ * @returns Format string suitable for a numeric date field / dayjs .format()
+ */
+export function getInputDateFormat(isUs?: boolean): string {
+    return (isUs ?? isUsCustomer()) ? 'MM/DD/YYYY' : 'DD/MM/YYYY';
+}
+
+/**
+ * Parse a numeric date string in the tenant's input format.
+ * Avoids the customParseFormat plugin by reordering the day/month components
+ * according to the locale before constructing the dayjs object.
+ * @param input - Date string like "03/04/2025"
+ * @param isUs - Whether the input is US-ordered (defaults to tenant setting)
+ * @returns Parsed Dayjs, or null if the string is not a valid date
+ */
+export function parseInputDate(input: string, isUs?: boolean): Dayjs | null {
+    const match = input.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return null;
+    const useUs = isUs ?? isUsCustomer();
+    const [, first, second, yyyy] = match;
+    const dd = useUs ? second : first;
+    const mm = useUs ? first : second;
+    const d = dayjs(`${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`);
+    return d.isValid() ? d : null;
+}
+
+/**
  * Format time only (HH:mm)
  * @param date - Date to format
  * @returns Formatted time string (e.g., "14:30")
@@ -187,19 +215,47 @@ export function formatRelativeDateTime(dateTimeString: string): string {
     const parsed = parseDateFromApi(dateTimeString);
     if (!parsed.isValid()) return 'Invalid date';
 
-    const ianaTimeZone = getIanaTimezone();
-    const dateTime = parsed.tz(ianaTimeZone);
-    const now = dayjs().tz(ianaTimeZone);
-    const isToday = dateTime.isSame(now, 'day');
-    const isTomorrow = dateTime.isSame(now.add(1, 'day'), 'day');
+    // The API already returns this timestamp in the tenant's local wall-clock with its
+    // offset (DeliveryJourneyService converts UTC rows via ConvertUtcToTenantTimeZone and
+    // stamps local rows via SetDateTimeWithTimeZone). parseDateFromApi preserves that
+    // wall-clock + offset, so display it as-is — matching formatLongDateTime/formatTime.
+    // Do NOT re-project with .tz(window.TimeZone): that double-converts and flips the day
+    // when the offsets disagree (showed a 16:24 booking as "Tomorrow 04:24").
+    const now = dayjs().utcOffset(parsed.utcOffset());
+    const isToday = parsed.isSame(now, 'day');
+    const isTomorrow = parsed.isSame(now.add(1, 'day'), 'day');
+
+    // Locale-aware time so US tenants see 12-hour AM/PM (matching formatLongDateTime),
+    // not the 24-hour form used for NZ tenants.
+    const timeStr = isUsCustomer() ? parsed.format('h:mm A') : parsed.format('HH:mm');
 
     if (isToday) {
-        return formatTime(dateTime);
+        return timeStr;
     } else if (isTomorrow) {
-        return `Tomorrow ${formatTime(dateTime)}`;
+        return `Tomorrow ${timeStr}`;
     } else {
-        return formatLongDateTime(dateTime);
+        return formatLongDateTime(parsed);
     }
+}
+
+/**
+ * Format the elapsed time since a past date as a short relative string
+ * (e.g. "just now", "45s ago", "3m ago", "5h ago", "2d ago").
+ * @param date - A past Date to measure from now
+ * @returns Short relative-time string
+ */
+export function formatRelativeTime(date: Date): string {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 10) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    // Round rather than truncate: a due date that is "2 calendar days ago" can be as
+    // little as 47 real hours back across a DST transition, and floor(47/24) wrongly
+    // reads "1d ago".
+    return `${Math.round(hours / 24)}d ago`;
 }
 
 /**

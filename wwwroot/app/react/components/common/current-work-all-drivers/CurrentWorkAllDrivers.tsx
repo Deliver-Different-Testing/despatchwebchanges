@@ -6,33 +6,40 @@
  */
 
 import React, { useMemo, useState, useCallback } from 'react';
-import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import Chip from '@mui/material/Chip';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import LinearProgress from '@mui/material/LinearProgress';
-import Divider from '@mui/material/Divider';
-import SearchIcon from '@mui/icons-material/Search';
-import SortIcon from '@mui/icons-material/SortByAlpha';
-import ClearIcon from '@mui/icons-material/Clear';
-import TruckIcon from '@mui/icons-material/LocalShipping';
+import {
+    ActionIcon,
+    Badge,
+    Box,
+    Divider,
+    Group,
+    Progress,
+    Text,
+    TextInput,
+    Tooltip,
+    UnstyledButton,
+} from '@mantine/core';
+import { ArrowDownAZ, Search, X } from 'lucide-react';
+import { Icon } from '../icon/Icon';
+import { NoData } from '../no-data';
 import { IDriverWorkOverview, SortOrder, CurrentWorkAllDriversProps } from './CurrentWorkAllDrivers.types';
+import classes from './CurrentWorkAllDrivers.module.css';
 
-/**
- * Get chip color based on job count
- */
-function getJobCountColor(jobCount: number): 'success' | 'warning' | 'error' | 'default' {
-    if (jobCount === 0) return 'default';
-    if (jobCount <= 3) return 'success';
-    if (jobCount <= 6) return 'warning';
-    return 'error';
+/** How loaded a driver is — a workload signal, so it climbs the semantic ramp. */
+export type DriverLoadTier = 'none' | 'light' | 'busy' | 'heavy';
+
+export function getDriverLoadTier(jobCount: number): DriverLoadTier {
+    if (jobCount === 0) return 'none';
+    if (jobCount <= 3) return 'light';
+    if (jobCount <= 6) return 'busy';
+    return 'heavy';
 }
+
+const LOAD_TIER_COLORS: Record<DriverLoadTier, string> = {
+    none: 'gray',
+    light: 'green',
+    busy: 'orange',
+    heavy: 'red',
+};
 
 export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
     drivers,
@@ -84,160 +91,120 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
 
     return (
         <Box
-            sx={{
+            style={{
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
                 overflow: 'hidden',
-                bgcolor: 'background.paper',
+                backgroundColor: 'var(--dd-surface-container)',
             }}
         >
             {/* Search and Sort Header */}
             <Box
-                sx={{
-                    p: 1.5,
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    bgcolor: 'grey.50',
+                p="sm"
+                style={{
+                    borderBottom: '1px solid var(--mantine-color-default-border)',
+                    backgroundColor: 'var(--mantine-color-gray-1)',
                 }}
             >
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    <TextField
-                        size="small"
+                <Group gap="xs" align="center" wrap="nowrap">
+                    <TextInput
+                        size="xs"
                         placeholder="Search courier..."
                         value={searchText}
                         onChange={handleSearchChange}
-                        sx={{ flex: 1 }}
-                        slotProps={{
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon fontSize="small" color="action" />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: searchText && (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            size="small"
-                                            onClick={handleClearSearch}
-                                            edge="end"
-                                        >
-                                            <ClearIcon fontSize="small" />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            },
-                        }}
+                        style={{ flex: 1 }}
+                        leftSection={<Icon lucide={Search} size={16} color="var(--mantine-color-gray-5)"/>}
+                        rightSection={searchText
+                            ? (
+                                <ActionIcon size="sm" variant="subtle" color="gray" aria-label="Clear search" onClick={handleClearSearch}>
+                                    <Icon lucide={X} size={16}/>
+                                </ActionIcon>
+                            )
+                            : null}
                     />
-                    <Tooltip title={`Sort ${sortOrder === 'asc' ? 'Z-A' : 'A-Z'}`}>
-                        <IconButton
-                            size="small"
+                    <Tooltip label={`Sort ${sortOrder === 'asc' ? 'Z-A' : 'A-Z'}`} withArrow>
+                        <ActionIcon
+                            size="md"
+                            variant="subtle"
+                            color={sortOrder === 'desc' ? 'brand' : 'gray'}
+                            aria-label={`Sort ${sortOrder === 'asc' ? 'Z-A' : 'A-Z'}`}
                             onClick={toggleSortOrder}
-                            color={sortOrder === 'desc' ? 'primary' : 'default'}
                         >
-                            <SortIcon />
-                        </IconButton>
+                            <Icon lucide={ArrowDownAZ} size={18}/>
+                        </ActionIcon>
                     </Tooltip>
-                </Box>
+                </Group>
                 {searchText && (
-                    <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ mt: 0.5, display: 'block' }}
-                    >
+                    <Text size="xs" c="dimmed" mt={4}>
                         {filteredAndSortedDrivers.length} of {drivers.length} drivers
-                    </Typography>
+                    </Text>
                 )}
             </Box>
-
             {/* Loading indicator */}
             {loading && (
-                <LinearProgress sx={{ flexShrink: 0 }} />
+                <Progress.Root size="xs" style={{ flexShrink: 0 }}>
+                    <Progress.Section value={100} animated aria-label="Loading drivers"/>
+                </Progress.Root>
             )}
-
             {/* Driver List */}
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <Box style={{ flex: 1, overflow: 'auto' }}>
                 {filteredAndSortedDrivers.length === 0 ? (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            py: 6,
-                            px: 2,
-                            color: 'text.secondary',
-                        }}
-                    >
-                        <TruckIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
-                        <Typography variant="subtitle1" gutterBottom>
-                            {searchText ? 'No Drivers Found' : 'No Drivers Available'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            {searchText
+                    <NoData
+                        title={searchText ? 'No Drivers Found' : 'No Drivers Available'}
+                        message={
+                            searchText
                                 ? `No drivers match "${searchText}"`
                                 : 'No active drivers found'
-                            }
-                        </Typography>
-                    </Box>
+                        }
+                    />
                 ) : (
-                    <List disablePadding>
-                        {filteredAndSortedDrivers.map((driver, index) => (
-                            <React.Fragment key={driver.courierId}>
-                                <ListItemButton
-                                    onClick={() => handleDriverClick(driver)}
-                                    selected={selectedCourierId === driver.courierId}
-                                    sx={{
-                                        py: 1.5,
-                                        px: 2,
-                                        '&.Mui-selected': {
-                                            bgcolor: 'primary.50',
-                                            borderLeft: 3,
-                                            borderColor: 'primary.main',
-                                            '&:hover': {
-                                                bgcolor: 'primary.100',
-                                            },
-                                        },
-                                    }}
-                                >
-                                    <ListItemText
-                                        primary={
-                                            <Typography
-                                                variant="subtitle2"
-                                                fontWeight={selectedCourierId === driver.courierId ? 600 : 500}
-                                            >
-                                                {driver.name}
-                                            </Typography>
-                                        }
-                                        secondary={driver.vehicleType}
-                                    />
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'flex-end',
-                                            gap: 0.5,
-                                        }}
+                    <Box component="ul" className={classes.list}>
+                        {filteredAndSortedDrivers.map((driver, index) => {
+                            const selected = selectedCourierId === driver.courierId;
+                            return (
+                                <li key={driver.courierId}>
+                                    <UnstyledButton
+                                        className={classes.row}
+                                        data-selected={selected || undefined}
+                                        aria-current={selected || undefined}
+                                        onClick={() => handleDriverClick(driver)}
                                     >
-                                        <Chip
-                                            label={`${driver.jobCount} ${driver.jobCount === 1 ? 'job' : 'jobs'}`}
-                                            size="small"
-                                            color={getJobCountColor(driver.jobCount)}
-                                            sx={{ fontWeight: 500 }}
-                                        />
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{ fontSize: '0.7rem' }}
+                                        <Box style={{ flex: 1, minWidth: 0 }}>
+                                            <Text size="sm" fw={selected ? 600 : 500}>
+                                                {driver.name}
+                                            </Text>
+                                            <Text size="xs" c="dimmed">{driver.vehicleType}</Text>
+                                        </Box>
+                                        <Box
+                                            style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'flex-end',
+                                                gap: 4,
+                                            }}
                                         >
-                                            {driver.driverStatusText}
-                                        </Typography>
-                                    </Box>
-                                </ListItemButton>
-                                {index < filteredAndSortedDrivers.length - 1 && <Divider />}
-                            </React.Fragment>
-                        ))}
-                    </List>
+                                            <Badge
+                                                size="sm"
+                                                variant="light"
+                                                color={LOAD_TIER_COLORS[getDriverLoadTier(driver.jobCount)]}
+                                                // The tier, not the colour, is the contract — so a palette
+                                                // change cannot silently invert what the badge means.
+                                                data-tier={getDriverLoadTier(driver.jobCount)}
+                                                fw={500}
+                                            >
+                                                {`${driver.jobCount} ${driver.jobCount === 1 ? 'job' : 'jobs'}`}
+                                            </Badge>
+                                            <Text c="dimmed" style={{ fontSize: '0.7rem' }}>
+                                                {driver.driverStatusText}
+                                            </Text>
+                                        </Box>
+                                    </UnstyledButton>
+                                    {index < filteredAndSortedDrivers.length - 1 && <Divider/>}
+                                </li>
+                            );
+                        })}
+                    </Box>
                 )}
             </Box>
         </Box>

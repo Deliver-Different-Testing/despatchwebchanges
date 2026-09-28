@@ -5,15 +5,50 @@
  * Used by the React Recurring Jobs page.
  */
 
-import {apiClient, RequestOptions, downloadBlob} from './apiClient';
+import {apiClient, downloadBlob} from './apiClient';
+import {parseDateFromApi, getTenantTimezone} from '../utils/dateUtils';
 import {
+    CreateCreateAheadBackfillRequest,
+    CreateCreateAheadBackfillResult,
+    InsertRecurringToLiveRequest,
+    InsertRecurringToLiveResult,
     PaginatedRecurringJobsResponse,
     PaginatedRecurringJobsResponseDto,
+    PreviewCreateAheadBackfillRequest,
+    PreviewCreateAheadBackfillResult,
     RecurringJobQuery,
+    RecurringMode,
     RouteOption,
     SpeedOption,
     transformPaginatedResponse,
 } from '../interfaces';
+import type {
+    RecurringJourney,
+    RecurringJourneyDto,
+    RecurringJourneyRunDto,
+    RecurringJourneyRun,
+} from '../components/common/recurring-delivery-journey/RecurringDeliveryJourney.types';
+import {RequestOptions} from "./requestOptions";
+
+function transformRecurringJourneyRun(dto: RecurringJourneyRunDto): RecurringJourneyRun {
+    return {
+        ...dto,
+        // parseDateFromApi (not bare dayjs) preserves the backend's wall-clock + offset
+        // as-is; bare dayjs() would re-project the instant into the browser's timezone
+        // and shift the displayed service/POD time.
+        serviceDate: parseDateFromApi(dto.serviceDate),
+        pod: dto.pod
+            ? {time: parseDateFromApi(dto.pod.time), signedBy: dto.pod.signedBy}
+            : null,
+    };
+}
+
+function transformRecurringJourney(dto: RecurringJourneyDto): RecurringJourney {
+    return {
+        breakdown: dto.breakdown,
+        runs: (dto.runs || []).map(transformRecurringJourneyRun),
+    };
+}
 
 export const recurringJobsApi = {
     /**
@@ -50,21 +85,66 @@ export const recurringJobsApi = {
     },
 
     /**
-     * Void (inactivate) a recurring job
-     * @param jobId - ID of the job to void
-     */
-    voidPrebookJob: async (jobId: number): Promise<void> => {
-        await apiClient.post('job/VoidPrebookJob', {jobId});
-    },
-
-    /**
      * Export recurring jobs to CSV
      * Downloads the file directly via blob
      * @param query - Query parameters to filter exported jobs
      */
     exportToCsv: async (query: RecurringJobQuery): Promise<void> => {
         const response = await apiClient.postForBlob('job/RecurringJobsExportCsv', query);
-        downloadBlob(response, `recurring-jobs-${query.active ? 'active' : 'inactive'}.csv`);
+        // Honor the three-state mode for the download filename suffix
+        // when present, falling back to the legacy active/inactive label.
+        const modeLabel = query.recurringMode !== undefined
+            ? RecurringMode[query.recurringMode].toLowerCase()
+            : (query.active ? 'active' : 'inactive');
+        downloadBlob(response, `recurring-jobs-${modeLabel}.csv`);
+    },
+
+    /**
+     * Manual-mode operator push of a recurring booking into live tucJob.
+     * Source booking stays on RecurringMode = Manual after the call.
+     */
+    insertToLive: async (request: InsertRecurringToLiveRequest): Promise<InsertRecurringToLiveResult> => {
+        return await apiClient.post<InsertRecurringToLiveResult>('job/InsertRecurringToLive', request);
+    },
+
+    /**
+     * Preview interim service dates that would be materialised if the operator
+     * raises RecurringInitialDays from `oldValue` to `newValue` on a template.
+     * Read-only — safe to call as the operator adjusts the value in the dialog.
+     */
+    previewCreateAheadBackfill: async (
+        request: PreviewCreateAheadBackfillRequest
+    ): Promise<PreviewCreateAheadBackfillResult> => {
+        return await apiClient.post<PreviewCreateAheadBackfillResult>(
+            'job/PreviewCreateAheadBackfill', request
+        );
+    },
+
+    /**
+     * Materialise the operator-confirmed subset of dates from the preview
+     * candidate list. Each date rotates a fresh ucbkJobNumber family via the
+     * same SP path uspPrebookSet uses nightly, so double-click yields
+     * jobsCreated=0 on the second call (dup guard against family + date).
+     */
+    createCreateAheadBackfill: async (
+        request: CreateCreateAheadBackfillRequest
+    ): Promise<CreateCreateAheadBackfillResult> => {
+        return await apiClient.post<CreateCreateAheadBackfillResult>(
+            'job/CreateCreateAheadBackfill', request
+        );
+    },
+
+    /**
+     * Fetch the recurring log entries (one per spawned live job) plus
+     * breakdown counts for a recurring booking.
+     */
+    getDeliveryJourney: async (bookingId: number, options?: RequestOptions): Promise<RecurringJourney> => {
+        const response = await apiClient.get<RecurringJourneyDto>(
+            'job/GetRecurringJobDeliveryJourney',
+            {bookingId, timeZone: getTenantTimezone()},
+            options,
+        );
+        return transformRecurringJourney(response);
     },
 };
 

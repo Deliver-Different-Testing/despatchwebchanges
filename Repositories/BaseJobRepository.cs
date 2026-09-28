@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -74,12 +76,14 @@ public partial class BaseJobRepository(
         {
             var query = await BuildBaseQueryAsync(selectedViewIds, isUsTenant);
             if (query == null)
+            {
                 return new JobSearchResult
                 {
                     Jobs = [],
                     TotalCount = 0,
                     HasMore = false
                 };
+            }
 
             ClearListEnvelopeViewModel clearListEnvelope = null;
             var isNeedsDispatchFilter = false;
@@ -97,17 +101,20 @@ public partial class BaseJobRepository(
             }
 
             query = ApplyGeographicFilters(query, clearListEnvelope, isNeedsDispatchFilter);
-            query = ApplyStatusFilter(query, queryParams.StatusFilter);
             query = ApplySearchTextFilter(query, queryParams.SearchText);
 
             switch (page)
             {
                 case AppPage.Dispatch:
                     if (queryParams.DateCutoff.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+                    {
+                        query = query.Where(JobDateOnOrBefore(queryParams.DateCutoff.Value));
+                    }
 
                     if (queryParams.StartDate.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+                    {
+                        query = query.Where(JobDateOnOrAfter(queryParams.StartDate.Value));
+                    }
 
                     query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
 
@@ -132,44 +139,34 @@ public partial class BaseJobRepository(
                     };
             }
 
-            // Apply server-side pagination when Page is provided
+            // The stats header describes the list as a whole, so its counts come off the query as it
+            // stands before the category tab narrows it — otherwise picking a tab would rewrite the
+            // very numbers it was picked from. Everything else the user asked for still applies.
+            var statsQuery = query;
+            query = ApplyStatusFilter(query, queryParams.StatusFilter);
+
+            // Resolve the distinct job IDs for this page up-front. Paginating over distinct IDs
+            // keeps page sizes consistent and lets us project only the page's jobs (no duplicate
+            // rows). Even when the caller omits Page, the non-paginated path is bounded by a safety
+            // ceiling so this query can never materialise an unbounded view.
             var requestedPage = queryParams.Page ?? 0;
             var pageSize = queryParams.PageSize ?? 500;
-            int? totalCount = null;
-            var hasMore = false;
 
-            List<DispatchJobViewModel> allJobs;
+            var (pageJobIds, totalCount, hasMore) = await ResolveJobIdPageAsync(
+                query.Select(j => j.UcjbId).Distinct(),
+                requestedPage,
+                pageSize,
+                cancellationToken: cancellationToken);
 
-            if (requestedPage > 0)
-            {
-                // Paginate over distinct job IDs to ensure consistent page sizes,
-                // then project only the page's jobs to avoid transferring duplicate rows
-                var distinctIdsQuery = query.Select(j => j.UcjbId).Distinct();
-                totalCount = await distinctIdsQuery.CountAsync(cancellationToken);
+            // Answered with the first page only; the client keeps it while it scrolls.
+            var statusCounts = requestedPage == 0
+                ? await CountStatusBucketsAsync(statsQuery, cancellationToken)
+                : null;
 
-                var pageJobIds = await distinctIdsQuery
-                    .OrderBy(id => id)
-                    .Skip((requestedPage - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync(cancellationToken);
-
-                hasMore = totalCount > requestedPage * pageSize;
-
-                allJobs = await Context.TucJobs
-                    .Where(j => pageJobIds.Contains(j.UcjbId))
-                    .Select(JobMappings.JobDispatchMapping(isUsTenant))
-                    .ToListAsync(cancellationToken);
-            }
-            else
-            {
-                allJobs = await query
-                    .Select(JobMappings.JobDispatchMapping(isUsTenant))
-                    .ToListAsync(cancellationToken);
-
-                allJobs = allJobs.DistinctBy(j => j.Id).ToList();
-            }
-
-            totalCount ??= allJobs.Count;
+            var allJobs = await Context.TucJobs
+                .Where(j => pageJobIds.Contains(j.UcjbId))
+                .Select(JobMappings.JobDispatchMapping(isUsTenant, infoService.GetCurrentTenantId()))
+                .ToListAsync(cancellationToken);
 
             // Populate Children on parent jobs so the frontend can track grouping via _groupChildren.
             // All jobs stay in the flat list the template renders them as flat rows.
@@ -179,7 +176,11 @@ public partial class BaseJobRepository(
 
             foreach (var child in allJobs.Where(j => !j.IsParentOrSingle && j.ParentId.HasValue))
             {
-                if (!parentJobMap.TryGetValue(child.ParentId!.Value, out var parent)) continue;
+                if (!parentJobMap.TryGetValue(child.ParentId!.Value, out var parent))
+                {
+                    continue;
+                }
+
                 parent.Children ??= [];
                 parent.Children.Add(child);
             }
@@ -208,24 +209,27 @@ public partial class BaseJobRepository(
             return new JobSearchResult
             {
                 Jobs = allJobs,
-                TotalCount = totalCount.Value,
+                TotalCount = totalCount,
                 HasMore = hasMore,
-                MapItems = page == AppPage.Dispatch ? mapItems : null
+                MapItems = page == AppPage.Dispatch ? mapItems : null,
+                StatusCounts = statusCounts
             };
         }
         catch (Exception e)
         {
-            Log.Error(e, "Error occurred getting jobs for dispatch page with pagination. Please see exception.");
+            Log.Error(e, "Error occurred getting jobs for dispatch page with pagination. Please see exception");
             throw;
         }
     }
 
-    private async Task<IQueryable<TucJob>> BuildBaseQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    protected async Task<IQueryable<TucJob>> BuildBaseQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
     {
         var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant);
 
         if (!isUsTenant && (selectedViewIds == null || selectedViewIds.Count == 0))
+        {
             return Context.TucJobs.Where(j => false);
+        }
 
         var query = from job in Context.TucJobs
             join id in jobIdsQuery on job.UcjbId equals id
@@ -234,11 +238,56 @@ public partial class BaseJobRepository(
         return query.TagWith($"BuildBaseQuery - Views: {selectedViewIds?.Count ?? 0}");
     }
 
-    private async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    /// <summary>
+    /// Same despatch-view scoping as <see cref="BuildBaseQueryAsync"/>, but for callers that
+    /// group jobs by parent (e.g. the Overview page's parent/child list). A view's
+    /// WhereCondition is evaluated leg-by-leg, so a split job's child can match on its own
+    /// courier/region/etc. while the parent row does not — resolving straight to the matched
+    /// leg's own id would then get filtered out by a parent-only restriction downstream, and
+    /// the parent was never in the matched set either. Routing matches through
+    /// <see cref="ResolveParentScopedJobs"/> ensures a match on any leg still surfaces the
+    /// family under its parent.
+    /// </summary>
+    protected async Task<IQueryable<TucJob>> BuildParentScopedQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    {
+        if (!isUsTenant && (selectedViewIds == null || selectedViewIds.Count == 0))
+        {
+            return Context.TucJobs.Where(j => false);
+        }
+
+        var matchedJobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant);
+        var matchedJobIds = await matchedJobIdsQuery.ToListAsync();
+
+        return ResolveParentScopedJobs(matchedJobIds)
+            .TagWith($"BuildParentScopedQuery - Views: {selectedViewIds?.Count ?? 0}");
+    }
+
+    /// <summary>
+    /// Maps a set of matched job/leg ids up to their parent (or themselves, if standalone),
+    /// then returns the corresponding parent-level <see cref="TucJob"/> rows. Takes the
+    /// matched ids already materialized (rather than an <see cref="IQueryable{T}"/> sourced
+    /// from the SQL-Server-only despatch view) so the parent-resolution logic can be composed
+    /// and tested against a plain in-memory id list, independent of that view.
+    /// </summary>
+    // internal so DespatchWeb.Tests can exercise it directly (InternalsVisibleTo is set).
+    internal IQueryable<TucJob> ResolveParentScopedJobs(IReadOnlyList<int> matchedJobIds)
+    {
+        var parentIds = Context.TucJobs
+            .Where(job => matchedJobIds.Contains(job.UcjbId))
+            .Select(job => job.ParentId ?? job.UcjbId)
+            .Distinct();
+
+        return Context.TucJobs.Where(job => parentIds.Contains(job.UcjbId));
+    }
+
+    protected async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
-            if (!isUsTenant) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+            if (!isUsTenant)
+            {
+                return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+            }
 
             return Context.DeswebQryDespatchJobViewFilters
                 .Select(x => x.UcjbId)
@@ -250,7 +299,10 @@ public partial class BaseJobRepository(
             .Select(dv => dv.WhereCondition)
             .ToListAsync();
 
-        if (viewFilters.Count == 0) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+        if (viewFilters.Count == 0)
+        {
+            return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+        }
 
         // Validate each filter to prevent SQL injection
         foreach (var filter in viewFilters.Where(filter => !IsValidWhereCondition(filter)))
@@ -282,7 +334,10 @@ public partial class BaseJobRepository(
 
     private async Task EnrichJobsWithCollections(List<DispatchJobViewModel> jobs)
     {
-        if (jobs.Count == 0) return;
+        if (jobs.Count == 0)
+        {
+            return;
+        }
 
         var jobIds = jobs.Select(j => j.Id).ToList();
         var parentIds = jobs.Where(j => j.ParentId.HasValue)
@@ -319,15 +374,47 @@ public partial class BaseJobRepository(
 
         // Apply related jobs
         foreach (var job in jobs.Where(j => j.ParentId.HasValue))
+        {
             if (job.ParentId != null && relatedJobsDict.TryGetValue(job.ParentId.Value, out var related))
+            {
                 job.RelatedJobs = related;
+            }
+        }
 
         // Apply flights
         foreach (var job in jobs)
+        {
             if (flightsDict.TryGetValue(job.Id, out var flight))
+            {
                 job.AssignedFlight = flight;
+            }
+        }
     }
 
+
+    /// <summary>
+    /// Tallies the stats header's buckets over every job the query matches.
+    /// </summary>
+    /// <remarks>
+    /// The view the base query joins through fans a job out across rows, so the ids are reduced to
+    /// a distinct set and re-joined before classifying — the same shape the total count uses, so
+    /// the two can never disagree.
+    /// </remarks>
+    private async Task<JobListStatusCounts> CountStatusBucketsAsync(
+        IQueryable<TucJob> query, CancellationToken cancellationToken)
+    {
+        var tallies = await query
+            .Select(j => j.UcjbId)
+            .Distinct()
+            .Join(Context.TucJobs, id => id, j => j.UcjbId, (_, j) => j)
+            .Select(JobListStatusBuckets.Over(JobStatusSnapshots.Live))
+            .GroupBy(bucket => bucket)
+            .Select(g => new JobListBucketTally(g.Key, g.Count()))
+            .TagWith("DespatchQry - Status Counts")
+            .ToListAsync(cancellationToken);
+
+        return JobListStatusCounts.FromBuckets(tallies);
+    }
 
     private static IQueryable<TucJob> ApplyStatusFilter(IQueryable<TucJob> query, string statusFilter)
     {
@@ -356,7 +443,10 @@ public partial class BaseJobRepository(
 
     private static IQueryable<TucJob> ApplySearchTextFilter(IQueryable<TucJob> query, string searchText)
     {
-        if (string.IsNullOrWhiteSpace(searchText)) return query;
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            return query;
+        }
 
         var search = searchText.Trim().ToLower();
         return query.Where(j =>
@@ -395,16 +485,21 @@ public partial class BaseJobRepository(
         bool pickupOnlyFilter = false
     )
     {
-        if (clearListEnvelope == null) return query;
+        if (clearListEnvelope == null)
+        {
+            return query;
+        }
 
         if (pickupOnlyFilter)
             // Filter by pickup location only (jobs FROM this area) - for needs-dispatch
+        {
             return query.Where(j =>
                 j.PickUpLatitude >= clearListEnvelope.MinimumLatitude
                 && j.PickUpLatitude <= clearListEnvelope.MaximumLatitude
                 && j.PickUpLongitude >= clearListEnvelope.MinimumLongitude
                 && j.PickUpLongitude <= clearListEnvelope.MaximumLongitude
             );
+        }
 
         // Filter by pickup OR delivery location (jobs FROM or TO this area) - for all other categories
         return query.Where(j =>
@@ -432,9 +527,14 @@ public partial class BaseJobRepository(
     {
         // Filter dates
         if (queryParams.StartDate != null)
-            query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+        {
+            query = query.Where(JobDateOnOrAfter(queryParams.StartDate.Value));
+        }
+
         if (queryParams.DateCutoff != null)
-            query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+        {
+            query = query.Where(JobDateOnOrBefore(queryParams.DateCutoff.Value));
+        }
 
         query = ApplyEndDateFilter(query, queryParams.DateCutoff, queryParams.UseTime);
 
@@ -460,7 +560,10 @@ public partial class BaseJobRepository(
         query = query.Where(j => !j.UcjbComplTime.HasValue);
 
         // Apply client viewFilters for non-internal users
-        if (isInternal || string.IsNullOrEmpty(clientIds)) return query;
+        if (isInternal || string.IsNullOrEmpty(clientIds))
+        {
+            return query;
+        }
 
         var clientIdList = clientIds.Split(',')
             .Select(id => int.TryParse(id.Trim(), out var parsed) ? parsed : (int?)null)
@@ -478,18 +581,134 @@ public partial class BaseJobRepository(
         bool useTime)
     {
         if (!endDate.HasValue)
+        {
             return query;
+        }
 
-        if (!useTime) return query.Where(j => j.UcjbDate.Date <= endDate.Value.Date);
+        return useTime
+            ? query.Where(JobDateTimeOnOrBefore(endDate.Value))
+            : query.Where(JobDateOnOrBefore(endDate.Value));
+    }
 
-        // Compare full datetime by checking date first, then time
-        var filterDate = endDate.Value.Date;
-        var filterTime = endDate.Value.TimeOfDay;
+    /// <summary>
+    /// Sargable equivalent of <c>j.UcjbDate.Date &gt;= date.Date</c>. Wrapping the column in
+    /// <c>.Date</c> stops the optimiser seeking an index on UcjbDate, so the bound is normalised
+    /// in C# and compared against the bare column instead.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> JobDateOnOrAfter(DateTimeOffset date)
+    {
+        var startInclusive = date.Date;
+        return j => j.UcjbDate >= startInclusive;
+    }
 
-        return query.Where(j =>
-            j.UcjbDate.Date < filterDate ||
-            (j.UcjbDate.Date == filterDate &&
-             (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime)));
+    /// <summary>
+    /// Sargable equivalent of <c>j.UcjbDate.Date &lt;= date.Date</c> (on or before the given
+    /// calendar day), expressed as <c>UcjbDate &lt; nextMidnight</c> so an index can seek.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> JobDateOnOrBefore(DateTimeOffset date)
+    {
+        var exclusiveEnd = date.Date.AddDays(1);
+        return j => j.UcjbDate < exclusiveEnd;
+    }
+
+    /// <summary>
+    /// A courier's "current work": not void, not done, not a Void-status job, and dated on or
+    /// before <paramref name="asOf"/>'s calendar day (today + overdue past jobs; future excluded).
+    /// Shared by the drivers-overview count and the drill-down list so the two never diverge.
+    /// Sargable (bare <c>UcjbDate</c> column) so an index can seek and SQLite can translate it.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> CurrentWorkJob(DateTimeOffset asOf)
+    {
+        var exclusiveEnd = asOf.Date.AddDays(1);
+        return j => !j.UcjbVoid
+                    && !j.UcjbJobDone
+                    && j.UcjbStatus != (int)JobStatus.Void
+                    && j.UcjbDate < exclusiveEnd;
+    }
+
+    /// <summary>
+    /// The current-work drill-down list. Like <see cref="CurrentWorkJob"/> (the drivers-overview
+    /// count) it excludes void jobs and caps the window at <paramref name="endDate"/>'s day, but it
+    /// KEEPS done/completed jobs so the panel's client-side "Done" tab has data. Done jobs are bounded
+    /// below by <paramref name="startDate"/> (the page's date filter) so the list does not return the
+    /// courier's entire completion history; not-done jobs stay unbounded below so overdue work shows.
+    /// Sargable (bare <c>UcjbDate</c> column) so an index can seek and SQLite can translate it.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> CurrentWorkListJob(
+        DateTimeOffset startDate, DateTimeOffset endDate)
+    {
+        var startInclusive = startDate.Date;
+        var exclusiveEnd = endDate.Date.AddDays(1);
+        return j => !j.UcjbVoid
+                    && j.UcjbStatus != (int)JobStatus.Void
+                    && j.UcjbDate < exclusiveEnd
+                    && (!j.UcjbJobDone || j.UcjbDate >= startInclusive);
+    }
+
+    /// <summary>
+    /// Sargable equivalent of the date-then-time end filter: jobs booked before the filter day, or
+    /// on the filter day at or before the filter time. The UcjbDate comparisons avoid <c>.Date</c>
+    /// so the index range can seek; the intraday time check on the separate UcjbTime column only
+    /// applies within the single matching day.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> JobDateTimeOnOrBefore(DateTimeOffset endDate)
+    {
+        var filterDate = endDate.Date;
+        var nextDay = filterDate.AddDays(1);
+        var filterTime = endDate.TimeOfDay;
+
+        return j =>
+            j.UcjbDate < filterDate
+            || (j.UcjbDate >= filterDate
+                && j.UcjbDate < nextDay
+                && (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime));
+    }
+
+    private const int DefaultNonPaginatedJobCap = 2000;
+
+    internal readonly record struct PagedJobIds(IReadOnlyList<int> JobIds, int TotalCount, bool HasMore);
+
+    /// <summary>
+    /// Resolves the distinct job IDs for the requested page. When <paramref name="requestedPage"/>
+    /// is not positive the caller did not ask for a specific page, so the result is bounded by
+    /// <paramref name="nonPaginatedCap"/> to avoid materialising an unbounded view; a warning is
+    /// logged (and <see cref="PagedJobIds.HasMore"/> set) when the cap truncates the result.
+    /// </summary>
+    internal static async Task<PagedJobIds> ResolveJobIdPageAsync(
+        IQueryable<int> distinctJobIdQuery,
+        int requestedPage,
+        int pageSize,
+        int nonPaginatedCap = DefaultNonPaginatedJobCap,
+        CancellationToken cancellationToken = default)
+    {
+        var totalCount = await distinctJobIdQuery.CountAsync(cancellationToken);
+
+        if (requestedPage > 0)
+        {
+            var pageIds = await distinctJobIdQuery
+                .OrderBy(id => id)
+                .Skip((requestedPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return new PagedJobIds(pageIds, totalCount, totalCount > requestedPage * pageSize);
+        }
+
+        var cappedIds = await distinctJobIdQuery
+            .OrderBy(id => id)
+            .Take(nonPaginatedCap)
+            .ToListAsync(cancellationToken);
+
+        var capped = totalCount > nonPaginatedCap;
+        if (capped)
+        {
+            Log.Warning(
+                "DespatchQry returned {Returned} of {Total} jobs without pagination; capped at {Cap}. " +
+                "The caller should request paged results",
+                cappedIds.Count, totalCount, nonPaginatedCap);
+        }
+
+        return new PagedJobIds(cappedIds, totalCount, capped);
     }
 
     protected async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
@@ -544,7 +763,10 @@ public partial class BaseJobRepository(
 
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.ConfirmNoteTypeExistsAsync(noteType);
-        if (!noteTypeExists) noteType = NoteType.InternalNote;
+        if (!noteTypeExists)
+        {
+            noteType = NoteType.InternalNote;
+        }
 
         var staffId = infoService.GetStaffId();
         var currentTime = clock.TenantNow;
@@ -564,7 +786,11 @@ public partial class BaseJobRepository(
     {
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.ConfirmNoteTypeExistsAsync(noteType);
-        if (!noteTypeExists) noteType = NoteType.InternalNote;
+        if (!noteTypeExists)
+        {
+            noteType = NoteType.InternalNote;
+        }
+
         return noteType;
     }
 
@@ -581,6 +807,7 @@ public partial class BaseJobRepository(
         noteType = await ConfirmNoteTypeExists(noteType);
 
         var now = clock.TenantNow;
+        var nowUtc = clock.UtcNow;
         var staffId = infoService.GetStaffId();
 
         var newNotes = jobIds.Select(jobId => new TucNote
@@ -591,9 +818,11 @@ public partial class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedDate = now,
+                CreatedDateUtc = nowUtc,
                 CreatedBy = staffId,
                 UpdatedBy = staffId,
-                UpdatedDate = now
+                UpdatedDate = now,
+                UpdatedDateUtc = nowUtc
             })
             .ToList();
 
@@ -615,6 +844,7 @@ public partial class BaseJobRepository(
         noteType = await ConfirmNoteTypeExists(noteType);
 
         var now = clock.TenantNow;
+        var nowUtc = clock.UtcNow;
         var staffId = infoService.GetStaffId();
 
         var newNotes = jobIds.Select(jobId => new TucNoteArchive
@@ -624,9 +854,11 @@ public partial class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedDate = now,
+                CreatedDateUtc = nowUtc,
                 CreatedBy = staffId,
                 UpdatedBy = staffId,
-                UpdatedDate = now
+                UpdatedDate = now,
+                UpdatedDateUtc = nowUtc
             })
             .ToList();
 
@@ -644,6 +876,7 @@ public partial class BaseJobRepository(
             noteType = await ConfirmNoteTypeExists(noteType);
 
             var now = clock.TenantNow;
+            var nowUtc = clock.UtcNow;
             var staffId = infoService.GetStaffId();
 
             var newNote = new TucNote
@@ -654,14 +887,20 @@ public partial class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedDate = now,
+                CreatedDateUtc = nowUtc,
                 CreatedBy = staffId,
                 UpdatedBy = staffId,
-                UpdatedDate = now
+                UpdatedDate = now,
+                UpdatedDateUtc = nowUtc
             };
 
             await Context.TucNotes.AddAsync(newNote);
 
-            if (!saveChanges) return;
+            if (!saveChanges)
+            {
+                return;
+            }
+
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
@@ -670,6 +909,43 @@ public partial class BaseJobRepository(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteAsync)));
             throw;
         }
+    }
+
+    /// <summary>
+    /// Builds the per-package cubic CSV (matching the api repo's @CubicList convention used by
+    /// DD_stpJob_InsertExcelerator) from tucJobItems (or tucJobItemsArchive for an archived job)
+    /// for an existing job, expanding each row by its Items count. Returns null when the job has
+    /// no per-package cubic data.
+    /// </summary>
+    protected async Task<string> GetCubicListAsync(int jobId)
+    {
+        var isArchived = await IsJobArchived(jobId);
+
+        var items = isArchived
+            ? await Context.TucJobItemsArchives
+                .Where(i => i.JobId == jobId && i.Cubic != null)
+                .Select(i => new { i.Items, i.Cubic })
+                .ToListAsync()
+            : await Context.TucJobItems
+                .Where(i => i.JobId == jobId && i.Cubic != null)
+                .Select(i => new { i.Items, i.Cubic })
+                .ToListAsync();
+
+        if (items.Count == 0)
+        {
+            return null;
+        }
+
+        var cubicValues = new List<string>();
+        foreach (var item in items)
+        {
+            for (var unit = 0; unit < item.Items; unit++)
+            {
+                cubicValues.Add(item.Cubic?.ToString(CultureInfo.InvariantCulture));
+            }
+        }
+
+        return string.Join(",", cubicValues);
     }
 
     // Helper Methods
@@ -690,13 +966,19 @@ public partial class BaseJobRepository(
         try
         {
             ArgumentNullException.ThrowIfNull(job);
-            if (!job.Booked.HasValue) throw new ArgumentException("Booked date is required.", nameof(job));
+            if (!job.Booked.HasValue)
+            {
+                throw new ArgumentException("Booked date is required.", nameof(job));
+            }
 
             var jobDateTime = job.Booked.Value;
 
             if (job.SpeedId == economySpeedId)
             {
-                if (!ecoDeliveryTime.HasValue) throw new ArgumentNullException(nameof(ecoDeliveryTime));
+                if (!ecoDeliveryTime.HasValue)
+                {
+                    throw new ArgumentNullException(nameof(ecoDeliveryTime));
+                }
 
                 var targetDateTime = new DateTime(
                     job.Booked.Value.Year,
@@ -707,14 +989,17 @@ public partial class BaseJobRepository(
                     ecoDeliveryTime.Value.Second
                 );
 
-                return Math.Round((targetDateTime - currentTenantTime).TotalMinutes);
+                return Math.Round((targetDateTime - currentTenantTime).TotalMinutes, MidpointRounding.AwayFromZero);
             }
 
-            if (!job.JobTypeMins.HasValue) return null;
+            if (!job.JobTypeMins.HasValue)
+            {
+                return null;
+            }
 
             var minutesToAdd = job.JobTypeMins.Value;
             var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
-            return Math.Round((standardDeliveryDateTime - currentTenantTime).TotalMinutes);
+            return Math.Round((standardDeliveryDateTime - currentTenantTime).TotalMinutes, MidpointRounding.AwayFromZero);
         }
         catch (Exception e)
         {
@@ -741,7 +1026,8 @@ public partial class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedBy = infoService.GetStaffId(),
-                CreatedDate = clock.TenantNow
+                CreatedDate = clock.TenantNow,
+                CreatedDateUtc = clock.UtcNow
             };
             await Context.AddAsync(newNote);
             await Context.SaveChangesAsync();
@@ -764,6 +1050,7 @@ public partial class BaseJobRepository(
         {
             var staffId = infoService.GetStaffId();
             var currentTime = clock.TenantNow;
+            var currentTimeUtc = clock.UtcNow;
 
             var strategy = Context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
@@ -784,9 +1071,13 @@ public partial class BaseJobRepository(
                         .SetProperty(e => e.IsImportant, isImportant)
                         .SetProperty(e => e.UpdatedBy, staffId)
                         .SetProperty(e => e.UpdatedDate, currentTime)
+                        .SetProperty(e => e.UpdatedDateUtc, currentTimeUtc)
                     );
 
-                if (rowsAffected == 0) throw new Exception($"Existing note under {noteId} not found");
+                if (rowsAffected == 0)
+                {
+                    throw new Exception($"Existing note under {noteId} not found");
+                }
 
                 if (currentNote != null)
                 {
@@ -821,7 +1112,9 @@ public partial class BaseJobRepository(
     protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
     {
         if (_economyCache.HasValue)
+        {
             return _economyCache.Value;
+        }
 
         var economySpeedId = await Context.GetEconomySpeedIdAsync();
         var ecoDeliveryTime = await Context.GetEcoDeliveryTimeAsync();
@@ -832,14 +1125,19 @@ public partial class BaseJobRepository(
 
     protected static void UpdateNoteDate(List<TucNoteViewModel> notes, string tenantTimeZone)
     {
-        foreach (var note in notes) UpdateNoteDate(note, tenantTimeZone);
+        foreach (var note in notes)
+        {
+            UpdateNoteDate(note, tenantTimeZone);
+        }
     }
 
     private static void UpdateNoteDate(TucNoteViewModel note, string tenantTimeZone)
     {
         note.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.CreatedDate, tenantTimeZone);
         if (note.UpdatedDate.HasValue)
+        {
             note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
+        }
     }
 
     protected async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
@@ -853,7 +1151,10 @@ public partial class BaseJobRepository(
                 .Select(j => j.BulkParentId ?? j.BulkJobId)
                 .FirstOrDefaultAsync();
 
-            if (parentBulkJobId == 0) return [];
+            if (parentBulkJobId == 0)
+            {
+                return [];
+            }
 
             return await Context.TblBulkJobs
                 .Where(j => j.BulkJobId == parentBulkJobId || j.BulkParentId == parentBulkJobId)
@@ -927,7 +1228,8 @@ public partial class BaseJobRepository(
                 CourierPayment = j.CourierPayment ?? 0,
                 CourierFuel = j.CourierFuel ?? 0,
                 CourierBonus = j.CourierBonus ?? 0,
-                IsPrebook = false
+                IsPrebook = false,
+                RatedManually = j.RatedManually
             })
             .ToListAsync();
 

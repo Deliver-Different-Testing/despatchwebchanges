@@ -7,12 +7,10 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {HereMap} from './HereMap';
 import type {HereMapConfig, HereMapCredentials,} from './HereMap.types';
-import {getTheme} from '../../../theme/muiTheme';
 import angular from 'angular';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 
 /**
  * AngularJS Component Controller for React HereMap
@@ -51,9 +49,6 @@ class HereMapReactController implements angular.IController {
 
     private render(): void {
         if (!this.root) return;
-
-        const currentTheme = getTheme();
-
         // Wrap AngularJS callback to match React expected signature
         // and ensure it runs within Angular's digest cycle
         const handleMapReady = this.onMapReady
@@ -64,17 +59,15 @@ class HereMapReactController implements angular.IController {
             }
             : undefined;
 
-        this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline/>
-                <HereMap
-                    mapId={this.mapId || 'here-map'}
-                    credentials={this.credentials}
-                    config={this.config}
-                    onMapReady={handleMapReady}
-                />
-            </ThemeProvider>
-        );
+        this.root.render(islandTree(
+        <HereMap
+            mapId={this.mapId || 'here-map'}
+            credentials={this.credentials}
+            config={this.config}
+            onMapReady={handleMapReady}
+        />
+
+        ));
     }
 }
 

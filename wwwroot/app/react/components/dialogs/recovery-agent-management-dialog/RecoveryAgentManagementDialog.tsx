@@ -7,53 +7,59 @@
  */
 
 import React, {useEffect, useMemo, useState} from 'react';
-import {alpha} from '@mui/material/styles';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import Divider from '@mui/material/Divider';
-import FormControl from '@mui/material/FormControl';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Paper from '@mui/material/Paper';
-import Select from '@mui/material/Select';
-import Typography from '@mui/material/Typography';
-import BusinessIcon from '@mui/icons-material/Business';
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
-import EditIcon from '@mui/icons-material/Edit';
-import GroupIcon from '@mui/icons-material/Group';
-import GroupOffIcon from '@mui/icons-material/GroupOff';
-import InfoIcon from '@mui/icons-material/Info';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
-import PackageIcon from '@mui/icons-material/Inventory';
-import PersonIcon from '@mui/icons-material/Person';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
-import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
-import SaveIcon from '@mui/icons-material/Save';
-import EngineeringIcon from '@mui/icons-material/Engineering';
-import WarningIcon from '@mui/icons-material/Warning';
+import {
+    ActionIcon,
+    Alert,
+    Badge,
+    Box,
+    Button,
+    Checkbox,
+    Divider,
+    Group,
+    Loader,
+    Paper,
+    Select,
+    Stack,
+    Text,
+    ThemeIcon,
+    alpha,
+} from '@mantine/core';
+import {useDisclosure} from '@mantine/hooks';
+import {
+    Building2,
+    Check,
+    CircleDot,
+    HardHat,
+    Info,
+    Pencil,
+    Save,
+    Search,
+    TriangleAlert,
+    User,
+    UserMinus,
+    UserPlus,
+    Users,
+    UsersRound,
+} from 'lucide-react';
+import {IconMapPin, IconPackage} from '@tabler/icons-react';
+import {
+    DialogShell,
+    DialogHeader,
+    DialogFooter,
+    dialogContentBg,
+    dialogSize,
+    headerColors,
+    headerOverlayColor,
+} from '../shared/mantine';
+import {Icon} from '../../common/icon/Icon';
 import type {ShowToastFn} from '../../../services/toastService';
+import type {Suggestion} from '../../../interfaces/job';
 import type {
     AddAgentRecoveryRequest,
     RecoveryAgentJobViewModel,
     RecoveryAgentViewModel,
-    Suggestion,
     UpdateAgentRecoveryRequest,
-} from '../../../services/nationwideApi';
+} from '../../../interfaces/nationwideJobs';
 
 export interface RecoveryAgentManagementDialogProps {
     open: boolean;
@@ -68,6 +74,10 @@ export interface RecoveryAgentManagementDialogProps {
     showToast: ShowToastFn;
 }
 
+/** Mantine palette key per accent, so cards/chips tint consistently. */
+type AccentColor = 'brand' | 'orange' | 'default';
+type StatusColor = 'default' | 'info' | 'warning' | 'success';
+
 const STATUS_LABELS: Record<string, string> = {
     assigned: 'Currently Assigned',
     searching: 'Currently Searching',
@@ -75,19 +85,30 @@ const STATUS_LABELS: Record<string, string> = {
     completed: 'Assignment Completed',
 };
 
-const STATUS_COLORS: Record<string, 'default' | 'info' | 'warning' | 'success'> = {
+const STATUS_COLORS: Record<string, StatusColor> = {
     assigned: 'info',
     searching: 'warning',
     pending: 'default',
     completed: 'success',
 };
 
+const STATUS_BADGE_COLOR: Record<StatusColor, string> = {
+    default: 'gray',
+    info: 'reflex',
+    warning: 'orange',
+    success: 'green',
+};
+
+const captionProps = {size: 'xs', c: 'dimmed', tt: 'uppercase', style: {letterSpacing: 0.5}} as const;
+
+const surfaceTint = alpha('var(--mantine-color-gray-6)', 0.04);
+
 function getStatusLabel(status: string | undefined): string {
     if (!status) return 'Unknown Status';
     return STATUS_LABELS[status] || 'Unknown Status';
 }
 
-function getStatusColor(status: string | undefined): 'default' | 'info' | 'warning' | 'success' {
+function getStatusColor(status: string | undefined): StatusColor {
     if (!status) return 'default';
     return STATUS_COLORS[status] || 'default';
 }
@@ -98,6 +119,16 @@ function hasPrimaryRecoveryAgent(job: RecoveryAgentJobViewModel | null): boolean
         rj.recoveryAgents?.some(agent => agent.primaryRecoveryAgent)
     );
 }
+
+/** The label + hint pair used by both "Set as Primary Recovery Agent" checkboxes. */
+const primaryAgentLabel = (
+    <Box>
+        <Text size="sm" fw={600}>Set as Primary Recovery Agent</Text>
+        <Text size="xs" c="dimmed">
+            Primary agents take lead responsibility for recovery operations
+        </Text>
+    </Box>
+);
 
 export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDialogProps> = ({
     open,
@@ -115,8 +146,8 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     const [airportOptions, setAirportOptions] = useState<Suggestion[]>([]);
     const [agentOptions, setAgentOptions] = useState<Suggestion[]>([]);
 
-    const [showAssignForm, setShowAssignForm] = useState(false);
-    const [showEditForm, setShowEditForm] = useState(false);
+    const [showAssignForm, {open: openAssignForm, close: closeAssignForm}] = useDisclosure(false);
+    const [showEditForm, {open: openEditForm, close: closeEditForm}] = useDisclosure(false);
 
     const [selectedAirportId, setSelectedAirportId] = useState<number>(0);
     const [selectedAgentId, setSelectedAgentId] = useState<number>(0);
@@ -127,9 +158,13 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
+    // Re-seed local job state when the parent passes a different job, derived
+    // during render rather than in an effect (avoids the extra post-paint commit).
+    const [prevInitialJob, setPrevInitialJob] = useState(initialJob);
+    if (initialJob !== prevInitialJob) {
+        setPrevInitialJob(initialJob);
         setJob(initialJob);
-    }, [initialJob]);
+    }
 
     useEffect(() => {
         if (!open) return;
@@ -169,7 +204,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     };
 
     const resetAssignForm = () => {
-        setShowAssignForm(false);
+        closeAssignForm();
         setSelectedAirportId(0);
         setSelectedAgentId(0);
         setIsPrimaryRecoveryAgent(false);
@@ -177,20 +212,20 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     };
 
     const resetEditForm = () => {
-        setShowEditForm(false);
+        closeEditForm();
         setEditingAgent(null);
         setEditIsPrimaryRecoveryAgent(false);
     };
 
     const handleShowAssignForm = () => {
-        setShowAssignForm(true);
+        openAssignForm();
         setIsPrimaryRecoveryAgent(false);
     };
 
     const handleShowEditForm = (agent: RecoveryAgentViewModel) => {
         setEditingAgent(agent);
         setEditIsPrimaryRecoveryAgent(agent.primaryRecoveryAgent || false);
-        setShowEditForm(true);
+        openEditForm();
     };
 
     const handleAssignAgent = async () => {
@@ -305,191 +340,93 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     const isFormOpen = showAssignForm || showEditForm;
 
     return (
-        <Dialog
-            open={open}
+        <DialogShell
+            opened={open}
             onClose={handleCancel}
-            maxWidth="md"
-            fullWidth
-            disableEscapeKeyDown
-            slotProps={{
-                paper: {
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                        minWidth: {xs: '95%', sm: '90%', md: 800},
-                        maxWidth: 1100,
-                        width: '90%',
-                    },
-                },
-            }}
+            size={dialogSize.lg}
+            label="Lost Package Recovery"
+            /* Escape must not bypass the unsaved-changes confirm */
+            closeOnEscape={false}
         >
-            {/* Header */}
-            <Box
-                sx={(theme) => ({
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: 'white',
-                    px: 3,
-                    py: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                })}
-            >
-                <Box
-                    sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <GroupIcon sx={{fontSize: 28}} />
-                </Box>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="h5" fontWeight={600}>
-                        Lost Package Recovery
-                    </Typography>
-                    {job && (
-                        <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                            Job #{job.jobNumber}
-                        </Typography>
-                    )}
-                </Box>
-                <IconButton
-                    onClick={handleCancel}
-                    aria-label="Cancel"
-                    sx={{
-                        color: 'white',
-                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-
-            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
+            <DialogHeader
+                icon={<Icon lucide={Users}/>}
+                title="Lost Package Recovery"
+                subtitle={job ? `Job #${job.jobNumber}` : undefined}
+                onClose={handleCancel}
+            />
+            <Box p="lg" style={{backgroundColor: dialogContentBg}}>
                 {!job ? (
-                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8}}>
-                        <CircularProgress size={40} />
-                    </Box>
+                    <Group justify="center" py={64}>
+                        <Loader size={40} role="progressbar" aria-label="Loading job"/>
+                    </Group>
                 ) : (
                     <>
                         {/* Package Information */}
-                        <Paper
-                            elevation={0}
-                            sx={(theme) => ({
-                                mb: 3,
-                                borderRadius: 3,
-                                border: `1px solid ${theme.palette.divider}`,
-                                overflow: 'hidden',
-                            })}
-                        >
-                            <Box
-                                sx={(theme) => ({
-                                    px: 2.5,
-                                    py: 2,
-                                    bgcolor: alpha(theme.palette.primary.main, 0.04),
-                                    borderBottom: `1px solid ${theme.palette.divider}`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1.5,
-                                })}
+                        <Paper withBorder radius="lg" mb="lg" style={{overflow: 'hidden'}}>
+                            <Group
+                                gap="sm"
+                                px="md"
+                                py="sm"
+                                wrap="nowrap"
+                                style={{
+                                    backgroundColor: alpha('var(--mantine-color-brand-6)', 0.04),
+                                    borderBottom: '1px solid var(--mantine-color-default-border)',
+                                }}
                             >
-                                <PackageIcon sx={{color: 'primary.main', fontSize: 22}} />
-                                <Typography variant="subtitle1" fontWeight={600}>
-                                    Package Information
-                                </Typography>
-                            </Box>
+                                <Box c="brand.6" style={{display: 'flex'}}>
+                                    <Icon tabler={IconPackage} size={22}/>
+                                </Box>
+                                <Text fw={600}>Package Information</Text>
+                            </Group>
 
                             {job.pickUpAddress && job.deliveryAddress && (
-                                <Box
-                                    sx={(theme) => ({
-                                        p: 3,
-                                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                                        color: 'white',
-                                    })}
+                                <Stack
+                                    gap="sm"
+                                    p="lg"
+                                    style={{
+                                        backgroundColor: headerColors.primary.bg,
+                                        color: headerColors.primary.fg,
+                                    }}
                                 >
-                                    <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 2, mb: 1.5}}>
-                                        <Box
-                                            sx={{
-                                                width: 32,
-                                                height: 32,
-                                                borderRadius: 1,
-                                                bgcolor: 'rgba(255,255,255,0.2)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexShrink: 0,
-                                            }}
-                                        >
-                                            <RadioButtonCheckedIcon sx={{color: 'white', fontSize: 18}} />
-                                        </Box>
-                                        <Box sx={{flex: 1, minWidth: 0}}>
-                                            <Typography variant="caption" sx={{opacity: 0.85, textTransform: 'uppercase', letterSpacing: 0.5}}>
-                                                Pickup Location
-                                            </Typography>
-                                            <Typography variant="body2" sx={{mt: 0.25}}>
-                                                {job.pickUpAddress.fullAddress}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                    <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 2}}>
-                                        <Box
-                                            sx={{
-                                                width: 32,
-                                                height: 32,
-                                                borderRadius: 1,
-                                                bgcolor: 'rgba(255,255,255,0.2)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexShrink: 0,
-                                            }}
-                                        >
-                                            <LocationOnIcon sx={{color: 'white', fontSize: 18}} />
-                                        </Box>
-                                        <Box sx={{flex: 1, minWidth: 0}}>
-                                            <Typography variant="caption" sx={{opacity: 0.85, textTransform: 'uppercase', letterSpacing: 0.5}}>
-                                                Delivery Location
-                                            </Typography>
-                                            <Typography variant="body2" sx={{mt: 0.25}}>
-                                                {job.deliveryAddress.fullAddress}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Box>
+                                    <AddressRow
+                                        icon={<Icon lucide={CircleDot} size={18}/>}
+                                        label="Pickup Location"
+                                        value={job.pickUpAddress.fullAddress}
+                                    />
+                                    <AddressRow
+                                        icon={<Icon tabler={IconMapPin} size={18}/>}
+                                        label="Delivery Location"
+                                        value={job.deliveryAddress.fullAddress}
+                                    />
+                                </Stack>
                             )}
 
                             <Box
-                                sx={{
-                                    p: 2.5,
+                                p="md"
+                                style={{
                                     display: 'grid',
-                                    gridTemplateColumns: {xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)'},
-                                    gap: 2,
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                                    gap: 'var(--mantine-spacing-md)',
                                 }}
                             >
                                 <DetailCard
-                                    icon={<Inventory2Icon fontSize="small" />}
+                                    icon={<Icon tabler={IconPackage} size={18}/>}
                                     label="Package Type"
                                     value={job.packageType}
                                 />
                                 <DetailCard
-                                    icon={<PriorityHighIcon fontSize="small" />}
+                                    icon={<Icon lucide={TriangleAlert} size={18}/>}
                                     label="Priority"
                                     value={job.priority}
-                                    valueColor="warning.main"
+                                    valueColor="orange.6"
                                 />
                                 <DetailCard
-                                    icon={<LocationSearchingIcon fontSize="small" />}
+                                    icon={<Icon lucide={Search} size={18}/>}
                                     label="Last Known Location"
                                     value={job.lastKnownLocation}
                                 />
                                 <DetailCard
-                                    icon={<PersonIcon fontSize="small" />}
+                                    icon={<Icon lucide={User} size={18}/>}
                                     label="Customer"
                                     value={job.customer}
                                 />
@@ -497,280 +434,143 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                         </Paper>
 
                         {/* Recovery Agents Section */}
-                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2}}>
-                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
-                                <GroupIcon sx={{color: 'primary.main'}} />
-                                <Typography variant="h6" fontWeight={600}>
-                                    Recovery Agents
-                                </Typography>
+                        <Group justify="space-between" mb="md" wrap="nowrap">
+                            <Group gap="sm" wrap="nowrap">
+                                <Box c="brand.6" style={{display: 'flex'}}>
+                                    <Icon lucide={Users}/>
+                                </Box>
+                                <Text fw={600} fz="lg">Recovery Agents</Text>
                                 {totalRecoveryAgents > 0 && (
-                                    <Chip
-                                        label={totalRecoveryAgents}
-                                        size="small"
-                                        color="primary"
-                                        sx={{fontWeight: 600}}
-                                    />
+                                    <Badge size="sm" fw={600}>{totalRecoveryAgents}</Badge>
                                 )}
-                            </Box>
+                            </Group>
                             {!isFormOpen && (
                                 <Button
-                                    variant="contained"
-                                    startIcon={<PersonAddIcon />}
+                                    leftSection={<Icon lucide={UserPlus}/>}
                                     onClick={handleShowAssignForm}
                                 >
                                     Assign Agent
                                 </Button>
                             )}
-                        </Box>
+                        </Group>
 
                         {/* Assign Form */}
                         {showAssignForm && (
-                            <Paper
-                                elevation={0}
-                                sx={(theme) => ({
-                                    mb: 3,
-                                    borderRadius: 3,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    overflow: 'hidden',
-                                })}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        px: 2.5,
-                                        py: 1.75,
-                                        bgcolor: alpha(theme.palette.primary.main, 0.06),
-                                        borderBottom: `1px solid ${theme.palette.divider}`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1.5,
-                                    })}
-                                >
-                                    <PersonAddIcon sx={{color: 'primary.main'}} />
-                                    <Typography variant="subtitle1" fontWeight={600}>
-                                        Assign Recovery Agent
-                                    </Typography>
-                                </Box>
+                            <Paper withBorder radius="lg" mb="lg" style={{overflow: 'hidden'}}>
+                                <FormBar icon={<Icon lucide={UserPlus}/>} title="Assign Recovery Agent"/>
 
-                                <Box sx={{p: 2.5}}>
-                                    <Alert
-                                        severity="info"
-                                        icon={<InfoIcon />}
-                                        sx={{mb: 2.5, borderRadius: 2}}
-                                    >
-                                        <Typography variant="body2" fontWeight={600}>
-                                            Recovery Agent Assignment
-                                        </Typography>
-                                        <Typography variant="body2">
+                                <Box p="md">
+                                    <Alert color="reflex" icon={<Icon lucide={Info}/>} mb="md" radius="md">
+                                        <Text size="sm" fw={600}>Recovery Agent Assignment</Text>
+                                        <Text size="sm">
                                             This will assign a recovery agent to search for the package at the
                                             selected location.
-                                        </Typography>
+                                        </Text>
                                     </Alert>
 
                                     <Box
-                                        sx={{
+                                        mb="md"
+                                        style={{
                                             display: 'grid',
-                                            gridTemplateColumns: {xs: '1fr', sm: '1fr 1fr'},
-                                            gap: 2,
-                                            mb: 2.5,
+                                            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                                            gap: 'var(--mantine-spacing-md)',
                                         }}
                                     >
-                                        <FormControl fullWidth size="small">
-                                            <InputLabel id="recovery-airport-label">Airport Location</InputLabel>
-                                            <Select
-                                                labelId="recovery-airport-label"
-                                                label="Airport Location"
-                                                value={selectedAirportId || ''}
-                                                onChange={(e) => handleAirportChange(Number(e.target.value))}
-                                            >
-                                                {airportOptions.map((airport) => (
-                                                    <MenuItem key={airport.id} value={airport.id}>
-                                                        {airport.text}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-
-                                        <FormControl fullWidth size="small" disabled={!selectedAirportId}>
-                                            <InputLabel id="recovery-agent-label">Available Agent</InputLabel>
-                                            <Select
-                                                labelId="recovery-agent-label"
-                                                label="Available Agent"
-                                                value={selectedAgentId || ''}
-                                                onChange={(e) => setSelectedAgentId(Number(e.target.value))}
-                                            >
-                                                {agentOptions.map((agent) => (
-                                                    <MenuItem key={agent.id} value={agent.id}>
-                                                        {agent.text}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
+                                        <Select
+                                            label="Airport Location"
+                                            size="sm"
+                                            data={airportOptions.map(a => ({value: String(a.id), label: a.text}))}
+                                            value={selectedAirportId ? String(selectedAirportId) : null}
+                                            onChange={(value) => handleAirportChange(Number(value) || 0)}
+                                            comboboxProps={{keepMounted: false}}
+                                        />
+                                        <Select
+                                            label="Available Agent"
+                                            size="sm"
+                                            disabled={!selectedAirportId}
+                                            data={agentOptions.map(a => ({value: String(a.id), label: a.text}))}
+                                            value={selectedAgentId ? String(selectedAgentId) : null}
+                                            onChange={(value) => setSelectedAgentId(Number(value) || 0)}
+                                            comboboxProps={{keepMounted: false}}
+                                        />
                                     </Box>
 
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={isPrimaryRecoveryAgent}
-                                                onChange={(e) => setIsPrimaryRecoveryAgent(e.target.checked)}
-                                                color="primary"
-                                            />
-                                        }
-                                        label={
-                                            <Box>
-                                                <Typography variant="body2" fontWeight={600}>
-                                                    Set as Primary Recovery Agent
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Primary agents take lead responsibility for recovery operations
-                                                </Typography>
-                                            </Box>
-                                        }
+                                    <Checkbox
+                                        checked={isPrimaryRecoveryAgent}
+                                        onChange={(e) => setIsPrimaryRecoveryAgent(e.currentTarget.checked)}
+                                        label={primaryAgentLabel}
                                     />
 
                                     {isPrimaryRecoveryAgent && jobHasPrimary && (
-                                        <Alert
-                                            severity="warning"
-                                            icon={<WarningIcon />}
-                                            sx={{mt: 1.5, borderRadius: 2}}
-                                        >
+                                        <Alert color="orange" icon={<Icon lucide={TriangleAlert}/>} mt="sm" radius="md">
                                             Setting this agent as primary will remove the current primary status from other agents.
                                         </Alert>
                                     )}
                                 </Box>
 
-                                <Box
-                                    sx={(theme) => ({
-                                        p: 2,
-                                        bgcolor: alpha(theme.palette.grey[500], 0.04),
-                                        borderTop: `1px solid ${theme.palette.divider}`,
-                                        display: 'flex',
-                                        justifyContent: 'flex-end',
-                                        gap: 1,
-                                    })}
-                                >
-                                    <Button onClick={resetAssignForm} disabled={isSubmitting}>
+                                <FormActions>
+                                    <Button variant="subtle" color="gray" onClick={resetAssignForm} disabled={isSubmitting}>
                                         Cancel
                                     </Button>
                                     <Button
-                                        variant="contained"
-                                        startIcon={
-                                            isSubmitting ? (
-                                                <CircularProgress size={18} color="inherit" />
-                                            ) : (
-                                                <CheckIcon />
-                                            )
-                                        }
+                                        leftSection={<Icon lucide={Check}/>}
+                                        loading={isSubmitting}
                                         onClick={handleAssignAgent}
-                                        disabled={!selectedAirportId || !selectedAgentId || isSubmitting}
+                                        disabled={!selectedAirportId || !selectedAgentId}
                                     >
                                         Assign Agent
                                     </Button>
-                                </Box>
+                                </FormActions>
                             </Paper>
                         )}
 
                         {/* Edit Form */}
                         {showEditForm && editingAgent && (
-                            <Paper
-                                elevation={0}
-                                sx={(theme) => ({
-                                    mb: 3,
-                                    borderRadius: 3,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    overflow: 'hidden',
-                                })}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        px: 2.5,
-                                        py: 1.75,
-                                        bgcolor: alpha(theme.palette.primary.main, 0.06),
-                                        borderBottom: `1px solid ${theme.palette.divider}`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1.5,
-                                    })}
-                                >
-                                    <EditIcon sx={{color: 'primary.main'}} />
-                                    <Typography variant="subtitle1" fontWeight={600}>
-                                        Edit Recovery Agent — {editingAgent.agentName}
-                                    </Typography>
-                                </Box>
+                            <Paper withBorder radius="lg" mb="lg" style={{overflow: 'hidden'}}>
+                                <FormBar
+                                    icon={<Icon lucide={Pencil}/>}
+                                    title={`Edit Recovery Agent — ${editingAgent.agentName}`}
+                                />
 
-                                <Box sx={{p: 2.5}}>
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={editIsPrimaryRecoveryAgent}
-                                                onChange={(e) => setEditIsPrimaryRecoveryAgent(e.target.checked)}
-                                                color="primary"
-                                            />
-                                        }
-                                        label={
-                                            <Box>
-                                                <Typography variant="body2" fontWeight={600}>
-                                                    Set as Primary Recovery Agent
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Primary agents take lead responsibility for recovery operations
-                                                </Typography>
-                                            </Box>
-                                        }
+                                <Box p="md">
+                                    <Checkbox
+                                        checked={editIsPrimaryRecoveryAgent}
+                                        onChange={(e) => setEditIsPrimaryRecoveryAgent(e.currentTarget.checked)}
+                                        label={primaryAgentLabel}
                                     />
 
                                     {editIsPrimaryRecoveryAgent && jobHasPrimary && !editingAgent.primaryRecoveryAgent && (
-                                        <Alert
-                                            severity="warning"
-                                            icon={<WarningIcon />}
-                                            sx={{mt: 1.5, borderRadius: 2}}
-                                        >
+                                        <Alert color="orange" icon={<Icon lucide={TriangleAlert}/>} mt="sm" radius="md">
                                             Setting this agent as primary will remove the current primary status from other agents.
                                         </Alert>
                                     )}
                                 </Box>
 
-                                <Box
-                                    sx={(theme) => ({
-                                        p: 2,
-                                        bgcolor: alpha(theme.palette.grey[500], 0.04),
-                                        borderTop: `1px solid ${theme.palette.divider}`,
-                                        display: 'flex',
-                                        justifyContent: 'flex-end',
-                                        gap: 1,
-                                    })}
-                                >
-                                    <Button onClick={resetEditForm} disabled={isSubmitting}>
+                                <FormActions>
+                                    <Button variant="subtle" color="gray" onClick={resetEditForm} disabled={isSubmitting}>
                                         Cancel
                                     </Button>
                                     <Button
-                                        variant="contained"
-                                        color="error"
-                                        startIcon={<PersonRemoveIcon />}
+                                        color="red"
+                                        leftSection={<Icon lucide={UserMinus}/>}
                                         onClick={() => handleRemoveAgent(editingAgent)}
                                         disabled={isSubmitting}
                                     >
                                         Remove Agent
                                     </Button>
                                     <Button
-                                        variant="contained"
-                                        startIcon={
-                                            isSubmitting ? (
-                                                <CircularProgress size={18} color="inherit" />
-                                            ) : (
-                                                <SaveIcon />
-                                            )
-                                        }
+                                        leftSection={<Icon lucide={Save}/>}
+                                        loading={isSubmitting}
                                         onClick={handleUpdateAgent}
-                                        disabled={isSubmitting}
                                     >
                                         Save Changes
                                     </Button>
-                                </Box>
+                                </FormActions>
                             </Paper>
                         )}
 
                         {/* Agent Cards */}
-                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                        <Stack gap="md">
                             {/* Main Agent */}
                             {job.assignedAgent && (
                                 <AgentCard
@@ -778,9 +578,9 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     role="Primary Job Agent"
                                     statusLabel={getStatusLabel('assigned')}
                                     statusColor="info"
-                                    accentColor="primary"
-                                    icon={<EngineeringIcon />}
-                                    metaItems={[{icon: <BusinessIcon fontSize="small" />, text: 'Overall Job Responsibility'}]}
+                                    accentColor="brand"
+                                    icon={<Icon lucide={HardHat}/>}
+                                    metaItems={[{icon: <Icon lucide={Building2} size={16}/>, text: 'Overall Job Responsibility'}]}
                                 />
                             )}
 
@@ -792,32 +592,33 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     role={agent.primaryRecoveryAgent ? 'Primary Recovery Agent' : 'Recovery Agent'}
                                     statusLabel={getStatusLabel(agent.assignStatus)}
                                     statusColor={getStatusColor(agent.assignStatus)}
-                                    accentColor={agent.primaryRecoveryAgent ? 'warning' : 'default'}
-                                    icon={<PersonIcon />}
+                                    accentColor={agent.primaryRecoveryAgent ? 'orange' : 'default'}
+                                    icon={<Icon lucide={User}/>}
                                     metaItems={[
-                                        {icon: <LocationOnIcon fontSize="small" />, text: agent.airport},
+                                        {icon: <Icon tabler={IconMapPin} size={16}/>, text: agent.airport},
                                         {
-                                            icon: <BusinessIcon fontSize="small" />,
+                                            icon: <Icon lucide={Building2} size={16}/>,
                                             text: agent.primaryRecoveryAgent ? 'Lead Recovery Specialist' : 'Recovery Specialist',
                                         },
                                     ]}
                                     actions={
                                         <>
-                                            <IconButton
-                                                size="small"
+                                            <ActionIcon
+                                                variant="subtle"
+                                                color="gray"
                                                 onClick={() => handleShowEditForm(agent)}
                                                 aria-label={`Edit ${agent.agentName}`}
                                             >
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                            <IconButton
-                                                size="small"
-                                                color="error"
+                                                <Icon lucide={Pencil} size={18}/>
+                                            </ActionIcon>
+                                            <ActionIcon
+                                                variant="subtle"
+                                                color="red"
                                                 onClick={() => handleRemoveAgent(agent)}
                                                 aria-label={`Remove ${agent.agentName}`}
                                             >
-                                                <PersonRemoveIcon fontSize="small" />
-                                            </IconButton>
+                                                <Icon lucide={UserMinus} size={18}/>
+                                            </ActionIcon>
                                         </>
                                     }
                                 />
@@ -826,76 +627,106 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                             {/* Empty State */}
                             {!hasRecoveryJobs && !isFormOpen && (
                                 <Paper
-                                    elevation={0}
-                                    sx={(theme) => ({
-                                        borderRadius: 3,
-                                        border: `1px dashed ${theme.palette.divider}`,
-                                        py: 5,
-                                        px: 3,
-                                        textAlign: 'center',
-                                    })}
+                                    radius="lg"
+                                    py={40}
+                                    px="lg"
+                                    ta="center"
+                                    style={{border: '1px dashed var(--mantine-color-default-border)'}}
                                 >
-                                    <Box
-                                        sx={(theme) => ({
-                                            width: 64,
-                                            height: 64,
-                                            borderRadius: '50%',
-                                            bgcolor: alpha(theme.palette.grey[500], 0.08),
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            mx: 'auto',
-                                            mb: 2,
-                                        })}
-                                    >
-                                        <GroupOffIcon sx={{fontSize: 32, color: 'grey.400'}} />
-                                    </Box>
-                                    <Typography variant="h6" fontWeight={600} sx={{mb: 1}}>
-                                        No Recovery Agents Assigned
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{mb: 2.5, maxWidth: 480, mx: 'auto'}}>
+                                        {/* An empty-state glyph in a tinted disc is `ThemeIcon variant="light"`. */}
+                                        <ThemeIcon size={64} radius="xl" variant="light" color="gray" mx="auto" mb="md">
+                                            <Icon lucide={UsersRound} size={32}/>
+                                        </ThemeIcon>
+                                    <Text fw={600} fz="lg" mb="xs">No Recovery Agents Assigned</Text>
+                                    <Text size="sm" c="dimmed" mb="md" mx="auto" maw={480}>
                                         Get started by assigning recovery agents to specific locations where the package
                                         might be found.
-                                    </Typography>
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<PersonAddIcon />}
-                                        onClick={handleShowAssignForm}
-                                    >
+                                    </Text>
+                                    <Button leftSection={<Icon lucide={UserPlus}/>} onClick={handleShowAssignForm}>
                                         Assign First Recovery Agent
                                     </Button>
                                 </Paper>
                             )}
-                        </Box>
+                        </Stack>
                     </>
                 )}
-            </DialogContent>
-
-            <Divider />
-
-            <DialogActions sx={{p: 2, gap: 1}}>
-                {!isFormOpen && (
-                    <>
-                        <Button onClick={handleCancel} disabled={isSubmitting}>
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            startIcon={<DoneIcon />}
-                            onClick={onClose}
-                            disabled={isSubmitting}
-                        >
-                            Complete
-                        </Button>
-                    </>
-                )}
-            </DialogActions>
-        </Dialog>
+            </Box>
+            <Divider/>
+            {!isFormOpen && (
+                <DialogFooter
+                    onCancel={handleCancel}
+                    onConfirm={onClose}
+                    confirmLabel="Complete"
+                    confirmIcon={<Icon lucide={Check}/>}
+                    confirmDisabled={isSubmitting}
+                    submitting={false}
+                />
+            )}
+        </DialogShell>
     );
 };
 
 // ──────────────────────────────────────────────────────────────────────────
 // Internal helper components
+
+/** The tinted title bar at the top of the assign/edit sub-forms. */
+function FormBar({icon, title}: {icon: React.ReactNode; title: string}): React.ReactElement {
+    return (
+        <Group
+            gap="sm"
+            px="md"
+            py="sm"
+            wrap="nowrap"
+            style={{
+                backgroundColor: alpha('var(--mantine-color-brand-6)', 0.06),
+                borderBottom: '1px solid var(--mantine-color-default-border)',
+            }}
+        >
+            <Box c="brand.6" style={{display: 'flex'}}>{icon}</Box>
+            <Text fw={600}>{title}</Text>
+        </Group>
+    );
+}
+
+/** The tinted action strip at the bottom of the assign/edit sub-forms. */
+function FormActions({children}: {children: React.ReactNode}): React.ReactElement {
+    return (
+        <Group
+            justify="flex-end"
+            gap="xs"
+            p="md"
+            style={{
+                backgroundColor: surfaceTint,
+                borderTop: '1px solid var(--mantine-color-default-border)',
+            }}
+        >
+            {children}
+        </Group>
+    );
+}
+
+/** A pickup/delivery line inside the brand-filled address block. */
+function AddressRow({icon, label, value}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+}): React.ReactElement {
+    return (
+        <Group gap="md" align="flex-start" wrap="nowrap">
+            <ThemeIcon
+                size={32}
+                radius="lg"
+                style={{'--ti-bg': headerOverlayColor(0.2), '--ti-color': 'inherit'} as React.CSSProperties}
+            >
+                {icon}
+            </ThemeIcon>
+            <Box style={{flex: 1, minWidth: 0}}>
+                <Text size="xs" tt="uppercase" style={{opacity: 0.85, letterSpacing: 0.5}}>{label}</Text>
+                <Text size="sm" mt={2}>{value}</Text>
+            </Box>
+        </Group>
+    );
+}
 
 interface DetailCardProps {
     icon: React.ReactNode;
@@ -906,44 +737,25 @@ interface DetailCardProps {
 
 function DetailCard({icon, label, value, valueColor}: DetailCardProps): React.ReactElement {
     return (
-        <Box
-            sx={(theme) => ({
-                p: 2,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.grey[500], 0.04),
-                border: `1px solid ${theme.palette.divider}`,
-                display: 'flex',
-                gap: 1.5,
-                alignItems: 'flex-start',
-            })}
+        <Group
+            gap="sm"
+            align="flex-start"
+            wrap="nowrap"
+            p="md"
+            style={{
+                borderRadius: 'var(--mantine-radius-md)',
+                backgroundColor: surfaceTint,
+                border: '1px solid var(--mantine-color-default-border)',
+            }}
         >
-            <Box
-                sx={(theme) => ({
-                    width: 32,
-                    height: 32,
-                    borderRadius: 1,
-                    bgcolor: alpha(theme.palette.primary.main, 0.08),
-                    color: 'primary.main',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                })}
-            >
+            <ThemeIcon size={32} radius="lg" variant="light" color="brand">
                 {icon}
+            </ThemeIcon>
+            <Box style={{minWidth: 0}}>
+                <Text {...captionProps} display="block">{label}</Text>
+                <Text size="sm" fw={500} c={valueColor} mt={2}>{value || '—'}</Text>
             </Box>
-            <Box sx={{minWidth: 0}}>
-                <Typography
-                    variant="caption"
-                    sx={{color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block'}}
-                >
-                    {label}
-                </Typography>
-                <Typography variant="body2" fontWeight={500} sx={{color: valueColor || 'text.primary', mt: 0.25}}>
-                    {value || '—'}
-                </Typography>
-            </Box>
-        </Box>
+        </Group>
     );
 }
 
@@ -951,8 +763,8 @@ interface AgentCardProps {
     title: string;
     role: string;
     statusLabel: string;
-    statusColor: 'default' | 'info' | 'warning' | 'success';
-    accentColor: 'primary' | 'warning' | 'default';
+    statusColor: StatusColor;
+    accentColor: AccentColor;
     icon: React.ReactNode;
     metaItems: {icon: React.ReactNode; text: string}[];
     actions?: React.ReactNode;
@@ -968,87 +780,50 @@ function AgentCard({
     metaItems,
     actions,
 }: AgentCardProps): React.ReactElement {
+    const isNeutral = accentColor === 'default';
+    const accentVar = `var(--mantine-color-${accentColor}-6)`;
+
     return (
         <Paper
-            elevation={0}
-            sx={(theme) => {
-                const borderColor =
-                    accentColor === 'default'
-                        ? theme.palette.divider
-                        : alpha(theme.palette[accentColor].main, 0.4);
-                const bgTint =
-                    accentColor === 'default'
-                        ? 'transparent'
-                        : alpha(theme.palette[accentColor].main, 0.03);
-                return {
-                    p: 2.5,
-                    borderRadius: 3,
-                    border: `1px solid ${borderColor}`,
-                    bgcolor: bgTint,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1.5,
-                };
+            p="md"
+            radius="lg"
+            style={{
+                border: `1px solid ${isNeutral ? 'var(--mantine-color-default-border)' : alpha(accentVar, 0.4)}`,
+                backgroundColor: isNeutral ? 'transparent' : alpha(accentVar, 0.03),
             }}
         >
-            <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 2}}>
-                <Box
-                    sx={(theme) => {
-                        if (accentColor === 'default') {
-                            return {
-                                width: 48,
-                                height: 48,
-                                borderRadius: 2,
-                                bgcolor: alpha(theme.palette.grey[500], 0.12),
-                                color: 'text.secondary',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                            };
-                        }
-                        return {
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            bgcolor: alpha(theme.palette[accentColor].main, 0.12),
-                            color: theme.palette[accentColor].main,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                        };
-                    }}
+            <Group gap="md" align="flex-start" wrap="nowrap">
+                <ThemeIcon
+                    size={48}
+                    radius="md"
+                    c={isNeutral ? 'dimmed' : `${accentColor}.6`}
+                    style={{
+                        '--ti-bg': isNeutral
+                            ? alpha('var(--mantine-color-gray-6)', 0.12)
+                            : alpha(accentVar, 0.12),
+                    } as React.CSSProperties}
                 >
                     {icon}
-                </Box>
-                <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="subtitle1" fontWeight={600} noWrap>
-                        {title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{mb: 0.75}}>
-                        {role}
-                    </Typography>
-                    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 2, color: 'text.secondary'}}>
+                </ThemeIcon>
+                <Box style={{flex: 1, minWidth: 0}}>
+                    <Text fw={600} truncate>{title}</Text>
+                    <Text size="sm" c="dimmed" mb={6}>{role}</Text>
+                    <Group gap="md" c="dimmed">
                         {metaItems.map((meta, index) => (
-                            <Box key={index} sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                                {meta.icon}
-                                <Typography variant="caption">{meta.text}</Typography>
-                            </Box>
+                            <Group key={index} gap={4} wrap="nowrap">
+                                <Box style={{display: 'flex'}}>{meta.icon}</Box>
+                                <Text size="xs">{meta.text}</Text>
+                            </Group>
                         ))}
-                    </Box>
+                    </Group>
                 </Box>
-                {actions && <Box sx={{display: 'flex', gap: 0.5}}>{actions}</Box>}
-            </Box>
-
-            <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
-                <Chip
-                    label={statusLabel}
-                    size="small"
-                    color={statusColor === 'default' ? undefined : statusColor}
-                    sx={{fontWeight: 500}}
-                />
-            </Box>
+                {actions && <Group gap={4} wrap="nowrap">{actions}</Group>}
+            </Group>
+            <Group justify="flex-end" mt="sm">
+                <Badge size="sm" fw={500} color={STATUS_BADGE_COLOR[statusColor]} variant="light">
+                    {statusLabel}
+                </Badge>
+            </Group>
         </Paper>
     );
 }

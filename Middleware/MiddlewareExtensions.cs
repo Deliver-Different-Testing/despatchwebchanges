@@ -7,5 +7,10 @@ public static class MiddlewareExtensions
         public void UseCsrfProtection() => app.UseMiddleware<CsrfProtectionMiddleware>();
 
         public void UseSecurityHeaders() => app.UseMiddleware<SecurityHeadersMiddleware>();
+
+        public void UseConnectedTenantRejection() => app.UseMiddleware<ConnectedTenantRejectionMiddleware>();
+
+        public void UsePrecompressedStaticFiles(PrecompressedStaticFileOptions options) =>
+            app.UseMiddleware<PrecompressedStaticFilesMiddleware>(options);
     }
 }

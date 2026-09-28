@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Job Search API Service Tests
  *
@@ -9,8 +10,10 @@
 import {
     fetchPodJobs,
     fetchBulkJobs,
+    fetchDispatchBulkJobDetail,
     fetchDispatchJobs,
     fetchClearListJobs,
+    fetchCurrentWorkJobs,
     fetchNationwideJobsNew,
     fetchNationwideJobsPod,
     fetchNationwideJobsReprice,
@@ -202,6 +205,24 @@ describe('jobSearchApi', () => {
         });
     });
 
+    // ── fetchDispatchBulkJobDetail ───────────────────────────────────
+
+    describe('fetchDispatchBulkJobDetail', () => {
+        it('should GET /Job/DispatchBulkJobDetail with the bulkJobId and transform the result', async () => {
+            mockApiClient.get.mockResolvedValueOnce({id: 7, jobNo: 'BULK-7'});
+
+            const result = await fetchDispatchBulkJobDetail(7);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                '/Job/DispatchBulkJobDetail',
+                {bulkJobId: 7},
+                undefined,
+            );
+            expect(result).toHaveProperty('_transformed', true);
+            expect(result).toHaveProperty('jobNo', 'BULK-7');
+        });
+    });
+
     // ── fetchDispatchJobs ────────────────────────────────────────────
 
     describe('fetchDispatchJobs', () => {
@@ -243,6 +264,39 @@ describe('jobSearchApi', () => {
             expect(calledParams.order).toBe('time');
             expect(calledParams.orderDirection).toBe('asc');
             expect(calledParams.searchText).toBe('');
+        });
+    });
+
+    // ── fetchCurrentWorkJobs ─────────────────────────────────────────
+
+    describe('fetchCurrentWorkJobs', () => {
+        it('should call GET /job/GetCurrentWorkList with courierId and formatted dates', async () => {
+            mockApiClient.get.mockResolvedValueOnce(createMockDto());
+
+            await fetchCurrentWorkJobs(createBaseParams({
+                courierId: 42,
+                startDate: dayjs('2025-02-01') as any,
+                endDate: dayjs('2025-02-28') as any,
+            }));
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                '/job/GetCurrentWorkList',
+                expect.objectContaining({
+                    courierId: 42,
+                    startDate: expect.stringContaining('formatted-'),
+                    endDate: expect.stringContaining('formatted-'),
+                }),
+                undefined,
+            );
+        });
+
+        it('transforms each returned job', async () => {
+            mockApiClient.get.mockResolvedValueOnce(createMockDto(2));
+
+            const result = await fetchCurrentWorkJobs(createBaseParams({courierId: 1}));
+
+            expect(result.jobs).toHaveLength(2);
+            expect((result.jobs[0] as any)._transformed).toBe(true);
         });
     });
 

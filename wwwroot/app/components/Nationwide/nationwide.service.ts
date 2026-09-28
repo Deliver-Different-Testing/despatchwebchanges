@@ -1,6 +1,6 @@
 import {
     IAgent,
-    IAgentInfoDialog, IAirlineSuggestion,
+    IAirlineSuggestion,
     IAirportSuggestion,
     IJobQueryParams, IJobSearchResult, IJobSearchResultDto
 } from "../../interfaces/job.interface";
@@ -9,7 +9,7 @@ import {
     IFlightSearchResponseDto,
     IGetAgentOptionsResponse,
     IGetFlightOptionsResponse
-} from "./nationwide.interfaces";
+} from "../../interfaces/nationwideFlight.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
@@ -91,6 +91,7 @@ class NationwideService {
         departureAirportId?: number,
         arrivalAirportId?: number,
         minimumLayoverMinutes: number = 0,
+        includeNearbyAirports: boolean = false,
     ): Promise<IGetFlightOptionsResponse> {
         const formattedDate = formatDateForApiWithTzs(departureDate, timezone);
         const response = await this.$http.get<IFlightSearchResponseDto>("nationwideJob/GetScheduledFlightOptions", {
@@ -100,7 +101,8 @@ class NationwideService {
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
-                minimumLayoverMinutes
+                minimumLayoverMinutes,
+                includeNearbyAirports
             }
         });
 
@@ -135,11 +137,14 @@ class NationwideService {
         };
     }
 
-    async assignAgentToJob(jobId: number, agentId: number, includeStopJobs: boolean): Promise<any> {
+    async assignAgentToJob(jobId: number, agentId: number, includeStopJobs: boolean,
+        emailSubject?: string, emailBody?: string): Promise<any> {
         await this.$http.post("nationwideJob/AssignAgentToJob", {
             jobId,
             agentId,
-            includeStopJobs
+            includeStopJobs,
+            emailSubject,
+            emailBody
         });
     }
 
@@ -170,15 +175,6 @@ class NationwideService {
         await this.$http.post("nationwideJob/RestoreJob", {
             jobId,
         });
-    }
-
-    async getAgentInfoForDialog(agentId: number): Promise<IAgentInfoDialog> {
-        const response = await this.$http.get<IAgentInfoDialog>("nationwideJob/GetAgentInfo", {
-            params: {
-                agentId,
-            }
-        });
-        return response.data;
     }
 
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Dayjs, timezone?: string): Promise<IFlightCargoProcessing> {

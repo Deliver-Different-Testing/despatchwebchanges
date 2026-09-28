@@ -1,16 +1,18 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * FlightInformation Component Tests
  */
 
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen} from '@testing-library/react';
+import { setupUser } from '../../../../__testUtils__/setupUser';
 import {FlightInformation} from './FlightInformation';
 import {createMockFlight} from '../__testUtils__/mockJob';
+import {renderWithMantine} from '../../../../__testUtils__';
 import dayjs from 'dayjs';
 import nationwideApi from '../../../../services/nationwideApi';
+
+// Shared fast userEvent instance (see setupUser).
+const userEvent = setupUser();
 
 jest.mock('../../../../services/nationwideApi', () => ({
     __esModule: true,
@@ -21,10 +23,9 @@ jest.mock('../../../../services/nationwideApi', () => ({
 
 const mockGetFlightWebhookStatus = nationwideApi.getFlightWebhookStatus as jest.Mock;
 
-const theme = createTheme();
 
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    return renderWithMantine(ui);
 }
 
 describe('FlightInformation', () => {
@@ -33,15 +34,18 @@ describe('FlightInformation', () => {
     });
 
     it('renders nothing when flight has no or undefined segments', () => {
-        const {container: c1} = renderWithTheme(
+        // `MantineProvider` injects a <style> element, so an empty container is no
+        // longer the signal — assert the section header is absent instead.
+        const {unmount} = renderWithTheme(
             <FlightInformation flight={createMockFlight({flightSegments: []})} jobId={1} />
         );
-        expect(c1.firstChild).toBeNull();
+        expect(screen.queryByTestId('section-header')).not.toBeInTheDocument();
+        unmount();
 
-        const {container: c2} = renderWithTheme(
+        renderWithTheme(
             <FlightInformation flight={createMockFlight({flightSegments: undefined})} jobId={1} />
         );
-        expect(c2.firstChild).toBeNull();
+        expect(screen.queryByTestId('section-header')).not.toBeInTheDocument();
     });
 
     it('renders flight segment details and the Check Webhooks button', () => {
@@ -125,9 +129,7 @@ describe('FlightInformation', () => {
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        await waitFor(() => {
-            expect(screen.getByText('Webhooks Active')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Webhooks Active')).toBeInTheDocument();
         expect(mockGetFlightWebhookStatus).toHaveBeenCalledWith(42);
     });
 
@@ -138,9 +140,7 @@ describe('FlightInformation', () => {
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        await waitFor(() => {
-            expect(screen.getByText('Webhooks Inactive')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Webhooks Inactive')).toBeInTheDocument();
         expect(mockGetFlightWebhookStatus).toHaveBeenCalledWith(7);
     });
 
@@ -151,9 +151,7 @@ describe('FlightInformation', () => {
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        await waitFor(() => {
-            expect(screen.getByText('Webhooks Inactive')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Webhooks Inactive')).toBeInTheDocument();
     });
 
     it('shows loading state while checking webhooks', async () => {
@@ -169,8 +167,6 @@ describe('FlightInformation', () => {
         expect(screen.getByRole('button', {name: /checking/i})).toBeDisabled();
 
         resolve!({active: true});
-        await waitFor(() => {
-            expect(screen.getByText('Webhooks Active')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Webhooks Active')).toBeInTheDocument();
     });
 });

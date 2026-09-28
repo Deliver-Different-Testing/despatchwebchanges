@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Interceptors;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Extensions;
@@ -18,6 +19,12 @@ public static class DatabaseServiceCollectionExtensions
         services.AddDbContextFactory<DespatchContext>(options =>
                 options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;"),
             ServiceLifetime.Transient);
+
+        // Registered as a singleton so the same instance is handed to
+        // AddInterceptors on every CreateDbContext call — a fresh instance per
+        // call would change the options hash and spawn a new EF internal service
+        // provider each time.
+        services.AddSingleton<StaffSessionContextInterceptor>();
 
         // Phase 2: Override the factory with our tenant-aware implementation
         // that resolves the real connection string per-request from cached tenant config.

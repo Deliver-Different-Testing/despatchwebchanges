@@ -1,23 +1,12 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * AppShell Component Tests
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
+import {renderWithMantine} from '../../../__testUtils__';
 import {AppShell} from './AppShell';
-
-const theme = createTheme();
-
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
 
 describe('AppShell', () => {
     const defaultProps = {
@@ -27,6 +16,11 @@ describe('AppShell', () => {
         isUsCustomer: false,
         currentState: 'home',
         onNavigate: jest.fn(),
+    };
+
+    /** Hovering the menu button is the shell's "open the nav" gesture. */
+    const openSideNav = () => {
+        fireEvent.mouseEnter(screen.getByRole('button', {name: /navigation menu/i}));
     };
 
     beforeEach(() => {
@@ -39,7 +33,7 @@ describe('AppShell', () => {
 
     describe('Rendering', () => {
         it('should render toolbar title, menu button, and logo', () => {
-            renderWithTheme(<AppShell {...defaultProps} />);
+            renderWithMantine(<AppShell {...defaultProps} />);
 
             expect(screen.getByText('Test Dashboard')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /navigation menu/i})).toBeInTheDocument();
@@ -47,7 +41,7 @@ describe('AppShell', () => {
         });
 
         it('should render children when provided', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <AppShell {...defaultProps}>
                     <button data-testid="custom-content">Custom</button>
                 </AppShell>
@@ -55,8 +49,14 @@ describe('AppShell', () => {
             expect(screen.getByTestId('custom-content')).toBeInTheDocument();
         });
 
+        it('forwards the network-partner flag to the drawer', () => {
+            renderWithMantine(<AppShell {...defaultProps} isNetworkPartner={true} />);
+            act(() => openSideNav());
+            expect(screen.getByTestId('sidenav-np-chip')).toBeInTheDocument();
+        });
+
         it('should use custom logo URL when provided', () => {
-            renderWithTheme(
+            renderWithMantine(
                 <AppShell {...defaultProps} logoUrl="custom/logo.png" />
             );
             const logo = screen.getByAltText('DFRNT');
@@ -66,93 +66,62 @@ describe('AppShell', () => {
 
     describe('SideNav Integration', () => {
         it('should open SideNav when avatar is hovered', async () => {
-            renderWithTheme(<AppShell {...defaultProps} />);
+            renderWithMantine(<AppShell {...defaultProps} />);
 
-            const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
-            fireEvent.mouseEnter(avatarButton);
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-            expect(await screen.findByText('John Doe')).toBeInTheDocument();
+            openSideNav();
+
+            expect(await screen.findByRole('dialog')).toBeInTheDocument();
+            expect(screen.getByText('John Doe')).toBeInTheDocument();
         });
 
         it('should close SideNav after mouse leaves with delay', async () => {
-            // Use real timers for this test as MUI Drawer has complex animations
-            jest.useRealTimers();
+            renderWithMantine(<AppShell {...defaultProps} />);
 
-            renderWithTheme(<AppShell {...defaultProps} />);
+            openSideNav();
+            const panel = await screen.findByRole('dialog');
 
-            // Open sidenav
-            const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
-            fireEvent.mouseEnter(avatarButton);
+            fireEvent.mouseLeave(panel);
 
-            // Verify drawer is open (has modal role with presentation)
-            await waitFor(() => {
-                const drawer = document.querySelector('.MuiDrawer-root');
-                expect(drawer).toBeInTheDocument();
+            // Advance past the 300ms close delay.
+            act(() => {
+                jest.advanceTimersByTime(300);
             });
 
-            // Get the drawer and simulate mouse leave
-            const drawerPaper = document.querySelector('.MuiDrawer-paper');
-            if (drawerPaper) {
-                fireEvent.mouseLeave(drawerPaper);
-            }
-
-            // Wait for the close delay (300ms) and check drawer is no longer visible
-            await waitFor(
-                () => {
-                    // Check that the drawer modal is hidden
-                    const drawerRoot = document.querySelector('.MuiDrawer-root');
-                    // When drawer closes, MUI removes the root element or adds hidden styles
-                    expect(drawerRoot?.getAttribute('aria-hidden')).toBe('true');
-                },
-                {timeout: 1000}
-            );
-
-            // Restore fake timers for other tests
-            jest.useFakeTimers();
+            await waitFor(() => {
+                expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            });
         });
 
         it('should not close SideNav if mouse re-enters before delay', async () => {
-            renderWithTheme(<AppShell {...defaultProps} />);
+            renderWithMantine(<AppShell {...defaultProps} />);
 
-            // Open sidenav
-            const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
-            fireEvent.mouseEnter(avatarButton);
+            openSideNav();
+            const panel = await screen.findByRole('dialog');
 
-            expect(await screen.findByText('John Doe')).toBeInTheDocument();
+            fireEvent.mouseLeave(panel);
+            act(() => {
+                jest.advanceTimersByTime(100);
+            });
 
-            const drawer = document.querySelector('.MuiDrawer-paper');
-            if (drawer) {
-                fireEvent.mouseLeave(drawer);
+            // Re-enter before the delay completes.
+            fireEvent.mouseEnter(panel);
+            act(() => {
+                jest.advanceTimersByTime(200);
+            });
 
-                // Partially advance timer
-                act(() => {
-                    jest.advanceTimersByTime(100);
-                });
-
-                // Re-enter before delay completes
-                fireEvent.mouseEnter(drawer);
-
-                // Complete the delay
-                act(() => {
-                    jest.advanceTimersByTime(200);
-                });
-            }
-
-            // SideNav should still be open
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('John Doe')).toBeInTheDocument();
         });
 
         it('should call onNavigate when navigation item is clicked', async () => {
             const onNavigate = jest.fn();
-            renderWithTheme(<AppShell {...defaultProps} onNavigate={onNavigate} />);
+            renderWithMantine(<AppShell {...defaultProps} onNavigate={onNavigate} />);
 
-            // Open sidenav
-            const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
-            fireEvent.mouseEnter(avatarButton);
+            openSideNav();
 
-            expect(await screen.findByText('Tasks')).toBeInTheDocument();
-
-            fireEvent.click(screen.getByText('Tasks'));
+            fireEvent.click(await screen.findByText('Tasks'));
 
             expect(onNavigate).toHaveBeenCalledWith('taskDashboard');
         });
@@ -161,12 +130,11 @@ describe('AppShell', () => {
     describe('Logo Click', () => {
         it('should call onLogoClick when logo is clicked', () => {
             const onLogoClick = jest.fn();
-            renderWithTheme(
+            renderWithMantine(
                 <AppShell {...defaultProps} onLogoClick={onLogoClick} />
             );
 
-            const logo = screen.getByAltText('DFRNT');
-            fireEvent.click(logo);
+            fireEvent.click(screen.getByAltText('DFRNT'));
 
             expect(onLogoClick).toHaveBeenCalledTimes(1);
         });
@@ -174,19 +142,17 @@ describe('AppShell', () => {
 
     describe('US Customer Handling', () => {
         it('should show Domestic label for US customers in SideNav', async () => {
-            renderWithTheme(<AppShell {...defaultProps} isUsCustomer={true} />);
+            renderWithMantine(<AppShell {...defaultProps} isUsCustomer={true} />);
 
-            const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
-            fireEvent.mouseEnter(avatarButton);
+            openSideNav();
 
             expect(await screen.findByText('Domestic')).toBeInTheDocument();
         });
 
         it('should show Nationwide label for non-US customers in SideNav', async () => {
-            renderWithTheme(<AppShell {...defaultProps} isUsCustomer={false} />);
+            renderWithMantine(<AppShell {...defaultProps} isUsCustomer={false} />);
 
-            const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
-            fireEvent.mouseEnter(avatarButton);
+            openSideNav();
 
             expect(await screen.findByText('Nationwide')).toBeInTheDocument();
         });
@@ -194,27 +160,22 @@ describe('AppShell', () => {
 
     describe('Current State Highlighting', () => {
         it('should highlight current navigation item', async () => {
-            renderWithTheme(<AppShell {...defaultProps} currentState="taskDashboard" />);
+            renderWithMantine(<AppShell {...defaultProps} currentState="taskDashboard" />);
 
-            const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
-            fireEvent.mouseEnter(avatarButton);
+            openSideNav();
 
-            await waitFor(() => {
-                const tasksButton = screen.getByText('Tasks').closest('div[role="button"]');
-                // Check that it has the active styling
-                expect(tasksButton).toHaveStyle({borderLeft: expect.stringContaining('4px solid')});
-            });
+            expect(await screen.findByRole('button', {name: 'Tasks'}))
+                .toHaveAttribute('data-active', 'true');
         });
     });
 
     describe('Company Name', () => {
         it('should display custom company name in SideNav', async () => {
-            renderWithTheme(
+            renderWithMantine(
                 <AppShell {...defaultProps} companyName="Custom Company" />
             );
 
-            const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
-            fireEvent.mouseEnter(avatarButton);
+            openSideNav();
 
             expect(await screen.findByText('Custom Company')).toBeInTheDocument();
         });

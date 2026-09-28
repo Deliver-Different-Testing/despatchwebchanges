@@ -6,26 +6,48 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { useMantineTheme } from '@mantine/core';
 import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 import type { UseCourierMapReturn } from './CourierMapPage.types';
-import { DEFAULT_ZOOM, OVERVIEW_ZOOM } from './CourierMapPage.types';
+import { DEFAULT_ZOOM, OVERVIEW_ZOOM, getMarkerColors } from './CourierMapPage.types';
 import { initPlatform, createMap } from '../../components/common/here-map/hereMapUtils';
 import { CourierMarkerManager } from './CourierMarkerManager';
+import type { CourierMapDisplaySettings } from './CourierMapDisplaySettings';
 
 interface UseCourierMapOptions {
     apiKey: string | null;
     isUsCustomer: boolean;
     mapCenter: { lat: number; lng: number };
+    displaySettings: CourierMapDisplaySettings;
+    /** Called when a courier's flag is tapped directly on the map. */
+    onMarkerTap?: (driver: IAvailableCourierPosition) => void;
+}
+
+/** The user's custom single-color pair, or undefined to use the default blue. */
+function customSingleColor(settings: CourierMapDisplaySettings): { bg: string; text: string } | undefined {
+    return settings.singleColor && settings.singleTextColor
+        ? { bg: settings.singleColor, text: settings.singleTextColor }
+        : undefined;
 }
 
 export function useCourierMap({
     apiKey,
     isUsCustomer,
     mapCenter,
+    displaySettings,
+    onMarkerTap,
 }: UseCourierMapOptions): UseCourierMapReturn {
+    const theme = useMantineTheme();
+    const themeRef = useRef(theme);
+    themeRef.current = theme;
+    const displaySettingsRef = useRef(displaySettings);
+    displaySettingsRef.current = displaySettings;
+    const onMarkerTapRef = useRef(onMarkerTap);
+    onMarkerTapRef.current = onMarkerTap;
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const platformRef = useRef<any>(null);
+    const defaultLayersRef = useRef<any>(null);
     const markerManagerRef = useRef<CourierMarkerManager | null>(null);
     const userZoomLevelRef = useRef<number | null>(null);
 
@@ -57,11 +79,21 @@ export function useCourierMap({
             }
 
             mapInstanceRef.current = mapResult.map;
+            defaultLayersRef.current = mapResult.defaultLayers;
 
-            // Create marker manager
+            // Strip HERE's native zoom/map-settings chrome; zoom and the layer
+            // picker are rendered as MUI controls (MapZoomViewControls) so the
+            // courier map matches the rest of the app — same as the dispatch map.
+            mapResult.ui?.removeControl('zoom');
+            mapResult.ui?.removeControl('mapsettings');
+
+            // Create marker manager with theme-derived status colors so map
+            // markers and the driver list stay in step with the palette.
             markerManagerRef.current = new CourierMarkerManager(
                 mapInstanceRef.current,
-                isUsCustomer
+                getMarkerColors(themeRef.current, displaySettingsRef.current.colorMode, customSingleColor(displaySettingsRef.current)),
+                displaySettingsRef.current,
+                (driver) => onMarkerTapRef.current?.(driver)
             );
 
             // Track user zoom changes
@@ -85,9 +117,20 @@ export function useCourierMap({
                 mapInstanceRef.current = null;
             }
             platformRef.current = null;
+            defaultLayersRef.current = null;
             setIsInitialized(false);
         };
     }, [apiKey, isUsCustomer, mapCenter]);
+
+    // Repaint existing markers immediately when the display settings change (a settings
+    // menu edit or a template pick), rather than waiting for the next 30s poll.
+    useEffect(() => {
+        if (!isInitialized || !markerManagerRef.current) return;
+        markerManagerRef.current.updateSettings(
+            getMarkerColors(themeRef.current, displaySettings.colorMode, customSingleColor(displaySettings)),
+            displaySettings
+        );
+    }, [isInitialized, displaySettings]);
 
     // Update couriers on the map
     const updateCouriers = useCallback(
@@ -126,6 +169,12 @@ export function useCourierMap({
         []
     );
 
+    // Highlight/un-highlight a driver's flag; persists through the next poll refresh since
+    // CourierMarkerManager tracks selection as instance state.
+    const setSelectedDriver = useCallback((courierId: number | null) => {
+        markerManagerRef.current?.setSelectedCourier(courierId);
+    }, []);
+
     // Return to overview (fit all or reset to country view)
     const returnToOverview = useCallback(() => {
         if (!mapInstanceRef.current) return;
@@ -138,8 +187,12 @@ export function useCourierMap({
     return {
         mapContainerRef,
         isInitialized,
+        map: mapInstanceRef.current,
+        platform: platformRef.current,
+        defaultLayers: defaultLayersRef.current,
         updateCouriers,
         centerOnCourier,
+        setSelectedDriver,
         returnToOverview,
     };
 }

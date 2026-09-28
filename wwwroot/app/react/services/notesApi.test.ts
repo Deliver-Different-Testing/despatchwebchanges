@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Notes API Service Tests
  */
@@ -226,6 +227,14 @@ describe('notesApi', () => {
             await notesApi.deleteNote(1);
 
             expect(mockApiClient.delete).toHaveBeenCalledWith('note/DeleteNote?noteId=1');
+        });
+
+        it('should include jobId when provided', async () => {
+            mockApiClient.delete.mockResolvedValueOnce(undefined);
+
+            await notesApi.deleteNote(1, 123);
+
+            expect(mockApiClient.delete).toHaveBeenCalledWith('note/DeleteNote?noteId=1&jobId=123');
         });
     });
 

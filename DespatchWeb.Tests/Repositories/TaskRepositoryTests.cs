@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
-/// Tests for the static ApplyFilters method in TaskRepository.
+/// Tests for the static ApplyFilters method and ProjectToTaskViewModel projection in TaskRepository.
 /// Date filter tests use in-memory queryable (SQLite cannot translate DateTimeOffset-to-DateTime
 /// comparisons that SQL Server handles implicitly).
 /// SearchText tests use SQLite since EF.Functions.Like requires a real database provider.
@@ -14,6 +15,7 @@ namespace DespatchWeb.Tests.Repositories;
 public class TaskRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
+    private static readonly int[] Expected = [4, 7, 9];
 
     public async ValueTask DisposeAsync()
     {
@@ -42,7 +44,7 @@ public class TaskRepositoryTests : IAsyncDisposable
     {
         var query = events.AsQueryable();
         var filtered = TaskRepository.ApplyFilters(query, filters);
-        return filtered.ToList();
+        return [.. filtered];
     }
 
     private static TucEvent CreateEvent(int id, Action<TucEvent>? configure = null)
@@ -58,6 +60,75 @@ public class TaskRepositoryTests : IAsyncDisposable
         };
         configure?.Invoke(ev);
         return ev;
+    }
+
+    private static TaskViewModel ProjectInMemory(TucEvent ev) =>
+        new[] { ev }.AsQueryable().Select(TaskRepository.ProjectToTaskViewModel).Single();
+
+    private static TucEvent CreateEventWithGroup(int id, string group) =>
+        CreateEvent(id, e => e.UcevTypeNavigation = new TucEventType { UcetGroup = group });
+
+    [Fact]
+    public void ApplyTaskGroupFilter_ShowsCustomerServiceGeneralAndPartnerTaskGroups()
+    {
+        // The "Add Task" dialog (JobRepository.EventTypeListAsync) offers CS, GE and PT event
+        // types, so the task list must surface all three — otherwise a task the user creates with
+        // a 'GE' type (e.g. "dispatch to check pickup") is saved but never shown.
+        var events = new[]
+        {
+            CreateEventWithGroup(1, "CS"),
+            CreateEventWithGroup(2, "PT"),
+            CreateEventWithGroup(3, "GE"),
+            CreateEventWithGroup(4, "CE"),
+            CreateEventWithGroup(5, "OE")
+        };
+
+        var results = TaskRepository.ApplyTaskGroupFilter(events.AsQueryable())
+            .Select(e => e.UcevId)
+            .OrderBy(id => id)
+            .ToList();
+
+        Assert.Equal(new[] { 1, 2, 3 }, results);
+    }
+
+    [Fact]
+    public void ProjectToTaskViewModel_MapsCourierAndClientCodeFromJob()
+    {
+        var ev = CreateEvent(1, e => e.UcevJob = new TucJob
+        {
+            UcjbNumber = "JOB-001",
+            UcjbClientCode = "ACME",
+            UcjbCourier = new TucCourier
+            {
+                Code = "ABC123",
+                UccrName = "John",
+                UccrSurname = "Smith"
+            }
+        });
+
+        var task = ProjectInMemory(ev);
+
+        Assert.Equal("ABC123", task.CourierCode);
+        Assert.Equal("John Smith", task.CourierName);
+        Assert.Equal("ACME", task.ClientCode);
+        Assert.Equal("JOB-001", task.JobNumber);
+    }
+
+    [Fact]
+    public void ProjectToTaskViewModel_NullCourierAndClientCode_MapToNull()
+    {
+        var ev = CreateEvent(1, e => e.UcevJob = new TucJob
+        {
+            UcjbNumber = "JOB-001",
+            UcjbClientCode = null,
+            UcjbCourier = null
+        });
+
+        var task = ProjectInMemory(ev);
+
+        Assert.Null(task.CourierCode);
+        Assert.Null(task.CourierName);
+        Assert.Null(task.ClientCode);
     }
 
     [Fact]
@@ -306,5 +377,70 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         Assert.Single(results);
         Assert.Equal(1, results[0].UcevId);
+    }
+
+    private static List<int> ApplyOrderingInMemory(
+        IEnumerable<TucEvent> events,
+        TaskTableFiltersRequest filters,
+        DateTime today) =>
+    [
+        .. TaskRepository.ApplyOrdering(events.AsQueryable(), filters, today)
+            .Select(e => e.UcevId)
+    ];
+
+    [Fact]
+    public void ApplyOrdering_WithoutOrderBy_SortsTiesByDueTimeThenId()
+    {
+        // GetAllTasksAsync applies Take(500) straight after ordering, and the task dashboard
+        // sends no OrderBy. Ordering only by the overdue boolean leaves every row in a group
+        // tied, so SQL Server may return a different arbitrary 500 on each call and a task can
+        // vanish between refreshes. The sort must be total.
+        var today = new DateTime(2025, 6, 1, 8, 0, 0);
+        var events = new[]
+        {
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2025, 6, 15, 12, 0, 0)),
+            CreateEvent(1, e => e.UcevDueTime = new DateTime(2025, 6, 15, 12, 0, 0)),
+            CreateEvent(2, e => e.UcevDueTime = new DateTime(2025, 6, 15, 9, 0, 0))
+        };
+
+        var results = ApplyOrderingInMemory(events, new TaskTableFiltersRequest(), today);
+
+        Assert.Equal(new[] { 2, 1, 3 }, results);
+    }
+
+    [Fact]
+    public void ApplyOrdering_WithoutOrderBy_KeepsOverdueFirstThenSortsDeterministically()
+    {
+        var today = new DateTime(2025, 6, 15, 12, 0, 0);
+        var events = new[]
+        {
+            CreateEvent(10, e => e.UcevDueTime = new DateTime(2025, 6, 20, 9, 0, 0)),
+            CreateEvent(20, e => e.UcevDueTime = new DateTime(2025, 6, 10, 9, 0, 0)),
+            CreateEvent(30, e => e.UcevDueTime = new DateTime(2025, 6, 20, 9, 0, 0)),
+            CreateEvent(40, e => e.UcevDueTime = new DateTime(2025, 6, 9, 9, 0, 0))
+        };
+
+        var results = ApplyOrderingInMemory(events, new TaskTableFiltersRequest(), today);
+
+        Assert.Equal(new[] { 40, 20, 10, 30 }, results);
+    }
+
+    [Fact]
+    public void ApplyOrdering_WithDateTimeOrder_BreaksDueTimeTiesById()
+    {
+        var today = new DateTime(2025, 6, 1, 8, 0, 0);
+        var dueTime = new DateTime(2025, 6, 15, 12, 0, 0);
+        var events = new[]
+        {
+            CreateEvent(7, e => e.UcevDueTime = dueTime),
+            CreateEvent(4, e => e.UcevDueTime = dueTime),
+            CreateEvent(9, e => e.UcevDueTime = dueTime)
+        };
+
+        var filters = new TaskTableFiltersRequest { OrderBy = "datetime", OrderDirection = "asc" };
+
+        var results = ApplyOrderingInMemory(events, filters, today);
+
+        Assert.Equal(Expected, results);
     }
 }

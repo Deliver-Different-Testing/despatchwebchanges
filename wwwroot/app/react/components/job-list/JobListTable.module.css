@@ -1,0 +1,296 @@
+/*
+ * Job-list table styling.
+ *
+ * The table is virtualised (`@tanstack/react-virtual`) and re-renders on every
+ * scroll frame, so it keeps raw `<table>` markup rather than a component tree,
+ * and its row variants are driven by `data-*` attributes instead of per-row
+ * style objects — one stylesheet, no per-row CSS generated at render time.
+ *
+ * Density is a pair of custom properties set on the table element, so changing
+ * mode repaints without touching a single row's markup.
+ */
+
+.container {
+    flex: 1;
+    overflow: auto;
+}
+
+.table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-family: inherit;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.headerCell {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: var(--mantine-spacing-xs) var(--mantine-spacing-xs);
+    white-space: nowrap;
+    text-align: left;
+    background-color: var(--mantine-color-gray-2);
+    border-bottom: 2px solid var(--mantine-color-gray-3);
+    color: var(--mantine-color-dimmed);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.headerCellRight {
+    text-align: right;
+}
+
+.headerCellCenter {
+    text-align: center;
+}
+
+.sortButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+}
+
+.sortButton:hover {
+    color: var(--mantine-color-text);
+}
+
+.sortIcon {
+    opacity: 0;
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.sortButton:hover .sortIcon {
+    opacity: 0.5;
+}
+
+.sortIconActive {
+    opacity: 1;
+}
+
+.sortIconDesc {
+    transform: rotate(180deg);
+}
+
+.resizeHandle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: col-resize;
+    background-color: transparent;
+    z-index: 3;
+}
+
+.resizeHandle:hover {
+    background-color: var(--mantine-color-brand-5);
+    opacity: 0.3;
+}
+
+.resizeHandle:active {
+    background-color: var(--mantine-color-brand-5);
+    opacity: 0.5;
+}
+
+/* ── Rows ───────────────────────────────────────────────────────────── */
+
+.row {
+    cursor: pointer;
+    transition: background-color 150ms ease;
+}
+
+.row > td {
+    padding: var(--jl-cell-py) var(--mantine-spacing-xs);
+    font-size: var(--jl-cell-fz);
+    border-bottom: 1px solid var(--mantine-color-default-border);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.row:hover {
+    background-color: var(--mantine-color-gray-3);
+    box-shadow: var(--mantine-shadow-sm);
+}
+
+/*
+ * Variants are mutually exclusive and ordered by precedence in the component;
+ * `data-multiselected` and `data-unread` are additive on top of whichever one
+ * applies, which is why they are separate attributes rather than more values.
+ */
+
+.row[data-variant='selected'] {
+    background-color: var(--mantine-color-brand-0);
+    box-shadow: inset 3px 0 0 0 var(--mantine-color-brand-6);
+}
+
+.row[data-variant='selected'] > td {
+    font-weight: 600;
+}
+
+.row[data-variant='selected']:hover {
+    background-color: var(--mantine-color-brand-1);
+}
+
+.row[data-variant='related'] {
+    background-color: var(--mantine-color-gray-1);
+}
+
+.row[data-variant='related'] > td {
+    color: var(--mantine-color-dimmed);
+}
+
+.row[data-variant='related']:hover {
+    background-color: var(--mantine-color-gray-2);
+}
+
+.row[data-variant='direct-chilled'] {
+    background-color: var(--mantine-color-grape-0);
+    border-left: 3px solid var(--mantine-color-grape-5);
+}
+
+.row[data-variant='direct-chilled'] > td {
+    color: var(--mantine-color-grape-7);
+    font-weight: 600;
+}
+
+.row[data-variant='direct-chilled']:hover {
+    background-color: var(--mantine-color-grape-1);
+}
+
+.row[data-variant='direct'] {
+    background-color: var(--mantine-color-red-0);
+    border-left: 3px solid var(--mantine-color-red-5);
+}
+
+.row[data-variant='direct'] > td {
+    color: var(--mantine-color-red-7);
+    font-weight: 600;
+}
+
+.row[data-variant='direct']:hover {
+    background-color: var(--mantine-color-red-1);
+}
+
+.row[data-variant='chilled'] {
+    background-color: var(--mantine-color-cyan-0);
+    border-left: 3px solid var(--mantine-color-cyan-5);
+}
+
+.row[data-variant='chilled'] > td {
+    color: var(--mantine-color-cyan-8);
+    font-weight: 600;
+}
+
+.row[data-variant='chilled']:hover {
+    background-color: var(--mantine-color-cyan-1);
+}
+
+.row[data-variant='multipart'] {
+    background-color: var(--mantine-color-gray-1);
+    border-left: 3px solid var(--mantine-color-grape-4);
+}
+
+.row[data-variant='multipart']:hover {
+    background-color: var(--mantine-color-gray-2);
+}
+
+.row[data-variant='child'] {
+    background-color: var(--mantine-color-gray-0);
+    border-left: 3px solid var(--mantine-color-gray-6);
+}
+
+.row[data-variant='child']:hover {
+    background-color: var(--mantine-color-gray-3);
+}
+
+/* Additive: overlays whichever category variant applies. */
+.row[data-multiselected='true'] {
+    background-color: var(--mantine-color-grape-1);
+    border-left: 4px solid var(--mantine-color-grape-6);
+}
+
+.row[data-multiselected='true']:hover {
+    background-color: var(--mantine-color-grape-2);
+    box-shadow: 0 1px 3px var(--mantine-color-grape-2);
+}
+
+/* Additive: unread outweighs every other weight rule. */
+.row[data-unread='true'] > td {
+    font-weight: 900;
+}
+
+/* Additive: a brief flash as a job appears in the list. */
+.row[data-new='true'] {
+    animation: newJobHighlight 2s ease-out;
+}
+
+@keyframes newJobHighlight {
+    0% {
+        background-color: var(--mantine-color-green-1);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* Additive: a brief flash confirming a job was just dispatched. */
+.row[data-dispatched='true'] {
+    animation: dispatchedHighlight 1.5s ease-out;
+}
+
+@keyframes dispatchedHighlight {
+    0% {
+        background-color: var(--mantine-color-blue-1);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .row[data-new='true'],
+    .row[data-dispatched='true'] {
+        animation: none;
+    }
+}
+
+/* ── Cells ──────────────────────────────────────────────────────────── */
+
+.cellRight {
+    text-align: right;
+}
+
+.cellCenter {
+    text-align: center;
+}
+
+.lateBadge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: var(--mantine-color-white);
+    border-radius: 3px;
+    padding-inline: 4px;
+    line-height: 1.4;
+}
+
+.lateBadgePickup {
+    background-color: var(--mantine-color-red-7);
+}
+
+.lateBadgeDelivery {
+    background-color: var(--mantine-color-orange-7);
+}

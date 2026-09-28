@@ -7,93 +7,28 @@
  */
 
 import React from 'react';
-import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {EditAfterhoursDialog} from './EditAfterhoursDialog';
-import {getTheme} from '../../../theme/muiTheme';
-import {ReactQueryProvider} from '../../../query';
+import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {AfterHoursCourierSchedule} from '../../../interfaces';
-import type {ShowToastFn, ToastService} from '../../../services/toastService';
+import type {ToastService} from '../../../services/toastService';
+import {createDialogHost} from '../../../utils/reactDialogHost';
 
-// State management for the dialog
-interface DialogState {
-    open: boolean;
-    schedule: AfterHoursCourierSchedule | null;
-    isUsTenant: boolean;
-    toastService: ToastService | null;
-    resolve?: (value: AfterHoursCourierSchedule | null) => void;
-}
-
-let dialogRoot: Root | null = null;
-let dialogContainer: HTMLDivElement | null = null;
-let dialogState: DialogState = {
-    open: false,
-    schedule: null,
-    isUsTenant: false,
-    toastService: null,
-};
-
-/**
- * Renders the dialog with current state
- */
-function renderDialog(): void {
-    if (!dialogRoot) return;
-
-    const handleClose = () => {
-        dialogState.open = false;
-        dialogState.resolve?.(null);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleSave = (schedule: AfterHoursCourierSchedule) => {
-        dialogState.open = false;
-        dialogState.resolve?.(schedule);
-        dialogState.resolve = undefined;
-        renderDialog();
-    };
-
-    const handleShowToast: ShowToastFn = (message, type) => {
-        if (!dialogState.toastService) {
-            // Fallback to console if toast service not available
-            console.log(`[Toast ${type}]: ${message}`);
-            return;
-        }
-        dialogState.toastService.showToast(message, type);
-    };
-
-    // Get theme dynamically based on customer region
-    const currentTheme = getTheme();
-
-    dialogRoot.render(
-        <ReactQueryProvider>
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <EditAfterhoursDialog
-                    open={dialogState.open}
-                    schedule={dialogState.schedule}
-                    isUsTenant={dialogState.isUsTenant}
-                    onClose={handleClose}
-                    onSave={handleSave}
-                    showToast={handleShowToast}
-                />
-            </ThemeProvider>
-        </ReactQueryProvider>
-    );
-}
-
-/**
- * Initialize the dialog root (called once)
- */
-function initializeDialogRoot(): void {
-    if (dialogRoot) return;
-
-    dialogContainer = document.createElement('div');
-    dialogContainer.id = 'react-edit-afterhours-dialog-root';
-    document.body.appendChild(dialogContainer);
-    dialogRoot = createRoot(dialogContainer);
-}
+const host = createDialogHost<
+    {schedule: AfterHoursCourierSchedule | null; isUsTenant: boolean},
+    AfterHoursCourierSchedule | null
+>({
+    containerId: 'react-edit-afterhours-dialog-root',
+    render: ({open, payload, close, showToast}) => islandTree(
+        <EditAfterhoursDialog
+            open={open}
+            schedule={payload.schedule}
+            isUsTenant={payload.isUsTenant}
+            onClose={() => close(null)}
+            onSave={close}
+            showToast={showToast}
+        />
+    ),
+});
 
 /**
  * Opens the edit afterhours dialog
@@ -108,18 +43,7 @@ export function openEditAfterhoursDialog(
     isUsTenant: boolean,
     toastService?: ToastService
 ): Promise<AfterHoursCourierSchedule | null> {
-    initializeDialogRoot();
-
-    return new Promise((resolve) => {
-        dialogState = {
-            open: true,
-            schedule,
-            isUsTenant,
-            toastService: toastService ?? null,
-            resolve,
-        };
-        renderDialog();
-    });
+    return host.open({schedule, isUsTenant}, toastService);
 }
 
 // Expose globally for AngularJS access

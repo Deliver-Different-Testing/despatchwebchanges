@@ -13,45 +13,61 @@
         {
             ["vendor-core.js"] = "vendor-core.js",
             ["vendor-plugins.js"] = "vendor-plugins.js",
+            ["vendor-react.js"] = "vendor-react.js",
             ["app.js"] = "app.js",
             ["vendor-core.css"] = "vendor-core.css",
             ["vendor-plugins.css"] = "vendor-plugins.css",
+            ["vendor-react.css"] = "vendor-react.css",
             ["app.css"] = "app.css"
         };
 
         await Console.Error.WriteLineAsync($"Error reading manifest: {ex.Message}");
     }
 
-    var vendorCoreJs = manifest["vendor-core.js"];
-    var vendorPluginsJs = manifest["vendor-plugins.js"];
-    var appBundleFile = manifest["app.js"];
+    var vendorCoreJs = manifest.GetValueOrDefault("vendor-core.js", "");
+    var vendorPluginsJs = manifest.GetValueOrDefault("vendor-plugins.js", "");
+    var vendorReactJs = manifest.GetValueOrDefault("vendor-react.js", "");
+    var appBundleFile = manifest.GetValueOrDefault("app.js", "");
     var vendorCoreCss = manifest.GetValueOrDefault("vendor-core.css", "");
     var vendorPluginsCss = manifest.GetValueOrDefault("vendor-plugins.css", "");
-    var appStylesFile = manifest["app.css"];
+    var vendorReactCss = manifest.GetValueOrDefault("vendor-react.css", "");
+    var appStylesFile = manifest.GetValueOrDefault("app.css", "");
 }
 
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Deliver Different - Dispatch</title>
+    <title>Dispatch - Deliver DFRNT</title>
 
-    <link id="favicon" rel="shortcut icon" type="image/x-icon" href="dispmain.ico">
+    <link id="favicon" rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260619">
+    <link rel="alternate icon" type="image/x-icon" href="/dispmain.ico?v=20260619">
+
+    <link rel="preload" as="image" href="/images/dfrnt_logo.png" fetchpriority="high">
 
     <style>
+        /* DFRNT brand hex is inlined rather than tokenised here: this block paints
+           before any bundle stylesheet and before app.ts defines the theme vars. */
+        :root {
+            --theme-primary: #3bc7f4;
+            --theme-primary-light: rgba(59, 199, 244, 0.15);
+            --theme-primary-medium: rgba(59, 199, 244, 0.3);
+            --theme-primary-strong: rgba(59, 199, 244, 0.5);
+        }
+
+        html, body {
+            background-color: #f4f2f1;
+        }
+
         .app-loader {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #fafafa;
+            inset: 0;
+            background-color: #f4f2f1;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            transition: opacity 0.3s ease-out;
+            transition: opacity 350ms ease-out;
         }
 
         .app-loader.hidden {
@@ -66,24 +82,28 @@
             gap: 24px;
         }
 
-        .loader-icon {
-            font-size: 48px;
-            color: rgba(0, 0, 0, 0.54);
+        /* The asset bakes in its own clear-space, so the mark itself renders
+           at roughly 214x51 inside this box. */
+        .loader-logo {
+            width: 260px;
+            height: 88px;
+            object-fit: contain;
+            margin-bottom: 8px;
         }
 
         .loading-text {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-size: 14px;
-            font-weight: 500;
-            color: rgba(0, 0, 0, 0.6);
-            letter-spacing: 0;
+            font-weight: 400;
+            color: #6e6d80;
+            letter-spacing: 0.01em;
         }
 
         .linear-progress {
             width: 200px;
             height: 4px;
-            background-color: rgba(0, 0, 0, 0.08);
-            border-radius: 4px;
+            background-color: #e7e5e4;
+            border-radius: 9999px;
             overflow: hidden;
             position: relative;
         }
@@ -94,8 +114,8 @@
             left: 0;
             height: 100%;
             width: 40%;
-            border-radius: 4px;
-            background-color: var(--theme-primary, #2196f3);
+            border-radius: 9999px;
+            background-color: #3bc7f4;
             animation: indeterminate 1.8s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
         }
 
@@ -111,6 +131,18 @@
             100% {
                 left: 100%;
                 width: 40%;
+            }
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .app-loader {
+                transition: none;
+            }
+
+            .linear-progress-bar {
+                animation: none;
+                width: 100%;
+                opacity: 0.55;
             }
         }
     </style>
@@ -138,18 +170,26 @@
     {
         <link rel="stylesheet" href="/dist/@vendorPluginsCss"/>
     }
-    <link rel="stylesheet" href="/dist/@appStylesFile"/>
+    @* Mantine (DFRNT) styles — scoped to @@layer mantine, loaded once for all React islands. *@
+    @if (!string.IsNullOrEmpty(vendorReactCss))
+    {
+        <link rel="stylesheet" href="/dist/@vendorReactCss"/>
+    }
+    @if (!string.IsNullOrEmpty(appStylesFile))
+    {
+        <link rel="stylesheet" href="/dist/@appStylesFile"/>
+    }
 </head>
 
 <body ng-app="uDispatch">
 <!-- Full Screen Loader -->
-<div class="app-loader" id="appLoader">
+<div class="app-loader" id="appLoader" role="status" aria-live="polite">
     <div class="loader-content">
-        <span class="material-symbols-outlined loader-icon">local_shipping</span>
-        <div class="linear-progress">
+        <img class="loader-logo" src="/images/dfrnt_logo.png" width="260" height="88" alt="DFRNT">
+        <div class="linear-progress" role="progressbar" aria-label="Loading Dispatch">
             <div class="linear-progress-bar"></div>
         </div>
-        <div class="loading-text">Loading...</div>
+        <div class="loading-text">Loading&hellip;</div>
     </div>
 </div>
 
@@ -169,9 +209,24 @@
 <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
 <script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js"></script>
 
-<script src="/dist/@vendorCoreJs"></script>
-<script src="/dist/@vendorPluginsJs"></script>
-<script src="/dist/@appBundleFile"></script>
+@if (!string.IsNullOrEmpty(vendorCoreJs))
+{
+    <script src="/dist/@vendorCoreJs"></script>
+}
+@if (!string.IsNullOrEmpty(vendorPluginsJs))
+{
+    <script src="/dist/@vendorPluginsJs"></script>
+}
+@* vendor-react must evaluate before app.js: the module bundles resolve React
+   and Mantine off the window globals it publishes. *@
+@if (!string.IsNullOrEmpty(vendorReactJs))
+{
+    <script src="/dist/@vendorReactJs"></script>
+}
+@if (!string.IsNullOrEmpty(appBundleFile))
+{
+    <script src="/dist/@appBundleFile"></script>
+}
 
 
 <script>
@@ -192,7 +247,7 @@
                     if (loaderElement.parentNode) {
                         loaderElement.parentNode.removeChild(loaderElement);
                     }
-                }, 500);
+                }, 400);
             }
         }
 
