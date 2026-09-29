@@ -307,7 +307,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                     return (
                         <Fragment key={column.id}>
                             {columnIdx > 0 && !isDefaultLayout && (
-                                <PanelResizeHandle>
+                                <PanelResizeHandle className={classes.horizontalTrack}>
                                     <Box className={`${classes.handle} ${classes.horizontal}`} />
                                 </PanelResizeHandle>
                             )}
@@ -375,7 +375,7 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                 return (
                                                     <Fragment key={boxRef.name}>
                                                         {vIdx > 0 && !isDefaultLayout && (
-                                                            <PanelResizeHandle>
+                                                            <PanelResizeHandle className={classes.verticalTrack}>
                                                                 <Box className={`${classes.handle} ${classes.vertical}`} />
                                                             </PanelResizeHandle>
                                                         )}
