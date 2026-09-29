@@ -1,13 +1,15 @@
 ---
 name: gitlab-customd-access
-description: Set up read-only git access to Deliver Different's CustomD GitLab (git.customd.com) on macOS by decrypting a personal age-encrypted PAT from this repo's secure/ folder and storing it in the macOS Keychain. Use when someone asks to "set up GitLab access", "decrypt the GitLab token", "get access to git.customd.com", or when a clone/fetch from git.customd.com fails with an auth error.
+description: Set up read-only git access to Deliver Different's CustomD GitLab (git.customd.com) on macOS or Windows by decrypting a personal age-encrypted PAT from this repo's secure/ folder and storing it in the macOS Keychain or Windows Credential Manager. Use when someone asks to "set up GitLab access", "decrypt the GitLab token", "get access to git.customd.com", or when a clone/fetch from git.customd.com fails with an auth error.
 ---
 
-# CustomD GitLab access (macOS)
+# CustomD GitLab access (macOS / Windows)
 
 Gets a teammate's Claude Code / git able to `clone` and `fetch` from `https://git.customd.com/...` without anyone pasting a token into chat.
 
-**How it works:** Steve encrypts the GitLab PAT to each person's SSH public key with [age](https://github.com/FiloSottile/age) and commits it as `secure/gitlab-customd-token-<name>.age`. Only that person's private key can decrypt it. The decrypted PAT goes into the macOS Keychain, and git picks it up automatically.
+**How it works:** Steve encrypts the GitLab PAT to each person's SSH public key with [age](https://github.com/FiloSottile/age) and commits it as `secure/gitlab-customd-token-<name>.age`. Only that person's private key can decrypt it. The decrypted PAT goes into the macOS Keychain or Windows Credential Manager, and git picks it up automatically.
+
+**Windows users:** do Step 0, then skip to [Windows setup](#windows-setup). Steps 1–4 are macOS only.
 
 ## Rules
 
@@ -84,6 +86,68 @@ Branch names back → done. `git clone https://git.customd.com/<group>/<repo>.gi
 | Browser pops up / `missing OAuth configuration` | GCM is still handling the host. Re-run the `helper` lines in Step 3. |
 | `HTTP 401` / `Authentication failed` | The token is wrong or revoked. Tell Steve. |
 | `HTTP 404` on a repo you expect | The PAT's account can't see that project. Tell Steve. Don't guess other paths. |
+
+## Windows setup
+
+**Run every command in a normal PowerShell window.** The prompt must start with `PS C:\Users\<you>>`.
+- **Not Command Prompt.** A prompt of `C:\Users\<you>>` without `PS` is Command Prompt. It stores `$u`/`$p` as literal text, so type `powershell` first.
+- **Not "Run as administrator".** A prompt of `PS C:\windows\system32>` usually means an admin window. Credentials saved there can be invisible to git in the normal session.
+
+In the Claude Code prompt, prefix each block with `!` so it runs in PowerShell.
+
+### W1 — Install age
+
+```powershell
+if (-not (Get-Command age -ErrorAction SilentlyContinue)) { winget install --id FiloSottile.age -e }
+```
+
+After a fresh install, open a **new** PowerShell window so `age` is on the PATH.
+
+### W2 — Download and decrypt (user runs this)
+
+```powershell
+$name = "<name>"
+$f = "$env:TEMP\gitlab-token.age"
+curl.exe -fsSL -o $f "https://raw.githubusercontent.com/Deliver-Different-Testing/despatchwebchanges/main/secure/gitlab-customd-token-$name.age"
+age -d -i "$HOME\.ssh\id_ed25519" -o "$HOME\.gitlab-customd.env" $f
+icacls "$HOME\.gitlab-customd.env" /inheritance:r /grant:r "${env:USERDOMAIN}\${env:USERNAME}:F" "SYSTEM:F"
+Remove-Item $f
+```
+
+Use `-o`, never `>`. Windows PowerShell 5.1 re-encodes redirected output, which corrupts both the `.age` file and the decrypted token.
+
+If you get `Access is denied` on `~\.ssh\id_ed25519` (common after copying `.ssh` from another PC), fix the permissions and retry:
+```powershell
+icacls "$HOME\.ssh\*" /inheritance:r /grant:r "${env:USERDOMAIN}\${env:USERNAME}:F" "SYSTEM:F"
+```
+
+### W3 — Store it in Windows Credential Manager (user runs this)
+
+```powershell
+$env_ = Get-Content "$HOME\.gitlab-customd.env" | Where-Object { $_ -match '=' }
+$u = (($env_ | Where-Object { $_ -like 'GITLAB_USERNAME=*' }) -split '=',2)[1].Trim().Trim('"')
+$p = (($env_ | Where-Object { $_ -like 'GITLAB_PAT=*' }) -split '=',2)[1].Trim().Trim('"')
+cmdkey /generic:git:https://git.customd.com /user:$u /pass:$p
+Remove-Variable p
+git config --global credential.https://git.customd.com.provider generic
+git config --global credential.https://git.customd.com.username $u
+cmdkey /list:git:https://git.customd.com
+```
+
+The last line must show `User: oauth2`. If it shows `$u` or `$($e...)`, it was run in Command Prompt. Run `cmdkey /delete:git:https://git.customd.com` and redo W3 in PowerShell.
+
+Don't use `git credential approve` here. Windows PowerShell adds a byte-order mark to piped input, and git rejects it with `missing protocol field`.
+
+The `provider generic` line matters. Without it, Git Credential Manager detects GitLab, ignores the stored PAT, and asks for an OAuth login (`missing OAuth configuration for git.customd.com`).
+
+### W4 — Verify (Claude can run this)
+
+```powershell
+$env:GCM_INTERACTIVE = "never"; $env:GIT_TERMINAL_PROMPT = "0"
+git ls-remote --heads https://git.customd.com/urgent-couriers/dfrntdrive_configurator.git | Select-Object -First 5
+```
+
+Branch names back → done. The troubleshooting table in Step 4 applies here too. On Windows, "re-run Step 3" means re-run W3.
 
 ## For Steve — adding a new person
 
