@@ -89,12 +89,17 @@ const boxContentStyle: React.CSSProperties = {
 
 // Insets each card inside its panel so neighbouring cards get a small,
 // uniform gap. border-box keeps the card at the panel's full size minus
-// the padding, so it never overflows / triggers a scrollbar.
-const boxPanelPadStyle: React.CSSProperties = {
+// the padding, so it never overflows / triggers a scrollbar. Top/bottom
+// padding is dropped on edges that already back onto a resize handle (custom
+// layouts only) so the two don't stack into a double-wide gap.
+const boxPanelPadStyle = (padTop: boolean, padBottom: boolean): React.CSSProperties => ({
     height: '100%',
-    padding: 2,
+    paddingLeft: 2,
+    paddingRight: 2,
+    paddingTop: padTop ? 2 : 0,
+    paddingBottom: padBottom ? 2 : 0,
     boxSizing: 'border-box',
-};
+});
 
 // Per-card wrapper that owns the header-slot DOM node so a box can render its own
 // header controls (via createPortal) without lifting state. Header + content are
@@ -375,7 +380,10 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                             </PanelResizeHandle>
                                                         )}
                                                         <Panel id={boxName} defaultSize={`${defaultSize}%`} minSize="12%">
-                                                            <Box style={boxPanelPadStyle}>
+                                                            <Box style={boxPanelPadStyle(
+                                                                isDefaultLayout || vIdx === 0,
+                                                                isDefaultLayout || vIdx === visibleBoxes.length - 1,
+                                                            )}>
                                                                 <BoxCardBody
                                                                     onDragOver={handleDragOver}
                                                                     onDrop={handleDropOnBox(column.id, originalIndex)}

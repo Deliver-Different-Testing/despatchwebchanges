@@ -16,12 +16,12 @@
 }
 
 .horizontal {
-    width: 8px;
+    width: 4px;
     cursor: col-resize;
 }
 
 .vertical {
-    height: 8px;
+    height: 4px;
     cursor: row-resize;
 }
 
