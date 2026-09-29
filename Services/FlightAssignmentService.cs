@@ -20,7 +20,7 @@ public sealed class FlightAssignmentService(
         cancellationToken.ThrowIfCancellationRequested();
 
         var webhookIds = await CreateWebhooksAsync(request.FlightSegments);
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, cancellationToken);
     }
 
     public async Task<FlightAutoAssignSummary> AutoAssignSavedFlightsAsync(IReadOnlyList<int> jobIds)
