@@ -278,6 +278,8 @@ Notes for whoever writes the migration:
 
 ## 3. The Display Change — For Kerran, Implementing in Dispatch
 
+> **Built 30 Sep 2026 for the two DespatchWeb modals** — job detail modal and split job detail modal — on despatchweb branch [`feat/np-pay-display`](https://github.com/Deliver-Different-Testing/despatchwebchanges/tree/feat/np-pay-display), server-side substitution plus a partner view of the breakdown dialog; Part 2 of `JACOB-NP-COURIER-PAY-TRIGGERS-2026-09-30.md` has the file list, tests and merge steps. The other surfaces in §3.4 (job lists, job search export, Agent Portal, Routed Operations) are still to do.
+
 *Steve, 17 Sep 2026. This is the change being asked for.*
 
 ### 3.1 The substitution
