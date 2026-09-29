@@ -989,6 +989,82 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
     });
 });
 
+describe('useJobActions — handlePricingClick as a network partner', () => {
+    afterEach(() => {
+        delete (window as any).ReactSplitPricingBreakdownDialog;
+        delete (window as any).ReactPriceBreakdownDialog;
+        jest.restoreAllMocks();
+    });
+
+    function armDialogs() {
+        const openMock = jest.fn().mockResolvedValue(null);
+        (window as any).ReactPriceBreakdownDialog = {open: openMock, setToastService: jest.fn()};
+        const splitOpenMock = jest.fn().mockResolvedValue(null);
+        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+        return {openMock, splitOpenMock};
+    }
+
+    it('opens the flat dialog in partner view, read-only, with the server-substituted pay lines', async () => {
+        const {openMock} = armDialogs();
+        const {getPriceBreakdowns} = jest.requireMock('../../../../services/pricingBreakdownApi');
+        const payLines = [{chargeId: -1, name: 'Base', amount: 57}, {chargeId: -2, name: 'Fuel', amount: 8.5}];
+        (getPriceBreakdowns as jest.Mock).mockResolvedValueOnce(payLines);
+        const job = createMockJob({id: 700, jobNo: 'NP700', locked: false, isArchived: false, preBook: false});
+
+        const {result} = renderHook(() =>
+            useJobActions({...jobActionsDefaults(), job, isNetworkPartner: true}),
+        );
+        await act(async () => {
+            await result.current.handlePricingClick();
+        });
+
+        expect(getPriceBreakdowns).toHaveBeenCalledWith(700, false, false);
+        expect(openMock).toHaveBeenCalledWith(
+            payLines, 700, false, false, false, true, undefined, undefined, {partnerView: true},
+        );
+    });
+
+    it('never asks for the split grid, even on a split child', async () => {
+        const {openMock, splitOpenMock} = armDialogs();
+        const {getSplitPricingBreakdown} = jest.requireMock('../../../../services/splitPriceBreakdownApi');
+        const parentJob = createMockJob({id: 500, jobNo: 'KT4071V'});
+        const job = createMockJob({
+            id: 501,
+            jobNo: 'KT4071VA',
+            rootParentId: 500,
+            jobRelationshipTypeId: JobRelationshipType.SplitChild,
+        });
+
+        const {result} = renderHook(() =>
+            useJobActions({...jobActionsDefaults(), job, relatedJobs: [parentJob], isNetworkPartner: true}),
+        );
+        await act(async () => {
+            await result.current.handlePricingClick();
+        });
+
+        expect(getSplitPricingBreakdown).not.toHaveBeenCalled();
+        expect(splitOpenMock).not.toHaveBeenCalled();
+        expect(openMock).toHaveBeenCalledTimes(1);
+        expect(openMock.mock.calls[0][8]).toEqual({partnerView: true});
+    });
+
+    it('still shows the pay view on an invoiced job instead of the invoiced warning', async () => {
+        const {openMock} = armDialogs();
+        const showToast = jest.fn();
+        const job = createMockJob({id: 701, jobNo: 'NP701', isInvoiced: true});
+
+        const {result} = renderHook(() =>
+            useJobActions({...jobActionsDefaults(), job, showToast, isNetworkPartner: true}),
+        );
+        await act(async () => {
+            await result.current.handlePricingClick();
+        });
+
+        expect(showToast).not.toHaveBeenCalled();
+        expect(openMock).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('useJobActions — handlePricingClick on a split child', () => {
     afterEach(() => {
         delete (window as any).ReactSplitPricingBreakdownDialog;
