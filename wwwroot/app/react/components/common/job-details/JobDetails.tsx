@@ -313,6 +313,7 @@ export function JobDetails({config}: JobDetailsProps) {
         job,
         isRecurringJob,
         isUsCustomer,
+        isNetworkPartner: isNetworkPartnerSession(),
         showToast,
         updateField,
         updateAddress,

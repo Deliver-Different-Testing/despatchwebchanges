@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
@@ -16,6 +17,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly IClientRepository _clientRepositoryMock = Substitute.For<IClientRepository>();
+    private readonly IScopeProvider _scopeProviderMock = Substitute.For<IScopeProvider>();
     private static readonly int[] Expected = [100, 101];
 
     public PricingPermissionServiceTests()
@@ -234,8 +236,12 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     private PricingPermissionService CreateService() => new(
         _tenantInfoServiceMock,
         _clientRepositoryMock,
-        _contextFactoryMock
+        _contextFactoryMock,
+        _scopeProviderMock
     );
+
+    private void SetupScope(int clientTypeId, int? npAgentId = null) =>
+        _scopeProviderMock.Scope.Returns(new ScopeContext(ClientTypeId: clientTypeId, ClientId: null, NpAgentId: npAgentId));
 
     private async Task SeedJobAsync(int jobId, int? clientId = 1)
     {
@@ -291,6 +297,32 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
         var result = await service.CanModifyPriceBreakdownAsync();
         Assert.True(result);
+    }
+
+    // A network partner is shown their own pay in the job detail modal but must never be able to
+    // write pricing. Every price-mutation endpoint on JobController gates on these two checks.
+    [Fact]
+    public async Task NetworkPartner_CannotModifyPricesOrBreakdown()
+    {
+        SetupScope((int)ClientType.NetworkPartner, npAgentId: 42);
+        var service = CreateService();
+
+        Assert.False(await service.CanModifyPricesAsync());
+        Assert.False(await service.CanModifyPriceBreakdownAsync());
+    }
+
+    [Theory]
+    [InlineData((int)ClientType.Internal)]
+    [InlineData((int)ClientType.Customer)]
+    [InlineData((int)ClientType.Tenant)]
+    [InlineData((int)ClientType.DfrntAdmin)]
+    public async Task NonPartnerScopes_CanStillModifyPricing(int clientTypeId)
+    {
+        SetupScope(clientTypeId);
+        var service = CreateService();
+
+        Assert.True(await service.CanModifyPricesAsync());
+        Assert.True(await service.CanModifyPriceBreakdownAsync());
     }
 
     [Theory]

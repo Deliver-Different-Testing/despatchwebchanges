@@ -1,4 +1,4 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,8 +11,16 @@ namespace DespatchWeb.Services;
 public sealed class PricingPermissionService(
     ITenantInfoService tenantInfoService,
     IClientRepository clientRepository,
-    IDbContextFactory<DespatchContext> contextFactory) : IPricingPermissionService
+    IDbContextFactory<DespatchContext> contextFactory,
+    IScopeProvider scopeProvider) : IPricingPermissionService
 {
+    /// <summary>
+    /// A logged-in network partner is shown their own pay in place of the tenant's pricing
+    /// (see JobRepository.NetworkPartner.cs). They can read it, never write it: every price
+    /// mutation endpoint gates on the two checks below, so this is the single place that says no.
+    /// </summary>
+    private bool CallerIsNetworkPartner => scopeProvider.Scope?.IsNetworkPartner ?? false;
+
     // Valid pricing modes
     private static readonly HashSet<string> ValidPricingModes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -25,7 +33,7 @@ public sealed class PricingPermissionService(
     private HashSet<int> _accessibleClientIds;
 
     /// <inheritdoc />
-    public Task<bool> CanModifyPricesAsync() => Task.FromResult(true);
+    public Task<bool> CanModifyPricesAsync() => Task.FromResult(!CallerIsNetworkPartner);
 
     /// <inheritdoc />
     public Task<bool> CanUsePricingModeAsync(string pricingMode)
@@ -39,7 +47,7 @@ public sealed class PricingPermissionService(
     public Task<bool> CanBulkUpdatePricesAsync() => Task.FromResult(true);
 
     /// <inheritdoc />
-    public Task<bool> CanModifyPriceBreakdownAsync() => Task.FromResult(true);
+    public Task<bool> CanModifyPriceBreakdownAsync() => Task.FromResult(!CallerIsNetworkPartner);
 
     /// <inheritdoc />
     public async Task ValidateJobAccessAsync(int jobId)

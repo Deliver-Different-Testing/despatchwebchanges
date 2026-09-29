@@ -55,6 +55,51 @@ describe('PriceBreakdownDialog', () => {
         });
     });
 
+    // ── Partner view (network partner sees their pay, not the tenant's pricing) ──
+    describe('partnerView (network partner)', () => {
+        const payLines: PriceBreakdown[] = [
+            {chargeId: -1, name: 'Base', amount: 57.00, jobId: 100},
+            {chargeId: -2, name: 'Fuel', amount: 8.50, jobId: 100},
+        ];
+
+        it('titles the dialog as the partner\'s pay and lists name + amount only', () => {
+            renderWithMantine(<PriceBreakdownDialog {...createMockProps({partnerView: true, priceBreakdowns: payLines})} />);
+
+            expect(screen.getByText('Your Pay')).toBeInTheDocument();
+            expect(screen.getByText('What you will be paid for this job')).toBeInTheDocument();
+            expect(screen.getByText('Pay Items')).toBeInTheDocument();
+            expect(screen.getByText('Base')).toBeInTheDocument();
+            expect(screen.getByText('$57.00')).toBeInTheDocument();
+            expect(screen.getByText('Fuel')).toBeInTheDocument();
+            expect(screen.getByText('$8.50')).toBeInTheDocument();
+
+            // No tenant-side columns or summary cards.
+            expect(screen.getByRole('columnheader', {name: 'Amount'})).toBeInTheDocument();
+            expect(screen.queryByRole('columnheader', {name: 'Revenue'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('columnheader', {name: 'Cost'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('columnheader', {name: 'Profit'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('columnheader', {name: 'Margin'})).not.toBeInTheDocument();
+            expect(screen.queryByText('Total Revenue')).not.toBeInTheDocument();
+        });
+
+        it('is view-only even when readOnly is not passed', () => {
+            renderWithMantine(<PriceBreakdownDialog {...createMockProps({partnerView: true, priceBreakdowns: payLines})} />);
+
+            expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /save & close/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /edit base/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /delete base/i})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
+        });
+
+        it('shows a partner-worded empty state when pay has not been set', () => {
+            renderWithMantine(<PriceBreakdownDialog {...createMockProps({partnerView: true, priceBreakdowns: []})} />);
+
+            expect(screen.getByText('No pay set yet')).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /add first item/i})).not.toBeInTheDocument();
+        });
+    });
+
     // ── Read-only: split child, managed on the parent ────────────────
     describe('managedElsewhere (split child)', () => {
         it('shows a message naming the parent job and a link to it, and hides Add Item', () => {

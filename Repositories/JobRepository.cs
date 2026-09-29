@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -3325,6 +3325,13 @@ public partial class JobRepository(
     public async Task<IReadOnlyList<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId,
         bool isPrebook, bool isArchived = false)
     {
+        // A network partner never sees the tenant's PricingBreakdown rows — only their own pay
+        // (CourierPayment / CourierFuel), read from the job itself. See JobRepository.NetworkPartner.cs.
+        if (Context.CurrentIsNetworkPartner)
+        {
+            return await GetNetworkPartnerPriceBreakdownAsync(jobId, isArchived);
+        }
+
         if (isPrebook)
         {
             var effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobId);
@@ -3672,6 +3679,11 @@ public partial class JobRepository(
                 .FirstOrDefaultAsync();
 
             activeJob.IsArchived = archivedStatus;
+            if (Context.CurrentIsNetworkPartner)
+            {
+                activeJob.Amount = (await GetNetworkPartnerPayAsync(jobId))?.Total;
+            }
+
             return activeJob;
         }
 
@@ -3995,13 +4007,16 @@ public partial class JobRepository(
         {
             _ = MarkJobAsReadAsync(jobId);
 
-            var result = await GetLiveJobByIdAsync(jobId);
-            if (result != null)
+            var result = await GetLiveJobByIdAsync(jobId) ?? await GetArchivedJobByIdAsync(jobId);
+
+            // A network partner sees their pay in place of the tenant's charge, on every job in the
+            // group. Done here, not in the mapping, so the tenant's figure never reaches the client.
+            if (Context.CurrentIsNetworkPartner)
             {
-                return result;
+                await SubstituteNetworkPartnerChargesAsync(result);
             }
 
-            return await GetArchivedJobByIdAsync(jobId);
+            return result;
         }
         catch (Exception e)
         {
@@ -4440,6 +4455,13 @@ public partial class JobRepository(
     /// </summary>
     public async Task<SplitPricingBreakdownDto> GetSplitPricingBreakdownAsync(int jobId, bool isArchived = false)
     {
+        // The split grid is the tenant's revenue / cost / margin per leg. A network partner gets null
+        // here, which sends the client down the flat breakdown path — and that path returns their pay.
+        if (Context.CurrentIsNetworkPartner)
+        {
+            return null;
+        }
+
         if (!await IsSplitParentAsync(jobId, isArchived))
         {
             return null;

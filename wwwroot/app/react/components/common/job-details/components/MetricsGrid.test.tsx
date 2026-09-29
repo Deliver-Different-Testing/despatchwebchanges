@@ -60,6 +60,17 @@ describe('MetricsGrid', () => {
         expect(screen.getByText('Test Client Ltd')).toBeInTheDocument();
     });
 
+    it('labels the pricing tile "Your Pay" for a network partner session', () => {
+        (window as any).IsNetworkPartner = true;
+        try {
+            renderWithTheme(<MetricsGrid {...createDefaultProps()} />);
+            expect(screen.getByText('Your Pay')).toBeInTheDocument();
+            expect(screen.queryByText('Pricing')).not.toBeInTheDocument();
+        } finally {
+            delete (window as any).IsNetworkPartner;
+        }
+    });
+
     it('calls click handlers for editable cards', () => {
         const onPricingClick = jest.fn();
         const onClientClick = jest.fn();
