@@ -16,13 +16,29 @@
 }
 
 .horizontal {
-    width: 4px;
+    width: 2px;
+    height: 100%;
     cursor: col-resize;
 }
 
 .vertical {
-    height: 4px;
+    height: 2px;
+    width: 100%;
     cursor: row-resize;
+}
+
+/*
+ * The Separator itself (not just the `.handle` child above) occupies flex
+ * space in the Group. Its own default box can be wider than the 2px visible
+ * sliver (the library reserves extra room for pointer hit-testing), so the
+ * track itself is pinned to 2px to match.
+ */
+.horizontalTrack {
+    flex: 0 0 2px;
+}
+
+.verticalTrack {
+    flex: 0 0 2px;
 }
 
 [data-separator='hover'] .handle {
