@@ -5,7 +5,7 @@
 **From:** Steve Bonnici (AI-assisted analysis)
 **Status:** Investigation — not scoped for build, not assigned.
 
-> **Updated 30 Sep 2026 — read §2.7 first.** The NP pay rule is now decided and verified against the code: allocation populates `CourierPayment` from the partner's `DefaultCourierPayPercent`; the partner dispatching their own driver must not touch it and instead sets `NpCourierPayment = CourierPayment × uccrPercentage`; a proposed trigger change carries both. §2.7 supersedes §2.6(d) and closes most of §7.
+> **Updated 30 Sep 2026 — read §2.7 first.** The NP pay rule is now decided and verified against the code: allocation populates `CourierPayment` from the partner's `DefaultCourierPayPercent`; the partner dispatching their own driver must not touch it and instead sets `NpCourierPayment = CourierPayment × uccrPercentage`; a proposed trigger change carries both. §2.7 supersedes §2.6(d) and closes most of §7. **Migration written and on GitHub for Jacob to merge** — see §2.7.3.
 
 > **Start at §2 and §3.** §2 is how network partner pay actually works in production (confirmed by Steve, 17 Sep 2026) — note §2.3, which splits the work into two paths with different timing; §3 is the change being asked for. §4 onward is supporting analysis, and §6 records where earlier revisions of this doc were wrong.
 >
@@ -216,7 +216,7 @@ Three events, three writes. `CourierPayment` / `CourierFuel` are the tenant → 
 
 | Event | `CourierPayment` / `CourierFuel` | `NpCourierPayment` |
 |---|---|---|
-| **1. Tenant allocates the job to a network partner** (`NpAgentId` set, `ucjbCourierID` blank) | **Populate.** `CourierPayment = RawBaseAmount × pct`, where pct = client `CourierPercentage` if set, else **`tucAgents.DefaultCourierPayPercent`** (§2.4). `CourierFuel = FuelSurchargeAmount`. The blank courier must **not** zero it. | untouched (NULL) |
+| **1. Tenant allocates the job to a network partner** (`NpAgentId` set, `ucjbCourierID` blank) | **Populate.** `CourierPayment = RawBaseAmount × pct`, where pct = client `CourierPercentage` if set, else **`tucAgents.DefaultCourierPayPercent`**, else **0.4** (§2.4; 40% fallback confirmed by Steve, 30 Sep). `CourierFuel = FuelSurchargeAmount`. The blank courier must **not** zero it. | untouched (NULL) |
 | **2. Partner dispatches their own driver** (`ucjbCourierID` set on a job with `NpAgentId`) | **Left alone.** The courier cascade must not run. | **Populate.** `NpCourierPayment = CourierPayment × tucCourier.uccrPercentage` — the driver's cut comes off what the partner is paid, **not** off the job. `RawBaseAmount × uccrPercentage` would pay the driver the same as the partner. |
 | **3. Job repriced** (`RawBaseAmount` changes — weight, items, cubic) on an NP job | Recalculate by rule 1. | Recalculate by rule 2 from the new `CourierPayment`, if a driver is assigned. |
 
@@ -226,7 +226,7 @@ Both fields stay in step under reprice, which the earlier "populate if empty, lo
 
 **Recommended over stamping pay in despatchweb + setting `CourierPaymentManualOverride`.** The flag would freeze partner pay against reprice, overload a field that means something else to Accounts, and still need a separate write for `NpCourierPayment`. Branching the trigger keeps every writer (nationwide allocation, NP board dispatch, reprice, bulk) correct without app changes, and the NP board dispatch path needs no code at all.
 
-Change `tucJob_InsertUpdate_CalculateCourierPayment` (and the `tucJobArchive_Update_CalculateCourierPayment` twin) as follows. Proposed — **not written to `dbmigrationsv2` yet; for review.**
+**Written and pushed, 30 Sep 2026** — migration `20260930090000_NetworkPartnerCourierPaymentTriggers.sql` on branch [`feat/np-courier-pay-triggers`](https://github.com/Deliver-Different-Testing/dbmigrationsv2/tree/feat/np-courier-pay-triggers) of the `dbmigrationsv2` GitHub mirror, based on GitLab master `6e815c6`. Merge instructions and test plan: `JACOB-NP-COURIER-PAY-TRIGGERS-2026-09-30.md` in `despatchwebchanges`. The shipped version keeps the two existing cascade triggers intact (two-line change each: fire on `UPDATE(NpAgentId)`, skip `NpAgentId IS NOT NULL` rows) and adds the NP logic as **two new triggers** rather than editing the cascade body — smaller diff, easier to review. The sketch below is the logic; the migration is the source of truth.
 
 ```sql
 -- 1. Early exit gains NpAgentId so allocation fires the trigger.
@@ -266,9 +266,9 @@ WHERE i.NpAgentId IS NOT NULL AND i.ucjbCourierID IS NOT NULL;
 
 Notes for whoever writes the migration:
 
-- Step 2 deliberately has **no 40% fallback**. If neither the client nor the partner has a percentage the partner gets **0**, which is visible on their board and gets queried; a silent 40% is not (§2.6b). Confirm with Steve.
-- Cascade levels 1–3 (`CourierPercentageOverride`, client+speed, job type) are **bypassed** on NP jobs by this branch (§2.6a). If a per-job override should still win for a partner, add `i.CourierPercentageOverride` to the front of the `COALESCE`.
-- Base is **`RawBaseAmount`**, matching the existing trigger (§2.6c / Q11). Fuel passes through in full via `CourierFuel`.
+- Step 2 **falls back to 0.4 (40%)** when neither the client nor the partner has a percentage — same as the courier cascade. *(Steve, 30 Sep 2026: "put in the same 40% fallback".)*
+- Cascade levels 1–3 (`CourierPercentageOverride`, client+speed, job type) are **bypassed** on NP jobs (§2.6a). *Confirmed by Steve, 30 Sep.*
+- Base is **`RawBaseAmount`**, matching the existing trigger (§2.6c / Q11). *Confirmed by Steve, 30 Sep.* Fuel passes through in full via `CourierFuel`.
 - Path A jobs (§2.3 — an agent rate priced the delivery) already carry the pre-markup rate; step 2 must not overwrite those. Gate on the Path A signal once Q13 closes the speed set.
 - Sanity check worth adding: `cr.NpAgentId = i.NpAgentId` in step 3, so a tenant courier accidentally dispatched onto an NP job does not get an `NpCourierPayment`.
 - The `tucJobArchive` twin needs the same three steps. Archived NP jobs are repriced too.
@@ -524,7 +524,7 @@ These are policy and design calls. Database access does not answer them, and if 
 | Q16 | Agent default lives in **`tucAgents.DefaultCourierPayPercent`** (fraction). |
 | Q17a | Confirmed: the partner's driver lands in `ucjbCourierID` via `AssignCourierToJobsAsync`, and the trigger does overwrite `CourierPayment` today. |
 | Q17b | Driver stays in `ucjbCourierID`. The trigger branch removes the hazard, so no separate field. |
-| Q10a / Q10b / Q11 | Proposed in §2.7.3: levels 1–3 bypassed for NP jobs; no 40% fallback (0 instead); base is `RawBaseAmount`. **Steve to confirm** — they are stated as the proposal, not yet signed off. |
+| Q10a / Q10b / Q11 | **Confirmed by Steve, 30 Sep:** levels 1–3 bypassed for NP jobs; **40% fallback kept** (same as the courier cascade); base is `RawBaseAmount`. |
 | New | `NpCourierPayment = CourierPayment × uccrPercentage` — **not** `RawBaseAmount ×`, which would pay the driver the same as the partner. (Steve, 30 Sep 2026.) |
 
 Still open: Q4, Q5, Q13 (Path A speed set — gates step 2 of the trigger), Q15b (record the marketplace-plan supersession), Q18 (job download export leak).
