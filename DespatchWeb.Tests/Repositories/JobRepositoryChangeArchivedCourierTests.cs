@@ -72,6 +72,11 @@ public class JobRepositoryChangeArchivedCourierTests : IAsyncDisposable
         Substitute.For<ISuburbResolver>()
     );
 
+    private static TucInvoiceNo RealInvoice(int id) => new()
+    {
+        UcinId = id, UcinDate = TestDates.Now, UcinClientId = 1, ProcessId = 1
+    };
+
     private void SeedArchivedJob(Action<TucJobArchive>? customise = null)
     {
         using var context = CreateContext();
@@ -131,7 +136,7 @@ public class JobRepositoryChangeArchivedCourierTests : IAsyncDisposable
     [Fact]
     public async Task ChangeArchivedJobCourier_AlreadyInvoiced_InvoiceNo_Throws()
     {
-        SeedArchivedJob(a => a.UcjbInvoiceNo = 555);
+        SeedArchivedJob(a => a.Invoice = RealInvoice(555));
         var repository = CreateRepository();
 
         await Assert.ThrowsAsync<ArchivedCourierChangeException>(
@@ -141,6 +146,32 @@ public class JobRepositoryChangeArchivedCourierTests : IAsyncDisposable
         var archive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 1,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(OldCourierId, archive.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task ChangeArchivedJobCourier_InvoiceNoZero_IsNotInvoiced_Reassigns()
+    {
+        SeedArchivedJob(a => a.UcjbInvoiceNo = 0);
+        var repository = CreateRepository();
+
+        await repository.ChangeArchivedJobCourierAsync(1, NewCourierId);
+
+        await using var verifyContext = CreateContext();
+        var archive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 1,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(NewCourierId, archive.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task GetEligibility_InvoiceNoWithNoInvoiceRow_ReportsNotInvoiced()
+    {
+        SeedArchivedJob(a => a.UcjbInvoiceNo = 555);
+        var repository = CreateRepository();
+
+        var eligibility = await repository.GetArchivedCourierChangeEligibilityAsync(1);
+
+        Assert.NotNull(eligibility);
+        Assert.False(eligibility.IsInvoiced);
     }
 
     [Fact]
@@ -245,7 +276,7 @@ public class JobRepositoryChangeArchivedCourierTests : IAsyncDisposable
     [Fact]
     public async Task GetEligibility_InvoiceNo_ReportsInvoiced()
     {
-        SeedArchivedJob(a => a.UcjbInvoiceNo = 555);
+        SeedArchivedJob(a => a.Invoice = RealInvoice(555));
         var repository = CreateRepository();
 
         var eligibility = await repository.GetArchivedCourierChangeEligibilityAsync(1);
