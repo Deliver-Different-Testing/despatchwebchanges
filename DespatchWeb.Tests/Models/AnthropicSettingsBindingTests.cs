@@ -7,64 +7,113 @@ using Microsoft.Extensions.Options;
 namespace DespatchWeb.Tests.Models;
 
 /// <summary>
-/// The Anthropic settings are supplied as Anthropic__* environment variables from
-/// launchSettings.json, which is developer-local and not deployed. Everywhere else the
-/// C# defaults are the only source, so every value has to survive an absent or partially
-/// filled configuration — a half-populated profile must not zero out the prices it omits.
+/// The Anthropic settings have no C# fallback defaults — appsettings.json's "Anthropic"
+/// section is the only source, for every environment. A missing or incomplete profile
+/// must fail validation at startup rather than silently run on an empty/zero value.
 /// </summary>
 public class AnthropicSettingsBindingTests
 {
-    private static AnthropicSettings Bind(Dictionary<string, string> values)
+    // Mirrors the "Anthropic" section committed to appsettings.json.
+    private static Dictionary<string, string?> AppSettingsShapedConfig() => new()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+        ["Anthropic:Drafting:Model"] = "claude-haiku-4-5",
+        ["Anthropic:Drafting:MaxTokens"] = "1024",
+        ["Anthropic:Drafting:InputPricePerMillion"] = "1.00",
+        ["Anthropic:Drafting:OutputPricePerMillion"] = "5.00",
+        ["Anthropic:Drafting:CacheReadPricePerMillion"] = "0.10",
+        ["Anthropic:Drafting:CacheWritePricePerMillion"] = "1.25",
+        ["Anthropic:Judgment:Model"] = "claude-sonnet-5",
+        ["Anthropic:Judgment:Effort"] = "low",
+        ["Anthropic:Judgment:MaxTokens"] = "4096",
+        ["Anthropic:Judgment:InputPricePerMillion"] = "2.00",
+        ["Anthropic:Judgment:OutputPricePerMillion"] = "10.00",
+        ["Anthropic:Judgment:CacheReadPricePerMillion"] = "0.20",
+        ["Anthropic:Judgment:CacheWritePricePerMillion"] = "2.50",
+        ["Anthropic:RateLimitPerUserPerMinute"] = "5",
+        ["Anthropic:RateLimitPerTenantPerMinute"] = "20",
+        ["Anthropic:ResponseCacheSeconds"] = "90"
+    };
+
+    private static AnthropicSettings Bind(params IEnumerable<KeyValuePair<string, string?>>[] layers)
+    {
+        var builder = new ConfigurationBuilder();
+        foreach (var layer in layers)
+            builder.AddInMemoryCollection(layer);
 
         var services = new ServiceCollection();
-        services.AddSingleton<IConfiguration>(configuration);
+        services.AddSingleton<IConfiguration>(builder.Build());
         services.AddAiServices();
 
         return services.BuildServiceProvider().GetRequiredService<IOptions<AnthropicSettings>>().Value;
     }
 
     [Fact]
-    public void NoConfigurationAtAll_FallsBackToTheCodeDefaults()
+    public void AppSettingsShapedConfiguration_BindsTheDocumentedBusinessRules()
     {
-        var settings = Bind([]);
-        var defaults = new AnthropicSettings();
+        var settings = Bind(AppSettingsShapedConfig());
 
-        Assert.Equal(defaults.Drafting.Model, settings.Drafting.Model);
-        Assert.Equal(defaults.Judgment.Model, settings.Judgment.Model);
-        Assert.Equal(defaults.Judgment.Effort, settings.Judgment.Effort);
-        Assert.Equal(defaults.Judgment.MaxTokens, settings.Judgment.MaxTokens);
-        Assert.Equal(defaults.Judgment.OutputPricePerMillion, settings.Judgment.OutputPricePerMillion);
-        Assert.Equal(defaults.ResponseCacheSeconds, settings.ResponseCacheSeconds);
+        // Drafts are reviewed and edited by a dispatcher before they send, and the user
+        // is waiting on the button, so the cheapest fast model is the right trade.
+        Assert.Equal("claude-haiku-4-5", settings.Drafting.Model);
+        // Claude Haiku 4.5 has no effort parameter and rejects the request if one is sent.
+        Assert.True(string.IsNullOrEmpty(settings.Drafting.Effort));
+
+        // Judgment drives money, safety and severity decisions, where being wrong costs
+        // far more than the token difference between tiers.
+        Assert.Equal("claude-sonnet-5", settings.Judgment.Model);
+        Assert.Equal("low", settings.Judgment.Effort);
+
+        // Claude Sonnet 5 thinks adaptively by default and those tokens count against
+        // MaxTokens, so Judgment needs more room than Drafting for the answer plus a
+        // forced tool call.
+        Assert.True(settings.Judgment.MaxTokens > settings.Drafting.MaxTokens);
+
+        // Cache reads bill at 10% of input on both tiers.
+        Assert.Equal(settings.Drafting.InputPricePerMillion / 10m, settings.Drafting.CacheReadPricePerMillion);
+        Assert.Equal(settings.Judgment.InputPricePerMillion / 10m, settings.Judgment.CacheReadPricePerMillion);
+
+        Assert.Equal(settings.Drafting, settings.For(AiTaskClass.Drafting));
+        Assert.Equal(settings.Judgment, settings.For(AiTaskClass.Judgment));
     }
 
     [Fact]
-    public void PartialProfile_KeepsTheDefaultsForEveryKeyItOmits()
+    public void NoConfigurationAtAll_FailsValidationAtStartup()
     {
-        // Only the model is overridden; the prices and ceiling must survive.
-        var settings = Bind(new Dictionary<string, string>
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+        services.AddAiServices();
+
+        var options = services.BuildServiceProvider().GetRequiredService<IOptions<AnthropicSettings>>();
+
+        Assert.Throws<OptionsValidationException>(() => options.Value);
+    }
+
+    [Fact]
+    public void PartialOverride_KeepsTheBaseLayerForEveryKeyItOmits()
+    {
+        // Only the model is overridden by a higher-precedence layer (e.g. launchSettings);
+        // the prices and ceiling from the base appsettings.json layer must survive.
+        var settings = Bind(AppSettingsShapedConfig(), new Dictionary<string, string?>
         {
             ["Anthropic:Judgment:Model"] = "claude-opus-5"
         });
-        var defaults = new AnthropicSettings();
 
         Assert.Equal("claude-opus-5", settings.Judgment.Model);
-        Assert.Equal(defaults.Judgment.Effort, settings.Judgment.Effort);
-        Assert.Equal(defaults.Judgment.MaxTokens, settings.Judgment.MaxTokens);
-        Assert.Equal(defaults.Judgment.InputPricePerMillion, settings.Judgment.InputPricePerMillion);
-        Assert.Equal(defaults.Judgment.OutputPricePerMillion, settings.Judgment.OutputPricePerMillion);
-        Assert.Equal(defaults.Judgment.CacheReadPricePerMillion, settings.Judgment.CacheReadPricePerMillion);
+        Assert.Equal("low", settings.Judgment.Effort);
+        Assert.Equal(4096, settings.Judgment.MaxTokens);
+        Assert.Equal(2.00m, settings.Judgment.InputPricePerMillion);
+        Assert.Equal(10.00m, settings.Judgment.OutputPricePerMillion);
+        Assert.Equal(0.20m, settings.Judgment.CacheReadPricePerMillion);
 
         // An untouched profile is untouched.
-        Assert.Equal(defaults.Drafting.Model, settings.Drafting.Model);
-        Assert.Equal(defaults.Drafting.OutputPricePerMillion, settings.Drafting.OutputPricePerMillion);
+        Assert.Equal("claude-haiku-4-5", settings.Drafting.Model);
+        Assert.Equal(5.00m, settings.Drafting.OutputPricePerMillion);
     }
 
     [Fact]
     public void PopulatedConfiguration_Wins()
     {
-        var settings = Bind(new Dictionary<string, string>
+        var settings = Bind(new Dictionary<string, string?>
         {
             ["Anthropic:Drafting:Model"] = "claude-haiku-4-5",
             ["Anthropic:Drafting:MaxTokens"] = "2048",
@@ -81,21 +130,21 @@ public class AnthropicSettingsBindingTests
     [Fact]
     public void EnvironmentVariableDoubleUnderscore_ReachesTheNestedProfile()
     {
-        // This is the shape launchSettings.json actually supplies.
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>())
-            .AddEnvironmentVariables()
-            .Build();
-
+        // This is the shape launchSettings.json actually supplies, layered on top of the
+        // appsettings.json base.
         Environment.SetEnvironmentVariable("Anthropic__Judgment__MaxTokens", "8192");
         try
         {
-            configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(AppSettingsShapedConfig())
+                .AddEnvironmentVariables()
+                .Build();
+
             var settings = new AnthropicSettings();
             configuration.GetSection("Anthropic").Bind(settings);
 
             Assert.Equal(8192, settings.Judgment.MaxTokens);
-            // Everything the env vars did not mention still holds its default.
+            // Everything the env var did not mention still holds the base layer's value.
             Assert.Equal("claude-sonnet-5", settings.Judgment.Model);
         }
         finally
@@ -109,7 +158,8 @@ public class AnthropicSettingsBindingTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(AppSettingsShapedConfig())
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 // Haiku 4.5 rejects the effort parameter outright.
                 ["Anthropic:Drafting:Effort"] = "low"
