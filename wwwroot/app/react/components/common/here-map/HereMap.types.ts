@@ -89,6 +89,9 @@ export const MAP_CONSTANTS = {
     CURVE_STEPS: 30,
     DEFAULT_CURVATURE: 0.5,
     BOUNDING_BOX_EXPAND_FACTOR: 0.25,
+    // World render height is 256 * 2^zoom px (Mercator); below this the world stops
+    // filling the container's height while width keeps tiling to fill it regardless.
+    MIN_ZOOM: 3,
 } as const;
 
 export const US_MAP_CENTER = {lat: 39.8097343, lng: -98.5556199};

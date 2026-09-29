@@ -11,6 +11,7 @@ import {ActionIcon, Divider, Menu, Paper, Tooltip} from '@mantine/core';
 import {Check, Layers, Minus, Mountain, Plus, Satellite, TrafficCone, TriangleAlert} from 'lucide-react';
 import {IconMap} from '@tabler/icons-react';
 import {Icon} from '../icon/Icon';
+import {MAP_CONSTANTS} from '../here-map/HereMap.types';
 
 const ICON_SIZE = 20;
 
@@ -153,7 +154,7 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
 
     const handleZoomOut = () => {
         if (!map) return;
-        map.setZoom(map.getZoom() - 1, true);
+        map.setZoom(Math.max(map.getZoom() - 1, MAP_CONSTANTS.MIN_ZOOM), true);
     };
 
     /** Switches the base layer, unless `view` is already active. */

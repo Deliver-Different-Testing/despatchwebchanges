@@ -5,14 +5,16 @@ import {setupUser} from '../../../__testUtils__/setupUser';
 import {MapZoomViewControls} from './MapZoomViewControls';
 import type {MapZoomViewControlsHandle} from './MapZoomViewControls';
 import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
+import {MAP_CONSTANTS} from '../here-map/HereMap.types';
 
-function createMockMap() {
+function createMockMap(overrides: Record<string, unknown> = {}) {
     return {
         getZoom: jest.fn(() => 10),
         setZoom: jest.fn(),
         setBaseLayer: jest.fn(),
         addLayer: jest.fn(),
         removeLayer: jest.fn(),
+        ...overrides,
     };
 }
 
@@ -117,6 +119,14 @@ describe('MapZoomViewControls', () => {
 
         fireEvent.click(screen.getByLabelText('Zoom out'));
         expect(map.setZoom).toHaveBeenCalledWith(9, true);
+    });
+
+    it('does not zoom out below MIN_ZOOM', () => {
+        const map = createMockMap({getZoom: jest.fn(() => MAP_CONSTANTS.MIN_ZOOM)});
+        renderWithTheme(<MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers()}/>);
+
+        fireEvent.click(screen.getByLabelText('Zoom out'));
+        expect(map.setZoom).toHaveBeenCalledWith(MAP_CONSTANTS.MIN_ZOOM, true);
     });
 
     it('opens the view menu and switches base layer on selection', () => {

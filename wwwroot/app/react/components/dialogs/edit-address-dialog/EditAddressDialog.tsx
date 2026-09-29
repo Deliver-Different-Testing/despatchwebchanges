@@ -24,6 +24,7 @@ import {US_STATES, normalizeToStateAbbreviation} from '../../../utils/usStates';
 import type {ShowToastFn} from '../../../services/toastService';
 import {MapZoomViewControls} from '../../common/dispatch-map';
 import {safeRemoveObject} from '../../common/here-map/hereMapUtils';
+import {MAP_CONSTANTS} from '../../common/here-map/HereMap.types';
 import {AddressType} from '../../../../enums/address-type.enum';
 import {
     DialogFooter,
@@ -219,6 +220,16 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             // the React MapZoomViewControls overlay below replaces it so the
             // controls match the other maps in the app.
             new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+            // Below MIN_ZOOM the world stops filling the container's height (see
+            // MAP_CONSTANTS), so snap back up regardless of how the user zoomed out.
+            // Listens on the continuous 'mapviewchange' (not 'mapviewchangeend') so the
+            // correction lands mid-gesture instead of after the zoom-out animation finishes.
+            map.addEventListener('mapviewchange', () => {
+                if (map.getZoom() < MAP_CONSTANTS.MIN_ZOOM) {
+                    map.setZoom(MAP_CONSTANTS.MIN_ZOOM, true);
+                }
+            });
 
             mapInstanceRef.current = map;
             setMapInstance(map);
