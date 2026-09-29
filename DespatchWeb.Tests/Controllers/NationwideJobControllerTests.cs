@@ -551,6 +551,21 @@ public class NationwideJobControllerTests
     }
 
     [Fact]
+    public async Task AssignFlightToJob_ForwardsCancellationTokenToService()
+    {
+        // Arrange
+        var request = CreateTestAssignRequest(jobId: 100);
+        var controller = CreateController();
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        await controller.AssignFlightToJob(request, cts.Token);
+
+        // Assert
+        await _flightAssignmentServiceMock.Received(1).AssignFlightAsync(request, cts.Token);
+    }
+
+    [Fact]
     public async Task AssignFlightToJob_JobAlreadyHasFlight_ReturnsConflict()
     {
         // Arrange

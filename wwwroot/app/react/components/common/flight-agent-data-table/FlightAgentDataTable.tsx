@@ -63,13 +63,15 @@ const RowActionButton: React.FC<{
     icon: React.ReactNode;
     tooltip: string;
     onClick: () => void;
-}> = ({icon, tooltip, onClick}) => (
+    disabled?: boolean;
+}> = ({icon, tooltip, onClick, disabled}) => (
     <Tooltip label={tooltip} position="left">
         <ActionIcon
             variant="subtle"
             color="gray"
             size="sm"
             onClick={onClick}
+            disabled={disabled}
             aria-label={tooltip}
         >
             {icon}
@@ -451,6 +453,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                                               onOutboundAirportChange,
                                                                               onInboundAirportChange,
                                                                               onAddFlightToJob,
+                                                                              isAssigningFlight,
                                                                               onLoadMoreFlights,
                                                                               onLoadNextDayFlights,
                                                                               onAddAgentToJob,
@@ -856,6 +859,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                             icon={<Icon lucide={Plus} size={16}/>}
                                                             tooltip="Assign Flight"
                                                             onClick={() => onAddFlightToJob(flight)}
+                                                            disabled={isAssigningFlight}
                                                         />
                                                         <RowActionButton
                                                             icon={<Icon lucide={Info} size={16}/>}

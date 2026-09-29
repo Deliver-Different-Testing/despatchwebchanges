@@ -351,6 +351,18 @@ describe('FlightAgentDataTable', () => {
                 expect(props.onAddFlightToJob).toHaveBeenCalled();
             });
 
+            it('disables Assign Flight while an assignment is in flight, but leaves More Info enabled', () => {
+                const props = createMockProps({isAssigningFlight: true});
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                for (const button of screen.getAllByRole('button', {name: 'Assign Flight'})) {
+                    expect(button).toBeDisabled();
+                }
+                for (const button of screen.getAllByRole('button', {name: 'More Info'})) {
+                    expect(button).not.toBeDisabled();
+                }
+            });
+
             it('opens flight details dialog when clicking info button', () => {
                 const mockOpen = openFlightDetailsDialog as jest.Mock;
                 mockOpen.mockClear();

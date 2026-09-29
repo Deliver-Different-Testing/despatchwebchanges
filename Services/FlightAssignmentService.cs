@@ -9,9 +9,15 @@ public sealed class FlightAssignmentService(
     INationwideJobRepository repository)
     : IFlightAssignmentService
 {
-    public async Task AssignFlightAsync(AssignFlightToJobRequest request)
+    public async Task AssignFlightAsync(AssignFlightToJobRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        // Only bail out here, before any side effect has started. Once webhook
+        // creation begins it must run to completion -- honouring cancellation
+        // after that point could leave an external Cirium alert registered
+        // with no matching DB row.
+        cancellationToken.ThrowIfCancellationRequested();
 
         var webhookIds = await CreateWebhooksAsync(request.FlightSegments);
         await repository.AddJobNationwideAsync(request, webhookIds);
