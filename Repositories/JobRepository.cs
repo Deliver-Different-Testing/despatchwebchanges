@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -4338,16 +4339,30 @@ public partial class JobRepository(
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
 
+    /// <summary>
+    /// An archived job is invoiced when it's on a real invoice — <c>ucjbInvoiceNo</c> points at an
+    /// existing <c>tucInvoiceNo</c> row (legacy rows carry 0 or a number with no invoice behind it) —
+    /// or its invoice run is finished. The one definition every archived-edit lock uses.
+    /// </summary>
+    private static readonly Expression<Func<TucJobArchive, bool>> IsArchivedJobInvoiced =
+        j => (j.UcjbInvoiceNo > 0 && j.Invoice != null) || (j.InvoiceProcess != null && j.InvoiceProcess.UcipDone);
+
+    private Task<bool> IsArchivedJobInvoicedAsync(int jobId) =>
+        Context.TucJobArchives.Where(j => j.UcjbId == jobId).Select(IsArchivedJobInvoiced).FirstOrDefaultAsync();
+
     public async Task<ArchivedCourierChangeEligibility> GetArchivedCourierChangeEligibilityAsync(int jobId)
-        => await Context.TucJobArchives
+    {
+        var isInvoiced = await IsArchivedJobInvoicedAsync(jobId);
+        return await Context.TucJobArchives
             .Where(j => j.UcjbId == jobId)
             .Select(j => new ArchivedCourierChangeEligibility(
-                j.UcjbInvoiceNo.HasValue || (j.InvoiceProcess != null && j.InvoiceProcess.UcipDone),
+                isInvoiced,
                 j.CourierSettlementBatchId != null,
                 j.UcjbJobDone,
                 j.UcjbCourierId,
                 j.UcjbCourier != null ? j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname : null))
             .FirstOrDefaultAsync();
+    }
 
     /// <summary>
     /// Which editable surfaces of a split parent's price breakdown are still open
@@ -4365,10 +4380,7 @@ public partial class JobRepository(
                 .Select(j => j.UcjbId))
             .ToListAsync();
 
-        var isParentInvoiced = await Context.TucJobArchives
-            .Where(j => j.UcjbId == parentJobId)
-            .Select(j => (bool?)(j.UcjbInvoiceNo.HasValue || (j.InvoiceProcess != null && j.InvoiceProcess.UcipDone)))
-            .FirstOrDefaultAsync() ?? false;
+        var isParentInvoiced = await IsArchivedJobInvoicedAsync(parentJobId);
 
         var revenueLockReason = isParentInvoiced ? "Invoiced" : null;
         var shareLocked = isParentInvoiced;

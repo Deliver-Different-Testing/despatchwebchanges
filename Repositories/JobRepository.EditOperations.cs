@@ -1328,7 +1328,7 @@ public partial class JobRepository
             throw new ArchivedCourierChangeException($"Job {jobId} was not found in the archive.");
         }
 
-        if (archive.UcjbInvoiceNo.HasValue || archive.InvoiceProcess is { UcipDone: true })
+        if (await IsArchivedJobInvoicedAsync(jobId))
         {
             throw new ArchivedCourierChangeException(
                 "This job has already been invoiced and the courier can no longer be changed.");
