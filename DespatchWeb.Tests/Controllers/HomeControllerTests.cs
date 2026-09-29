@@ -71,6 +71,21 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
+    public void Index_HasNoStoreResponseCacheAttribute()
+    {
+        // The HTML shell names which content-hashed bundle to load, so a cached copy of
+        // it can keep pointing at bundles a later deploy already deleted.
+        var method = typeof(HomeController).GetMethod(nameof(HomeController.Index));
+        var attribute = method?.GetCustomAttributes(typeof(ResponseCacheAttribute), inherit: true)
+            .OfType<ResponseCacheAttribute>()
+            .FirstOrDefault();
+
+        Assert.NotNull(attribute);
+        Assert.True(attribute!.NoStore);
+        Assert.Equal(ResponseCacheLocation.None, attribute.Location);
+    }
+
+    [Fact]
     public async Task Index_ValidUser_SetsViewBagAndReturnsView()
     {
         Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
