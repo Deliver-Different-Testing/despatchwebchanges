@@ -108,16 +108,6 @@ export function createMap(
     const zoomControl = new H.ui.ZoomControl({fractionalZoom: false});
     ui.addControl('zoom', zoomControl);
 
-    // Below MIN_ZOOM the world stops filling the container's height (see MAP_CONSTANTS),
-    // so snap back up regardless of how the user zoomed out (wheel, pinch, or button).
-    // Listens on the continuous 'mapviewchange' (not 'mapviewchangeend') so the correction
-    // lands mid-gesture instead of after the full zoom-out animation has already played out.
-    map.addEventListener('mapviewchange', () => {
-        if (map.getZoom() < MAP_CONSTANTS.MIN_ZOOM) {
-            map.setZoom(MAP_CONSTANTS.MIN_ZOOM, true);
-        }
-    });
-
     return {
         map,
         behavior,

@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../../../query';
 import { getHereMapsKey } from '../../../services/configApi';
 import { DEFAULT_MAP_ZOOM } from './DispatchMap.types';
-import { getDefaultMapCenter, MAP_CONSTANTS } from '../here-map/HereMap.types';
+import { getDefaultMapCenter } from '../here-map/HereMap.types';
 
 declare const H: any;
 
@@ -100,16 +100,6 @@ export function useHereMap({
                 ui.removeControl('zoom');
                 ui.removeControl('mapsettings');
                 behavior.disable(H.mapevents.Behavior.Feature.FRACTIONAL_ZOOM);
-
-                // Below MIN_ZOOM the world stops filling the container's height (see
-                // MAP_CONSTANTS), so snap back up regardless of how the user zoomed out.
-                // Listens on the continuous 'mapviewchange' (not 'mapviewchangeend') so the
-                // correction lands mid-gesture instead of after the zoom-out animation finishes.
-                map.addEventListener('mapviewchange', () => {
-                    if (map.getZoom() < MAP_CONSTANTS.MIN_ZOOM) {
-                        map.setZoom(MAP_CONSTANTS.MIN_ZOOM, true);
-                    }
-                });
 
                 platformRef.current = platform;
                 mapRef.current = map;

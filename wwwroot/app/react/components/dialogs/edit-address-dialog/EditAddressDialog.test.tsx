@@ -13,7 +13,6 @@ import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi'
 import {addressApi} from '../../../services/addressApi';
 import {renderWithMantine, suppressConsoleError} from '../../../__testUtils__';
 import {HERE_US_ADDRESS_FIELDS} from '../../../__testUtils__/mockData';
-import {MAP_CONSTANTS} from '../../common/here-map/HereMap.types';
 
 // Mock the React Query hooks
 jest.mock('../../../hooks/useAddressApi', () => ({
@@ -919,79 +918,6 @@ describe('EditAddressDialog', () => {
             expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('');
             expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('');
             expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('');
-        });
-    });
-
-    describe('Zoom floor', () => {
-        function createMockMap() {
-            return {
-                getZoom: jest.fn(() => 10),
-                setZoom: jest.fn(),
-                addEventListener: jest.fn(),
-                getViewPort: jest.fn(() => ({resize: jest.fn()})),
-                screenToGeo: jest.fn(),
-            };
-        }
-
-        function mockHereMapsSdk(map: ReturnType<typeof createMockMap>) {
-            (window as any).H = {
-                service: {
-                    Platform: jest.fn(() => ({
-                        createDefaultLayers: jest.fn(() => ({raster: {normal: {map: {}}}})),
-                    })),
-                },
-                Map: jest.fn(() => map),
-                mapevents: {Behavior: jest.fn(() => ({})), MapEvents: jest.fn()},
-                geo: {Point: jest.fn()},
-                map: {Icon: jest.fn(() => ({})), Marker: jest.fn(() => ({}))},
-            };
-            (window as any).H.Map.EngineType = {HARP: 'HARP'};
-        }
-
-        afterEach(() => {
-            delete (window as any).H;
-        });
-
-        it('registers a mapviewchange listener that snaps zoom back up to MIN_ZOOM', async () => {
-            mockUseHereMapsApiKey.mockReturnValue({data: 'test-key', isLoading: false, error: null} as any);
-            const map = createMockMap();
-            mockHereMapsSdk(map);
-
-            renderWithProviders(createDefaultProps());
-
-            await waitFor(() => {
-                expect(map.addEventListener).toHaveBeenCalledWith('mapviewchange', expect.any(Function));
-            });
-
-            const handler = map.addEventListener.mock.calls.find(
-                ([event]: [string]) => event === 'mapviewchange'
-            )[1];
-
-            map.getZoom.mockReturnValue(1);
-            handler();
-
-            expect(map.setZoom).toHaveBeenCalledWith(MAP_CONSTANTS.MIN_ZOOM, true);
-        });
-
-        it('does not touch zoom when already at or above MIN_ZOOM', async () => {
-            mockUseHereMapsApiKey.mockReturnValue({data: 'test-key', isLoading: false, error: null} as any);
-            const map = createMockMap();
-            mockHereMapsSdk(map);
-
-            renderWithProviders(createDefaultProps());
-
-            await waitFor(() => {
-                expect(map.addEventListener).toHaveBeenCalledWith('mapviewchange', expect.any(Function));
-            });
-
-            const handler = map.addEventListener.mock.calls.find(
-                ([event]: [string]) => event === 'mapviewchange'
-            )[1];
-
-            map.getZoom.mockReturnValue(MAP_CONSTANTS.MIN_ZOOM);
-            handler();
-
-            expect(map.setZoom).not.toHaveBeenCalled();
         });
     });
 });

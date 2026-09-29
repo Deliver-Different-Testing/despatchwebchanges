@@ -10,7 +10,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useHereMap } from './useHereMap';
 import { DEFAULT_MAP_ZOOM } from './DispatchMap.types';
-import { US_MAP_CENTER, NZ_MAP_CENTER, MAP_CONSTANTS } from '../here-map/HereMap.types';
+import { US_MAP_CENTER, NZ_MAP_CENTER } from '../here-map/HereMap.types';
 import * as configApi from '../../../services/configApi';
 
 // Mock the config API
@@ -22,8 +22,6 @@ jest.mock('../../../services/configApi', () => ({
 const createMockMap = () => ({
     setCenter: jest.fn(),
     setZoom: jest.fn(),
-    getZoom: jest.fn(() => 10),
-    addEventListener: jest.fn(),
     getViewPort: jest.fn(() => ({
         resize: jest.fn(),
     })),
@@ -55,11 +53,6 @@ let mockMapInstance: ReturnType<typeof createMockMap>;
 let mockPlatformInstance: ReturnType<typeof createMockPlatform>;
 let mockUIInstance: ReturnType<typeof createMockUI>;
 
-const mockBehaviorConstructor: any = jest.fn(() => createMockBehavior());
-mockBehaviorConstructor.Feature = {
-    FRACTIONAL_ZOOM: 'FRACTIONAL_ZOOM',
-};
-
 const mockH = {
     service: {
         Platform: jest.fn(() => {
@@ -72,8 +65,11 @@ const mockH = {
         return mockMapInstance;
     }),
     mapevents: {
-        Behavior: mockBehaviorConstructor,
+        Behavior: jest.fn(() => createMockBehavior()),
         MapEvents: jest.fn(),
+        Feature: {
+            FRACTIONAL_ZOOM: 'FRACTIONAL_ZOOM',
+        },
     },
     ui: {
         UI: {
@@ -417,53 +413,6 @@ describe('useHereMap', () => {
             (window as any).serverConfig = {isUSCustomer: true};
             const { getDefaultMapCenter } = require('../here-map/HereMap.types');
             expect(getDefaultMapCenter()).toEqual(US_MAP_CENTER);
-        });
-    });
-
-    describe('Zoom floor', () => {
-        it('registers a mapviewchange listener that snaps zoom back up to MIN_ZOOM', async () => {
-            const { result } = renderHook(() => useHereMap(), {
-                wrapper: createWrapper(),
-            });
-            result.current.mapContainerRef.current = document.createElement('div');
-
-            await waitFor(() => {
-                expect(result.current.isReady).toBe(true);
-            });
-
-            expect(mockMapInstance.addEventListener).toHaveBeenCalledWith(
-                'mapviewchange',
-                expect.any(Function)
-            );
-
-            const handler = mockMapInstance.addEventListener.mock.calls.find(
-                ([event]: [string]) => event === 'mapviewchange'
-            )[1];
-
-            mockMapInstance.getZoom.mockReturnValue(1);
-            handler();
-
-            expect(mockMapInstance.setZoom).toHaveBeenCalledWith(MAP_CONSTANTS.MIN_ZOOM, true);
-        });
-
-        it('does not touch zoom when already at or above MIN_ZOOM', async () => {
-            const { result } = renderHook(() => useHereMap(), {
-                wrapper: createWrapper(),
-            });
-            result.current.mapContainerRef.current = document.createElement('div');
-
-            await waitFor(() => {
-                expect(result.current.isReady).toBe(true);
-            });
-
-            const handler = mockMapInstance.addEventListener.mock.calls.find(
-                ([event]: [string]) => event === 'mapviewchange'
-            )[1];
-
-            mockMapInstance.getZoom.mockReturnValue(MAP_CONSTANTS.MIN_ZOOM);
-            handler();
-
-            expect(mockMapInstance.setZoom).not.toHaveBeenCalled();
         });
     });
 });
