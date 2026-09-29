@@ -136,12 +136,25 @@ test:backend:
     when: runner_system_failure
   variables:
     NODE_OPTIONS: "--max-old-space-size=4096"
+    # Jest's --maxWorkers=50% reads the node's full core count (os.cpus()), not the
+    # pod's cgroup CPU quota, so it can oversubscribe and throttle on a constrained
+    # K8s runner. Pin the pod to a known size and match --maxWorkers to it below,
+    # mirroring test:backend's KUBERNETES_* fix for the same class of bug.
+    KUBERNETES_CPU_REQUEST: "2"
+    KUBERNETES_CPU_LIMIT: "2"
+    KUBERNETES_MEMORY_REQUEST: "2Gi"
+    KUBERNETES_MEMORY_LIMIT: "3Gi"
+    # husky's "prepare" script installs git hooks, which are pointless in an
+    # ephemeral CI container and were running (and being timed) on every job.
+    HUSKY: "0"
   cache:
+    # npm ci always deletes and reinstalls node_modules, so caching that directory
+    # buys nothing and just costs a large upload/download. Only .npm/ (npm's own
+    # package cache) actually makes npm ci faster.
     - key:
         files:
           - package-lock.json
       paths:
-        - node_modules/
         - .npm/
       policy: pull-push
     - key: jest-cache-${CI_COMMIT_REF_SLUG}
@@ -150,6 +163,14 @@ test:backend:
       policy: pull-push
       fallback_keys:
         - jest-cache-master
+    # tsc --noEmit is incremental (tsconfig.json already sets tsBuildInfoFile), but
+    # that only helps if .tsbuildinfo survives between CI runs.
+    - key: tsbuildinfo-${CI_COMMIT_REF_SLUG}
+      paths:
+        - .tsbuildinfo
+      policy: pull-push
+      fallback_keys:
+        - tsbuildinfo-master
   before_script:
     - npm ci --cache .npm --prefer-offline
 
@@ -170,7 +191,7 @@ test:frontend:unit:
   allow_failure: false
   parallel: 3
   script:
-    - npx jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=50%
+    - npx jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=2
 
 test:frontend:integration:
   stage: .pre
@@ -179,4 +200,4 @@ test:frontend:integration:
     - .frontend-test-rules
   allow_failure: true
   script:
-    - npx jest --config jest.integration.config.js --ci --maxWorkers=50%
+    - npx jest --config jest.integration.config.js --ci --maxWorkers=2

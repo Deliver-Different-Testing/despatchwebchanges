@@ -4,9 +4,10 @@
  * Manages courier markers on the HERE map with efficient batch operations,
  * icon caching, position threshold checks, and status-based coloring.
  *
- * Draws the same courier flag as the dispatch map — driver, job counts and a last-delivery line —
- * from the shared builder in here-map/courierFlagSvg, but colours it from the active Mantine theme
- * so the markers follow dark mode and match the driver-list rows:
+ * Draws the same courier flag as the dispatch map — driver and job counts, plus a last-delivery
+ * line once the courier is selected — from the shared builder in here-map/courierFlagSvg, but
+ * colours it from the active Mantine theme so the markers follow dark mode and match the
+ * driver-list rows:
  *   - Red flag:   has overdue jobs (needs attention)
  *   - Brand flag: has active jobs (working normally)
  *   - Green flag: no jobs (idle/available)
@@ -273,13 +274,20 @@ export class CourierMarkerManager {
         );
     }
 
-    private getFlagLines(courier: IAvailableCourierPosition): CourierFlagLines {
-        return getCourierFlagLines(courier, this.displaySettings);
+    /**
+     * The last-delivery line is only ever shown for the currently-selected courier — an
+     * unselected marker stays a compact single line with just the driver's label and job
+     * count. Hovering still surfaces the last-delivery detail via the tooltip regardless of
+     * selection (see showTooltip/createCourierTooltipHtml).
+     */
+    private getFlagLines(courier: IAvailableCourierPosition, isSelected: boolean): CourierFlagLines {
+        const lines = getCourierFlagLines(courier, this.displaySettings);
+        return isSelected ? lines : {...lines, secondary: null};
     }
 
     private getFlagCacheKey(courier: IAvailableCourierPosition, isSelected: boolean): string {
         return courierFlagCacheKey(
-            this.getFlagLines(courier), getCourierStatus(courier), false, this.markerScale, isSelected
+            this.getFlagLines(courier, isSelected), getCourierStatus(courier), false, this.markerScale, isSelected
         );
     }
 
@@ -288,7 +296,7 @@ export class CourierMarkerManager {
     }
 
     private getOrCreateIcon(courier: IAvailableCourierPosition, isSelected: boolean): any {
-        const lines = this.getFlagLines(courier);
+        const lines = this.getFlagLines(courier, isSelected);
         const cacheKey = this.getFlagCacheKey(courier, isSelected);
 
         if (this.iconCache.has(cacheKey)) {

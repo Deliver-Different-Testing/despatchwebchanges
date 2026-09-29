@@ -67,4 +67,28 @@ public interface IPricingBreakdownAllocationService
         IReadOnlyList<int>? currentLegIds = null,
         IReadOnlyDictionary<(int ParentPricingBreakdownId, int LegJobId), decimal>? seedCostOverrides = null,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// The archive-table counterpart of <see cref="RewriteAllocationsForParentAsync"/>: re-derives
+    /// every PricingBreakdownAllocationArchive row's ChargeAmount/CostAmount from the parent's
+    /// archived items and the rows' own SharePercent/CostOverride, then writes each leg's
+    /// UcjbAmount, FuelSurchargeAmount and CourierPayment. A newly added item is seeded at each
+    /// leg's average share across the other items; rows are never removed here.
+    /// </summary>
+    /// <param name="context">The caller's open context/transaction.</param>
+    /// <param name="parentJobId">The archived split parent whose allocations to rewrite.</param>
+    /// <param name="currentLegIds">The parent's current (non-void) legs, live or archived.</param>
+    /// <param name="fallbackShareByLeg">
+    /// Per-leg share (0-100) to seed with when a leg has no existing allocation row for *any* item
+    /// yet — e.g. each leg's own recorded revenue ratio, so a real historical split isn't flattened
+    /// to an equal split just because per-leg pricing wasn't recorded at split time. Omit to fall
+    /// back to an equal split, as before.
+    /// </param>
+    /// <param name="ct">Cancellation token.</param>
+    Task RewriteArchivedAllocationsForParentAsync(
+        DespatchContext context,
+        int parentJobId,
+        IReadOnlyList<int> currentLegIds,
+        IReadOnlyDictionary<int, decimal>? fallbackShareByLeg = null,
+        CancellationToken ct = default);
 }
