@@ -71,6 +71,17 @@
             background-color: #f4f2f1;
         }
 
+        /* Dark start: the canvas must be dark too, or the page paints light before the
+           loader exists. !important because udispatch.less pins html/body to the light
+           background with !important once app.css loads, which is the white flash.
+           The attribute is dropped with the loader unless a React island took over
+           (see hideLoader), so Angular-only pages still end up light.
+           Values are the DFRNT dark surface ladder. */
+        html[data-dd-boot-scheme='dark'],
+        html[data-dd-boot-scheme='dark'] body {
+            background-color: #2c2a30 !important;
+        }
+
         html[data-dd-boot-scheme='dark'] .app-loader {
             background-color: #2c2a30;
         }
@@ -262,6 +273,10 @@
                 setTimeout(function () {
                     if (loaderElement.parentNode) {
                         loaderElement.parentNode.removeChild(loaderElement);
+                    }
+                    var root = document.documentElement;
+                    if (!root.hasAttribute('data-mantine-color-scheme')) {
+                        root.removeAttribute('data-dd-boot-scheme');
                     }
                 }, 400);
             }

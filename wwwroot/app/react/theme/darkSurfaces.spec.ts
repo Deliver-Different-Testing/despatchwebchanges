@@ -33,6 +33,14 @@ describe('hand-fixed surfaces follow the colour scheme', () => {
         expect(layout).toMatch(/data-dd-boot-scheme=['"]dark['"]\]\s*\.app-loader/);
         expect(layout).toMatch(/dd-color-mode/);
     });
+
+    it('paints the page canvas dark before the loader, so a dark start never flashes light', () => {
+        const layout = fs.readFileSync(path.resolve(react, '../../../Views/Shared/_Layout.cshtml'), 'utf-8');
+
+        expect(layout).toMatch(/html\[data-dd-boot-scheme=['"]dark['"]\][^{]*body[^{]*\{[^}]*background-color:\s*#2c2a30 !important/);
+        expect(layout).toMatch(/removeAttribute\('data-dd-boot-scheme'\)/);
+    });
+
 });
 
 function sourceFiles(dir: string): string[] {
