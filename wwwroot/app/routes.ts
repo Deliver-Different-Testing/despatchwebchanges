@@ -1276,7 +1276,7 @@ class RouterConfig {
                 <div style="height: 100%; position: relative;">
                     <react-app-shell section="Dashboards" title="Overview"></react-app-shell>
                     <div class="scrollable-container" style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: auto;">
-                        <div id="react-overview"></div>
+                        <div id="react-overview" style="height: 100%;"></div>
                     </div>
                 </div>
             `,
