@@ -779,7 +779,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                             {flight.airline}
                                                         </Text>
                                                         {flight.isCodeShare && (
-                                                            <Text fz={10} c="var(--mantine-color-yellow-6)">*</Text>
+                                                            <Text fz={10} c="light-dark(var(--mantine-color-yellow-6), var(--mantine-color-yellow-4))">*</Text>
                                                         )}
                                                     </Group>
                                                 </Table.Td>
@@ -828,7 +828,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                 </Table.Td>
                                                 <Table.Td>
                                                     {flight.stops === 0 ? (
-                                                        <Text fz={10} fw={600} c="var(--mantine-color-green-6)">
+                                                        <Text fz={10} fw={600} c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))">
                                                             Nonstop
                                                         </Text>
                                                     ) : (

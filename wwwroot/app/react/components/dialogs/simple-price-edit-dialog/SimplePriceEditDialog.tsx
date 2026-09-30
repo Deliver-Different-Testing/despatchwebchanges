@@ -296,12 +296,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                             : alpha('var(--mantine-color-green-6)', 0.25)}`,
                     }}
                 >
-                    <Text size="xs" fw={500} c={hasChildSumMismatch ? 'red.6' : 'green.6'}>
+                    <Text size="xs" fw={500} c={hasChildSumMismatch ? 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))' : 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))'}>
                         {hasChildSumMismatch
                             ? `Parent must equal children total — set to $${childSum.toFixed(2)}`
                             : 'Parent matches children total'}
                     </Text>
-                    <Text size="xs" fw={700} c={hasChildSumMismatch ? 'red.6' : 'green.6'}>
+                    <Text size="xs" fw={700} c={hasChildSumMismatch ? 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))' : 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))'}>
                         ${childSum.toFixed(2)}
                     </Text>
                 </Group>
@@ -392,7 +392,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
 
             {/* Error message */}
             {errorMessage && (
-                <Text c="red.6" size="sm" mt="md">{errorMessage}</Text>
+                <Text c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))" size="sm" mt="md">{errorMessage}</Text>
             )}
         </Box>
     );
@@ -406,7 +406,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
 
     const renderSuccessState = () => (
         <Box py="xl" px="lg" ta="center">
-            <Box c="green.6" mb="md" style={{display: 'flex', justifyContent: 'center'}}>
+            <Box c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))" mb="md" style={{display: 'flex', justifyContent: 'center'}}>
                 <Icon lucide={CircleCheck} size={56} />
             </Box>
             <Text fw={600} fz="lg" mb="xs">Price Updated</Text>
@@ -425,7 +425,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 <Text size="xs" c="dimmed" tt="uppercase" display="block" mb={4} style={{letterSpacing: 0.5}}>
                     New Price
                 </Text>
-                <Text fz={36} fw={700} c="green.6">${savedAmount.toFixed(2)}</Text>
+                <Text fz={36} fw={700} c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))">${savedAmount.toFixed(2)}</Text>
             </Box>
 
             {/* Price Comparison */}
@@ -447,7 +447,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     </Box>
                     <Box ta="center">
                         <Text size="xs" c="dimmed" display="block" mb={4}>New Price</Text>
-                        <Text fw={600} c="green.6">${savedAmount.toFixed(2)}</Text>
+                        <Text fw={600} c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))">${savedAmount.toFixed(2)}</Text>
                     </Box>
                 </Group>
             )}

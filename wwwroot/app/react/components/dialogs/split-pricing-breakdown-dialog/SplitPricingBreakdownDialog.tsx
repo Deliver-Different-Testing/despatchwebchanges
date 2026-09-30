@@ -833,7 +833,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                             <Text size="sm" c="dimmed">{formatCurrency(totalCost)}</Text>
                                         </Table.Td>
                                         <Table.Td ta="right">
-                                            <Text size="sm" fw={600} c={profit >= 0 ? 'green.6' : 'red.6'}>
+                                            <Text size="sm" fw={600} c={profit >= 0 ? 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))' : 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))'}>
                                                 {formatCurrency(profit)}
                                             </Text>
                                         </Table.Td>

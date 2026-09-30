@@ -68,7 +68,7 @@
 .due[data-due-state='unset'],
 .assignee {
     background-color: var(--mantine-color-gray-3);
-    color: var(--mantine-color-gray-8);
+    color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-0));
 }
 
 /* Every chip is filled; this is the only one filled at full saturation. Late is the

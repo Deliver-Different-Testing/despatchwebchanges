@@ -387,7 +387,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                                     borderRadius: 'var(--mantine-radius-sm)',
                                 }}
                             >
-                                <Box c="reflex.6" style={{display: 'flex'}}>
+                                <Box c="light-dark(var(--mantine-color-reflex-6), var(--mantine-color-reflex-4))" style={{display: 'flex'}}>
                                     <Icon lucide={Timer}/>
                                 </Box>
                                 <Text size="sm" c="dimmed">Total Duration</Text>

@@ -61,7 +61,7 @@
     background-color: var(--mantine-color-white);
     border: 1px solid var(--mantine-color-default-border);
     box-shadow: var(--mantine-shadow-sm);
-    color: var(--mantine-color-gray-7);
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 }
 
 /*
@@ -93,7 +93,7 @@
 .chip[data-disabled] {
     background-color: var(--mantine-color-gray-1);
     border-color: var(--mantine-color-default-border);
-    color: var(--mantine-color-gray-5);
+    color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
     box-shadow: none;
 }
 

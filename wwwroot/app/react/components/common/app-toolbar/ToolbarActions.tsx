@@ -427,7 +427,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                     </Box>
                                     <Text
                                         fz="sm"
-                                        c={isActive ? 'brand.7' : undefined}
+                                        c={isActive ? 'light-dark(var(--mantine-color-brand-7), var(--mantine-color-brand-3))' : undefined}
                                         style={{fontWeight: isActive ? 600 : 400}}
                                     >
                                         {layout.name}

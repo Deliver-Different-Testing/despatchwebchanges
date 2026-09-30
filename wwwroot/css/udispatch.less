@@ -19,6 +19,9 @@ html, body {
 html[data-mantine-color-scheme='dark'],
 html[data-mantine-color-scheme='dark'] body {
   background: var(--dd-surface) !important;
+  // Mantine's own body colour sits in a cascade layer, so unlayered legacy CSS can pin
+  // text black; islands that don't set a colour inherit this.
+  color: var(--mantine-color-text);
 }
 
 .ui-viewer {

@@ -951,7 +951,7 @@ const CellContent: React.FC<{
                     <Text
                         component="span"
                         fz="inherit"
-                        c={overdue ? 'var(--mantine-color-red-5)' : undefined}
+                        c={overdue ? 'light-dark(var(--mantine-color-red-5), var(--mantine-color-red-5))' : undefined}
                         fw={overdue ? 600 : 'inherit'}
                     >
                         {remain}

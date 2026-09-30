@@ -386,7 +386,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                                 fw={600}
                                 fz="0.75rem"
                                 mr={6}
-                                c={isTaskOverdue(task) ? 'var(--mantine-color-red-8)' : 'var(--mantine-color-yellow-8)'}
+                                c={isTaskOverdue(task) ? 'light-dark(var(--mantine-color-red-8), var(--mantine-color-red-2))' : 'light-dark(var(--mantine-color-yellow-8), var(--mantine-color-yellow-2))'}
                             >
                                 {dayjs(task.dueDate).format('h:mm a')}
                             </Text>
@@ -596,7 +596,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                         p={16}
                         gap={8}
                         wrap="nowrap"
-                        c="var(--mantine-color-red-8)"
+                        c="light-dark(var(--mantine-color-red-8), var(--mantine-color-red-2))"
                         style={{backgroundColor: alpha('var(--mantine-color-red-6)', 0.08)}}
                     >
                         <Icon lucide={TriangleAlert} color="var(--mantine-color-red-6)"/>

@@ -69,3 +69,21 @@ describe('dialog planes follow the scheme', () => {
         expect(styles).toMatch(/bg: 'var\(--dd-dialog-section\)'/);
     });
 });
+
+describe('text colours follow the colour scheme', () => {
+    // Fixed mid/dark shades (`red.7`, `gray-8`) are near-black in dark mode too.
+    // A text colour must be a scheme-aware token or a `light-dark()` pair.
+    const HUES = 'gray|brand|blue|green|red|orange|yellow|grape|reflex|cyan|teal|violet|pink|indigo|lime';
+    const FIXED_TEXT_SHADE = new RegExp(
+        `(\\bc=\\{?["'](${HUES})\\.[5-9]["']|\\bc=\\{?["']var\\(--mantine-color-(${HUES})-[5-9]\\)["']|(^|[\\s{;,])color:\\s*["']?var\\(--mantine-color-(${HUES})-[5-9]\\))`,
+    );
+
+    it('has no fixed-shade text colour left in non-test source', () => {
+        const offenders = sourceFiles(react).filter((file) => {
+            const src = fs.readFileSync(file, 'utf-8');
+            return src.split('\n').some((line) => FIXED_TEXT_SHADE.test(line) && !line.includes('light-dark('));
+        });
+
+        expect(offenders.map((f) => path.relative(react, f))).toEqual([]);
+    });
+});
