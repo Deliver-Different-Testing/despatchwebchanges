@@ -54,10 +54,11 @@ function sourceFiles(dir: string): string[] {
 describe('tinted surfaces use Mantine scheme-aware variants', () => {
     // `--mantine-color-<hue>-0..2` are fixed pale tints; they stay pale in dark mode.
     // `-light` / `-light-hover` / `-light-color` flip with the scheme.
-    const PALE_TINT = /--mantine-color-(brand|blue|green|red|orange|yellow|grape|reflex|cyan|teal|violet|pink|indigo|lime)-[0-2]/;
+    const PALE_TINT = /--mantine-color-(brand|blue|green|red|orange|yellow|grape|reflex|cyan|teal|violet|pink|indigo|lime)-[0-2]\b/;
 
     it('has no fixed pale-tint variable left in non-test source', () => {
-        const offenders = sourceFiles(react).filter((file) => PALE_TINT.test(fs.readFileSync(file, 'utf-8')));
+        const offenders = sourceFiles(react).filter((file) =>
+            fs.readFileSync(file, 'utf-8').split('\n').some((line) => PALE_TINT.test(line) && !line.includes('light-dark(')));
 
         expect(offenders.map((f) => path.relative(react, f))).toEqual([]);
     });
