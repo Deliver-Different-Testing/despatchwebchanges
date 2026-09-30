@@ -1,23 +1,19 @@
 /**
- * Per-user preference for the React Nationwide page.
+ * Per-user preference for the React Nationwide page (v2).
  *
  * Stored in localStorage keyed by ContactID, separate from the Dispatch and Job
  * Search preferences so each operator's choice is per-screen and independent.
  *
- * **Default OFF — opt-in.** This is the one place Nationwide differs from the
- * other two: Dispatch and Job Search default ON because they have been live and
- * exercised for some time, whereas the React Nationwide page is new and
- * unproven. Operators stay on the classic AngularJS page until they turn this
- * on themselves, and the toggle gets them straight back if the new page gives
- * them trouble. Only a stored `'true'` opts in.
+ * **Default ON.** Only a stored `'false'` keeps an operator on the classic
+ * AngularJS page (v1), which they can still choose from the dashboard settings.
+ * v1 has no dark mode, so while it is on the colour mode is pinned to light
+ * (see `useColorMode`).
  *
  * Read by:
  *   - the `nw` (`/Nationwide`) route's `redirectTo` (sends to `/NationwideV2`
- *     only when opted in)
+ *     unless opted out)
  *   - the dashboard settings dialog, which renders the toggle
- *
- * Mirrors the shape of `pages/dispatch/lib/betaPreference.ts` and
- * `pages/job-search/lib/betaPreference.ts`, inverting only the default.
+ *   - `useColorMode` and the Settings page, to enforce light mode on v1
  */
 
 import {ContactID} from '../../../../contants';
@@ -26,10 +22,9 @@ const STORAGE_KEY = `nationwideBetaEnabled-${ContactID}`;
 
 export function getNationwideBetaEnabled(): boolean {
     try {
-        // Opt-in: anything other than an explicit 'true' keeps the classic page.
-        return localStorage.getItem(STORAGE_KEY) === 'true';
+        return localStorage.getItem(STORAGE_KEY) !== 'false';
     } catch {
-        return false;
+        return true;
     }
 }
 

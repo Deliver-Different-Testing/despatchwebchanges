@@ -17,6 +17,7 @@ import {AutoMateLogo} from '../../components/common/auto-mate-logo/AutoMateLogo'
 import {Icon} from '../../components/common/icon/Icon';
 import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../../components/common/action-button';
 import {useColorMode, type ColorModePreference} from '../../hooks/useColorMode';
+import {getNationwideBetaEnabled} from '../nationwide/lib/betaPreference';
 import {aiAccentColor} from '../../theme/designTokens';
 import {
     isAiEnabled,
@@ -49,6 +50,10 @@ const APPEARANCE_OPTIONS: {value: ColorModePreference; label: string}[] = [
 
 export const SettingsPage: React.FC = () => {
     const {preference: colorPreference, setPreference: setColorPreference} = useColorMode();
+    const darkModeBlocked = !getNationwideBetaEnabled();
+    const appearanceOptions = darkModeBlocked
+        ? APPEARANCE_OPTIONS.map(o => ({...o, disabled: o.value !== 'light'}))
+        : APPEARANCE_OPTIONS;
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
     const [aiAutoOpen, setAiAutoOpenState] = useState<boolean>(isAiAutoOpenEnabled);
     const [hideButtonEnabled, setHideButtonEnabledState] = useState<boolean>(isPanelHideButtonEnabled);
@@ -282,10 +287,14 @@ export const SettingsPage: React.FC = () => {
 
                 <SettingRadioGroup
                     title="Theme"
-                    description="Choose light or dark, or follow your device's setting. Applies to your
-                        account only."
+                    description={darkModeBlocked
+                        ? `You have Nationwide v1 turned on, which doesn't support dark mode, so the theme
+                            is locked to Light. Switch to Nationwide v2 in the Nationwide dashboard
+                            settings to enable the dark and device options.`
+                        : `Choose light or dark, or follow your device's setting. Applies to your
+                            account only.`}
                     value={colorPreference}
-                    options={APPEARANCE_OPTIONS}
+                    options={appearanceOptions}
                     onChange={setColorPreference}
                 />
             </Box>

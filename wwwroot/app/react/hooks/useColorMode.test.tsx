@@ -84,6 +84,45 @@ describe('ColorModeProvider', () => {
         await waitFor(() => expect(mockSavePreference).toHaveBeenCalledWith(StaffPreferenceKey.Appearance, 'light'));
     });
 
+    describe('while Nationwide v1 (classic AngularJS) is on', () => {
+        beforeEach(() => window.localStorage.setItem('nationwideBetaEnabled-0', 'false'));
+
+        it('switches a stored dark or system preference to light, persisting and saving it', async () => {
+            window.localStorage.setItem(COLOR_MODE_STORAGE_KEY, 'dark');
+            render(<ColorModeProvider><Probe/></ColorModeProvider>);
+
+            expect(screen.getByTestId('probe-state')).toHaveTextContent('light:light');
+            await waitFor(() => expect(window.localStorage.getItem(COLOR_MODE_STORAGE_KEY)).toBe('light'));
+            expect(mockSavePreference).toHaveBeenCalledWith(StaffPreferenceKey.Appearance, 'light');
+        });
+
+        it('forces light even when the OS is dark and the preference is unset', () => {
+            mockMatchMedia(true);
+            render(<ColorModeProvider><Probe/></ColorModeProvider>);
+
+            expect(screen.getByTestId('probe-state')).toHaveTextContent('light:light');
+        });
+
+        it('refuses a switch to dark', async () => {
+            const user = setupUser();
+            render(<ColorModeProvider><Probe/></ColorModeProvider>);
+
+            await user.click(screen.getByText('probe-dark'));
+
+            expect(screen.getByTestId('probe-state')).toHaveTextContent('light:light');
+            expect(window.localStorage.getItem(COLOR_MODE_STORAGE_KEY)).toBe('light');
+        });
+
+        it('overrides a dark preference arriving from the server', async () => {
+            win.ContactID = 7;
+            mockGetPreference.mockResolvedValue('dark');
+            render(<ColorModeProvider><Probe/></ColorModeProvider>);
+
+            await waitFor(() => expect(mockSavePreference).toHaveBeenCalledWith(StaffPreferenceKey.Appearance, 'light'));
+            expect(screen.getByTestId('probe-state')).toHaveTextContent('light:light');
+        });
+    });
+
     it('does not touch the server when there is no signed-in staff member', () => {
         render(<ColorModeProvider><Probe/></ColorModeProvider>);
 

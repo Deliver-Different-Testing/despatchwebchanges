@@ -8,32 +8,29 @@ describe('nationwide betaPreference', () => {
         (window as unknown as {ContactID: number}).ContactID = 0;
     });
 
-    describe('defaults OFF, unlike Dispatch and Job Search', () => {
-        // The React Nationwide page is opt-in while it is unproven: operators
-        // keep the classic AngularJS page until they choose otherwise. Dispatch
-        // and Job Search default ON because they have been live for some time.
-        it('is off when nothing is stored', () => {
-            expect(getNationwideBetaEnabled()).toBe(false);
+    describe('defaults ON, matching Dispatch and Job Search', () => {
+        it('is on when nothing is stored', () => {
+            expect(getNationwideBetaEnabled()).toBe(true);
         });
 
-        it('needs an explicit opt-in, not merely a non-false value', () => {
+        it('stays on for an unrecognised stored value', () => {
             localStorage.setItem(KEY, 'yes');
-            expect(getNationwideBetaEnabled()).toBe(false);
+            expect(getNationwideBetaEnabled()).toBe(true);
         });
 
-        it('is off when localStorage is unavailable', () => {
+        it('is on when localStorage is unavailable', () => {
             const getItem = jest.spyOn(Storage.prototype, 'getItem')
                 .mockImplementation(() => { throw new Error('blocked'); });
 
-            expect(getNationwideBetaEnabled()).toBe(false);
+            expect(getNationwideBetaEnabled()).toBe(true);
 
             getItem.mockRestore();
         });
     });
 
-    it('turns on only for a stored "true"', () => {
-        localStorage.setItem(KEY, 'true');
-        expect(getNationwideBetaEnabled()).toBe(true);
+    it('turns off only for a stored "false"', () => {
+        localStorage.setItem(KEY, 'false');
+        expect(getNationwideBetaEnabled()).toBe(false);
     });
 
     it('round-trips the operator choice', () => {
@@ -44,10 +41,7 @@ describe('nationwide betaPreference', () => {
         expect(getNationwideBetaEnabled()).toBe(false);
     });
 
-    it('lets an operator switch back to the classic page after opting in', () => {
-        // The whole point of keeping the AngularJS page: if the React one
-        // misbehaves, the toggle must get them back.
-        setNationwideBetaEnabled(true);
+    it('lets an operator switch back to the classic page', () => {
         setNationwideBetaEnabled(false);
 
         expect(localStorage.getItem(KEY)).toBe('false');

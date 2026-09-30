@@ -25,6 +25,7 @@ import {
 import type {Md3Mode} from '../theme/md3';
 import {StaffPreferenceKey} from '../../enums/staff-preference-key.enum';
 import {getPreference, savePreference} from '../services/preferencesApi';
+import {getNationwideBetaEnabled} from '../pages/nationwide/lib/betaPreference';
 
 export const COLOR_MODE_STORAGE_KEY = 'dd-color-mode';
 const CHANGE_EVENT = 'dd-color-mode-change';
@@ -75,6 +76,11 @@ function getSystemMode(): Md3Mode {
     return 'light';
 }
 
+/** Nationwide v1 (classic AngularJS) has no dark styling, so it pins the app to light. */
+function enforceNationwideLight(preference: ColorModePreference): ColorModePreference {
+    return getNationwideBetaEnabled() ? preference : 'light';
+}
+
 function resolveMode(preference: ColorModePreference): Md3Mode {
     return preference === 'system' ? getSystemMode() : preference;
 }
@@ -120,11 +126,14 @@ async function syncFromServerOnce(): Promise<void> {
 }
 
 export function ColorModeProvider({children}: {children: ReactNode}) {
-    const [preference, setPreferenceState] = useState<ColorModePreference>(readStoredPreference);
-    const [mode, setModeState] = useState<Md3Mode>(() => resolveMode(readStoredPreference()));
+    const [preference, setPreferenceState] = useState<ColorModePreference>(
+        () => enforceNationwideLight(readStoredPreference()),
+    );
+    const [mode, setModeState] = useState<Md3Mode>(() => resolveMode(enforceNationwideLight(readStoredPreference())));
     const preferenceRef = useRef<ColorModePreference>(preference);
 
-    const setPreference = useCallback((next: ColorModePreference) => {
+    const setPreference = useCallback((requested: ColorModePreference) => {
+        const next = enforceNationwideLight(requested);
         preferenceRef.current = next;
         setPreferenceState(next);
         setModeState(resolveMode(next));
@@ -135,10 +144,15 @@ export function ColorModeProvider({children}: {children: ReactNode}) {
 
     // Adopt a pick made by another island (same document) or another tab.
     useEffect(() => {
-        const adopt = (next: ColorModePreference) => {
+        const adopt = (incoming: ColorModePreference) => {
+            const next = enforceNationwideLight(incoming);
             preferenceRef.current = next;
             setPreferenceState(next);
             setModeState(resolveMode(next));
+            if (next !== incoming) {
+                persist(next);
+                saveToServer(next);
+            }
         };
         const onChange = (e: Event) => {
             const next = (e as CustomEvent<unknown>).detail;
@@ -156,6 +170,13 @@ export function ColorModeProvider({children}: {children: ReactNode}) {
     }, []);
 
     useEffect(() => {
+        const stored = readStoredPreference();
+        const enforced = enforceNationwideLight(stored);
+        if (enforced !== stored) {
+            persist(enforced);
+            saveToServer(enforced);
+            window.dispatchEvent(new CustomEvent<ColorModePreference>(CHANGE_EVENT, {detail: enforced}));
+        }
         if (canSyncWithServer()) void syncFromServerOnce();
     }, []);
 
