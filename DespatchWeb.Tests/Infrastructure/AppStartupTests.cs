@@ -27,6 +27,19 @@ public class AppStartupTests(AppStartupTests.TestApp factory) : IClassFixture<Ap
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [Fact]
+    public async Task GenericStaticFiles_AreNotCachedWithoutRevalidation()
+    {
+        // favicon.ico sits directly in wwwroot (outside /dist) and is served by the
+        // catch-all UseStaticFiles branch in Program.cs, which historically set no
+        // Cache-Control at all — leaving it to browser heuristic freshness, which can
+        // keep a stale copy around well past a deploy.
+        var response = await _client.GetAsync("/favicon.ico", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoCache);
+    }
+
     public class TestApp : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)

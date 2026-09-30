@@ -365,8 +365,10 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         void queryClient.invalidateQueries({queryKey: queryKeys.nationwide.all});
     }, []);
 
+    const [isAssigningFlight, setIsAssigningFlight] = useState(false);
+
     const handleAddFlightToJob = useCallback(async (flight: FlightViewModel) => {
-        if (!flightAgentJob) return;
+        if (!flightAgentJob || isAssigningFlight) return;
 
         const result = await openFlightConfirmationDialog({
             jobId: flightAgentJob.id,
@@ -377,48 +379,67 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         });
         if (!result?.shouldAssign) return;
 
+        setIsAssigningFlight(true);
         try {
-            await nationwideApi.assignFlightToJob({
-                jobId: flightAgentJob.id,
-                fromAirportId: widget.selectedOutboundAirport?.id,
-                toAirportId: widget.selectedInboundAirport?.id,
-                flightNumber: flight.flightNumber,
-                departureDate: formatDateForApiWithTzs(flight.departureTime, flight.departureTimeZone),
-                flightSegments: (flight.flightSegments ?? []).map(segment => ({
-                    ...segment,
-                    departureTime: formatDateForApiWithTzs(segment.departureTime, segment.departureAirportTimeZone),
-                    arrivalTime: formatDateForApiWithTzs(segment.arrivalTime, segment.arrivalAirportTimeZone),
-                })),
-                packageReadyTime: result.packageReadyTime
-                    ? formatDateForApiWithTzs(result.packageReadyTime, flight.arrivalTimeZone)
-                    : undefined,
-                packageDeliverByTime: result.packageDeliverByTime
-                    ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone)
-                    : undefined,
-                packageDeliveryNotes: result.packageDeliveryNotes,
-            });
-
-            // V1 wrote a returned AWB back to the job's ConNote.
-            if (result.awb) {
-                await apiClient.post('job/UpdateJob', {
+            try {
+                await nationwideApi.assignFlightToJob({
                     jobId: flightAgentJob.id,
-                    property: JobProperty.ConNote,
-                    value: result.awb,
+                    fromAirportId: widget.selectedOutboundAirport?.id,
+                    toAirportId: widget.selectedInboundAirport?.id,
+                    flightNumber: flight.flightNumber,
+                    departureDate: formatDateForApiWithTzs(flight.departureTime, flight.departureTimeZone),
+                    flightSegments: (flight.flightSegments ?? []).map(segment => ({
+                        ...segment,
+                        departureTime: formatDateForApiWithTzs(segment.departureTime, segment.departureAirportTimeZone),
+                        arrivalTime: formatDateForApiWithTzs(segment.arrivalTime, segment.arrivalAirportTimeZone),
+                    })),
+                    packageReadyTime: result.packageReadyTime
+                        ? formatDateForApiWithTzs(result.packageReadyTime, flight.arrivalTimeZone)
+                        : undefined,
+                    packageDeliverByTime: result.packageDeliverByTime
+                        ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone)
+                        : undefined,
+                    packageDeliveryNotes: result.packageDeliveryNotes,
                 });
+            } catch (error) {
+                console.error('Error assigning flight:', error);
+                showToast('Could not assign the flight. Please try again.', 'error');
+                return;
             }
 
+            // The assignment above is the authoritative write and has already
+            // succeeded -- tell the user now, before any best-effort follow-up
+            // work below, so a failure there can never be reported as a failed
+            // assignment.
             refreshLists();
             showToast('Flight assigned to job', 'success');
-            // V1 refetched and re-selected the job so the widget and job-detail
-            // panel immediately reflect the new assignedFlight, matching the
-            // other two mutation handlers in this file.
-            await selectJobById(flightAgentJob.id);
-        } catch (error) {
-            console.error('Error assigning flight:', error);
-            showToast('Could not assign the flight. Please try again.', 'error');
+
+            try {
+                // V1 wrote a returned AWB back to the job's ConNote.
+                if (result.awb) {
+                    await apiClient.post('job/UpdateJob', {
+                        jobId: flightAgentJob.id,
+                        property: JobProperty.ConNote,
+                        value: result.awb,
+                    });
+                }
+
+                // V1 refetched and re-selected the job so the widget and job-detail
+                // panel immediately reflect the new assignedFlight, matching the
+                // other two mutation handlers in this file.
+                await selectJobById(flightAgentJob.id);
+            } catch (error) {
+                console.error('Error finishing flight assignment follow-up:', error);
+                showToast(
+                    'Flight assigned, but the job details could not be refreshed. Please refresh the page.',
+                    'warning',
+                );
+            }
+        } finally {
+            setIsAssigningFlight(false);
         }
-    }, [flightAgentJob, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast, refreshLists,
-        selectJobById]);
+    }, [flightAgentJob, isAssigningFlight, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast,
+        refreshLists, selectJobById]);
 
     const handleAddAgentToJob = useCallback(async (agent: Agent) => {
         if (!flightAgentJob) return;
@@ -717,6 +738,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                         onOutboundAirportChange={widget.onOutboundAirportChange as never}
                         onInboundAirportChange={widget.onInboundAirportChange as never}
                         onAddFlightToJob={handleAddFlightToJob as never}
+                        isAssigningFlight={isAssigningFlight}
                         onLoadMoreFlights={widget.loadMoreFlights}
                         onLoadNextDayFlights={widget.loadNextDayFlights}
                         onAddAgentToJob={handleAddAgentToJob as never}

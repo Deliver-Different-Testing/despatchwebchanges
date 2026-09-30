@@ -650,7 +650,32 @@ describe('NationwideApiService flight and agent operations', () => {
 
             await nationwideApi.assignFlightToJob(request);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('nationwideJob/AssignFlightToJob', request);
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                'nationwideJob/AssignFlightToJob',
+                request,
+                expect.anything(),
+            );
+        });
+
+        it('gives the request extra headroom beyond the default timeout for slow multi-segment flights', async () => {
+            mockApiClient.post.mockResolvedValue(undefined);
+            const request = {
+                jobId: 42,
+                fromAirportId: 1,
+                toAirportId: 2,
+                flightNumber: 'NZ123',
+                departureDate: '2026-03-15T08:00:00',
+                flightSegments: [],
+                packageDeliveryNotes: 'Leave at dock',
+            };
+
+            await nationwideApi.assignFlightToJob(request);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                'nationwideJob/AssignFlightToJob',
+                request,
+                expect.objectContaining({timeout: 90000}),
+            );
         });
     });
 

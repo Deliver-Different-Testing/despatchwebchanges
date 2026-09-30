@@ -10,7 +10,7 @@ import {Info, Repeat, SlidersHorizontal} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
 import {DialogFooter, DialogHeader, DialogShell, dialogContentBg, dialogSize} from '../../components/dialogs/shared/mantine';
 import classes from './RecurringJobsPage.module.css';
-import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
+import {Group as PanelGroup, Panel, Separator as PanelResizeHandle, useDefaultLayout} from 'react-resizable-panels';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
 import {PanelHeader} from '../../components/common/panel-header';
@@ -43,8 +43,8 @@ const DEFAULT_QUERY: RecurringJobQuery = {
 };
 
 // The gutter's look lives in RecurringJobsPage.module.css: react-resizable-panels
-// stamps data-resize-handle-state on the PanelResizeHandle root, so the rule has to
-// select from that parent down to this child.
+// stamps data-separator on the Separator (aliased as PanelResizeHandle) root, so
+// the rule has to select from that parent down to this child.
 
 export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                                                                         showToast,
@@ -240,11 +240,18 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         }
     }, [onAddStop]);
 
+    const {defaultLayout, onLayoutChanged} = useDefaultLayout({id: 'recurring-jobs-layout'});
+
     return (
         <Box h="100%" p={8} bg="var(--mantine-color-body)">
-            <PanelGroup direction="horizontal" autoSaveId="recurring-jobs-layout">
+            <PanelGroup
+                orientation="horizontal"
+                id="recurring-jobs-layout"
+                defaultLayout={defaultLayout}
+                onLayoutChanged={onLayoutChanged}
+            >
             {/* Left Panel: Filters + Table (~40%) */}
-            <Panel defaultSize={40} minSize={25}>
+            <Panel id="filters-table" defaultSize="40%" minSize="25%">
             <Stack gap={16} h="100%" miw={0} style={{minHeight: 0}}>
                 {/* Filters Card */}
                 <Card withBorder p={0} style={{flexShrink: 0, overflow: 'hidden'}}>
@@ -314,7 +321,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             </PanelResizeHandle>
 
             {/* Middle Panel: Job Details (~35%) */}
-            <Panel defaultSize={35} minSize={20}>
+            <Panel id="job-details" defaultSize="35%" minSize="20%">
             <Stack gap={0} h="100%" miw={0} style={{minHeight: 0}}>
                 <Card
                     withBorder
@@ -349,7 +356,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             </PanelResizeHandle>
 
             {/* Right Panel: Recurring Log (~25%) */}
-            <Panel defaultSize={25} minSize={20}>
+            <Panel id="recurring-log" defaultSize="25%" minSize="20%">
             <Stack gap={0} h="100%" miw={0} style={{minHeight: 0}}>
                 <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
                     <RecurringDeliveryJourney bookingId={selectedJobId} />

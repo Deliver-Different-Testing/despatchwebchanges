@@ -189,7 +189,10 @@ export const codeBlockPalette = {
  * into rounded squares, which was never part of the "less rounded" complaint.
  */
 export const tokens = {
-    radius: {xs: 2, sm: 8, md: 10, lg: 14, xl: 28, full: 9999, tile: 2},
+    // `card` (16px) is deliberately larger than `md`/`lg` — Apple-HIG-style
+    // content containers (Card/Paper) read as roomier than the controls
+    // sitting inside them (`sm`, 8px).
+    radius: {xs: 2, sm: 8, md: 10, lg: 14, xl: 28, full: 9999, tile: 2, card: 16},
     duration: {instant: 100, fast: 150, normal: 200, slow: 350},
     shadow: {
         sm: '0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1)',
@@ -249,13 +252,17 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             // NOT a `bg` defaultProp, so a component's own inline `style={{background}}`
             // still wins.
             Card: {
-                defaultProps: {radius: 'md', shadow: 'sm'},
+                defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
                 styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
             },
             Paper: {
-                defaultProps: {radius: 'md', shadow: 'sm'},
+                defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
                 styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
             },
+            // Not given the `card` radius or a glass-scrim `overlayProps` default:
+            // every dialog in this app goes through DialogShell, which composes
+            // `Modal.Root`/`Overlay`/`Content` directly (radius="xl", a documented
+            // deliberately-unblurred overlay) and never reads these defaults.
             Modal: {
                 defaultProps: {radius: 'md', centered: true, shadow: 'md'},
                 styles: {content: {backgroundColor: 'var(--dd-surface-container-high)'}},
@@ -266,7 +273,12 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             Autocomplete: {defaultProps: {radius: 'sm'}},
             Menu: {
                 defaultProps: {radius: 'sm', shadow: 'md'},
-                styles: {dropdown: {backgroundColor: 'var(--dd-surface-container-high)'}},
+                styles: {
+                    dropdown: {
+                        backgroundColor: 'var(--dd-surface-container-high)',
+                        border: '1px solid var(--dd-outline-variant)',
+                    },
+                },
             },
             Tooltip: {defaultProps: {radius: 'sm', color: 'ink'}},
             Badge: {defaultProps: {radius: 'sm'}},
@@ -316,12 +328,14 @@ export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
             '--dd-surface': light.surface,
             '--dd-surface-container': light.surfaceContainerLowest, // #ffffff cards
             '--dd-surface-container-high': light.surfaceContainerLowest, // #ffffff menus/dialogs
+            '--dd-outline-variant': light.outlineVariant, // #e7e5e4 keyline divider / hairline border
         },
         dark: {
             '--mantine-color-body': dk.surface, // #2c2a30 page
             '--dd-surface': dk.surface,
             '--dd-surface-container': dk.surfaceContainer, // #37353c cards
             '--dd-surface-container-high': dk.surfaceContainerHigh, // #413f47 menus/dialogs
+            '--dd-outline-variant': dk.outlineVariant, // #56535c keyline divider / hairline border
         },
     };
 };
