@@ -1,6 +1,7 @@
 import React from 'react';
 import {JobActionsMenu, type JobAction} from '../../../components/common/job-actions-menu/JobActionsMenu';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
+import {isNetworkPartnerSession} from '../../../components/dialogs/dispatch-dialog/dispatchSession';
 
 /**
  * Job-detail action menu for the React Nationwide page, rendered as an overflow
@@ -30,7 +31,7 @@ const ACTIONS: JobAction<NationwideJobActionId>[] = [
     {id: 'addStop', label: 'Add Stop', icon: 'pin_drop',
         available: job => job.isAgentJob},
     {id: 'accessorialCharges', label: 'Accessorial Charges', icon: 'receipt_long',
-        available: job => !!job.accessorialChargeGroupId},
+        available: job => !!job.accessorialChargeGroupId && !isNetworkPartnerSession()},
     {id: 'attachments', label: 'Attachments', icon: 'cloud_upload',
         available: () => true},
     {id: 'addTask', label: 'Add Task', icon: 'edit_calendar',

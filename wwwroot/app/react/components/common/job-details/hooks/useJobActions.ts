@@ -137,6 +137,8 @@ interface UseJobActionsOptions {
     job: IJob | undefined;
     isRecurringJob: boolean;
     isUsCustomer: boolean;
+    /** Logged-in network partner: Pricing opens their pay (view-only), never the tenant's breakdown. */
+    isNetworkPartner?: boolean;
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
     updateField: (args: {job: IJob; field: string; value: unknown; isRecurring: boolean; timezone?: string}) => Promise<unknown>;
     updateAddress: (args: {job: IJob; address: IAddressViewModel; isDelivery: boolean}) => Promise<unknown>;
@@ -180,6 +182,7 @@ export function useJobActions({
     job,
     isRecurringJob,
     isUsCustomer,
+    isNetworkPartner = false,
     showToast,
     updateField,
     updateAddress,
@@ -982,6 +985,18 @@ export function useJobActions({
     const handlePricingClick = useCallback(async (hideRecalculate?: boolean) => {
         const j = jobRef.current;
         if (!j) return;
+        // A network partner sees their pay, not the tenant's pricing. The server substitutes
+        // CourierPayment / CourierFuel for the breakdown rows and returns no split grid, so every
+        // NP path — split or not, invoiced or not — is the flat dialog in partner view.
+        if (isNetworkPartner) {
+            const payLines = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
+            await ensurePriceBreakdownDialog();
+            window.ReactPriceBreakdownDialog?.setToastService({showToast});
+            await window.ReactPriceBreakdownDialog?.open(
+                payLines, j.id, j.preBook, j.isArchived, isUsCustomer, true, undefined, undefined, {partnerView: true},
+            );
+            return;
+        }
         if (j.isInvoiced) {
             showToast(`Job ${j.jobNo} is invoiced and cannot be modified.`, 'warning');
             return;
@@ -1077,7 +1092,7 @@ export function useJobActions({
             );
         }
         await refreshAndNotify();
-    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, ensureSplitPricingBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync, relatedJobs, onNavigateToJob]);
+    }, [isUsCustomer, isNetworkPartner, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, ensureSplitPricingBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync, relatedJobs, onNavigateToJob]);
 
     const handleStatusClick = useCallback(async () => {
         const j = jobRef.current;

@@ -168,6 +168,14 @@ public partial class BaseJobRepository(
                 .Select(JobMappings.JobDispatchMapping(isUsTenant, infoService.GetCurrentTenantId()))
                 .ToListAsync(cancellationToken);
 
+            // A network partner sees their own pay, never the tenant's revenue, in every list
+            // row's Amount - the same rule already applied to the job detail modal.
+            if (Context.CurrentIsNetworkPartner)
+            {
+                var payByJob = await GetNetworkPartnerPayByJobAsync(Context, allJobs.Select(j => j.Id).ToList());
+                ApplyNetworkPartnerAmounts(allJobs, payByJob);
+            }
+
             // Populate Children on parent jobs so the frontend can track grouping via _groupChildren.
             // All jobs stay in the flat list the template renders them as flat rows.
             var parentJobMap = allJobs
@@ -950,6 +958,55 @@ public partial class BaseJobRepository(
 
     // Helper Methods
     protected async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
+
+    /// <summary>
+    /// A network partner's pay (CourierPayment + CourierFuel) for a batch of jobs, live rows
+    /// first then archive for any not found live. Shared by every list/export surface that
+    /// substitutes a partner's own pay for tenant revenue.
+    /// </summary>
+    protected static async Task<IReadOnlyDictionary<int, NetworkPartnerPay>> GetNetworkPartnerPayByJobAsync(
+        DespatchContext context, IReadOnlyCollection<int> jobIds) =>
+        await GetNetworkPartnerPayByJobAsync(context, context, jobIds);
+
+    /// <summary>Two-context overload for call sites that query live/archived jobs through separate
+    /// <see cref="DespatchContext"/> instances (parallel queries).</summary>
+    protected static async Task<IReadOnlyDictionary<int, NetworkPartnerPay>> GetNetworkPartnerPayByJobAsync(
+        DespatchContext liveContext, DespatchContext archivedContext, IReadOnlyCollection<int> jobIds)
+    {
+        var live = await liveContext.TucJobs
+            .Where(j => jobIds.Contains(j.UcjbId))
+            .Select(j => new { j.UcjbId, Pay = new NetworkPartnerPay(j.CourierPayment ?? 0, j.CourierFuel ?? 0) })
+            .ToListAsync();
+
+        var result = live.ToDictionary(x => x.UcjbId, x => x.Pay);
+
+        var missing = jobIds.Where(id => !result.ContainsKey(id)).ToList();
+        if (missing.Count > 0)
+        {
+            var archived = await archivedContext.TucJobArchives
+                .Where(j => missing.Contains(j.UcjbId))
+                .Select(j => new { j.UcjbId, Pay = new NetworkPartnerPay(j.CourierPayment ?? 0, j.CourierFuel ?? 0) })
+                .ToListAsync();
+            foreach (var row in archived)
+            {
+                result[row.UcjbId] = row.Pay;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Pure: sets each job's Amount to its network partner pay total, or null when the
+    /// partner has no visibility of it. Kept static so the rule is unit-testable without a
+    /// database - mirrors JobRepository.ApplyNetworkPartnerCharges for list rows.</summary>
+    internal static void ApplyNetworkPartnerAmounts(
+        IEnumerable<DispatchJobViewModel> jobs, IReadOnlyDictionary<int, NetworkPartnerPay> payByJob)
+    {
+        foreach (var job in jobs)
+        {
+            job.Amount = payByJob.TryGetValue(job.Id, out var pay) ? pay.Total : null;
+        }
+    }
 
     protected static string GetTrackingName(int trackingMethodId) =>
         trackingMethodId switch

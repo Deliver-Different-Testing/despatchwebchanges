@@ -3109,6 +3109,11 @@ public partial class JobRepository(
 
         var tenantTimeZone = _infoService.GetTenantTimeZone();
 
+        // A network partner never sees tenant revenue or the tenant's cost-side fields in an
+        // export they keep. Amount/Fuel become their own pay; the tenant-only columns go null
+        // rather than duplicating it under a different name.
+        var isNetworkPartner = liveJobsContext.CurrentIsNetworkPartner;
+
         var voidStatusName = await GetVoidStatusNameAsync(liveJobsContext);
         return
         [
@@ -3118,12 +3123,12 @@ public partial class JobRepository(
                 ParentId = j.ParentId,
                 JobNumber = j.JobNumber,
                 BookDate = j.BookDate,
-                Amount = j.Amount,
-                Fuel = j.Fuel,
-                Ppd = j.Ppd,
-                CourierPayment = j.CourierPayment,
-                CourierFuel = j.CourierFuel,
-                CourierBonus = j.CourierBonus,
+                Amount = isNetworkPartner ? (j.CourierPayment ?? 0) : j.Amount,
+                Fuel = isNetworkPartner ? (j.CourierFuel ?? 0) : j.Fuel,
+                Ppd = isNetworkPartner ? null : j.Ppd,
+                CourierPayment = isNetworkPartner ? null : j.CourierPayment,
+                CourierFuel = isNetworkPartner ? null : j.CourierFuel,
+                CourierBonus = isNetworkPartner ? null : j.CourierBonus,
                 Quantity = j.Quantity,
                 Weight = j.Weight,
                 Size = j.Size,
@@ -3161,7 +3166,7 @@ public partial class JobRepository(
                 InvoiceDate = j.InvoiceDate,
                 IsArchived = j.IsArchived,
                 LoggedInContact = j.LoggedInContact,
-                RawBaseAmount = j.RawBaseAmount,
+                RawBaseAmount = isNetworkPartner ? null : j.RawBaseAmount,
                 CourierCode = j.CourierCode,
                 Void = j.Void,
                 OurReference = j.OurReference,
@@ -3517,6 +3522,13 @@ public partial class JobRepository(
     public async Task<IReadOnlyList<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId,
         bool isPrebook, bool isArchived = false)
     {
+        // A network partner never sees the tenant's PricingBreakdown rows — only their own pay
+        // (CourierPayment / CourierFuel), read from the job itself. See JobRepository.NetworkPartner.cs.
+        if (Context.CurrentIsNetworkPartner)
+        {
+            return await GetNetworkPartnerPriceBreakdownAsync(jobId, isArchived);
+        }
+
         if (isPrebook)
         {
             var effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobId);
@@ -3864,6 +3876,11 @@ public partial class JobRepository(
                 .FirstOrDefaultAsync();
 
             activeJob.IsArchived = archivedStatus;
+            if (Context.CurrentIsNetworkPartner)
+            {
+                activeJob.Amount = (await GetNetworkPartnerPayAsync(jobId))?.Total;
+            }
+
             return activeJob;
         }
 
@@ -3989,6 +4006,9 @@ public partial class JobRepository(
                 FromAirportId = j.FromAirportId,
                 PickupContact = j.PickupFromContact,
                 DeliveryContact = j.DeliverToContact
+                // No Amount here today - the live branch above substitutes it for a network
+                // partner (CurrentIsNetworkPartner). If Amount is ever added to this archived
+                // projection, it needs the same substitution or it reopens the revenue leak.
             };
 
         return await archivedJobQuery.FirstOrDefaultAsync();
@@ -4187,13 +4207,16 @@ public partial class JobRepository(
         {
             _ = MarkJobAsReadAsync(jobId);
 
-            var result = await GetLiveJobByIdAsync(jobId);
-            if (result != null)
+            var result = await GetLiveJobByIdAsync(jobId) ?? await GetArchivedJobByIdAsync(jobId);
+
+            // A network partner sees their pay in place of the tenant's charge, on every job in the
+            // group. Done here, not in the mapping, so the tenant's figure never reaches the client.
+            if (Context.CurrentIsNetworkPartner)
             {
-                return result;
+                await SubstituteNetworkPartnerChargesAsync(result);
             }
 
-            return await GetArchivedJobByIdAsync(jobId);
+            return result;
         }
         catch (Exception e)
         {
@@ -4621,6 +4644,13 @@ public partial class JobRepository(
     /// </summary>
     public async Task<SplitPricingBreakdownDto> GetSplitPricingBreakdownAsync(int jobId, bool isArchived = false)
     {
+        // The split grid is the tenant's revenue / cost / margin per leg. A network partner gets null
+        // here, which sends the client down the flat breakdown path — and that path returns their pay.
+        if (Context.CurrentIsNetworkPartner)
+        {
+            return null;
+        }
+
         if (!await IsSplitParentAsync(jobId, isArchived))
         {
             return null;

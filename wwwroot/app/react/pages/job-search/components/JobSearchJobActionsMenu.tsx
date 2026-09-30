@@ -1,6 +1,7 @@
 import React from 'react';
 import {JobActionsMenu, type JobAction} from '../../../components/common/job-actions-menu/JobActionsMenu';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
+import {isNetworkPartnerSession} from '../../../components/dialogs/dispatch-dialog/dispatchSession';
 
 /**
  * Job-detail action menu for the React job search page, rendered as an overflow
@@ -27,7 +28,7 @@ export interface JobSearchJobActionsMenuProps {
 
 const ACTIONS: JobAction<JobSearchJobActionId>[] = [
     {id: 'accessorialCharges', label: 'Accessorial Charges', icon: 'receipt_long',
-        available: job => !!job.accessorialChargeGroupId},
+        available: job => !!job.accessorialChargeGroupId && !isNetworkPartnerSession()},
     {id: 'attachments', label: 'Attachments', icon: 'cloud_upload',
         available: () => true},
     {id: 'dispatch', label: 'Dispatch to Courier', icon: 'send_to_mobile',

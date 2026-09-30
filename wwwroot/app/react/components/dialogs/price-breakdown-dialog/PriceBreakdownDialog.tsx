@@ -82,6 +82,9 @@ export interface PriceBreakdownDialogProps {
     /** Split children: pricing is edited on the parent job, not here. Shows a
      * message + link back to the parent above the table; pair with readOnly. */
     managedElsewhere?: {parentJobNumber: string; onNavigateToParent: () => void};
+    /** Network partner: the rows are the partner's pay (server-substituted), not the tenant's
+     * pricing. Shows name + amount only — no cost/profit/margin, no summary cards, no edits. */
+    partnerView?: boolean;
     onClose: () => void;
     onSave: (totalAmount: number) => void;
     onAddItem: (item: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
@@ -118,8 +121,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     isPrebook,
     isArchived = false,
     isUsCustomer = false,
-    readOnly = false,
+    readOnly: readOnlyProp = false,
     managedElsewhere,
+    partnerView = false,
     onClose,
     onSave,
     onAddItem,
@@ -128,6 +132,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     onGetSuggestedFuelCharge,
     showToast,
 }) => {
+    const readOnly = readOnlyProp || partnerView;
     const [priceBreakdowns, setPriceBreakdowns] = useState<PriceBreakdown[]>(initialBreakdowns);
 
     // Sync state when props change (e.g., when a new job is selected)
@@ -326,12 +331,13 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     const itemCountLabel = `${priceBreakdowns.length} ${priceBreakdowns.length === 1 ? 'item' : 'items'}`;
 
     return (
-        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label="Price Breakdown">
+        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label={partnerView ? 'Your Pay' : 'Price Breakdown'}>
             <DialogHeader
-                icon={<Icon lucide={readOnly ? Lock : ReceiptText}/>}
-                title="Price Breakdown"
+                icon={<Icon lucide={partnerView ? DollarSign : readOnly ? Lock : ReceiptText}/>}
+                title={partnerView ? 'Your Pay' : 'Price Breakdown'}
                 subtitle={
-                    managedElsewhere ? 'Managed on the parent job'
+                    partnerView ? 'What you will be paid for this job'
+                        : managedElsewhere ? 'Managed on the parent job'
                         : readOnly ? 'View only — this job is locked'
                         : 'Manage pricing components for this job'
                 }
@@ -353,7 +359,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                         </Alert>
                     </Box>
                 )}
-                {!isEditing && priceBreakdowns.length > 0 && (
+                {!isEditing && !partnerView && priceBreakdowns.length > 0 && (
                     <PricingSummaryCards totals={totals}/>
                 )}
 
@@ -363,7 +369,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                         {/* Action Bar */}
                         <Group justify="space-between" mb="md" wrap="nowrap">
                             <Group gap="sm" wrap="nowrap">
-                                <Text fw={600} fz="lg">Price Items</Text>
+                                <Text fw={600} fz="lg">{partnerView ? 'Pay Items' : 'Price Items'}</Text>
                                 {priceBreakdowns.length > 0 && (
                                     <Badge size="sm" color="gray" variant="light">{itemCountLabel}</Badge>
                                 )}
@@ -382,11 +388,15 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-0)'}}>
                                         <Table.Tr>
                                             <Table.Th c="dimmed">Item Name</Table.Th>
-                                            <Table.Th c="dimmed" ta="right">Revenue</Table.Th>
-                                            <Table.Th c="dimmed" ta="right">Cost</Table.Th>
-                                            <Table.Th c="dimmed" ta="right">Profit</Table.Th>
-                                            <Table.Th c="dimmed" ta="center">Margin</Table.Th>
-                                            <Table.Th c="dimmed" ta="center" w={100}>Actions</Table.Th>
+                                            <Table.Th c="dimmed" ta="right">{partnerView ? 'Amount' : 'Revenue'}</Table.Th>
+                                            {!partnerView && (
+                                                <>
+                                                    <Table.Th c="dimmed" ta="right">Cost</Table.Th>
+                                                    <Table.Th c="dimmed" ta="right">Profit</Table.Th>
+                                                    <Table.Th c="dimmed" ta="center">Margin</Table.Th>
+                                                    <Table.Th c="dimmed" ta="center" w={100}>Actions</Table.Th>
+                                                </>
+                                            )}
                                         </Table.Tr>
                                     </Table.Thead>
                                     <Table.Tbody>
@@ -417,6 +427,8 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                     <Table.Td ta="right">
                                                         <Text size="sm" fw={500}>{formatCurrency(item.amount || 0)}</Text>
                                                     </Table.Td>
+                                                    {!partnerView && (
+                                                    <>
                                                     <Table.Td ta="right">
                                                         <Text size="sm" c="dimmed">{formatCurrency(item.costAmount || 0)}</Text>
                                                     </Table.Td>
@@ -454,6 +466,8 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                             </ActionIcon>
                                                         </Group>
                                                     </Table.Td>
+                                                    </>
+                                                    )}
                                                 </Table.Tr>
                                             );
                                         })}
@@ -474,9 +488,11 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     <ThemeIcon size={72} radius="xl" variant="light" mx="auto" mb="md">
                                         <Icon lucide={ReceiptText} size={36}/>
                                     </ThemeIcon>
-                                <Text fz="lg" c="dimmed" mb="xs">No price items yet</Text>
+                                <Text fz="lg" c="dimmed" mb="xs">{partnerView ? 'No pay set yet' : 'No price items yet'}</Text>
                                 <Text size="sm" c="dimmed" mb="md">
-                                    {readOnly
+                                    {partnerView
+                                        ? 'Your pay for this job has not been set yet'
+                                        : readOnly
                                         ? 'There are no price breakdown items to view'
                                         : 'Start by adding your first price breakdown item'}
                                 </Text>

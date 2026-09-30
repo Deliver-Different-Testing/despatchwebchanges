@@ -756,6 +756,11 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> RecurringJobsExportCsv([FromBody] RecurringJobQueryRequest request)
     {
+        if (!await pricingPermissionService.CanExportPricingAsync())
+        {
+            return Forbid();
+        }
+
         try
         {
             var (fileBytes, fileName) = await jobReportService.GenerateRecurringJobsCsvAsync(request);
@@ -801,6 +806,11 @@ public class JobController(
 
     public async Task<IActionResult> PriceDetailReportDownload([FromQuery] PriceDetailReportRequest request)
     {
+        if (!await pricingPermissionService.CanExportPricingAsync())
+        {
+            return Forbid();
+        }
+
         try
         {
             var (fileBytes, fileName) = await priceReportService.GeneratePriceDetailReportAsync(request);
@@ -818,6 +828,11 @@ public class JobController(
 
     public async Task<IActionResult> ClientJobsReportDownload([FromQuery] ClientJobsReportRequest request)
     {
+        if (!await pricingPermissionService.CanExportPricingAsync())
+        {
+            return Forbid();
+        }
+
         try
         {
             var (fileBytes, fileName) = await jobReportService.GenerateClientJobsReportCsvAsync(request);

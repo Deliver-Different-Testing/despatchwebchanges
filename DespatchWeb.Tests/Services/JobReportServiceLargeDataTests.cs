@@ -2,6 +2,7 @@
 using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -23,15 +24,18 @@ public class JobReportServiceLargeDataTests
     private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
+    private readonly IScopeProvider _scopeProviderMock = Substitute.For<IScopeProvider>();
 
     private JobReportService CreateService()
     {
+        _scopeProviderMock.Scope.Returns(new ScopeContext(ClientTypeId: (int)ClientType.Tenant, ClientId: null, NpAgentId: null));
         return new JobReportService(
             _jobQueryRepositoryMock,
             _jobCommandRepositoryMock,
             _recurringJobRepositoryMock,
             _clock,
-            _s3ClientMock
+            _s3ClientMock,
+            _scopeProviderMock
         );
     }
 
