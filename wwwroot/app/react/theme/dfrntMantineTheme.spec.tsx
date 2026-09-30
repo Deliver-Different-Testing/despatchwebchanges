@@ -144,6 +144,31 @@ describe('dfrntCssVariablesResolver — fixed Mantine grays in dark mode', () =>
     });
 });
 
+describe('dfrntCssVariablesResolver — gray component roles in dark mode', () => {
+    const vars = dfrntCssVariablesResolver(dfrntTheme as never);
+    const dark = getMd3Scheme('dark');
+
+    it('gives color="gray" glyphs and labels a readable tone instead of the remapped surface tone', () => {
+        for (const role of ['light-color', 'text', 'outline']) {
+            const tone = vars.dark[`--mantine-color-gray-${role}`];
+            expect(tone).toBe(dark.onSurfaceVariant);
+            expect(contrastRatio(tone, dark.surface)).toBeGreaterThanOrEqual(4.5);
+        }
+    });
+
+    it('keeps the gray tinted and filled roles distinct from the page and legible', () => {
+        expect(vars.dark['--mantine-color-gray-filled']).toBe(dark.surfaceContainerHighest);
+        expect(contrastRatio('#ffffff', vars.dark['--mantine-color-gray-filled'])).toBeGreaterThanOrEqual(4.5);
+        expect(vars.dark['--mantine-color-gray-light']).toContain('color-mix');
+        expect(vars.dark['--mantine-color-gray-light-hover']).toContain('color-mix');
+    });
+
+    it('leaves the light scheme roles to Mantine', () => {
+        expect(vars.light['--mantine-color-gray-light-color']).toBeUndefined();
+        expect(vars.light['--mantine-color-gray-filled']).toBeUndefined();
+    });
+});
+
 describe('dfrntCssVariablesResolver — dialog planes', () => {
     const vars = dfrntCssVariablesResolver(dfrntTheme as never);
     const dark = getMd3Scheme('dark');

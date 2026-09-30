@@ -352,6 +352,16 @@ export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
             '--mantine-color-gray-2': dk.surfaceContainerHighest,
             '--mantine-color-gray-3': dk.outlineVariant,
             '--mantine-color-gray-4': dk.outline,
+            // Mantine derives `color="gray"` roles from gray-0/-8 in dark mode, which the remap
+            // above turned into near-page surface tones (glyphs vanished). Set the roles directly.
+            '--mantine-color-gray-light-color': dk.onSurfaceVariant,
+            '--mantine-color-gray-text': dk.onSurfaceVariant,
+            '--mantine-color-gray-outline': dk.onSurfaceVariant,
+            '--mantine-color-gray-outline-hover': `color-mix(in srgb, ${dk.onSurfaceVariant} 10%, transparent)`,
+            '--mantine-color-gray-light': `color-mix(in srgb, ${dk.onSurfaceVariant} 12%, transparent)`,
+            '--mantine-color-gray-light-hover': `color-mix(in srgb, ${dk.onSurfaceVariant} 20%, transparent)`,
+            '--mantine-color-gray-filled': dk.surfaceContainerHighest,
+            '--mantine-color-gray-filled-hover': dk.surfaceBright,
         },
     };
 };
