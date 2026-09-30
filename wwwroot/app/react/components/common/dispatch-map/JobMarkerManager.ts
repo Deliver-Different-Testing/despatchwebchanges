@@ -306,7 +306,7 @@ export class JobMarkerManager {
             contentEl.innerHTML = `
                 <strong>Job ${this.escapeHtml(job.jobNo)}</strong><br>
                 ${locationType} Location<br>
-                <small style="color: #666;">Click to open job details</small>
+                <small style="color: var(--map-muted, #666);">Click to open job details</small>
             `;
         }
 

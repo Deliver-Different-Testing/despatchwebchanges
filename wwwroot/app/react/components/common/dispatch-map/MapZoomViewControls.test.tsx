@@ -5,6 +5,7 @@ import {setupUser} from '../../../__testUtils__/setupUser';
 import {MapZoomViewControls} from './MapZoomViewControls';
 import type {MapZoomViewControlsHandle} from './MapZoomViewControls';
 import {renderWithMantine as renderWithTheme} from '../../../__testUtils__';
+import {ColorModeContext} from '../../../hooks/useColorMode';
 
 function createMockMap() {
     return {
@@ -21,7 +22,7 @@ function createMockLayers(opts: {includeTraffic?: boolean} = {}) {
     return {
         ...(includeTraffic ? {vector: {normal: {traffic: {id: 'traffic-layer'}}}} : {}),
         raster: {
-            normal: {base: {id: 'roadmap-layer'}},
+            normal: {base: {id: 'roadmap-layer'}, basenight: {id: 'roadmap-night-layer'}},
             satellite: {map: {id: 'satellite-layer'}},
             terrain: {map: {id: 'terrain-layer'}},
         },
@@ -36,6 +37,106 @@ function createMockPlatform() {
 }
 
 describe('MapZoomViewControls', () => {
+    describe('map theme picker', () => {
+        beforeEach(() => window.localStorage.clear());
+
+        it('pins the map dark while the app is light, and tints its surfaces', async () => {
+            const user = setupUser();
+            const el = document.createElement('div');
+            const map = {...createMockMap(), getElement: () => el};
+            renderWithTheme(<ColorModeContext.Provider value={{mode: 'light', preference: 'light', setPreference: jest.fn()}}>
+                <MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers()}/>
+            </ColorModeContext.Provider>);
+            expect(el.dataset.mapTheme).toBe('light');
+            expect(el.style.getPropertyValue('--map-surface')).toBe('#ffffff');
+
+            await user.click(screen.getByLabelText('Map theme'));
+            await user.click(await screen.findByText('Dark'));
+
+            expect(map.setBaseLayer).toHaveBeenLastCalledWith({id: 'roadmap-night-layer'});
+            expect(el.dataset.mapTheme).toBe('dark');
+            expect(el.style.getPropertyValue('--map-surface')).not.toBe('#ffffff');
+        });
+
+        it('pins the map light while the app is dark, and can return to matching the app', async () => {
+            const user = setupUser();
+            const map = createMockMap();
+            renderWithTheme(<ColorModeContext.Provider value={{mode: 'dark', preference: 'dark', setPreference: jest.fn()}}>
+                <MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers()}/>
+            </ColorModeContext.Provider>);
+
+            await user.click(screen.getByLabelText('Map theme'));
+            await user.click(await screen.findByText('Light'));
+            expect(map.setBaseLayer).toHaveBeenLastCalledWith({id: 'roadmap-layer'});
+
+            await user.click(screen.getByLabelText('Map theme'));
+            await user.click(await screen.findByText('Match app'));
+            expect(map.setBaseLayer).toHaveBeenLastCalledWith({id: 'roadmap-night-layer'});
+        });
+
+        it('can be hidden', () => {
+            renderWithTheme(<MapZoomViewControls map={createMockMap()} platform={null} defaultLayers={createMockLayers()} showThemePicker={false}/>);
+            expect(screen.queryByLabelText('Map theme')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('dark mode', () => {
+        beforeEach(() => window.localStorage.clear());
+
+        const inMode = (mode: 'light' | 'dark', ui: React.ReactElement) => (
+            <ColorModeContext.Provider value={{mode, preference: mode, setPreference: jest.fn()}}>{ui}</ColorModeContext.Provider>
+        );
+
+        it('uses the night roadmap layer when the app is dark, and leaves light maps untouched', () => {
+            const light = createMockMap();
+            const {unmount} = renderWithTheme(inMode('light',
+                <MapZoomViewControls map={light} platform={null} defaultLayers={createMockLayers()}/>));
+            expect(light.setBaseLayer).not.toHaveBeenCalled();
+            unmount();
+
+            const dark = createMockMap();
+            renderWithTheme(inMode('dark',
+                <MapZoomViewControls map={dark} platform={null} defaultLayers={createMockLayers()}/>));
+            expect(dark.setBaseLayer).toHaveBeenCalledWith({id: 'roadmap-night-layer'});
+        });
+
+        it('swaps the roadmap layer live when the mode changes', () => {
+            const map = createMockMap();
+            const layers = createMockLayers();
+            const el = (mode: 'light' | 'dark') => inMode(mode,
+                <MapZoomViewControls map={map} platform={null} defaultLayers={layers}/>);
+            const {rerender} = renderWithTheme(el('dark'));
+            map.setBaseLayer.mockClear();
+
+            rerender(el('light'));
+            expect(map.setBaseLayer).toHaveBeenLastCalledWith({id: 'roadmap-layer'});
+        });
+
+        it('keeps satellite when dark, and returns to the night roadmap from the view menu', async () => {
+            const user = setupUser();
+            const map = createMockMap();
+            renderWithTheme(inMode('dark',
+                <MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers()}/>));
+
+            await user.click(screen.getByLabelText('Choose view'));
+            await user.click(await screen.findByText('Satellite'));
+            expect(map.setBaseLayer).toHaveBeenLastCalledWith({id: 'satellite-layer'});
+
+            await user.click(screen.getByLabelText('Choose view'));
+            await user.click(await screen.findByText('Roadmap'));
+            expect(map.setBaseLayer).toHaveBeenLastCalledWith({id: 'roadmap-night-layer'});
+        });
+
+        it('falls back to the day roadmap when the SDK has no night layer', () => {
+            const map = createMockMap();
+            const layers = createMockLayers();
+            delete (layers.raster.normal as any).basenight;
+            renderWithTheme(inMode('dark', <MapZoomViewControls map={map} platform={null} defaultLayers={layers}/>));
+
+            expect(map.setBaseLayer).not.toHaveBeenCalled();
+        });
+    });
+
     it('renders zoom in, zoom out, traffic and choose view buttons', () => {
         renderWithTheme(<MapZoomViewControls map={createMockMap()} platform={null} defaultLayers={createMockLayers()}/>);
         expect(screen.getByLabelText('Zoom in')).toBeInTheDocument();

@@ -15,6 +15,7 @@ import type {
     MapInstance,
     Point,
 } from './HereMap.types';
+import {getMd3Scheme, type Md3Mode} from '../../../theme/md3';
 import {DEFAULT_MAP_CONFIG, getDefaultMapCenter, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES,} from './HereMap.types';
 
 declare const H: any;
@@ -761,6 +762,21 @@ export function getAllVisiblePoints(
 }
 
 /**
+ * Tint the map's own surfaces (hover tooltips) for `mode`. The maps' base layer is swapped
+ * separately; this sets CSS variables on the map element so DOM the marker managers append
+ * inside it follow the map's mode rather than the app's.
+ */
+export function applyMapTheme(element: HTMLElement | null | undefined, mode: Md3Mode): void {
+    if (!element) return;
+    const scheme = getMd3Scheme(mode);
+    element.dataset.mapTheme = mode;
+    element.style.setProperty('--map-surface', mode === 'dark' ? scheme.surfaceContainerHigh : scheme.surfaceContainerLowest);
+    element.style.setProperty('--map-on-surface', scheme.onSurface);
+    element.style.setProperty('--map-muted', scheme.onSurfaceVariant);
+    element.style.setProperty('--map-outline', mode === 'dark' ? scheme.outlineVariant : 'transparent');
+}
+
+/**
  * Build the marker tooltip element and attach it to the map container.
  *
  * Every marker manager needs the same bubble — the styling deliberately mimics the Google
@@ -779,7 +795,9 @@ export function createMapTooltipElement(map: {getElement(): HTMLElement | null})
     `;
     tooltip.innerHTML = `
         <div class="gm-style-iw" style="
-            background: white;
+            background: var(--map-surface, white);
+            color: var(--map-on-surface, inherit);
+            border: 1px solid var(--map-outline, transparent);
             border-radius: 8px;
             box-shadow: 0 2px 7px 1px rgba(0,0,0,0.3);
             padding: 12px;
@@ -797,7 +815,7 @@ export function createMapTooltipElement(map: {getElement(): HTMLElement | null})
             height: 0;
             border-left: 11px solid transparent;
             border-right: 11px solid transparent;
-            border-top: 11px solid white;
+            border-top: 11px solid var(--map-surface, white);
             filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
         "></div>
     `;

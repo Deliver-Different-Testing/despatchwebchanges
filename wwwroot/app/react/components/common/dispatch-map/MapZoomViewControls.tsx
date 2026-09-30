@@ -8,9 +8,11 @@
 
 import React, {useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {ActionIcon, Divider, Menu, Paper, Tooltip} from '@mantine/core';
-import {Check, Layers, Minus, Mountain, Plus, Satellite, TrafficCone, TriangleAlert} from 'lucide-react';
+import {Check, Layers, Minus, Monitor, Moon, Mountain, Plus, Satellite, Sun, TrafficCone, TriangleAlert} from 'lucide-react';
 import {IconMap} from '@tabler/icons-react';
 import {Icon} from '../icon/Icon';
+import {useMapTheme, type MapThemePreference} from '../../../hooks/useMapTheme';
+import {applyMapTheme} from '../here-map/hereMapUtils';
 
 const ICON_SIZE = 20;
 
@@ -58,6 +60,8 @@ interface MapZoomViewControlsProps {
     showTraffic?: boolean;
     showIncidents?: boolean;
     showViewPicker?: boolean;
+    /** Show the map light/dark picker. Defaults to true. */
+    showThemePicker?: boolean;
     /** Which edge of the map the control rail anchors to. Defaults to 'right'. */
     placement?: 'left' | 'right';
     /** Base view to apply on mount, once. Defaults to 'roadmap' (today's behaviour — no-op). */
@@ -79,11 +83,18 @@ const VIEW_OPTIONS: ReadonlyArray<{value: ViewType; label: string; icon: React.R
     {value: 'terrain', label: 'Terrain', icon: <Icon lucide={Mountain} size={16}/>},
 ];
 
-function getLayer(defaultLayers: any, view: ViewType): any | null {
+const THEME_OPTIONS: ReadonlyArray<{value: MapThemePreference; label: string; icon: React.ReactNode}> = [
+    {value: 'auto', label: 'Match app', icon: <Icon lucide={Monitor} size={16}/>},
+    {value: 'light', label: 'Light', icon: <Icon lucide={Sun} size={16}/>},
+    {value: 'dark', label: 'Dark', icon: <Icon lucide={Moon} size={16}/>},
+];
+
+/** HERE ships a night roadmap (`basenight`) but no night satellite or terrain. */
+function getLayer(defaultLayers: any, view: ViewType, dark = false): any | null {
     if (!defaultLayers?.raster) return null;
     switch (view) {
         case 'roadmap':
-            return defaultLayers.raster.normal?.base ?? null;
+            return (dark ? defaultLayers.raster.normal?.basenight : null) ?? defaultLayers.raster.normal?.base ?? null;
         case 'satellite':
             return defaultLayers.raster.satellite?.map ?? null;
         case 'terrain':
@@ -133,10 +144,15 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
         showTraffic = true,
         showIncidents = true,
         showViewPicker = true,
+        showThemePicker = true,
         placement = 'right',
         defaultView = 'roadmap',
         defaultTrafficEnabled = false,
     }, ref) {
+    const {mode, preference: themePreference, setPreference: setThemePreference} = useMapTheme();
+    const dark = mode === 'dark';
+    const [themeMenuOpened, setThemeMenuOpened] = useState(false);
+    const wasDarkRef = useRef(false);
     const isLeft = placement === 'left';
     const tooltipPlacement = isLeft ? 'right' : 'left';
     const [activeView, setActiveView] = useState<ViewType>('roadmap');
@@ -159,7 +175,7 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
     /** Switches the base layer, unless `view` is already active. */
     const applyView = (view: ViewType) => {
         if (view === activeView) return;
-        const layer = getLayer(defaultLayers, view);
+        const layer = getLayer(defaultLayers, view, dark);
         if (map && layer) {
             map.setBaseLayer(layer);
             setActiveView(view);
@@ -186,6 +202,22 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
     const handleToggleTraffic = () => applyTraffic(!trafficEnabled);
 
     useImperativeHandle(ref, () => ({setView: applyView, setTrafficEnabled: applyTraffic}));
+
+    // Tint the map's own surfaces (hover tooltips) to match.
+    useEffect(() => {
+        applyMapTheme(map?.getElement?.(), mode);
+    }, [map, mode]);
+
+    // Follow the map's colour mode on the roadmap view. Light on first mount is a
+    // no-op; satellite/terrain have no night variant so they are left alone.
+    useEffect(() => {
+        const changed = dark || wasDarkRef.current;
+        wasDarkRef.current = dark;
+        if (!map || !changed || activeView !== 'roadmap') return;
+        const layer = getLayer(defaultLayers, 'roadmap', dark);
+        if (layer && (dark ? layer !== defaultLayers?.raster?.normal?.base : true)) map.setBaseLayer(layer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to mode/map only
+    }, [map, dark]);
 
     // Apply the initial view/traffic the parent asked for, once, when the map first mounts —
     // e.g. a display-settings preset ("Live" = satellite + traffic) applied at page load.
@@ -304,6 +336,43 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
                                     }
                                     onClick={() => handleViewSelect(opt.value)}
                                     data-selected={activeView === opt.value}
+                                >
+                                    {opt.label}
+                                </Menu.Item>
+                            ))}
+                        </Menu.Dropdown>
+                    </Menu>
+                </>
+            )}
+            {showThemePicker && (
+                <>
+                    <Divider/>
+                    <Menu
+                        position={isLeft ? 'right-end' : 'left-end'}
+                        withinPortal
+                        onChange={setThemeMenuOpened}
+                    >
+                        <Menu.Target>
+                            <Tooltip label="Map theme" position={tooltipPlacement}>
+                                <RailButton
+                                    label="Map theme"
+                                    aria-haspopup="menu"
+                                    aria-expanded={themeMenuOpened}
+                                >
+                                    <Icon lucide={dark ? Moon : Sun} size={ICON_SIZE}/>
+                                </RailButton>
+                            </Tooltip>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                            {THEME_OPTIONS.map((opt) => (
+                                <Menu.Item
+                                    key={opt.value}
+                                    leftSection={opt.icon}
+                                    rightSection={
+                                        themePreference === opt.value ? <Icon lucide={Check} size={16}/> : undefined
+                                    }
+                                    onClick={() => setThemePreference(opt.value)}
+                                    data-selected={themePreference === opt.value}
                                 >
                                     {opt.label}
                                 </Menu.Item>
