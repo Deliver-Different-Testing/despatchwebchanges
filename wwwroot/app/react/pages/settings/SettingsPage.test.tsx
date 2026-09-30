@@ -17,6 +17,11 @@ import {
 } from '../../../functions/panelHideButtonSettings';
 import {deletePreference, getPreference, savePreference} from '../../services/preferencesApi';
 import {getTenantAddressFormatDefault} from '../../services/tenantSettingsApi';
+import {useColorMode} from '../../hooks/useColorMode';
+
+jest.mock('../../hooks/useColorMode', () => ({
+    useColorMode: jest.fn(),
+}));
 
 jest.mock('../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn(),
@@ -55,6 +60,8 @@ const mockGetPreference = getPreference as jest.Mock;
 const mockSavePreference = savePreference as jest.Mock;
 const mockDeletePreference = deletePreference as jest.Mock;
 const mockGetTenantAddressFormatDefault = getTenantAddressFormatDefault as jest.Mock;
+const mockUseColorMode = useColorMode as jest.Mock;
+const mockSetColorPreference = jest.fn();
 
 /** Pickup renders first, delivery second — both sides render an identically-labelled control per field. */
 function radioFor(side: 'pickup' | 'delivery', fieldLabel: string, lineLabel: 'Off' | 'Line 1' | 'Line 2') {
@@ -75,6 +82,7 @@ describe('SettingsPage', () => {
         mockSavePreference.mockResolvedValue(undefined);
         mockDeletePreference.mockResolvedValue(undefined);
         mockGetTenantAddressFormatDefault.mockResolvedValue(null);
+        mockUseColorMode.mockReturnValue({mode: 'light', preference: 'system', setPreference: mockSetColorPreference});
     });
 
     afterEach(() => {
@@ -88,6 +96,18 @@ describe('SettingsPage', () => {
         expect(screen.getByText('Auto-mate Settings')).toBeInTheDocument();
         expect(screen.getByText('Show Auto-mate briefings')).toBeInTheDocument();
         expect(screen.getByText('Open automatically')).toBeInTheDocument();
+    });
+
+    it('offers Light / Dark / System appearance, reflects the current pick and applies a change', async () => {
+        const user = setupUser();
+        renderWithMantine(<SettingsPage />);
+
+        expect(screen.getByText('Appearance')).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: 'Match device'})).toBeChecked();
+
+        await user.click(screen.getByRole('radio', {name: 'Dark'}));
+
+        expect(mockSetColorPreference).toHaveBeenCalledWith('dark');
     });
 
     it('seeds both Auto-mate toggles from the stored preferences', () => {

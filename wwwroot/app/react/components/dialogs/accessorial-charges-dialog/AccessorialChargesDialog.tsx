@@ -1248,7 +1248,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     px="lg"
                     py="md"
                     style={{
-                        backgroundColor: 'var(--mantine-color-white)',
+                        backgroundColor: 'var(--dd-surface-container-high)',
                         borderTop: '1px solid var(--mantine-color-gray-3)',
                     }}
                 >

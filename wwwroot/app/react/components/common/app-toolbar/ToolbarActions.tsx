@@ -197,7 +197,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                             <Indicator
                                 label={selectedCount > 0 ? selectedCount : undefined}
                                 disabled={selectedCount === 0}
-                                color="gray.0"
+                                color="var(--dd-on-shell)"
                                 size={16}
                                 offset={2}
                             >

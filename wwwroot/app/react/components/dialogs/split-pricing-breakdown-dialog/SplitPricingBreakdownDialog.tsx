@@ -941,7 +941,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                 py="md"
                 wrap="nowrap"
                 style={{
-                    backgroundColor: 'var(--mantine-color-white)',
+                    backgroundColor: 'var(--dd-surface-container-high)',
                     borderTop: '1px solid var(--mantine-color-gray-3)',
                 }}
             >

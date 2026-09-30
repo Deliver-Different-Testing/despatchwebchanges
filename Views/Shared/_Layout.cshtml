@@ -45,6 +45,18 @@
 
     <link rel="preload" as="image" href="/images/dfrnt_logo.png" fetchpriority="high">
 
+    <script>
+        // Resolve the saved colour mode before first paint so the loader doesn't flash
+        // light. A separate attribute from Mantine's: Angular-only pages never mount a
+        // React island, so they must stay light once the loader clears. Mirrors hooks/useColorMode.tsx (key, 'system' default).
+        (function () {
+            try {
+                var pref = localStorage.getItem('dd-color-mode');
+                var dark = pref === 'dark' || (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (dark) document.documentElement.setAttribute('data-dd-boot-scheme', 'dark');
+            } catch (e) { /* storage or matchMedia unavailable — stay light */ }
+        })();
+    </script>
     <style>
         /* DFRNT brand hex is inlined rather than tokenised here: this block paints
            before any bundle stylesheet and before app.ts defines the theme vars. */
@@ -57,6 +69,10 @@
 
         html, body {
             background-color: #f4f2f1;
+        }
+
+        html[data-dd-boot-scheme='dark'] .app-loader {
+            background-color: #2c2a30;
         }
 
         .app-loader {

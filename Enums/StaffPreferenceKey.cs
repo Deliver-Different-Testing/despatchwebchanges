@@ -20,4 +20,5 @@ public enum StaffPreferenceKey
     DispatchCourierDisplayMode,
     CourierMapDisplaySettings,
     ShowPanelHideButton,
+    Appearance,
 }

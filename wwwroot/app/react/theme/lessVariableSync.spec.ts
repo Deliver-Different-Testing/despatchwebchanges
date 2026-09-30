@@ -123,3 +123,13 @@ describe('LESS ↔ theme variable sync', () => {
         });
     });
 });
+
+describe('dashboard page canvas follows the colour scheme', () => {
+    const udispatch = fs.readFileSync(path.resolve(__dirname, '../../../css/udispatch.less'), 'utf-8');
+
+    it('repaints html/body from the theme surface once a React island has set the dark scheme', () => {
+        const rule = udispatch.match(/html\[data-mantine-color-scheme=['"]dark['"]\][^{]*\{[^}]*\}/);
+
+        expect(rule?.[0]).toMatch(/background:\s*var\(--dd-surface\)\s*!important/);
+    });
+});

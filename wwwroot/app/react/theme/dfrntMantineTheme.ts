@@ -336,6 +336,15 @@ export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
             '--dd-surface-container': dk.surfaceContainer, // #37353c cards
             '--dd-surface-container-high': dk.surfaceContainerHigh, // #413f47 menus/dialogs
             '--dd-outline-variant': dk.outlineVariant, // #56535c keyline divider / hairline border
+            // Mantine's gray-0..4 are fixed palette values that never flip, and the app uses
+            // them as quiet fills (zebra rows, headers, hovers) and hairline borders. Remap
+            // them onto the dark ladder so those follow the scheme. `white` is left alone:
+            // it is used as text on filled badges and buttons.
+            '--mantine-color-gray-0': dk.surfaceContainerLow,
+            '--mantine-color-gray-1': dk.surfaceContainerHigh,
+            '--mantine-color-gray-2': dk.surfaceContainerHighest,
+            '--mantine-color-gray-3': dk.outlineVariant,
+            '--mantine-color-gray-4': dk.outline,
         },
     };
 };

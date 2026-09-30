@@ -7,10 +7,10 @@
  * feed the resolved `mode` into `forceColorScheme` so there is one source of truth
  * — `DfrntMantineProvider` already does this.
  *
- * NB: dark mode is not user-selectable yet. Until the migration has converted the
- * always-on chrome and the high-traffic surfaces, a dark Mantine island sits on a
- * light AngularJS/Angular-Material page and reads as broken, so
- * `DfrntMantineProvider` pins the mode to light. See `DARK_MODE_ENABLED` there.
+ * Every island mounts its own provider, so a pick is broadcast on `window`
+ * (same document) and via the `storage` event (other tabs) to keep them in step.
+ * The pick is also saved as the `Appearance` StaffPreference so it follows the
+ * user across devices; localStorage stays the synchronous cache that avoids a flash.
  */
 import {
     createContext,
@@ -23,8 +23,12 @@ import {
     type ReactNode,
 } from 'react';
 import type {Md3Mode} from '../theme/md3';
+import {StaffPreferenceKey} from '../../enums/staff-preference-key.enum';
+import {getPreference, savePreference} from '../services/preferencesApi';
 
-const STORAGE_KEY = 'dd-color-mode';
+export const COLOR_MODE_STORAGE_KEY = 'dd-color-mode';
+const CHANGE_EVENT = 'dd-color-mode-change';
+const SERVER_SYNC_FLAG = '__ddColorModeServerSynced';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
 export type ColorModePreference = Md3Mode | 'system';
@@ -47,11 +51,15 @@ export function useColorMode(): ColorModeContextValue {
     return useContext(ColorModeContext);
 }
 
+function isPreference(value: unknown): value is ColorModePreference {
+    return value === 'light' || value === 'dark' || value === 'system';
+}
+
 function readStoredPreference(): ColorModePreference {
     if (typeof window === 'undefined') return 'system';
     try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
-        if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+        const stored = window.localStorage.getItem(COLOR_MODE_STORAGE_KEY);
+        if (isPreference(stored)) return stored;
     } catch {
         /* localStorage unavailable — fall through to default */
     }
@@ -73,9 +81,41 @@ function resolveMode(preference: ColorModePreference): Md3Mode {
 
 function persist(preference: ColorModePreference): void {
     try {
-        window.localStorage.setItem(STORAGE_KEY, preference);
+        window.localStorage.setItem(COLOR_MODE_STORAGE_KEY, preference);
     } catch {
         /* ignore */
+    }
+}
+
+function saveToServer(preference: ColorModePreference): void {
+    void savePreference(StaffPreferenceKey.Appearance, preference).catch(error =>
+        console.error('Failed to sync appearance preference to server:', error),
+    );
+}
+
+/** Only a signed-in staff member (Razor sets ContactID) has a server preference to sync. */
+function canSyncWithServer(): boolean {
+    return typeof window !== 'undefined' && Number((window as unknown as {ContactID?: number}).ContactID) > 0;
+}
+
+/**
+ * Reconciles with the server once per page (islands share one window): a saved
+ * server value wins and is broadcast; with none saved, the local value seeds it.
+ */
+async function syncFromServerOnce(): Promise<void> {
+    const flagged = window as unknown as Record<string, boolean>;
+    if (flagged[SERVER_SYNC_FLAG]) return;
+    flagged[SERVER_SYNC_FLAG] = true;
+    try {
+        const value = await getPreference(StaffPreferenceKey.Appearance);
+        if (isPreference(value)) {
+            persist(value);
+            window.dispatchEvent(new CustomEvent<ColorModePreference>(CHANGE_EVENT, {detail: value}));
+        } else {
+            saveToServer(readStoredPreference());
+        }
+    } catch (error) {
+        console.error('Failed to load appearance preference from server:', error);
     }
 }
 
@@ -89,6 +129,34 @@ export function ColorModeProvider({children}: {children: ReactNode}) {
         setPreferenceState(next);
         setModeState(resolveMode(next));
         persist(next);
+        saveToServer(next);
+        window.dispatchEvent(new CustomEvent<ColorModePreference>(CHANGE_EVENT, {detail: next}));
+    }, []);
+
+    // Adopt a pick made by another island (same document) or another tab.
+    useEffect(() => {
+        const adopt = (next: ColorModePreference) => {
+            preferenceRef.current = next;
+            setPreferenceState(next);
+            setModeState(resolveMode(next));
+        };
+        const onChange = (e: Event) => {
+            const next = (e as CustomEvent<unknown>).detail;
+            if (isPreference(next)) adopt(next);
+        };
+        const onStorage = (e: StorageEvent) => {
+            if (e.key === COLOR_MODE_STORAGE_KEY && isPreference(e.newValue)) adopt(e.newValue);
+        };
+        window.addEventListener(CHANGE_EVENT, onChange);
+        window.addEventListener('storage', onStorage);
+        return () => {
+            window.removeEventListener(CHANGE_EVENT, onChange);
+            window.removeEventListener('storage', onStorage);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (canSyncWithServer()) void syncFromServerOnce();
     }, []);
 
     // Follow OS theme changes live while the preference is 'system'.
