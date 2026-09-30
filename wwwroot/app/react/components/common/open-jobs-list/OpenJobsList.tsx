@@ -331,7 +331,7 @@ const DriverCard: React.FC<{
                         <Text fz="xs">
                             Last completed:{' '}
                             {initialDriver.lastCompleted === 'N/A' ? (
-                                <Text component="span" fz="xs" c="var(--mantine-color-yellow-6)">N/A</Text>
+                                <Text component="span" fz="xs" c="light-dark(var(--mantine-color-yellow-6), var(--mantine-color-yellow-4))">N/A</Text>
                             ) : (
                                 initialDriver.lastCompleted
                             )}

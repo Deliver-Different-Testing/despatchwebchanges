@@ -292,17 +292,17 @@ const SegmentDetailsRow: React.FC<{
                                     px={12}
                                     py={4}
                                     style={{
-                                        backgroundColor: 'var(--mantine-color-orange-0)',
+                                        backgroundColor: 'var(--mantine-color-orange-light)',
                                         border: '1px solid var(--mantine-color-orange-3)',
                                         borderRadius: 'var(--mantine-radius-sm)',
                                     }}
                                 >
-                                    <Icon tabler={IconPlaneTilt} size={16} style={{color: 'var(--mantine-color-orange-8)'}}/>
+                                    <Icon tabler={IconPlaneTilt} size={16} style={{color: 'var(--mantine-color-orange-light-color)'}}/>
                                     <div style={{textAlign: 'center'}}>
-                                        <Text fz={11} fw={600} c="var(--mantine-color-orange-8)" lh={1.2}>
+                                        <Text fz={11} fw={600} c="var(--mantine-color-orange-light-color)" lh={1.2}>
                                             {getConnectionTime(segment, segments[index + 1])}
                                         </Text>
-                                        <Text fz={9} c="var(--mantine-color-orange-6)" tt="uppercase" style={{letterSpacing: '0.5px'}}>
+                                        <Text fz={9} c="var(--mantine-color-orange-light-color)" tt="uppercase" style={{letterSpacing: '0.5px'}}>
                                             Layover
                                         </Text>
                                     </div>
@@ -779,7 +779,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                             {flight.airline}
                                                         </Text>
                                                         {flight.isCodeShare && (
-                                                            <Text fz={10} c="var(--mantine-color-yellow-6)">*</Text>
+                                                            <Text fz={10} c="light-dark(var(--mantine-color-yellow-6), var(--mantine-color-yellow-4))">*</Text>
                                                         )}
                                                     </Group>
                                                 </Table.Td>
@@ -828,7 +828,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                 </Table.Td>
                                                 <Table.Td>
                                                     {flight.stops === 0 ? (
-                                                        <Text fz={10} fw={600} c="var(--mantine-color-green-6)">
+                                                        <Text fz={10} fw={600} c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))">
                                                             Nonstop
                                                         </Text>
                                                     ) : (

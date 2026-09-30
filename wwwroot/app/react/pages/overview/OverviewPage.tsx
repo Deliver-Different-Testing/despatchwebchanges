@@ -319,7 +319,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     
     // Flex takes a responsive direction natively — no media query needed.
     return (
-        <Flex p={8} gap={16} direction={{base: 'column', md: 'row'}} bg="var(--mantine-color-body)">
+        <Flex mih="100%" p={8} gap={16} direction={{base: 'column', md: 'row'}} bg="var(--mantine-color-body)">
             {/* Left Panel — Filters */}
             <Box miw={250} style={{flex: '0 0 20%'}}>
                 <FilterPanel

@@ -62,9 +62,9 @@ function dropBoxStyle(isPodMode: boolean, isDragOver: boolean): React.CSSPropert
             ? 'var(--mantine-color-brand-6)'
             : 'var(--mantine-color-gray-4)';
     const background = isDragOver
-        ? 'var(--mantine-color-green-0)'
+        ? 'var(--mantine-color-green-light)'
         : isPodMode
-            ? 'var(--mantine-color-brand-0)'
+            ? 'var(--mantine-color-brand-light)'
             : 'var(--mantine-color-gray-0)';
     return {
         display: 'block',
@@ -133,7 +133,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                     onDragOver={upload.handleDragOver}
                     onDragLeave={upload.handleDragLeave}
                 >
-                    <Box mb="xs" c={isPodMode ? 'brand.6' : 'gray.6'} style={{display: 'flex', justifyContent: 'center'}}>
+                    <Box mb="xs" c={isPodMode ? 'light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))' : 'light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2))'} style={{display: 'flex', justifyContent: 'center'}}>
                         <Icon lucide={isPodMode ? Camera : CloudUpload} size={48}/>
                     </Box>
                     <Text>

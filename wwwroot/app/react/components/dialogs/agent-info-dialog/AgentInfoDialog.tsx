@@ -194,7 +194,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                         {/* Right Column - Airports */}
                         <Box style={{flex: '1 1 40%', minWidth: 0}}>
                             <Group gap="xs" mb="xs" wrap="nowrap">
-                                <Box c="green.6" style={{display: 'flex'}}>
+                                <Box c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))" style={{display: 'flex'}}>
                                     <Icon tabler={IconPlane} size={18}/>
                                 </Box>
                                 <Text size="sm" c="dimmed" fw={500}>Assigned Airports</Text>

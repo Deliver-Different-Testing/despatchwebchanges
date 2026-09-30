@@ -184,16 +184,21 @@ describe('RouterConfig', () => {
             });
         });
 
-        it('leaves /Nationwide on the classic page unless the operator opts in', () => {
-            // Nationwide is opt-in while the React page is unproven, so an
-            // operator who has never touched the toggle must not be redirected.
-            localStorage.clear();
+        it('keeps /Nationwide on the classic page only for operators who opted out', () => {
+            localStorage.setItem('nationwideBetaEnabled-0', 'false');
             const nw = registeredStates.get('nw');
 
             expect(nw.redirectTo({params: () => ({})})).toBeUndefined();
         });
 
-        it('redirects /Nationwide to the React page once opted in, keeping ?jobId', () => {
+        it('redirects /Nationwide to the React page by default', () => {
+            localStorage.clear();
+            const nw = registeredStates.get('nw');
+
+            expect(nw.redirectTo({params: () => ({})})).toEqual({state: 'nwV2', params: {}});
+        });
+
+        it('redirects /Nationwide to the React page, keeping ?jobId', () => {
             localStorage.setItem('nationwideBetaEnabled-0', 'true');
             const nw = registeredStates.get('nw');
 

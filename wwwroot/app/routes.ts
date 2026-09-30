@@ -540,10 +540,8 @@ class RouterConfig {
         this.$stateProvider.state("nw", {
             url: "/Nationwide?jobId",
             template: '<nationwide-component></nationwide-component>',
-            // Opt-in, unlike /(dispatch) and /jobSearch: the classic AngularJS
-            // page stays the default and this only redirects for operators who
-            // turned the new page on themselves. Handled at the route level so
-            // the React bundle is not fetched for everyone else.
+            // The React page (v2) is the default; only operators who opted out
+            // in the dashboard settings stay on the classic AngularJS page.
             redirectTo: (trans: any) => {
                 if (!getNationwideBetaEnabled()) return undefined;
                 const jobId = trans.params()?.jobId;
@@ -1278,7 +1276,7 @@ class RouterConfig {
                 <div style="height: 100%; position: relative;">
                     <react-app-shell section="Dashboards" title="Overview"></react-app-shell>
                     <div class="scrollable-container" style="height: ${BELOW_APP_BAR_HEIGHT}; overflow: auto;">
-                        <div id="react-overview"></div>
+                        <div id="react-overview" style="height: 100%;"></div>
                     </div>
                 </div>
             `,

@@ -433,7 +433,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                         <Text size="sm" c="dimmed">{formatCurrency(item.costAmount || 0)}</Text>
                                                     </Table.Td>
                                                     <Table.Td ta="right">
-                                                        <Text size="sm" fw={600} c={profit >= 0 ? 'green.6' : 'red.6'}>
+                                                        <Text size="sm" fw={600} c={profit >= 0 ? 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))' : 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))'}>
                                                             {formatCurrency(profit)}
                                                         </Text>
                                                     </Table.Td>
@@ -521,7 +521,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     borderBottom: '1px solid var(--mantine-color-default-border)',
                                 }}
                             >
-                                <ThemeIcon size={40} radius="md" variant="default" c="brand.6">
+                                <ThemeIcon size={40} radius="md" variant="default" c="light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))">
                                     <Icon lucide={isNew ? Plus : Pencil}/>
                                 </ThemeIcon>
                                 <Text fw={600} fz="lg">{isNew ? 'Add New Price Item' : 'Edit Price Item'}</Text>
@@ -646,7 +646,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                         <Group gap={32} justify="center">
                                             <Box ta="center">
                                                 <Text size="sm" c="dimmed" mb={4}>Profit</Text>
-                                                <Text fz="h3" fw={700} c={formProfit >= 0 ? 'green.6' : 'red.6'}>
+                                                <Text fz="h3" fw={700} c={formProfit >= 0 ? 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))' : 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))'}>
                                                     {formatCurrency(formProfit)}
                                                 </Text>
                                             </Box>
@@ -732,7 +732,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     py="md"
                     wrap="nowrap"
                     style={{
-                        backgroundColor: 'var(--mantine-color-white)',
+                        backgroundColor: 'var(--dd-dialog-section)',
                         borderTop: '1px solid var(--mantine-color-gray-3)',
                     }}
                 >

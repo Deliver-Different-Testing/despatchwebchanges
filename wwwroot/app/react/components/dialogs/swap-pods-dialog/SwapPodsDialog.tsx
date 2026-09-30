@@ -24,12 +24,12 @@ const JobChip: React.FC<{label: string; value: string}> = ({label, value}) => (
         style={{
             flex: 1,
             borderRadius: 'var(--mantine-radius-sm)',
-            backgroundColor: 'var(--mantine-color-brand-0)',
+            backgroundColor: 'var(--mantine-color-brand-light)',
             border: '1px solid var(--mantine-color-brand-3)',
         }}
     >
         <Text fz="xs" c="dimmed">{label}</Text>
-        <Text fz="lg" fw={700} c="brand.7">{value}</Text>
+        <Text fz="lg" fw={700} c="var(--mantine-color-brand-light-color)">{value}</Text>
     </Box>
 );
 

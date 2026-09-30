@@ -11,11 +11,13 @@
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Badge, Box, Button, Group, Stack, Text, Title} from '@mantine/core';
-import {ArrowLeftRight, EyeOff, MapPin, RotateCcw, Save, TriangleAlert} from 'lucide-react';
-import {SectionHeading, SettingRow} from '../../components/common/settings-controls/SettingsControls';
+import {ArrowLeftRight, EyeOff, MapPin, Palette, RotateCcw, Save, TriangleAlert} from 'lucide-react';
+import {SectionHeading, SettingRadioGroup, SettingRow} from '../../components/common/settings-controls/SettingsControls';
 import {AutoMateLogo} from '../../components/common/auto-mate-logo/AutoMateLogo';
 import {Icon} from '../../components/common/icon/Icon';
 import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../../components/common/action-button';
+import {useColorMode, type ColorModePreference} from '../../hooks/useColorMode';
+import {getNationwideBetaEnabled} from '../nationwide/lib/betaPreference';
 import {aiAccentColor} from '../../theme/designTokens';
 import {
     isAiEnabled,
@@ -40,7 +42,18 @@ import {registerUnsavedChangesGuard, type LeaveDecision} from '../../services/un
 
 const EMPTY_FORMAT: AddressLineFormat = {line1: [], line2: []};
 
+const APPEARANCE_OPTIONS: {value: ColorModePreference; label: string}[] = [
+    {value: 'system', label: 'Match device'},
+    {value: 'light', label: 'Light'},
+    {value: 'dark', label: 'Dark'},
+];
+
 export const SettingsPage: React.FC = () => {
+    const {preference: colorPreference, setPreference: setColorPreference} = useColorMode();
+    const darkModeBlocked = !getNationwideBetaEnabled();
+    const appearanceOptions = darkModeBlocked
+        ? APPEARANCE_OPTIONS.map(o => ({...o, disabled: o.value !== 'light'}))
+        : APPEARANCE_OPTIONS;
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
     const [aiAutoOpen, setAiAutoOpenState] = useState<boolean>(isAiAutoOpenEnabled);
     const [hideButtonEnabled, setHideButtonEnabledState] = useState<boolean>(isPanelHideButtonEnabled);
@@ -264,6 +277,26 @@ export const SettingsPage: React.FC = () => {
                         onToggle={toggleAiAutoOpen}
                     />
                 </Stack>
+            </Box>
+
+            <Box mt={32}>
+                <SectionHeading
+                    icon={<Icon lucide={Palette} size={20}/>}
+                    title="Appearance"
+                />
+
+                <SettingRadioGroup
+                    title="Theme"
+                    description={darkModeBlocked
+                        ? `You have Nationwide v1 turned on, which doesn't support dark mode, so the theme
+                            is locked to Light. Switch to Nationwide v2 in the Nationwide dashboard
+                            settings to enable the dark and device options.`
+                        : `Choose light or dark, or follow your device's setting. Applies to your
+                            account only.`}
+                    value={colorPreference}
+                    options={appearanceOptions}
+                    onChange={setColorPreference}
+                />
             </Box>
 
             <Box mt={32}>

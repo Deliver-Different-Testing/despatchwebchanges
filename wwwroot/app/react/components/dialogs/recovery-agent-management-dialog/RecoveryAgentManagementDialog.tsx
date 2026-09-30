@@ -373,7 +373,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     borderBottom: '1px solid var(--mantine-color-default-border)',
                                 }}
                             >
-                                <Box c="brand.6" style={{display: 'flex'}}>
+                                <Box c="light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))" style={{display: 'flex'}}>
                                     <Icon tabler={IconPackage} size={22}/>
                                 </Box>
                                 <Text fw={600}>Package Information</Text>
@@ -436,7 +436,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                         {/* Recovery Agents Section */}
                         <Group justify="space-between" mb="md" wrap="nowrap">
                             <Group gap="sm" wrap="nowrap">
-                                <Box c="brand.6" style={{display: 'flex'}}>
+                                <Box c="light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))" style={{display: 'flex'}}>
                                     <Icon lucide={Users}/>
                                 </Box>
                                 <Text fw={600} fz="lg">Recovery Agents</Text>
@@ -682,7 +682,7 @@ function FormBar({icon, title}: {icon: React.ReactNode; title: string}): React.R
                 borderBottom: '1px solid var(--mantine-color-default-border)',
             }}
         >
-            <Box c="brand.6" style={{display: 'flex'}}>{icon}</Box>
+            <Box c="light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))" style={{display: 'flex'}}>{icon}</Box>
             <Text fw={600}>{title}</Text>
         </Group>
     );
