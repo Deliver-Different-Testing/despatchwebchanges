@@ -98,9 +98,9 @@ const priorityColor: Partial<Record<NonNullable<Task['priority']>, string>> = {
  * number for all three is what makes a "filled" chip disappear.
  */
 const factTone: Record<string, {bg: string; fg: string}> = {
-    gray: {bg: 'gray.3', fg: 'gray.8'},
-    red: {bg: 'red.2', fg: 'red.9'},
-    orange: {bg: 'orange.2', fg: 'orange.9'},
+    gray: {bg: 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))', fg: 'light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-0))'},
+    red: {bg: 'light-dark(var(--mantine-color-red-2), var(--mantine-color-red-9))', fg: 'light-dark(var(--mantine-color-red-9), var(--mantine-color-red-1))'},
+    orange: {bg: 'light-dark(var(--mantine-color-orange-2), var(--mantine-color-orange-9))', fg: 'light-dark(var(--mantine-color-orange-9), var(--mantine-color-orange-1))'},
 };
 
 /**

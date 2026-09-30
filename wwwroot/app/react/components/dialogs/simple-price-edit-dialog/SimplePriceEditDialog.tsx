@@ -215,7 +215,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 borderWidth: 2,
                                 cursor: (disabled || readOnly) ? 'default' : 'pointer',
                                 opacity: disabled ? 0.5 : 1,
-                                backgroundColor: isSelected ? alpha(modeColor, 0.06) : 'var(--mantine-color-white)',
+                                backgroundColor: isSelected ? alpha(modeColor, 0.06) : 'var(--dd-dialog-section)',
                             } as React.CSSProperties}
                         >
                             <Group gap={14} wrap="nowrap">

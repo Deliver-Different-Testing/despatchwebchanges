@@ -285,10 +285,10 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             p={12}
             mb={16}
             wrap="nowrap"
-            c="var(--mantine-color-red-8)"
+            c="var(--mantine-color-red-light-color)"
             style={{
                 borderRadius: 'var(--mantine-radius-md)',
-                background: 'var(--mantine-color-red-0)',
+                background: 'var(--mantine-color-red-light)',
             }}
         >
             <Icon lucide={CircleAlert} size={20}/>
@@ -594,12 +594,12 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                 return (
                                     <Table.Tr
                                         key={`${row.jobId}_${row.field}`}
-                                        bg={row.skipped ? 'var(--mantine-color-yellow-0)' : undefined}
+                                        bg={row.skipped ? 'var(--mantine-color-yellow-light)' : undefined}
                                     >
                                         <Table.Td fw={500}>
                                             <Group gap={4} wrap="nowrap">
                                                 {row.skipped && (
-                                                    <Box c="yellow.7" style={{display: 'flex'}}>
+                                                    <Box c="var(--mantine-color-yellow-light-color)" style={{display: 'flex'}}>
                                                         <Icon lucide={TriangleAlert} size={16}/>
                                                     </Box>
                                                 )}
@@ -608,7 +608,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                         </Table.Td>
                                         <Table.Td>
                                             {row.skipped
-                                                ? <Text fz="xs" c="yellow.8">{row.error || 'Skipped'}</Text>
+                                                ? <Text fz="xs" c="var(--mantine-color-yellow-light-color)">{row.error || 'Skipped'}</Text>
                                                 : row.field}
                                         </Table.Td>
                                         {/* Tabular figures so the columns line up down the page. */}

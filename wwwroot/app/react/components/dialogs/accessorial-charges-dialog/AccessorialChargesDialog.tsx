@@ -915,7 +915,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                     <Table.Tr
                                                         key={charge.jobAccessorialChargeId}
                                                         style={row.isDirty
-                                                            ? {backgroundColor: 'var(--mantine-color-orange-0)'}
+                                                            ? {backgroundColor: 'var(--mantine-color-orange-light)'}
                                                             : undefined}
                                                     >
                                                         <Table.Td>
@@ -1129,7 +1129,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                         style={{
                                                             cursor: 'pointer',
                                                             backgroundColor: isSelected
-                                                                ? 'var(--mantine-color-green-0)'
+                                                                ? 'var(--mantine-color-green-light)'
                                                                 : undefined,
                                                         }}
                                                     >

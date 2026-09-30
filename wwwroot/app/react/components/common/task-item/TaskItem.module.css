@@ -79,8 +79,8 @@
 }
 
 .due[data-due-state='done'] {
-    background-color: var(--mantine-color-green-2);
-    color: var(--mantine-color-green-9);
+    background-color: var(--mantine-color-green-light-hover);
+    color: var(--mantine-color-green-light-color);
 }
 
 .due:hover,

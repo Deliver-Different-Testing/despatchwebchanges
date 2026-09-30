@@ -62,9 +62,9 @@ function dropBoxStyle(isPodMode: boolean, isDragOver: boolean): React.CSSPropert
             ? 'var(--mantine-color-brand-6)'
             : 'var(--mantine-color-gray-4)';
     const background = isDragOver
-        ? 'var(--mantine-color-green-0)'
+        ? 'var(--mantine-color-green-light)'
         : isPodMode
-            ? 'var(--mantine-color-brand-0)'
+            ? 'var(--mantine-color-brand-light)'
             : 'var(--mantine-color-gray-0)';
     return {
         display: 'block',

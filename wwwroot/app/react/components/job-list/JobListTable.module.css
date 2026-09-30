@@ -148,7 +148,7 @@
  */
 
 .row[data-variant='selected'] {
-    background-color: var(--mantine-color-brand-0);
+    background-color: var(--mantine-color-brand-light);
     box-shadow: inset 3px 0 0 0 var(--mantine-color-brand-6);
 }
 
@@ -157,7 +157,7 @@
 }
 
 .row[data-variant='selected']:hover {
-    background-color: var(--mantine-color-brand-1);
+    background-color: var(--mantine-color-brand-light-hover);
 }
 
 .row[data-variant='related'] {
@@ -173,45 +173,45 @@
 }
 
 .row[data-variant='direct-chilled'] {
-    background-color: var(--mantine-color-grape-0);
+    background-color: var(--mantine-color-grape-light);
     border-left: 3px solid var(--mantine-color-grape-5);
 }
 
 .row[data-variant='direct-chilled'] > td {
-    color: var(--mantine-color-grape-7);
+    color: var(--mantine-color-grape-light-color);
     font-weight: 600;
 }
 
 .row[data-variant='direct-chilled']:hover {
-    background-color: var(--mantine-color-grape-1);
+    background-color: var(--mantine-color-grape-light-hover);
 }
 
 .row[data-variant='direct'] {
-    background-color: var(--mantine-color-red-0);
+    background-color: var(--mantine-color-red-light);
     border-left: 3px solid var(--mantine-color-red-5);
 }
 
 .row[data-variant='direct'] > td {
-    color: var(--mantine-color-red-7);
+    color: var(--mantine-color-red-light-color);
     font-weight: 600;
 }
 
 .row[data-variant='direct']:hover {
-    background-color: var(--mantine-color-red-1);
+    background-color: var(--mantine-color-red-light-hover);
 }
 
 .row[data-variant='chilled'] {
-    background-color: var(--mantine-color-cyan-0);
+    background-color: var(--mantine-color-cyan-light);
     border-left: 3px solid var(--mantine-color-cyan-5);
 }
 
 .row[data-variant='chilled'] > td {
-    color: var(--mantine-color-cyan-8);
+    color: var(--mantine-color-cyan-light-color);
     font-weight: 600;
 }
 
 .row[data-variant='chilled']:hover {
-    background-color: var(--mantine-color-cyan-1);
+    background-color: var(--mantine-color-cyan-light-hover);
 }
 
 .row[data-variant='multipart'] {
@@ -234,13 +234,13 @@
 
 /* Additive: overlays whichever category variant applies. */
 .row[data-multiselected='true'] {
-    background-color: var(--mantine-color-grape-1);
+    background-color: var(--mantine-color-grape-light-hover);
     border-left: 4px solid var(--mantine-color-grape-6);
 }
 
 .row[data-multiselected='true']:hover {
-    background-color: var(--mantine-color-grape-2);
-    box-shadow: 0 1px 3px var(--mantine-color-grape-2);
+    background-color: var(--mantine-color-grape-light-hover);
+    box-shadow: 0 1px 3px var(--mantine-color-grape-light-hover);
 }
 
 /* Additive: unread outweighs every other weight rule. */
@@ -255,7 +255,7 @@
 
 @keyframes newJobHighlight {
     0% {
-        background-color: var(--mantine-color-green-1);
+        background-color: var(--mantine-color-green-light-hover);
     }
     100% {
         background-color: transparent;
@@ -269,7 +269,7 @@
 
 @keyframes dispatchedHighlight {
     0% {
-        background-color: var(--mantine-color-blue-1);
+        background-color: var(--mantine-color-blue-light-hover);
     }
     100% {
         background-color: transparent;
@@ -303,7 +303,7 @@
 }
 
 .lateBadgePickup {
-    background-color: var(--mantine-color-red-7);
+    background-color: var(--mantine-color-red-light-color);
 }
 
 .lateBadgeDelivery {

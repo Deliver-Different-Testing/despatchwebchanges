@@ -732,7 +732,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     py="md"
                     wrap="nowrap"
                     style={{
-                        backgroundColor: 'var(--mantine-color-white)',
+                        backgroundColor: 'var(--dd-dialog-section)',
                         borderTop: '1px solid var(--mantine-color-gray-3)',
                     }}
                 >

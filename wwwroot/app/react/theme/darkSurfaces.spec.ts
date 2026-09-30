@@ -34,3 +34,38 @@ describe('hand-fixed surfaces follow the colour scheme', () => {
         expect(layout).toMatch(/dd-color-mode/);
     });
 });
+
+function sourceFiles(dir: string): string[] {
+    return fs.readdirSync(dir, {withFileTypes: true}).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return sourceFiles(full);
+        return /\.(tsx?|css)$/.test(entry.name) && !/\.(test|spec)\./.test(entry.name) ? [full] : [];
+    });
+}
+
+describe('tinted surfaces use Mantine scheme-aware variants', () => {
+    // `--mantine-color-<hue>-0..2` are fixed pale tints; they stay pale in dark mode.
+    // `-light` / `-light-hover` / `-light-color` flip with the scheme.
+    const PALE_TINT = /--mantine-color-(brand|blue|green|red|orange|yellow|grape|reflex|cyan|teal|violet|pink|indigo|lime)-[0-2]/;
+
+    it('has no fixed pale-tint variable left in non-test source', () => {
+        const offenders = sourceFiles(react).filter((file) => PALE_TINT.test(fs.readFileSync(file, 'utf-8')));
+
+        expect(offenders.map((f) => path.relative(react, f))).toEqual([]);
+    });
+});
+
+describe('dialog planes follow the scheme', () => {
+    const styles = read('components/dialogs/shared/mantine/styles.ts');
+
+    it.each([
+        ['dialogHeaderBg', 'var(--dd-dialog-bar)'],
+        ['dialogContentBg', 'var(--dd-dialog-body)'],
+    ])('%s is the scheme-aware token', (name, value) => {
+        expect(styles).toContain(`export const ${name} = '${value}'`);
+    });
+
+    it('paints section papers from the section token, not white', () => {
+        expect(styles).toMatch(/bg: 'var\(--dd-dialog-section\)'/);
+    });
+});

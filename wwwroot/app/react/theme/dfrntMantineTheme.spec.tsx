@@ -144,6 +144,20 @@ describe('dfrntCssVariablesResolver — fixed Mantine grays in dark mode', () =>
     });
 });
 
+describe('dfrntCssVariablesResolver — dialog planes', () => {
+    const vars = dfrntCssVariablesResolver(dfrntTheme as never);
+    const dark = getMd3Scheme('dark');
+
+    it('lifts dialog sections above the header/footer bars, and the bars above the body, in both schemes', () => {
+        expect(vars.dark['--dd-dialog-section']).toBe(dark.surfaceContainerHigh);
+        expect(vars.dark['--dd-dialog-bar']).toBe(dark.surfaceContainer);
+        expect(vars.dark['--dd-dialog-body']).toBe(dark.surfaceContainerLow);
+        expect(vars.light['--dd-dialog-section']).toBe('var(--mantine-color-white)');
+        expect(vars.light['--dd-dialog-bar']).toBe('var(--mantine-color-gray-1)');
+        expect(vars.light['--dd-dialog-body']).toBe('var(--mantine-color-gray-2)');
+    });
+});
+
 describe('DFRNT brand contrast', () => {
     it.each([
         ['Cyan', dfrntBrand.cyan],
