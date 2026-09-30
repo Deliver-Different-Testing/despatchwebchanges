@@ -189,7 +189,8 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                           * The Indicator carries no `c`: style props land on its root, which
                           * wraps the glyph, so a colour there leaks onto the eye through
                           * currentColor and puts it out of step with the rest of the bar. The
-                          * badge digits come from the theme's `autoContrast` against the pill.
+                          * badge digits are pinned to the bar colour: autoContrast can't
+                          * read the pill's `var()` fill, so it guessed white-on-white in dark mode.
                           */}
                         {loading ? (
                             <Loader size={TOOLBAR_ICON_SIZE} color="currentColor" role="progressbar" aria-label="Loading views" />
@@ -198,6 +199,8 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                                 label={selectedCount > 0 ? selectedCount : undefined}
                                 disabled={selectedCount === 0}
                                 color="var(--dd-on-shell)"
+                                autoContrast={false}
+                                styles={{indicator: {color: 'var(--dd-shell-bar)'}}}
                                 size={16}
                                 offset={2}
                             >

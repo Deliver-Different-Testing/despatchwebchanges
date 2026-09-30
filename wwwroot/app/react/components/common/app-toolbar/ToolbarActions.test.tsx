@@ -163,6 +163,8 @@ describe('ViewsMenu', () => {
         expect(screen.getByRole('button')).toBeInTheDocument();
         // 2 views are selected
         expect(screen.getByText('2')).toBeInTheDocument();
+        // Digits take the bar colour so they read against the pill in both colour modes.
+        expect(screen.getByText('2').closest('.mantine-Indicator-indicator')).toHaveStyle({color: 'var(--dd-shell-bar)'});
     });
 
     it('should open menu with views and a selection header that clears', async () => {
