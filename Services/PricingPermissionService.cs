@@ -50,6 +50,9 @@ public sealed class PricingPermissionService(
     public Task<bool> CanModifyPriceBreakdownAsync() => Task.FromResult(!CallerIsNetworkPartner);
 
     /// <inheritdoc />
+    public Task<bool> CanExportPricingAsync() => Task.FromResult(!CallerIsNetworkPartner);
+
+    /// <inheritdoc />
     public async Task ValidateJobAccessAsync(int jobId)
     {
         // Staff members have access to all jobs

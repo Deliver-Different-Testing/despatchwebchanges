@@ -311,6 +311,17 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         Assert.False(await service.CanModifyPriceBreakdownAsync());
     }
 
+    // A network partner must not be able to export/download anything containing tenant revenue -
+    // the job search CSV, client jobs report or price detail report all carry ucjbAmount/RawBaseAmount.
+    [Fact]
+    public async Task NetworkPartner_CannotExportPricing()
+    {
+        SetupScope((int)ClientType.NetworkPartner, npAgentId: 42);
+        var service = CreateService();
+
+        Assert.False(await service.CanExportPricingAsync());
+    }
+
     [Theory]
     [InlineData((int)ClientType.Internal)]
     [InlineData((int)ClientType.Customer)]
@@ -323,6 +334,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
 
         Assert.True(await service.CanModifyPricesAsync());
         Assert.True(await service.CanModifyPriceBreakdownAsync());
+        Assert.True(await service.CanExportPricingAsync());
     }
 
     [Theory]

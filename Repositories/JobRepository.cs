@@ -3109,6 +3109,11 @@ public partial class JobRepository(
 
         var tenantTimeZone = _infoService.GetTenantTimeZone();
 
+        // A network partner never sees tenant revenue or the tenant's cost-side fields in an
+        // export they keep. Amount/Fuel become their own pay; the tenant-only columns go null
+        // rather than duplicating it under a different name.
+        var isNetworkPartner = liveJobsContext.CurrentIsNetworkPartner;
+
         var voidStatusName = await GetVoidStatusNameAsync(liveJobsContext);
         return
         [
@@ -3118,12 +3123,12 @@ public partial class JobRepository(
                 ParentId = j.ParentId,
                 JobNumber = j.JobNumber,
                 BookDate = j.BookDate,
-                Amount = j.Amount,
-                Fuel = j.Fuel,
-                Ppd = j.Ppd,
-                CourierPayment = j.CourierPayment,
-                CourierFuel = j.CourierFuel,
-                CourierBonus = j.CourierBonus,
+                Amount = isNetworkPartner ? (j.CourierPayment ?? 0) : j.Amount,
+                Fuel = isNetworkPartner ? (j.CourierFuel ?? 0) : j.Fuel,
+                Ppd = isNetworkPartner ? null : j.Ppd,
+                CourierPayment = isNetworkPartner ? null : j.CourierPayment,
+                CourierFuel = isNetworkPartner ? null : j.CourierFuel,
+                CourierBonus = isNetworkPartner ? null : j.CourierBonus,
                 Quantity = j.Quantity,
                 Weight = j.Weight,
                 Size = j.Size,
@@ -3161,7 +3166,7 @@ public partial class JobRepository(
                 InvoiceDate = j.InvoiceDate,
                 IsArchived = j.IsArchived,
                 LoggedInContact = j.LoggedInContact,
-                RawBaseAmount = j.RawBaseAmount,
+                RawBaseAmount = isNetworkPartner ? null : j.RawBaseAmount,
                 CourierCode = j.CourierCode,
                 Void = j.Void,
                 OurReference = j.OurReference,
@@ -4001,6 +4006,9 @@ public partial class JobRepository(
                 FromAirportId = j.FromAirportId,
                 PickupContact = j.PickupFromContact,
                 DeliveryContact = j.DeliverToContact
+                // No Amount here today - the live branch above substitutes it for a network
+                // partner (CurrentIsNetworkPartner). If Amount is ever added to this archived
+                // projection, it needs the same substitution or it reopens the revenue leak.
             };
 
         return await archivedJobQuery.FirstOrDefaultAsync();

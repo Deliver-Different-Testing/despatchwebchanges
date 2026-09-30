@@ -2,6 +2,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -17,6 +18,10 @@ public class JobRepositoryNetworkPartnerPricingTests : IAsyncDisposable
 {
     private const int OwnAgentId = 77;
     private const int OtherAgentId = 88;
+
+    // An id guaranteed not to collide with whatever GetEconomySpeedIdAsync resolves against an
+    // empty tucJobType table, so CalculateRemainTime's economy-speed branch never engages.
+    private const int NonEconomySpeedId = 999999;
 
     private readonly SqliteTestDatabase _db = new();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
@@ -217,5 +222,89 @@ public class JobRepositoryNetworkPartnerPricingTests : IAsyncDisposable
 
         Assert.Equal([-1, -2], rows.Select(r => r.ChargeId).ToArray());
         Assert.Equal(["Base", "Fuel"], rows.Select(r => r.Name).ToArray());
+    }
+
+    // ── Job search export CSV (Q18) ────────────────────────────────────────
+
+    private async Task SeedForDownloadAsync()
+    {
+        await using var seed = _db.CreateContext();
+        seed.TucJobs.Add(new TucJob
+        {
+            UcjbId = 400, UcjbNumber = "NP-DOWNLOAD", NpAgentId = OwnAgentId,
+            UcjbDate = TestDates.Today, UcjbTime = TestDates.Today, UcjbSpeed = NonEconomySpeedId,
+            UcjbAmount = 200.00m, CourierPayment = 114.00m, CourierFuel = 16.00m,
+            CourierBonus = 5.00m, RawBaseAmount = 180.00m, FuelSurchargeAmount = 16.00m,
+            PpdexclusiveAmount = 12.00m
+        });
+        await seed.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_AsNetworkPartner_SubstitutesPayAndDropsTenantFields()
+    {
+        await SeedForDownloadAsync();
+        await using var context = CreateContext(NpScope(OwnAgentId));
+        var repo = CreateRepository(context);
+
+        var rows = await repo.PodSearchDownloadAsync(
+            [], [], string.Empty, string.Empty, TestDates.Today.AddDays(-1), TestDates.Today.AddDays(1), []);
+
+        var row = Assert.Single(rows);
+        Assert.Equal(114.00m, row.Amount);
+        Assert.Equal(16.00m, row.Fuel);
+        Assert.Null(row.Ppd);
+        Assert.Null(row.RawBaseAmount);
+        Assert.Null(row.CourierBonus);
+        Assert.Null(row.CourierPayment);
+        Assert.Null(row.CourierFuel);
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_AsTenant_StillReturnsRevenueAndCostFields()
+    {
+        await SeedForDownloadAsync();
+        await using var context = CreateContext(TenantScope());
+        var repo = CreateRepository(context);
+
+        var rows = await repo.PodSearchDownloadAsync(
+            [], [], string.Empty, string.Empty, TestDates.Today.AddDays(-1), TestDates.Today.AddDays(1), []);
+
+        var row = Assert.Single(rows);
+        Assert.Equal(200.00m, row.Amount);
+        Assert.Equal(16.00m, row.Fuel);
+        Assert.Equal(12.00m, row.Ppd);
+        Assert.Equal(180.00m, row.RawBaseAmount);
+        Assert.Equal(5.00m, row.CourierBonus);
+        Assert.Equal(114.00m, row.CourierPayment);
+        Assert.Equal(16.00m, row.CourierFuel);
+    }
+
+    // ── Pure: list-row amount substitution (unit-testable without a database) ─
+    // Note: PodSearchAsync (the Job Search grid, /Job/PODSearch) never populates Amount at all -
+    // JobMappings.PodSearchMapping has no Amount field, for any caller - so there's nothing to
+    // substitute there. The real list leak is JobDispatchMapping (Dispatch + Nationwide, via
+    // DespatchQry below), and the CSV export (PodSearchDownloadAsync, covered above).
+
+    [Fact]
+    public void ApplyNetworkPartnerAmounts_SetsTotalOrNullWhenNotVisible()
+    {
+        var jobs = new List<DispatchJobViewModel>
+        {
+            new() { Id = 100, Amount = 200.00m },
+            new() { Id = 101, Amount = 999.00m },
+            new() { Id = 102, Amount = 50.00m }
+        };
+        var pay = new Dictionary<int, NetworkPartnerPay>
+        {
+            [100] = new(57.00m, 8.50m),
+            [101] = new(120.00m, 0m)
+        };
+
+        BaseJobRepository.ApplyNetworkPartnerAmounts(jobs, pay);
+
+        Assert.Equal(65.50m, jobs[0].Amount);
+        Assert.Equal(120.00m, jobs[1].Amount);
+        Assert.Null(jobs[2].Amount);
     }
 }

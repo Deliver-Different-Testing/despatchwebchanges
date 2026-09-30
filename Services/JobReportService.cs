@@ -24,7 +24,8 @@ public sealed class JobReportService(
     IJobCommandRepository jobCommandRepository,
     IRecurringJobRepository recurringJobRepository,
     ITenantClock clock,
-    IAmazonS3 s3Client) : IJobReportService
+    IAmazonS3 s3Client,
+    IScopeProvider scopeProvider) : IJobReportService
 {
     private static readonly string[] ValidFileExtensions = [".xls", ".xlsx", ".csv"];
 
@@ -62,7 +63,8 @@ public sealed class JobReportService(
             request.JobId
         );
 
-        var csvBytes = await GeneratePodSearchCsvAsync(data);
+        var isNetworkPartner = scopeProvider.Scope?.IsNetworkPartner ?? false;
+        var csvBytes = await GeneratePodSearchCsvAsync(data, isNetworkPartner);
         var filename = $"Jobs {currentDate:yyyyMMddHHmmssfff}.csv";
 
         // Fire and forget S3 upload to avoid blocking the response
@@ -79,15 +81,17 @@ public sealed class JobReportService(
         };
     }
 
-    private static async Task<byte[]> GeneratePodSearchCsvAsync(IEnumerable<dynamic> data)
+    private static async Task<byte[]> GeneratePodSearchCsvAsync(IEnumerable<dynamic> data, bool isNetworkPartner)
     {
+        var columns = isNetworkPartner ? NpPodSearchCsvColumns : PodSearchCsvColumns;
+
         using var stream = new MemoryStream();
         await using var writer = new StreamWriter(stream, new UTF8Encoding(true));
 
-        await writer.WriteLineAsync(string.Join(",", PodSearchCsvColumns.Keys));
+        await writer.WriteLineAsync(string.Join(",", columns.Keys));
         foreach (var item in data)
         {
-            var values = PodSearchCsvColumns.Values.Select(extractor => extractor(item) ?? string.Empty);
+            var values = columns.Values.Select(extractor => extractor(item) ?? string.Empty);
             await writer.WriteLineAsync(string.Join(",", values));
         }
 
@@ -148,6 +152,16 @@ public sealed class JobReportService(
         ["LoggedInContact"] = x => FormatCsvField(x.LoggedInContact),
         ["Void"] = x => x.Void?.ToString()
     };
+
+    // A network partner's own pay already reads as Amount/Fuel (substituted in
+    // JobRepository.PodSearchDownloadAsync) - these tenant-worded cost columns would either
+    // duplicate that under a confusing name or expose figures that are never theirs to see.
+    private static readonly HashSet<string> TenantOnlyPodSearchColumns =
+        ["Ppd", "CourierPayment", "CourierFuel", "CourierBonus", "RawBaseAmount"];
+
+    private static readonly Dictionary<string, Func<dynamic, string>> NpPodSearchCsvColumns = PodSearchCsvColumns
+        .Where(kvp => !TenantOnlyPodSearchColumns.Contains(kvp.Key))
+        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
     /// <summary>
     /// Generates a client jobs report in CSV format based on search criteria.

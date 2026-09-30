@@ -98,34 +98,8 @@ public partial class JobRepository
             jobIds.AddRange(group.RelatedJobs.Select(r => r.Id));
         }
 
-        var payByJob = await GetNetworkPartnerPayByJobAsync(jobIds);
+        var payByJob = await GetNetworkPartnerPayByJobAsync(Context, jobIds);
         ApplyNetworkPartnerCharges(group, payByJob);
-    }
-
-    private async Task<IReadOnlyDictionary<int, NetworkPartnerPay>> GetNetworkPartnerPayByJobAsync(
-        IReadOnlyCollection<int> jobIds)
-    {
-        var live = await Context.TucJobs
-            .Where(j => jobIds.Contains(j.UcjbId))
-            .Select(j => new { j.UcjbId, Pay = new NetworkPartnerPay(j.CourierPayment ?? 0, j.CourierFuel ?? 0) })
-            .ToListAsync();
-
-        var result = live.ToDictionary(x => x.UcjbId, x => x.Pay);
-
-        var missing = jobIds.Where(id => !result.ContainsKey(id)).ToList();
-        if (missing.Count > 0)
-        {
-            var archived = await Context.TucJobArchives
-                .Where(j => missing.Contains(j.UcjbId))
-                .Select(j => new { j.UcjbId, Pay = new NetworkPartnerPay(j.CourierPayment ?? 0, j.CourierFuel ?? 0) })
-                .ToListAsync();
-            foreach (var row in archived)
-            {
-                result[row.UcjbId] = row.Pay;
-            }
-        }
-
-        return result;
     }
 
     /// <summary>Pure: the charge on each job becomes the partner's total pay for that job, or null when
