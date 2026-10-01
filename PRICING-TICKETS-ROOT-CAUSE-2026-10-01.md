@@ -404,6 +404,130 @@ Open question for Marcus/Deane: does "per item" mean bags (BDO rows) or job quan
 
 ---
 
+## US cross-check
+
+Kerran, you wrote the US rating path and the breakdown functions, so this section doesn't describe them. It only lists where NZ diverges from them, because several of these tickets are that divergence.
+
+### The three differences that matter
+
+| | US (Excelerator path) | NZ today |
+|---|---|---|
+| **Breakdown rows at insert** | Always written. `DD_stpJob_Excelerator_Insert` calls `DD_InsertPricingBreakdown` (`MIG/20260925132718_FixErroneousAH.sql:580,591`), including a `Manually Rated=` line for fixed amounts (`:237`). | The core on-demand insert `UTL_stpJob_Insert` writes none (`CRE:29774+`). Rows exist only where another path adds them: bulk/schedule, prebook, a later Despatch re-rate, or the API after booking (not visible locally). |
+| **Breakdown is authoritative** | `TR_PricingBreakdown_tucJob_Sync` derives `ucjbAmount`, `CourierPayment`, `FuelSurchargeAmount` and `CourierFuel` from the rows. | Same trigger, but for NZ it derives only `ucjbAmount` (`MIG/20260728102944_...:34-37`). Courier pay comes from the percentage cascade trigger; fuel and raw base from separate `tucJob` triggers. |
+| **One engine, one call** | `UTL_fncJob_ExceleratorRate` returns Rate, Fuel, DriverPay, DriverFuel and the line items together (`FixErroneousAH:241`), and quote, insert and re-rate all use it. | Quote, insert and re-rate use different procs that take different inputs. Insert calls the scalar `UTL_fncJob_Rate` and discards the description (`CRE:29930`). |
+
+### Ticket by ticket
+
+| # | US behaviour | What that means for the NZ fix |
+|---|---|---|
+| 820 | **US had the same bug and it was fixed on 17 Sep.** `MIG/20260917150000_WireCubicListIntoRateDescribed.sql`: "per-package cubic excess charging silently never applied when repricing through this path". It adds `@CubicList` to `DD_stpJob_Rate_Described`, sourced in despatchweb via `BaseJobRepository.GetCubicListAsync`. | Port the same pattern to the NZ re-rate: `NET_stpJob_BulkZoneRate_Described`, `fncT_StpBulkZoneRate_GetAmountByJobID` and the `UrgentRerateObject` payload. The NZ dispatcher `NET_stpJob_Rate_Described_All` has no `CubicList` reference at all. |
+| 208 | The US schedule insert rates through the P2P engine: `DD_stpBulkScheduleJob_Insert` calls `DD_stpGetExceleratorRates` (`MIG/20260925100100_...:321`). | The NZ twin `WS_stpBulkScheduleJob_Insert` needs the equivalent branch for P2P-grouped speeds. The US proc is the reference implementation. |
+| 225 | After-hours via ExtraCharges carries a per-charge fuel flag (`ExtraCharges.ApplyAfterHoursFuel`, `MIG/20260914160000_...:157,303`). | The NZ block bolted onto the same function (`FixErroneousAH:965-1008`) bypasses that and adds `tblAfterHours.Amount` flat. Either apply MFV/PPD in that block or move NZ after-hours onto the ExtraCharges row. |
+| 213 | Driver pay is a rate on the rate card (`ZoneCombo.DriverRate`, `DistanceRates.BaseChargeDP`) and lands in `CostAmount` per line. | NZ courier pay is a percentage of raw base with no zone term. A zone-level courier % is natural under the US model and awkward under the NZ cascade. |
+| 219 | A non-commissionable, non-fuel line is just a row with `CostAmount` NULL and a name without "Fuel". | On NZ the same row raises `ucjbAmount`, hence raw base, hence courier pay. This ticket needs the NZ derivation changed or the charge kept off the job. |
+| 215 | Fuel is a line; re-rating regenerates it. | NZ reconstructs raw base by subtracting stored fuel from stored totals, which is where the stale-value defects come from. |
+| 218 | **Same exposure.** `DD_stpJob_CreateReturnParent` is shared and has no country branch (`CRE:4923-5159`); the parent gets a snapshot and no rows. | Not an NZ-only problem. Worth checking whether US return parents show the same drift; the fix belongs in the shared proc. |
+| 224 | US re-rate bypasses the API (`JobRepository.RatingOperations.cs:407`) and passes the job's date. | NZ goes via the API and substitutes `tenantNow` for schedule jobs (`RateJobService.cs:854`). The `RatedManually` probe skip is in shared React code and applies to both. |
+| 216 | Not checked on the US side. | The silent-$0 paths are in the NZ legacy and regional functions. |
+| 217 | Not checked on the US side. | The item-insert proc `NET_stpBulkJobItems_Insert` is shared, so the id-collision hypothesis would apply to US bulk imports too. |
+| 226 | `UTL_fncJob_ExtraRate` has `DangerousGoodsCharge` and `DryIceCharge x @DryIceWeight` from ExtraCharges (`MIG/20260914160000_...:162-165,266-271`). | The NZ flight proc `NP_stpGetNationwideRates` hard-codes 83. The US ExtraCharges columns are a ready-made model for the rate table Deane proposed. |
+
+**Takeaway:** #820, #208, #225 and #226 each already have a working answer on the US path. #218 and possibly #217 are shared defects, not NZ ones.
+
+---
+
+## Adding price breakdowns to all NZ jobs
+
+The question: if every NZ job carried PricingBreakdown rows the way US jobs do, would these tickets go away? Short answer: it removes the cause of two, shrinks two more, and makes the rest diagnosable, but only if it is done as "one engine returns the breakdown", not as "also write some rows".
+
+This builds on `pricing-breakdown-gap-analysis.md` (18 Mar), which sets out the four-phase path (populate, reconcile, edit path, make authoritative). That doc's open question 1, the source of the courier-pay trigger, is now answered: the cascade is in `MIG/20260930090000_NetworkPartnerCourierPaymentTriggers.sql:61-71` and summarised under #213 above.
+
+### Where NZ jobs get rows today
+
+| Path | Rows written? | Evidence |
+|---|---|---|
+| On-demand insert (`UTL_stpJob_Insert`) | No | No PricingBreakdown reference in the proc; it calls scalar `UTL_fncJob_Rate` and adds fuel to the total (`CRE:29908-29932`) |
+| Booking page, after insert | Reported as `Base=Amount~0.00` | Second-hand: `extra-charges-deep-dive.md`, path 2. Booking and API source not local |
+| Bulk / schedule (`WS_stpJob_Insert` bulk branches) | Yes, via `PricingBreakdownBulk` | `MIG/20260908142042_BulkContactID.sql:407, 3742-3751, 3887-3896` |
+| Prebook / recurring template | Yes | same file `:612` |
+| Recurring insert-to-live | Yes, copied from template, then Fuel and PPD lines replaced | `MIG/20260820121330_...:12-85` |
+| Despatch re-rate | Yes, rebuilt from the API's description | `DW/Repositories/JobRepository.RatingOperations.cs:264, 345-350` |
+| Truck, nationwide, from-parent inserts | Calls present but commented out | `CRE:21317, 21332, 31915, 31930, 33596, 33614, 34090, 34107` |
+| Return parent | No | `CRE:4923-5159` |
+| Baggage (World Tracer) | Inferred no | `WS_stpJob_Insert` only touches the table in its bulk branches |
+
+So coverage is partial and depends on how a job was created and whether anyone has re-rated it since. That inconsistency is itself a cause: the sync trigger sets `ucjbAmount = SUM(rows)`, so the first write of any row to a job that had none replaces the amount with just that row (the #219 blocker, and #218 H2/H4).
+
+A coverage query to size the gap before deciding anything:
+
+```sql
+SELECT g.GroupingName, jt.ucjtName,
+       COUNT(*) AS Jobs,
+       SUM(CASE WHEN pb.JobID IS NULL THEN 1 ELSE 0 END) AS NoBreakdown,
+       SUM(CASE WHEN pb.JobID IS NOT NULL AND ABS(pb.Total - j.ucjbAmount) > 0.01 THEN 1 ELSE 0 END) AS RowsDontSum
+FROM tucJob j
+JOIN tucJobType jt ON jt.ucjtID = j.ucjbSpeed
+LEFT JOIN tucJobTypeGrouping g ON g.GroupingID = jt.GroupingId
+LEFT JOIN (SELECT JobID, SUM(ChargeAmount) AS Total FROM PricingBreakdown GROUP BY JobID) pb
+       ON pb.JobID = j.ucjbID
+WHERE j.ucjbVoid = 0
+GROUP BY g.GroupingName, jt.ucjtName
+ORDER BY NoBreakdown DESC;
+```
+
+### What has to change
+
+**1. The legacy engine's output is not in the parser's format.**
+`UTL_fncJob_RateAndDescription` already itemises, but as display text: `'Plus Weight Excess = $' + ...`, `'Pickup Afterhours Fee = $' + ...`, `'Saturday Fee = $5.25'` (`CRE:24767-26300`). `DD_InsertPricingBreakdown` splits on `CHAR(13)`, `=` and `~` and expects `Name=Amount~Cost` (`MIG/20260224141710_AccessorialJobListPB.sql:12-80`). The legacy lines have spaces, a `$`, and no cost part. Either the function gains a second, parser-format output column, or an adapter normalises it. A second column is cleaner and leaves the display text alone.
+
+**2. Fuel and PPD are folded into each line, not separate.**
+Legacy lines are `...WithSurcharge` amounts: fuel is applied per component inside the function, and again on the whole amount at insert (`CRE:29930-29931`). The NZ triggers then back fuel and PPD out of the total to get raw base (`MIG/20260810100000_...:311-317`). For rows to be useful they need raw base lines plus explicit `Fuel` and `PPD` lines, which is the shape `UTL_stpJob_ApplyRecurringFuelReprice` already writes for recurring jobs. That proc is the working precedent on NZ.
+
+**3. Every insert path has to write rows, in the same transaction as the job.**
+`UTL_stpJob_Insert` is the main gap; the commented-out calls in the truck, nationwide and from-parent procs are the rest. A job that exists without rows, even briefly, is exposed to the overwrite problem above.
+
+**4. Parent and child placement needs one rule.**
+Split and nationwide parents hold rows on the parent with `ChildJobID`. Return legs hold their own rows and the parent holds none. `GetEffectiveJobId` (`DW/EntityClasses/DespatchContext.Partial.cs:55-60`) assumes the first model for every family. Pick one model per relationship type and make the trigger, the proc and `DW` agree. Section 6 of the gap-analysis doc proposes the data model.
+
+**5. Decide whether cost moves onto the rows (phase 4 of the gap-analysis doc).**
+- **Charge side only** (rows written everywhere, NZ courier pay still from the percentage cascade): low risk, no change to what couriers are paid. Fixes the overwrite problem and gives an audit trail. Does not help #213 or #219.
+- **Cost side too** (NZ branch of the sync trigger derives `CourierPayment` and fuel from rows, as US does): this is what makes #213 and #219 clean. It means retiring `tucJob_InsertUpdate_CalculateCourierPayment` and the raw-base trigger for NZ, and it collides directly with the NP courier-pay triggers on `feat/np-courier-pay-triggers`, which extend that cascade. That branch should merge, or be reshaped, before this starts.
+
+**6. Edits and re-rates have to regenerate rows, not totals.**
+`RepriceJobWithBaseAmountAsync`, `SimpleRepriceJobManualAsync` and the bulk price upload write `UcbkAmount`/`ucjbAmount` directly and set `RatedManually`. Under an authoritative breakdown they would write a `Manually Rated=` row instead, as the US insert does. That also gives `RatedManually` a single meaning (theme 2).
+
+**7. Backfill.**
+Archived and in-flight jobs without rows either stay as they are (reports must tolerate both) or get a synthetic single `Base` row. `sp_JobArchive` already copies rows to `PricingBreakdownArchive`, and disables the sync trigger while it runs.
+
+### What it would and wouldn't fix
+
+| Ticket | Effect | Why |
+|---|---|---|
+| 219 | Unblocked | Accessorial no longer overwrites a job with no rows; with cost on rows, a `CostAmount` NULL line pays no courier |
+| 213 | Unblocked, cost side only | Zone rate can carry its own driver rate per line |
+| 215 | Mostly | Raw base and fuel are rows, so nothing is reconstructed from stale totals. The `RatedManually` skip still needs its own fix |
+| 218 | Partly | Removes the "first write replaces the snapshot" failure once the parent/child rule is settled. The courier-app overwrite (H1) is separate |
+| 225 | Only if after-hours moves to ExtraCharges | The bug is in the engine, not in storage |
+| 217 | Diagnosis | The extra item would be visible as a line, with a timestamp |
+| 820, 208, 216, 224, 226 | No | Wrong inputs, wrong engine, silent zero, flag handling and a hard-coded fee. A breakdown of the wrong price is still the wrong price |
+
+### Recommendation
+
+Treat this as two pieces of work, in this order:
+
+1. **Unify the NZ rating call first.** One function used by quote, insert and re-rate, returning total plus parser-format lines, taking the same inputs each time (cubic and weight lists, booked time, schedule context). This is what closes #820, #224 and the re-rate half of #217, and it is the US design.
+2. **Then write rows on every NZ insert, charge side only.** Low risk once step 1 exists, because the lines come from the same call that produced the amount.
+3. **Cost side last, and only after the NP pay branch has landed.** It changes how couriers are paid and needs its own reconciliation run against the current cascade before switching over.
+
+Doing step 2 without step 1 would store, faithfully, the output of three paths that disagree.
+
+Open questions for Kerran:
+- Does the WebAPI already transform the legacy description into parser format for the re-rate path? If so that adapter may be reusable at insert.
+- Are the commented-out `DD_InsertPricingBreakdown` calls in the truck, nationwide and from-parent procs disabled for a known reason?
+- Is `tblSetting.CountryCode` really NULL on NZ staging? If so the NZ branches of the sync trigger and the schedule insert are not being exercised there.
+
+---
+
 ## Suggested order
 
 1. **Run the confirm queries** for #218 (relationship-type flag), #217 (max id comparison), #215 (template raw-base mismatch) and #213 (`BulkZoneRate` rows). Each is one SELECT and settles the leading hypothesis.
