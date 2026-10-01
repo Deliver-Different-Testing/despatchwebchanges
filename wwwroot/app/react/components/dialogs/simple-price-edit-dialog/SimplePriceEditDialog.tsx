@@ -1,10 +1,3 @@
-/**
- * SimplePriceEditDialog Component
- *
- * React replacement for the AngularJS simple-price-edit-dialog.
- * Provides a fallback pricing interface for non-US customers without price breakdowns.
- * Supports three pricing modes: recalculate, raw base amount, and gross amount.
- */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Button, Divider, Group, Loader, Radio, Stack, Text, TextInput, ThemeIcon, alpha, NumberInput} from '@mantine/core';
@@ -400,7 +393,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     const renderLoadingState = () => (
         <Stack align="center" justify="center" gap="md" py={60} px="lg">
             <Loader size={48} role="progressbar" aria-label="Saving price" />
-            <Text fw={500} c="dimmed">Saving price...</Text>
+            <Text fw={500} c="dimmed">Saving price…</Text>
         </Stack>
     );
 

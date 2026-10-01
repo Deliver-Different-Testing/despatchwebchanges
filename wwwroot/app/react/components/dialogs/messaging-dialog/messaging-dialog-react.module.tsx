@@ -1,11 +1,3 @@
-/**
- * Messaging Dialog React Module
- *
- * Entry point for the React-based Messaging Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- * Uses native React API services instead of AngularJS dependencies.
- */
-
 import React from 'react';
 import { MessagingDialog } from './MessagingDialog';
 import { OpenMessagingDialogOptions } from './types';

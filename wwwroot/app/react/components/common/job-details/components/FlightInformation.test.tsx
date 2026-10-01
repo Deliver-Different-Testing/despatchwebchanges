@@ -1,7 +1,3 @@
-/**
- * FlightInformation Component Tests
- */
-
 import React from 'react';
 import {screen} from '@testing-library/react';
 import { setupUser } from '../../../../__testUtils__/setupUser';
@@ -163,7 +159,7 @@ describe('FlightInformation', () => {
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        expect(screen.getByText('Checking...')).toBeInTheDocument();
+        expect(screen.getByText('Checking…')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /checking/i})).toBeDisabled();
 
         resolve!({active: true});

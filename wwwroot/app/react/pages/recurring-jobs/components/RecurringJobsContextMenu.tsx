@@ -1,14 +1,3 @@
-/**
- * Recurring Jobs Context Menu Component
- *
- * Right-click context menu for recurring job actions. Surfaces:
- *  - Add Pickup / Delivery Stop (always)
- *  - Insert to live (Manual-mode rows only — opens the date+scope modal)
- *  - Mode transitions tailored to the row's current RecurringMode:
- *      Active   → Move to Manual, Deactivate
- *      Manual   → Insert to live, Activate, Deactivate
- *      Inactive → Activate, Move to Manual
- */
 
 import React from 'react';
 import {Menu} from '@mantine/core';
@@ -126,7 +115,7 @@ export const RecurringJobsContextMenu: React.FC<RecurringJobsContextMenuProps> =
                             onClick={handleInsertToLive}
                             leftSection={<Icon lucide={PlayCircle} size={16} color="var(--mantine-color-yellow-6)"/>}
                         >
-                            Insert to live...
+                            Insert to live…
                         </Menu.Item>
                     </>
                 )}

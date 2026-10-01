@@ -122,7 +122,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSubmit}
-                confirmLabel={isLoading ? 'Saving...' : 'Save'}
+                confirmLabel={isLoading ? 'Saving…' : 'Save changes'}
                 confirmDisabled={!selectedItem}
                 submitting={isLoading}
             />

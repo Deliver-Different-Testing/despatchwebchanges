@@ -1,7 +1,3 @@
-/**
- * SaveLayoutDialog Component
- */
-
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Paper, TextInput} from '@mantine/core';
 import {LayoutGrid, Save} from 'lucide-react';

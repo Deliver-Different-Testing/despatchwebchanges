@@ -1,9 +1,3 @@
-/**
- * Recurring Jobs Table Component
- *
- * Data table with sorting, pagination, and row selection for recurring jobs.
- */
-
 import React from 'react';
 import {ActionIcon, Box, Text, Tooltip} from '@mantine/core';
 import {Power, Repeat} from 'lucide-react';
@@ -207,7 +201,7 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
             rowKey={(job) => job.id}
             totalCount={totalCount}
             isLoading={isLoading}
-            loadingMessage="Loading recurring jobs..."
+            loadingMessage="Loading recurring jobs…"
             sort={sort}
             onSortChange={(next) => onSortChange(next as RecurringJobSort)}
             page={page}

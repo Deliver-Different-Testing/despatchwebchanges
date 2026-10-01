@@ -95,7 +95,7 @@ describe('SwapPodsDialog', () => {
         renderWithTheme(<SwapPodsDialog {...props} />);
         fireEvent.change(screen.getByLabelText(/Second job number/i), { target: { value: 'JOB-002' } });
         await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-        expect(screen.getByText('Validating...')).toBeInTheDocument();
+        expect(screen.getByText('Validating…')).toBeInTheDocument();
 
         // Clean up: resolve the pending promise
         await act(async () => { resolveValidation(true); });
@@ -185,7 +185,7 @@ describe('SwapPodsDialog', () => {
         });
         await advanceToPhase2(props);
         await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
-        expect(screen.getByText('Swapping...')).toBeInTheDocument();
+        expect(screen.getByText('Swapping…')).toBeInTheDocument();
 
         // Clean up: resolve the pending promise
         await act(async () => { resolveSwap(); });

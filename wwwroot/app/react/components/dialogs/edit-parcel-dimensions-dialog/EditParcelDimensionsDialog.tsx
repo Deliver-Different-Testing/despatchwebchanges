@@ -735,7 +735,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         onCancel={handleCancel}
                         onConfirm={handleSubmit}
                         cancelLabel={readOnly ? 'Close' : 'Cancel'}
-                        confirmLabel={partnerMode ? 'Continue' : 'Save'}
+                        confirmLabel={partnerMode ? 'Continue' : 'Save changes'}
                         confirmDisabled={hasEmptyWeights || weightMismatch || cubicMismatch}
                         submitting={isLoading}
                         hideConfirm={readOnly}

@@ -1,12 +1,3 @@
-/**
- * SearchSelect tests.
- *
- * The component replaces the object-valued MUI `Autocomplete`, so these pin the
- * parts that differ from Mantine's string-only `Autocomplete`: the value is the
- * option object, typing invalidates the previous pick, and the search is
- * debounced and abortable.
- */
-
 import React, {useState} from 'react';
 import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {SearchSelect} from './SearchSelect';

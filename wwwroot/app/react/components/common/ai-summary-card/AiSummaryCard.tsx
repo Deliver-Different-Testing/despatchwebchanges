@@ -258,7 +258,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                     {!loading && summary && (
                         <CopyButton value={buildPlainTextCopy(summary)} timeout={2000}>
                             {({copied, copy}) => (
-                                <Tooltip label={copied ? 'Copied!' : 'Copy briefing'}>
+                                <Tooltip label={copied ? 'Copied' : 'Copy briefing'}>
                                     <ActionIcon
                                         variant="subtle"
                                         color={copied ? 'green' : 'gray'}

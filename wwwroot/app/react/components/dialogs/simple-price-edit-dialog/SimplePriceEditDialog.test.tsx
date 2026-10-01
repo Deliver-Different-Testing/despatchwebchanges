@@ -262,7 +262,7 @@ describe('SimplePriceEditDialog', () => {
 
             // During loading, we show a loading state — buttons are hidden
             // Verify loading indicator is shown instead
-            expect(screen.getByText('Saving price...')).toBeInTheDocument();
+            expect(screen.getByText('Saving price…')).toBeInTheDocument();
         });
     });
 
@@ -299,7 +299,7 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
-            expect(await screen.findByText('Saving price...')).toBeInTheDocument();
+            expect(await screen.findByText('Saving price…')).toBeInTheDocument();
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
         });
 
@@ -471,7 +471,7 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
-            await screen.findByText('Saving price...');
+            await screen.findByText('Saving price…');
 
             // During loading, close icon button should be disabled
             const closeButtons = screen.getAllByRole('button');

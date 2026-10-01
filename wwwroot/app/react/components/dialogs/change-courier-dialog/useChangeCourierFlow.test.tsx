@@ -107,7 +107,7 @@ describe('useChangeCourierFlow', () => {
         const search = screen.getByPlaceholderText(/Search courier/);
         await userEvent.type(search, 'Nina');
         await userEvent.click(await screen.findByRole('option', {name: /Nina New/}));
-        await userEvent.click(screen.getByRole('button', {name: /^save$/i}));
+        await userEvent.click(screen.getByRole('button', {name: /^save changes$/i}));
         await userEvent.click(await screen.findByRole('button', {name: /confirm change/i}));
 
         await waitFor(() => {

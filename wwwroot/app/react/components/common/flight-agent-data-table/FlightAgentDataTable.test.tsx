@@ -1,9 +1,3 @@
-/**
- * FlightAgentDataTable Component Tests
- *
- * Optimised: read-only tests consolidated to reduce render count.
- */
-
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
@@ -598,9 +592,9 @@ describe('FlightAgentDataTable', () => {
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
                 expect(screen.getByText('Agent already assigned')).toBeInTheDocument();
-                expect(screen.getByText('Manage Recovery Agent(s)')).toBeInTheDocument();
+                expect(screen.getByText('Manage recovery agents')).toBeInTheDocument();
 
-                await userEvent.click(screen.getByText('Manage Recovery Agent(s)'));
+                await userEvent.click(screen.getByText('Manage recovery agents'));
                 expect(props.onOpenRecoveryAgentDialog).toHaveBeenCalled();
             });
 

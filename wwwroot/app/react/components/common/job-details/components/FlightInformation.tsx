@@ -1,7 +1,3 @@
-/**
- * FlightInformation - Flight segments with connection times
- */
-
 import React, {useState, useCallback} from 'react';
 import {Badge, Box, Button, Group, Paper, Text} from '@mantine/core';
 import {RadioTower} from 'lucide-react';
@@ -164,7 +160,7 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
                             loading={webhookStatus === 'loading'}
                             style={{fontSize: '0.75rem'}}
                         >
-                            {webhookStatus === 'loading' ? 'Checking...' : 'Check webhooks'}
+                            {webhookStatus === 'loading' ? 'Checking…' : 'Check webhooks'}
                         </Button>
                     </>
                 }

@@ -27,7 +27,7 @@ describe('AddressFormatEditor', () => {
     it('reflects which zone each field is currently in', () => {
         renderEditor({line1: ['streetName'], line2: ['postcode']});
 
-        expect(radioFor('Street Name', 'Line 1')).toBeChecked();
+        expect(radioFor('Street name', 'Line 1')).toBeChecked();
         expect(radioFor('Postcode', 'Line 2')).toBeChecked();
         expect(radioFor('Country', 'Hidden')).toBeChecked();
     });
@@ -59,7 +59,7 @@ describe('AddressFormatEditor', () => {
     it('reorders fields within line 1 with the arrow keys', () => {
         const onChange = renderEditor({line1: ['streetNumber', 'streetName', 'postcode'], line2: []});
 
-        fireEvent.keyDown(screen.getByRole('button', {name: /Reorder Street Name/}), {key: 'ArrowUp'});
+        fireEvent.keyDown(screen.getByRole('button', {name: /Reorder Street name/}), {key: 'ArrowUp'});
 
         expect(onChange).toHaveBeenCalledWith({line1: ['streetName', 'streetNumber', 'postcode'], line2: []});
     });
@@ -67,7 +67,7 @@ describe('AddressFormatEditor', () => {
     it('does not reorder past the ends of a line', () => {
         const onChange = renderEditor({line1: ['streetNumber', 'streetName'], line2: []});
 
-        fireEvent.keyDown(screen.getByRole('button', {name: /Reorder Street Number/}), {key: 'ArrowUp'});
+        fireEvent.keyDown(screen.getByRole('button', {name: /Reorder Street number/}), {key: 'ArrowUp'});
 
         expect(onChange).not.toHaveBeenCalled();
     });

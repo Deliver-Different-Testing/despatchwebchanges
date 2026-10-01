@@ -167,7 +167,7 @@ export function ChangeCourierDialog({
                 <DialogFooter
                     onCancel={onClose}
                     onConfirm={() => setPhase('confirm')}
-                    confirmLabel="Save"
+                    confirmLabel="Save changes"
                     confirmDisabled={!newCourier}
                 />
             ) : (
@@ -175,7 +175,7 @@ export function ChangeCourierDialog({
                     onCancel={() => setPhase('input')}
                     cancelLabel="Back"
                     onConfirm={handleConfirmChange}
-                    confirmLabel={saving ? 'Saving...' : 'Confirm change'}
+                    confirmLabel={saving ? 'Saving…' : 'Confirm change'}
                     confirmColor="orange"
                     submitting={saving}
                 />

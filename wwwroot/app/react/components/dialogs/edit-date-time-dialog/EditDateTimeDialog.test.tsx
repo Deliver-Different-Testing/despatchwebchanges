@@ -1,9 +1,3 @@
-/**
- * EditDateTimeDialog Component Tests
-import {fireEvent, screen, waitFor} from '@testing-library/react';
- * Optimised: read-only tests consolidated to reduce render count.
- */
-
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
@@ -16,7 +10,6 @@ import {renderWithMantine} from '../../../__testUtils__';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
 
 
 // The pickers render for real: Mantine's are string-valued and light enough for jsdom,
@@ -417,7 +410,7 @@ describe('EditDateTimeDialog', () => {
             }));
 
             await user.click(screen.getByRole('button', {name: /Save/i}));
-            expect(await screen.findByText('Saving...')).toBeInTheDocument();
+            expect(await screen.findByText('Saving…')).toBeInTheDocument();
         });
     });
 

@@ -1,8 +1,3 @@
-/**
- * RecurringJobsToolbar Component Tests
- * Optimised: read-only tests consolidated to reduce render count.
- */
-
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, screen, waitFor} from '@testing-library/react';

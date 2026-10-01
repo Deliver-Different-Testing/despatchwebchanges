@@ -1,9 +1,3 @@
-/**
- * RecurringJobsPage Component Tests
- *
- * Optimised: tests sharing identical setup consolidated into single renders.
- */
-
 import React from 'react';
 import {act, fireEvent, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
 import {renderWithMantine} from '../../__testUtils__';
@@ -245,7 +239,7 @@ describe('RecurringJobsPage', () => {
 
         renderWithProviders(createDefaultProps());
 
-        expect(screen.getByText('Loading recurring jobs...')).toBeInTheDocument();
+        expect(screen.getByText('Loading recurring jobs…')).toBeInTheDocument();
     });
 
     // ── Job list + selection + Job details panel ──────────────────────
@@ -295,13 +289,13 @@ describe('RecurringJobsPage', () => {
         expect(screen.getByText(/this will deactivate this recurring job/i)).toBeInTheDocument();
 
         // Cancel with No → dialog closes
-        fireEvent.click(screen.getByText('No'));
+        fireEvent.click(screen.getByText('Keep active'));
         await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
         expect(mockUpdateJobDetail).not.toHaveBeenCalled();
 
         // Re-open and confirm with Yes
         fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
-        fireEvent.click(screen.getByText('Yes'));
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate job'}));
 
         // Toast fires only after updateJobDetail resolves, so a single
         // waitFor on the toast covers both — no double-poll needed.

@@ -124,7 +124,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
         const clean = email.trim().toLowerCase();
         if (!clean) return;
         if (!isValidEmail(clean)) {
-            setFreeError('Invalid email address');
+            setFreeError('Email address must include @ and a domain');
             return;
         }
         if (recipients.includes(clean)) {

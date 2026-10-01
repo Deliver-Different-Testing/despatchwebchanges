@@ -1,11 +1,3 @@
-/**
- * JobListPanel Tests
- *
- * Covers the main container component: rendering child components,
- * category filtering, search filtering, job selection, stats computation,
- * localStorage persistence, AngularJS bridge callbacks, and optimistic dispatch.
- */
-
 import React from 'react';
 import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
 import { renderWithMantineProviders } from '../../__testUtils__';
@@ -1559,7 +1551,7 @@ describe('JobListPanel', () => {
 
             await user.click(screen.getByText('Restore'));
 
-            expect(props.showToast).toHaveBeenCalledWith('Archived jobs can’t be restored', 'warning');
+            expect(props.showToast).toHaveBeenCalledWith("Archived jobs can't be restored", 'warning');
             expect(mockedRestoreJobs).not.toHaveBeenCalled();
             expect(mockedAddRestoreEvent).not.toHaveBeenCalled();
             expect(mockedGetRestorePodImpact).not.toHaveBeenCalled();

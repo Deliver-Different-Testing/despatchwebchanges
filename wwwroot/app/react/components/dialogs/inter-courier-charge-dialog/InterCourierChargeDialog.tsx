@@ -1,14 +1,3 @@
-/**
- * Inter-Courier Charge Dialog (React)
- *
- * An inter-courier charge is a double entry: the backend writes one phantom job
- * against the from-courier for a negative amount and one against the to-courier
- * for the positive (see `JobRepository.BuildIccJobPair`). The dialog showed six
- * flat fields and none of that, so a from/to mix-up was invisible until two
- * uncorrectable jobs existed. The ledger strip below the form now shows exactly
- * what will be recorded, before it is.
- */
-
 import React, {useState, useCallback, useEffect, useId, useMemo} from 'react';
 import {Anchor, Badge, Box, Divider, Group, Paper, Stack, Text, TextInput, NumberInput} from '@mantine/core';
 import {Banknote, Plus} from 'lucide-react';

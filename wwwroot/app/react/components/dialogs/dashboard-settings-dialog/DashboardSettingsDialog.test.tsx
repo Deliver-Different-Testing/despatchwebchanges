@@ -326,7 +326,7 @@ describe('DashboardSettingsDialog', () => {
             const setPreference = renderWithMode('dark', {onSave});
 
             await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
-            await user.click(screen.getByRole('button', {name: /^save$/i}));
+            await user.click(screen.getByRole('button', {name: /^save changes$/i}));
 
             expect(onSave).not.toHaveBeenCalled();
             expect(screen.getByText(/disable dark mode/i)).toBeInTheDocument();
@@ -343,7 +343,7 @@ describe('DashboardSettingsDialog', () => {
             const setPreference = renderWithMode('dark', {onSave});
 
             await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
-            await user.click(screen.getByRole('button', {name: /^save$/i}));
+            await user.click(screen.getByRole('button', {name: /^save changes$/i}));
             await user.click(screen.getAllByRole('button', {name: /cancel/i}).at(-1)!);
 
             expect(setPreference).not.toHaveBeenCalled();
@@ -356,7 +356,7 @@ describe('DashboardSettingsDialog', () => {
             const setPreference = renderWithMode('light', {onSave});
 
             await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
-            await user.click(screen.getByRole('button', {name: /^save$/i}));
+            await user.click(screen.getByRole('button', {name: /^save changes$/i}));
 
             expect(screen.queryByText(/disable dark mode/i)).not.toBeInTheDocument();
             expect(setPreference).not.toHaveBeenCalled();
@@ -368,7 +368,7 @@ describe('DashboardSettingsDialog', () => {
             const onSave = jest.fn();
             renderWithMode('dark', {onSave});
 
-            await user.click(screen.getByRole('button', {name: /^save$/i}));
+            await user.click(screen.getByRole('button', {name: /^save changes$/i}));
 
             expect(screen.queryByText(/disable dark mode/i)).not.toBeInTheDocument();
             expect(onSave).toHaveBeenCalledWith(expect.objectContaining({nationwideBetaEnabled: true}));

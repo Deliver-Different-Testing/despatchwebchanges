@@ -1,7 +1,3 @@
-/**
- * React Void Job Confirmation Dialog (DFRNT / Mantine)
- */
-
 import React, {useState, useMemo, useEffect, useCallback} from 'react';
 import {Alert, Badge, Box, Button, Checkbox, Group, Loader, Paper, Stack, Switch, Text, Textarea} from '@mantine/core';
 import {Info, Trash2, TriangleAlert} from 'lucide-react';
@@ -168,7 +164,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 {/* Reason */}
                 <Textarea
                     label="Reason for voiding (required)"
-                    placeholder="Please provide a reason for voiding this job"
+                    placeholder="Reason for voiding this job"
                     value={voidReasonText}
                     onChange={handleReasonChange}
                     disabled={isSubmitting}
@@ -218,7 +214,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                         {isLoadingRelatedJobs && (
                             <Group justify="center" gap="sm" py="lg">
                                 <Loader size={UI_ICON_SIZE}/>
-                                <Text fz="sm" c="dimmed">Loading related jobs...</Text>
+                                <Text fz="sm" c="dimmed">Loading related jobs…</Text>
                             </Group>
                         )}
 
@@ -288,7 +284,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 onConfirm={handleConfirm}
                 confirmColor="red"
                 confirmIcon={<Icon lucide={Trash2}/>}
-                confirmLabel={isSubmitting ? 'Voiding...' : confirmButtonText}
+                confirmLabel={isSubmitting ? 'Voiding…' : confirmButtonText}
                 confirmDisabled={isConfirmDisabled}
                 submitting={isSubmitting}
             />

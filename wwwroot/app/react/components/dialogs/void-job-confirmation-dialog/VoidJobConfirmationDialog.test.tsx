@@ -107,7 +107,7 @@ describe('VoidJobConfirmationDialog', () => {
         await userEvent.click(screen.getByRole('button', {name: /void job/i}));
 
         // Submitting state
-        expect(screen.getByText('Voiding...')).toBeInTheDocument();
+        expect(screen.getByText('Voiding…')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /cancel/i})).toBeDisabled();
 
         // Resolve
@@ -217,7 +217,7 @@ describe('VoidJobConfirmationDialog', () => {
 
         await userEvent.click(screen.getByRole('switch'));
 
-        expect(await screen.findByText('Loading related jobs...')).toBeInTheDocument();
+        expect(await screen.findByText('Loading related jobs…')).toBeInTheDocument();
 
         // Resolve with empty list
         await act(async () => {

@@ -1,11 +1,3 @@
-/**
- * SplitJobProgressDialog
- *
- * The non-dismissable progress dialog shown while a job is being split. Follows
- * the dialog design language — solid brand header + a content area with a white
- * section Paper — but uses a *bespoke* header without a close button, since a
- * progress dialog has no cancel path.
- */
 import React from 'react';
 import {Box, Paper, Progress, Text, ThemeIcon} from '@mantine/core';
 import {Split} from 'lucide-react';

@@ -1,14 +1,3 @@
-/**
- * JobFileUploadDialog Component
- *
- * React replacement for the AngularJS job-file-upload-dialog.
- * Supports regular file uploads and POD (Proof of Delivery) photo uploads
- * with drag-and-drop, progress tracking, and file management.
- *
- * All upload/download/delete logic lives in the useFileUpload hook;
- * this component is purely presentational.
- */
-
 import React, {useEffect, useCallback, useRef, useState} from 'react';
 import {
     ActionIcon,

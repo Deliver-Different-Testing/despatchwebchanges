@@ -258,7 +258,7 @@ describe('SettingsPage', () => {
 
             renderWithMantine(<SettingsPage />);
 
-            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street name', 'Line 1')).toBeChecked());
             expect(radioFor('delivery', 'Postcode', 'Line 1')).toBeChecked();
             expect(screen.getByRole('button', {name: 'Reset to default'})).toBeEnabled();
         });
@@ -269,7 +269,7 @@ describe('SettingsPage', () => {
             );
             const user = setupUser();
             renderWithMantine(<SettingsPage />);
-            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street name', 'Line 1')).toBeChecked());
 
             expect(screen.getByRole('button', {name: 'Save changes'})).toBeDisabled();
             await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
@@ -284,7 +284,7 @@ describe('SettingsPage', () => {
             );
             const user = setupUser();
             renderWithMantine(<SettingsPage />);
-            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street name', 'Line 1')).toBeChecked());
 
             await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
             await user.click(screen.getByRole('button', {name: 'Save changes'}));
@@ -311,7 +311,7 @@ describe('SettingsPage', () => {
             await waitFor(() => expect(radioFor('pickup', 'Postcode', 'Line 1')).toBeChecked());
 
             // Customize delivery only; pickup is left matching the tenant default.
-            await user.click(radioFor('delivery', 'Street Name', 'Line 1'));
+            await user.click(radioFor('delivery', 'Street name', 'Line 1'));
             await user.click(screen.getByRole('button', {name: 'Save changes'}));
 
             expect(mockSavePreference).toHaveBeenCalledWith(
@@ -332,9 +332,9 @@ describe('SettingsPage', () => {
             );
             const user = setupUser();
             renderWithMantine(<SettingsPage />);
-            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street name', 'Line 1')).toBeChecked());
 
-            await user.click(radioFor('pickup', 'Street Name', 'Hidden'));
+            await user.click(radioFor('pickup', 'Street name', 'Hidden'));
             await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
             await user.click(screen.getByRole('button', {name: 'Save changes'}));
 
@@ -349,11 +349,11 @@ describe('SettingsPage', () => {
             );
             const user = setupUser();
             renderWithMantine(<SettingsPage />);
-            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street name', 'Line 1')).toBeChecked());
 
             await user.click(screen.getByRole('button', {name: 'Copy to delivery'}));
 
-            expect(radioFor('delivery', 'Street Name', 'Line 1')).toBeChecked();
+            expect(radioFor('delivery', 'Street name', 'Line 1')).toBeChecked();
         });
 
         it('resets both sides to the tenant default and clears the stored override immediately', async () => {
@@ -365,13 +365,13 @@ describe('SettingsPage', () => {
             );
             const user = setupUser();
             renderWithMantine(<SettingsPage />);
-            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street name', 'Line 1')).toBeChecked());
 
             await user.click(screen.getByRole('button', {name: 'Reset to default'}));
 
             expect(mockDeletePreference).toHaveBeenCalledWith('DispatchAddressFormat');
             await waitFor(() => expect(radioFor('pickup', 'Postcode', 'Line 1')).toBeChecked());
-            expect(radioFor('pickup', 'Street Name', 'Hidden')).toBeChecked();
+            expect(radioFor('pickup', 'Street name', 'Hidden')).toBeChecked();
             expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled();
         });
 
@@ -383,7 +383,7 @@ describe('SettingsPage', () => {
 
             renderWithMantine(<SettingsPage />);
 
-            await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
+            await waitFor(() => expect(radioFor('pickup', 'Street name', 'Line 1')).toBeChecked());
             expect(screen.getByText(/Couldn.t load your organisation.s default format/)).toBeInTheDocument();
         });
     });

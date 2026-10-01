@@ -1,12 +1,3 @@
-/**
- * FamilyPriceChangeDialog
- *
- * Shows every price change resulting from a date cascade in one list, so the user accepts or
- * declines them together rather than being walked through a modal per job. Manually-priced
- * jobs are listed but never selectable — a hand-set price must not be clobbered.
- *
- * The single-job case still uses PriceChangeModal; this only appears for families.
- */
 import React from 'react';
 import {Badge, Divider, Box, Checkbox, Group, Paper, Stack, Text} from '@mantine/core';
 import {BellRing, Check} from 'lucide-react';

@@ -217,7 +217,7 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSubmit}
-                confirmLabel={isSubmitting ? 'Saving...' : 'Save'}
+                confirmLabel={isSubmitting ? 'Saving…' : 'Save task'}
                 confirmDisabled={!isFormValid || isLoading}
                 submitting={isSubmitting}
             />

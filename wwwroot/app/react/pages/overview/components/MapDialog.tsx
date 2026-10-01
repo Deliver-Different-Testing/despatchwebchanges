@@ -80,7 +80,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                         style={{position: 'absolute', inset: 0, zIndex: 10}}
                     >
                         <Loader size={60} role="progressbar" aria-label="Loading map data"/>
-                        <Text fz="sm">Loading map data...</Text>
+                        <Text fz="sm">Loading map data…</Text>
                     </Stack>
                 )}
 

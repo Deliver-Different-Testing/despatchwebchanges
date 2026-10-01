@@ -71,7 +71,7 @@ describe('RecurringJobsTable', () => {
         it('should show loading indicator', () => {
             renderWithTheme(<RecurringJobsTable {...defaultProps} isLoading={true}/>);
 
-            expect(screen.getByText('Loading recurring jobs...')).toBeInTheDocument();
+            expect(screen.getByText('Loading recurring jobs…')).toBeInTheDocument();
         });
     });
 

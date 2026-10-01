@@ -177,7 +177,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
 
         setCurrentState('loading');
         setIsLoading(true);
-        setLoadingMessage('Applying price changes...');
+        setLoadingMessage('Applying price changes…');
         setErrorMessage('');
 
         try {
@@ -496,7 +496,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         return (
             <Stack align="center" justify="center" py={60} px={24} gap={16}>
                 <Loader size={48} aria-label={loadingMessage || 'Processing'}/>
-                <Text fz="md" fw={500} c="dimmed">{loadingMessage || 'Processing...'}</Text>
+                <Text fz="md" fw={500} c="dimmed">{loadingMessage || 'Processing…'}</Text>
             </Stack>
         );
     };

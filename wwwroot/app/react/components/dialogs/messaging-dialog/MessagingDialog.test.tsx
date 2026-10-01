@@ -191,7 +191,7 @@ describe('MessagingDialog', () => {
         // Message previews
         expect(screen.getByText(/See you tomorrow/)).toBeInTheDocument();
         // Truncated long message
-        expect(screen.getByText(new RegExp('A{40}\\.\\.\\.'))).toBeInTheDocument();
+        expect(screen.getByText(new RegExp('A{40}…'))).toBeInTheDocument();
 
         // Sender prefixes: "You:" for read (unread=0), "Bob:" for unread >0
         expect(screen.getByText('You:')).toBeInTheDocument();
@@ -218,7 +218,7 @@ describe('MessagingDialog', () => {
         mockApi.getQuickResponses.mockResolvedValue([]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
-        expect(await screen.findByText('Unable to load messages')).toBeInTheDocument();
+        expect(await screen.findByText("Couldn't load messages")).toBeInTheDocument();
         expect(screen.getByText('Server error')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /Retry/i})).toBeInTheDocument();
 

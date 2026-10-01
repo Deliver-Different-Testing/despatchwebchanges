@@ -145,7 +145,7 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
 
                 {/* A `Badge` is the tonal pill the MUI version built out of a Paper. */}
                 <Badge color={isValidRange ? 'green' : 'red'} variant="light" size="lg" tt="none">
-                    {isValidRange ? `${duration} day${duration !== 1 ? 's' : ''}` : 'Invalid'}
+                    {isValidRange ? `${duration} day${duration !== 1 ? 's' : ''}` : 'Check dates'}
                 </Badge>
             </Group>
 

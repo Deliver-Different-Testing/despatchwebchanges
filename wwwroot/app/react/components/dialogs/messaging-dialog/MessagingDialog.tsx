@@ -1,10 +1,3 @@
-/**
- * React Messaging Dialogue
- *
- * A modern replacement for the AngularJS messaging-dialog using MUI components.
- * Features real-time messaging, conversation list, quick responses, and multi-recipient support.
- */
-
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     ActionIcon,
@@ -785,7 +778,7 @@ function ConversationsPanel({
                                                         {conv.unreadCount > 0 ? `${conv.otherPartyName}: ` : 'You: '}
                                                     </Text>
                                                     {conv.lastMessage.substring(0, 40)}
-                                                    {conv.lastMessage.length > 40 ? '...' : ''}
+                                                    {conv.lastMessage.length > 40 ? '…' : ''}
                                                 </>
                                             ) : null}
                                         </Text>
@@ -1309,7 +1302,7 @@ function NewChatView({
             {isSearching && (
                 <Group justify="center" gap={12} p={24}>
                     <Loader size={24} aria-label="Searching"/>
-                    <Text c="dimmed">Searching...</Text>
+                    <Text c="dimmed">Searching…</Text>
                 </Group>
             )}
 
@@ -1499,7 +1492,7 @@ function ErrorState({message, onRetry}: ErrorStateProps) {
             <Box c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))">
                 <Icon lucide={CircleAlert} size={64}/>
             </Box>
-            <Title order={5}>Unable to load messages</Title>
+            <Title order={5}>Couldn't load messages</Title>
             <Text c="dimmed">{message}</Text>
             <Button leftSection={<Icon lucide={RefreshCw} size={16}/>} onClick={onRetry}>
                 Retry

@@ -315,7 +315,7 @@ export const EditSavedFlightDialog: React.FC<EditSavedFlightDialogProps> = ({
                     <DialogFooter
                         onCancel={onClose}
                         onConfirm={handleSubmit}
-                        confirmLabel="Save"
+                        confirmLabel="Save changes"
                         confirmDisabled={submitDisabled}
                         submitting={isSaving}
                     />

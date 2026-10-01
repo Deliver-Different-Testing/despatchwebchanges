@@ -1,10 +1,3 @@
-/**
- * Flight Agent Confirmation Dialog
- *
- * React replacement for the AngularJS flight-agent-conformation-dialog.
- * Handles both flight and agent assignment confirmation with cargo processing calculations.
- */
-
 import React, {useCallback, useEffect, useState} from 'react';
 import {
     ActionIcon,
@@ -181,19 +174,19 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
         setCargoStatus({
             class: 'cargo-loading',
             icon: 'schedule',
-            hours: 'Loading...',
-            text: 'Loading cargo information...',
+            hours: 'Loading…',
+            text: 'Loading cargo information…',
         });
         setCargoIndicator({
             class: 'cargo-indicator loading',
             icon: 'schedule',
-            text: 'Loading...',
+            text: 'Loading…',
         });
         setAvailableTime({
             class: 'time-loading',
             icon: 'schedule',
-            text: 'Loading...',
-            subtext: 'Calculating times...',
+            text: 'Loading…',
+            subtext: 'Calculating times…',
         });
     }, []);
 
@@ -291,7 +284,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setAvailableTime({
                 class: 'time-critical',
                 icon: 'error',
-                text: 'Invalid times',
+                text: 'Times unavailable',
                 subtext: 'Package ready time not available',
             });
             return;
@@ -303,8 +296,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setAvailableTime({
                 class: 'time-critical',
                 icon: 'cancel',
-                text: 'Invalid timing',
-                subtext: 'Delivery before package ready',
+                text: 'Delivery before ready time',
+                subtext: 'Delivery is set before the package is ready',
             });
         } else if (diffMinutes < 30) {
             setAvailableTime({
@@ -368,13 +361,13 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 setCargoIndicator({
                     class: 'cargo-indicator invalid',
                     icon: 'error',
-                    text: 'Unable to verify cargo hours',
+                    text: "Couldn't verify cargo hours",
                 });
                 setAvailableTime({
                     class: 'time-critical',
                     icon: 'error',
                     text: 'Error',
-                    subtext: 'Unable to calculate times',
+                    subtext: "Couldn't calculate times",
                 });
                 showToast("Couldn't calculate cargo processing times. Try again.", 'error');
                 setIsCalculatingTimes(false);

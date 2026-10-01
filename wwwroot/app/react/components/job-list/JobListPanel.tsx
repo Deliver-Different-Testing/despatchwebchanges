@@ -1,11 +1,5 @@
-/**
- * Job List Panel
- *
- * Main container for the React dispatch job list.
- * Manages local UI state (filtering, sorting, density, selection, context menu)
- * while receiving job data from AngularJS via props/callbacks.
- */
 
+import {pluralise} from '../../utils/pluralise';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Progress} from '@mantine/core';
 import {useDebouncedValue, useDisclosure, useHotkeys, useLocalStorage} from '@mantine/hooks';
@@ -692,13 +686,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             id => !jobs.find(j => j.id === id)?.isArchived,
         );
         if (ids.length === 0) {
-            showToast('Archived jobs can’t be restored', 'warning');
+            showToast("Archived jobs can't be restored", 'warning');
             return;
         }
         try {
             await Promise.all(ids.map(id => addRestoreEvent(id)));
             await restoreJobs(ids, removeCapturedImages);
-            showToast(`${ids.length} job(s) restored`, 'success');
+            showToast(`${ids.length} ${pluralise(ids.length, 'job')} restored`, 'success');
             multiSelect.clear();
             // Invalidate job detail (and related/photos) so an open detail panel reflects the
             // reset status, then refresh the list.
@@ -719,7 +713,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             id => !jobs.find(j => j.id === id)?.isArchived,
         );
         if (restorableIds.length === 0) {
-            showToast('Archived jobs can’t be restored', 'warning');
+            showToast("Archived jobs can't be restored", 'warning');
             return;
         }
         if (bulkRestoreChecking) return;
@@ -748,7 +742,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         const ids = [...multiSelect.selectedIds];
         try {
             await bulkUpdateReadStatus(ids, true);
-            showToast(`${ids.length} job(s) marked as read`, 'success');
+            showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as read`, 'success');
             multiSelect.clear();
             if (fetchConfig) {
                 hookDataRef.current.refresh();
@@ -764,7 +758,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         const ids = [...multiSelect.selectedIds];
         try {
             await bulkUpdateReadStatus(ids, false);
-            showToast(`${ids.length} job(s) marked as unread`, 'success');
+            showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as unread`, 'success');
             multiSelect.clear();
             if (fetchConfig) {
                 hookDataRef.current.refresh();
@@ -799,7 +793,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                     : await assignNpAgentToJobs(ids, destination.id);
 
                 const noun = type === 'Agent' ? 'agent' : 'network partner';
-                message = `${result.assigned} job(s) assigned to ${noun} ${destination.text}`;
+                message = `${result.assigned} ${pluralise(result.assigned, 'job')} assigned to ${noun} ${destination.text}`;
 
                 if (result.failed > 0) {
                     const reasons = [...new Set(
@@ -810,7 +804,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 }
             } else {
                 await allocateJobs(destination.id, ids);
-                message = `${ids.length} job(s) dispatched to ${destination.text}`;
+                message = `${ids.length} ${pluralise(ids.length, 'job')} dispatched to ${destination.text}`;
             }
 
             showToast(message, severity);

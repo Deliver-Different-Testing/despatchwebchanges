@@ -1,3 +1,4 @@
+import {pluralise} from '../../../utils/pluralise';
 import React, {useState} from 'react';
 import {
     useComplianceList,
@@ -128,7 +129,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
         setBulkDialogOpen(false);
         try {
             await sendBulk.mutateAsync(remindableItems);
-            showToast(`Reminders sent to ${remindableItems.length} driver(s)`, 'success');
+            showToast(`Reminders sent to ${remindableItems.length} ${pluralise(remindableItems.length, 'driver')}`, 'success');
         } catch {
             showToast("Couldn't send the reminders. Check your connection and try again.", 'error');
         }

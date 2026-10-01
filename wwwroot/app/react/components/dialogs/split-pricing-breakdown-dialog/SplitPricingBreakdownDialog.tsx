@@ -125,7 +125,7 @@ const BASIS_LABELS: Record<SplitPricingBasis, string> = {
     RoadMiles: 'Split by road distance per leg',
     StraightLine: 'Split by straight-line distance per leg',
     UserConfirmed: 'Split by your adjusted shares',
-    LegRates: 'Split by each leg’s calculated rate',
+    LegRates: "Split by each leg's calculated rate",
     EvenSplit: 'No distance available for either leg — split evenly',
 };
 
@@ -542,8 +542,8 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                 title={isEdit ? 'Price breakdown' : 'Confirm split pricing'}
                 subtitle={isEdit
                     ? (readOnly
-                        ? `The parent’s original items, split across ${legKeys.length} legs — view only`
-                        : `The parent’s original items, split across ${legKeys.length} legs — each leg’s cost is derived and editable below`)
+                        ? `The parent's original items, split across ${legKeys.length} legs — view only`
+                        : `The parent's original items, split across ${legKeys.length} legs — each leg's cost is derived and editable below`)
                     : `${(props as SplitModeProps).jobNo} · ${formatCurrency(totals.totalRevenue)} to divide`}
                 onClose={handleCancel}
             />
@@ -568,7 +568,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                         One breakdown for the whole split, the same from the parent or either leg.
                         Revenue changes are divided across the legs by their share, so the legs
                         always add up to the parent.
-                        {highlightLegId != null && ' You are viewing this job’s leg below, highlighted.'}
+                        {highlightLegId != null && " You are viewing this job's leg below, highlighted."}
                     </Alert>
                 )}
             </Box>

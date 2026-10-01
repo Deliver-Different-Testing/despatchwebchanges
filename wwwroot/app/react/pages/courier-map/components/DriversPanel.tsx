@@ -1,11 +1,3 @@
-/**
- * DriversPanel Component
- *
- * Sidebar panel with summary statistics, search, and a status-coded driver
- * list. Floats over the map on an opaque surface with theme elevation, matching
- * the app's MD3 surface language.
- */
-
 import React, { useMemo } from 'react';
 import {
     alpha, Box, CloseButton, Group, Loader, MultiSelect, Stack, Text, TextInput,
@@ -218,7 +210,7 @@ export function DriversPanel({
                         <Stack align="center" gap={12} py={40}>
                             <Loader size={32} aria-label="Loading drivers" />
                             <Text fz={13} c="dimmed">
-                                Loading drivers...
+                                Loading drivers…
                             </Text>
                         </Stack>
                     )}

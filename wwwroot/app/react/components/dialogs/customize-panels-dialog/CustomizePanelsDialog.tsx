@@ -129,7 +129,7 @@ export const CustomizePanelsDialog: React.FC<CustomizePanelsDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel="Save"
+                confirmLabel="Save changes"
                 confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={!layoutEditable}
             />

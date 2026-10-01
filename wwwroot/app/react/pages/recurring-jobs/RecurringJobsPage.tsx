@@ -1,8 +1,3 @@
-/**
- * Recurring Jobs Page Component
- *
- * React component for the recurring jobs list panel and job-details panel.
- */
 
 import React, {useCallback, useEffect, useState} from 'react';
 import {Box, Card, Stack, Text} from '@mantine/core';
@@ -411,8 +406,8 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 <DialogFooter
                     onCancel={handleDeactivateCancel}
                     onConfirm={handleDeactivateConfirm}
-                    cancelLabel="No"
-                    confirmLabel={isDeactivating ? 'Deactivating...' : 'Yes'}
+                    cancelLabel="Keep active"
+                    confirmLabel={isDeactivating ? 'Deactivating…' : 'Deactivate job'}
                     submitting={isDeactivating}
                 />
             </DialogShell>

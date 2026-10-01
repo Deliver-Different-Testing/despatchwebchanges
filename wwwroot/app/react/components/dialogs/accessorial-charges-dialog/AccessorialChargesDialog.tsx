@@ -769,7 +769,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setAvailableInputMap({});
             setAvailableNotesMap({});
             setIsAddingCharges(false);
-            showToastRef.current(`${toAdd.length} charge(s) added`, 'success');
+            showToastRef.current(`${toAdd.length} charge${toAdd.length === 1 ? "" : "s"} added`, 'success');
             const applied = await loadAllRef.current();
             await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
@@ -864,7 +864,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                             )}
                             {pricingResult && pricingResult.suggestions.length > 0 && (
                                 <Alert color="reflex">
-                                    Suggested {pricingResult.suggestions.length} charge(s), pre-selected below for review:{' '}
+                                    Suggested {pricingResult.suggestions.length} charge{pricingResult.suggestions.length === 1 ? "" : "s"}, pre-selected below for review:{' '}
                                     {pricingResult.suggestions.map(s => s.name).join(', ')}
                                 </Alert>
                             )}
@@ -1262,7 +1262,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                             loading={isAddingCharges}
                         >
                             {isAddingCharges
-                                ? 'Adding...'
+                                ? 'Adding…'
                                 : `Add selected charges${selectedTotal > 0 ? ` (${formatCurrency(selectedTotal)})` : ''}`}
                         </Button>
                     )}

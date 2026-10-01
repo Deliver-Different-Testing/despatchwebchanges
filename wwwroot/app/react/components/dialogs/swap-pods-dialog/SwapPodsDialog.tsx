@@ -1,14 +1,3 @@
-/**
- * React Swap PODs Dialog
- *
- * Allows operators to move a POD signature from one job to another,
- * correcting cases where a driver signed off the wrong job.
- *
- * Two-phase flow:
- *   Phase 1 — Input:   Enter second job number and validate
- *   Phase 2 — Confirm: Review both job numbers and confirm the swap
- */
-
 import React, {useState} from 'react';
 import {Alert, Box, Group, Paper, Stack, Text, TextInput} from '@mantine/core';
 import {ArrowLeftRight, CircleCheck, Info} from 'lucide-react';
@@ -175,7 +164,7 @@ export function SwapPodsDialog({
                 <DialogFooter
                     onCancel={onClose}
                     onConfirm={handleValidate}
-                    confirmLabel={loading ? 'Validating...' : 'Validate'}
+                    confirmLabel={loading ? 'Validating…' : 'Validate'}
                     confirmIcon={<Icon lucide={ArrowLeftRight}/>}
                     confirmDisabled={loading || !secondJobNo.trim()}
                     submitting={loading}
@@ -185,7 +174,7 @@ export function SwapPodsDialog({
                     onCancel={handleBackToInput}
                     cancelLabel="Back"
                     onConfirm={handleConfirmSwap}
-                    confirmLabel={loading ? 'Swapping...' : 'Confirm swap'}
+                    confirmLabel={loading ? 'Swapping…' : 'Confirm swap'}
                     confirmIcon={<Icon lucide={ArrowLeftRight}/>}
                     submitting={loading}
                 />

@@ -104,7 +104,7 @@ export interface RefreshButtonProps {
 
 export const RefreshButton: React.FC<RefreshButtonProps> = ({onClick, loading = false}) => {
     return (
-        <Tooltip label={loading ? 'Refreshing...' : 'Refresh'}>
+        <Tooltip label={loading ? 'Refreshing…' : 'Refresh'}>
             {/* span wrapper so the tooltip still works while the button is disabled */}
             <span>
                 <ActionIcon

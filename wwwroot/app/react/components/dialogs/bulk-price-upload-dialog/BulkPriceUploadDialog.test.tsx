@@ -371,7 +371,7 @@ describe('BulkPriceUploadDialog', () => {
             await userEvent.click(applyButton);
 
             // Promise never resolves until we say so — loading state is guaranteed visible
-            expect(await screen.findByText(/Applying price changes.../)).toBeInTheDocument();
+            expect(await screen.findByText(/Applying price changes…/)).toBeInTheDocument();
 
             // Clean up: resolve the pending promise
             resolveSubmit(mockResponse);

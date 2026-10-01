@@ -1,10 +1,3 @@
-/**
- * React Note Management Dialog
- *
- * A dialog for creating and editing job notes with note type management.
- * Supports creating new note types inline and displays note metadata.
- */
-
 import React, {useEffect, useMemo, useState} from 'react';
 import {
     ActionIcon,

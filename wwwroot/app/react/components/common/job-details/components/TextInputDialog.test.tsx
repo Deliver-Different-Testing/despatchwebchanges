@@ -49,7 +49,7 @@ describe('TextInputDialog', () => {
     it('calls onSubmit with current value when Save clicked', async () => {
         const user = setupUser({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
-        await user.click(screen.getByRole('button', {name: 'Save'}));
+        await user.click(screen.getByRole('button', {name: 'Save changes'}));
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('REF-001');
     });
 
@@ -61,7 +61,7 @@ describe('TextInputDialog', () => {
 
         fireEvent.change(screen.getByDisplayValue('REF-001'), {target: {value: 'NEW-REF'}});
 
-        await user.click(screen.getByRole('button', {name: 'Save'}));
+        await user.click(screen.getByRole('button', {name: 'Save changes'}));
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('NEW-REF');
     });
 
@@ -70,7 +70,7 @@ describe('TextInputDialog', () => {
 
         fireEvent.change(screen.getByDisplayValue('REF-001'), {target: {value: ''}});
 
-        expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Save changes'})).toBeDisabled();
         expect(screen.getByText('This field is required')).toBeInTheDocument();
     });
 

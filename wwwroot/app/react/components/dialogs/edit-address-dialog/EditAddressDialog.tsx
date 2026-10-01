@@ -1,11 +1,3 @@
-/**
- * React Edit Address Dialog
- *
- * A modern replacement for the AngularJS edit-address-dialog using MUI components.
- * Allows users to search addresses, edit address fields, and optionally add shipment details.
- * Supports both US and NZ address formats with interactive HERE Maps integration.
- */
-
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Box, Button, Collapse, Group, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Textarea} from '@mantine/core';
 import {ChevronDown, ChevronUp, Lock, Map as MapGlyph, Save, Search} from 'lucide-react';
@@ -649,7 +641,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     {isLoadingAddress && (
                         <Group gap={8} mt={8}>
                             <Loader size={16} aria-label="Loading address details"/>
-                            <Text fz="sm" c="dimmed">Loading address details...</Text>
+                            <Text fz="sm" c="dimmed">Loading address details…</Text>
                         </Group>
                     )}
                 </Paper>
@@ -944,7 +936,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel={isSubmitting ? 'Saving...' : submitLabel}
+                confirmLabel={isSubmitting ? 'Saving…' : submitLabel}
                 cancelLabel={readOnly ? 'Close' : 'Cancel'}
                 confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={isSubmitting}

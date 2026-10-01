@@ -243,7 +243,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSubmit}
-                confirmLabel="Save"
+                confirmLabel="Save changes"
                 confirmIcon={<Icon lucide={Check} />}
                 confirmDisabled={!selectedItem}
             />

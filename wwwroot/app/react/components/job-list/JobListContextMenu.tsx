@@ -1,11 +1,3 @@
-/**
- * Job List Context Menu
- *
- * A Mantine Menu positioned at mouse coordinates, built dynamically from job
- * state. Self-contained: it owns all of its action handlers.
- * Icons come from the shared <Icon> wrapper (Lucide/Tabler).
- */
-
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Box, Menu, NumberInput, Paper, Stack, Text, Tooltip} from '@mantine/core';
 import {useDisclosure} from '@mantine/hooks';
@@ -97,6 +89,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         onConfirm: () => Promise<void>;
         icon?: React.ReactNode;
         variant?: HeaderVariant;
+        confirmLabel?: string;
     } | null>(null);
     const [sendToLiveTarget, setSendToLiveTarget] = useState<{id: number; jobNo: string} | null>(null);
     const [splitJobLoading, setSplitJobLoading] = useState(false);
@@ -169,6 +162,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         setConfirmDialogConfig({
             title: 'Unassign flight?',
+            confirmLabel: 'Unassign flight',
             message: `Are you sure you wish to unassign flight ${activeJob.assignedFlight?.flightNumber} from ${activeJob.jobNo}?`,
             icon: <Icon tabler={IconPlaneOff}/>,
             variant: 'warning',
@@ -189,6 +183,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         setConfirmDialogConfig({
             title: 'Unassign agent?',
+            confirmLabel: 'Unassign agent',
             message: `Are you sure you wish to unassign agent ${activeJob.assignedAgent?.agentName} from ${activeJob.jobNo}?`,
             icon: <Icon lucide={UserMinus}/>,
             variant: 'warning',
@@ -248,7 +243,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         try {
             await api.moveJobToReprice(activeJob.id);
-            showToast(`Job ${activeJob.jobNo} marked as Reprice`, 'success');
+            showToast(`Job ${activeJob.jobNo} sent for repricing`, 'success');
             refresh();
         } catch {
             showToast("Couldn't reprice the job. Check your connection and try again.", 'error');
@@ -415,6 +410,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         const targetJob = dialogJobRef.current ?? activeJob;
         setConfirmDialogConfig({
             title: 'Split job',
+            confirmLabel: 'Split job',
             message: 'Are you sure you wish to split this job?',
             icon: <Icon lucide={Split}/>,
             variant: 'primary',
@@ -434,6 +430,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         setConfirmDialogConfig({
             title: 'Set first job?',
+            confirmLabel: 'Set first job',
             message: 'Are you sure you wish to set this as the First Job?',
             icon: <Icon lucide={ChevronFirst}/>,
             variant: 'primary',
@@ -817,7 +814,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 <DialogFooter
                     onCancel={closeLateDialog}
                     onConfirm={handleLateSubmit}
-                    confirmLabel="Save"
+                    confirmLabel="Apply late call"
                     confirmDisabled={!lateMinutes}
                 />
             </DialogShell>
@@ -898,7 +895,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                             await confirmDialogConfig.onConfirm();
                         }
                     }}
-                    confirmLabel="OK"
+                    confirmLabel={confirmDialogConfig?.confirmLabel ?? 'Confirm'}
                     confirmColor={confirmDialogConfig?.variant === 'warning' ? 'orange' : undefined}
                 />
             </DialogShell>

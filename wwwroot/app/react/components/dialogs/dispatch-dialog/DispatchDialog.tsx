@@ -292,10 +292,10 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     // the other three are framed as "Send to ..." so it's obvious which lane the
     // job is heading down (and gives DFRNT Partner its own visual identity).
     const CONFIRM_LABELS: Record<DispatchType, {idle: string; busy: string}> = {
-        Courier: {idle: 'Dispatch', busy: 'Dispatching...'},
-        DfrntPartner: {idle: 'Send to partner', busy: 'Sending...'},
-        Agent: {idle: 'Send to agent', busy: 'Sending...'},
-        NP: {idle: 'Send to NP', busy: 'Sending...'},
+        Courier: {idle: 'Dispatch', busy: 'Dispatching…'},
+        DfrntPartner: {idle: 'Send to partner', busy: 'Sending…'},
+        Agent: {idle: 'Send to agent', busy: 'Sending…'},
+        NP: {idle: 'Send to NP', busy: 'Sending…'},
     };
     const CONFIRM_ICONS: Record<DispatchType, React.ReactElement> = {
         Courier: <Icon tabler={IconTruck} size={16}/>,

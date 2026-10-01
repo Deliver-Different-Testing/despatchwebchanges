@@ -263,7 +263,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel="Save"
+                confirmLabel="Save changes"
             />
             <ConfirmDialog
                 opened={confirmingV1}

@@ -146,13 +146,13 @@ describe('ComposeEmailDialog', () => {
 
             // Trigger validation errors
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
-            expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email subject')).toBeInTheDocument();
 
             // Apply template should clear errors
             fireEvent.click(screen.getByRole('button', {name: 'Weekly update'}));
 
-            expect(screen.queryByText('Please enter an email subject')).not.toBeInTheDocument();
-            expect(screen.queryByText('Please enter an email message')).not.toBeInTheDocument();
+            expect(screen.queryByText('Enter an email subject')).not.toBeInTheDocument();
+            expect(screen.queryByText('Enter an email message')).not.toBeInTheDocument();
         });
     });
 
@@ -162,7 +162,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
-            expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email subject')).toBeInTheDocument();
         });
 
         it('should show body error when sending with empty body', () => {
@@ -170,7 +170,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
-            expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email message')).toBeInTheDocument();
         });
 
         it('should show both errors when both fields are empty', () => {
@@ -178,8 +178,8 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
-            expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
-            expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email subject')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email message')).toBeInTheDocument();
         });
 
         it('should not call onSend when validation fails', () => {
@@ -197,8 +197,8 @@ describe('ComposeEmailDialog', () => {
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Test Subject'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
-            expect(screen.queryByText('Please enter an email subject')).not.toBeInTheDocument();
-            expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
+            expect(screen.queryByText('Enter an email subject')).not.toBeInTheDocument();
+            expect(screen.getByText('Enter an email message')).toBeInTheDocument();
         });
 
         it('should show subject error when only body is filled', async () => {
@@ -208,8 +208,8 @@ describe('ComposeEmailDialog', () => {
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Test body content'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
-            expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
-            expect(screen.queryByText('Please enter an email message')).not.toBeInTheDocument();
+            expect(screen.getByText('Enter an email subject')).toBeInTheDocument();
+            expect(screen.queryByText('Enter an email message')).not.toBeInTheDocument();
         });
 
         it('should treat whitespace-only subject as empty', async () => {
@@ -220,7 +220,7 @@ describe('ComposeEmailDialog', () => {
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Some body'}});
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
-            expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email subject')).toBeInTheDocument();
             expect(defaultProps.onSend).not.toHaveBeenCalled();
         });
 
@@ -232,7 +232,7 @@ describe('ComposeEmailDialog', () => {
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: '   '}});
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
-            expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email message')).toBeInTheDocument();
             expect(defaultProps.onSend).not.toHaveBeenCalled();
         });
 
@@ -241,11 +241,11 @@ describe('ComposeEmailDialog', () => {
             const user = setupUser();
 
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
-            expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email subject')).toBeInTheDocument();
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'T'}});
 
-            expect(screen.queryByText('Please enter an email subject')).not.toBeInTheDocument();
+            expect(screen.queryByText('Enter an email subject')).not.toBeInTheDocument();
         });
 
         it('should clear body error when user types in body field', async () => {
@@ -253,11 +253,11 @@ describe('ComposeEmailDialog', () => {
             const user = setupUser();
 
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
-            expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email message')).toBeInTheDocument();
 
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'T'}});
 
-            expect(screen.queryByText('Please enter an email message')).not.toBeInTheDocument();
+            expect(screen.queryByText('Enter an email message')).not.toBeInTheDocument();
         });
     });
 
@@ -374,12 +374,12 @@ describe('ComposeEmailDialog', () => {
 
             // Trigger errors then cancel
             fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
-            expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
+            expect(screen.getByText('Enter an email subject')).toBeInTheDocument();
 
             fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
-            expect(screen.queryByText('Please enter an email subject')).not.toBeInTheDocument();
-            expect(screen.queryByText('Please enter an email message')).not.toBeInTheDocument();
+            expect(screen.queryByText('Enter an email subject')).not.toBeInTheDocument();
+            expect(screen.queryByText('Enter an email message')).not.toBeInTheDocument();
         });
 
         it('should not call onSend when cancelled', () => {

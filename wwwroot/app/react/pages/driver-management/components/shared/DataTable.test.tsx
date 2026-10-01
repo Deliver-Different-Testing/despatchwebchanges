@@ -95,7 +95,7 @@ describe('DataTable', () => {
         it('should show loading indicator', () => {
             renderTable({isLoading: true});
 
-            expect(screen.getByText('Loading...')).toBeInTheDocument();
+            expect(screen.getByText('Loading…')).toBeInTheDocument();
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
         });
 

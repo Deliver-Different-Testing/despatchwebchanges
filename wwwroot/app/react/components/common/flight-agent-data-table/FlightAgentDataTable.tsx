@@ -1,10 +1,3 @@
-/**
- * FlightAgentDataTable React Component
- *
- * Displays flight options or agent options based on job type.
- * Styled to match the original AngularJS md-table layout.
- */
-
 import React, {useCallback, useMemo, useState} from 'react';
 import {ActionIcon, Badge, Box, Button, Collapse, Group, Menu, Progress, Stack, Table, Text, TextInput, ThemeIcon, Tooltip, alpha} from '@mantine/core';
 import {Check, ChevronDown, ChevronUp, FileText, HardHat, Info, Navigation, Plus, Search, UserSearch, X} from 'lucide-react';
@@ -930,7 +923,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                     message="An agent has already been assigned to this job. This can be found in the job details widget."
                     icon={<Icon lucide={HardHat}/>}
                     showAction={true}
-                    actionText="Manage Recovery Agent(s)"
+                    actionText="Manage recovery agents"
                     onAction={onOpenRecoveryAgentDialog}
                     isUsCustomer={isUsCustomer}
                 />

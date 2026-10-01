@@ -1,12 +1,3 @@
-/**
- * RestoreConfirmationDialog
- *
- * Confirms a restore that would cost the job something it can't get back. Restoring reopens the
- * job as a new job on the dispatch board and always clears its POD name (the board view excludes
- * any job that still carries one); the captured photos and signatures are only archived when the
- * operator opts in. Shared by the job-list context menu, the bulk job-list action, the job-search
- * page and the AngularJS job-search FAB.
- */
 import React from 'react';
 import {Alert, Box, Button, Checkbox, Paper, Stack, Text} from '@mantine/core';
 import {ArrowLeftRight, History} from 'lucide-react';

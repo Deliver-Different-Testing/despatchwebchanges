@@ -199,7 +199,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                     label="Subject"
                     value={subject}
                     onChange={(e) => { setSubject(e.currentTarget.value); setSubjectError(false); }}
-                    error={subjectError ? 'Please enter an email subject' : undefined}
+                    error={subjectError ? 'Enter an email subject' : undefined}
                     data-autofocus
                 />
 
@@ -211,7 +211,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                     maxRows={8}
                     value={body}
                     onChange={(e) => { setBody(e.currentTarget.value); setBodyError(false); }}
-                    error={bodyError ? 'Please enter an email message' : undefined}
+                    error={bodyError ? 'Enter an email message' : undefined}
                 />
             </Stack>
             <DialogFooter

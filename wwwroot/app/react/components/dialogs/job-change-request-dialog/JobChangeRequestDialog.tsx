@@ -1,19 +1,3 @@
-/**
- * Job Change Request Dialog
- *
- * Lets a dispatcher submit a change request against an inter-tenant partner job.
- * Auto-apply fields (Notes / ProgressNote / PodNote / references / tracking)
- * apply immediately on the local job; manual fields open a task on the
- * partner's dashboard and await approval.
- *
- * Each field gets a typed input matched to its semantic — currency for the
- * agreed rate, integer stepper for quantity, the live speed list for
- * service speed, native datetime for dates, structured fields for
- * pickup/delivery address — so the dialog can't silently file a malformed
- * request. The title, helper hint, and dropdown glyphs all come from the
- * shared formatter so labels match the history panel and approver inbox.
- */
-
 import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import {Alert, Box, Group, NumberInput, Paper, Select, Stack, Text, TextInput, Textarea} from '@mantine/core';
 import {ArrowLeftRight, CircleX, Info, Send} from 'lucide-react';

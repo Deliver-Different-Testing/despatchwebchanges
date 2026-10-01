@@ -1,19 +1,3 @@
-/**
- * DialogShell (Mantine)
- *
- * The standard modal wrapper for the DFRNT dialog design language — the Mantine
- * counterpart to the MUI `shared/DialogShell`. Wraps `<Modal>` with the design
- * defaults: centered, no built-in close button (the header owns it), zero body
- * padding (header/content/footer control their own), the theme's extra-large
- * (28px) radius, a scrollable body (see {@link dialogShellStyles}) and a
- * fixed-ish width.
- *
- * The overlay is a light, unblurred scrim on purpose: dialogs open over the
- * dispatch job list and users need to keep reading it while they edit. Dialogs
- * that genuinely want a heavy surround (the POD photo viewer) pass `overlayProps`.
- *
- * Compose with <DialogHeader>, a content region and <DialogFooter> as children.
- */
 import React, {useLayoutEffect, useRef, useState} from 'react';
 import {Modal} from '@mantine/core';
 import {useGlassAllowed} from '../../../../hooks/useGlassStrategy';

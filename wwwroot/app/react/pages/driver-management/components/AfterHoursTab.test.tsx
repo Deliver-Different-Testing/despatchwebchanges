@@ -136,7 +136,7 @@ describe('AfterHoursTab', () => {
             setupMocks(undefined, true);
             renderWithProviders();
 
-            expect(screen.getByText('Loading...')).toBeInTheDocument();
+            expect(screen.getByText('Loading…')).toBeInTheDocument();
         });
     });
 

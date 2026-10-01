@@ -1,16 +1,3 @@
-/**
- * React Event Group Dialog
- *
- * Manages task group assignments for jobs with editable due dates, user
- * assignments, and active toggles.
- *
- * **Wall-clock in, `Date` out — unchanged.** `DateTimePicker` is string-valued
- * (`YYYY-MM-DD HH:mm`), so the picker itself never carries a zone; the view model
- * still holds a `Date`, exactly as the MUI version did, and the save path still
- * formats with `dayjs(...).format()`. The tenant zone appears only as the
- * abbreviation in the Due Date column head.
- */
-
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Avatar, Badge, Box, Checkbox, Paper, Select, Stack, Table, Text,
@@ -233,7 +220,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel={isSubmitting ? 'Saving...' : 'Save changes'}
+                confirmLabel={isSubmitting ? 'Saving…' : 'Save changes'}
                 confirmIcon={<Icon lucide={Save} size={16}/>}
                 confirmDisabled={!hasEvents}
                 submitting={isSubmitting}

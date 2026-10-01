@@ -64,8 +64,8 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
             data.status === 'NoAgentEmail'
                 ? 'This agent has no email address on file — no inbound-agent link will be sent.'
                 : data.status === 'NoInboundUrl'
-                    ? 'The inbound portal URL isn’t configured — no inbound-agent link will be sent.'
-                    : 'The inbound-agent link couldn’t be prepared — no link will be sent.';
+                    ? "The inbound portal URL isn't configured — no inbound-agent link will be sent."
+                    : "The inbound-agent link couldn't be prepared — no link will be sent.";
         return (
             <Alert color="orange" variant="outline">
                 {message}
@@ -93,7 +93,7 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
                             autosize
                             value={body}
                             onChange={(e) => setBodyEdit(e.currentTarget.value)}
-                            description="Tokens like [AgentName], [JobNumber] and [InboundUrl] are replaced with the job’s details when the email is sent."
+                            description="Tokens like [AgentName], [JobNumber] and [InboundUrl] are replaced with the job's details when the email is sent."
                             inputWrapperOrder={['label', 'input', 'description', 'error']}
                         />
                     </Stack>

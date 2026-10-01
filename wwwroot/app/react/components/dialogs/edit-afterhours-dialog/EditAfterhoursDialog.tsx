@@ -1,12 +1,3 @@
-/**
- * React Edit Afterhours Dialog
- *
- * A modern replacement for the AngularJS edit-afterhours-dialog.
- * Allows users to create or edit afterhours schedules for couriers.
- *
- * Uses React Query for data fetching with automatic caching and loading states.
- */
-
 import React, {useState, useCallback, useEffect, useMemo} from 'react';
 import {Alert, Box, Group, MultiSelect, Paper, Select, Stack, Text, TextInput, alpha} from '@mantine/core';
 import {Calendar, Clock, Save, Timer, TriangleAlert, User} from 'lucide-react';
@@ -192,23 +183,23 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
         const errors: ValidationErrors = {};
 
         if (!courierId) {
-            errors.courier = 'Please select a courier';
+            errors.courier = 'Select a courier';
         }
 
         if (selectedDays.length === 0) {
-            errors.days = 'Please select at least one day';
+            errors.days = 'Select at least one day';
         }
 
         if (!startTime) {
-            errors.startTime = 'Please set a start time';
+            errors.startTime = 'Enter a start time';
         }
 
         if (!endTime) {
-            errors.endTime = 'Please set an end time';
+            errors.endTime = 'Enter an end time';
         }
 
         if (isUsTenant && !selectedTimeZone) {
-            errors.timeZone = 'Please select a time zone';
+            errors.timeZone = 'Select a time zone';
         }
 
         if (startTime && endTime && startTime === endTime) {
@@ -414,7 +405,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel={isSubmitting ? 'Saving...' : `${isNewSchedule ? 'Create' : 'Save'} schedule`}
+                confirmLabel={isSubmitting ? 'Saving…' : `${isNewSchedule ? 'Create' : 'Save'} schedule`}
                 confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={!isFormValid || isSubmitting}
                 submitting={isSubmitting}

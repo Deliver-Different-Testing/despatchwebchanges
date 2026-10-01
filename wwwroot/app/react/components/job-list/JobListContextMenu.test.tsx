@@ -420,7 +420,7 @@ describe('JobListContextMenu', () => {
             await waitFor(() => {
                 expect(mockedApi.moveJobToReprice).toHaveBeenCalledWith(1);
             });
-            expect(props.showToast).toHaveBeenCalledWith('Job J001 marked as Reprice', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('Job J001 sent for repricing', 'success');
             expect(props.onRefresh).toHaveBeenCalled();
         });
 
@@ -659,7 +659,7 @@ describe('JobListContextMenu', () => {
 
             const input = screen.getByLabelText('Minutes');
             fireEvent.change(input, {target: {value: '15'}});
-            fireEvent.click(screen.getByText('Save'));
+            fireEvent.click(screen.getByText('Apply late call'));
 
             await waitFor(() => {
                 expect(mockedApi.lateCall).toHaveBeenCalledWith({
@@ -681,7 +681,7 @@ describe('JobListContextMenu', () => {
 
             const input = screen.getByLabelText('Minutes');
             fireEvent.change(input, {target: {value: '30'}});
-            fireEvent.click(screen.getByText('Save'));
+            fireEvent.click(screen.getByText('Apply late call'));
 
             await waitFor(() => {
                 expect(mockedApi.lateCall).toHaveBeenCalledWith({
@@ -726,13 +726,13 @@ describe('JobListContextMenu', () => {
             expect(mockedApi.lateCall).not.toHaveBeenCalled();
         });
 
-        it('empty minutes disables the Save button', () => {
+        it('empty minutes disables the Apply late call button', () => {
             renderWithMantine(<JobListContextMenu {...createDefaultProps()} />);
 
             fireEvent.click(screen.getByText('Late pickup'));
 
             // Save button should be disabled when input is empty
-            const saveButton = screen.getByRole('button', {name: 'Save'});
+            const saveButton = screen.getByRole('button', {name: 'Apply late call'});
             expect(saveButton).toBeDisabled();
             expect(mockedApi.lateCall).not.toHaveBeenCalled();
         });
@@ -745,7 +745,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Late pickup'));
             const input = screen.getByLabelText('Minutes');
             fireEvent.change(input, {target: {value: '5'}});
-            fireEvent.click(screen.getByText('Save'));
+            fireEvent.click(screen.getByText('Apply late call'));
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith("Couldn't apply the late pickup. Check your connection and try again.", 'error');
@@ -776,7 +776,7 @@ describe('JobListContextMenu', () => {
             // Confirmation dialog should be visible
             expect(screen.getByText('Unassign flight?')).toBeInTheDocument();
 
-            fireEvent.click(screen.getByText('OK'));
+            fireEvent.click(screen.getByRole('button', {name: 'Unassign flight'}));
 
             await waitFor(() => {
                 expect(mockedApi.restoreNationwideJob).toHaveBeenCalledWith(1);
@@ -820,7 +820,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Unassign agent'));
             expect(screen.getByText('Unassign agent?')).toBeInTheDocument();
 
-            fireEvent.click(screen.getByText('OK'));
+            fireEvent.click(screen.getByRole('button', {name: 'Unassign agent'}));
 
             await waitFor(() => {
                 expect(mockedApi.restoreNationwideJob).toHaveBeenCalledWith(1);
@@ -884,7 +884,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Set first job'));
             expect(screen.getByText('Set first job?')).toBeInTheDocument();
 
-            fireEvent.click(screen.getByText('OK'));
+            fireEvent.click(screen.getByRole('button', {name: 'Set first job'}));
 
             await waitFor(() => {
                 expect(mockedApi.setFirstJob).toHaveBeenCalledWith(1, 77);
@@ -917,7 +917,7 @@ describe('JobListContextMenu', () => {
             expect(screen.getByRole('heading', {name: 'Split job'})).toBeInTheDocument();
             expect(screen.getByText('Are you sure you wish to split this job?')).toBeInTheDocument();
 
-            fireEvent.click(screen.getByText('OK'));
+            fireEvent.click(screen.getByRole('button', {name: 'Split job'}));
 
             await waitFor(() => {
                 expect(mockedExecuteSplitJobFlow).toHaveBeenCalledWith(

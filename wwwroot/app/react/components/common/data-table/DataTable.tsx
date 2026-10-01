@@ -51,7 +51,7 @@ export interface DataTableProps<T> {
     onRowClick?: (row: T) => void;
     /** Right-click on a row — used for context menus. */
     onRowContextMenu?: (event: React.MouseEvent, row: T) => void;
-    /** Overrides the default "Loading..." caption. */
+    /** Overrides the default "Loading…" caption. */
     loadingMessage?: string;
     isRowSelected?: (row: T) => boolean;
     checkboxSelection?: boolean;
@@ -79,7 +79,7 @@ export function DataTable<T>({
     emptyMessage = 'No records match your search.',
     onRowClick,
     onRowContextMenu,
-    loadingMessage = 'Loading...',
+    loadingMessage = 'Loading…',
     isRowSelected,
     checkboxSelection,
     allSelected,

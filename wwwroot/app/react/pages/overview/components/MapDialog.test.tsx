@@ -96,7 +96,7 @@ describe('MapDialog', () => {
                 <MapDialog open onClose={jest.fn()} delivery={createMockDelivery()} />,
             );
 
-            expect(screen.getByText('Loading map data...')).toBeInTheDocument();
+            expect(screen.getByText('Loading map data…')).toBeInTheDocument();
         });
 
         it('renders HereMap when data is loaded', async () => {

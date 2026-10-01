@@ -1,6 +1,3 @@
-/**
- * Optimised: read-only tests consolidated to reduce render count.
- */
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
@@ -166,7 +163,7 @@ describe('DriverEarningsTab', () => {
         setupMocks(undefined, true);
         renderWithProviders();
 
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        expect(screen.getByText('Loading…')).toBeInTheDocument();
     });
 
     it('should show empty message when no items', () => {

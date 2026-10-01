@@ -144,7 +144,7 @@ describe('DriverComplianceTab', () => {
         setupMocks(undefined, true);
         renderWithProviders();
 
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        expect(screen.getByText('Loading…')).toBeInTheDocument();
     });
 
     it('should show empty message when no items', () => {

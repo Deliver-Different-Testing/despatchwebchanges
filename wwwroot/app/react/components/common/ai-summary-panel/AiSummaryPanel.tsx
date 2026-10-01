@@ -101,7 +101,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
         if (!summary) return;
         try {
             await navigator.clipboard.writeText(summary);
-            setCopyTooltip('Copied!');
+            setCopyTooltip('Copied');
         } catch {
             setCopyTooltip('Copy failed');
         }
