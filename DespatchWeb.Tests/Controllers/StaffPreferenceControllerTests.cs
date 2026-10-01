@@ -91,6 +91,21 @@ public class StaffPreferenceControllerTests
     }
 
     [Fact]
+    public async Task SavePreference_AcceptsTheLiquidGlassKey()
+    {
+        var controller = CreateController();
+
+        var result = await controller.SavePreference(new SavePreferenceRequest
+        {
+            PreferenceKey = "LiquidGlass",
+            PreferenceJson = "on",
+        });
+
+        Assert.IsType<OkResult>(result);
+        await _repositoryMock.Received(1).SetPreferenceAsync("LiquidGlass", "on");
+    }
+
+    [Fact]
     public async Task SavePreference_AcceptsAJobListColumnsKey()
     {
         var controller = CreateController();

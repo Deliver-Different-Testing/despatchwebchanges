@@ -6,6 +6,11 @@ import { dfrntTheme, dfrntCssVariablesResolver } from '../../../theme/dfrntManti
 import glassClasses from '../../../theme/glass.module.css';
 import { GlassDropdownRoot, LENS_MOUNT_DELAY_MS } from './GlassDropdownRoot';
 
+jest.mock('../../../hooks/glassSupport', () => ({
+    ...jest.requireActual('../../../hooks/glassSupport'),
+    isLiquidGlassSupported: () => true,
+}));
+
 const mockUseGlassStrategy = jest.fn();
 jest.mock('../../../theme/glass.module.css', () => ({ __esModule: true, default: { glass: 'glass', panel: 'panel' } }));
 jest.mock('../../../hooks/useGlassStrategy', () => ({ useGlassStrategy: () => mockUseGlassStrategy() }));

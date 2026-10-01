@@ -1,6 +1,11 @@
 import {startBoxPointerDrag} from './boxPointerDrag';
 import {LIQUID_GLASS_STORAGE_KEY} from '../../../hooks/useLiquidGlassPreference';
 
+jest.mock('../../../hooks/glassSupport', () => ({
+    ...jest.requireActual('../../../hooks/glassSupport'),
+    isLiquidGlassSupported: () => true,
+}));
+
 const setRect = (el: Element, left: number, top: number, width: number, height: number) => {
     el.getBoundingClientRect = () => ({
         left, top, width, height, x: left, y: top, right: left + width, bottom: top + height, toJSON: () => ({}),

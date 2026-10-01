@@ -7,6 +7,11 @@ import {MapZoomViewControls} from '../../../components/common/dispatch-map/MapZo
 import {MapControlButtons} from '../../../components/common/dispatch-map/MapControlButtons';
 import type {DriversPanelProps, MapControlsProps} from '../CourierMapPage.types';
 
+jest.mock('../../../hooks/glassSupport', () => ({
+    ...jest.requireActual('../../../hooks/glassSupport'),
+    isLiquidGlassSupported: () => true,
+}));
+
 jest.mock('../../../theme/glass.module.css', () => ({__esModule: true, default: {glass: 'glass-mock', panel: 'panel-mock'}}));
 
 const panelProps = {

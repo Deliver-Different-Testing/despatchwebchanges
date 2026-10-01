@@ -5,6 +5,11 @@ import {BoxShell, BoxShellProps} from './BoxShell';
 import {setLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import {ILayout} from '../../../../interfaces/layout.interfaces';
 
+jest.mock('../../../hooks/glassSupport', () => ({
+    ...jest.requireActual('../../../hooks/glassSupport'),
+    isLiquidGlassSupported: () => true,
+}));
+
 
 const layout: ILayout = {
     name: 'Default',

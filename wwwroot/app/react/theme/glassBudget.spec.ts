@@ -14,7 +14,8 @@ const GLASS_SOURCES = [
     'components/common/glass/lens/SvgBackdropLens.tsx', // dropdown lens (Chromium)
     'components/common/segmented-toggle/SegmentedToggle.module.css', // sliding indicator only
     'components/dialogs/shared/mantine/DialogGlass.module.css', // bars, only with content beneath
-    'hooks/useGlassStrategy.ts', // capability probe, not a declaration
+    'hooks/glassSupport.ts', // capability probe, not a declaration
+    'hooks/useGlassStrategy.ts', // mentions it in docs only
     'theme/glass.module.css', // dropdown panels, map overlays, hero search
 ];
 

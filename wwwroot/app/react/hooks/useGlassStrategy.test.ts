@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react';
-import { isChromiumEngine, pickGlassStrategy, useLiquidGlassSupport } from './useGlassStrategy';
+import { isChromiumEngine, isLiquidGlassSupported, pickGlassStrategy, useLiquidGlassSupport } from './useGlassStrategy';
 
 describe('isChromiumEngine', () => {
   it('returns true when userAgentData brands include Chromium (Chrome/Edge/Brave/Opera/Samsung Internet)', () => {
@@ -126,5 +126,29 @@ describe('pickGlassStrategy', () => {
 
   it('falls back to CSS glass without backdrop-filter support', () => {
     expect(pickGlassStrategy({ ...capable, backdropFilter: false })).toBe('css');
+  });
+});
+
+describe('isLiquidGlassSupported', () => {
+  afterEach(() => {
+    Object.defineProperty(window.navigator, 'userAgentData', { value: undefined, configurable: true });
+    Reflect.deleteProperty(CSS, 'supports');
+  });
+
+  function setBrowser(chromium: boolean, backdrop: boolean) {
+    Object.defineProperty(window.navigator, 'userAgentData', {
+      value: { brands: [{ brand: chromium ? 'Chromium' : 'Other', version: '141' }] },
+      configurable: true,
+    });
+    Object.defineProperty(CSS, 'supports', { value: jest.fn().mockReturnValue(backdrop), configurable: true });
+  }
+
+  it.each([
+    [true, true, true],
+    [true, false, false],
+    [false, true, false],
+  ])('chromium=%s backdrop-filter=%s -> %s', (chromium, backdrop, expected) => {
+    setBrowser(chromium, backdrop);
+    expect(isLiquidGlassSupported()).toBe(expected);
   });
 });

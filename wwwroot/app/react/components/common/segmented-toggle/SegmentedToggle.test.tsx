@@ -23,6 +23,11 @@ import {
 } from './segmentedToggleTokens';
 import {headerSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 
+jest.mock('../../../hooks/glassSupport', () => ({
+    ...jest.requireActual('../../../hooks/glassSupport'),
+    isLiquidGlassSupported: () => true,
+}));
+
 const SCOPE_DATA = [
     {value: 'current', label: 'This job'},
     {value: 'all', label: 'All tasks'},

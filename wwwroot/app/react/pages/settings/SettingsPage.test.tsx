@@ -18,6 +18,12 @@ import {
 import {deletePreference, getPreference, savePreference} from '../../services/preferencesApi';
 import {getTenantAddressFormatDefault} from '../../services/tenantSettingsApi';
 import {useColorMode} from '../../hooks/useColorMode';
+import {isLiquidGlassSupported} from '../../hooks/glassSupport';
+
+jest.mock('../../hooks/glassSupport', () => ({
+    ...jest.requireActual('../../hooks/glassSupport'),
+    isLiquidGlassSupported: jest.fn(),
+}));
 
 jest.mock('../../hooks/useColorMode', () => ({
     useColorMode: jest.fn(),
@@ -161,6 +167,8 @@ describe('SettingsPage', () => {
     });
 
     describe('Liquid Glass', () => {
+        beforeEach(() => (isLiquidGlassSupported as jest.Mock).mockReturnValue(true));
+
         it('is off by default, tagged BETA, and names the browsers it works in', () => {
             renderWithMantine(<SettingsPage />);
 
@@ -177,6 +185,21 @@ describe('SettingsPage', () => {
 
             expect(screen.getByRole('switch', {name: 'Liquid Glass'})).toBeChecked();
             expect(localStorage.getItem('dd-liquid-glass')).toBe('on');
+            expect(savePreference).toHaveBeenCalledWith('LiquidGlass', 'on');
+        });
+
+        it('is disabled and explains why in an unsupported browser', async () => {
+            (isLiquidGlassSupported as jest.Mock).mockReturnValue(false);
+            localStorage.removeItem('dd-liquid-glass');
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+
+            const toggle = screen.getByRole('switch', {name: 'Liquid Glass'});
+            expect(toggle).toBeDisabled();
+            expect(screen.getByText(/Not available in this browser/)).toBeInTheDocument();
+            await user.click(toggle);
+            expect(toggle).not.toBeChecked();
+            expect(localStorage.getItem('dd-liquid-glass')).toBeNull();
         });
     });
 

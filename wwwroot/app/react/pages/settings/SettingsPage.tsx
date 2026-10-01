@@ -19,6 +19,7 @@ import {Icon} from '../../components/common/icon/Icon';
 import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../../components/common/action-button';
 import {useColorMode, type ColorModePreference} from '../../hooks/useColorMode';
 import {setLiquidGlassEnabled, useLiquidGlassEnabled} from '../../hooks/useLiquidGlassPreference';
+import {isLiquidGlassSupported} from '../../hooks/glassSupport';
 import {getNationwideBetaEnabled} from '../nationwide/lib/betaPreference';
 import {aiAccentColor} from '../../theme/designTokens';
 import {
@@ -57,6 +58,7 @@ export const SettingsPage: React.FC = () => {
         ? APPEARANCE_OPTIONS.map(o => ({...o, disabled: o.value !== 'light'}))
         : APPEARANCE_OPTIONS;
     const liquidGlassEnabled = useLiquidGlassEnabled();
+    const liquidGlassSupported = isLiquidGlassSupported();
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
     const [aiAutoOpen, setAiAutoOpenState] = useState<boolean>(isAiAutoOpenEnabled);
     const [hideButtonEnabled, setHideButtonEnabledState] = useState<boolean>(isPanelHideButtonEnabled);
@@ -315,10 +317,11 @@ export const SettingsPage: React.FC = () => {
                                         BETA
                                     </Badge>
                                 }
-                                description="Gives dialogs and dropdown menus a frosted, see-through glass look. Only works
+                                description={`Gives dialogs and dropdown menus a frosted, see-through glass look. Only works
                                     in Chromium-based browsers (Google Chrome, Microsoft Edge, Brave and Opera). Applies
-                                    to this device only."
+                                    to your account and follows you across devices.${liquidGlassSupported ? '' : ' Not available in this browser.'}`}
                                 checked={liquidGlassEnabled}
+                                disabled={!liquidGlassSupported}
                                 onToggle={() => setLiquidGlassEnabled(!liquidGlassEnabled)}
                             />
                         </Box>
