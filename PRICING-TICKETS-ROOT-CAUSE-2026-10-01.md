@@ -27,17 +27,17 @@ Related existing docs in this repo: `pricing-breakdown-gap-analysis.md` (courier
 
 | # | Ticket | Most likely cause | Confidence | Fix lives in |
 |---|---|---|---|---|
-| 218 | Return parent total shows one leg | Parent total is a one-time snapshot; courier-app events and Despatch re-rates overwrite it with one leg | Medium-high | SQL + `DW` |
-| 216 | 90-min collection leg from Wellington at $0 | Regional rate silently returns 0 when the client's available-speed row drops out (time window) | Medium-high, conditional on client/speed | SQL / config |
-| 820 | Dimension pricing overridden after booking | Every re-rate path drops the cubic/weight lists, so the dimension multiplier is lost | Medium-high | SQL + `DW` + API |
-| 208 | P2P on a schedule priced at Client Manager rates | NZ schedule inserts are forced down `WS_stpJob_Insert`, which has no P2P rating branch | High on code | SQL |
-| 224 | Time change doesn't re-rate after-hours fee | Post-edit price probe silently skips `RatedManually` jobs; Recalculate clears the flag | Medium-high | `DW` |
-| 225 | After-hours fuel: Auckland yes, P2P no | NZ after-hours block in the P2P engine adds the fee flat, after fuel and PPD | High | SQL |
-| 215 | Recurring insert: raw base + fuel + PPD | Main change has landed; raw-base edit on a template never adds fuel and then switches fuel off | High | `DW` + SQL |
-| 217 | Eden Office bulk import extra item charge | Something hands the rater Qty 2; best fit is item rows landing on the wrong bulk job via an ID collision | Medium | SQL / importer |
-| 213 | Client Manager courier % ignored | Value is saved but never read; courier-pay cascade has no zone or rate-code term | High (feature gap) | SQL |
-| 226 | Air NZ dry ice DG charge | Hard-coded `83` cost for all DG; class never reaches rating | High | SQL + booking |
-| 219 | World Tracer 74c per item | New capability; no durable WT flag, and NZ has no "no courier pay / no fuel" line type | n/a (design) | Accounts or SQL |
+| [218](https://deliver-different-testing.github.io/1on1/#/tickets/218) | Return parent total shows one leg | Parent total is a one-time snapshot; courier-app events and Despatch re-rates overwrite it with one leg | Medium-high | SQL + `DW` |
+| [216](https://deliver-different-testing.github.io/1on1/#/tickets/216) | 90-min collection leg from Wellington at $0 | Regional rate silently returns 0 when the client's available-speed row drops out (time window) | Medium-high, conditional on client/speed | SQL / config |
+| [820](https://deliver-different-testing.github.io/1on1/#/tickets/820) | Dimension pricing overridden after booking | Every re-rate path drops the cubic/weight lists, so the dimension multiplier is lost | Medium-high | SQL + `DW` + API |
+| [208](https://deliver-different-testing.github.io/1on1/#/tickets/208) | P2P on a schedule priced at Client Manager rates | NZ schedule inserts are forced down `WS_stpJob_Insert`, which has no P2P rating branch | High on code | SQL |
+| [224](https://deliver-different-testing.github.io/1on1/#/tickets/224) | Time change doesn't re-rate after-hours fee | Post-edit price probe silently skips `RatedManually` jobs; Recalculate clears the flag | Medium-high | `DW` |
+| [225](https://deliver-different-testing.github.io/1on1/#/tickets/225) | After-hours fuel: Auckland yes, P2P no | NZ after-hours block in the P2P engine adds the fee flat, after fuel and PPD | High | SQL |
+| [215](https://deliver-different-testing.github.io/1on1/#/tickets/215) | Recurring insert: raw base + fuel + PPD | Main change has landed; raw-base edit on a template never adds fuel and then switches fuel off | High | `DW` + SQL |
+| [217](https://deliver-different-testing.github.io/1on1/#/tickets/217) | Eden Office bulk import extra item charge | Something hands the rater Qty 2; best fit is item rows landing on the wrong bulk job via an ID collision | Medium | SQL / importer |
+| [213](https://deliver-different-testing.github.io/1on1/#/tickets/213) | Client Manager courier % ignored | Value is saved but never read; courier-pay cascade has no zone or rate-code term | High (feature gap) | SQL |
+| [226](https://deliver-different-testing.github.io/1on1/#/tickets/226) | Air NZ dry ice DG charge | Hard-coded `83` cost for all DG; class never reaches rating | High | SQL + booking |
+| [219](https://deliver-different-testing.github.io/1on1/#/tickets/219) | World Tracer 74c per item | New capability; no durable WT flag, and NZ has no "no courier pay / no fuel" line type | n/a (design) | Accounts or SQL |
 
 ## Cross-cutting themes
 
@@ -54,6 +54,8 @@ Five patterns account for most of the tickets. Fixing them as patterns closes mo
 ## Group A — parent/child return jobs
 
 ### #218 Return job parent total only shows one leg
+
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/218>
 
 **How a booking-page return is built** (second-hand for the booking side; proc read directly):
 the booking page books two ordinary jobs, then calls `ConnectReturnParts`, which runs `DD_stpJob_CreateReturnParent` (`CRE:4923-5159`).
@@ -108,6 +110,8 @@ Any rows on a return parent prove a post-booking write.
 
 ### #216 90-min collection leg on returns from Wellington at $0
 
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/216>
+
 The ticket has no description. **A job number is needed** to know the client and whether "90 min" is speed 24 (local, `tblClient.Rate90min`) or speed 100 (regional). Every ranking below is conditional on that.
 
 **H1 — regional client, available-speed row drops out, silent $0 (medium-high).**
@@ -144,6 +148,8 @@ Then call the rating function for the leg's actual booked time; the Description 
 
 ### #820 Joyfood dimension pricing overridden after booking
 
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/820>
+
 The only per-client dimension multiplier in SQL is in `fncT_BulkZoneRate_WithLinehaul` (`CRE:10018`). It needs both `@CubicList` and `@WeightList` and looks up `BulkZonePackageRate.CubicRate`. Without the lists it prices `base + addon% x (Qty - 1)`.
 
 - **Quote and insert pass the lists:** `WS_stpJobType_Rates` (`MIG/20260908154525_ScheduleDepotFilter.sql:328,353`) and `WS_stpBulkScheduleJob_Insert` (`MIG/20260925100000_F19a_WS_stpBulkScheduleJob_Insert_FirstLegTime.sql:403`). This is why the booking page is right.
@@ -169,6 +175,8 @@ Also read the job notes: a `DW` re-rate writes "Rate updated to X from Y". No su
 
 ### #208 P2P speed on a schedule priced at Client Manager rates
 
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/208>
+
 - Schedule materialisation branches on tenant country, not on the speed's rating method: `UTL_stpJobBooking_InsertSchedule`, `MIG/20260914143000_FixInsertScheduleTucJobItemsFallbackDelete.sql:485-606` (spot-checked). Non-NZ goes to `DD_stpJob_InsertExcelerator` (the P2P engine); NZ goes to `WS_stpJob_Insert`.
 - Inside that, a schedule speed goes to `WS_stpBulkScheduleJob_Insert`, which has two rate sources chosen by `tucJobType.ZoneRated`: `BulkZoneRate`, or client rate codes via `UTL_fncJob_Rate` (`MIG/20260925100000_...:328, 378-403`). There is no P2P branch.
 - The US twin does use the P2P engine (`MIG/20260925100100_F19a_DD_stpBulkScheduleJob_Insert_FirstLegTime.sql:321`).
@@ -192,6 +200,8 @@ Decision needed from Steve/Marcus: fix on the existing stack, or carry into Kevi
 
 ### #224 (and #220) After-hours fee not re-rated on time change
 
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/224>
+
 - Live job edits do not re-rate server-side (`DW/Controllers/JobController.cs:2000-2108`). The client probes and asks the user to accept the change: `useJobActions.ts:469-475`.
 - **The probe silently skips manually-rated jobs:** `useJobUpdate.ts:177` and `:236` (spot-checked).
 - **Recalculate clears the flag first:** `JobController.cs:2730`, `SetJobRatedManuallyAsync(jobId, isBooking, false)`, then rates.
@@ -212,6 +222,8 @@ Test: on a non-manual, non-schedule job change the booked time 22:00 to 10:00 an
 
 ### #225 After-hours fuel: Auckland yes, P2P no
 
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/225>
+
 - Legacy path applies fuel and PPD to the after-hours fee explicitly (`CRE:26032-26034`).
 - The P2P engine's NZ block adds `tblAfterHours.Amount` flat, after fuel, PPD and markup are already calculated: `MIG/20260925132718_FixErroneousAH.sql:999-1006`, `TotalJobAmount = TotalJobAmount + @PickupAfterhoursAmount` (spot-checked).
 - A second, configurable after-hours charge exists via ExtraCharges, where fuel is a per-row flag (`ExtraCharges.ApplyAfterHoursFuel`).
@@ -230,6 +242,8 @@ SELECT ChargeName, ChargeAmount, CostAmount FROM PricingBreakdown WHERE JobID = 
 ## Group C — recurring and bulk import
 
 ### #215 Recurring insert-to-live: raw base + fuel + PPD
+
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/215>
 
 **The requested change has largely landed.** Sequence: `MIG/20260610120000` (adds `RawBaseAmount`), `20260720155642_FixRecurringFuel`, `20260721170000_RecurringFuelToggle`, then `20260820121330_RecalcFuelNZFuelLinePriceBreakdown` with the matching C# commit 0c5701db (20 Aug). Marcus's "$10 stays $10" test was 25 Jun, before the first of these, so **it needs re-running**. No unmerged branch for #215 was found.
 
@@ -279,6 +293,8 @@ Dead code: `tucClient.RecalcRecurringFuel` is still on the entity but nothing re
 
 ### #217 Eden Office bulk-imported jobs: extra item charge
 
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/217>
+
 Importer evidence is from the port in `RO/Core/Application/Services/BulkImport/`. Whether production runs the port or the original BulkImportHyper is unknown.
 
 What is established:
@@ -322,6 +338,8 @@ Overlap: `WS_stpBulkJob_Update` (`CRE:37349-37611`) is the only place that rewri
 
 ### #213 Courier percentage in Client Manager ignored
 
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/213>
+
 Courier pay is computed by trigger `tucJob_InsertUpdate_CalculateCourierPayment` as `RawBaseAmount x pct`, with this precedence (read on the NP branch file, `MIG/20260930090000_NetworkPartnerCourierPaymentTriggers.sql:61-71`):
 
 1. relationship type doesn't post to courier → 0
@@ -351,6 +369,8 @@ Then pull the Gisborne driver's recent jobs for the three clients and check `Cou
 
 ### #226 Air NZ dry ice DG charge
 
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/226>
+
 - The fee is hard-coded in `NP_stpGetNationwideRates`: `MIG/20260918110000_NationwideFlightBreakdownMissingPPD.sql:208`, `WHEN @DangerousGoods = 1 THEN 83 --Also need to add case for 21 for dry ice` (spot-checked), divided by `tucClient.AirNZMargin`.
 - DG class never reaches rating. `NP_stpJob_NationWideFlight_Insert` takes `@DGClass`, collapses it to a bit (`MIG/20260901132615_CustomJobNumberSuffix.sql:2074-2078`), and stores the class on the job unpriced.
 - $100 = 83 / a margin of 0.83 (inference). On the same reading the comment's 21 gives about $25, not $30, so **the dry-ice cost figure needs confirming with Deane**.
@@ -366,6 +386,8 @@ FROM tucClient WHERE ucclID = <client>;
 ```
 
 ### #219 World Tracer 74c per item
+
+Ticket: <https://deliver-different-testing.github.io/1on1/#/tickets/219>
 
 This is new capability, not a bug. Three things block the obvious approaches:
 
