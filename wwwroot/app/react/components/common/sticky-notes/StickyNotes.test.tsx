@@ -358,7 +358,7 @@ describe('StickyNotes', () => {
 
             // Shows success toast after deleting
             await waitFor(() => {
-                expect(props.showSuccessToast).toHaveBeenCalledWith('Note deleted successfully');
+                expect(props.showSuccessToast).toHaveBeenCalledWith('Note deleted');
             });
 
             confirmSpy.mockRestore();

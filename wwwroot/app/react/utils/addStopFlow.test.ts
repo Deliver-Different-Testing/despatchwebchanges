@@ -39,7 +39,7 @@ describe('executeAddStopFlow', () => {
         const showToast = jest.fn();
         const result = await executeAddStopFlow({job: makeJob('JOB2'), isUsCustomer: false, showToast});
         expect(result).toBeUndefined();
-        expect(showToast).toHaveBeenCalledWith('Cannot add stop to this job', 'warning');
+        expect(showToast).toHaveBeenCalledWith("Stops can't be added to this job.", 'warning');
         expect(openEditAddressDialogMock).not.toHaveBeenCalled();
     });
 

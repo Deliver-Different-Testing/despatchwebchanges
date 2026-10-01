@@ -31,7 +31,7 @@ async function send(data: SendPodRequest): Promise<void> {
         host.update(state => ({
             ...state,
             sending: false,
-            error: (error as ApiError)?.message || 'Failed to send POD report. Please try again.',
+            error: (error as ApiError)?.message || "Couldn't send POD report. Try again.",
         }));
     }
 }

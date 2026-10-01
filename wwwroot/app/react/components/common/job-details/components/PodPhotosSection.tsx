@@ -101,7 +101,7 @@ function PhotoGrid({
         if (!jobId || pendingDeleteIndex == null) return;
         const photo = photos[pendingDeleteIndex];
         if (!photo?.s3Key) {
-            showToast('Cannot delete this photo — missing file reference.', 'error');
+            showToast("Couldn't delete this photo. Its file reference is missing.", 'error');
             setPendingDeleteIndex(null);
             return;
         }
@@ -114,7 +114,7 @@ function PhotoGrid({
             showToast('Photo deleted', 'success');
             onPhotoDeleted?.();
         } catch {
-            showToast('Failed to delete photo', 'error');
+            showToast("Couldn't delete the photo. Check your connection and try again.", 'error');
         } finally {
             setIsDeleting(false);
         }
@@ -153,8 +153,8 @@ function PhotoGrid({
             );
         } else if (photo.s3Key) {
             downloadFile(photo.s3Key, photo.fileName || 'file')
-                .then(() => showToast('File downloaded successfully', 'success'))
-                .catch(() => showToast('Failed to download file', 'error'));
+                .then(() => showToast('File downloaded', 'success'))
+                .catch(() => showToast("Couldn't download the file. Check your connection and try again.", 'error'));
         }
     }, [photos, imageOnlyPhotos, showToast]);
 

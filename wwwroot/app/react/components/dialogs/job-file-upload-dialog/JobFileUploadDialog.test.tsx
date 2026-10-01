@@ -135,7 +135,7 @@ describe('JobFileUploadDialog — normal (attached files) mode', () => {
         const {props} = renderDialog();
 
         await waitFor(() =>
-            expect(props.showToast).toHaveBeenCalledWith('Failed to load files. Please try again.', 'error'));
+            expect(props.showToast).toHaveBeenCalledWith("Couldn't load files. Try again.", 'error'));
     });
 
     it('closes from both the header close button and the Complete action', async () => {
@@ -242,7 +242,7 @@ describe('JobFileUploadDialog — uploading', () => {
         expect(mockUploadJobFile.mock.calls[0][0]).toBe(1);
         expect(mockUploadJobFile.mock.calls[0][1]).toBe(file);
         await waitFor(() =>
-            expect(props.showToast).toHaveBeenCalledWith('Success photo.png uploaded as file', 'success'));
+            expect(props.showToast).toHaveBeenCalledWith('photo.png uploaded as file', 'success'));
         // One load on open, one after the upload completes.
         expect(mockGetAttachedFiles).toHaveBeenCalledTimes(2);
     });
@@ -260,7 +260,7 @@ describe('JobFileUploadDialog — uploading', () => {
         await waitFor(() => expect(mockUploadPod).toHaveBeenCalled());
         expect(mockUploadPod.mock.calls[0][2]).toBe('Signed by Dana');
         await waitFor(() =>
-            expect(props.showToast).toHaveBeenCalledWith('Success pod.jpg uploaded as POD photo', 'success'));
+            expect(props.showToast).toHaveBeenCalledWith('pod.jpg uploaded as POD photo', 'success'));
     });
 
     it('rejects an unaccepted file type without calling the API', async () => {
@@ -272,7 +272,7 @@ describe('JobFileUploadDialog — uploading', () => {
         });
 
         await waitFor(() => expect(props.showToast).toHaveBeenCalledWith(
-            'Invalid file type: notes.txt. Only images and PDFs are accepted.', 'error'));
+            "Can't upload notes.txt. Only images and PDFs are accepted.", 'error'));
         expect(mockUploadJobFile).not.toHaveBeenCalled();
     });
 
@@ -285,7 +285,7 @@ describe('JobFileUploadDialog — uploading', () => {
         });
 
         await waitFor(() => expect(props.showToast).toHaveBeenCalledWith(
-            'Files exceed 10MB limit: huge.png', 'error'));
+            "Can't upload huge.png. Files must be under 10MB.", 'error'));
         expect(mockUploadJobFile).not.toHaveBeenCalled();
     });
 
@@ -325,7 +325,7 @@ describe('JobFileUploadDialog — uploading', () => {
         });
 
         await waitFor(() => expect(props.showToast).toHaveBeenCalledWith(
-            'Failed to upload file: photo.png', 'error'));
+            "Couldn't upload photo.png. Try again.", 'error'));
     });
 });
 
@@ -340,7 +340,7 @@ describe('JobFileUploadDialog — row actions', () => {
 
         expect(mockDownloadFile).toHaveBeenCalledWith('jobs/1/invoice.pdf', 'invoice.pdf');
         await waitFor(() =>
-            expect(props.showToast).toHaveBeenCalledWith('File downloaded successfully', 'success'));
+            expect(props.showToast).toHaveBeenCalledWith('File downloaded', 'success'));
     });
 
     it('deletes a regular file through the file endpoint', async () => {
@@ -354,7 +354,7 @@ describe('JobFileUploadDialog — row actions', () => {
         expect(mockDeleteJobFile).toHaveBeenCalledWith(1, 'jobs/1/invoice.pdf');
         expect(mockDeletePod).not.toHaveBeenCalled();
         await waitFor(() =>
-            expect(props.showToast).toHaveBeenCalledWith('File deleted successfully', 'success'));
+            expect(props.showToast).toHaveBeenCalledWith('File deleted', 'success'));
     });
 
     it('deletes a POD photo through the delivery-photo endpoint', async () => {
@@ -368,7 +368,7 @@ describe('JobFileUploadDialog — row actions', () => {
         expect(mockDeletePod).toHaveBeenCalledWith(1, 'jobs/1/DeliveryPhotos/signature.jpg');
         expect(mockDeleteJobFile).not.toHaveBeenCalled();
         await waitFor(() =>
-            expect(props.showToast).toHaveBeenCalledWith('POD photo deleted successfully', 'success'));
+            expect(props.showToast).toHaveBeenCalledWith('POD photo deleted', 'success'));
     });
 });
 

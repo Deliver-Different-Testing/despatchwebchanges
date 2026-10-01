@@ -80,7 +80,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 setRelatedJobs(jobs);
             } catch (error) {
                 console.error('Error loading related jobs:', error);
-                showToast('Failed to load related jobs.', 'error');
+                showToast("Couldn't load related jobs. Refresh and try again.", 'error');
                 setRelatedJobs([]);
             } finally {
                 setIsLoadingRelatedJobs(false);
@@ -106,14 +106,14 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
         if (!job) return;
 
         if (!voidReasonText || voidReasonText.trim() === '') {
-            showToast('Please enter a reason for voiding this job.', 'warning');
+            showToast('Enter a reason for voiding this job', 'warning');
             return;
         }
 
         const jobIds = voidSingleJobOnly ? undefined : selectedJobIds;
 
         if (!voidSingleJobOnly && (!jobIds || jobIds.length === 0)) {
-            showToast('Please select at least one job to void.', 'warning');
+            showToast('Select at least one job to void', 'warning');
             return;
         }
 
@@ -128,13 +128,13 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
 
             const voidedCount = voidSingleJobOnly ? 1 : jobIds?.length ?? 1;
             const message = voidedCount === 1
-                ? `${job.jobNo} has been voided successfully.`
-                : `${voidedCount} jobs have been voided successfully.`;
+                ? `${job.jobNo} voided`
+                : `${voidedCount} jobs voided`;
 
             showToast(message, 'success');
             onConfirm({success: true, voidedCount});
         } catch {
-            showToast('An error occurred while voiding the job. Please try again later.', 'error');
+            showToast("Couldn't void the job. Try again.", 'error');
             setIsSubmitting(false);
         }
     };

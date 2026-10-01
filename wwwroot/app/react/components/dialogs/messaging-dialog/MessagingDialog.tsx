@@ -275,7 +275,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         } catch (err) {
             console.error('Failed to send message:', err);
             updateMessage(tempId, {status: 'failed'});
-            showToast('Failed to send message', 'error');
+            showToast("Couldn't send message. Check your connection and try again.", 'error');
         }
     }, [selectedConversation, messageDeliveryType, currentStaffId, addOptimisticMessage, updateMessage, updateConversation, showToast]);
 
@@ -328,7 +328,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             showToast(`Message sent to ${courierIds.length + staffIds.length} contacts`, 'success');
         } catch (err) {
             console.error('Failed to send multi message:', err);
-            showToast('Failed to send message to all contacts', 'error');
+            showToast("Couldn't send message to all contacts. Check your connection and try again.", 'error');
         } finally {
             setIsSending(false);
         }

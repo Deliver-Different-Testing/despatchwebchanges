@@ -311,7 +311,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setIsLoadingApplied(false);
             return charges;
         } catch (error: unknown) {
-            showToastRef.current(`Error loading applied charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't load applied charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setIsLoadingApplied(false);
             return null;
         }
@@ -345,7 +345,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setIsLoadingAvailable(false);
             return charges;
         } catch (error: unknown) {
-            showToastRef.current(`Error loading available charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't load available charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setIsLoadingAvailable(false);
             return null;
         }
@@ -410,7 +410,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                 });
                 didSave = true;
             } catch (error: unknown) {
-                showToastRef.current(`Error updating percentage charge "${charge.name}": ${error instanceof Error ? error.message : String(error)}`, 'error');
+                showToastRef.current(`Couldn't update percentage charge "${charge.name}". ${error instanceof Error ? error.message : String(error)}`, 'error');
             }
         }
 
@@ -642,11 +642,11 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     isDeleting: false,
                 },
             }));
-            showToastRef.current(`Charge "${charge.name}" updated.`, 'success');
+            showToastRef.current(`Charge "${charge.name}" updated`, 'success');
             const applied = await loadAllRef.current();
             if (charge.chargeType !== 'percentage') await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Error saving charge: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't save charge. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setAppliedRowState(prev => ({
                 ...prev,
                 [charge.jobAccessorialChargeId]: { ...prev[charge.jobAccessorialChargeId], isSaving: false },
@@ -672,11 +672,11 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                 delete updated[charge.jobAccessorialChargeId];
                 return updated;
             });
-            showToastRef.current(`Charge "${charge.name}" removed.`, 'success');
+            showToastRef.current(`Charge "${charge.name}" removed`, 'success');
             const applied = await loadAllRef.current();
             await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Error deleting charge: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't delete charge. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setAppliedRowState(prev => ({
                 ...prev,
                 [charge.jobAccessorialChargeId]: { ...prev[charge.jobAccessorialChargeId], isDeleting: false },
@@ -769,11 +769,11 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setAvailableInputMap({});
             setAvailableNotesMap({});
             setIsAddingCharges(false);
-            showToastRef.current(`${toAdd.length} charge(s) added.`, 'success');
+            showToastRef.current(`${toAdd.length} charge(s) added`, 'success');
             const applied = await loadAllRef.current();
             await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Error adding charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't add charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setIsAddingCharges(false);
         }
     }, [getActiveJobId, autoSavePercentageCharges]);

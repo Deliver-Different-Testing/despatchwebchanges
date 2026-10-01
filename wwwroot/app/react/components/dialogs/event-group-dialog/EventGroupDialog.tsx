@@ -99,7 +99,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
     const handleSave = useCallback(async () => {
         const activeEvents = localEvents.filter(e => e.active);
         if (activeEvents.length === 0) {
-            showToast('No events are active. Please select at least one event to add to the job.', 'warning');
+            showToast('Select at least one event to add to the job', 'warning');
             return;
         }
 

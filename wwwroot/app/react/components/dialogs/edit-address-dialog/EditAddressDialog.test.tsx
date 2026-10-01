@@ -694,7 +694,7 @@ describe('EditAddressDialog', () => {
             fireEvent.click(option);
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Error processing selected address.', 'error');
+                expect(showToast).toHaveBeenCalledWith("Couldn't use the selected address. Try again.", 'error');
             });
         });
 

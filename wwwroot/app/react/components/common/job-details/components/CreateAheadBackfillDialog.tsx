@@ -85,7 +85,7 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
                 if (cancelled) return;
                 const message =
                     (error as {response?: {data?: string}})?.response?.data
-                    || (error instanceof Error ? error.message : 'Failed to load backfill preview.');
+                    || (error instanceof Error ? error.message : "Couldn't load the backfill preview. Try again.");
                 setPreviewError(message);
             })
             .finally(() => {
@@ -156,7 +156,7 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
         } catch (error) {
             const message =
                 (error as {response?: {data?: string}})?.response?.data
-                || (error instanceof Error ? error.message : 'Backfill push failed.');
+                || (error instanceof Error ? error.message : "Couldn't create the backfill jobs. Try again.");
             showToast(message, 'error');
         } finally {
             setIsSubmitting(false);

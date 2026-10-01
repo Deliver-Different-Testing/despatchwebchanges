@@ -403,14 +403,14 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             // Process pickup address
             const pickupResult = await processAddress(selectedPickupAddress!);
             if (!pickupResult) {
-                showToast('An error occurred processing the pickup address. Please try again.', 'error');
+                showToast("Couldn't process the pickup address. Check it and try again.", 'error');
                 return;
             }
 
             // Process delivery address
             const deliveryResult = await processAddress(selectedDeliveryAddress!);
             if (!deliveryResult) {
-                showToast('An error occurred processing the delivery address. Please try again.', 'error');
+                showToast("Couldn't process the delivery address. Check it and try again.", 'error');
                 return;
             }
 
@@ -465,13 +465,13 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             if (selectedCourier) {
                 try {
                     await jobApi.allocateJobToCourier(selectedCourier.id, [newJobId]);
-                    showToast(`Job ${jobNumber} created and dispatched successfully${copySuffix}`, 'success');
+                    showToast(`Job ${jobNumber} created and dispatched${copySuffix}`, 'success');
                 } catch (dispatchError) {
                     console.error('[CreateJobDialog] Courier dispatch failed:', dispatchError);
-                    showToast(`Job ${jobNumber} created successfully, but could not be dispatched to the courier. The courier may be offline.`, 'warning');
+                    showToast(`Job ${jobNumber} created, but couldn't be dispatched to the courier. The courier may be offline.`, 'warning');
                 }
             } else {
-                showToast(`Job ${jobNumber} created successfully${copySuffix}`, 'success');
+                showToast(`Job ${jobNumber} created${copySuffix}`, 'success');
             }
 
             onSubmit(newJobId);
@@ -485,7 +485,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 }
                 return null;
             })();
-            showToast(serverMessage || 'Failed to create job. Please try again.', 'error');
+            showToast(serverMessage || "Couldn't create job. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }

@@ -199,7 +199,7 @@ describe('BulkPriceUploadDialog', () => {
             // Use fireEvent.change to simulate file selection with invalid file
             fireEvent.change(input, { target: { files: [file] } });
 
-            expect(await screen.findByText(/Invalid file format/)).toBeInTheDocument();
+            expect(await screen.findByText(/Upload an Excel/)).toBeInTheDocument();
 
             // Should still be in upload state (not transition to mode-select)
             expect(screen.getByText('Drop your file here')).toBeInTheDocument();
@@ -387,7 +387,7 @@ describe('BulkPriceUploadDialog', () => {
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith(
-                    'Successfully updated prices for 2 jobs.',
+                    'Updated prices for 2 jobs',
                     'success'
                 );
             });
@@ -423,7 +423,7 @@ describe('BulkPriceUploadDialog', () => {
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith(
-                    'No prices were updated. 1 job could not be updated.',
+                    "No prices were updated. 1 job couldn't be updated.",
                     'error'
                 );
             });
@@ -441,7 +441,7 @@ describe('BulkPriceUploadDialog', () => {
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith(
-                    'Upload failed',
+                    "Couldn't apply prices. Upload failed",
                     'error'
                 );
             });

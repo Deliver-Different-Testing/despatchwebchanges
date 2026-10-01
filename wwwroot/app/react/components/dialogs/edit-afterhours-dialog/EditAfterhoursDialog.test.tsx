@@ -122,7 +122,7 @@ describe('EditAfterhoursDialog', () => {
             renderWithProviders(createDefaultProps({isUsTenant: true, showToast}));
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Failed to load time zone options.', 'error');
+                expect(showToast).toHaveBeenCalledWith("Couldn't load time zones. Refresh and try again.", 'error');
             });
         });
     });
@@ -173,7 +173,7 @@ describe('EditAfterhoursDialog', () => {
             renderWithProviders(createDefaultProps({showToast}));
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('An error occurred while searching. Please try again later.', 'error');
+                expect(showToast).toHaveBeenCalledWith("Couldn't search couriers. Try again.", 'error');
             });
         });
     });

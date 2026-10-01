@@ -82,7 +82,7 @@ export const MetricsGrid = React.memo(({
     useEffect(() => { jobRef.current = job; }, [job]);
 
     const handleDispatchedClick = useCallback(() => {
-        showToast('Dispatch Time is not editable', 'info');
+        showToast("Dispatch time can't be edited", 'info');
     }, [showToast]);
 
     const handleReadyClick = useCallback(() => {

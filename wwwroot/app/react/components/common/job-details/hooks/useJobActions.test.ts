@@ -223,7 +223,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await act(() => result.current.handleDoneClick());
 
             expect(mockShowToast).toHaveBeenCalledWith(
-                'J-1001 is archived and completed, so it cannot be marked not done.',
+                "J-1001 is archived and completed, so it can't be marked not done.",
                 'warning',
             );
             expect(mockUpdateField).not.toHaveBeenCalled();
@@ -301,7 +301,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                 podName: 'Jane Doe',
                 podTime: '2026-03-23T11:45:00+13:00',
             });
-            expect(mockShowToast).toHaveBeenCalledWith('J-1001 Completed', 'success');
+            expect(mockShowToast).toHaveBeenCalledWith('J-1001 completed', 'success');
             expect(mockRefreshAndNotify).toHaveBeenCalled();
         });
 
@@ -396,7 +396,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             expect(mockUpdatePod).toHaveBeenCalledWith(
                 expect.objectContaining({jobStatus: '6', podName: 'Bob Smith'}),
             );
-            expect(mockShowToast).toHaveBeenCalledWith('J-1001 Completed', 'success');
+            expect(mockShowToast).toHaveBeenCalledWith('J-1001 completed', 'success');
         });
 
         it('refuses to complete a recurring booking', async () => {
@@ -407,7 +407,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await act(() => result.current.handleDoneClick());
 
             expect(mockShowToast).toHaveBeenCalledWith(
-                'Recurring bookings cannot be completed here. Open the live job for this run.',
+                "Recurring bookings can't be completed here. Open the live job for this run.",
                 'warning',
             );
             expect(mockUpdatePod).not.toHaveBeenCalled();
@@ -424,7 +424,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await act(() => result.current.handleDoneClick());
 
             expect(mockShowToast).toHaveBeenCalledWith(
-                'Completing a job is not currently available for scheduled jobs.',
+                "Scheduled jobs can't be completed here.",
                 'warning',
             );
             expect(mockUpdatePod).not.toHaveBeenCalled();
@@ -439,7 +439,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await act(() => result.current.handleDoneClick());
 
             expect(mockShowToast).toHaveBeenCalledWith(
-                'A POD time needs to be provided to close this job.',
+                'Enter a POD time to close this job.',
                 'warning',
             );
             expect(mockUpdatePod).not.toHaveBeenCalled();
@@ -478,7 +478,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                     podName: 'Jane Doe',
                 }),
             );
-            expect(mockShowToast).toHaveBeenCalledWith('J-1001 Completed', 'success');
+            expect(mockShowToast).toHaveBeenCalledWith('J-1001 completed', 'success');
         });
 
         it('stops and shows warning when user cancels POD name dialog', async () => {
@@ -501,7 +501,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await act(() => donePromise!);
 
             expect(mockShowToast).toHaveBeenCalledWith(
-                'A POD name needs to be provided to close this job.',
+                'Enter a POD name to close this job.',
                 'warning',
             );
             expect(mockUpdatePod).not.toHaveBeenCalled();
@@ -2008,7 +2008,7 @@ describe('useJobActions — date cascade', () => {
         });
         await flushDialogChain();
 
-        expect(mockShowToast).toHaveBeenCalledWith('Date applied to 2 of 3 jobs', 'warning');
+        expect(mockShowToast).toHaveBeenCalledWith('Date updated on 2 of 3 jobs', 'warning');
     });
 
     it('never looks up a family for a non-date field', async () => {

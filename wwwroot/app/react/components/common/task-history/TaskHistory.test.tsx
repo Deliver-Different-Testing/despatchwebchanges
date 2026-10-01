@@ -222,7 +222,7 @@ describe('TaskHistory', () => {
             const refreshButton = buttons[1];
             await user.click(refreshButton);
 
-            expect(props.showInfoToast).toHaveBeenCalledWith('Refreshing delivery journey...');
+            expect(props.showInfoToast).toHaveBeenCalledWith('Refreshing delivery journey…');
         });
 
         it('calls tasksApi.getDeliveryJourney on refresh', async () => {

@@ -450,7 +450,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             showToast?.('Split pricing breakdown saved', 'success');
             props.onClose();
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to save the split pricing breakdown.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't save the split pricing breakdown. Try again."), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -506,7 +506,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             setAddRevenue('');
             showToast?.(`Added "${addName}"`, 'success');
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to add price item.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't add price item. Try again."), 'error');
         } finally {
             setIsAddSaving(false);
         }
@@ -521,7 +521,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             setConfirmDeleteItemId(null);
             showToast?.('Price item deleted', 'success');
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to delete price item.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't delete price item. Try again."), 'error');
         } finally {
             setIsDeleting(false);
         }

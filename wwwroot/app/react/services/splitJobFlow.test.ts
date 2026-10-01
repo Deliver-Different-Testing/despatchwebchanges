@@ -131,7 +131,7 @@ describe('executeSplitJobFlow', () => {
             await executeSplitJobFlow(opts);
 
             expect(opts.showToast).toHaveBeenCalledWith(
-                'Splitting archived jobs is not currently supported.',
+                "Archived jobs can't be split.",
                 'error',
             );
             expect(mockedOpenEditAddressDialog).not.toHaveBeenCalled();
@@ -177,7 +177,7 @@ describe('executeSplitJobFlow', () => {
 
             await executeSplitJobFlow(opts);
 
-            expect(opts.showToast).toHaveBeenCalledWith('Invalid meeting point address', 'error');
+            expect(opts.showToast).toHaveBeenCalledWith('Select a meeting point address', 'error');
             expect(mockedOpenSplitJobCourierDialog).not.toHaveBeenCalled();
             expect(mockedSplitJob).not.toHaveBeenCalled();
         });
@@ -280,7 +280,7 @@ describe('executeSplitJobFlow', () => {
 
             expect(mockedSplitJob).not.toHaveBeenCalled();
             expect(opts.showToast).toHaveBeenCalledWith(
-                expect.stringContaining('has not been split'),
+                expect.stringContaining("job wasn't split"),
                 'error',
             );
         });
@@ -293,7 +293,7 @@ describe('executeSplitJobFlow', () => {
 
             expect(mockedOpenSplitPricingDialog).not.toHaveBeenCalled();
             expect(opts.showToast).toHaveBeenCalledWith(
-                expect.stringContaining('Could not preview split pricing'),
+                expect.stringContaining("Couldn't preview split pricing"),
                 'warning',
             );
             expect(mockedSplitJob).toHaveBeenCalledWith(
@@ -333,7 +333,7 @@ describe('executeSplitJobFlow', () => {
                 pricingAllocation: CONFIRMED_ALLOCATION,
                 lineAllocation: [],
             });
-            expect(opts.showToast).toHaveBeenCalledWith('Job J001 successfully split', 'success');
+            expect(opts.showToast).toHaveBeenCalledWith('Job J001 split', 'success');
             expect(opts.onComplete).toHaveBeenCalled();
             expect(opts.setLoading).toHaveBeenCalledWith(true);
             expect(opts.setLoading).toHaveBeenCalledWith(false);
@@ -348,7 +348,7 @@ describe('executeSplitJobFlow', () => {
             await executeSplitJobFlow(opts);
 
             expect(opts.showToast).toHaveBeenCalledWith(
-                expect.stringContaining('Error splitting job'),
+                expect.stringContaining("Couldn't split the job"),
                 'error',
             );
             expect(opts.setLoading).toHaveBeenCalledWith(false);

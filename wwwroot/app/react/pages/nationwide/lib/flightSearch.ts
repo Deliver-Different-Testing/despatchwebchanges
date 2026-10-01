@@ -17,12 +17,12 @@ dayjs.extend(timezone);
 /** Hard-coded in V1's `loadFlights`; connections shorter than this are excluded. */
 export const MINIMUM_LAYOVER_MINUTES = 60;
 
-export const NO_JOB_MESSAGE = 'Please select a job to view flight options';
+export const NO_JOB_MESSAGE = 'Select a job to view flight options';
 export const NO_AIRPORTS_MESSAGE =
-    'Please select both outbound and inbound airports to search for flights';
+    'Select outbound and inbound airports to search for flights';
 export const NO_FLIGHTS_MESSAGE = 'No flights available for the selected criteria';
 export const GENERIC_ERROR_MESSAGE =
-    'An error occurred while loading flights. Please try again.';
+    "Couldn't load flights. Check your connection and try again.";
 
 export interface FlightSearchGuardInput {
     job?: {assignedFlight?: unknown} | undefined;

@@ -54,7 +54,7 @@ export function ClearListDebugButton({ courierId }: { courierId: number }) {
             const result = await fetchClearListDebug(courierId);
             setData(result);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to load debug info');
+            setError(err instanceof Error ? err.message : "Couldn't load the debug info. Try again.");
         } finally {
             setLoading(false);
         }

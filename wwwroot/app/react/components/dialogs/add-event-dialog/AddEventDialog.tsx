@@ -93,7 +93,7 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
             setIsLoading(false);
         } catch (error) {
             console.error('Error loading event types:', error);
-            showToast('Failed to load event types.', 'error');
+            showToast("Couldn't load event types. Refresh and try again.", 'error');
             setIsLoading(false);
         }
     }, [onLoadEventTypes, showToast]);
@@ -130,7 +130,7 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
         if (!job) return;
 
         if (!isFormValid) {
-            showToast('Please complete all required fields.', 'warning');
+            showToast('Complete all required fields', 'warning');
             return;
         }
 
@@ -145,11 +145,11 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
             };
 
             await onSubmit(eventData);
-            showToast('Task added successfully.', 'success');
+            showToast('Task added', 'success');
             onClose();
         } catch (error: unknown) {
             console.error('Error adding event:', error);
-            showToast(error instanceof Error ? error.message : 'Failed to add task.', 'error');
+            showToast(error instanceof Error ? `Couldn't add task. ${error.message}` : "Couldn't add task. Try again.", 'error');
             setIsSubmitting(false);
         }
     };

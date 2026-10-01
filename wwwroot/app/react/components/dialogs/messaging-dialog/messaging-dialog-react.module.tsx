@@ -36,7 +36,7 @@ const host = createDialogHost<void, void>({
 export function openMessagingDialog(options?: OpenMessagingDialogOptions): Promise<void> {
     if (!currentStaffId()) {
         console.error('[MessagingDialog] Unable to determine current staff member');
-        options?.toastService?.showToast('Unable to determine current staff member', 'error');
+        options?.toastService?.showToast("Couldn't open messaging. Refresh and try again.", 'error');
         return Promise.resolve();
     }
 

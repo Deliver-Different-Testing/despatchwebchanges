@@ -163,7 +163,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             setShowResult(true);
         } catch (error: unknown) {
             console.error('Error saving price:', error);
-            const msg = error instanceof Error ? error.message : 'Failed to save price. Please try again.';
+            const msg = error instanceof Error ? `Couldn't save price. ${error.message}` : "Couldn't save price. Try again.";
             setErrorMessage(msg);
             showToast(msg, 'error');
         } finally {

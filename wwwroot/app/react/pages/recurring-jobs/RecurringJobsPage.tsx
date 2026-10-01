@@ -132,12 +132,12 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         const modeLabel = RecurringMode[mode];
         try {
             await updateJobDetail(job.id, 'RecurringMode', String(mode), true);
-            showToast(`Mode changed to ${modeLabel}.`, 'success');
+            showToast(`Mode changed to ${modeLabel}`, 'success');
             await refetch();
         } catch (error) {
             const message = error instanceof Error
                 ? error.message
-                : `Failed to change mode to ${modeLabel}.`;
+                : `Couldn't change the mode to ${modeLabel}. Try again.`;
             console.error('Mode change failed:', error);
             showToast(message, 'error');
         }
@@ -158,12 +158,12 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     const handleExport = useCallback(async () => {
         setIsExporting(true);
         try {
-            showToast('Exporting recurring jobs...', 'info');
+            showToast('Exporting recurring jobs…', 'info');
             await recurringJobsApi.exportToCsv(query);
-            showToast('Recurring jobs exported successfully', 'success');
+            showToast('Recurring jobs exported', 'success');
         } catch (error) {
             console.error('Export failed:', error);
-            showToast('Failed to export recurring jobs', 'error');
+            showToast("Couldn't export recurring jobs. Check your connection and try again.", 'error');
         } finally {
             setIsExporting(false);
         }

@@ -73,7 +73,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             if (e instanceof Error && (e.name === 'AbortError' || e.name === 'CanceledError') || controller.signal.aborted) {
                 return;
             }
-            const message = e instanceof Error ? e.message : 'Failed to generate Auto-mate summary';
+            const message = e instanceof Error ? e.message : "Couldn't generate the Auto-mate summary. Try again.";
             setError(message);
         } finally {
             if (abortControllerRef.current === controller) {

@@ -272,7 +272,7 @@ describe('NoteManagementDialog', () => {
 
         await waitFor(() => {
             expect(props.onCreateNote).toHaveBeenCalled();
-            expect(props.showToast).toHaveBeenCalledWith('Note created successfully', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('Note created', 'success');
         });
     });
 
@@ -327,7 +327,7 @@ describe('NoteManagementDialog', () => {
         });
 
         await waitFor(() => {
-            expect(props.showToast).toHaveBeenCalledWith('Failed to save note', 'error');
+            expect(props.showToast).toHaveBeenCalledWith("Couldn't save note. Try again.", 'error');
         });
     });
 });

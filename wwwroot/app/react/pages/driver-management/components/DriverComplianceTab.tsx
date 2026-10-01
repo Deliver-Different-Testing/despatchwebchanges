@@ -107,7 +107,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
             await sendReminder.mutateAsync(item);
             showToast(`Reminder sent to ${item.name}`, 'success');
         } catch {
-            showToast('Failed to send reminder', 'error');
+            showToast("Couldn't send the reminder. Check your connection and try again.", 'error');
         }
     };
 
@@ -118,7 +118,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
 
     const handleOpenBulkDialog = () => {
         if (remindableItems.length === 0) {
-            showToast('No drivers need reminders at this time', 'info');
+            showToast('No drivers need reminders right now', 'info');
             return;
         }
         setBulkDialogOpen(true);
@@ -130,7 +130,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
             await sendBulk.mutateAsync(remindableItems);
             showToast(`Reminders sent to ${remindableItems.length} driver(s)`, 'success');
         } catch {
-            showToast('Failed to send reminders', 'error');
+            showToast("Couldn't send the reminders. Check your connection and try again.", 'error');
         }
     };
 
@@ -148,7 +148,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
         try {
             await driverManagementApi.exportComplianceCsv(query, filters);
         } catch {
-            showToast('Failed to export data', 'error');
+            showToast("Couldn't export the data. Try again.", 'error');
         }
     };
 

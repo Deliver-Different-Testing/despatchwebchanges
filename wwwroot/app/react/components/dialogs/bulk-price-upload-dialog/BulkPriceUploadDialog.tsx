@@ -105,7 +105,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
         if (!VALID_EXTENSIONS.includes(extension)) {
-            setErrorMessage('Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.');
+            setErrorMessage('Upload an Excel (.xls, .xlsx) or CSV file');
             return;
         }
 
@@ -202,7 +202,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
 
             if (updatedCount === 0 && skippedCount > 0) {
                 showToast(
-                    `No prices were updated. ${skippedCount} ${skippedCount === 1 ? 'job' : 'jobs'} could not be updated.`,
+                    `No prices were updated. ${skippedCount} ${skippedCount === 1 ? 'job' : 'jobs'} couldn't be updated.`,
                     'error',
                 );
             } else if (skippedCount > 0) {
@@ -211,11 +211,11 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     'warning',
                 );
             } else {
-                showToast(`Successfully updated prices for ${updatedCount} jobs.`, 'success');
+                showToast(`Updated prices for ${updatedCount} jobs`, 'success');
             }
         } catch (error: unknown) {
             console.error('Error applying prices:', error);
-            const msg = error instanceof Error ? error.message : 'Failed to apply prices. Please try again.';
+            const msg = error instanceof Error ? `Couldn't apply prices. ${error.message}` : "Couldn't apply prices. Try again.";
             setErrorMessage(msg);
             setCurrentState('mode-select');
             setIsLoading(false);

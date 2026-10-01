@@ -350,7 +350,7 @@ describe('MessagingDialog', () => {
             await user.click(screen.getByRole('button', {name: 'Send message'}));
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Failed to send message', 'error');
+                expect(showToast).toHaveBeenCalledWith("Couldn't send message. Check your connection and try again.", 'error');
             });
         }, 30000);
     });

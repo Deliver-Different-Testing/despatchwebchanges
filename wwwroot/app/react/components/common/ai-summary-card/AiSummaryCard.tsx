@@ -139,7 +139,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
             ) {
                 return;
             }
-            setError(e instanceof Error ? e.message : 'Failed to generate Auto-mate summary');
+            setError(e instanceof Error ? e.message : "Couldn't generate the Auto-mate summary. Try again.");
         } finally {
             if (abortRef.current === controller) {
                 setLoading(false);

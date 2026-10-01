@@ -115,7 +115,7 @@ describe('VoidJobConfirmationDialog', () => {
 
         await waitFor(() => {
             expect(props.onVoidJob).toHaveBeenCalledWith(123, true, 'Customer requested cancellation', undefined);
-            expect(props.showToast).toHaveBeenCalledWith('JOB-001 has been voided successfully.', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('JOB-001 voided', 'success');
             expect(props.onConfirm).toHaveBeenCalledWith({success: true, voidedCount: 1});
         });
     });
@@ -265,7 +265,7 @@ describe('VoidJobConfirmationDialog', () => {
 
         await waitFor(() => {
             expect(props.onVoidJob).toHaveBeenCalledWith(123, false, 'Multi-void reason', [123, 124]);
-            expect(props.showToast).toHaveBeenCalledWith('2 jobs have been voided successfully.', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('2 jobs voided', 'success');
         });
     });
 

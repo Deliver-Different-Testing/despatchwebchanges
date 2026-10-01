@@ -709,7 +709,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh();
             }
         } catch {
-            showToast('Failed to restore jobs', 'error');
+            showToast("Couldn't restore the jobs. Check your connection and try again.", 'error');
         }
     }, [multiSelect, jobs, showToast, fetchConfig, onRefresh]);
 
@@ -756,7 +756,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh();
             }
         } catch {
-            showToast('Failed to mark jobs as read', 'error');
+            showToast("Couldn't mark the jobs as read. Check your connection and try again.", 'error');
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 
@@ -772,7 +772,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh();
             }
         } catch {
-            showToast('Failed to mark jobs as unread', 'error');
+            showToast("Couldn't mark the jobs as unread. Check your connection and try again.", 'error');
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 
@@ -824,7 +824,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             }
         } catch (err) {
             // Re-throw so the dialog surfaces the error inline.
-            const message = err instanceof Error ? err.message : 'Failed to dispatch jobs';
+            const message = err instanceof Error ? err.message : "Couldn't dispatch the jobs. Check your connection and try again.";
             throw new Error(message, {cause: err});
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh, closeBulkDispatch]);
@@ -832,7 +832,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // Bulk DFRNT Partner is disabled in the dialog (per-job rates required),
     // so this should never fire — but the dialog still needs the prop.
     const handleBulkSendToPartner = useCallback(async () => {
-        throw new Error('DFRNT Partner is not available for bulk dispatch.');
+        throw new Error("DFRNT Partner can't be used for bulk dispatch. Dispatch these jobs one at a time.");
     }, []);
 
     const handleJobDispatch = useCallback(async (
@@ -876,7 +876,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         } catch {
             // Rollback — restore original job
             setPushedJobs(prev => prev.map(j => j.id === job.id ? job : j));
-            showToast('Failed to dispatch job', 'error');
+            showToast("Couldn't dispatch the job. Check your connection and try again.", 'error');
         }
     }, [showToast, fetchConfig, onRefresh]);
 

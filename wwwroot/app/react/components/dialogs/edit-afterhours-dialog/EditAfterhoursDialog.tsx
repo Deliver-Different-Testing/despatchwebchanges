@@ -92,13 +92,13 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
     // Show error toasts for query failures
     useEffect(() => {
         if (courierSearchError) {
-            showToast('An error occurred while searching. Please try again later.', 'error');
+            showToast("Couldn't search couriers. Try again.", 'error');
         }
     }, [courierSearchError, showToast]);
 
     useEffect(() => {
         if (timeZoneError) {
-            showToast('Failed to load time zone options.', 'error');
+            showToast("Couldn't load time zones. Refresh and try again.", 'error');
         }
     }, [timeZoneError, showToast]);
 

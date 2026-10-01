@@ -232,10 +232,10 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         try {
             await notesApi.deleteNote(note.noteId ?? 0, note.jobId ?? (isRecurringJob ? undefined : jobId));
             await invalidateNotes();
-            showSuccessToast?.('Note deleted successfully');
+            showSuccessToast?.('Note deleted');
         } catch (error) {
             console.error('Error deleting note:', error);
-            showErrorToast?.('Failed to delete note');
+            showErrorToast?.("Couldn't delete the note. Check your connection and try again.");
         }
     };
 

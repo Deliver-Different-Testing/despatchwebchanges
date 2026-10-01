@@ -224,7 +224,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             setFormFuelChargeAmount(suggestion.fuelChargeAmount);
             setFormFuelCostAmount(suggestion.fuelCostAmount);
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to calculate suggested fuel charge.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't calculate the suggested fuel charge. Try again."), 'error');
         } finally {
             setIsFuelLoading(false);
         }
@@ -291,7 +291,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             handleCancelEdit();
         } catch (error) {
             const action = wasNew ? 'add' : 'update';
-            showToast?.(extractErrorMessage(error, `Failed to ${action} price item.`), 'error');
+            showToast?.(extractErrorMessage(error, `Couldn't ${action} price item. Try again.`), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -317,7 +317,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             showToast?.(`Deleted "${item.name}"`, 'success');
             setConfirmDelete(null);
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to delete price item.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't delete price item. Try again."), 'error');
         } finally {
             setIsDeleting(null);
         }

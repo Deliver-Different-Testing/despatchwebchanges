@@ -369,7 +369,7 @@ export function JobDetails({config}: JobDetailsProps) {
 
     const handleResetFieldVisibility = useCallback(() => {
         resetToDefaults();
-        showToast('Default Job Detail layout restored', 'success');
+        showToast('Default job detail layout restored', 'success');
     }, [resetToDefaults, showToast]);
 
     const handleToggleReadStatus = useCallback(async () => {

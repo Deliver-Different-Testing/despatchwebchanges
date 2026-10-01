@@ -108,10 +108,10 @@ export function ChangeCourierDialog({
         setSaving(true);
         try {
             await onSave(newCourier.id);
-            showToast('Paid courier changed successfully.', 'success');
+            showToast('Paid courier changed', 'success');
             onClose();
         } catch {
-            showToast('An error occurred while changing the courier. Please try again.', 'error');
+            showToast("Couldn't change the courier. Try again.", 'error');
             setSaving(false);
         }
     };

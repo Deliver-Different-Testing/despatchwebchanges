@@ -219,12 +219,12 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             pairingId: pairingId ?? undefined,
         }).then((result) => {
             if (!result.success) {
-                toast.update(result.message ?? 'Submission failed', 'error');
+                toast.update(result.message ?? "Couldn't submit the change. Try again.", 'error');
                 return;
             }
             if (result.peerForwardWarning) {
                 toast.update(
-                    `Saved locally, but ${partnerLabel} was not notified (${result.peerForwardWarning}). Please retry or contact support.`,
+                    `Saved locally, but ${partnerLabel} was not notified (${result.peerForwardWarning}). Retry or contact support.`,
                     'warning',
                 );
             } else {
@@ -237,7 +237,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             }
             onSubmitted?.(result);
         }).catch((e: unknown) => {
-            const msg = (e as { message?: string })?.message ?? 'Submission failed';
+            const msg = (e as { message?: string })?.message ?? "Couldn't submit the change. Try again.";
             toast.update(msg, 'error');
         });
     }, [fieldName, submitValue, meta.category, meta.mode, meta.label, reason, jobId, partnerLabel, pairingId, onClose, onSubmitted]);

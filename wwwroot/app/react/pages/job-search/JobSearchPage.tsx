@@ -136,7 +136,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             })
             .catch(err => {
                 console.error('[JobSearchPage] Failed to load job detail:', err);
-                showToast('Could not load the full job detail. Showing the list row only.', 'error');
+                showToast("Couldn't load the full job detail. Showing the list row only.", 'error');
             });
     }, [showToast]);
 
@@ -315,7 +315,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             return filterCouriersForNumericSearch(results, text) as unknown as ISuggestion[];
         } catch (err) {
             console.error('Error in courier search:', err);
-            showToast('Courier search failed. Please try again.', 'error');
+            showToast("Couldn't search couriers. Check your connection and try again.", 'error');
             return [];
         }
     }, [showToast]);
@@ -326,7 +326,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             return results as ISuggestion[];
         } catch (err) {
             console.error('Error in speed search:', err);
-            showToast('Service-level search failed. Please try again.', 'error');
+            showToast("Couldn't search service levels. Check your connection and try again.", 'error');
             return [];
         }
     }, [showToast]);
@@ -386,7 +386,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 .then(() => queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all}))
                 .catch((err: unknown) => console.error('Bulk upload dialog error:', err));
         } else {
-            showToast('Bulk price upload dialog is not loaded.', 'warning');
+            showToast("Bulk price upload didn't load. Refresh the page and try again.", 'warning');
         }
     }, [showToast]);
 
@@ -400,7 +400,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const performRestore = useCallback(async (job: DispatchJob, removeCapturedImages = false) => {
         await addRestoreEvent(job.id);
         await restoreJobs([job.id], removeCapturedImages);
-        showToast(`${job.jobNo} restored.`, 'success');
+        showToast(`${job.jobNo} restored`, 'success');
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
 
@@ -463,7 +463,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     if (job.displaySplitJobDetail) {
                         await addRestoreEvent(job.id);
                         await restoreSplitJobs([job.id]);
-                        showToast(`${job.jobNo} restored.`, 'success');
+                        showToast(`${job.jobNo} restored`, 'success');
                         await Promise.all([invalidateLists(), invalidateDetail()]);
                         return;
                     }
@@ -502,7 +502,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 case 'unlock': {
                     const locked = actionId === 'lock';
                     await setJobLocked(job.id, locked, !!job.preBook);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
+                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;
                 }
@@ -531,18 +531,19 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     if ((msg || '').length > 2) {
                         showToast(msg, 'error');
                     } else {
-                        showToast(`${job.jobNo} un-split.`, 'success');
+                        showToast(`${job.jobNo} un-split`, 'success');
                     }
                     await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;
                 }
 
                 default:
-                    showToast(`Unknown job action: ${actionId}`, 'warning');
+                    console.error(`[JobSearchPage] Unknown job action "${actionId}"`);
+                    showToast("That action isn't available here.", 'warning');
             }
         } catch (error) {
             console.error(`[JobSearchPage] Job action "${actionId}" failed:`, error);
-            showToast(`Failed to ${actionId}: ${error instanceof Error ? error.message : 'unknown error'}`, 'error');
+            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
         }
     }, [showToast, openChangeCourier]);
 
@@ -576,7 +577,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         if (!currentJob) return;
         const result = await sendToPartner(currentJob.id, partner.id, agreedRate);
         if (!result.success) {
-            throw new Error(result.message || 'Failed to send job to partner');
+            throw new Error(result.message || "Couldn't send the job to the partner. Try again.");
         }
         setDispatchDialogOpen(false);
         showToast(`Job ${currentJob.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`, 'success');

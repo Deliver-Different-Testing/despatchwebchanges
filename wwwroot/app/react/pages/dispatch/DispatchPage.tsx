@@ -334,7 +334,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             if (job) selectJob(job as unknown as DispatchJob);
         } catch (err) {
             console.error('[DispatchPage] failed to load job detail:', err);
-            showToast('Error loading job details', 'error');
+            showToast("Couldn't load the job details. Check your connection and try again.", 'error');
         }
     }, [selectJob, showToast]);
 
@@ -507,7 +507,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         if (!currentJob) return;
         const result = await sendToPartner(currentJob.id, partner.id, agreedRate);
         if (!result.success) {
-            throw new Error(result.message || 'Failed to send job to partner');
+            throw new Error(result.message || "Couldn't send the job to the partner. Try again.");
         }
         closeDispatchDialog();
         showToast(`Job ${currentJob.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`, 'success');
@@ -573,7 +573,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 case 'unlock': {
                     const locked = actionId === 'lock';
                     await setJobLocked(job.id, locked, !!job.preBook);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
+                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     await refreshLists();
                     refreshDetail();
                     return;
@@ -599,11 +599,12 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     return;
 
                 default:
-                    showToast(`Unknown FAB action: ${actionId}`, 'warning');
+                    console.error(`[DispatchPage] Unknown FAB action "${actionId}"`);
+                    showToast("That action isn't available here.", 'warning');
             }
         } catch (error) {
             console.error(`[DispatchPage] FAB action "${actionId}" failed:`, error);
-            showToast(`Failed to ${actionId}: ${error instanceof Error ? error.message : 'unknown error'}`, 'error');
+            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
         }
     }, [showToast, isUsCustomer, jobCreated]);
 

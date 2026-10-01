@@ -75,7 +75,7 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
         try {
             await driverManagementApi.exportTodayActiveDriversCsv(query, filters);
         } catch {
-            showToast('Failed to export data', 'error');
+            showToast("Couldn't export the data. Try again.", 'error');
         }
     };
 

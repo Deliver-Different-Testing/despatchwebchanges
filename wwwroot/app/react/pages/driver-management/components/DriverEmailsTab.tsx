@@ -74,15 +74,15 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
             if (!result) return;
 
             await sendEmail.mutateAsync(result);
-            showToast(`Email${recipients.length > 1 ? 's' : ''} sent successfully`, 'success');
+            showToast(`Email${recipients.length > 1 ? 's' : ''} sent`, 'success');
         } catch {
-            showToast('Failed to send email', 'error');
+            showToast("Couldn't send the email. Check your connection and try again.", 'error');
         }
     };
 
     const handleComposeEmail = async () => {
         const selected = items.filter(e => selectedIds.has(e.courierId));
-        if (selected.length === 0) { showToast('No recipients selected', 'warning'); return; }
+        if (selected.length === 0) { showToast('Select at least one recipient', 'warning'); return; }
         await openComposeDialog(selected);
     };
 
@@ -94,7 +94,7 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
         try {
             await driverManagementApi.exportDriverEmailsCsv(query);
         } catch {
-            showToast('Failed to export data', 'error');
+            showToast("Couldn't export the data. Try again.", 'error');
         }
     };
 

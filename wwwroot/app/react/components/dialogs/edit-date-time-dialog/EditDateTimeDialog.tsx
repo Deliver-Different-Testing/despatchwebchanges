@@ -141,7 +141,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
     // Handle form submission
     const handleSubmit = useCallback(async () => {
         if (!dateTime || !dateTime.isValid()) {
-            showToast('Please provide valid date/time information', 'warning');
+            showToast('Enter a date and time', 'warning');
             return;
         }
 
@@ -160,7 +160,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             await onSubmit(result);
         } catch (error: unknown) {
             console.error('Error submitting date/time:', error);
-            showToast(error instanceof Error ? error.message : 'Failed to save date/time', 'error');
+            showToast(error instanceof Error ? `Couldn't save date/time. ${error.message}` : "Couldn't save date/time. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -180,7 +180,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             });
         } catch (error: unknown) {
             console.error('Error clearing date/time:', error);
-            showToast(error instanceof Error ? error.message : 'Failed to clear date/time', 'error');
+            showToast(error instanceof Error ? `Couldn't clear date/time. ${error.message}` : "Couldn't clear date/time. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }

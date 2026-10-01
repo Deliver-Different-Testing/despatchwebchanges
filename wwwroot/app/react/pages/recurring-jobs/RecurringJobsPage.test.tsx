@@ -201,13 +201,13 @@ describe('RecurringJobsPage', () => {
         fireEvent.click(exportButton!);
 
         await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith('Exporting recurring jobs...', 'info');
+            expect(showToast).toHaveBeenCalledWith('Exporting recurring jobs…', 'info');
         });
         await waitFor(() => {
             expect(mockRecurringJobsApi.exportToCsv).toHaveBeenCalled();
         });
         await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith('Recurring jobs exported successfully', 'success');
+            expect(showToast).toHaveBeenCalledWith('Recurring jobs exported', 'success');
         });
     });
 
@@ -306,7 +306,7 @@ describe('RecurringJobsPage', () => {
         // Toast fires only after updateJobDetail resolves, so a single
         // waitFor on the toast covers both — no double-poll needed.
         await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith('Mode changed to Inactive.', 'success');
+            expect(showToast).toHaveBeenCalledWith('Mode changed to Inactive', 'success');
         });
         expect(mockUpdateJobDetail).toHaveBeenCalledWith(1, 'RecurringMode', '0', true);
         expect(refetch).toHaveBeenCalled();

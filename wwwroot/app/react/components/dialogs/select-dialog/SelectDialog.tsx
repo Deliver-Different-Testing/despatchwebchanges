@@ -55,7 +55,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
 
     const handleSubmit = useCallback(async () => {
         if (!selectedItem) {
-            showToast('Please select an option', 'warning');
+            showToast('Select an option', 'warning');
             return;
         }
 
@@ -72,7 +72,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             await onSubmit(result);
         } catch (error: unknown) {
             console.error('Error submitting selection:', error);
-            showToast(error instanceof Error ? error.message : 'Failed to save selection', 'error');
+            showToast(error instanceof Error ? `Couldn't save selection. ${error.message}` : "Couldn't save selection. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }

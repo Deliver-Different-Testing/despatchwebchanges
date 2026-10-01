@@ -392,7 +392,7 @@ describe('SimplePriceEditDialog', () => {
             await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Network error', 'error');
+                expect(showToast).toHaveBeenCalledWith("Couldn't save price. Network error", 'error');
             });
         });
 
@@ -418,7 +418,7 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
 
-            expect(await screen.findByText('Price update failed')).toBeInTheDocument();
+            expect(await screen.findByText("Couldn't save price. Price update failed")).toBeInTheDocument();
         });
 
         it('uses fallback message when error has no message', async () => {
@@ -431,7 +431,7 @@ describe('SimplePriceEditDialog', () => {
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith(
-                    'Failed to save price. Please try again.',
+                    "Couldn't save price. Try again.",
                     'error'
                 );
             });

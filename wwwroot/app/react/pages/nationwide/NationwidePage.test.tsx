@@ -325,7 +325,7 @@ describe('NationwidePage', () => {
             });
 
             await waitFor(() => expect(showToast).toHaveBeenCalledWith(
-                'Courier dispatch is not supported for US customers',
+                "Courier dispatch isn't available for US customers.",
                 'warning',
             ));
             expect(executeDispatchConfirmationMock).not.toHaveBeenCalled();
@@ -486,10 +486,10 @@ describe('NationwidePage', () => {
             expect(assignFlightToJobMock).toHaveBeenCalled();
             expect(showToast).toHaveBeenCalledWith('Flight assigned to job', 'success');
             expect(showToast).toHaveBeenCalledWith(
-                'Flight assigned, but the job details could not be refreshed. Please refresh the page.',
+                "Flight assigned, but the job details didn't refresh. Refresh the page to see the change.",
                 'warning',
             );
-            expect(showToast).not.toHaveBeenCalledWith('Could not assign the flight. Please try again.', 'error');
+            expect(showToast).not.toHaveBeenCalledWith("Couldn't assign the flight. Check your connection and try again.", 'error');
             postSpy.mockRestore();
         });
 
@@ -512,7 +512,7 @@ describe('NationwidePage', () => {
                 await onAddFlight(mockFlight);
             });
 
-            expect(showToast).toHaveBeenCalledWith('Could not assign the flight. Please try again.', 'error');
+            expect(showToast).toHaveBeenCalledWith("Couldn't assign the flight. Check your connection and try again.", 'error');
             expect(postSpy).not.toHaveBeenCalledWith('job/UpdateJob', expect.anything());
             postSpy.mockRestore();
         });

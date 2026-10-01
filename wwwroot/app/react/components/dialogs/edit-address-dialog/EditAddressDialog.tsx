@@ -253,7 +253,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             };
         } catch (error) {
             console.error('[EditAddressDialog] Error initializing HERE Maps:', error);
-            showToast('Error loading map. Please try again.', 'error');
+            showToast("Couldn't load the map. Refresh and try again.", 'error');
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- map init only after dialog transition/apiKey; lat/lng/addMarker change during drag
     }, [dialogFullyOpen, hereMapsApiKey]);
@@ -465,7 +465,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             }
         } catch (error) {
             console.error('[EditAddressDialog] Error fetching nearest address:', error);
-            showToast('Error retrieving address information.', 'error');
+            showToast("Couldn't get address details. Try again.", 'error');
         } finally {
             setIsLoadingAddress(false);
         }
@@ -504,7 +504,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             }
         } catch (error) {
             console.error('[EditAddressDialog] Error processing selected address:', error);
-            showToast('Error processing selected address.', 'error');
+            showToast("Couldn't use the selected address. Try again.", 'error');
         } finally {
             setIsLoadingAddress(false);
         }

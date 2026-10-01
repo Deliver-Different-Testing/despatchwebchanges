@@ -588,7 +588,7 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('No flight segments available', 'error');
+                expect(showToast).toHaveBeenCalledWith("Couldn't load flight details. This flight has no segments.", 'error');
             });
         });
 
@@ -608,7 +608,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith(
-                    'Failed to calculate cargo processing times',
+                    "Couldn't calculate cargo processing times. Try again.",
                     'error'
                 );
             });

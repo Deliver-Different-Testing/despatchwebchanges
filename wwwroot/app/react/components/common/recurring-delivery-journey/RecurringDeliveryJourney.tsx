@@ -91,7 +91,7 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
 
                 {bookingId && isError && (
                     <Alert color="red" m={16}>
-                        Failed to load recurring log: {error?.message ?? 'unknown error'}
+                        Couldn't load the recurring log. {error?.message ?? 'Try again.'}
                     </Alert>
                 )}
 

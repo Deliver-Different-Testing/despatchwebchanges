@@ -335,7 +335,7 @@ describe('RecoveryAgentManagementDialog', () => {
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith(
-                    'Failed to assign agent. Please try again.',
+                    "Couldn't assign agent. Try again.",
                     'error'
                 );
             });

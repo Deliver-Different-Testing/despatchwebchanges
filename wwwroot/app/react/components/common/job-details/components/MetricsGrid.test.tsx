@@ -91,7 +91,7 @@ describe('MetricsGrid', () => {
 
         const dispatchButton = screen.getByText('Dispatched').closest('button');
         if (dispatchButton) fireEvent.click(dispatchButton);
-        expect(showToast).toHaveBeenCalledWith('Dispatch Time is not editable', 'info');
+        expect(showToast).toHaveBeenCalledWith("Dispatch time can't be edited", 'info');
     });
 
     it('calls onEditPodName when POD Name card is clicked', () => {

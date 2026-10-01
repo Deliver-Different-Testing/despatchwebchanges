@@ -150,7 +150,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
     useEffect(() => {
         if (fetchError) {
             console.error('Error loading delivery journey:', fetchError);
-            showErrorToast?.('Failed to load delivery journey');
+            showErrorToast?.("Couldn't load the delivery journey. Check your connection and try again.");
         }
     }, [fetchError, showErrorToast]);
 
@@ -185,7 +185,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
     }, [densityMode]);
 
     const handleRefresh = useCallback(async (): Promise<void> => {
-        showInfoToast?.('Refreshing delivery journey...');
+        showInfoToast?.('Refreshing delivery journey…');
         setShouldAnimate(false);
         await refetch();
         setShouldAnimate(true);

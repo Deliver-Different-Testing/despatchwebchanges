@@ -276,7 +276,7 @@ describe('ClearListDebugButton', () => {
 
             await user.click(screen.getByRole('button'));
 
-            expect(await screen.findByText('Failed to load debug info')).toBeInTheDocument();
+            expect(await screen.findByText("Couldn't load the debug info. Try again.")).toBeInTheDocument();
         });
 
         it('shows Error.message when API throws an Error', async () => {

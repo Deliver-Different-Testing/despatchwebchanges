@@ -251,11 +251,11 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
-            showSuccessToast?.('Task updated successfully');
+            showSuccessToast?.('Task updated');
             onTaskStatusChange?.(task);
         } catch (error) {
             task.closed = !newClosedState;
-            showErrorToast?.('Failed to update task');
+            showErrorToast?.("Couldn't update the task. Check your connection and try again.");
             console.error('Error updating task:', error);
         }
     }, [tasksService, showSuccessToast, showErrorToast, onTaskStatusChange]);

@@ -161,7 +161,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             showToast(activeJob.hasBeenRead ? 'Job marked as unread' : 'Job marked as read', 'success');
             refresh();
         } catch {
-            showToast('Error marking job as read/unread', 'error');
+            showToast("Couldn't update the job's read status. Check your connection and try again.", 'error');
         }
     };
 
@@ -175,10 +175,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             onConfirm: async () => {
                 try {
                     await api.restoreNationwideJob(activeJob.id);
-                    showToast(`${activeJob.assignedFlight?.flightNumber} unassigned successfully`, 'success');
+                    showToast(`${activeJob.assignedFlight?.flightNumber} unassigned`, 'success');
                     refresh();
                 } catch {
-                    showToast('Error unassigning flight', 'error');
+                    showToast("Couldn't unassign the flight. Check your connection and try again.", 'error');
                 }
             },
         });
@@ -195,10 +195,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             onConfirm: async () => {
                 try {
                     await api.restoreNationwideJob(activeJob.id);
-                    showToast(`${activeJob.assignedAgent?.agentName} unassigned successfully`, 'success');
+                    showToast(`${activeJob.assignedAgent?.agentName} unassigned`, 'success');
                     refresh();
                 } catch {
-                    showToast('Error unassigning agent', 'error');
+                    showToast("Couldn't unassign the agent. Check your connection and try again.", 'error');
                 }
             },
         });
@@ -237,10 +237,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 lateTime: mins,
                 calculationRequired: true,
             });
-            showToast('Late call applied successfully', 'success');
+            showToast('Late call applied', 'success');
             refresh();
         } catch {
-            showToast(`Error applying late ${lateType}`, 'error');
+            showToast(`Couldn't apply the late ${lateType}. Check your connection and try again.`, 'error');
         }
     };
 
@@ -251,7 +251,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             showToast(`Job ${activeJob.jobNo} marked as Reprice`, 'success');
             refresh();
         } catch {
-            showToast('Error repricing job', 'error');
+            showToast("Couldn't reprice the job. Check your connection and try again.", 'error');
         }
     };
 
@@ -309,7 +309,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             setDispatchDialog((s) => ({...s, open: false}));
             refresh();
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Error dispatching job';
+            const message = err instanceof Error ? err.message : "Couldn't dispatch the job. Check your connection and try again.";
             throw new Error(message, {cause: err});
         }
     };
@@ -322,7 +322,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         const sentJobNo = activeJob.jobNo;
         const result = await api.sendToPartner(sentJobId, partner.id, agreedRate);
         if (!result.success) {
-            throw new Error(result.message || 'Failed to send job to partner');
+            throw new Error(result.message || "Couldn't send the job to the partner. Try again.");
         }
         setDispatchDialog((s) => ({...s, open: false}));
         let copied = false;
@@ -375,7 +375,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             // Surface the server's message so operators see the real reason
             // ("Bulk job not found", "no releasable rows", SP/trigger mismatch, …)
             // rather than a generic failure string that hides the cause.
-            const message = (err as {message?: string})?.message ?? 'Failed to send bulk job to live';
+            const message = (err as {message?: string})?.message ?? "Couldn't send the bulk job to live. Try again.";
             showToast(message, 'error');
         }
     };
@@ -441,10 +441,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 if (activeJob.courierData?.courierId) {
                     try {
                         await api.setFirstJob(activeJob.id, activeJob.courierData.courierId);
-                        showToast('Job set as first job successfully', 'success');
+                        showToast('Job set as first job', 'success');
                         refresh();
                     } catch {
-                        showToast('Error setting first job', 'error');
+                        showToast("Couldn't set the first job. Check your connection and try again.", 'error');
                     }
                 }
             },
@@ -469,7 +469,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             refresh();
         } catch {
-            showToast('Error restoring job', 'error');
+            showToast("Couldn't restore the job. Check your connection and try again.", 'error');
         }
     };
 
@@ -500,10 +500,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         try {
             await api.markJobMissing(activeJob.id);
-            showToast('Job successfully marked as missing.', 'success');
+            showToast('Job marked as missing', 'success');
             refresh();
         } catch {
-            showToast('An unexpected error occurred marking this job as missing.', 'error');
+            showToast("Couldn't mark the job as missing. Check your connection and try again.", 'error');
         }
     };
 

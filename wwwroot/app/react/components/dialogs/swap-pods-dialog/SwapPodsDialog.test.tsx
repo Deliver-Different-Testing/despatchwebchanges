@@ -69,12 +69,12 @@ describe('SwapPodsDialog', () => {
         // Same job number → error, onValidate not called
         fireEvent.change(input, { target: { value: 'JOB-001' } });
         await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-        expect(screen.getByText(/cannot be the same/i)).toBeInTheDocument();
+        expect(screen.getByText(/enter a different job number/i)).toBeInTheDocument();
         expect(props.onValidate).not.toHaveBeenCalled();
 
         // Clear error on re-type
         fireEvent.change(input, { target: { value: 'JOB-0011' } });
-        expect(screen.queryByText(/cannot be the same/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/enter a different job number/i)).not.toBeInTheDocument();
 
         // Trim whitespace
         fireEvent.change(input, { target: { value: '  JOB-002  ' } });
@@ -110,12 +110,12 @@ describe('SwapPodsDialog', () => {
         await userEvent.click(screen.getByRole('button', {name: /validate/i}));
 
         // Error shown, stays on phase 1
-        expect(await screen.findByText(/not eligible/i)).toBeInTheDocument();
+        expect(await screen.findByText(/eligible for a POD swap/i)).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /confirm swap/i})).not.toBeInTheDocument();
 
         // Clear error on re-type
         fireEvent.change(input, { target: { value: 'JOB-9991' } });
-        expect(screen.queryByText(/not eligible/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/eligible for a POD swap/i)).not.toBeInTheDocument();
     });
 
     // ── Phase 1: network error ──────────────────────────────────────
@@ -126,7 +126,7 @@ describe('SwapPodsDialog', () => {
         renderWithTheme(<SwapPodsDialog {...props} />);
         fireEvent.change(screen.getByLabelText(/Second job number/i), { target: { value: 'JOB-002' } });
         await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-        expect(await screen.findByText(/failed to validate/i)).toBeInTheDocument();
+        expect(await screen.findByText(/couldn't check this job/i)).toBeInTheDocument();
     });
 
     // ── Phase 1 → Phase 2 transition (single render) ────────────────
@@ -170,7 +170,7 @@ describe('SwapPodsDialog', () => {
 
         await waitFor(() => {
             expect(props.onSwap).toHaveBeenCalledWith('JOB-001', 'JOB-002');
-            expect(props.showToast).toHaveBeenCalledWith('PODs swapped successfully.', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('PODs swapped', 'success');
             expect(props.onClose).toHaveBeenCalled();
         });
     });

@@ -342,7 +342,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     // Calculate cargo processing times
     const calculateCargoProcessingTimes = useCallback(async (lastFlight: FlightSegment) => {
         if (!lastFlight.arrivalAirportId) {
-            showToast('No arrival airport ID found for cargo processing calculation', 'warning');
+            console.error('[FlightAgentConfirmationDialog] No arrival airport ID found for cargo processing calculation');
+            showToast("Couldn't calculate cargo processing times. The arrival airport is missing.", 'warning');
             return;
         }
 
@@ -375,7 +376,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                     text: 'Error',
                     subtext: 'Unable to calculate times',
                 });
-                showToast('Failed to calculate cargo processing times', 'error');
+                showToast("Couldn't calculate cargo processing times. Try again.", 'error');
                 setIsCalculatingTimes(false);
                 return;
             }
@@ -400,7 +401,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setIsCalculatingTimes(false);
         } catch (error) {
             console.error('Error calculating cargo processing times:', error);
-            showToast('Failed to calculate cargo processing times', 'error');
+            showToast("Couldn't calculate cargo processing times. Try again.", 'error');
             setIsCalculatingTimes(false);
         }
     }, [jobId, onCalculateCargoTimes, showToast, initializeLoadingStates]);
@@ -408,7 +409,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     // Process flight data
     const processFlightData = useCallback(async () => {
         if (!flight?.flightSegments || flight.flightSegments.length === 0) {
-            showToast('No flight segments available', 'error');
+            showToast("Couldn't load flight details. This flight has no segments.", 'error');
             return;
         }
 

@@ -230,7 +230,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
 
     const handleAssignAgent = async () => {
         if (!job || !selectedAirport || !selectedAgent) {
-            showToast('Please select both airport and agent', 'warning');
+            showToast('Select both airport and agent', 'warning');
             return;
         }
 
@@ -258,7 +258,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
             );
         } catch (error) {
             console.error('Error assigning agent:', error);
-            showToast('Failed to assign agent. Please try again.', 'error');
+            showToast("Couldn't assign agent. Try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -266,7 +266,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
 
     const handleUpdateAgent = async () => {
         if (!editingAgent) {
-            showToast('No agent selected for update', 'warning');
+            showToast('Select an agent to update', 'warning');
             return;
         }
 
@@ -285,7 +285,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
             resetEditForm();
         } catch (error) {
             console.error('Error updating agent:', error);
-            showToast('Failed to update agent. Please try again.', 'error');
+            showToast("Couldn't update agent. Try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -310,7 +310,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
             showToast(`${agent.agentName} has been removed from the recovery assignment`, 'success');
         } catch (error) {
             console.error('Error removing agent:', error);
-            showToast('Failed to remove agent. Please try again.', 'error');
+            showToast("Couldn't remove agent. Try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }

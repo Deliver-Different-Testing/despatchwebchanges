@@ -181,7 +181,7 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                 )}
                 {error && (
                     <Alert color="red" mb="md">
-                        Could not load approvals: {(error as {message?: string}).message}
+                        Couldn't load approvals. {(error as {message?: string}).message}
                     </Alert>
                 )}
 

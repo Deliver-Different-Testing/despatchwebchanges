@@ -459,7 +459,7 @@ export function useJobActions({
         const failedCount = response?.failedJobIds?.length ?? 0;
         if (failedCount > 0) {
             showToast(
-                `Date applied to ${updatedJobIds.length} of ${updatedJobIds.length + failedCount} jobs`,
+                `Date updated on ${updatedJobIds.length} of ${updatedJobIds.length + failedCount} jobs`,
                 'warning');
         } else if (cascadeToChildren && updatedJobIds.length > 1) {
             showToast(`${j.jobNo} and ${updatedJobIds.length - 1} linked jobs updated`, 'success');
@@ -693,11 +693,11 @@ export function useJobActions({
         // tucJobArchive rows. A recurring booking id or a bulk-schedule id would be
         // written nowhere at all, so refuse up front instead of failing invisibly.
         if (j.preBook || isRecurringJob) {
-            showToast('Recurring bookings cannot be completed here. Open the live job for this run.', 'warning');
+            showToast("Recurring bookings can't be completed here. Open the live job for this run.", 'warning');
             return;
         }
         if (j.isBulkJob) {
-            showToast('Completing a job is not currently available for scheduled jobs.', 'warning');
+            showToast("Scheduled jobs can't be completed here.", 'warning');
             return;
         }
 
@@ -711,7 +711,7 @@ export function useJobActions({
                 defaultTimeZone: (current.deliveryTimeZone as any)?.text,
             });
             if (!result?.value) {
-                showToast('A POD time needs to be provided to close this job.', 'warning');
+                showToast('Enter a POD time to close this job.', 'warning');
                 return null;
             }
             return formatDateForApi(result.value, (current.deliveryTimeZone as any)?.text);
@@ -727,7 +727,7 @@ export function useJobActions({
                 'Complete Job',
             );
             if (!name?.trim()) {
-                showToast('A POD name needs to be provided to close this job.', 'warning');
+                showToast('Enter a POD name to close this job.', 'warning');
                 return null;
             }
             return name.trim();
@@ -758,7 +758,7 @@ export function useJobActions({
             podName: podName,
             podTime: podTime || '',
         });
-        showToast(`${j.jobNo} Completed`, 'success');
+        showToast(`${j.jobNo} completed`, 'success');
         await refreshAndNotify();
 
         // POD file upload (optional — user can skip by closing the dialog)
@@ -778,7 +778,7 @@ export function useJobActions({
         // so there is nothing that could put a half-undone archive right again.
         if (j.done) {
             if (j.isArchived) {
-                showToast(`${j.jobNo} is archived and completed, so it cannot be marked not done.`, 'warning');
+                showToast(`${j.jobNo} is archived and completed, so it can't be marked not done.`, 'warning');
                 return;
             }
             await updateField({job: j, field: JobProperty.Delivered, value: false, isRecurring: j.preBook});
@@ -793,11 +793,11 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (j.tailLiftPu && (!j.parcelDimensions || j.parcelDimensions.length === 0)) {
-            showToast('Please enter the parcels for this job before proceeding.', 'warning');
+            showToast('Enter the parcels for this job first.', 'warning');
             return;
         }
         if (j.isBulkJob) {
-            showToast('Tail Lift Pickup is not currently available for scheduled jobs.', 'warning');
+            showToast("Tail lift pickup isn't available for scheduled jobs.", 'warning');
             return;
         }
         await updateField({job: j, field: JobProperty.TailLiftPu, value: !j.tailLiftPu, isRecurring: j.preBook});
@@ -808,11 +808,11 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (j.tailLiftPu && (!j.parcelDimensions || j.parcelDimensions.length === 0)) {
-            showToast('Please enter the parcels for this job before proceeding.', 'warning');
+            showToast('Enter the parcels for this job first.', 'warning');
             return;
         }
         if (j.isBulkJob) {
-            showToast('Tail Lift Drop-off is not currently available for scheduled jobs.', 'warning');
+            showToast("Tail lift drop-off isn't available for scheduled jobs.", 'warning');
             return;
         }
         await updateField({job: j, field: JobProperty.TailLiftDo, value: !j.tailLiftDo, isRecurring: j.preBook});
@@ -823,7 +823,7 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (j.isBulkJob) {
-            showToast('Deliver to Private Residential is not currently available for scheduled jobs.', 'warning');
+            showToast("Deliver to private residential isn't available for scheduled jobs.", 'warning');
             return;
         }
         await updateField({job: j, field: JobProperty.DeliverToPrivateRes, value: isResidential, isRecurring: j.preBook});
@@ -875,7 +875,7 @@ export function useJobActions({
                     toastService.showSuccessToast(message);
                 }
             } catch (err) {
-                const message = err instanceof Error ? err.message : 'Dispatch failed';
+                const message = err instanceof Error ? err.message : "Couldn't dispatch the job. Check your connection and try again.";
                 throw new Error(message, {cause: err});
             }
             return;
@@ -895,7 +895,7 @@ export function useJobActions({
             await refreshAndNotify();
             setDispatchDialog((s) => ({...s, open: false}));
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Dispatch failed';
+            const message = err instanceof Error ? err.message : "Couldn't dispatch the job. Check your connection and try again.";
             throw new Error(message, {cause: err});
         }
     }, [isRecurringJob, dispatchJob, updateField, refreshAndNotify]);
@@ -941,7 +941,7 @@ export function useJobActions({
             .then(async (result) => {
                 if (!result.success) {
                     toast.update(
-                        result.message || `Failed to send job ${j.jobNo} to ${partner.text}`,
+                        result.message || `Couldn't send job ${j.jobNo} to ${partner.text}. Try again.`,
                         'error',
                     );
                     return;
@@ -955,7 +955,7 @@ export function useJobActions({
             .catch((err: unknown) => {
                 const message = err instanceof Error && err.message
                     ? err.message
-                    : `Failed to send job ${j.jobNo} to ${partner.text}`;
+                    : `Couldn't send job ${j.jobNo} to ${partner.text}. Try again.`;
                 toast.update(message, 'error');
             });
     }, [refreshAndNotify]);
@@ -998,7 +998,7 @@ export function useJobActions({
             return;
         }
         if (j.isInvoiced) {
-            showToast(`Job ${j.jobNo} is invoiced and cannot be modified.`, 'warning');
+            showToast(`Job ${j.jobNo} is invoiced, so it can't be modified.`, 'warning');
             return;
         }
         // Partner-side mirrors don't carry the owner's customer breakdown. The only
@@ -1531,7 +1531,7 @@ export function useJobActions({
             showToast(`Bulk job ${j.jobNo} sent to live — ${joined}${copySuffix}`, 'success');
             await refreshAndNotify();
         } catch (err) {
-            const message = (err as {message?: string})?.message ?? 'Failed to send bulk job to live';
+            const message = (err as {message?: string})?.message ?? "Couldn't send the bulk job to live. Try again.";
             showToast(message, 'error');
         }
     }, [showToast, refreshAndNotify]);

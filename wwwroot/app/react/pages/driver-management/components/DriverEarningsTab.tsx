@@ -47,7 +47,7 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
         try {
             await driverManagementApi.exportDriverEarningsCsv(query);
         } catch {
-            showToast('Failed to export data', 'error');
+            showToast("Couldn't export the data. Try again.", 'error');
         }
     };
 

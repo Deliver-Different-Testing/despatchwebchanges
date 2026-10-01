@@ -42,7 +42,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
 
     // ── Validate ──
     if (job.isArchived) {
-        showToast('Splitting archived jobs is not currently supported.', 'error');
+        showToast("Archived jobs can't be split.", 'error');
         return;
     }
 
@@ -64,7 +64,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
     }
 
     if (!meetingPointAddress.fullAddress) {
-        showToast('Invalid meeting point address', 'error');
+        showToast('Select a meeting point address', 'error');
         return;
     }
 
@@ -90,7 +90,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
     } catch (error) {
         console.error('Split pricing preview failed:', error);
         showToast(
-            `Could not preview split pricing — the split will use the calculated division. ${serverReason(error)}`.trim(),
+            `Couldn't preview split pricing. The split will use the calculated division. ${serverReason(error)}`.trim(),
             'warning',
         );
     }
@@ -103,7 +103,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
             pricingResult = await openSplitPricingDialog(job.jobNo, preview, legCourierNames);
         } catch (error) {
             console.error('Split pricing dialog failed:', error);
-            showToast('Could not confirm split pricing — the job has not been split.', 'error');
+            showToast("Couldn't confirm split pricing, so the job wasn't split. Try again.", 'error');
             return;
         }
 
@@ -125,7 +125,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
             pricingAllocation,
             lineAllocation,
         });
-        showToast(`Job ${job.jobNo} successfully split`, 'success');
+        showToast(`Job ${job.jobNo} split`, 'success');
         try {
             onComplete?.();
         } catch (e) {
@@ -133,7 +133,7 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
         }
     } catch (error) {
         console.error('Splitting job failed:', error);
-        showToast(`Error splitting job. ${serverReason(error)}`.trim(), 'error');
+        showToast(`Couldn't split the job. ${serverReason(error)}`.trim(), 'error');
     } finally {
         setLoading?.(false);
     }

@@ -29,7 +29,7 @@ describe('flightSearchGuard', () => {
         expect(flightSearchGuard({job: undefined, airports, loading: false})).toEqual({
             action: 'block',
             clearFlights: true,
-            message: 'Please select a job to view flight options',
+            message: 'Select a job to view flight options',
         });
     });
 
@@ -48,7 +48,7 @@ describe('flightSearchGuard', () => {
         const expected = {
             action: 'block',
             clearFlights: true,
-            message: 'Please select both outbound and inbound airports to search for flights',
+            message: 'Select outbound and inbound airports to search for flights',
         };
 
         expect(flightSearchGuard({job: {}, airports: {outbound: {id: 1}}, loading: false}))
@@ -157,9 +157,9 @@ describe('flightSearchErrorMessage', () => {
 
     it('uses a generic message when the error carries no detail', () => {
         expect(flightSearchErrorMessage({}))
-            .toBe('An error occurred while loading flights. Please try again.');
+            .toBe("Couldn't load flights. Check your connection and try again.");
         expect(flightSearchErrorMessage(undefined))
-            .toBe('An error occurred while loading flights. Please try again.');
+            .toBe("Couldn't load flights. Check your connection and try again.");
     });
 });
 

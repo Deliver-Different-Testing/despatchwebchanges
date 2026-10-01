@@ -179,7 +179,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             setNoteTypes(types);
         } catch (error) {
             console.error('Error loading note types:', error);
-            showToast('Failed to load note types', 'error');
+            showToast("Couldn't load note types. Refresh and try again.", 'error');
         } finally {
             setIsLoadingTypes(false);
         }
@@ -201,11 +201,11 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
     const validate = (): boolean => {
         if (!noteText.trim()) {
-            showToast('Note text is required', 'error');
+            showToast('Enter note text', 'error');
             return false;
         }
         if (noteTypeId === 0) {
-            showToast('Please select a note type', 'error');
+            showToast('Select a note type', 'error');
             return false;
         }
         return true;
@@ -226,7 +226,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     bulkJobId: note?.bulkJobId,
                 };
                 await onCreateNote(request);
-                showToast('Note created successfully', 'success');
+                showToast('Note created', 'success');
             } else {
                 const request: UpdateNoteRequest = {
                     noteId: note!.noteId!,
@@ -238,13 +238,13 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     bulkJobId: note?.bulkJobId,
                 };
                 await onUpdateNote(request);
-                showToast('Note updated successfully', 'success');
+                showToast('Note updated', 'success');
             }
             onSave();
             onClose();
         } catch (error) {
             console.error('Error saving note:', error);
-            showToast('Failed to save note', 'error');
+            showToast("Couldn't save note. Try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -252,7 +252,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
     const handleCreateNoteType = async () => {
         if (!newNoteTypeName.trim()) {
-            showToast('Note type name is required', 'error');
+            showToast('Enter a note type name', 'error');
             return;
         }
 
@@ -266,7 +266,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             };
 
             await onCreateNoteType(newType);
-            showToast('Note type created successfully', 'success');
+            showToast('Note type created', 'success');
 
             // Reload note types and select the new one
             const types = await onLoadNoteTypes();
@@ -281,7 +281,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             resetNoteTypeForm();
         } catch (error) {
             console.error('Error creating note type:', error);
-            showToast('Failed to create note type', 'error');
+            showToast("Couldn't create note type. Try again.", 'error');
         } finally {
             setIsCreatingNoteType(false);
         }

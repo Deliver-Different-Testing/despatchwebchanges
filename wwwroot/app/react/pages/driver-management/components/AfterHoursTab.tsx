@@ -123,9 +123,9 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 startTime: fromHHmm(result.startTime),
                 endTime: fromHHmm(result.endTime),
             } as AfterHoursCourierScheduleItem);
-            showToast('Schedule created successfully', 'success');
+            showToast('Schedule created', 'success');
         } catch {
-            showToast('Failed to create schedule', 'error');
+            showToast("Couldn't create the schedule. Check your connection and try again.", 'error');
         }
     };
 
@@ -155,9 +155,9 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 startTime: fromHHmm(result.startTime),
                 endTime: fromHHmm(result.endTime),
             } as AfterHoursCourierScheduleItem);
-            showToast('Schedule updated successfully', 'success');
+            showToast('Schedule updated', 'success');
         } catch {
-            showToast('Failed to edit schedule', 'error');
+            showToast("Couldn't update the schedule. Check your connection and try again.", 'error');
         }
     };
 
@@ -166,9 +166,9 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
         setDeleteDialogOpen(false);
         try {
             await deleteMutation.mutateAsync(scheduleToDelete.afterHoursScheduleId);
-            showToast('Schedule deleted successfully', 'success');
+            showToast('Schedule deleted', 'success');
         } catch {
-            showToast('Failed to delete schedule', 'error');
+            showToast("Couldn't delete the schedule. Check your connection and try again.", 'error');
         }
         setScheduleToDelete(null);
     };
@@ -184,7 +184,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
         try {
             await driverManagementApi.exportAfterHoursScheduleCsv(query, filters);
         } catch {
-            showToast('Failed to export data', 'error');
+            showToast("Couldn't export the data. Try again.", 'error');
         }
     };
 

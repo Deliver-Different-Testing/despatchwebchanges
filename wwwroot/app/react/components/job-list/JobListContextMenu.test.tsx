@@ -405,7 +405,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Mark as Unread'));
 
             await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith('Error marking job as read/unread', 'error');
+                expect(props.showToast).toHaveBeenCalledWith("Couldn't update the job's read status. Check your connection and try again.", 'error');
             });
         });
 
@@ -610,7 +610,7 @@ describe('JobListContextMenu', () => {
             await waitFor(() => {
                 expect(mockedApi.markJobMissing).toHaveBeenCalledWith(1);
             });
-            expect(props.showToast).toHaveBeenCalledWith('Job successfully marked as missing.', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('Job marked as missing', 'success');
             expect(props.onRefresh).toHaveBeenCalled();
         });
 
@@ -669,7 +669,7 @@ describe('JobListContextMenu', () => {
                     calculationRequired: true,
                 });
             });
-            expect(props.showToast).toHaveBeenCalledWith('Late call applied successfully', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('Late call applied', 'success');
             expect(props.onRefresh).toHaveBeenCalled();
         });
 
@@ -748,7 +748,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Save'));
 
             await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith('Error applying late pickup', 'error');
+                expect(props.showToast).toHaveBeenCalledWith("Couldn't apply the late pickup. Check your connection and try again.", 'error');
             });
         });
     });
@@ -781,7 +781,7 @@ describe('JobListContextMenu', () => {
             await waitFor(() => {
                 expect(mockedApi.restoreNationwideJob).toHaveBeenCalledWith(1);
             });
-            expect(props.showToast).toHaveBeenCalledWith('NZ123 unassigned successfully', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('NZ123 unassigned', 'success');
             expect(props.onRefresh).toHaveBeenCalled();
         });
 
@@ -825,7 +825,7 @@ describe('JobListContextMenu', () => {
             await waitFor(() => {
                 expect(mockedApi.restoreNationwideJob).toHaveBeenCalledWith(1);
             });
-            expect(props.showToast).toHaveBeenCalledWith('Agent Smith unassigned successfully', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('Agent Smith unassigned', 'success');
         });
 
         it('Send to Live: shows confirmation, confirm calls releaseBulkJob', async () => {
@@ -889,7 +889,7 @@ describe('JobListContextMenu', () => {
             await waitFor(() => {
                 expect(mockedApi.setFirstJob).toHaveBeenCalledWith(1, 77);
             });
-            expect(props.showToast).toHaveBeenCalledWith('Job set as first job successfully', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('Job set as first job', 'success');
         });
     });
 

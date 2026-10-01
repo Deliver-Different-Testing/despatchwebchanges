@@ -317,7 +317,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             if (job) setCurrentJob(job);
         } catch (error) {
             console.error('Could not load job', jobId, error);
-            showToast('Could not open that job. Please try again.', 'error');
+            showToast("Couldn't open that job. Check your connection and try again.", 'error');
         }
     }, [showToast]);
 
@@ -403,7 +403,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                 });
             } catch (error) {
                 console.error('Error assigning flight:', error);
-                showToast('Could not assign the flight. Please try again.', 'error');
+                showToast("Couldn't assign the flight. Check your connection and try again.", 'error');
                 return;
             }
 
@@ -431,7 +431,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             } catch (error) {
                 console.error('Error finishing flight assignment follow-up:', error);
                 showToast(
-                    'Flight assigned, but the job details could not be refreshed. Please refresh the page.',
+                    "Flight assigned, but the job details didn't refresh. Refresh the page to see the change.",
                     'warning',
                 );
             }
@@ -470,7 +470,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                     showToast('Quote request sent', 'success');
                 } catch (error) {
                     console.error('Error sending quote request:', error);
-                    showToast('Could not send the quote request. Please try again.', 'error');
+                    showToast("Couldn't send the quote request. Check your connection and try again.", 'error');
                 }
             },
         });
@@ -489,7 +489,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         // V1's handleJobDispatch() refused courier dispatch for isUsCustomer;
         // the shared DispatchDialog has no such gate, so this page applies it.
         if (isUsCustomer && confirmation.type === 'Courier') {
-            showToast('Courier dispatch is not supported for US customers', 'warning');
+            showToast("Courier dispatch isn't available for US customers.", 'warning');
             closeDispatchDialog();
             return;
         }
@@ -514,7 +514,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
 
         const result = await sendToPartner(flightAgentJob.id, partner.id, agreedRate);
         if (!result.success) {
-            throw new Error(result.message || 'Failed to send job to partner');
+            throw new Error(result.message || "Couldn't send the job to the partner. Try again.");
         }
 
         closeDispatchDialog();
@@ -602,7 +602,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                 case 'unlock': {
                     const locked = actionId === 'lock';
                     await setJobLocked(job.id, locked, !!job.preBook);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
+                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     refreshLists();
                     refreshDetail();
                     return;
@@ -613,7 +613,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             }
         } catch (error) {
             console.error(`[NationwidePage] Job action '${actionId}' failed:`, error);
-            showToast('Something went wrong. Please try again.', 'error');
+            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
         }
     }, [isUsCustomer, showToast, refreshLists, selectJobById]);
 

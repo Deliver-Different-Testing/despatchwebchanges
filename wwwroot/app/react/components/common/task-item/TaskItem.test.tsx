@@ -262,7 +262,7 @@ describe('TaskItem', () => {
             await waitFor(() => {
                 expect(props.tasksService.updateTaskDate).toHaveBeenCalled();
             });
-            expect(props.showSuccessToast).toHaveBeenCalledWith('Task date updated successfully');
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task date updated');
             expect(await screen.findByLabelText('Hours')).toBeInTheDocument();
         });
 
@@ -279,7 +279,7 @@ describe('TaskItem', () => {
             await waitFor(() => {
                 expect(props.tasksService.updateTaskTime).toHaveBeenCalled();
             });
-            expect(props.showSuccessToast).toHaveBeenCalledWith('Task time updated successfully');
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task time updated');
             const committed = (props.tasksService.updateTaskTime as jest.Mock).mock.calls[0][1];
             expect(committed.format('HH:mm')).toBe('09:00');
         });
@@ -369,7 +369,7 @@ describe('TaskItem', () => {
             await waitFor(() => {
                 expect(props.tasksService.reassignTaskToStaff).toHaveBeenCalledWith(1, 101);
             });
-            expect(props.showSuccessToast).toHaveBeenCalledWith('Task reassigned successfully');
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task reassigned');
         });
 
         it('filters the staff list and reports when nothing matches', async () => {
@@ -459,7 +459,7 @@ describe('TaskItem', () => {
             await waitFor(() => {
                 expect(props.tasksService.markTaskAsClosed).toHaveBeenCalledWith(1, true);
             });
-            expect(props.showSuccessToast).toHaveBeenCalledWith('Task completed successfully');
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task completed');
             expect(props.onTaskUpdated).toHaveBeenCalled();
         });
 
