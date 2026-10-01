@@ -12,7 +12,7 @@ function renderEditor(value: AddressLineFormat, onChange = jest.fn()) {
     return onChange;
 }
 
-function radioFor(fieldLabel: string, lineLabel: 'Off' | 'Line 1' | 'Line 2') {
+function radioFor(fieldLabel: string, lineLabel: 'Hidden' | 'Line 1' | 'Line 2') {
     return within(screen.getByRole('radiogroup', {name: `${fieldLabel} line`})).getByRole('radio', {name: lineLabel});
 }
 
@@ -20,7 +20,7 @@ describe('AddressFormatEditor', () => {
     it('lists every configurable field across the three zones', () => {
         renderEditor({line1: ['postcode', 'streetName'], line2: []});
 
-        expect(screen.getByText('Not shown')).toBeInTheDocument();
+        expect(screen.getByText('Hidden', {selector: 'p'})).toBeInTheDocument();
         expect(screen.getAllByRole('radiogroup')).toHaveLength(8);
     });
 
@@ -29,7 +29,7 @@ describe('AddressFormatEditor', () => {
 
         expect(radioFor('Street Name', 'Line 1')).toBeChecked();
         expect(radioFor('Postcode', 'Line 2')).toBeChecked();
-        expect(radioFor('Country', 'Off')).toBeChecked();
+        expect(radioFor('Country', 'Hidden')).toBeChecked();
     });
 
     it('moves a field from off to line 1 when selected', async () => {
@@ -51,7 +51,7 @@ describe('AddressFormatEditor', () => {
     it('turns a field off, closing the gap in its line', async () => {
         const onChange = renderEditor({line1: ['streetName', 'postcode', 'country'], line2: []});
 
-        await userEvent.click(radioFor('Postcode', 'Off'));
+        await userEvent.click(radioFor('Postcode', 'Hidden'));
 
         expect(onChange).toHaveBeenCalledWith({line1: ['streetName', 'country'], line2: []});
     });

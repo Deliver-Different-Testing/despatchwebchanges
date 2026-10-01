@@ -53,6 +53,10 @@ jest.mock('../../services/tenantSettingsApi', () => ({
     getTenantAddressFormatDefault: jest.fn(),
 }));
 
+jest.mock('../../services/toastService', () => ({
+    toastService: {showSuccessToast: jest.fn(), showErrorToast: jest.fn()},
+}));
+
 const mockIsAiEnabled = isAiEnabled as jest.MockedFunction<typeof isAiEnabled>;
 const mockIsAiAutoOpenEnabled = isAiAutoOpenEnabled as jest.MockedFunction<typeof isAiAutoOpenEnabled>;
 const mockSetAiEnabled = setAiEnabled as jest.MockedFunction<typeof setAiEnabled>;
@@ -70,7 +74,7 @@ const mockUseColorMode = useColorMode as jest.Mock;
 const mockSetColorPreference = jest.fn();
 
 /** Pickup renders first, delivery second — both sides render an identically-labelled control per field. */
-function radioFor(side: 'pickup' | 'delivery', fieldLabel: string, lineLabel: 'Off' | 'Line 1' | 'Line 2') {
+function radioFor(side: 'pickup' | 'delivery', fieldLabel: string, lineLabel: 'Hidden' | 'Line 1' | 'Line 2') {
     const groups = screen.getAllByRole('radiogroup', {name: `${fieldLabel} line`});
     return within(groups[side === 'pickup' ? 0 : 1]).getByRole('radio', {name: lineLabel});
 }
@@ -99,9 +103,9 @@ describe('SettingsPage', () => {
         renderWithMantine(<SettingsPage />);
 
         expect(screen.getByRole('heading', {name: 'Settings'})).toBeInTheDocument();
-        expect(screen.getByText('Auto-mate Settings')).toBeInTheDocument();
+        expect(screen.getByText('Auto-mate')).toBeInTheDocument();
         expect(screen.getByText('Show Auto-mate briefings')).toBeInTheDocument();
-        expect(screen.getByText('Open automatically')).toBeInTheDocument();
+        expect(screen.getByText('Expand briefings automatically')).toBeInTheDocument();
     });
 
     it('offers Light / Dark / System appearance, reflects the current pick and applies a change', async () => {
@@ -122,7 +126,7 @@ describe('SettingsPage', () => {
         mockUseColorMode.mockReturnValue({mode: 'light', preference: 'light', setPreference: mockSetColorPreference});
         renderWithMantine(<SettingsPage />);
 
-        expect(screen.getByText(/Nationwide v1 .* doesn't support dark mode/i)).toBeInTheDocument();
+        expect(screen.getByText(/Dark mode isn't available while Nationwide v1 is on/i)).toBeInTheDocument();
         expect(screen.getByRole('radio', {name: 'Light'})).toBeChecked();
         expect(screen.getByRole('radio', {name: 'Dark'})).toBeDisabled();
         expect(screen.getByRole('radio', {name: 'Match device'})).toBeDisabled();
@@ -146,7 +150,7 @@ describe('SettingsPage', () => {
         renderWithMantine(<SettingsPage />);
 
         expect(screen.getByRole('switch', {name: 'Show Auto-mate briefings'})).toBeChecked();
-        expect(screen.getByRole('switch', {name: 'Open automatically'})).toBeChecked();
+        expect(screen.getByRole('switch', {name: 'Expand briefings automatically'})).toBeChecked();
     });
 
     it('disables "Open automatically" while briefings are off', () => {
@@ -154,7 +158,7 @@ describe('SettingsPage', () => {
 
         renderWithMantine(<SettingsPage />);
 
-        expect(screen.getByRole('switch', {name: 'Open automatically'})).toBeDisabled();
+        expect(screen.getByRole('switch', {name: 'Expand briefings automatically'})).toBeDisabled();
     });
 
     it('persists an Auto-mate toggle immediately, with no separate save step', async () => {
@@ -173,8 +177,8 @@ describe('SettingsPage', () => {
             renderWithMantine(<SettingsPage />);
 
             expect(screen.getByRole('switch', {name: 'Liquid Glass'})).not.toBeChecked();
-            expect(screen.getByText(/Only works in Chromium-based browsers/)).toBeInTheDocument();
-            expect(screen.getByText(/Google Chrome, Microsoft Edge, Brave and Opera/)).toBeInTheDocument();
+            expect(screen.getByText(/Works in Chromium browsers/)).toBeInTheDocument();
+            expect(screen.getByText(/Chrome, Edge, Brave and Opera/)).toBeInTheDocument();
         });
 
         it('turns on and persists when toggled', async () => {
@@ -196,7 +200,7 @@ describe('SettingsPage', () => {
 
             const toggle = screen.getByRole('switch', {name: 'Liquid Glass'});
             expect(toggle).toBeDisabled();
-            expect(screen.getByText(/Not available in this browser/)).toBeInTheDocument();
+            expect(screen.getByText(/Your browser doesn't support Liquid Glass/)).toBeInTheDocument();
             await user.click(toggle);
             expect(toggle).not.toBeChecked();
             expect(localStorage.getItem('dd-liquid-glass')).toBeNull();
@@ -207,8 +211,8 @@ describe('SettingsPage', () => {
         it('renders the per-panel hide button toggle, checked by default', () => {
             renderWithMantine(<SettingsPage />);
 
-            expect(screen.getByText('Show per-panel hide button')).toBeInTheDocument();
-            expect(screen.getByRole('switch', {name: 'Show per-panel hide button'})).toBeChecked();
+            expect(screen.getByText('Show hide button on each panel')).toBeInTheDocument();
+            expect(screen.getByRole('switch', {name: 'Show hide button on each panel'})).toBeChecked();
         });
 
         it('reflects an existing opt-out', () => {
@@ -216,14 +220,14 @@ describe('SettingsPage', () => {
 
             renderWithMantine(<SettingsPage />);
 
-            expect(screen.getByRole('switch', {name: 'Show per-panel hide button'})).not.toBeChecked();
+            expect(screen.getByRole('switch', {name: 'Show hide button on each panel'})).not.toBeChecked();
         });
 
         it('persists a toggle immediately, with no separate save step', async () => {
             const user = setupUser();
             renderWithMantine(<SettingsPage />);
 
-            await user.click(screen.getByRole('switch', {name: 'Show per-panel hide button'}));
+            await user.click(screen.getByRole('switch', {name: 'Show hide button on each panel'}));
 
             expect(mockSetPanelHideButtonEnabled).toHaveBeenCalledWith(false);
         });
@@ -241,7 +245,7 @@ describe('SettingsPage', () => {
             await waitFor(() => expect(radioFor('pickup', 'Postcode', 'Line 1')).toBeChecked());
             expect(radioFor('delivery', 'Country', 'Line 1')).toBeChecked();
             expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled();
-            expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+            expect(screen.getByRole('button', {name: 'Save changes'})).toBeDisabled();
         });
 
         it('loads the user\'s own override in preference to the tenant default, per side', async () => {
@@ -267,11 +271,11 @@ describe('SettingsPage', () => {
             renderWithMantine(<SettingsPage />);
             await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
 
-            expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+            expect(screen.getByRole('button', {name: 'Save changes'})).toBeDisabled();
             await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
 
             expect(mockSavePreference).not.toHaveBeenCalled();
-            expect(screen.getByRole('button', {name: 'Save'})).toBeEnabled();
+            expect(screen.getByRole('button', {name: 'Save changes'})).toBeEnabled();
         });
 
         it('saves both sides only once Save is clicked', async () => {
@@ -283,7 +287,7 @@ describe('SettingsPage', () => {
             await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
 
             await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
-            await user.click(screen.getByRole('button', {name: 'Save'}));
+            await user.click(screen.getByRole('button', {name: 'Save changes'}));
 
             // Delivery was never touched and still matches the (empty) tenant
             // default, so it's saved as `null` rather than a snapshot.
@@ -294,7 +298,7 @@ describe('SettingsPage', () => {
                     delivery: null,
                 }),
             );
-            await waitFor(() => expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled());
+            await waitFor(() => expect(screen.getByRole('button', {name: 'Save changes'})).toBeDisabled());
         });
 
         it('saves an untouched side as null (not a snapshot) so it keeps following the tenant default', async () => {
@@ -308,7 +312,7 @@ describe('SettingsPage', () => {
 
             // Customize delivery only; pickup is left matching the tenant default.
             await user.click(radioFor('delivery', 'Street Name', 'Line 1'));
-            await user.click(screen.getByRole('button', {name: 'Save'}));
+            await user.click(screen.getByRole('button', {name: 'Save changes'}));
 
             expect(mockSavePreference).toHaveBeenCalledWith(
                 'DispatchAddressFormat',
@@ -330,9 +334,9 @@ describe('SettingsPage', () => {
             renderWithMantine(<SettingsPage />);
             await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
 
-            await user.click(radioFor('pickup', 'Street Name', 'Off'));
+            await user.click(radioFor('pickup', 'Street Name', 'Hidden'));
             await user.click(radioFor('pickup', 'Postcode', 'Line 1'));
-            await user.click(screen.getByRole('button', {name: 'Save'}));
+            await user.click(screen.getByRole('button', {name: 'Save changes'}));
 
             expect(mockSavePreference).not.toHaveBeenCalled();
             expect(mockDeletePreference).toHaveBeenCalledWith('DispatchAddressFormat');
@@ -367,7 +371,7 @@ describe('SettingsPage', () => {
 
             expect(mockDeletePreference).toHaveBeenCalledWith('DispatchAddressFormat');
             await waitFor(() => expect(radioFor('pickup', 'Postcode', 'Line 1')).toBeChecked());
-            expect(radioFor('pickup', 'Street Name', 'Off')).toBeChecked();
+            expect(radioFor('pickup', 'Street Name', 'Hidden')).toBeChecked();
             expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled();
         });
 
@@ -380,7 +384,7 @@ describe('SettingsPage', () => {
             renderWithMantine(<SettingsPage />);
 
             await waitFor(() => expect(radioFor('pickup', 'Street Name', 'Line 1')).toBeChecked());
-            expect(screen.getByText(/Couldn.t load the tenant address format default/)).toBeInTheDocument();
+            expect(screen.getByText(/Couldn.t load your organisation.s default format/)).toBeInTheDocument();
         });
     });
 });

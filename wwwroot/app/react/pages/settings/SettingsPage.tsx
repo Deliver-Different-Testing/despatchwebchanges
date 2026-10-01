@@ -10,7 +10,7 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Badge, Box, Button, Group, Stack, Text, Title} from '@mantine/core';
+import {Badge, Box, Button, Group, Stack, Text, Title, Tooltip} from '@mantine/core';
 import styles from './SettingsPage.module.css';
 import {ArrowLeftRight, EyeOff, MapPin, Palette, RotateCcw, Save, TriangleAlert} from 'lucide-react';
 import {SectionHeading, SettingRadioGroup, SettingRow} from '../../components/common/settings-controls/SettingsControls';
@@ -41,6 +41,7 @@ import {StaffPreferenceKey} from '../../../enums/staff-preference-key.enum';
 import {deletePreference, getPreference, savePreference} from '../../services/preferencesApi';
 import {getTenantAddressFormatDefault} from '../../services/tenantSettingsApi';
 import {DialogShell, dialogSize, DialogHeader, DialogFooter} from '../../components/dialogs/shared/mantine';
+import {toastService} from '../../services/toastService';
 import {registerUnsavedChangesGuard, type LeaveDecision} from '../../services/unsavedChangesGuard';
 
 const EMPTY_FORMAT: AddressLineFormat = {line1: [], line2: []};
@@ -188,12 +189,19 @@ export const SettingsPage: React.FC = () => {
 
     const handleSaveClick = () => {
         void saveAddressFormat(pickupDraft, deliveryDraft)
-            .catch((error) => console.error('Failed to save address format preference:', error));
+            .then(() => toastService.showSuccessToast('Address format saved'))
+            .catch((error) => {
+                console.error('Failed to save address format preference:', error);
+                toastService.showErrorToast("Couldn't save address format. Check your connection and try again.");
+            });
     };
 
     const handleResetAddressFormat = () => {
         void deletePreference(StaffPreferenceKey.DispatchAddressFormat)
-            .catch((error) => console.error('Failed to reset address format preference:', error));
+            .catch((error) => {
+                console.error('Failed to reset address format preference:', error);
+                toastService.showErrorToast("Couldn't reset address format. Check your connection and try again.");
+            });
         void getTenantAddressFormatDefault()
             .then((tenantJson) => {
                 const tenantSides = parseAddressFormatJson(tenantJson);
@@ -241,14 +249,15 @@ export const SettingsPage: React.FC = () => {
 
     return (
         <Box className={styles.page}>
-            <Title order={3} fw={600} mb={24}>Settings</Title>
+            <Title order={3} fw={600} mb={4}>Settings</Title>
+            <Text fz="sm" c="dimmed" mb={24}>These settings apply to your account only.</Text>
 
             <div className={styles.columns}>
                 <div className={styles.preferences}>
                     <Box>
                         <SectionHeading
                             icon={<AutoMateLogo size={28}/>}
-                            title="Auto-mate Settings"
+                            title="Auto-mate"
                             accent={aiAccentColor}
                         />
 
@@ -264,9 +273,8 @@ export const SettingsPage: React.FC = () => {
                                         BETA
                                     </Badge>
                                 }
-                                description="Adds a short AI briefing — verdict, what needs attention, and key facts —
-                                    to the job details, task dashboard, operations, and driver compliance pages.
-                                    Applies to your account only."
+                                description="Adds a short AI briefing to job details, the task dashboard, operations and
+                                    driver compliance pages: what's happening, what needs attention, and key facts."
                                 accent={aiAccentColor}
                                 checked={aiEnabled}
                                 onToggle={toggleAiEnabled}
@@ -275,9 +283,8 @@ export const SettingsPage: React.FC = () => {
                             {/* Only meaningful while briefings are on, so the row is
                                 disabled and dimmed when they are off. */}
                             <SettingRow
-                                title="Open automatically"
-                                description="Opens the Auto-mate briefing expanded instead of waiting for a click.
-                                    Applies to your account only."
+                                title="Expand briefings automatically"
+                                description={`Show briefings expanded instead of waiting for a click.${aiEnabled ? '' : ' Turn on briefings first.'}`}
                                 accent={aiAccentColor}
                                 checked={aiAutoOpen}
                                 disabled={!aiEnabled}
@@ -295,11 +302,9 @@ export const SettingsPage: React.FC = () => {
                         <SettingRadioGroup
                             title="Theme"
                             description={darkModeBlocked
-                                ? `You have Nationwide v1 turned on, which doesn't support dark mode, so the theme
-                                    is locked to Light. Switch to Nationwide v2 in the Nationwide dashboard
-                                    settings to enable the dark and device options.`
-                                : `Choose light or dark, or follow your device's setting. Applies to your
-                                    account only.`}
+                                ? `Dark mode isn't available while Nationwide v1 is on. Switch to Nationwide v2 in
+                                    the Nationwide dashboard settings to unlock it.`
+                                : 'Choose Light or Dark, or Match device.'}
                             value={colorPreference}
                             options={appearanceOptions}
                             onChange={setColorPreference}
@@ -317,9 +322,9 @@ export const SettingsPage: React.FC = () => {
                                         BETA
                                     </Badge>
                                 }
-                                description={`Gives dialogs and dropdown menus a frosted, see-through glass look. Only works
-                                    in Chromium-based browsers (Google Chrome, Microsoft Edge, Brave and Opera). Applies
-                                    to your account and follows you across devices.${liquidGlassSupported ? '' : ' Not available in this browser.'}`}
+                                description={liquidGlassSupported
+                                    ? 'Gives dialogs and menus a frosted glass look. Works in Chromium browsers such as Chrome, Edge, Brave and Opera.'
+                                    : `Your browser doesn't support Liquid Glass. Use Chrome, Edge, Brave or Opera to turn it on.`}
                                 checked={liquidGlassEnabled}
                                 disabled={!liquidGlassSupported}
                                 onToggle={() => setLiquidGlassEnabled(!liquidGlassEnabled)}
@@ -334,10 +339,9 @@ export const SettingsPage: React.FC = () => {
                         />
 
                         <SettingRow
-                            title="Show per-panel hide button"
-                            description="Adds a quick hide icon to each panel's header on custom Dispatch and
-                                Job Search layouts, alongside the Show/Hide Panels dialog. Applies to your
-                                account only."
+                            title="Show hide button on each panel"
+                            description="Adds a hide icon to each panel header on custom Dispatch and Job Search
+                                layouts. You can still use the Show/Hide Panels dialog."
                             checked={hideButtonEnabled}
                             onToggle={toggleHideButtonEnabled}
                         />
@@ -347,20 +351,18 @@ export const SettingsPage: React.FC = () => {
                 <Box className={styles.addressFormat}>
                     <SectionHeading
                         icon={<Icon lucide={MapPin} size={20}/>}
-                        title="Address Format"
+                        title="Address format"
                     />
 
                     <Text fz="sm" c="dimmed" mb={12}>
-                        Choose which fields show for pickup and delivery addresses, and which of the
-                        two display lines each sits on. Applies to your account only — your tenant
-                        admin sets the default everyone else sees. Edits here are a draft until you
-                        click Save.
+                        Choose which fields appear in pickup and delivery addresses, and which line each
+                        sits on. Your admin sets the default. Changes aren&apos;t applied until you save.
                     </Text>
 
                     {addressLoadError && (
                         <Text fz="sm" c="orange" mb={12}>
-                            Couldn&apos;t load the tenant address format default — showing your last
-                            saved settings instead.
+                            Couldn&apos;t load your organisation&apos;s default format. Showing your saved
+                            format instead. Refresh to try again.
                         </Text>
                     )}
 
@@ -395,19 +397,23 @@ export const SettingsPage: React.FC = () => {
                     </div>
 
                     <Group justify="space-between" mt={16}>
-                        <ActionButton
-                            leftSection={<Icon lucide={RotateCcw} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                            onClick={handleResetAddressFormat}
-                            disabled={!hasAddressOverride}
-                        >
-                            Reset to default
-                        </ActionButton>
+                        <Tooltip label="Already using the default" disabled={hasAddressOverride}>
+                            <span>
+                                <ActionButton
+                                    leftSection={<Icon lucide={RotateCcw} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                                    onClick={handleResetAddressFormat}
+                                    disabled={!hasAddressOverride}
+                                >
+                                    Reset to default
+                                </ActionButton>
+                            </span>
+                        </Tooltip>
                         <ActionButton
                             leftSection={<Icon lucide={Save} size={ACTION_BUTTON_GLYPH_SIZE}/>}
                             onClick={handleSaveClick}
                             disabled={!isDirty}
                         >
-                            Save
+                            Save changes
                         </ActionButton>
                     </Group>
                 </Box>
@@ -423,15 +429,14 @@ export const SettingsPage: React.FC = () => {
                     variant="warning"
                     icon={<Icon lucide={TriangleAlert}/>}
                     title="Unsaved changes"
-                    subtitle="Your address format edits haven't been saved"
                     onClose={() => resolveLeavePrompt('stay')}
                 />
                 <Box p={24}>
-                    <Text>Save your address format changes before leaving, or they&apos;ll be lost.</Text>
+                    <Text>Leaving now will discard your address format edits.</Text>
                 </Box>
                 <DialogFooter
                     onCancel={() => resolveLeavePrompt('stay')}
-                    cancelLabel="Cancel"
+                    cancelLabel="Stay on page"
                     onConfirm={() => resolveLeavePrompt('save-and-leave')}
                     confirmLabel="Save and leave"
                     secondaryAction={
