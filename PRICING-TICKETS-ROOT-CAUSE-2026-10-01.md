@@ -10,7 +10,8 @@ Covers the 11 PRICING tickets Marcus escalated in Urgent Connection on 30 Sep:
 - **Hypotheses, not diagnoses.** Everything here comes from reading code. Each item has a SELECT-only query or staging test that confirms or kills it. Run those first.
 - **"Latest definition"** means the last migration in `dbmigrationsv2` that redefines the object. Prod can drift from migrations.
 - **Spot-checked** means the quoted line was re-read directly after the research pass. Everything else is as traced, not independently re-verified.
-- **Not available locally:** the WebAPI (`api` repo: `/Jobs`, `/rates/getRerateAmount`), the booking portal (`booking`), Client Manager, the courier portal, the original bulk importer (BulkImportHyper) and the World Tracer integration code. Anything about those is second-hand from `dfrnt-ops` reference notes.
+- **Updated 2 Oct:** the WebAPI (`api`) and booking portal (`booking`) were cloned from GitLab and read. What that changed is in [WebAPI and booking portal findings](#webapi-and-booking-portal-findings-2-oct); where it conflicts with a ticket section below, that section wins.
+- **Still not available locally:** Client Manager, the courier portal, the original bulk importer (BulkImportHyper) and the World Tracer integration code. Anything about those is second-hand from `dfrnt-ops` reference notes.
 
 Path shorthand:
 
@@ -20,6 +21,8 @@ Path shorthand:
 | `MIG` | `dbmigrationsv2/DatabaseScripts/Migrations` (read on `feat/np-courier-pay-triggers` @ c37f639) |
 | `CRE` | `MIG/20260818182434_ClientReferenceExpansion.sql` (40k lines; holds the latest definition of most legacy rating objects) |
 | `RO` | `routed-operations` (`fix/bulk-import-route-builder-0922`) |
+| `API` | `api` (GitLab `urgent-couriers/api`, `master` @ 48225a2, same as `develop`); `JobRepo` = `API/Models/Repository/JobRepository.cs` |
+| `BK` | `booking` (GitLab `urgent-couriers/booking`, `master`; `develop` is 2 commits ahead, neither touches pricing) |
 
 Related existing docs in this repo: `pricing-breakdown-gap-analysis.md` (courier pay vs PricingBreakdown, parent/child model) and `extra-charges-deep-dive.md` (the two accessorial systems, PricingBreakdown triggers).
 
@@ -29,8 +32,8 @@ Related existing docs in this repo: `pricing-breakdown-gap-analysis.md` (courier
 |---|---|---|---|---|
 | [218](https://deliver-different-testing.github.io/1on1/#/tickets/218) | Return parent total shows one leg | Parent total is a one-time snapshot; courier-app events and Despatch re-rates overwrite it with one leg | Medium-high | SQL + `DW` |
 | [216](https://deliver-different-testing.github.io/1on1/#/tickets/216) | 90-min collection leg from Wellington at $0 | Regional rate silently returns 0 when the client's available-speed row drops out (time window) | Medium-high, conditional on client/speed | SQL / config |
-| [820](https://deliver-different-testing.github.io/1on1/#/tickets/820) | Dimension pricing overridden after booking | Every re-rate path drops the cubic/weight lists, so the dimension multiplier is lost | Medium-high | SQL + `DW` + API |
-| [208](https://deliver-different-testing.github.io/1on1/#/tickets/208) | P2P on a schedule priced at Client Manager rates | NZ schedule inserts are forced down `WS_stpJob_Insert`, which has no P2P rating branch | High on code | SQL |
+| [820](https://deliver-different-testing.github.io/1on1/#/tickets/820) | Dimension pricing overridden after booking | Quote, insert and re-rate pass different dimension inputs; any re-rate (including a client edit in the booking job list) drops them and overwrites the price | Medium-high | SQL + `DW` + API |
+| [208](https://deliver-different-testing.github.io/1on1/#/tickets/208) | P2P on a schedule priced at Client Manager rates | NZ schedule inserts have no P2P rating branch, and the P2P re-rate branch is commented out, so Recalculate cannot correct them | High on code | SQL |
 | [224](https://deliver-different-testing.github.io/1on1/#/tickets/224) | Time change doesn't re-rate after-hours fee | Post-edit price probe silently skips `RatedManually` jobs; Recalculate clears the flag | Medium-high | `DW` |
 | [225](https://deliver-different-testing.github.io/1on1/#/tickets/225) | After-hours fuel: Auckland yes, P2P no | NZ after-hours block in the P2P engine adds the fee flat, after fuel and PPD | High | SQL |
 | [215](https://deliver-different-testing.github.io/1on1/#/tickets/215) | Recurring insert: raw base + fuel + PPD | Main change has landed; raw-base edit on a template never adds fuel and then switches fuel off | High | `DW` + SQL |
@@ -48,6 +51,53 @@ Five patterns account for most of the tickets. Fixing them as patterns closes mo
 3. **Parent totals are not maintained for return parents.** The roll-up trigger sums PricingBreakdown rows stored on the parent. Return parents have none. Drives #218, and likely #207/#211/#315.
 4. **Rating failures return $0 silently.** Missing zone row, missing rate code or missing available-speed row all yield 0 with no error, and `DW` refuses to save a re-rate unless `Rate > 0`, so $0 sticks. Drives #216.
 5. **Server clock used instead of the job's time.** `GETDATE()` in the schedule pickup rating and `tenantNow` in the schedule re-rate payload. Drives #220/#224 on scheduled jobs and the 1hr pickup figure in #217.
+6. **The quote is not the price** (added 2 Oct). The booking page does not carry the quoted amount into the booking; SQL re-rates at insert from a different input set. Then any later edit that re-rates can overwrite the amount again. Quote, insert and re-rate share no mapping code in the API. Drives #820 and feeds #216, #224 and #226.
+
+## WebAPI and booking portal findings (2 Oct)
+
+Read from `API` and `BK`. Thirteen of the lines quoted here were re-read directly and matched; the recurring `RawBaseAmount` expression under #215 was not re-verified.
+
+### How pricing actually flows on NZ
+
+1. **Quote.** `POST /api/Rates` → `GetNZRatesAsync` (`JobRepo:515-844`) fires five rating calls in parallel and merges the rows: `WS_stpJobType_Rates`, `DD_stpGetExceleratorRates`, `NP_stpGetNationwideRates`, `NP_stpGetSDShorthaulRates`, GSS (and NZ Post if enabled).
+2. **Book.** The page sends `fixedAmount` only when `speedId === 0` (`BK/wwwroot/App/Components/Home/desktopHomeControl.js:5010`). For every Urgent speed it is undefined, so `@FixedAmount` is null and **SQL rates the job again at insert**. Nothing compares the result with the quote.
+3. **Breakdown.** The API writes no PricingBreakdown rows for any job kind (zero references). The booking portal writes none at booking either; its only write is on job-list edit (`BK/Core/Application/Services/JobService.cs:2643`). For NZ local, P2P and regional jobs the SQL calls are commented out in `UTL_stpJob_Insert_Rated` (`CRE:31915, 31930`). So a plain NZ job has no rows until something re-rates it.
+4. **Items.** Job item rows are inserted after the insert proc has priced the job, by separate calls on a new connection (`JobRepo:4866-4891`). There are no transactions anywhere in the API.
+5. **Re-rate.** `POST /api/Rates/GetRerateAmount` calls one proc, `NET_stpJob_Rate_Described_All` (`JobRepo:2438`), which dispatches by speed grouping. The 17 Sep migration header calls this proc "currently unused"; it is the live NZ re-rate path.
+6. **Job-list edit (booking portal).** If the re-rate differs from the stored amount by 0.01 or more and the user's permission is not `Min`, saving **any** edit overwrites the amount and rewrites the breakdown (`BK/wwwroot/App/Components/JobList/jobListControl.js:560-562`; `JobService.cs:2181`). The amount save and the breakdown write are separate calls, not one transaction.
+
+### Inputs differ between quote, insert and re-rate
+
+| Input | Quote (`WS_stpJobType_Rates`) | Insert (`WS_stpJob_Insert`) | Re-rate (`NET_stpJob_Rate_Described_All`) |
+|---|---|---|---|
+| Per-unit cubic list | yes | yes | **no** |
+| Per-unit weight list | yes | yes | **no** |
+| DimensionsType | **no** | yes | **no** |
+| StockSizeId | **hard-coded null** (`JobRepo:1396`) | yes, default sizes only (`JobRepo:4278-4281`) | **no** |
+| DG class | **no** (not on the request model) | yes | **no** |
+| Dry ice weight | no | **no** (not mapped for NZ) | no |
+| Time | ready time as `@Date` | `GETDATE()` as `@Date`, ready time as `@Booked` | `DateTime` as sent, no timezone handling |
+| Weight | decimal sum | sum | `int` (`API/Models/Request/RerateRequest.cs:41`) |
+| Quantity | sum of units | sum of units | as sent |
+
+The re-rate request model has no fields for the missing inputs, so this is a contract change across `API`, `DW` and `BK`, not a one-line fix.
+
+### What changed per ticket
+
+| # | Change |
+|---|---|
+| 820 | **Stronger, and a new leading trigger.** Confirmed the re-rate passes none of the dimension inputs. New: the quote and the insert already disagree (StockSizeId null on quote, real on insert; DimensionsType on insert only), so the price can move at booking. New: a client edit in the booking portal's job list re-rates without the lists and overwrites the amount. That fits "auto reprices after booking" better than a Despatch action. Also flag: NZ sends cubic in m³ (e.g. 0.027) into SQL parameters typed `NUMERIC(18,0)` and commented as cm³; if the bands are cm³ the value rounds to 0. Needs a data check. |
+| 208 | **Confirmed, and Recalculate cannot fix it.** For an NZ speed grouped `US P2P`, the re-rate branch is commented out in the API (`JobRepo:2398-2426`) and in SQL. The API returns 404 "No Rates Found". Booking-page bookings of these speeds go through `DD_stpJob_InsertExcelerator`, which is why manual bookings are right and scheduled ones are not. |
+| 218 | **Order confirmed; H3 narrowed.** The connect call runs in leg 2's success handler, after both legs are inserted and priced (`desktopHomeControl.js:640-641`). So the snapshot is only short if leg 2 was $0 at insert. H1 and H2 stand. New: the "Return for" flow from the job list has its connect call commented out (`:642-643`), so those pairs are never linked. |
+| 216 | **Time-window hypothesis strengthened.** Leg 2's ready time is leg 1's ready time plus leg 1's speed minutes (`desktopHomeControl.js:3240-3249`), so the collection leg is always later in the day. Leg 2 reuses the last manually selected speed. Nothing guards against a $0 rate: the API filters only on availability and the page's bad-rate filter ignores amount. |
+| 224 / 220 | **New quote-versus-insert difference.** The quote passes the ready time as the rating date; the insert passes `GETDATE()` as the date and the ready time as booked time. If after-hours keys on the date argument, a later-ready job is quoted at one rate and inserted at another. The re-rate does no timezone conversion. |
+| 215 | **Supports H3.** A recurring local template is stored with `ucbkAmount` rated at insert (base + fuel + PPD), `RawBaseAmount` equal to that full amount, no fuel column and no breakdown rows. Schedule recurring templates do get rows. (The `RawBaseAmount` expression was not re-verified.) |
+| 217 | **H2 partly ruled out.** The API passes quantity as sent and never adds package units to it. Still open: with no per-package weight the vehicle size may default to Car regardless of the job's size, and a fractional weight may fail to bind to the `int` field. The API's own bulk import does not rate; it copies `tblBulkClientDefault.Amount`. |
+| 226 | **Located.** DG class is not on the quote or re-rate request models, so no quote can price by class. The lbs default is `desktopHomeControl.js:5437`, set before the country is known; `setCountryCodeOptions()` (`:1219-1242`) is where to set kg for NZ. The page converts dry ice weight to lbs before sending, and the NZ insert drops it. For NZ local jobs DG does not change the price at all. |
+| 219 | **Easier than thought.** A caller can already set `SourceId` on `POST api/Jobs` with no whitelist (`API/Controllers/JobsController.cs:396`). Adding a World Tracer value to `JobSource` gives the durable marker. |
+| 213, 225 | No change. |
+
+Two side defects worth a look, both unverified at runtime: the NZ Excelerator quote does `int.Parse` on a ZipCode field that NZ addresses may not populate (`JobRepo:1598`), and booking-time accessorials on a recurring booking are added using an id that may be the prebook id, not a job id.
 
 ---
 
@@ -447,7 +497,8 @@ This builds on `pricing-breakdown-gap-analysis.md` (18 Mar), which sets out the 
 | Path | Rows written? | Evidence |
 |---|---|---|
 | On-demand insert (`UTL_stpJob_Insert`) | No | No PricingBreakdown reference in the proc; it calls scalar `UTL_fncJob_Rate` and adds fuel to the total (`CRE:29908-29932`) |
-| Booking page, after insert | Reported as `Base=Amount~0.00` | Second-hand: `extra-charges-deep-dive.md`, path 2. Booking and API source not local |
+| Booking page and WebAPI, at booking | No | Read 2 Oct: the API has no PricingBreakdown write; the booking portal's only write is on job-list edit (`BK/.../JobService.cs:2643`). The `Base=Amount~0.00` note in `extra-charges-deep-dive.md` was not found in either repo |
+| Booking portal job-list edit | Yes, from the re-rate description | `BK/wwwroot/App/Components/JobList/jobListControl.js:560-562` |
 | Bulk / schedule (`WS_stpJob_Insert` bulk branches) | Yes, via `PricingBreakdownBulk` | `MIG/20260908142042_BulkContactID.sql:407, 3742-3751, 3887-3896` |
 | Prebook / recurring template | Yes | same file `:612` |
 | Recurring insert-to-live | Yes, copied from template, then Fuel and PPD lines replaced | `MIG/20260820121330_...:12-85` |
@@ -522,22 +573,65 @@ Treat this as two pieces of work, in this order:
 Doing step 2 without step 1 would store, faithfully, the output of three paths that disagree.
 
 Open questions for Kerran:
-- Does the WebAPI already transform the legacy description into parser format for the re-rate path? If so that adapter may be reusable at insert.
+- Answered 2 Oct: the WebAPI does not transform the legacy description. It returns SQL's `@Description` verbatim, and both `DW` and the booking portal feed that string to `DD_InsertPricingBreakdown`. So the legacy display text is already being parsed into rows on re-rate; worth checking what those rows look like for a legacy speed.
 - Are the commented-out `DD_InsertPricingBreakdown` calls in the truck, nationwide and from-parent procs disabled for a known reason?
 - Is `tblSetting.CountryCode` really NULL on NZ staging? If so the NZ branches of the sync trigger and the schedule insert are not being exercised there.
 
 ---
 
-## Suggested order
+## Two-week plan
 
-1. **Run the confirm queries** for #218 (relationship-type flag), #217 (max id comparison), #215 (template raw-base mismatch) and #213 (`BulkZoneRate` rows). Each is one SELECT and settles the leading hypothesis.
-2. **#225** — smallest, most contained code fix (one block in one function).
-3. **#226 hotfix** — one proc plus two callers, once Deane confirms the dry-ice cost.
-4. **#215 H1** — raw-base edit on templates; this ticket is already In Progress.
-5. **#218** — exclude ReturnParent from the courier-response overwrite and fix the effective-job id for return legs. Likely closes #207/#211 too.
-6. **#224** — decide whether the probe should skip `RatedManually` jobs silently; fix line 854 for schedule jobs.
-7. **#820, #208** — larger; both touch how schedule and bulk jobs are rated and should be scoped against Kevin's schedules rebuild.
-8. **#213, #219** — design decisions before code.
+Steve has allocated about two weeks to NZ rating. This plan assumes Claude drafts the code and queries, and Kerran reviews, merges to GitLab and deploys. It is a proposal for Kerran to correct, not a commitment.
+
+### Is fixing tickets wasted if breakdown-on-all-jobs is the goal?
+
+Mostly not. Five tickets are untouched by breakdown rows and need fixing anyway. The work that would be thrown away is small:
+
+| Fix | Survives the breakdown work? |
+|---|---|
+| #225, #226, #224, #217, #216 data fix | Yes; the breakdown work doesn't touch them |
+| #218 | Yes; settling the parent/child rule is a prerequisite |
+| #820, #208 | Yes, if done as input and engine parity, which is step 1 of the breakdown work |
+| #215 raw-base edit | Partly; small, but the arithmetic it patches goes away once fuel is a row |
+| #213 override stamp, #219 in-job line | No. Hold these for the cost side; use the config stopgap for #213 |
+
+### What the API read changed about sizing
+
+- **The core fix is input parity, and it is a contract change.** Quote, insert and re-rate each build their own proc arguments (three copy-pasted insert builders, a separate quote builder per engine, a re-rate that shares nothing). The re-rate request model lacks the fields. Fixing it touches `API`, `DW`, `BK` and SQL.
+- **There is no test safety net.** The API tests cannot execute stored procs and none assert the arguments passed to one (`API/WebAPICore.Tests/TestSupport/SqliteDbContextFactory.cs:19`). Argument-mapping tests need writing first.
+- **Scope of consolidation:** 9 NZ rating call sites over 8 SQL objects, plus 7 insert procs that rate implicitly.
+- **Breakdown rows at insert are closer than expected.** The calls exist and are commented out in `UTL_stpJob_Insert_Rated`, `UTL_stpJob_Truck_Insert` and `NP_stpJob_SDShorthaul_Insert`. The work is the description format and finding out why they were disabled.
+
+### Week 1 — confirm, contain, and get re-rate parity
+
+| Days | Work | Closes |
+|---|---|---|
+| 1 | Run the confirm queries (needs read access to the Urgent DB): #218 relationship-type flag, #217 max-id comparison, #215 template mismatch, #213 `BulkZoneRate` rows, breakdown coverage query, cubic units in `BulkZonePackageRate`, and `tblSetting.CountryCode` on staging | Settles the leading hypotheses |
+| 1–3 | Contained fixes: #225 after-hours fuel block; #226 hotfix (class through quote, insert and flight proc) plus kg default; #218 exclude ReturnParent from the courier-response overwrite and fix the effective-job id for return legs; #224 probe skip and `RateJobService.cs:854`; #215 raw-base edit; #216 data fix plus a zero-rate guard on the booking page | #225, #226, #218, #224, #215 H1, #216 |
+| 3–5 | Re-rate parity: add cubic list, weight list, DimensionsType and StockSizeId to `RerateRequest`, pass them through `NET_stpJob_Rate_Described_All` to the bulk-zone proc, and send them from `DW` and the booking job list. Restore the `US P2P` re-rate branch. Write argument-mapping tests alongside | #820 (re-rate), #208 (Recalculate) |
+
+### Week 2 — quote/insert parity and rows at insert
+
+| Days | Work | Closes |
+|---|---|---|
+| 6–7 | One request-to-arguments mapper in the API used by quote, insert and re-rate. Pass StockSizeId and DimensionsType on quote. Align the date arguments between quote and insert | #820 (quote vs insert), #220 |
+| 7–8 | P2P branch in `WS_stpBulkScheduleJob_Insert`, using the US twin as reference | #208 |
+| 8–9 | Breakdown rows at insert, charge side only: parser-format output from the legacy functions, restore the commented-out calls, one parent/child rule for return jobs | Foundation for #219, #213 |
+| 9–10 | Reconcile on staging: new amount and row totals against existing amounts for a sample of recent jobs per speed grouping; release | |
+
+### After the two weeks
+
+- **Cost side on the rows** (courier pay and fuel derived from breakdown on NZ). Needs the NP pay branch merged first and a parallel run across at least one weekly pay cycle. Delivers #213 and #219.
+- **DG rate table** (Deane's proposal) to replace the #226 hotfix.
+- **#217**, if the confirm query points at the importer rather than the shared item-insert proc.
+
+### Risks and dependencies
+
+- **Review load on Kerran.** With drafting done for him, his review and deploy time is the bottleneck, across four repos.
+- **Staging may not exercise NZ paths** if `tblSetting.CountryCode` is NULL there. Check on day 1.
+- **Database access for Claude is not set up.** Without it the day-1 queries fall to Kerran.
+- **`api` and `booking` have no GitHub mirror.** They are local clones from GitLab only, and GitLab is read-only for Claude, so drafts for those two repos need a delivery route agreed (patch files, or mirrors created by Steve).
+- **Week 2 is the part most likely to slip.** If it does, week 1 still stands on its own: the leakage fixes are in and re-rates stop corrupting dimension-priced jobs.
 
 ## Needed from the business
 
