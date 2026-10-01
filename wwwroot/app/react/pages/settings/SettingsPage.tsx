@@ -306,7 +306,15 @@ export const SettingsPage: React.FC = () => {
                         <Box mt={16}>
                             <SettingRow
                                 title="Liquid Glass"
-                                badge={<Badge size="xs">BETA</Badge>}
+                                badge={
+                                    <Badge
+                                        size="xs"
+                                        c="white"
+                                        style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
+                                    >
+                                        BETA
+                                    </Badge>
+                                }
                                 description="Gives dialogs and dropdown menus a frosted, see-through glass look. Only works
                                     in Chromium-based browsers (Google Chrome, Microsoft Edge, Brave and Opera). Applies
                                     to this device only."
