@@ -7,6 +7,7 @@ import {screen, waitFor, within} from '@testing-library/react';
 import {JobChangeRequestsForJob} from './JobChangeRequestsForJob';
 import { renderWithMantineProviders as renderWithProviders } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
+import { confirmRejectionWithReason } from '../../__testUtils__/rejectionFlow';
 import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
 import type {JobChangeRequestDto} from '../../interfaces/jobChangeRequest';
 
@@ -189,17 +190,7 @@ describe('JobChangeRequestsForJob', () => {
             mockApi.reject.mockResolvedValueOnce({success: true});
 
             const user = await openRejectInput();
-            await user.click(screen.getByLabelText(/Reason for rejection/i));
-            await user.paste('rate too low');
-            await user.click(screen.getByRole('button', {name: /Confirm reject/}));
-
-            await waitFor(() => {
-                expect(mockApi.reject).toHaveBeenCalledWith({
-                    requestId: 1,
-                    rowVersion: undefined,
-                    reason: 'rate too low',
-                });
-            });
+            await confirmRejectionWithReason(user, mockApi.reject);
         });
 
         it('Back returns to the row state without calling the API', async () => {
