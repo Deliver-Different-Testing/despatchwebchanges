@@ -289,6 +289,7 @@ describe('JobDetails', () => {
             renderJobDetails();
 
             expect(screen.getByTestId('job-detail-loading')).toBeInTheDocument();
+            expect(screen.getByTestId('job-detail-loading')).toHaveStyle({backgroundColor: 'var(--mantine-color-gray-1)'});
             expect(screen.queryByTestId('job-detail-header')).not.toBeInTheDocument();
         });
 

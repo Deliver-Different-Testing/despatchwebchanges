@@ -7,6 +7,7 @@ import {MAX_COLUMNS, MIN_COLUMNS, parsePercent} from './columnLayout';
 import {Icon} from '../../../components/common/icon/Icon';
 import {BoxHeader} from './BoxHeader';
 import classes from './BoxShell.module.css';
+import {startBoxPointerDrag} from './boxPointerDrag';
 
 export interface BoxShellProps {
     layout: ILayout;
@@ -81,10 +82,14 @@ const boxCardStyle: React.CSSProperties = {
     overflow: 'hidden',
 };
 
+// The header overlays the scroller (see BoxShell.module.css), so the scroller starts
+// below it and content scrolls up beneath it. It stays solid: glass over dense job rows shimmers.
 const boxContentStyle: React.CSSProperties = {
     flex: 1,
     minHeight: 0,
     overflow: 'auto',
+    paddingTop: 'var(--box-header-height)',
+    scrollPaddingTop: 'var(--box-header-height)',
 };
 
 // Insets each card inside its panel so neighbouring cards get a small,
@@ -105,28 +110,35 @@ const boxPanelPadStyle = (padTop: boolean, padBottom: boolean): React.CSSPropert
 // header controls (via createPortal) without lifting state. Header + content are
 // rendered via callbacks so the shell keeps the drag/drop/reorder logic inline.
 interface BoxCardBodyProps {
-    onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-    onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
+    columnId: string;
+    index: number;
     renderHeader: (headerSlotRef: (el: HTMLElement | null) => void) => React.ReactNode;
     renderContent: (headerSlot: HTMLElement | null) => React.ReactNode;
 }
 
-const BoxCardBody: React.FC<BoxCardBodyProps> = ({onDragOver, onDrop, renderHeader, renderContent}) => {
+const BoxCardBody: React.FC<BoxCardBodyProps> = ({columnId, index, renderHeader, renderContent}) => {
     const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
     return (
-        <Box data-testid="job-search-box-card" style={boxCardStyle} onDragOver={onDragOver} onDrop={onDrop}>
-            {renderHeader(setHeaderSlot)}
-            <Box style={boxContentStyle}>{renderContent(headerSlot)}</Box>
+        <Box
+            data-testid="job-search-box-card"
+            data-box-card=""
+            data-column-id={columnId}
+            data-box-index={index}
+            className={classes.card}
+            style={boxCardStyle}
+        >
+            <Box
+                data-testid="job-search-box-header"
+                className={classes.header}
+            >
+                {renderHeader(setHeaderSlot)}
+            </Box>
+            <Box data-testid="job-search-box-scroller" style={boxContentStyle}>
+                {renderContent(headerSlot)}
+            </Box>
         </Box>
     );
 };
-
-const DRAG_MIME = 'application/x-jobsearch-box';
-
-interface DragRef {
-    sourceColumnId: string;
-    sourceIndex: number;
-}
 
 export const BoxShell: React.FC<BoxShellProps> = ({
     layout,
@@ -153,7 +165,6 @@ export const BoxShell: React.FC<BoxShellProps> = ({
     // Gates only the columns stepper bar. Resize and reorder are governed
     // separately, by isDefaultLayout alone — see canReorder below.
     const editable = columnEditMode && !isDefaultLayout;
-    const dragRef = useRef<DragRef | null>(null);
     // Every PanelGroup emits its computed sizes once on mount. That emit carries
     // no user intent, so swallowing the first one per group keeps merely opening
     // the page from rewriting (and syncing) the layout.
@@ -174,41 +185,6 @@ export const BoxShell: React.FC<BoxShellProps> = ({
     // Name of the panel whose drag handle should be re-focused after a reorder
     // remounts the panel tree (see BoxHeader.focusHandleOnMount).
     const pendingFocusRef = useRef<string | null>(null);
-
-    const handleDragStart = (sourceColumnId: string, sourceIndex: number) =>
-        (event: React.DragEvent<HTMLElement>) => {
-            dragRef.current = {sourceColumnId, sourceIndex};
-            event.dataTransfer.effectAllowed = 'move';
-            // Empty payload is fine — we read from the ref. Setting the MIME
-            // tells onDragOver we're a job-search box (vs an external file).
-            event.dataTransfer.setData(DRAG_MIME, '1');
-        };
-
-    const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-        if (!dragRef.current) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-    };
-
-    const handleDropOnBox = (targetColumnId: string, targetIndex: number) =>
-        (event: React.DragEvent<HTMLDivElement>) => {
-            const drag = dragRef.current;
-            dragRef.current = null;
-            if (!drag || !onMoveBox) return;
-            event.preventDefault();
-            event.stopPropagation();
-            if (drag.sourceColumnId === targetColumnId && drag.sourceIndex === targetIndex) return;
-            onMoveBox(drag.sourceColumnId, drag.sourceIndex, targetColumnId, targetIndex);
-        };
-
-    const handleDropAtColumnEnd = (targetColumnId: string, length: number) =>
-        (event: React.DragEvent<HTMLDivElement>) => {
-            const drag = dragRef.current;
-            dragRef.current = null;
-            if (!drag || !onMoveBox) return;
-            event.preventDefault();
-            onMoveBox(drag.sourceColumnId, drag.sourceIndex, targetColumnId, length);
-        };
 
     return (
         <Box style={{
@@ -317,9 +293,10 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                 minSize="10%"
                             >
                                 <Box
+                                    className={classes.column}
+                                    data-box-column={column.id}
+                                    data-column-length={column.boxes.length}
                                     style={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}
-                                    onDragOver={handleDragOver}
-                                    onDrop={handleDropAtColumnEnd(column.id, column.boxes.length)}
                                 >
                                     {visibleBoxes.length === 0 ? (
                                         <Box
@@ -385,8 +362,8 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                                 isDefaultLayout || vIdx === visibleBoxes.length - 1,
                                                             )}>
                                                                 <BoxCardBody
-                                                                    onDragOver={handleDragOver}
-                                                                    onDrop={handleDropOnBox(column.id, originalIndex)}
+                                                                    columnId={column.id}
+                                                                    index={originalIndex}
                                                                     renderHeader={(headerSlotRef) => (
                                                                         <BoxHeader
                                                                             icon={meta.icon ?? 'crop_square'}
@@ -399,8 +376,12 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                                             showDragHandle={canReorder}
                                                                             showHideButton={canHide}
                                                                             onHide={canHide ? () => onHideBox?.(boxName) : undefined}
-                                                                            onDragStart={canReorder
-                                                                                ? handleDragStart(column.id, originalIndex)
+                                                                            onGrab={canReorder
+                                                                                ? e => startBoxPointerDrag(
+                                                                                    e,
+                                                                                    {columnId: column.id, index: originalIndex},
+                                                                                    (...move) => onMoveBox?.(...move),
+                                                                                )
                                                                                 : undefined}
                                                                             onRefresh={() => onRefreshBox(meta.name ?? '')}
                                                                             onMoveUp={canReorder && prevVisible

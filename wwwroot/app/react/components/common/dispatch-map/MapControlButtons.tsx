@@ -10,6 +10,7 @@ import {ActionIcon, Divider, Paper, Tooltip} from '@mantine/core';
 import {Expand, EyeOff, Maximize, Minimize, Scan, Siren} from 'lucide-react';
 import {IconMap, IconTruck} from '@tabler/icons-react';
 import {Icon} from '../icon/Icon';
+import {useMapGlassClassName} from '../../../hooks/useMapGlassClassName';
 import type { MapControlButtonsProps } from './DispatchMap.types';
 
 const ICON_SIZE = 20;
@@ -74,9 +75,11 @@ export function MapControlButtons({
 }: MapControlButtonsProps) {
     const { autoZoomEnabled, couriersOnlyEnabled, urgentArmyOnlyEnabled, couriersLargeViewEnabled } =
         controlState;
+    const glassClassName = useMapGlassClassName();
 
     return (
         <Paper
+            className={glassClassName}
             shadow="md"
             radius="sm"
             style={{

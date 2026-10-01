@@ -13,6 +13,7 @@ import {Rows3, Rows4} from 'lucide-react';
 
 import {renderWithMantine} from '../../../__testUtils__';
 import {setupUser} from '../../../__testUtils__/setupUser';
+import {setLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import {Icon} from '../icon/Icon';
 import {SegmentedToggle} from './SegmentedToggle';
 import {
@@ -188,5 +189,39 @@ describe('SegmentedToggle', () => {
 
         expect(nameOf(first)).toBeTruthy();
         expect(nameOf(first)).not.toEqual(nameOf(second));
+    });
+    describe('liquid glass', () => {
+        const originalCss = (globalThis as {CSS?: unknown}).CSS;
+
+        beforeEach(() => {
+            (globalThis as {CSS?: unknown}).CSS = {supports: () => true};
+        });
+
+        afterEach(() => {
+            (globalThis as {CSS?: unknown}).CSS = originalCss;
+            setLiquidGlassEnabled(false);
+        });
+
+        const group = (orientation: 'horizontal' | 'vertical') => {
+            renderWithMantine(
+                <SegmentedToggle aria-label="Task scope" data={SCOPE_DATA} value="current" onChange={jest.fn()} orientation={orientation}/>,
+            );
+            return screen.getByRole('radiogroup');
+        };
+
+        it('glasses the horizontal bar only when the Liquid Glass preference is on', () => {
+            setLiquidGlassEnabled(false);
+            expect(group('horizontal')).not.toHaveAttribute('data-glass');
+        });
+
+        it('opts the horizontal bar into glass when the preference is on, but never the vertical list', () => {
+            setLiquidGlassEnabled(true);
+            expect(group('horizontal')).toHaveAttribute('data-glass');
+        });
+
+        it('leaves the vertical row list unglassed', () => {
+            setLiquidGlassEnabled(true);
+            expect(group('vertical')).not.toHaveAttribute('data-glass');
+        });
     });
 });

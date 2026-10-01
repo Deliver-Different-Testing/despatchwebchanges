@@ -24,6 +24,8 @@
  * (light) / charcoal #2c2a30 (dark). Elevation by tone, plus a soft shadow.
  */
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
+import {GlassDropdownRoot} from '../components/common/glass/GlassDropdownRoot';
+import glassClasses from './glass.module.css';
 import {getMd3Scheme} from './md3';
 import {isUsTenant} from './tenant';
 
@@ -259,10 +261,9 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
                 defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
                 styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
             },
-            // Not given the `card` radius or a glass-scrim `overlayProps` default:
-            // every dialog in this app goes through DialogShell, which composes
-            // `Modal.Root`/`Overlay`/`Content` directly (radius="xl", a documented
-            // deliberately-unblurred overlay) and never reads these defaults.
+            // Not given the `card` radius or glass `overlayProps` defaults: every dialog
+            // goes through DialogShell, which composes `Modal.Root`/`Overlay`/`Content`
+            // directly and applies the glass overlay itself.
             Modal: {
                 defaultProps: {radius: 'md', centered: true, shadow: 'md'},
                 styles: {content: {backgroundColor: 'var(--dd-surface-container-high)'}},
@@ -273,13 +274,15 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             Autocomplete: {defaultProps: {radius: 'sm'}},
             Menu: {
                 defaultProps: {radius: 'sm', shadow: 'md'},
-                styles: {
-                    dropdown: {
-                        backgroundColor: 'var(--dd-surface-container-high)',
-                        border: '1px solid var(--dd-outline-variant)',
-                    },
-                },
+                classNames: {dropdown: `${glassClasses.glass} ${glassClasses.panel}`},
             },
+            Popover: {
+                defaultProps: {radius: 'sm', shadow: 'md'},
+                classNames: {dropdown: `${glassClasses.glass} ${glassClasses.panel}`},
+            },
+            // Menu renders through Popover, so this reaches both; Select/Autocomplete
+            // dropdowns lack the glass class and render unchanged.
+            PopoverDropdown: {defaultProps: {component: GlassDropdownRoot}},
             Tooltip: {defaultProps: {radius: 'sm', color: 'ink'}},
             Badge: {defaultProps: {radius: 'sm'}},
             Chip: {defaultProps: {radius: 'sm'}},

@@ -97,9 +97,11 @@ interface JobDetailsProps {
     config: MountJobDetailsConfig;
 }
 
+const PANEL_BACKGROUND = 'var(--mantine-color-gray-1)';
+
 const rootStyles = {
     container: (dense: boolean): React.CSSProperties => ({
-        backgroundColor: 'var(--mantine-color-gray-1)',
+        backgroundColor: PANEL_BACKGROUND,
         ...(dense ? {fontSize: '0.8125rem'} : {}),
     }),
     progressBar: {
@@ -381,7 +383,7 @@ export function JobDetails({config}: JobDetailsProps) {
 
     if (isLoading && !job) {
         return (
-            <Box p="sm" data-testid="job-detail-loading">
+            <Box p="sm" style={{backgroundColor: PANEL_BACKGROUND}} data-testid="job-detail-loading">
                 <Stack gap="sm">
                     <Skeleton height={44} radius="xs"/>
                     <Skeleton height={100} radius="xs"/>

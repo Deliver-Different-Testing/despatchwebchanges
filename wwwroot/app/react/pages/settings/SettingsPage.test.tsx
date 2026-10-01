@@ -160,6 +160,26 @@ describe('SettingsPage', () => {
         expect(mockSetAiEnabled).toHaveBeenCalledWith(true);
     });
 
+    describe('Liquid Glass', () => {
+        it('is off by default, tagged BETA, and names the browsers it works in', () => {
+            renderWithMantine(<SettingsPage />);
+
+            expect(screen.getByRole('switch', {name: 'Liquid Glass'})).not.toBeChecked();
+            expect(screen.getByText(/Only works in Chromium-based browsers/)).toBeInTheDocument();
+            expect(screen.getByText(/Google Chrome, Microsoft Edge, Brave and Opera/)).toBeInTheDocument();
+        });
+
+        it('turns on and persists when toggled', async () => {
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+
+            await user.click(screen.getByRole('switch', {name: 'Liquid Glass'}));
+
+            expect(screen.getByRole('switch', {name: 'Liquid Glass'})).toBeChecked();
+            expect(localStorage.getItem('dd-liquid-glass')).toBe('on');
+        });
+    });
+
     describe('Dashboard settings', () => {
         it('renders the per-panel hide button toggle, checked by default', () => {
             renderWithMantine(<SettingsPage />);

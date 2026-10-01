@@ -10,6 +10,7 @@ import React from 'react';
 import {Button, Group} from '@mantine/core';
 import {dialogFooterBg, dialogFooterBorder, dialogStickyChromeStyle} from './styles';
 import {DialogFooterProps} from "./DialogFooterProps";
+import {useGlassAllowed} from '../../../../hooks/useGlassStrategy';
 
 export const DialogFooter: React.FC<DialogFooterProps> = ({
     onCancel,
@@ -23,7 +24,9 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
     hideConfirm = false,
     hideCancel = false,
     secondaryAction,
-}) => (
+}) => {
+    const glass = useGlassAllowed();
+    return (
     <Group
         justify="flex-end"
         gap="sm"
@@ -31,7 +34,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
         py="md"
         style={{
             borderTop: dialogFooterBorder,
-            backgroundColor: dialogFooterBg,
+            backgroundColor: glass ? 'transparent' : dialogFooterBg,
             ...dialogStickyChromeStyle('bottom'),
         }}
     >
@@ -54,6 +57,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
             </Button>
         )}
     </Group>
-);
+    );
+};
 
 export default DialogFooter;

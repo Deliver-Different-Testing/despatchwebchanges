@@ -2,6 +2,7 @@ import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
 import {BoxShell, BoxShellProps} from './BoxShell';
+import {setLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import {ILayout} from '../../../../interfaces/layout.interfaces';
 
 
@@ -295,5 +296,72 @@ describe('BoxShell box card chrome', () => {
 
         expect(screen.getByTestId('job-search-box-card').style.backgroundColor)
             .toBe('var(--dd-surface-container)');
+    });
+
+    describe('sticky header', () => {
+        afterEach(() => setLiquidGlassEnabled(false));
+
+        it('overlays the header on the scroller so body content can scroll beneath it', () => {
+            renderShell();
+
+            const card = screen.getByTestId('job-search-box-card');
+            expect(card.firstElementChild).toBe(screen.getByTestId('job-search-box-header'));
+            expect(screen.getByTestId('job-search-box-scroller')).toHaveTextContent('content-jobList');
+        });
+
+        it('stays a solid header even with Liquid Glass on, because it sits over dense job rows', () => {
+            setLiquidGlassEnabled(true);
+            renderShell();
+            const header = screen.getByTestId('job-search-box-header');
+
+            const scroller = screen.getByTestId('job-search-box-scroller');
+            Object.defineProperty(scroller, 'scrollTop', {value: 12, configurable: true});
+            fireEvent.scroll(scroller);
+
+            expect(header).not.toHaveAttribute('data-glass');
+            expect(header).not.toHaveAttribute('data-scrolled');
+        });
+    });
+});
+
+describe('BoxShell pointer reorder', () => {
+    it('tags cards and columns so a drag can resolve its drop target, and moves on drop', () => {
+        const onMoveBox = jest.fn();
+        const {container} = renderShell({
+            layout: {
+                name: 'Mine',
+                layout: {
+                    columns: [{
+                        id: 'col1',
+                        width: '100%',
+                        boxes: [
+                            {name: 'a', title: 'Alpha', visible: true},
+                            {name: 'b', title: 'Beta', visible: true},
+                        ],
+                    }],
+                },
+            },
+            boxes: {a: {name: 'a', title: 'Alpha', visible: true}, b: {name: 'b', title: 'Beta', visible: true}},
+            onMoveBox,
+        });
+
+        const column = container.querySelector('[data-box-column="col1"]') as HTMLElement;
+        const cards = container.querySelectorAll<HTMLElement>('[data-box-card]');
+        expect(column).toHaveAttribute('data-column-length', '2');
+        expect(cards).toHaveLength(2);
+        expect(cards[1]).toHaveAttribute('data-box-index', '1');
+
+        document.elementFromPoint = jest.fn(() => cards[1]);
+        cards.forEach(card => {
+            card.getBoundingClientRect = () => ({left: 0, top: 0, width: 300, height: 200, x: 0, y: 0, right: 300, bottom: 200, toJSON: () => ({})});
+        });
+        const grab = screen.getByLabelText(/Reorder Alpha/);
+        // jsdom has no PointerEvent, so fireEvent would drop the coordinates.
+        grab.dispatchEvent(new MouseEvent('pointerdown', {bubbles: true, clientX: 5, clientY: 5, button: 0}));
+        window.dispatchEvent(new MouseEvent('pointermove', {clientX: 100, clientY: 150}));
+        window.dispatchEvent(new MouseEvent('pointerup', {clientX: 100, clientY: 150}));
+
+        expect(onMoveBox).toHaveBeenCalledWith('col1', 0, 'col1', 2);
+        expect(document.querySelector('[data-box-drag-ghost]')).toBeNull();
     });
 });

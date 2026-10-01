@@ -24,6 +24,7 @@
 import React, {useId, useReducer, useRef, useState} from 'react';
 import {FloatingIndicator, Tooltip} from '@mantine/core';
 
+import {useGlassAllowed} from '../../../hooks/useGlassStrategy';
 import classes from './SegmentedToggle.module.css';
 import {
     segmentedToggleAccent,
@@ -101,6 +102,8 @@ export function SegmentedToggle<T extends string = string>({
     };
 
     const vertical = orientation === 'vertical';
+    // The vertical rows are a tonal-accent list, not a raised chip, so only the bar takes glass.
+    const glass = useGlassAllowed() && !vertical;
 
     return (
         <div
@@ -109,6 +112,7 @@ export function SegmentedToggle<T extends string = string>({
             aria-label={ariaLabel}
             aria-orientation={orientation}
             data-orientation={orientation}
+            data-glass={glass ? '' : undefined}
             className={[classes.root, className].filter(Boolean).join(' ')}
             style={{
                 '--st-height': `${segmentedToggleHeight(variant)}px`,

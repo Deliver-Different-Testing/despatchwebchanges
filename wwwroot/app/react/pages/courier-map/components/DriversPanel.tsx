@@ -14,6 +14,8 @@ import {
 import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import classes from './DriversPanel.module.css';
+import glassClasses from '../../../theme/glass.module.css';
+import {useLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import { NoData } from '../../../components/common/no-data';
 import { matchesCourierSearch } from '../CourierMapPage.types';
 import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
@@ -104,9 +106,14 @@ export function DriversPanel({
     );
     const selectedFleetValues = useMemo(() => selectedFleetIds.map(String), [selectedFleetIds]);
 
+    const glassEnabled = useLiquidGlassEnabled();
+
     return (
         <Box
             w={PANEL_WIDTH}
+            // Glass covers the card chrome (header, stats, filters); the list area below keeps
+            // its own opaque surface so driver rows stay readable over the map.
+            className={glassEnabled ? `${glassClasses.glass} ${glassClasses.panel}` : undefined}
             style={{
                 position: 'absolute',
                 top: 16,
@@ -199,7 +206,14 @@ export function DriversPanel({
                 </Box>
 
                 {/* ── List area ─────────────────────── */}
-                <Box className={classes.listArea} style={{flex: 1, overflowY: 'auto', minHeight: 0}}>
+                <Box className={classes.listArea} style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    minHeight: 0,
+                    backgroundColor: 'var(--mantine-color-body)',
+                    borderBottomLeftRadius: 'var(--mantine-radius-md)',
+                    borderBottomRightRadius: 'var(--mantine-radius-md)',
+                }}>
                     {isLoading && (
                         <Stack align="center" gap={12} py={40}>
                             <Loader size={32} aria-label="Loading drivers" />

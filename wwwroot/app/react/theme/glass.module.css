@@ -1,0 +1,179 @@
+/*
+ * Shared "Liquid Glass" recipe — a translucent, blurred material for floating
+ * surfaces that sit over vivid/content-rich backgrounds: Modal/Drawer overlays,
+ * Menu/Popover dropdowns, and (via `.glassOnScrim`) the HelpCentre hero search.
+ * Deliberately NOT used for Tooltip, Notifications, or persistent chrome — glass
+ * reads worst on small/fast/text-only surfaces and over flat page backgrounds
+ * (see styles/theme.ts component overrides).
+ *
+ * Every declaration is `!important`: this class exists specifically to override
+ * Mantine's own inline styling on these parts (the Overlay's opacity-driven
+ * background, and — the actual reason this class exists — Mantine's Transition
+ * wrapper setting `will-change: transform, opacity` on the animated node, which
+ * silently breaks backdrop-filter rendering in Chromium: mantinedev/mantine#8070).
+ *
+ * The -webkit-backdrop-filter value is hardcoded (not var()) because Safari does
+ * not resolve CSS custom properties inside -webkit-prefixed declarations.
+ */
+.glass {
+  will-change: auto !important;
+  background: color-mix(in srgb, var(--dd-surface-container-high) 70%, transparent) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid var(--dd-outline-variant) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Glass reads worse in low light — a touch more opaque, dimmer specular line. */
+:global([data-mantine-color-scheme='dark']) .glass {
+  background: color-mix(in srgb, var(--dd-surface-container-high) 85%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background: var(--dd-surface-container-high) !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--dd-surface-container-high) !important;
+  }
+}
+
+/*
+ * Floating panel (Menu/Popover dropdowns) — Apple's "Regular" Liquid Glass, not "Clear".
+ * Regular keeps enough tint for text to stay legible over anything, and is defined by its edges:
+ * a hairline border, a bright specular line along the top, a soft inner rim, and depth shadows
+ * that grow with the panel. Only dropdowns get this; `.glass` alone is also the Modal/Drawer scrim,
+ * which must not gain borders or shadows.
+ */
+.panel {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(rgba(13, 12, 44, 0.045), rgba(13, 12, 44, 0.045)),
+    color-mix(in srgb, var(--dd-surface-container-high) 62%, transparent) !important;
+  backdrop-filter: blur(22px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
+  border: 1px solid rgba(13, 12, 44, 0.14) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(13, 12, 44, 0.06),
+    0 1px 2px rgba(13, 12, 44, 0.14),
+    0 8px 24px -4px rgba(13, 12, 44, 0.24),
+    0 22px 48px -14px rgba(13, 12, 44, 0.26) !important;
+}
+
+:global([data-mantine-color-scheme='dark']) .panel {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 45%),
+    color-mix(in srgb, var(--dd-surface-container-high) 90%, transparent) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 10px 28px -4px rgba(0, 0, 0, 0.5),
+    0 24px 52px -14px rgba(0, 0, 0, 0.55) !important;
+}
+
+/*
+ * Dialog surfaces animate in over the busy dispatch page (grid + map), and a large animated
+ * backdrop-filter is re-rasterised every frame, so a dialog gets a cheaper blur than a dropdown.
+ */
+.dialog {
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* Light mode: the dialog surface is white over a pale scrim, so it needs depth to separate. */
+:global([data-mantine-color-scheme='light']) .dialog {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(13, 12, 44, 0.14),
+    0 12px 32px -6px rgba(13, 12, 44, 0.26),
+    0 32px 64px -16px rgba(13, 12, 44, 0.28) !important;
+}
+
+/* Menu items light up from within on hover/keyboard focus instead of turning grey. */
+.panel :global([role='menuitem'][data-hovered]) {
+  background: rgba(255, 255, 255, 0.6) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 1px 3px rgba(13, 12, 44, 0.1) !important;
+}
+
+:global([data-mantine-color-scheme='dark']) .panel :global([role='menuitem'][data-hovered]) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .panel {
+    background: var(--dd-surface-container-high) !important;
+  }
+}
+
+/*
+ * When GlassDropdownRoot has mounted the live SVG lens behind this content (Chromium), that
+ * layer handles blur/refraction. Turn off the host's backdrop-filter — an element with one
+ * becomes the backdrop root, so the child lens would only see the host instead of the page —
+ * and keep a tint here; the lens layer adds more on top (see glassLayer.module.css). The
+ * lens is only mounted on Chromium; other browsers keep the plain CSS glass.
+ */
+.glass[data-liquid-glass='svg'] {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(rgba(13, 12, 44, 0.045), rgba(13, 12, 44, 0.045)),
+    color-mix(in srgb, var(--dd-surface-container-high) 52%, transparent) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:global([data-mantine-color-scheme='dark']) .glass[data-liquid-glass='svg'] {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 45%),
+    color-mix(in srgb, var(--dd-surface-container-high) 84%, transparent) !important;
+}
+
+/*
+ * Variant for glass sitting on the fixed Ink-Blue scrim (hero surfaces, e.g.
+ * HelpCentre's search bar). Stays a light frosted pane in BOTH colour schemes —
+ * matching `onBrandScrim`'s white-based overlay tokens in theme.ts — since the
+ * scrim itself is a constant brand navy that doesn't flip with light/dark.
+ */
+.glassOnScrim {
+  will-change: auto !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  color: #fff !important;
+}
+
+.glassOnScrim::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glassOnScrim {
+    background: rgba(255, 255, 255, 0.22) !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glassOnScrim {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.22) !important;
+  }
+}

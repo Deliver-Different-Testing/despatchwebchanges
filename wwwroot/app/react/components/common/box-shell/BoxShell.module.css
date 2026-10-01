@@ -56,3 +56,157 @@
         transition: none;
     }
 }
+
+/*
+ * Pointer reorder (see boxPointerDrag.ts). The ghost is a plain DOM node on
+ * <body>, positioned by transform, so it sits above the HERE map's overlays
+ * (~1001) and ignores the pointer so hit-testing sees the panels beneath.
+ */
+.ghost {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 5000;
+    box-sizing: border-box;
+    overflow: hidden;
+    pointer-events: none;
+    background-color: var(--dd-surface-container);
+    border: 1px solid var(--mantine-primary-color-filled);
+    border-radius: var(--mantine-radius-lg);
+    box-shadow:
+        0 18px 40px -8px rgba(13, 12, 44, 0.45),
+        0 6px 14px rgba(13, 12, 44, 0.25);
+    will-change: transform;
+}
+
+.ghostBody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+}
+
+.ghostBar {
+    height: 8px;
+    border-radius: 4px;
+    background-color: var(--mantine-color-default-border);
+}
+
+.dragging,
+.dragging * {
+    cursor: grabbing !important;
+    user-select: none !important;
+}
+
+.card {
+    --box-header-height: 48px;
+    position: relative;
+    transition: opacity 0.18s ease;
+}
+
+/* The slot being vacated: still there, visibly empty-handed. */
+.card[data-dragging] {
+    opacity: 0.4;
+    outline: 2px dashed var(--mantine-primary-color-filled);
+    outline-offset: -2px;
+}
+
+/* Where the panel will land: a glowing edge on the card it will sit beside. */
+.card[data-drop-edge]::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: var(--mantine-primary-color-filled);
+    box-shadow: 0 0 12px var(--mantine-primary-color-filled);
+    pointer-events: none;
+}
+
+.card[data-drop-edge='top']::after {
+    top: 0;
+}
+
+.card[data-drop-edge='bottom']::after {
+    bottom: 0;
+}
+
+.column[data-drop-over] {
+    background-color: var(--mantine-primary-color-light);
+    border-radius: var(--mantine-radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card {
+        transition: none;
+    }
+}
+
+/*
+ * Liquid Glass ghost (device opt-in, see useLiquidGlassPreference). The held card is
+ * the one surface that always floats over live content, so it gets the same Regular
+ * glass as the dropdown panels: blur + saturation, a bright specular top edge and
+ * rim, depth shadow. The cloned header's own fill is cleared so the glass shows.
+ */
+.ghost[data-glass] {
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 45%),
+        color-mix(in srgb, var(--dd-surface-container-high) 52%, transparent);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    border-color: rgba(13, 12, 44, 0.14);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.95),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+        inset 0 -1px 0 rgba(13, 12, 44, 0.06),
+        0 8px 24px -4px rgba(13, 12, 44, 0.22),
+        0 26px 56px -12px rgba(13, 12, 44, 0.32);
+}
+
+.ghost[data-glass] > :first-child,
+.ghost[data-glass] > :first-child > :first-child,
+.ghost[data-glass] > :first-child > :first-child > :first-child {
+    background: transparent !important;
+}
+
+.ghost[data-glass] .ghostBar {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+:global([data-mantine-color-scheme='dark']) .ghost[data-glass] {
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 45%),
+        color-mix(in srgb, var(--dd-surface-container-high) 84%, transparent);
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+        0 10px 28px -4px rgba(0, 0, 0, 0.5),
+        0 28px 60px -12px rgba(0, 0, 0, 0.6);
+}
+
+:global([data-mantine-color-scheme='dark']) .ghost[data-glass] .ghostBar {
+    background-color: rgba(255, 255, 255, 0.16);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .ghost[data-glass] {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: var(--dd-surface-container-high);
+    }
+}
+
+/*
+ * Sticky header. It overlays the top of the card and the scroller pads itself below it, so rows
+ * scroll up beneath the bar. Always the plain opaque PanelHeader: glass over a scrolling list of
+ * dense data makes labels shimmer as rows move behind it.
+ */
+.header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+}

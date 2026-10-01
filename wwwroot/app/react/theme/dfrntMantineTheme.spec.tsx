@@ -8,8 +8,23 @@ import {
     dfrntCssVariablesResolver,
     createDfrntTheme,
 } from './dfrntMantineTheme';
+import {GlassDropdownRoot} from '../components/common/glass/GlassDropdownRoot';
 import {contrastRatio, getMd3Scheme} from './md3';
 import {dfrntPrimaryPalette, urgentPrimaryPalette, inkBluePalette} from './palettes';
+
+jest.mock('./glass.module.css', () => ({__esModule: true, default: {glass: 'glass-mock', panel: 'panel-mock'}}));
+
+describe('dfrntTheme glass dropdowns', () => {
+    it('gives Menu and Popover dropdowns the glass and panel classes', () => {
+        for (const name of ['Menu', 'Popover'] as const) {
+            expect(dfrntTheme.components?.[name]?.classNames).toEqual({dropdown: 'glass-mock panel-mock'});
+        }
+    });
+
+    it('routes PopoverDropdown through GlassDropdownRoot', () => {
+        expect(dfrntTheme.components?.PopoverDropdown?.defaultProps?.component).toBe(GlassDropdownRoot);
+    });
+});
 
 describe('dfrntTheme', () => {
     it('uses the DFRNT brand ramp as primary with the Cyan seed at the primary shade', () => {
