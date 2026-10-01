@@ -113,7 +113,7 @@ describe('RateAcceptanceBanner', () => {
         await user.click(await screen.findByRole('button', {name: /^Reject$/}));
 
         const dialog = await screen.findByRole('dialog');
-        const submit = within(dialog).getByRole('button', {name: /Reject Rate/});
+        const submit = within(dialog).getByRole('button', {name: /Reject rate/});
         expect(submit).toBeDisabled();
 
         // `user.click` does not focus an input inside a Mantine Modal, so the

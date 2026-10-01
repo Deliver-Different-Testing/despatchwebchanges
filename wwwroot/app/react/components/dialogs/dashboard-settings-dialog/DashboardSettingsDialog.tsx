@@ -26,9 +26,9 @@ import {ConfirmDialog} from '../confirm-dialog/ConfirmDialog';
 
 const COURIER_DISPLAY_MODE_OPTIONS: {value: CourierDisplayMode; label: string}[] = [
     {value: 'off', label: 'Off'},
-    {value: 'name', label: 'Show Courier Name'},
-    {value: 'number', label: 'Show Courier Number'},
-    {value: 'both', label: 'Show Name and Number'},
+    {value: 'name', label: 'Show courier name'},
+    {value: 'number', label: 'Show courier number'},
+    {value: 'both', label: 'Show name and number'},
 ];
 
 // Types that mirror the AngularJS interfaces

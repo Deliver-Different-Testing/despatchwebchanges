@@ -155,8 +155,8 @@ describe('executeSplitJobFlow', () => {
 
             expect(mockedOpenEditAddressDialog).toHaveBeenCalledWith(
                 opts.job.deliveryAddress,
-                'Set Meeting Point',
-                'Split Job',
+                'Set meeting point',
+                'Split job',
             );
         });
 

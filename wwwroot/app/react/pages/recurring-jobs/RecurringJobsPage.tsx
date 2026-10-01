@@ -291,7 +291,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 >
                     <PanelHeader
                         icon={<Icon lucide={Repeat}/>}
-                        title="Recurring Jobs"
+                        title="Recurring jobs"
                         count={data?.total || undefined}
                     />
                     <Box style={{flex: 1, overflow: 'hidden'}}>
@@ -330,7 +330,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 >
                     <PanelHeader
                         icon={<Icon lucide={Info}/>}
-                        title={selectedJobId ? `Job Details - Job #${selectedJobId}` : 'Job Details'}
+                        title={selectedJobId ? `Job details - Job #${selectedJobId}` : 'Job details'}
                     />
                     <Box style={{flex: 1, overflow: 'auto'}}>
                         <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
@@ -393,11 +393,11 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 opened={deactivateDialogOpen}
                 onClose={handleDeactivateCancel}
                 size={dialogSize.sm}
-                label="Deactivate Recurring Job"
+                label="Deactivate recurring job"
             >
                 <DialogHeader
                     icon={<Icon lucide={Repeat}/>}
-                    title="Deactivate Recurring Job"
+                    title="Deactivate recurring job"
                     onClose={handleDeactivateCancel}
                     closeDisabled={isDeactivating}
                     variant="warning"

@@ -57,7 +57,7 @@ const host = createDialogHost<EditAddressPayload, EditAddressDialogViewModel | n
  */
 export function openEditAddressDialog(
     addressDetails: EditAddressDialogViewModel | null,
-    title: string = 'Edit Address',
+    title: string = 'Edit address',
     submitLabel: string = 'Save',
     showContactInfo: boolean = false,
     isUsTenant: boolean = false,

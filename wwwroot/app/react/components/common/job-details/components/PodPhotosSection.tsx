@@ -339,17 +339,17 @@ export function PodPhotosSection({
             <Paper {...cardContainerProps}>
                 <SectionHeader
                     lucide={Camera}
-                    title="Delivery Photos"
+                    title="Delivery photos"
                     subtitle={`${deliveryPhotos.length} ${deliveryPhotos.length === 1 ? 'photo' : 'photos'}`}
                     endAction={
                         <>
                             {onUploadPhotos && (
-                                <Tooltip label="Upload POD Photos">
+                                <Tooltip label="Upload POD photos">
                                     <ActionIcon
                                         variant="subtle"
                                         color="gray"
                                         size="sm"
-                                        aria-label="Upload POD Photos"
+                                        aria-label="Upload POD photos"
                                         onClick={onUploadPhotos}
                                     >
                                         <Icon lucide={Upload} size={18}/>
@@ -390,7 +390,7 @@ export function PodPhotosSection({
                 <Paper {...cardContainerProps} mt="xs">
                     <SectionHeader
                         lucide={Camera}
-                        title="Pickup Photos"
+                        title="Pickup photos"
                         subtitle={`${pickupPhotos.length} ${pickupPhotos.length === 1 ? 'photo' : 'photos'}`}
                     />
                     <Box p="md">

@@ -32,26 +32,26 @@ const ICON_SIZE = 48;
 const errorConfigs: Record<ErrorType, ErrorConfig> = {
     notFound: {
         icon: <Icon lucide={SearchX} size={ICON_SIZE} />,
-        title: 'Page Not Found',
+        title: 'Page not found',
         message: 'The page you are looking for does not exist or has been moved.',
         code: '404',
     },
     error: {
         icon: <Icon lucide={TriangleAlert} size={ICON_SIZE} />,
-        title: 'Something Went Wrong',
-        message: 'An unexpected error occurred. Please try again later.',
+        title: 'Something went wrong',
+        message: 'Something went wrong on this page. Refresh to try again.',
         code: 'Error',
     },
     forbidden: {
         icon: <Icon lucide={Lock} size={ICON_SIZE} />,
-        title: 'Access Denied',
+        title: 'Access denied',
         message: 'You do not have permission to access this page.',
         code: '403',
     },
     serverError: {
         icon: <Icon lucide={CloudOff} size={ICON_SIZE} />,
-        title: 'Server Error',
-        message: 'The server encountered an error. Please try again later.',
+        title: 'Server error',
+        message: 'The server hit an error. Try again later.',
         code: '500',
     },
 };
@@ -173,7 +173,7 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
                         miw={120}
                         fw={500}
                     >
-                        Go Back
+                        Go back
                     </Button>
                     {onGoHome && (
                         <Button
@@ -182,7 +182,7 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
                             miw={120}
                             fw={500}
                         >
-                            Go Home
+                            Go home
                         </Button>
                     )}
                 </Flex>

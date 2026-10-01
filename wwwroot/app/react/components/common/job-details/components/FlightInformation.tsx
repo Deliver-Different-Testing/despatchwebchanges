@@ -146,15 +146,15 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
         <Paper {...cardContainerProps}>
             <SectionHeader
                 tabler={IconPlane}
-                title="Flight Information"
+                title="Flight information"
                 subtitle={segments.length > 1 ? `${segments.length} segments` : undefined}
                 endAction={
                     <>
                         {webhookStatus === 'active' && (
-                            <Badge size="sm" color="green" tt="none">Webhooks Active</Badge>
+                            <Badge size="sm" color="green" tt="none">Webhooks active</Badge>
                         )}
                         {webhookStatus === 'inactive' && (
-                            <Badge size="sm" color="red" tt="none">Webhooks Inactive</Badge>
+                            <Badge size="sm" color="red" tt="none">Webhooks inactive</Badge>
                         )}
                         <Button
                             size="compact-sm"
@@ -164,7 +164,7 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
                             loading={webhookStatus === 'loading'}
                             style={{fontSize: '0.75rem'}}
                         >
-                            {webhookStatus === 'loading' ? 'Checking...' : 'Check Webhooks'}
+                            {webhookStatus === 'loading' ? 'Checking...' : 'Check webhooks'}
                         </Button>
                     </>
                 }

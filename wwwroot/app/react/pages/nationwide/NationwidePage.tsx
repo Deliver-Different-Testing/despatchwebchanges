@@ -215,7 +215,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     const decoratedViewsRef = useRef(decoratedViews);
     const viewsListenerRef = useRef<((views: DfrntPageViewModel[]) => void) | null>(null);
     // Hold the first notification until the list has actually loaded, so the
-    // toolbar menu keeps its spinner instead of flashing "No views available".
+    // toolbar menu keeps its spinner instead of flashing "No views yet".
     const viewsLoadedRef = useRef(false);
     viewsLoadedRef.current = !viewsLoading;
     useEffect(() => {
@@ -448,7 +448,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         const allowed = await canAssignAgentToJob(flightAgentJob.id).catch(() => true);
         if (!allowed) {
             setConfirm({
-                title: 'Flight Assignment Required',
+                title: 'Flight assignment required',
                 message: 'Assign a flight to this job before assigning an agent.',
             });
             return;
@@ -461,7 +461,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         if (!flightAgentJob) return;
 
         setConfirm({
-            title: 'Send Quote Request',
+            title: 'Send quote request',
             message: `Send a quote request to ${agent.agentName} for job ${flightAgentJob.jobNo}?`,
             onConfirm: async () => {
                 closeConfirm();
@@ -530,7 +530,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         if (!flightAgentJob) return;
 
         const picked = await openAutoCompleteDialog(
-            'Search Agents',
+            'Search agents',
             'Start typing an agent name',
             (term: string) => apiClient.get('nationwideJob/GetAllAgentsSearch', {searchTerm: term}),
         );

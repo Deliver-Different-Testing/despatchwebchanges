@@ -162,7 +162,7 @@ describe('SwapPodsDialog', () => {
         expect(screen.getByLabelText(/Second job number/i)).toHaveValue('JOB-002');
     });
 
-    // ── Confirm Swap: success flow (single render) ──────────────────
+    // ── Confirm swap: success flow (single render) ──────────────────
     it('calls onSwap, shows success toast, and closes on successful swap', async () => {
         const props = createMockProps({jobNo: 'JOB-001'});
         await advanceToPhase2(props, 'JOB-002');
@@ -175,7 +175,7 @@ describe('SwapPodsDialog', () => {
         });
     });
 
-    // ── Confirm Swap: loading state ─────────────────────────────────
+    // ── Confirm swap: loading state ─────────────────────────────────
     it('should show loading state while the swap is in progress', async () => {
         let resolveSwap!: () => void;
         const props = createMockProps({
@@ -191,7 +191,7 @@ describe('SwapPodsDialog', () => {
         await act(async () => { resolveSwap(); });
     });
 
-    // ── Confirm Swap: error + re-enable (single render) ─────────────
+    // ── Confirm swap: error + re-enable (single render) ─────────────
     it('shows error toast, does not close, and re-enables button on swap failure', async () => {
         const props = createMockProps({
             onSwap: jest.fn().mockRejectedValue(new Error('API error')),

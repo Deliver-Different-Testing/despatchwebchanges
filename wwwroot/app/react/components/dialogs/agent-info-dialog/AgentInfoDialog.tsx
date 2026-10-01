@@ -31,7 +31,7 @@ import {AgentInfoDialogProps} from "./AgentInfoDialogProps";
 // Re-export interfaces for backward compatibility
 export type {AgentInfo, AirportViewModel, AddressViewModel};
 
-const DIALOG_TITLE = 'Agent Details';
+const DIALOG_TITLE = 'Agent details';
 const AIRPORT_LIST_MAX_HEIGHT = 420;
 
 // Helper functions
@@ -100,7 +100,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                         <Stack gap="lg" style={{flex: '1 1 60%', minWidth: 0}}>
                             {/* Basic Information */}
                             <Box>
-                                <Text {...sectionLabelProps}>Basic Information</Text>
+                                <Text {...sectionLabelProps}>Basic information</Text>
                                 <Paper {...sectionPaperProps}>
                                     <SimpleGrid cols={fullScreen ? 1 : 2} spacing="lg">
                                     <InfoField label="Name" value={agent.agentName}/>
@@ -167,7 +167,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                                 <Icon tabler={IconMapPin} size={16}/>
                                             </Box>
                                             <Text size="sm">
-                                                {agent.address?.fullAddress || 'No address available'}
+                                                {agent.address?.fullAddress || 'No address yet'}
                                             </Text>
                                         </Group>
                                         </Box>
@@ -185,7 +185,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                         fs={agent.agentNotes ? undefined : 'italic'}
                                         style={{whiteSpace: 'pre-line', lineHeight: 1.7}}
                                     >
-                                        {agent.agentNotes || 'No notes available.'}
+                                        {agent.agentNotes || 'No notes yet.'}
                                     </Text>
                                 </Paper>
                             </Box>
@@ -197,7 +197,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                 <Box c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))" style={{display: 'flex'}}>
                                     <Icon tabler={IconPlane} size={18}/>
                                 </Box>
-                                <Text size="sm" c="dimmed" fw={500}>Assigned Airports</Text>
+                                <Text size="sm" c="dimmed" fw={500}>Assigned airports</Text>
                                 {agent.airports && agent.airports.length > 0 && (
                                     <Badge color="green" size="sm" ml="auto" fw={600}>
                                         {agent.airports.length}
@@ -254,7 +254,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                     </Flex>
                 ) : (
                     <Group justify="center" py={64}>
-                        <Text c="dimmed">No agent data available</Text>
+                        <Text c="dimmed">No agent data found.</Text>
                     </Group>
                 )}
             </Box>

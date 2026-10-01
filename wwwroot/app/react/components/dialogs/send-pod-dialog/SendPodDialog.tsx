@@ -205,7 +205,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
         <DialogShell opened={open} onClose={handleClose}>
             <DialogHeader
                 icon={<Icon lucide={FileText}/>}
-                title="Send Proof of Delivery"
+                title="Send proof of delivery"
                 subtitle={<>Booking {jobData.jobNo} &middot; {jobData.clientName}</>}
                 onClose={handleClose}
             />

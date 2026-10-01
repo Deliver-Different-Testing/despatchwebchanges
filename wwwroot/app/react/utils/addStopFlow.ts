@@ -30,11 +30,11 @@ export async function executeAddStopFlow(
         return undefined;
     }
 
-    const title = isPickup ? 'Add Pick Up Stop' : 'Add Delivery Stop';
+    const title = isPickup ? 'Add pick up stop' : 'Add delivery stop';
     const address = await openEditAddressDialog(
         null,
         title,
-        'Add Stop',
+        'Add stop',
         true,
         isUsCustomer,
         {showToast},

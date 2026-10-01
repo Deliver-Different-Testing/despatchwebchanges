@@ -161,11 +161,11 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
     const applyButtonText = useMemo((): string => {
         switch (selectedMode) {
             case 'recalculate':
-                return 'Recalculate & Save';
+                return 'Recalculate & save';
             case 'base':
-                return 'Apply Base Amounts';
+                return 'Apply base amounts';
             case 'gross':
-                return 'Apply Final Amounts';
+                return 'Apply final amounts';
             default:
                 return 'Apply';
         }
@@ -341,7 +341,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
 
                 {/* File format info */}
                 <Paper radius="md" p={16} bg="var(--mantine-color-gray-0)">
-                    <Text fz="sm" fw={600} mb={8}>Expected File Format</Text>
+                    <Text fz="sm" fw={600} mb={8}>Expected file format</Text>
                     <Text fz="sm" c="dimmed" mb={8}>
                         Your spreadsheet should contain a column named <strong>Id</strong> with job IDs, and optionally:
                     </Text>
@@ -375,7 +375,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         const modes: { value: PricingMode; title: string; desc: string; icon: React.ReactNode }[] = [
             {
                 value: 'recalculate',
-                title: 'Auto-Calculate Prices',
+                title: 'Auto-calculate prices',
                 desc: 'Recalculate from job details & current rates',
                 icon: <Icon lucide={RefreshCw} size={22}/>,
             },
@@ -505,7 +505,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         const noneUpdated = totalJobs === 0 && skippedJobs > 0;
         const partial = totalJobs > 0 && skippedJobs > 0;
         const headerColor = noneUpdated ? 'red' : partial ? 'yellow' : 'green';
-        const headerTitle = noneUpdated ? 'No Prices Updated' : partial ? 'Partially Updated' : 'Prices Updated';
+        const headerTitle = noneUpdated ? 'No prices updated' : partial ? 'Partially updated' : 'Prices updated';
         const headerGlyph = noneUpdated ? CircleAlert : partial ? TriangleAlert : CircleCheck;
 
         /** One figure of the summary strip. */
@@ -543,13 +543,13 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         background: 'var(--mantine-color-gray-0)',
                     }}
                 >
-                    <Stat value={totalJobs} label="Jobs Updated"/>
+                    <Stat value={totalJobs} label="Jobs updated"/>
                     {skippedJobs > 0 && <Stat value={skippedJobs} label="Skipped" color="yellow.7"/>}
-                    <Stat value={formatCurrency(totalOldAmount)} label="Previous Total"/>
+                    <Stat value={formatCurrency(totalOldAmount)} label="Previous total"/>
                     <Box c="dimmed" style={{flexShrink: 0}}>
                         <Icon lucide={ArrowRight} size={20}/>
                     </Box>
-                    <Stat value={formatCurrency(totalNewAmount)} label="New Total"/>
+                    <Stat value={formatCurrency(totalNewAmount)} label="New total"/>
                     <Stat
                         value={formatChange(amountChange)}
                         label="Change"
@@ -562,7 +562,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     <TextInput
                         size="sm"
                         style={{flex: 1}}
-                        placeholder="Search by job number..."
+                        placeholder="Search by job number…"
                         aria-label="Search by job number"
                         value={searchTerm}
                         onChange={handleSearchChange}
@@ -584,7 +584,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                 <Table.Th tt="uppercase" fz="xs">Job #</Table.Th>
                                 <Table.Th tt="uppercase" fz="xs">Field</Table.Th>
                                 <Table.Th tt="uppercase" fz="xs" ta="right">Previous</Table.Th>
-                                <Table.Th tt="uppercase" fz="xs" ta="right">New Amount</Table.Th>
+                                <Table.Th tt="uppercase" fz="xs" ta="right">New amount</Table.Th>
                                 <Table.Th tt="uppercase" fz="xs" ta="right">Change</Table.Th>
                             </Table.Tr>
                         </Table.Thead>
@@ -636,7 +636,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                         <Box c="dimmed" mb={8} style={{display: 'flex', justifyContent: 'center'}}>
                                             <Icon lucide={SearchX} size={40}/>
                                         </Box>
-                                        <Text fz="sm" c="dimmed">No jobs match your search</Text>
+                                        <Text fz="sm" c="dimmed">No jobs match your search.</Text>
                                     </Table.Td>
                                 </Table.Tr>
                             )}
@@ -652,11 +652,11 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             opened={open}
             onClose={isLoading ? () => undefined : onClose}
             size={dialogSize.sm}
-            label="Bulk Price Upload"
+            label="Bulk price upload"
         >
             <DialogHeader
                 icon={<Icon lucide={FileUp}/>}
-                title="Bulk Price Upload"
+                title="Bulk price upload"
                 subtitle="Upload prices from a spreadsheet"
                 onClose={onClose}
                 closeDisabled={isLoading}

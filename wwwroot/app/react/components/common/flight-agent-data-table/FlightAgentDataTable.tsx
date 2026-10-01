@@ -593,8 +593,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showNoJobSelectedMessage) {
             return (
                 <NoData
-                    title="No Job Selected"
-                    message="Please select a job to view available flights."
+                    title="No job selected"
+                    message="Select a job to see flight options"
                     icon={<Icon tabler={IconPlaneDeparture}/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -605,7 +605,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showJobHasAssignedFlightMessage) {
             return (
                 <NoData
-                    title="Flight Already Assigned"
+                    title="Flight already assigned"
                     message="A flight has already been assigned to this job. This can be found in the job details widget."
                     icon={<Icon tabler={IconPlaneDeparture}/>}
                     showAction={false}
@@ -617,7 +617,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showMissingAirportInfoMessage) {
             return (
                 <NoData
-                    title="Missing Airport Info"
+                    title="Missing airport info"
                     message="Airport information not applicable or not provided for this job."
                     icon={<Icon tabler={IconPlane}/>}
                     showAction={false}
@@ -645,8 +645,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                     />
 
                     <NoData
-                        title="No Flights Available"
-                        message={flightMessage || "No flights available for the specified criteria."}
+                        title="No flights found"
+                        message={flightMessage || "No flights match the specified criteria."}
                         icon={<Icon tabler={IconPlaneDeparture}/>}
                         showAction={false}
                         isUsCustomer={isUsCustomer}
@@ -677,7 +677,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                     <Box px={4} py={4} style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}>
                         <TextInput
                             size="xs"
-                            placeholder="Search flights..."
+                            placeholder="Search flights…"
                             value={flightSearchText}
                             onChange={(e) => onFlightSearchChange(e.currentTarget.value)}
                             leftSection={<Icon lucide={Search} size={16}/>}
@@ -857,13 +857,13 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                     <Group gap={0} justify="flex-end" wrap="nowrap">
                                                         <RowActionButton
                                                             icon={<Icon lucide={Plus} size={16}/>}
-                                                            tooltip="Assign Flight"
+                                                            tooltip="Assign flight"
                                                             onClick={() => onAddFlightToJob(flight)}
                                                             disabled={isAssigningFlight}
                                                         />
                                                         <RowActionButton
                                                             icon={<Icon lucide={Info} size={16}/>}
-                                                            tooltip="More Info"
+                                                            tooltip="More info"
                                                             onClick={() => openFlightDetailsDialog(flight as unknown as Parameters<typeof openFlightDetailsDialog>[0])}
                                                         />
                                                     </Group>
@@ -896,7 +896,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             More
                         </Button>
                         <Button variant="outline" size="compact-xs" onClick={onLoadNextDayFlights} fz={11}>
-                            Next Day
+                            Next day
                         </Button>
                     </Group>
                 </Stack>
@@ -914,8 +914,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showNoAgentJobSelectedMessage) {
             return (
                 <NoData
-                    title="No Job Selected"
-                    message="Please select a job to view available agents."
+                    title="No job selected"
+                    message="Select a job to see agent options"
                     icon={<Icon lucide={HardHat}/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -926,7 +926,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showJobHasAssignedAgentMessage) {
             return (
                 <NoData
-                    title="Agent Already Assigned"
+                    title="Agent already assigned"
                     message="An agent has already been assigned to this job. This can be found in the job details widget."
                     icon={<Icon lucide={HardHat}/>}
                     showAction={true}
@@ -940,7 +940,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showNotDeliveryJobMessage) {
             return (
                 <NoData
-                    title="Not a Delivery Job"
+                    title="Not a delivery job"
                     message="Agent information is not applicable for this job. This section is only relevant for delivery jobs."
                     icon={<Icon lucide={HardHat}/>}
                     showAction={false}
@@ -952,8 +952,8 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showNoAgentsAvailableMessage) {
             return (
                 <NoData
-                    title="No Agents Available"
-                    message={agentMessage || "No agents available for the specified criteria."}
+                    title="No agents found"
+                    message={agentMessage || "No agents match the specified criteria."}
                     icon={<Icon lucide={HardHat}/>}
                     showAction={false}
                     isUsCustomer={isUsCustomer}
@@ -977,7 +977,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                             onClick={onOpenAgentSearchDialog}
                             fz={11}
                         >
-                            Search Agents
+                            Search agents
                         </Button>
                     </Group>
 
@@ -1048,17 +1048,17 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                             <Group gap={0} wrap="nowrap">
                                                 <RowActionButton
                                                     icon={<Icon lucide={FileText} size={16}/>}
-                                                    tooltip="Send Quote Request"
+                                                    tooltip="Send quote request"
                                                     onClick={() => onSendQuoteRequest(agent)}
                                                 />
                                                 <RowActionButton
                                                     icon={<Icon lucide={Plus} size={16}/>}
-                                                    tooltip="Assign Job"
+                                                    tooltip="Assign job"
                                                     onClick={() => onAddAgentToJob(agent)}
                                                 />
                                                 <RowActionButton
                                                     icon={<Icon lucide={Info} size={16}/>}
-                                                    tooltip="More Info"
+                                                    tooltip="More info"
                                                     onClick={() => openAgentInfoDialog({agentId: agent.agentId})}
                                                 />
                                             </Group>

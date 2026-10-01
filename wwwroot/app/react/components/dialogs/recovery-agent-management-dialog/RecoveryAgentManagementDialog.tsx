@@ -79,10 +79,10 @@ type AccentColor = 'brand' | 'orange' | 'default';
 type StatusColor = 'default' | 'info' | 'warning' | 'success';
 
 const STATUS_LABELS: Record<string, string> = {
-    assigned: 'Currently Assigned',
-    searching: 'Currently Searching',
-    pending: 'Pending Assignment',
-    completed: 'Assignment Completed',
+    assigned: 'Currently assigned',
+    searching: 'Currently searching',
+    pending: 'Pending assignment',
+    completed: 'Assignment completed',
 };
 
 const STATUS_COLORS: Record<string, StatusColor> = {
@@ -104,8 +104,8 @@ const captionProps = {size: 'xs', c: 'dimmed', tt: 'uppercase', style: {letterSp
 const surfaceTint = alpha('var(--mantine-color-gray-6)', 0.04);
 
 function getStatusLabel(status: string | undefined): string {
-    if (!status) return 'Unknown Status';
-    return STATUS_LABELS[status] || 'Unknown Status';
+    if (!status) return 'Unknown status';
+    return STATUS_LABELS[status] || 'Unknown status';
 }
 
 function getStatusColor(status: string | undefined): StatusColor {
@@ -123,7 +123,7 @@ function hasPrimaryRecoveryAgent(job: RecoveryAgentJobViewModel | null): boolean
 /** The label + hint pair used by both "Set as Primary Recovery Agent" checkboxes. */
 const primaryAgentLabel = (
     <Box>
-        <Text size="sm" fw={600}>Set as Primary Recovery Agent</Text>
+        <Text size="sm" fw={600}>Set as primary recovery agent</Text>
         <Text size="xs" c="dimmed">
             Primary agents take lead responsibility for recovery operations
         </Text>
@@ -344,13 +344,13 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
             opened={open}
             onClose={handleCancel}
             size={dialogSize.lg}
-            label="Lost Package Recovery"
+            label="Lost package recovery"
             /* Escape must not bypass the unsaved-changes confirm */
             closeOnEscape={false}
         >
             <DialogHeader
                 icon={<Icon lucide={Users}/>}
-                title="Lost Package Recovery"
+                title="Lost package recovery"
                 subtitle={job ? `Job #${job.jobNumber}` : undefined}
                 onClose={handleCancel}
             />
@@ -376,7 +376,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                 <Box c="light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))" style={{display: 'flex'}}>
                                     <Icon tabler={IconPackage} size={22}/>
                                 </Box>
-                                <Text fw={600}>Package Information</Text>
+                                <Text fw={600}>Package information</Text>
                             </Group>
 
                             {job.pickUpAddress && job.deliveryAddress && (
@@ -390,12 +390,12 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                 >
                                     <AddressRow
                                         icon={<Icon lucide={CircleDot} size={18}/>}
-                                        label="Pickup Location"
+                                        label="Pickup location"
                                         value={job.pickUpAddress.fullAddress}
                                     />
                                     <AddressRow
                                         icon={<Icon tabler={IconMapPin} size={18}/>}
-                                        label="Delivery Location"
+                                        label="Delivery location"
                                         value={job.deliveryAddress.fullAddress}
                                     />
                                 </Stack>
@@ -411,7 +411,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                             >
                                 <DetailCard
                                     icon={<Icon tabler={IconPackage} size={18}/>}
-                                    label="Package Type"
+                                    label="Package type"
                                     value={job.packageType}
                                 />
                                 <DetailCard
@@ -422,7 +422,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                 />
                                 <DetailCard
                                     icon={<Icon lucide={Search} size={18}/>}
-                                    label="Last Known Location"
+                                    label="Last known location"
                                     value={job.lastKnownLocation}
                                 />
                                 <DetailCard
@@ -439,7 +439,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                 <Box c="light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))" style={{display: 'flex'}}>
                                     <Icon lucide={Users}/>
                                 </Box>
-                                <Text fw={600} fz="lg">Recovery Agents</Text>
+                                <Text fw={600} fz="lg">Recovery agents</Text>
                                 {totalRecoveryAgents > 0 && (
                                     <Badge size="sm" fw={600}>{totalRecoveryAgents}</Badge>
                                 )}
@@ -449,7 +449,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     leftSection={<Icon lucide={UserPlus}/>}
                                     onClick={handleShowAssignForm}
                                 >
-                                    Assign Agent
+                                    Assign agent
                                 </Button>
                             )}
                         </Group>
@@ -457,11 +457,11 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                         {/* Assign Form */}
                         {showAssignForm && (
                             <Paper withBorder radius="lg" mb="lg" style={{overflow: 'hidden'}}>
-                                <FormBar icon={<Icon lucide={UserPlus}/>} title="Assign Recovery Agent"/>
+                                <FormBar icon={<Icon lucide={UserPlus}/>} title="Assign recovery agent"/>
 
                                 <Box p="md">
                                     <Alert color="reflex" icon={<Icon lucide={Info}/>} mb="md" radius="md">
-                                        <Text size="sm" fw={600}>Recovery Agent Assignment</Text>
+                                        <Text size="sm" fw={600}>Recovery agent assignment</Text>
                                         <Text size="sm">
                                             This will assign a recovery agent to search for the package at the
                                             selected location.
@@ -477,7 +477,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         }}
                                     >
                                         <Select
-                                            label="Airport Location"
+                                            label="Airport location"
                                             size="sm"
                                             data={airportOptions.map(a => ({value: String(a.id), label: a.text}))}
                                             value={selectedAirportId ? String(selectedAirportId) : null}
@@ -485,7 +485,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                             comboboxProps={{keepMounted: false}}
                                         />
                                         <Select
-                                            label="Available Agent"
+                                            label="Available agent"
                                             size="sm"
                                             disabled={!selectedAirportId}
                                             data={agentOptions.map(a => ({value: String(a.id), label: a.text}))}
@@ -518,7 +518,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         onClick={handleAssignAgent}
                                         disabled={!selectedAirportId || !selectedAgentId}
                                     >
-                                        Assign Agent
+                                        Assign agent
                                     </Button>
                                 </FormActions>
                             </Paper>
@@ -529,7 +529,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                             <Paper withBorder radius="lg" mb="lg" style={{overflow: 'hidden'}}>
                                 <FormBar
                                     icon={<Icon lucide={Pencil}/>}
-                                    title={`Edit Recovery Agent — ${editingAgent.agentName}`}
+                                    title={`Edit recovery agent — ${editingAgent.agentName}`}
                                 />
 
                                 <Box p="md">
@@ -556,14 +556,14 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         onClick={() => handleRemoveAgent(editingAgent)}
                                         disabled={isSubmitting}
                                     >
-                                        Remove Agent
+                                        Remove agent
                                     </Button>
                                     <Button
                                         leftSection={<Icon lucide={Save}/>}
                                         loading={isSubmitting}
                                         onClick={handleUpdateAgent}
                                     >
-                                        Save Changes
+                                        Save changes
                                     </Button>
                                 </FormActions>
                             </Paper>
@@ -575,12 +575,12 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                             {job.assignedAgent && (
                                 <AgentCard
                                     title={job.assignedAgent.text}
-                                    role="Primary Job Agent"
+                                    role="Primary job agent"
                                     statusLabel={getStatusLabel('assigned')}
                                     statusColor="info"
                                     accentColor="brand"
                                     icon={<Icon lucide={HardHat}/>}
-                                    metaItems={[{icon: <Icon lucide={Building2} size={16}/>, text: 'Overall Job Responsibility'}]}
+                                    metaItems={[{icon: <Icon lucide={Building2} size={16}/>, text: 'Overall job responsibility'}]}
                                 />
                             )}
 
@@ -589,7 +589,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                 <AgentCard
                                     key={agent.recoveryId}
                                     title={agent.agentName}
-                                    role={agent.primaryRecoveryAgent ? 'Primary Recovery Agent' : 'Recovery Agent'}
+                                    role={agent.primaryRecoveryAgent ? 'Primary recovery agent' : 'Recovery agent'}
                                     statusLabel={getStatusLabel(agent.assignStatus)}
                                     statusColor={getStatusColor(agent.assignStatus)}
                                     accentColor={agent.primaryRecoveryAgent ? 'orange' : 'default'}
@@ -598,7 +598,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         {icon: <Icon tabler={IconMapPin} size={16}/>, text: agent.airport},
                                         {
                                             icon: <Icon lucide={Building2} size={16}/>,
-                                            text: agent.primaryRecoveryAgent ? 'Lead Recovery Specialist' : 'Recovery Specialist',
+                                            text: agent.primaryRecoveryAgent ? 'Lead recovery specialist' : 'Recovery specialist',
                                         },
                                     ]}
                                     actions={
@@ -637,13 +637,13 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         <ThemeIcon size={64} radius="xl" variant="light" color="gray" mx="auto" mb="md">
                                             <Icon lucide={UsersRound} size={32}/>
                                         </ThemeIcon>
-                                    <Text fw={600} fz="lg" mb="xs">No Recovery Agents Assigned</Text>
+                                    <Text fw={600} fz="lg" mb="xs">No recovery agents assigned yet</Text>
                                     <Text size="sm" c="dimmed" mb="md" mx="auto" maw={480}>
                                         Get started by assigning recovery agents to specific locations where the package
                                         might be found.
                                     </Text>
                                     <Button leftSection={<Icon lucide={UserPlus}/>} onClick={handleShowAssignForm}>
-                                        Assign First Recovery Agent
+                                        Assign first recovery agent
                                     </Button>
                                 </Paper>
                             )}

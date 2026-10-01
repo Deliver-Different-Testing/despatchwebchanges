@@ -95,7 +95,7 @@ describe('RecoveryAgentManagementDialog', () => {
             expect(props.onLoadAirports).toHaveBeenCalled();
         });
 
-        expect(screen.getByText('Lost Package Recovery')).toBeInTheDocument();
+        expect(screen.getByText('Lost package recovery')).toBeInTheDocument();
         expect(screen.getByText('Job #JOB-123')).toBeInTheDocument();
         expect(screen.getByText('123 Pickup St')).toBeInTheDocument();
         expect(screen.getByText('456 Delivery Ave')).toBeInTheDocument();
@@ -106,10 +106,10 @@ describe('RecoveryAgentManagementDialog', () => {
 
         // Main and recovery agents listed
         expect(screen.getByText('Main Agent')).toBeInTheDocument();
-        expect(screen.getByText('Primary Job Agent')).toBeInTheDocument();
+        expect(screen.getByText('Primary job agent')).toBeInTheDocument();
         expect(screen.getByText('Joe Recovery')).toBeInTheDocument();
         expect(screen.getByText('Sue Recovery')).toBeInTheDocument();
-        expect(screen.getByText('Primary Recovery Agent')).toBeInTheDocument();
+        expect(screen.getByText('Primary recovery agent')).toBeInTheDocument();
     });
 
     it('shows empty state when there are no recovery agents', async () => {
@@ -118,7 +118,7 @@ describe('RecoveryAgentManagementDialog', () => {
             renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
         });
 
-        expect(screen.getByText('No Recovery Agents Assigned')).toBeInTheDocument();
+        expect(screen.getByText('No recovery agents assigned yet')).toBeInTheDocument();
         expect(
             screen.getByRole('button', {name: /assign first recovery agent/i})
         ).toBeInTheDocument();
@@ -146,7 +146,7 @@ describe('RecoveryAgentManagementDialog', () => {
         });
 
         // Pick airport
-        const airportSelect = screen.getByLabelText('Airport Location');
+        const airportSelect = screen.getByLabelText('Airport location');
         await act(async () => {
             await userEvent.click(airportSelect);
         });
@@ -159,7 +159,7 @@ describe('RecoveryAgentManagementDialog', () => {
         });
 
         // Pick agent
-        const agentSelect = screen.getByLabelText('Available Agent');
+        const agentSelect = screen.getByLabelText('Available agent');
         await act(async () => {
             await userEvent.click(agentSelect);
         });
@@ -225,7 +225,7 @@ describe('RecoveryAgentManagementDialog', () => {
             await userEvent.click(editButton);
         });
 
-        expect(screen.getByText(/Edit Recovery Agent — Sue Recovery/)).toBeInTheDocument();
+        expect(screen.getByText(/Edit recovery agent — Sue Recovery/)).toBeInTheDocument();
 
         const primaryCheckbox = screen.getByRole('checkbox', {name: /set as primary recovery agent/i});
         await act(async () => {
@@ -313,7 +313,7 @@ describe('RecoveryAgentManagementDialog', () => {
             });
 
             await act(async () => {
-                await userEvent.click(screen.getByLabelText('Airport Location'));
+                await userEvent.click(screen.getByLabelText('Airport location'));
             });
             await act(async () => {
                 await userEvent.click(await screen.findByText('Los Angeles International (LAX)'));
@@ -322,7 +322,7 @@ describe('RecoveryAgentManagementDialog', () => {
                 expect(props.onLoadAgentsForAirport).toHaveBeenCalledWith(1);
             });
             await act(async () => {
-                await userEvent.click(screen.getByLabelText('Available Agent'));
+                await userEvent.click(screen.getByLabelText('Available agent'));
             });
             await act(async () => {
                 await userEvent.click(await screen.findByText('Acme Couriers'));

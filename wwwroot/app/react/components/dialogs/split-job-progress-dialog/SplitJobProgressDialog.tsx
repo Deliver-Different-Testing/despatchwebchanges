@@ -27,7 +27,7 @@ export const SplitJobProgressDialog: React.FC<SplitJobProgressDialogProps> = ({o
     <DialogShell
         opened={open}
         onClose={() => {}}
-        label="Splitting Job"
+        label="Splitting job"
         closeOnClickOutside={false}
         closeOnEscape={false}
         withCloseButton={false}
@@ -38,7 +38,7 @@ export const SplitJobProgressDialog: React.FC<SplitJobProgressDialogProps> = ({o
             </ThemeIcon>
             <Box style={{flex: 1}}>
                 <Text component="h2" size="lg" fw={600}>
-                    Splitting Job
+                    Splitting job
                 </Text>
                 <Text size="sm" mt={2} style={{opacity: 0.85}}>
                     Job {jobNo}

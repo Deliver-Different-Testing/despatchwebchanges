@@ -47,12 +47,12 @@ describe('JobFieldsSection', () => {
     describe('Section headers', () => {
         it('renders all section titles', () => {
             renderWithTheme(<JobFieldsSection {...createDefaultProps()} />);
-            expect(screen.getByText('Package Details')).toBeInTheDocument();
-            expect(screen.getByText('Additional Info')).toBeInTheDocument();
-            expect(screen.getByText('Delivery Details')).toBeInTheDocument();
+            expect(screen.getByText('Package details')).toBeInTheDocument();
+            expect(screen.getByText('Additional info')).toBeInTheDocument();
+            expect(screen.getByText('Delivery details')).toBeInTheDocument();
             expect(screen.getByText('Tracking')).toBeInTheDocument();
-            expect(screen.getByText('Booked By')).toBeInTheDocument();
-            expect(screen.getByText('Job Details')).toBeInTheDocument();
+            expect(screen.getByText('Booked by')).toBeInTheDocument();
+            expect(screen.getByText('Job details')).toBeInTheDocument();
             const clientElements = screen.getAllByText('Client');
             expect(clientElements.length).toBeGreaterThanOrEqual(1);
         });
@@ -190,7 +190,7 @@ describe('JobFieldsSection', () => {
             renderWithTheme(<JobFieldsSection {...createDefaultProps()} />);
             expect(screen.getByText('Dispatcher A')).toBeInTheDocument();
             expect(screen.getByText('Test Courier')).toBeInTheDocument();
-            expect(screen.getByText('Courier Number')).toBeInTheDocument();
+            expect(screen.getByText('Courier number')).toBeInTheDocument();
             expect(screen.getByText('C001')).toBeInTheDocument();
             expect(screen.getByText('021 555 1234')).toBeInTheDocument();
         });
@@ -265,9 +265,9 @@ describe('JobFieldsSection', () => {
 
     describe('Section-level show/hide', () => {
         it.each([
-            {sectionKey: 'deliveryDetails', title: 'Delivery Details', contentText: 'Dispatcher A'},
-            {sectionKey: 'bookedBy', title: 'Booked By', contentText: 'Jane Admin'},
-            {sectionKey: 'jobDetails', title: 'Job Details', contentText: 'REF-A-001'},
+            {sectionKey: 'deliveryDetails', title: 'Delivery details', contentText: 'Dispatcher A'},
+            {sectionKey: 'bookedBy', title: 'Booked by', contentText: 'Jane Admin'},
+            {sectionKey: 'jobDetails', title: 'Job details', contentText: 'REF-A-001'},
             {sectionKey: 'trackingSection', title: 'Tracking', contentText: null},
         ])('hides $title when not visible, shows toolbar in edit mode', ({sectionKey, title, contentText}) => {
             const isFieldVisible = (key: string) => key !== sectionKey;
@@ -294,11 +294,11 @@ describe('JobFieldsSection', () => {
                 <JobFieldsSection {...createDefaultProps({isFieldVisible})} />
             );
             // Toolbars still visible (no outer conditional on these sections)
-            expect(screen.getByText('Package Details')).toBeInTheDocument();
-            expect(screen.getByText('Additional Info')).toBeInTheDocument();
+            expect(screen.getByText('Package details')).toBeInTheDocument();
+            expect(screen.getByText('Additional info')).toBeInTheDocument();
             // But content is collapsed
             expect(screen.queryByText('Barcode')).not.toBeInTheDocument();
-            expect(screen.queryByText('Leave Parcel')).not.toBeInTheDocument();
+            expect(screen.queryByText('Leave parcel')).not.toBeInTheDocument();
         });
 
         it('calls onToggleField when section visibility toggle is clicked in edit mode', () => {
@@ -342,12 +342,12 @@ describe('JobFieldsSection', () => {
                 <JobFieldsSection {...createDefaultProps({dense: true, onSpeedClick, onCourierClick})} />
             );
             // Section titles
-            expect(screen.getByText('Package Details')).toBeInTheDocument();
-            expect(screen.getByText('Additional Info')).toBeInTheDocument();
-            expect(screen.getByText('Delivery Details')).toBeInTheDocument();
+            expect(screen.getByText('Package details')).toBeInTheDocument();
+            expect(screen.getByText('Additional info')).toBeInTheDocument();
+            expect(screen.getByText('Delivery details')).toBeInTheDocument();
             expect(screen.getByText('Tracking')).toBeInTheDocument();
-            expect(screen.getByText('Booked By')).toBeInTheDocument();
-            expect(screen.getByText('Job Details')).toBeInTheDocument();
+            expect(screen.getByText('Booked by')).toBeInTheDocument();
+            expect(screen.getByText('Job details')).toBeInTheDocument();
 
             // Field values
             expect(screen.getByText('Standard')).toBeInTheDocument();
@@ -370,7 +370,7 @@ describe('JobFieldsSection', () => {
         });
     });
 
-    describe('Package Details', () => {
+    describe('Package details', () => {
         it('shows calc-once indicator when calculateDimsOncePerJob is true', () => {
             const job = createMockJob({calculateDimsOncePerJob: true});
             renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);

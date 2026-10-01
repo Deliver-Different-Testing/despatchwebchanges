@@ -50,19 +50,19 @@ export const TruckLoadingStatusDialog: React.FC<TruckLoadingStatusDialogProps> =
         : undefined;
 
     const fields: Array<{label: string; value: string}> = [
-        {label: 'Max Pallets', value: numberOrDash(data?.maxPallets)},
-        {label: `Max Weight (${weightUnit})`, value: numberOrDash(data?.maxPayLoad)},
-        {label: 'Available Pallets', value: numberOrDash(data?.availablePallets)},
-        {label: 'Current Pallets', value: numberOrDash(data?.currentPallets)},
-        {label: `Current Weight (${weightUnit})`, value: numberOrDash(data?.currentWeight)},
-        {label: `Available Weight (${weightUnit})`, value: numberOrDash(availableWeight)},
+        {label: 'Max pallets', value: numberOrDash(data?.maxPallets)},
+        {label: `Max weight (${weightUnit})`, value: numberOrDash(data?.maxPayLoad)},
+        {label: 'Available pallets', value: numberOrDash(data?.availablePallets)},
+        {label: 'Current pallets', value: numberOrDash(data?.currentPallets)},
+        {label: `Current weight (${weightUnit})`, value: numberOrDash(data?.currentWeight)},
+        {label: `Available weight (${weightUnit})`, value: numberOrDash(availableWeight)},
     ];
 
     return (
-        <DialogShell opened={open} onClose={onClose} label="Truck Loading Status">
+        <DialogShell opened={open} onClose={onClose} label="Truck loading status">
             <DialogHeader
                 icon={<Icon tabler={IconTruck}/>}
-                title="Truck Loading Status"
+                title="Truck loading status"
                 subtitle={courierLabel}
                 onClose={onClose}
             />

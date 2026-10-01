@@ -159,10 +159,10 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 )}
 
                 <ActionButton leftSection={<Icon lucide={MailOpen} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onBulkMarkRead}>
-                    Mark Read
+                    Mark read
                 </ActionButton>
                 <ActionButton leftSection={<Icon lucide={Mail} size={ACTION_BUTTON_GLYPH_SIZE}/>} onClick={onBulkMarkUnread}>
-                    Mark Unread
+                    Mark unread
                 </ActionButton>
             </Group>
         );
@@ -182,7 +182,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
             {/* Search */}
             <TextInput
                 size="xs"
-                placeholder="Search jobs..."
+                placeholder="Search jobs…"
                 defaultValue={searchQuery}
                 onChange={handleSearchInput}
                 leftSection={<Icon lucide={Search} size={16} color="var(--mantine-color-gray-5)"/>}

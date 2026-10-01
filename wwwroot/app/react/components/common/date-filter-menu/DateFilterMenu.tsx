@@ -372,7 +372,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
 
     const rangeSummary = selectedRangeOption === 'custom_date'
         ? `${startDate.format('MMM DD, YYYY')} — ${endDate.format('MMM DD, YYYY')}`
-        : `All Time — ${endDate.format('MMM DD, h:mm A')}`;
+        : `All time — ${endDate.format('MMM DD, h:mm A')}`;
 
     return (
         <Popover
@@ -386,14 +386,14 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
             closeOnEscape={false}
         >
             <Popover.Target>
-                <Tooltip label="Date Filter">
+                <Tooltip label="Date filter">
                     {/* Same box, glyph colour and hover grow as every other shell icon —
                         the shared style/class pair is the single source for all three. */}
                     <ActionIcon
                         variant="subtle"
                         size="lg"
                         onClick={handleClick}
-                        aria-label="Date Filter"
+                        aria-label="Date filter"
                         className={toolbarIconButtonClassName}
                         style={toolbarIconButtonStyle}
                     >
@@ -411,7 +411,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                     style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
                 >
                     <Icon lucide={CalendarRange} size={20} color="var(--mantine-primary-color-filled)"/>
-                    <Text size="sm" fw={600}>Date Filter</Text>
+                    <Text size="sm" fw={600}>Date filter</Text>
                     {timeZoneLong && (
                         <Text size="xs" c="dimmed" ml="auto">{timeZoneLong}</Text>
                     )}
@@ -427,18 +427,18 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                             for a colour to encode. The split that does exist — pick and
                             go, versus pick and then configure — is the divider. */}
                         <Stack gap="xs">
-                            <Radio value="all_time" label="All Time"/>
+                            <Radio value="all_time" label="All time"/>
                             <Radio value="today" label="Today"/>
                             <Divider my={2}/>
-                            <Radio value="custom_minutes" label="Time Range"/>
-                            <Radio value="custom_date" label="Custom Dates"/>
+                            <Radio value="custom_minutes" label="Time range"/>
+                            <Radio value="custom_date" label="Custom dates"/>
                         </Stack>
                     </Radio.Group>
 
                     {selectedRangeOption === 'custom_date' && (
                         <Stack gap="md" mt="md">
                             <DateInput
-                                label="Start Date"
+                                label="Start date"
                                 value={startDate.format(ISO_DATE)}
                                 onChange={(value) => value && setStartDate(dayjs(value))}
                                 valueFormat={inputFormat}
@@ -447,7 +447,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                 popoverProps={calendarPopoverProps}
                             />
                             <DateInput
-                                label="End Date"
+                                label="End date"
                                 value={endDate.format(ISO_DATE)}
                                 onChange={(value) => value && setEndDate(dayjs(value))}
                                 valueFormat={inputFormat}

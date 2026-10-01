@@ -20,7 +20,7 @@ export const MINIMUM_LAYOVER_MINUTES = 60;
 export const NO_JOB_MESSAGE = 'Select a job to view flight options';
 export const NO_AIRPORTS_MESSAGE =
     'Select outbound and inbound airports to search for flights';
-export const NO_FLIGHTS_MESSAGE = 'No flights available for the selected criteria';
+export const NO_FLIGHTS_MESSAGE = 'No flights match the selected criteria';
 export const GENERIC_ERROR_MESSAGE =
     "Couldn't load flights. Check your connection and try again.";
 

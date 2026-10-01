@@ -120,7 +120,7 @@ export function ChangeCourierDialog({
         <DialogShell opened={open} onClose={saving ? () => {} : onClose} size={520} label="Change paid courier">
             <DialogHeader
                 icon={<Icon tabler={IconTruck}/>}
-                title="Change Paid Courier"
+                title="Change paid courier"
                 subtitle={`Job ${jobNo}`}
                 variant="warning"
                 onClose={onClose}
@@ -136,7 +136,7 @@ export function ChangeCourierDialog({
                         <TextInput label="Current courier" value={currentCourierName ?? 'Unassigned'} disabled/>
                         <SearchSelect<ISuggestion>
                             aria-label="New courier"
-                            placeholder="Search courier..."
+                            placeholder="Search couriers…"
                             autoFocus
                             autoHighlight
                             value={newCourier}
@@ -175,7 +175,7 @@ export function ChangeCourierDialog({
                     onCancel={() => setPhase('input')}
                     cancelLabel="Back"
                     onConfirm={handleConfirmChange}
-                    confirmLabel={saving ? 'Saving...' : 'Confirm Change'}
+                    confirmLabel={saving ? 'Saving...' : 'Confirm change'}
                     confirmColor="orange"
                     submitting={saving}
                 />

@@ -149,7 +149,7 @@ export function JobDetailHeader({
                         leftSection={<Icon lucide={Handshake} size={14}/>}
                         style={pillStyle}
                     >
-                        Partner Job
+                        Partner job
                     </Badge>
                 )}
             </Group>
@@ -179,7 +179,7 @@ export function JobDetailHeader({
                     overlaid the open dropdown menu and obscured options. */}
                 {job.preBook && routes.length > 0 && (
                     <Select
-                        aria-label="Recurring Route — cascades to all associated legs"
+                        aria-label="Recurring route — cascades to all associated legs"
                         placeholder="No route"
                         w={180}
                         size="xs"
@@ -197,13 +197,13 @@ export function JobDetailHeader({
                     own copy independently. Don't disable on partner jobs: the field-level
                     edit guards handle cross-tenant protection, and showing "Locked —
                     managed by partner" here just conflates two distinct concepts. */}
-                <Tooltip label={job.locked ? 'Unlock Job' : 'Lock Job'}>
+                <Tooltip label={job.locked ? 'Unlock job' : 'Lock job'}>
                     <ActionIcon
                         variant="subtle"
                         size="md"
                         color={job.locked ? 'orange' : 'gray'}
                         data-locked={job.locked || undefined}
-                        aria-label={job.locked ? 'Unlock Job' : 'Lock Job'}
+                        aria-label={job.locked ? 'Unlock job' : 'Lock job'}
                         onClick={onLockToggle}
                     >
                         <Icon lucide={job.locked ? Lock : LockOpen} size={ICON_SIZE}/>
@@ -267,7 +267,7 @@ export function JobDetailHeader({
                         {renderPodItem(<Icon lucide={FileText} size={16}/>, 'Download as PDF', onPodReport)}
                         {renderPodItem(<Icon lucide={FileSpreadsheet} size={16}/>, 'Download as Excel', onPodSpreadsheet)}
                         <Menu.Divider/>
-                        {renderPodItem(<Icon lucide={Mail} size={16}/>, 'Email POD Report', onSendPodEmail)}
+                        {renderPodItem(<Icon lucide={Mail} size={16}/>, 'Email POD report', onSendPodEmail)}
 
                         {/* Extra overlay documents (invoices, manifests, etc.). Every configured
                             document type is shown; those without a template for this job's client

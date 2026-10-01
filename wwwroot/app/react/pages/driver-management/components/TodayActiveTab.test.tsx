@@ -62,16 +62,16 @@ describe('TodayActiveTab', () => {
         expect(screen.getByText('Name')).toBeInTheDocument();
         // 'Fleet' also appears as filter label
         expect(screen.getAllByText('Fleet').length).toBeGreaterThanOrEqual(1);
-        expect(screen.getByText('Login Time')).toBeInTheDocument();
-        expect(screen.getByText('Logout Time')).toBeInTheDocument();
+        expect(screen.getByText('Login time')).toBeInTheDocument();
+        expect(screen.getByText('Logout time')).toBeInTheDocument();
         expect(screen.getByText('Duration')).toBeInTheDocument();
         expect(screen.getByText('Deliveries')).toBeInTheDocument();
         // 'Status' also appears as filter label
         expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
 
-        expect(screen.getByText('Currently Online')).toBeInTheDocument();
-        expect(screen.getByText('Total Today')).toBeInTheDocument();
-        expect(screen.getByText('Average Session')).toBeInTheDocument();
+        expect(screen.getByText('Currently online')).toBeInTheDocument();
+        expect(screen.getByText('Total today')).toBeInTheDocument();
+        expect(screen.getByText('Average session')).toBeInTheDocument();
     });
 
     it('updates orderBy and direction when sortable headers are clicked', () => {
@@ -103,7 +103,7 @@ describe('TodayActiveTab', () => {
         });
         renderWithProviders();
 
-        expect(screen.getByText('No Active Drivers')).toBeInTheDocument();
-        expect(screen.getByText('No active drivers match your criteria.')).toBeInTheDocument();
+        expect(screen.getByText('No active drivers')).toBeInTheDocument();
+        expect(screen.getByText('No active drivers match your search.')).toBeInTheDocument();
     });
 });

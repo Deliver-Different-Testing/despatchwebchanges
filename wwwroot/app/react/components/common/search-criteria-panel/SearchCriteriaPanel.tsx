@@ -180,7 +180,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
         <Stack gap={16} p={16} h="100%" style={{boxSizing: 'border-box', overflowY: 'auto'}}>
             {/* Date Range */}
             <Stack gap={6} miw={0}>
-                <Text {...groupLabelProps}>Date Range</Text>
+                <Text {...groupLabelProps}>Date range</Text>
                 <DateRangePicker
                     dateSearchRange={dateSearchRange}
                     fromDate={localFromDate}
@@ -196,7 +196,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 <Text {...groupLabelProps}>Clients</Text>
                 <ChipsAutocomplete
                     label="Clients"
-                    placeholder="Search clients..."
+                    placeholder="Search clients…"
                     value={clients}
                     minInputLength={2}
                     onSearch={onClientSearch}
@@ -209,7 +209,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 <Text {...groupLabelProps}>Couriers</Text>
                 <ChipsAutocomplete
                     label="Couriers"
-                    placeholder="Search couriers..."
+                    placeholder="Search couriers…"
                     value={couriers}
                     minInputLength={1}
                     onSearch={onCourierSearch}
@@ -222,7 +222,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 <Text {...groupLabelProps}>Speeds</Text>
                 <ChipsAutocomplete
                     label="Speeds"
-                    placeholder="Search speeds..."
+                    placeholder="Search speeds…"
                     value={speeds}
                     minInputLength={1}
                     onSearch={onSpeedSearch}
@@ -232,7 +232,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
 
             {/* Job Number */}
             <Stack gap={6} miw={0}>
-                <Text {...groupLabelProps}>Job Number</Text>
+                <Text {...groupLabelProps}>Job number</Text>
                 <TextInput
                     {...criteriaFieldProps}
                     placeholder="Enter job number"
@@ -244,10 +244,10 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
 
             {/* General Search */}
             <Stack gap={6} miw={0}>
-                <Text {...groupLabelProps}>General Search</Text>
+                <Text {...groupLabelProps}>General search</Text>
                 <TextInput
                     {...criteriaFieldProps}
-                    placeholder="Address, name, reference..."
+                    placeholder="Address, name, reference…"
                     value={generalSearch}
                     onChange={handleGeneralSearchChange}
                     onKeyUp={handleKeyUp}
@@ -283,7 +283,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                             />
                         </Stack>
                         <Stack gap={6}>
-                            <Text {...groupLabelProps}>Bulk Job ID</Text>
+                            <Text {...groupLabelProps}>Bulk job ID</Text>
                             <TextInput
                                 {...criteriaFieldProps}
                                 type="number"
@@ -320,27 +320,27 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                         <>
                             {/* The <span> keeps the tooltip reachable while the button is
                                 disabled — a disabled button fires no pointer events. */}
-                            <Tooltip label="Client Report">
+                            <Tooltip label="Client report">
                                 <span>
                                     <ActionIcon
                                         {...actionProps}
                                         onClick={flushAndClientReport}
                                         disabled={!isClientReportEnabled}
-                                        aria-label="Client Report"
+                                        aria-label="Client report"
                                     >
                                         <Icon lucide={FileText} size={20} />
                                     </ActionIcon>
                                 </span>
                             </Tooltip>
-                            <Tooltip label="Price Detail Report">
-                                <ActionIcon {...actionProps} onClick={flushAndPriceDetailReport} aria-label="Price Detail Report">
+                            <Tooltip label="Price detail report">
+                                <ActionIcon {...actionProps} onClick={flushAndPriceDetailReport} aria-label="Price detail report">
                                     <Icon lucide={ReceiptText} size={20} />
                                 </ActionIcon>
                             </Tooltip>
                         </>
                     )}
-                    <Tooltip label="Upload Prices">
-                        <ActionIcon {...actionProps} onClick={onUpload} aria-label="Upload Prices">
+                    <Tooltip label="Upload prices">
+                        <ActionIcon {...actionProps} onClick={onUpload} aria-label="Upload prices">
                             <Icon lucide={Upload} size={20} />
                         </ActionIcon>
                     </Tooltip>

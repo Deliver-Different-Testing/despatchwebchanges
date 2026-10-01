@@ -94,7 +94,7 @@ describe('ClearListDebugButton', () => {
 
             await user.click(screen.getByRole('button'));
 
-            expect(await screen.findByText('Clear List Debug')).toBeInTheDocument();
+            expect(await screen.findByText('Clear list debug')).toBeInTheDocument();
             expect(screen.getByText('Driver placement diagnostics')).toBeInTheDocument();
             expect(mockGet).toHaveBeenCalledWith('/courier/ClearListDebug', { courierId: 99 });
         });
@@ -117,9 +117,9 @@ describe('ClearListDebugButton', () => {
             await user.click(screen.getByRole('button'));
 
             await screen.findByText('Courier');
-            expect(screen.getByText('GPS Location')).toBeInTheDocument();
-            expect(screen.getByText('Admin Assignment (TblClearListAreaOrder)')).toBeInTheDocument();
-            expect(screen.getByText('Polygon Area Mappings')).toBeInTheDocument();
+            expect(screen.getByText('GPS location')).toBeInTheDocument();
+            expect(screen.getByText('Admin assignment (TblClearListAreaOrder)')).toBeInTheDocument();
+            expect(screen.getByText('Polygon area mappings')).toBeInTheDocument();
         });
     });
 
@@ -174,7 +174,7 @@ describe('ClearListDebugButton', () => {
             mockGet.mockResolvedValue(mockDebugData(data));
             renderWithTheme(<ClearListDebugButton courierId={42} />);
             await user.click(screen.getByRole('button'));
-            await screen.findByText('GPS Location');
+            await screen.findByText('GPS location');
         }
 
         it('displays polygon info and coordinates', async () => {
@@ -231,29 +231,29 @@ describe('ClearListDebugButton', () => {
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
             await user.click(screen.getByRole('button'));
-            await screen.findByText('Admin Assignment (TblClearListAreaOrder)');
+            await screen.findByText('Admin assignment (TblClearListAreaOrder)');
 
             expect(screen.getByText('Active')).toBeInTheDocument();
             expect(screen.getByText(/controls the row position/)).toBeInTheDocument();
         });
     });
 
-    describe('Polygon Area Mappings Section', () => {
+    describe('Polygon area mappings Section', () => {
         it('displays mappings with channel match/no match chips', async () => {
             const user = setupUser();
             mockGet.mockResolvedValue(mockDebugData());
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
             await user.click(screen.getByRole('button'));
-            await screen.findByText('Polygon Area Mappings');
+            await screen.findByText('Polygon area mappings');
 
             expect(screen.getAllByText('North Area').length).toBeGreaterThanOrEqual(2);
             expect(screen.getByText('Ch: 10')).toBeInTheDocument();
-            expect(screen.getByText('Channel Match')).toBeInTheDocument();
+            expect(screen.getByText('Channel match')).toBeInTheDocument();
 
             expect(screen.getByText('South Area')).toBeInTheDocument();
             expect(screen.getByText('Ch: 20')).toBeInTheDocument();
-            expect(screen.getByText('No Match')).toBeInTheDocument();
+            expect(screen.getByText('No match')).toBeInTheDocument();
         });
 
         it('shows warning alert when no mappings exist', async () => {
@@ -262,7 +262,7 @@ describe('ClearListDebugButton', () => {
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
             await user.click(screen.getByRole('button'));
-            await screen.findByText('Polygon Area Mappings');
+            await screen.findByText('Polygon area mappings');
 
             expect(screen.getByText(/No polygon-to-area mappings found/)).toBeInTheDocument();
         });
@@ -308,7 +308,7 @@ describe('ClearListDebugButton', () => {
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
             await user.click(screen.getByRole('button'));
-            await screen.findByText('Clear List Debug');
+            await screen.findByText('Clear list debug');
 
             // The shared <DialogHeader> names its close button, so this no longer
             // has to hunt for an icon's generated test id.

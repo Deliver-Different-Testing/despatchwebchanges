@@ -275,7 +275,7 @@ describe('DispatchDialog', () => {
             renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /^NP$/}));
-            const search = screen.getByPlaceholderText(/Search Network Partner/);
+            const search = screen.getByPlaceholderText(/Search network partners/);
             fireEvent.focus(search);
             fireEvent.change(search, {target: {value: 'Net'}});
 
@@ -362,11 +362,11 @@ describe('DispatchDialog', () => {
             const partnerOption = await screen.findByRole('option', {name: 'PartnerCo'});
             fireEvent.click(partnerOption);
 
-            // Wait for the rate panel to load + pre-fill the Agreed Rate input.
-            const rateInput = await screen.findByLabelText(/Agreed Rate/) as HTMLInputElement;
+            // Wait for the rate panel to load + pre-fill the Agreed rate input.
+            const rateInput = await screen.findByLabelText(/Agreed rate/) as HTMLInputElement;
             await waitFor(() => expect(rateInput.value).toBe('85.00'));
 
-            fireEvent.click(screen.getByRole('button', {name: /Send to Partner/}));
+            fireEvent.click(screen.getByRole('button', {name: /Send to partner/}));
 
             await waitFor(() => {
                 expect(onSendToPartner).toHaveBeenCalledWith({id: 7, text: 'PartnerCo'}, 85);
@@ -388,11 +388,11 @@ describe('DispatchDialog', () => {
             expect(screen.getByRole('button', {name: /^Dispatch$/})).toBeInTheDocument();
         });
 
-        it('reads "Send to Agent" when the Agent radio is selected', () => {
+        it('reads "Send to agent" when the Agent radio is selected', () => {
             renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /Agent/}));
-            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/})).toBeInTheDocument();
+            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to agent$/})).toBeInTheDocument();
         });
 
         it('reads "Send to NP" when the NP radio is selected', () => {
@@ -402,12 +402,12 @@ describe('DispatchDialog', () => {
             expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to NP$/})).toBeInTheDocument();
         });
 
-        it('reads "Send to Partner" when the DFRNT Partner radio is selected', () => {
+        it('reads "Send to partner" when the DFRNT Partner radio is selected', () => {
             renderWithMantine(<DispatchDialog {...makeProps()} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
             // The footer button label is the disabled state until a partner is picked.
-            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /Send to Partner/})).toBeInTheDocument();
+            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /Send to partner/})).toBeInTheDocument();
         });
     });
 
@@ -549,7 +549,7 @@ describe('DispatchDialog', () => {
             await user.click(bodyInput);
             await user.paste('Edited body for the agent');
 
-            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to agent$/}));
 
             await waitFor(() => {
                 expect(onDispatchCourier).toHaveBeenCalledWith({
@@ -572,7 +572,7 @@ describe('DispatchDialog', () => {
             expect(await screen.findByText(/no email address on file/i)).toBeInTheDocument();
             expect(screen.queryByLabelText('Message')).not.toBeInTheDocument();
 
-            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to agent$/}));
 
             await waitFor(() => {
                 expect(onDispatchCourier).toHaveBeenCalledWith({
@@ -601,7 +601,7 @@ describe('DispatchDialog', () => {
             expect(cascade).not.toBeChecked();
             fireEvent.click(cascade);
 
-            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to agent$/}));
 
             await waitFor(() => {
                 expect(onDispatchCourier).toHaveBeenCalledWith({
@@ -620,18 +620,18 @@ describe('DispatchDialog', () => {
                 <DispatchDialog {...makeProps({onDispatchCourier, existingConNote: 'AWB-EXISTING'})} />
             );
             await pickAgent();
-            expect(screen.getByLabelText(/AWB Number/i)).toBeDisabled();
+            expect(screen.getByLabelText(/AWB number/i)).toBeDisabled();
             unmount();
 
             renderWithMantineProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
             await pickAgent();
 
-            const awb = screen.getByLabelText(/AWB Number/i);
+            const awb = screen.getByLabelText(/AWB number/i);
             expect(awb).toBeEnabled();
             await user.click(awb);
             await user.paste('123-45678901');
 
-            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/}));
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to agent$/}));
 
             await waitFor(() => {
                 expect(onDispatchCourier).toHaveBeenCalledWith({
@@ -695,7 +695,7 @@ describe('DispatchDialog', () => {
         it('keeps the normal label when the route is fine', async () => {
             await openPartnerTabWith({...unserviceableRate, serviceAvailable: true, alternatives: []});
 
-            expect(await screen.findByRole('button', {name: /Send to Partner/})).toBeInTheDocument();
+            expect(await screen.findByRole('button', {name: /Send to partner/})).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: /Send anyway/})).not.toBeInTheDocument();
         });
     });

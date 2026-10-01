@@ -104,9 +104,9 @@ export function MapControlButtons({
                 // `jobListIndicators` carries a `testId` per marker).
                 icon={<Icon lucide={Expand} size={ICON_SIZE} data-control-icon="auto-zoom-off"/>}
                 activeIcon={<Icon lucide={Scan} size={ICON_SIZE} data-control-icon="auto-zoom-on"/>}
-                tooltip="Auto Zoom Disabled"
-                activeTooltip="Auto Zoom Enabled"
-                ariaLabel="Toggle Auto Zoom"
+                tooltip="Auto zoom disabled"
+                activeTooltip="Auto zoom enabled"
+                ariaLabel="Toggle auto zoom"
             />
             <Divider/>
             <ControlButton
@@ -115,9 +115,9 @@ export function MapControlButtons({
                 onClick={onToggleCouriersOnly}
                 icon={<Icon tabler={IconMap} size={ICON_SIZE} data-control-icon="pins-and-couriers"/>}
                 activeIcon={<Icon tabler={IconTruck} size={ICON_SIZE} data-control-icon="couriers-only"/>}
-                tooltip="Pins and Couriers"
-                activeTooltip="Couriers Only"
-                ariaLabel="Toggle Couriers Only"
+                tooltip="Pins and couriers"
+                activeTooltip="Couriers only"
+                ariaLabel="Toggle couriers only"
             />
             <Divider/>
             <ControlButton
@@ -126,9 +126,9 @@ export function MapControlButtons({
                 onClick={onToggleUrgentArmyOnly}
                 icon={<Icon lucide={EyeOff} size={ICON_SIZE} data-control-icon="all-couriers"/>}
                 activeIcon={<Icon lucide={Siren} size={ICON_SIZE} data-control-icon="fleet-only"/>}
-                tooltip="Show All Couriers"
-                activeTooltip="Show Fleet Only"
-                ariaLabel="Toggle Urgent Army Filter"
+                tooltip="Show all couriers"
+                activeTooltip="Show fleet only"
+                ariaLabel="Toggle Urgent Army filter"
             />
             <Divider/>
             <ControlButton
@@ -136,9 +136,9 @@ export function MapControlButtons({
                 onClick={onToggleCouriersLargeView}
                 icon={<Icon lucide={Minimize} size={ICON_SIZE} data-control-icon="normal-view"/>}
                 activeIcon={<Icon lucide={Maximize} size={ICON_SIZE} data-control-icon="large-view"/>}
-                tooltip="Normal View"
-                activeTooltip="Couriers Large View"
-                ariaLabel="Toggle Couriers Large View"
+                tooltip="Normal view"
+                activeTooltip="Couriers large view"
+                ariaLabel="Toggle couriers large view"
             />
         </Paper>
     );

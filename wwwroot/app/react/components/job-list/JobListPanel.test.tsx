@@ -246,10 +246,10 @@ describe('JobListPanel', () => {
             expect(screen.getByText('Total')).toBeInTheDocument();
             expect(screen.getByText('Unassigned')).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'All'})).toBeInTheDocument();
-            expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+            expect(screen.getByPlaceholderText('Search jobs…')).toBeInTheDocument();
             // Footer is hidden when there are no jobs to display
             expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
-            expect(screen.getByText('No jobs to display')).toBeInTheDocument();
+            expect(screen.getByText('No jobs match the current view.')).toBeInTheDocument();
 
             // setJobsCallback bridge registered
             expect(setJobsCallbackSpy).toHaveBeenCalledWith(expect.any(Function));
@@ -359,7 +359,7 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs, {onSearchChange});
 
-            const searchInput = screen.getByPlaceholderText('Search jobs...');
+            const searchInput = screen.getByPlaceholderText('Search jobs…');
 
             // Filter by job number
             await typeAndFlush(searchInput, 'ALPHA');
@@ -396,7 +396,7 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs);
 
-            const searchInput = screen.getByPlaceholderText('Search jobs...');
+            const searchInput = screen.getByPlaceholderText('Search jobs…');
             await typeAndFlush(searchInput, 'wellington');
             expect(screen.getByText('ADDR-001')).toBeInTheDocument();
             expect(screen.queryByText('ADDR-002')).not.toBeInTheDocument();
@@ -415,7 +415,7 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs);
 
-            const searchInput = screen.getByPlaceholderText('Search jobs...');
+            const searchInput = screen.getByPlaceholderText('Search jobs…');
             await typeAndFlush(searchInput, 'anything');
             expect(screen.queryByText('NULL-001')).not.toBeInTheDocument();
 
@@ -488,7 +488,7 @@ describe('JobListPanel', () => {
             expect(localStorage.getItem(key('loggedInCouriersOnly'))).toBe('true');
 
             // Persist sort state
-            fireEvent.click(screen.getByText('Job No'));
+            fireEvent.click(screen.getByText('Job no'));
             const saved = JSON.parse(localStorage.getItem(key('sortState'))!);
             expect(saved).toEqual({column: 'jobNo', direction: 'asc'});
         });
@@ -675,7 +675,7 @@ describe('JobListPanel', () => {
             const onBackendFilter = jest.fn();
             renderAndPushJobs([createMockDispatchJob()], {storagePrefix, onBackendFilter});
 
-            const header = screen.getByText('Job No');
+            const header = screen.getByText('Job no');
 
             // First click → asc
             fireEvent.click(header);
@@ -697,8 +697,8 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs);
 
-            // Click Job No header to sort asc
-            fireEvent.click(screen.getByText('Job No'));
+            // Click Job no header to sort asc
+            fireEvent.click(screen.getByText('Job no'));
 
             const rows = screen.getAllByText(/^[A-C]-00\d$/);
             expect(rows.map(el => el.textContent)).toEqual(['A-001', 'B-002', 'C-003']);
@@ -904,7 +904,7 @@ describe('JobListPanel', () => {
             expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
             result.unmount();
 
-            // Current Work box on dispatch opts out explicitly.
+            // Current work box on dispatch opts out explicitly.
             const {result: currentWork} = renderAndPushJobs([], {hideLoggedInSwitch: true});
             expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
             currentWork.unmount();
@@ -926,7 +926,7 @@ describe('JobListPanel', () => {
             });
 
             await user.click(screen.getByText('Assign'));
-            await user.click(screen.getByPlaceholderText('Search courier...'));
+            await user.click(screen.getByPlaceholderText('Search couriers…'));
             await user.paste('John');
 
             await waitFor(() => {
@@ -1109,7 +1109,7 @@ describe('JobListPanel', () => {
 
             (fetchConfig.fetchFn as jest.Mock).mockClear();
 
-            fireEvent.click(screen.getByText('Job No'));
+            fireEvent.click(screen.getByText('Job no'));
 
             await waitFor(() => {
                 expect(fetchConfig.fetchFn).toHaveBeenCalledWith(
@@ -1245,7 +1245,7 @@ describe('JobListPanel', () => {
                 <JobListPanel {...createDefaultProps({fetchConfig, onJobsLoaded})} />,
             );
 
-            await screen.findByText('No jobs to display');
+            await screen.findByText('No jobs match the current view.');
             expect(onJobsLoaded).not.toHaveBeenCalled();
         });
 
@@ -1279,7 +1279,7 @@ describe('JobListPanel', () => {
                 <JobListPanel {...createDefaultProps({fetchConfig: emptyFetchConfig})} />,
             );
 
-            expect(await screen.findByText('No jobs to display')).toBeInTheDocument();
+            expect(await screen.findByText('No jobs match the current view.')).toBeInTheDocument();
 
             unmount();
 
@@ -1325,7 +1325,7 @@ describe('JobListPanel', () => {
                 expect(await screen.findByText('ALPHA-001')).toBeInTheDocument();
                 (fetchConfig.fetchFn as jest.Mock).mockClear();
 
-                const searchInput = screen.getByPlaceholderText('Search jobs...');
+                const searchInput = screen.getByPlaceholderText('Search jobs…');
                 await act(async () => { fireEvent.change(searchInput, {target: {value: 'ALPHA'}}); });
                 await act(async () => { await jest.advanceTimersByTimeAsync(300); });
                 await act(async () => { await jest.advanceTimersByTimeAsync(200); });

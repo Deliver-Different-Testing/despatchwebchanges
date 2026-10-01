@@ -37,9 +37,9 @@ export const SaveLayoutDialog: React.FC<SaveLayoutDialogProps> = ({
     onClose,
     onConfirm,
     initialName = '',
-    title = 'Save Layout',
+    title = 'Save layout',
     subtitle = 'Name the current arrangement to save it',
-    confirmLabel = 'Add Layout',
+    confirmLabel = 'Add layout',
 }) => {
     const [name, setName] = useState(initialName);
 

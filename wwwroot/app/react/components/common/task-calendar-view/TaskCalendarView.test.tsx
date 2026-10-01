@@ -298,7 +298,7 @@ describe('TaskCalendarView', () => {
         });
     });
 
-    describe('Week View', () => {
+    describe('Week view', () => {
         it('renders time slots in week view', async () => {
             const user = setupUser();
             const props = createDefaultProps();
@@ -323,7 +323,7 @@ describe('TaskCalendarView', () => {
         });
     });
 
-    describe('Day View', () => {
+    describe('Day view', () => {
         it('renders time slots in day view', async () => {
             const user = setupUser();
             const props = createDefaultProps();

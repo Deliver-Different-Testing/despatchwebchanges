@@ -45,11 +45,11 @@ interface DriverComplianceTabProps {
 
 /** Mantine palette keys — see chipColors for why these are not the tenant brand. */
 function getComplianceStatus(expiryDate?: string): { status: string; color: string; daysUntil: number } {
-    if (!expiryDate) return {status: 'Not Set', color: 'gray', daysUntil: -999};
+    if (!expiryDate) return {status: 'Not set', color: 'gray', daysUntil: -999};
     const today = dayjs();
     const daysUntil = dayjs(expiryDate).diff(today, 'day');
     if (daysUntil < 0) return {status: 'Expired', color: 'red', daysUntil};
-    if (daysUntil <= 30) return {status: 'Expiring Soon', color: 'yellow', daysUntil};
+    if (daysUntil <= 30) return {status: 'Expiring soon', color: 'yellow', daysUntil};
     return {status: 'Valid', color: 'green', daysUntil};
 }
 
@@ -65,12 +65,12 @@ const columns: DataTableColumn<CourierCompliance>[] = [
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
     {key: 'complianceType', label: 'Type', sortable: true, render: (row) => <Badge size="sm" tt="none" color={getComplianceTypeColor(row.complianceType)}>{row.complianceType}</Badge>},
     {key: 'itemNumber', label: 'Item/Number', sortable: true, render: (row) => row.itemNumber},
-    {key: 'expiryDate', label: 'Expiry Date', sortable: true, width: '120px', render: (row) => row.expiryDate ? dayjs(row.expiryDate).format('MMM D, YYYY') : ''},
+    {key: 'expiryDate', label: 'Expiry date', sortable: true, width: '120px', render: (row) => row.expiryDate ? dayjs(row.expiryDate).format('MMM D, YYYY') : ''},
     {key: 'status', label: 'Status', sortable: true, sortKey: 'expiryDate', width: '120px', render: (row) => {
         const cs = getComplianceStatus(row.expiryDate);
         return <Badge size="sm" tt="none" color={cs.color}>{cs.status}</Badge>;
     }},
-    {key: 'daysUntil', label: 'Days Until Expiry', sortable: true, sortKey: 'expiryDate', width: '140px', render: (row) => {
+    {key: 'daysUntil', label: 'Days until expiry', sortable: true, sortKey: 'expiryDate', width: '140px', render: (row) => {
         const cs = getComplianceStatus(row.expiryDate);
         return <Badge size="sm" tt="none" color={cs.color}>{formatDaysUntil(cs.daysUntil)}</Badge>;
     }},
@@ -179,9 +179,9 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
             {/* Stats */}
             <Group gap={16}>
                 <StatCard value={stats.expired} label="Expired" color="var(--mantine-color-red-6)" icon={<Icon lucide={CircleAlert} size={28} color="var(--mantine-color-red-6)"/>} />
-                <StatCard value={stats.expiring} label="Expiring Soon" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={TriangleAlert} size={28} color="var(--mantine-color-yellow-6)"/>} />
+                <StatCard value={stats.expiring} label="Expiring soon" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={TriangleAlert} size={28} color="var(--mantine-color-yellow-6)"/>} />
                 <StatCard value={stats.valid} label="Valid" color="var(--mantine-color-green-6)" icon={<Icon lucide={CircleCheck} size={28} color="var(--mantine-color-green-6)"/>} />
-                <StatCard value={stats.totalDrivers} label="Total Drivers" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users} size={28} color="var(--mantine-color-cyan-6)"/>} />
+                <StatCard value={stats.totalDrivers} label="Total drivers" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users} size={28} color="var(--mantine-color-cyan-6)"/>} />
             </Group>
 
             {/* AI Compliance Risk Summary */}
@@ -278,7 +278,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                 <SearchField
                     value={query.searchTerm ?? ''}
                     onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
-                    placeholder="Search compliance..."
+                    placeholder="Search compliance…"
                 />
             </FilterToolbar>
 
@@ -293,8 +293,8 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
                 emptyIcon={<Icon lucide={ShieldCheck} size={40}/>}
-                emptyTitle="No Compliance Records"
-                emptyMessage="No compliance records match your criteria."
+                emptyTitle="No compliance records"
+                emptyMessage="No compliance records match your search."
             />
 
             {/* Bulk Reminders Confirmation Dialog */}

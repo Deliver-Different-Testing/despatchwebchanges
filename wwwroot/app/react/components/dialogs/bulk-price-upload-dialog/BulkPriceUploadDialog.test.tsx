@@ -105,7 +105,7 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Bulk Price Upload')).toBeInTheDocument();
+            expect(screen.getByText('Bulk price upload')).toBeInTheDocument();
         });
 
         it('should not render dialog when open is false', () => {
@@ -128,7 +128,7 @@ describe('BulkPriceUploadDialog', () => {
             const props = createMockProps();
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
 
-            expect(screen.getByText('Expected File Format')).toBeInTheDocument();
+            expect(screen.getByText('Expected file format')).toBeInTheDocument();
             expect(screen.getByText(/Id/)).toBeInTheDocument();
         });
 
@@ -151,7 +151,7 @@ describe('BulkPriceUploadDialog', () => {
         });
     });
 
-    describe('File Upload', () => {
+    describe('File upload', () => {
         it('should accept CSV files', async () => {
             const props = createMockProps();
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
@@ -231,7 +231,7 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            expect(screen.getByText('Auto-Calculate Prices')).toBeInTheDocument();
+            expect(screen.getByText('Auto-calculate prices')).toBeInTheDocument();
             expect(screen.getByText('Base Price (add surcharges)')).toBeInTheDocument();
             expect(screen.getByText('Final Price (use as-is)')).toBeInTheDocument();
         });
@@ -276,7 +276,7 @@ describe('BulkPriceUploadDialog', () => {
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
 
-            expect(screen.getByRole('radio', {name: /Auto-Calculate Prices/})).toBeChecked();
+            expect(screen.getByRole('radio', {name: /Auto-calculate prices/})).toBeChecked();
             expect(screen.getByRole('radio', {name: /Base Price/})).not.toBeChecked();
 
             await userEvent.click(screen.getByRole('radio', {name: /Base Price/}));
@@ -460,7 +460,7 @@ describe('BulkPriceUploadDialog', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /recalculate & save/i }));
 
-            expect(await screen.findByText('Prices Updated')).toBeInTheDocument();
+            expect(await screen.findByText('Prices updated')).toBeInTheDocument();
             expect(props.showToast).not.toHaveBeenCalledWith(expect.anything(), 'error');
         });
 
@@ -491,17 +491,17 @@ describe('BulkPriceUploadDialog', () => {
             const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
             await userEvent.click(applyButton);
 
-            expect(await screen.findByText('Prices Updated')).toBeInTheDocument();
+            expect(await screen.findByText('Prices updated')).toBeInTheDocument();
         };
 
         it('should display success header', async () => {
             const props = createMockProps();
             await uploadAndApply(props);
 
-            expect(screen.getByText('Prices Updated')).toBeInTheDocument();
+            expect(screen.getByText('Prices updated')).toBeInTheDocument();
         });
 
-        it('should show a "Partially Updated" header and the skip reason when some jobs are skipped', async () => {
+        it('should show a "Partially updated" header and the skip reason when some jobs are skipped', async () => {
             const props = createMockProps({
                 onSubmit: jest.fn().mockResolvedValue(mockPartialResponse),
             });
@@ -513,7 +513,7 @@ describe('BulkPriceUploadDialog', () => {
             expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
             await userEvent.click(screen.getByRole('button', { name: /recalculate & save/i }));
 
-            expect(await screen.findByText('Partially Updated')).toBeInTheDocument();
+            expect(await screen.findByText('Partially updated')).toBeInTheDocument();
             expect(screen.getByText(/1 job could not be updated/i)).toBeInTheDocument();
             // The per-row skip reason is surfaced in the results table.
             expect(
@@ -526,7 +526,7 @@ describe('BulkPriceUploadDialog', () => {
             await uploadAndApply(props);
 
             expect(screen.getByText('2')).toBeInTheDocument(); // Total jobs
-            expect(screen.getByText('Jobs Updated')).toBeInTheDocument();
+            expect(screen.getByText('Jobs updated')).toBeInTheDocument();
             expect(screen.getByText('$300.00')).toBeInTheDocument(); // Previous total
             expect(screen.getByText('$330.00')).toBeInTheDocument(); // New total
             expect(screen.getByText('+$30.00')).toBeInTheDocument(); // Change
@@ -546,14 +546,14 @@ describe('BulkPriceUploadDialog', () => {
             const props = createMockProps();
             await uploadAndApply(props);
 
-            expect(screen.getByPlaceholderText('Search by job number...')).toBeInTheDocument();
+            expect(screen.getByPlaceholderText('Search by job number…')).toBeInTheDocument();
         });
 
         it('should filter results by job number', async () => {
             const props = createMockProps();
             await uploadAndApply(props);
 
-            const searchInput = screen.getByPlaceholderText('Search by job number...');
+            const searchInput = screen.getByPlaceholderText('Search by job number…');
             fireEvent.change(searchInput, { target: { value: 'JOB-001' } });
 
             expect(await screen.findByText('JOB-001')).toBeInTheDocument();
@@ -571,7 +571,7 @@ describe('BulkPriceUploadDialog', () => {
             const props = createMockProps();
             await uploadAndApply(props);
 
-            const searchInput = screen.getByPlaceholderText('Search by job number...');
+            const searchInput = screen.getByPlaceholderText('Search by job number…');
             fireEvent.change(searchInput, { target: { value: 'JOB-001' } });
 
             expect(await screen.findByText('1 of 2 jobs')).toBeInTheDocument();
@@ -581,10 +581,10 @@ describe('BulkPriceUploadDialog', () => {
             const props = createMockProps();
             await uploadAndApply(props);
 
-            const searchInput = screen.getByPlaceholderText('Search by job number...');
+            const searchInput = screen.getByPlaceholderText('Search by job number…');
             fireEvent.change(searchInput, { target: { value: 'NONEXISTENT' } });
 
-            expect(await screen.findByText('No jobs match your search')).toBeInTheDocument();
+            expect(await screen.findByText('No jobs match your search.')).toBeInTheDocument();
         });
 
         it('should display Done button in results state', async () => {

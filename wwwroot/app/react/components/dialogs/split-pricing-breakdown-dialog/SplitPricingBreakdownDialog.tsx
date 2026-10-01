@@ -535,11 +535,11 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             onClose={handleCancel}
             size={computeDialogWidth(legKeys.length)}
             maw="95vw"
-            label={isEdit ? 'Price Breakdown' : 'Confirm Split Pricing'}
+            label={isEdit ? 'Price breakdown' : 'Confirm split pricing'}
         >
             <DialogHeader
                 icon={<Icon lucide={isEdit ? ReceiptText : Split}/>}
-                title={isEdit ? 'Price Breakdown' : 'Confirm Split Pricing'}
+                title={isEdit ? 'Price breakdown' : 'Confirm split pricing'}
                 subtitle={isEdit
                     ? (readOnly
                         ? `The parent’s original items, split across ${legKeys.length} legs — view only`
@@ -669,7 +669,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                 </Group>
 
                 <Group justify="space-between" mb="md" wrap="nowrap">
-                    <Text fw={600} fz="lg">Price Items</Text>
+                    <Text fw={600} fz="lg">Price items</Text>
                     {canEdit && (
                         <Button
                             leftSection={<Icon lucide={Plus}/>}
@@ -677,7 +677,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                             onClick={() => setIsAdding(true)}
                             disabled={revenueLocked}
                         >
-                            Add Item
+                            Add item
                         </Button>
                     )}
                 </Group>
@@ -686,7 +686,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                     <Paper withBorder radius="md" p="md" mb="md">
                         <Group gap="md" align="flex-end" wrap="wrap">
                             <TextInput
-                                label="Item Name"
+                                label="Item name"
                                 value={addName}
                                 onChange={(e) => setAddName(e.currentTarget.value)}
                                 required
@@ -740,7 +740,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                         </Stack>
                                     </Table.Th>
                                 ))}
-                                <Table.Th c="dimmed" ta="right">Total Cost</Table.Th>
+                                <Table.Th c="dimmed" ta="right">Total cost</Table.Th>
                                 <Table.Th c="dimmed" ta="right">Profit</Table.Th>
                                 <Table.Th c="dimmed" ta="center">Margin</Table.Th>
                                 {canEdit && <Table.Th c="dimmed" ta="center" w={60}/>}
@@ -973,7 +973,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                 disabled={isEdit && !hasPendingEdits}
                                 miw={140}
                             >
-                                {isEdit ? 'Save & Close' : 'Confirm & Split'}
+                                {isEdit ? 'Save & close' : 'Confirm & split'}
                             </Button>
                         </>
                     )}

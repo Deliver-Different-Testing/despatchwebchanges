@@ -74,10 +74,10 @@ describe('SimplePriceEditDialog', () => {
             expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Close dialog'}));
         });
 
-        it('displays "Edit Price" title', () => {
+        it('displays "Edit price" title', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
-            expect(screen.getByText('Edit Price')).toBeInTheDocument();
+            expect(screen.getByText('Edit price')).toBeInTheDocument();
         });
 
         it('displays the job number badge', () => {
@@ -89,7 +89,7 @@ describe('SimplePriceEditDialog', () => {
         it('displays all three mode cards', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
-            expect(screen.getByText('Auto-Calculate Prices')).toBeInTheDocument();
+            expect(screen.getByText('Auto-calculate prices')).toBeInTheDocument();
             expect(screen.getByText('Base Price (add surcharges)')).toBeInTheDocument();
             expect(screen.getByText('Final Price (use as-is)')).toBeInTheDocument();
         });
@@ -106,7 +106,7 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
             expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /Recalculate & Save/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Recalculate & save/i })).toBeInTheDocument();
         });
     });
 
@@ -178,55 +178,55 @@ describe('SimplePriceEditDialog', () => {
             expect(input).toHaveValue('250.5');
         });
 
-        it('shows "Enter Base Amount" label for base mode', async () => {
+        it('shows "Enter base amount" label for base mode', async () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
             await userEvent.click(screen.getByText('Base Price (add surcharges)'));
 
-            expect(screen.getByText('Enter Base Amount')).toBeInTheDocument();
+            expect(screen.getByText('Enter base amount')).toBeInTheDocument();
         });
 
-        it('shows "Enter Final Amount" label for gross mode', async () => {
+        it('shows "Enter final amount" label for gross mode', async () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
             await userEvent.click(screen.getByText('Final Price (use as-is)'));
 
-            expect(screen.getByText('Enter Final Amount')).toBeInTheDocument();
+            expect(screen.getByText('Enter final amount')).toBeInTheDocument();
         });
     });
 
     describe('Submit Button', () => {
-        it('shows "Recalculate & Save" text for recalculate mode', () => {
+        it('shows "Recalculate & save" text for recalculate mode', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
-            expect(screen.getByRole('button', { name: /Recalculate & Save/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Recalculate & save/i })).toBeInTheDocument();
         });
 
-        it('shows "Apply Base Amount" text for base mode', async () => {
+        it('shows "Apply base amount" text for base mode', async () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
             await userEvent.click(screen.getByText('Base Price (add surcharges)'));
 
-            expect(screen.getByRole('button', { name: /Apply Base Amount/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Apply base amount/i })).toBeInTheDocument();
         });
 
-        it('shows "Apply Final Amount" text for gross mode', async () => {
+        it('shows "Apply final amount" text for gross mode', async () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
             await userEvent.click(screen.getByText('Final Price (use as-is)'));
 
-            expect(screen.getByRole('button', { name: /Apply Final Amount/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Apply final amount/i })).toBeInTheDocument();
         });
 
         it('is enabled for recalculate mode without entering an amount', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
-            const button = screen.getByRole('button', { name: /Recalculate & Save/i });
+            const button = screen.getByRole('button', { name: /Recalculate & save/i });
             expect(button).not.toBeDisabled();
         });
 
@@ -236,7 +236,7 @@ describe('SimplePriceEditDialog', () => {
 
             await userEvent.click(screen.getByText('Base Price (add surcharges)'));
 
-            const button = screen.getByRole('button', { name: /Apply Base Amount/i });
+            const button = screen.getByRole('button', { name: /Apply base amount/i });
             expect(button).not.toBeDisabled();
         });
 
@@ -249,7 +249,7 @@ describe('SimplePriceEditDialog', () => {
             const input = screen.getByRole('textbox', {name: /Amount/i});
             await userEvent.clear(input);
 
-            const button = screen.getByRole('button', { name: /Apply Base Amount/i });
+            const button = screen.getByRole('button', { name: /Apply base amount/i });
             expect(button).toBeDisabled();
         });
 
@@ -258,7 +258,7 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
             // During loading, we show a loading state — buttons are hidden
             // Verify loading indicator is shown instead
@@ -273,7 +273,7 @@ describe('SimplePriceEditDialog', () => {
             renderWithProviders(props);
 
             await userEvent.click(screen.getByText('Base Price (add surcharges)'));
-            await userEvent.click(screen.getByRole('button', { name: /Apply Base Amount/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Apply base amount/i }));
 
             await waitFor(() => {
                 expect(onSubmit).toHaveBeenCalledWith('base', 150, []);
@@ -285,7 +285,7 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit, currentCharge: 150 });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
             await waitFor(() => {
                 expect(onSubmit).toHaveBeenCalledWith('recalculate', 150, []);
@@ -297,7 +297,7 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
             expect(await screen.findByText('Saving price...')).toBeInTheDocument();
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -308,9 +308,9 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
-            expect(await screen.findByText('Price Updated')).toBeInTheDocument();
+            expect(await screen.findByText('Price updated')).toBeInTheDocument();
         });
     });
 
@@ -320,15 +320,15 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit, currentCharge: 150.00, ...overrides });
             const result = renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
-            await screen.findByText('Price Updated');
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
+            await screen.findByText('Price updated');
 
             return { ...result, props };
         }
 
-        it('displays "Price Updated" heading', async () => {
+        it('displays "Price updated" heading', async () => {
             await submitAndWaitForSuccess();
-            expect(screen.getByText('Price Updated')).toBeInTheDocument();
+            expect(screen.getByText('Price updated')).toBeInTheDocument();
         });
 
         it('displays the new price amount', async () => {
@@ -340,7 +340,7 @@ describe('SimplePriceEditDialog', () => {
 
         it('shows price comparison when price changed', async () => {
             await submitAndWaitForSuccess({ currentCharge: 150.00 });
-            expect(screen.getByText('Previous Price')).toBeInTheDocument();
+            expect(screen.getByText('Previous price')).toBeInTheDocument();
             expect(screen.getByText('$150.00')).toBeInTheDocument();
         });
 
@@ -355,9 +355,9 @@ describe('SimplePriceEditDialog', () => {
             renderWithProviders(props);
 
             await userEvent.click(screen.getByText('Base Price (add surcharges)'));
-            await userEvent.click(screen.getByRole('button', { name: /Apply Base Amount/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Apply base amount/i }));
 
-            await screen.findByText('Price Updated');
+            await screen.findByText('Price updated');
             expect(screen.getByText('Base price applied')).toBeInTheDocument();
         });
 
@@ -367,9 +367,9 @@ describe('SimplePriceEditDialog', () => {
             renderWithProviders(props);
 
             await userEvent.click(screen.getByText('Final Price (use as-is)'));
-            await userEvent.click(screen.getByRole('button', { name: /Apply Final Amount/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Apply final amount/i }));
 
-            await screen.findByText('Price Updated');
+            await screen.findByText('Price updated');
             expect(screen.getByText('Final price applied')).toBeInTheDocument();
         });
 
@@ -389,7 +389,7 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit, showToast });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith("Couldn't save price. Network error", 'error');
@@ -401,14 +401,14 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
             await waitFor(() => {
                 // Still in edit state — mode cards visible
-                expect(screen.getByText('Auto-Calculate Prices')).toBeInTheDocument();
+                expect(screen.getByText('Auto-calculate prices')).toBeInTheDocument();
             });
             // Success state not shown
-            expect(screen.queryByText('Price Updated')).not.toBeInTheDocument();
+            expect(screen.queryByText('Price updated')).not.toBeInTheDocument();
         });
 
         it('shows inline error message on failure', async () => {
@@ -416,7 +416,7 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
             expect(await screen.findByText("Couldn't save price. Price update failed")).toBeInTheDocument();
         });
@@ -427,7 +427,7 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit, showToast });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith(
@@ -469,7 +469,7 @@ describe('SimplePriceEditDialog', () => {
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
 
             await screen.findByText('Saving price...');
 
@@ -520,8 +520,8 @@ describe('SimplePriceEditDialog', () => {
             const { rerender } = renderWithProviders(props);
 
             // Submit and get to success state
-            await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
-            await screen.findByText('Price Updated');
+            await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
+            await screen.findByText('Price updated');
 
             // Close dialog
             await act(async () => {
@@ -538,8 +538,8 @@ describe('SimplePriceEditDialog', () => {
             });
 
             // Should be back in edit state
-            expect(screen.queryByText('Price Updated')).not.toBeInTheDocument();
-            expect(screen.getByText('Auto-Calculate Prices')).toBeInTheDocument();
+            expect(screen.queryByText('Price updated')).not.toBeInTheDocument();
+            expect(screen.getByText('Auto-calculate prices')).toBeInTheDocument();
         });
     });
 });

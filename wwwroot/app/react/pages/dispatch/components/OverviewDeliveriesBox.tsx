@@ -168,7 +168,7 @@ export const OverviewDeliveriesBox: React.FC<OverviewDeliveriesBoxProps> = ({
             <Box px="xs" pt={4} style={{flexShrink: 0}}>
                 <TextInput
                     size="xs"
-                    placeholder="Search deliveries"
+                    placeholder="Search deliveries…"
                     aria-label="Search deliveries"
                     value={search}
                     onChange={(e) => changeSearch(e.currentTarget.value)}

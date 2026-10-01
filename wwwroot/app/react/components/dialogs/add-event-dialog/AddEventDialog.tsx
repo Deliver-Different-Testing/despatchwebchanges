@@ -157,10 +157,10 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
     if (!job) return null;
 
     return (
-        <DialogShell opened={open} onClose={onClose} label="Add Task">
+        <DialogShell opened={open} onClose={onClose} label="Add task">
             <DialogHeader
                 icon={<Icon lucide={CalendarClock}/>}
-                title="Add Task"
+                title="Add task"
                 subtitle="Create a new task for this job"
                 onClose={onClose}
                 closeDisabled={isSubmitting}
@@ -174,13 +174,13 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
                 ) : (
                     <Stack gap="lg">
                         <Group gap="md" grow align="flex-start">
-                            <TextInput label="Job Number" value={job.jobNo} disabled/>
+                            <TextInput label="Job number" value={job.jobNo} disabled/>
                             <TextInput label="Client" value={job.client} disabled/>
                         </Group>
 
                         <Group gap="md" grow align="flex-start">
                             <Select
-                                label="Task Type"
+                                label="Task type"
                                 required
                                 value={selectedEventTypeId === '' ? null : String(selectedEventTypeId)}
                                 onChange={(value) => setSelectedEventTypeId(value ? Number(value) : '')}
@@ -190,7 +190,7 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
                             {/* 24-hour, tenant-ordered date — `TimePicker` rather than a native
                                 time input so the segments never fall back to the browser's AM/PM. */}
                             <DateTimePicker
-                                label="Due Date & Time"
+                                label="Due date & time"
                                 value={eventDate.format(PICKER_VALUE_FORMAT)}
                                 onChange={handleDateChange}
                                 valueFormat={`${getInputDateFormat()} HH:mm`}
@@ -201,7 +201,7 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
 
                         <Textarea
                             label="Notes"
-                            placeholder="Add notes for this task..."
+                            placeholder="Add notes for this task…"
                             value={notes}
                             onChange={(event) => setNotes(event.currentTarget.value)}
                             disabled={isSubmitting}

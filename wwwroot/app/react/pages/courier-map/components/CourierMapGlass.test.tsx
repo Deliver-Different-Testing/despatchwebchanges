@@ -64,13 +64,13 @@ describe('Courier Map liquid glass', () => {
 
         const off = rails();
         expect(railOf('Zoom in')).not.toHaveClass('glass-mock');
-        expect(railOf('Toggle Auto Zoom')).not.toHaveClass('glass-mock');
+        expect(railOf('Toggle auto zoom')).not.toHaveClass('glass-mock');
         off.unmount();
 
         localStorage.setItem('dd-liquid-glass', 'on');
         rails();
         expect(railOf('Zoom in')).toHaveClass('glass-mock', 'panel-mock');
-        expect(railOf('Toggle Auto Zoom')).toHaveClass('glass-mock', 'panel-mock');
+        expect(railOf('Toggle auto zoom')).toHaveClass('glass-mock', 'panel-mock');
     });
 
     it('frosts the drivers card and map controls when on, but not the driver list', () => {

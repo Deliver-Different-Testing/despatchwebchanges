@@ -303,8 +303,8 @@ export const DriverLocations = React.memo(function DriverLocations({
             {/* No data state */}
             {showNoData && (
                 <NoData
-                    title="No Driver Locations"
-                    message="Please configure driver locations in Admin Manager to continue."
+                    title="No driver locations yet"
+                    message="Add driver locations in Admin Manager to see them here."
                     icon={<Icon tabler={IconUserPin}/>}
                 />
             )}

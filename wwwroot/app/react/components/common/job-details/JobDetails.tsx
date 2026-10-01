@@ -293,7 +293,7 @@ export function JobDetails({config}: JobDetailsProps) {
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
     const showInfoToast = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
 
-    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    // Archived-job "Change paid courier" flow: eligibility gate + dialog + blocked popup.
     const {openChangeCourier, changeCourierDialogs} = useChangeCourierFlow({
         showToast,
         onChanged: refreshAndNotify,
@@ -399,7 +399,7 @@ export function JobDetails({config}: JobDetailsProps) {
     if (!job) {
         return (
             <NoData
-                title="No Job Selected"
+                title="No job selected"
                 message="Select a job to view details"
                 icon={<Icon lucide={Briefcase}/>}
             />
@@ -545,7 +545,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     />
 
                     {isEditMode && (
-                        <CardVisibilityToggle label="Total Distance" fieldKey="totalMiles"
+                        <CardVisibilityToggle label="Total distance" fieldKey="totalMiles"
                                               isVisible={isFieldVisible('totalMiles')} onToggle={toggleField}/>
                     )}
                     <TotalDistance
@@ -600,7 +600,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     {job.isPartnerJob && (
                         <>
                             {isEditMode && (
-                                <CardVisibilityToggle label="Partner Change Requests" fieldKey="partnerChangeRequests"
+                                <CardVisibilityToggle label="Partner change requests" fieldKey="partnerChangeRequests"
                                                       isVisible={isFieldVisible('partnerChangeRequests')}
                                                       onToggle={toggleField}/>
                             )}

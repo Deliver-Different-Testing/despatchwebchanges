@@ -388,7 +388,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             {key: 'overdue', label: 'Overdue', accent: STAT_COLORS.error.main, accentText: STAT_COLORS.error.dark},
             {key: 'today', label: 'Today', accent: STAT_COLORS.primary.main, accentText: STAT_COLORS.primary.dark},
             {key: 'tomorrow', label: 'Tomorrow', accent: STAT_COLORS.warning.main, accentText: STAT_COLORS.warning.dark},
-            {key: 'thisWeek', label: 'This Week', accent: STAT_COLORS.info.dark, accentText: STAT_COLORS.info.dark},
+            {key: 'thisWeek', label: 'This week', accent: STAT_COLORS.info.dark, accentText: STAT_COLORS.info.dark},
             {key: 'later', label: 'Later', accent: STAT_COLORS.secondary.main, accentText: STAT_COLORS.secondary.dark},
         ];
 
@@ -489,7 +489,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
     // Job Details panel content — shared between the side pane (≥ md) and the
     // drawer (< md); only one is mounted at a time via the isCompact guards.
-    const jobDetailsTitle = selectedTask ? `Job Details - Job #${selectedTask.jobId}` : 'Job Details';
+    const jobDetailsTitle = selectedTask ? `Job details - Job #${selectedTask.jobId}` : 'Job details';
     const jobDetailsBody = (
         <Box style={{flex: 1, overflow: 'auto'}}>
             <JobDetails
@@ -692,7 +692,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                             <TextInput
                                 size="xs"
                                 w={200}
-                                placeholder="Search tasks"
+                                placeholder="Search tasks…"
                                 aria-label="Search tasks"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.currentTarget.value)}

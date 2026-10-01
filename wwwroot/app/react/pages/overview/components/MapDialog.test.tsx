@@ -136,7 +136,7 @@ describe('MapDialog', () => {
 
             expect(await screen.findByText('Origin')).toBeInTheDocument();
 
-            expect(screen.getByText('Delivery Route')).toBeInTheDocument();
+            expect(screen.getByText('Delivery route')).toBeInTheDocument();
         });
 
         it('renders timeline with child job stops', async () => {

@@ -131,7 +131,7 @@ describe('flightResultMessage', () => {
 
     it('reports no flights when the search came back empty', () => {
         expect(flightResultMessage({flights: []}))
-            .toBe('No flights available for the selected criteria');
+            .toBe('No flights match the selected criteria');
     });
 
     it('has no message when flights were found', () => {

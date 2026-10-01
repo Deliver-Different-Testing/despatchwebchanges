@@ -259,7 +259,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
 
     if (!open) return null;
 
-    const title = `${isNewSchedule ? 'Create' : 'Edit'} Afterhours Schedule`;
+    const title = `${isNewSchedule ? 'Create' : 'Edit'} afterhours schedule`;
 
     return (
         <DialogShell opened={open} onClose={onClose} label={title}>
@@ -278,12 +278,12 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                         <Box c="dimmed" style={{display: 'flex'}}>
                             <Icon lucide={User}/>
                         </Box>
-                        <Text fw={500}>{isNewSchedule ? 'Select' : 'Change'} Driver</Text>
+                        <Text fw={500}>{isNewSchedule ? 'Select' : 'Change'} driver</Text>
                     </Group>
 
                     <SearchSelect<CourierSuggestion>
-                        label="Search driver..."
-                        placeholder="Type at least 2 characters"
+                        label="Search driver"
+                        placeholder="Enter at least 2 characters"
                         value={selectedCourier}
                         onChange={handleCourierSelect}
                         options={courierOptions}
@@ -321,14 +321,14 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                         <Box c="dimmed" style={{display: 'flex'}}>
                             <Icon lucide={Clock}/>
                         </Box>
-                        <Text fw={500}>Schedule Details</Text>
+                        <Text fw={500}>Schedule details</Text>
                     </Group>
 
                     <Stack gap="lg">
                         {/* Days of Week Selection */}
                         <Box>
                             <MultiSelect
-                                label="Days of Week"
+                                label="Days of week"
                                 data={[...DAYS_OF_WEEK]}
                                 value={selectedDays}
                                 onChange={setSelectedDays}
@@ -347,14 +347,14 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                               * wall-clock "HH:mm" strings that must round-trip unchanged.
                               */}
                             <TextInput
-                                label="Start Time"
+                                label="Start time"
                                 type="time"
                                 value={startTime}
                                 onChange={(e) => setStartTime(e.currentTarget.value)}
                                 error={validationErrors.startTime}
                             />
                             <TextInput
-                                label="End Time"
+                                label="End time"
                                 type="time"
                                 value={endTime}
                                 onChange={(e) => setEndTime(e.currentTarget.value)}
@@ -390,7 +390,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                                 <Box c="light-dark(var(--mantine-color-reflex-6), var(--mantine-color-reflex-4))" style={{display: 'flex'}}>
                                     <Icon lucide={Timer}/>
                                 </Box>
-                                <Text size="sm" c="dimmed">Total Duration</Text>
+                                <Text size="sm" c="dimmed">Total duration</Text>
                                 <Text fw={600} ml="auto">{duration}</Text>
                             </Group>
                         )}
@@ -414,7 +414,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel={isSubmitting ? 'Saving...' : `${isNewSchedule ? 'Create' : 'Save'} Schedule`}
+                confirmLabel={isSubmitting ? 'Saving...' : `${isNewSchedule ? 'Create' : 'Save'} schedule`}
                 confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={!isFormValid || isSubmitting}
                 submitting={isSubmitting}

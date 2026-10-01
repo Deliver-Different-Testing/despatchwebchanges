@@ -161,7 +161,7 @@ describe('PartnerApprovalsInbox', () => {
         mockApi.pendingForApproval.mockResolvedValueOnce([addressItem]);
         renderWithMantineProviders(<PartnerApprovalsInbox/>);
 
-        expect(await screen.findByText('Pickup Address')).toBeInTheDocument();
+        expect(await screen.findByText('Pickup address')).toBeInTheDocument();
         expect(screen.getByText(/7 Lambton Quay, Wellington/)).toBeInTheDocument();
     });
 });

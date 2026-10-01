@@ -126,10 +126,10 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
     const tzAbbreviation = getTimezoneAbbreviation(tz);
 
     return (
-        <DialogShell opened={open} onClose={onClose} size="85%" label="Task Groups Management">
+        <DialogShell opened={open} onClose={onClose} size="85%" label="Task groups management">
             <DialogHeader
                 icon={<Icon lucide={ListChecks}/>}
-                title="Task Groups Management"
+                title="Task groups management"
                 subtitle="Manage task group assignments for jobs"
                 onClose={onClose}
                 closeDisabled={isSubmitting}
@@ -139,7 +139,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                 {hasEvents ? (
                     <Paper p="lg" radius="md" withBorder>
                         <Stack gap={4} pb="sm" mb="md" style={{borderBottom: '2px solid var(--mantine-color-default-border)'}}>
-                            <Text fw={600} size="lg">Active Task Groups</Text>
+                            <Text fw={600} size="lg">Active task groups</Text>
                             <Text size="sm" c="dimmed">Manage task assignments and schedules</Text>
                         </Stack>
 
@@ -153,18 +153,18 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                         >
                             <Table.Thead>
                                 <Table.Tr>
-                                    <Table.Th w="18%" {...thProps}>Task Type</Table.Th>
+                                    <Table.Th w="18%" {...thProps}>Task type</Table.Th>
                                     <Table.Th w="15%" {...thProps}>Group</Table.Th>
                                     <Table.Th w="10%" {...thProps}>Sequence</Table.Th>
                                     <Table.Th w="22%" {...thProps}>
-                                        Due Date
+                                        Due date
                                         {tzAbbreviation && (
                                             <Text size="xs" c="dimmed" fs="italic" tt="none" fw={400}>
                                                 {tzAbbreviation}
                                             </Text>
                                         )}
                                     </Table.Th>
-                                    <Table.Th w="25%" {...thProps}>Assign To</Table.Th>
+                                    <Table.Th w="25%" {...thProps}>Assign to</Table.Th>
                                     <Table.Th w="10%" {...thProps}>Active</Table.Th>
                                 </Table.Tr>
                             </Table.Thead>
@@ -192,7 +192,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                                         <Table.Td>
                                             <Select
                                                 aria-label={`Assign ${item.eventType.text} to`}
-                                                placeholder="Search User..."
+                                                placeholder="Search users…"
                                                 data={userOptions}
                                                 value={item.assignTo ? String(item.assignTo.id) : null}
                                                 onChange={(value) => handleUserChange(
@@ -220,11 +220,11 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                     </Paper>
                 ) : (
                     <NoData
-                        title="No Task Groups Found"
+                        title="No task groups yet"
                         message="Get started by adding task types in the Admin Manager to create your first task group."
                         icon={<Icon lucide={CalendarOff}/>}
                         showAction={true}
-                        actionText="Open Admin Manager"
+                        actionText="Open admin manager"
                         onAction={onOpenAdminManager}
                     />
                 )}
@@ -233,7 +233,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel={isSubmitting ? 'Saving...' : 'Save Changes'}
+                confirmLabel={isSubmitting ? 'Saving...' : 'Save changes'}
                 confirmIcon={<Icon lucide={Save} size={16}/>}
                 confirmDisabled={!hasEvents}
                 submitting={isSubmitting}

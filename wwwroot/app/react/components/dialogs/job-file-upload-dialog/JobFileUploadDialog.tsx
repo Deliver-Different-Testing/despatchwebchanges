@@ -151,10 +151,10 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
         <Table mt="md" verticalSpacing="xs" horizontalSpacing="xs">
             <Table.Thead>
                 <Table.Tr>
-                    <Table.Th>{isPodMode ? 'Photo Name' : 'File Name'}</Table.Th>
+                    <Table.Th>{isPodMode ? 'Photo name' : 'File name'}</Table.Th>
                     {isPodMode && <Table.Th>Description</Table.Th>}
                     <Table.Th>Size</Table.Th>
-                    <Table.Th>{isPodMode ? 'Upload Date' : 'Last Modified'}</Table.Th>
+                    <Table.Th>{isPodMode ? 'Upload date' : 'Last modified'}</Table.Th>
                     <Table.Th>Actions</Table.Th>
                 </Table.Tr>
             </Table.Thead>
@@ -208,7 +208,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                 </Text>
                 {/* Overall progress */}
                 <Group justify="space-between" mb={4}>
-                    <Text size="sm">Overall Progress</Text>
+                    <Text size="sm">Overall progress</Text>
                     <Text size="sm">{upload.overallProgress}%</Text>
                 </Group>
                 <Progress value={upload.overallProgress} mb="xs"/>
@@ -244,7 +244,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
     const renderPodContent = () => (
         <>
             <TextInput
-                label="POD Photo Description"
+                label="POD photo description"
                 placeholder="Enter description for POD photo"
                 value={upload.podDescription}
                 onChange={e => upload.setPodDescription(e.currentTarget.value)}
@@ -260,7 +260,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
     }, [upload.isUploading, onClose]);
 
     // Determine header icon and title
-    const headerTitle = isPODOnly ? 'POD Photos' : isBothMode ? 'File Upload' : 'Attached Files';
+    const headerTitle = isPODOnly ? 'POD photos' : isBothMode ? 'File upload' : 'Attached files';
     const headerSubtitle = isPODOnly
         ? 'Upload proof of delivery photos'
         : isBothMode
@@ -299,8 +299,8 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                             mb="md"
                         >
                             <Tabs.List mb="md">
-                                <Tabs.Tab value="normal">Regular Files</Tabs.Tab>
-                                <Tabs.Tab value="pod">POD Photos</Tabs.Tab>
+                                <Tabs.Tab value="normal">Regular files</Tabs.Tab>
+                                <Tabs.Tab value="pod">POD photos</Tabs.Tab>
                             </Tabs.List>
                             <Tabs.Panel value="normal">{renderNormalContent()}</Tabs.Panel>
                             <Tabs.Panel value="pod">{renderPodContent()}</Tabs.Panel>

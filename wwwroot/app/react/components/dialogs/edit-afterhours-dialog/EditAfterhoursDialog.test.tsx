@@ -68,12 +68,12 @@ describe('EditAfterhoursDialog', () => {
 
     // ── Rendering: new schedule ─────────────────────────────────────
     describe('Rendering (new schedule)', () => {
-        it('renders dialog with create title, Select Driver label, and disabled save', () => {
+        it('renders dialog with create title, Select driver label, and disabled save', () => {
             renderWithProviders(createDefaultProps());
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Create Afterhours Schedule')).toBeInTheDocument();
-            expect(screen.getByText('Select Driver')).toBeInTheDocument();
+            expect(screen.getByText('Create afterhours schedule')).toBeInTheDocument();
+            expect(screen.getByText('Select driver')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /Create Schedule/i})).toBeDisabled();
             expect(screen.queryByText('Timezone')).not.toBeInTheDocument();
         });
@@ -89,15 +89,15 @@ describe('EditAfterhoursDialog', () => {
         it('renders with edit title, current driver, populated fields and days', () => {
             renderWithProviders(createDefaultProps({schedule: existingSchedule}));
 
-            expect(screen.getByText('Edit Afterhours Schedule')).toBeInTheDocument();
-            expect(screen.getByText('Change Driver')).toBeInTheDocument();
+            expect(screen.getByText('Edit afterhours schedule')).toBeInTheDocument();
+            expect(screen.getByText('Change driver')).toBeInTheDocument();
             expect(screen.getByText('Current driver:')).toBeInTheDocument();
             expect(screen.getByText('JohnD (John Doe)')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /Save Schedule/i})).toBeInTheDocument();
 
-            const startTimeInput = screen.getByLabelText('Start Time') as HTMLInputElement;
+            const startTimeInput = screen.getByLabelText('Start time') as HTMLInputElement;
             expect(startTimeInput.value).toBe('18:00');
-            const endTimeInput = screen.getByLabelText('End Time') as HTMLInputElement;
+            const endTimeInput = screen.getByLabelText('End time') as HTMLInputElement;
             expect(endTimeInput.value).toBe('06:00');
 
             const dialog = screen.getByRole('dialog');
@@ -132,11 +132,11 @@ describe('EditAfterhoursDialog', () => {
         it('allows changing start and end time', () => {
             renderWithProviders(createDefaultProps());
 
-            const startTimeInput = screen.getByLabelText('Start Time');
+            const startTimeInput = screen.getByLabelText('Start time');
             fireEvent.change(startTimeInput, {target: {value: '20:00'}});
             expect((startTimeInput as HTMLInputElement).value).toBe('20:00');
 
-            const endTimeInput = screen.getByLabelText('End Time');
+            const endTimeInput = screen.getByLabelText('End time');
             fireEvent.change(endTimeInput, {target: {value: '04:00'}});
             expect((endTimeInput as HTMLInputElement).value).toBe('04:00');
         });
@@ -150,7 +150,7 @@ describe('EditAfterhoursDialog', () => {
             const user = setupUser();
             renderWithProviders(createDefaultProps());
 
-            const searchInput = screen.getByLabelText('Search driver...');
+            const searchInput = screen.getByLabelText('Search driver');
             await user.click(searchInput);
             await user.paste('John');
 
@@ -183,8 +183,8 @@ describe('EditAfterhoursDialog', () => {
         it('calculates duration for same-day and overnight shifts', async () => {
             renderWithProviders(createDefaultProps());
 
-            fireEvent.change(screen.getByLabelText('Start Time'), {target: {value: '09:00'}});
-            fireEvent.change(screen.getByLabelText('End Time'), {target: {value: '17:00'}});
+            fireEvent.change(screen.getByLabelText('Start time'), {target: {value: '09:00'}});
+            fireEvent.change(screen.getByLabelText('End time'), {target: {value: '17:00'}});
             expect(await screen.findByText('8h 00m')).toBeInTheDocument();
         });
 

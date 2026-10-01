@@ -13,7 +13,7 @@ export function createJobSearchBoxes(): Record<string, IBox> {
         },
         [JobSearchBoxes.JobList]: {
             name: JobSearchBoxes.JobList,
-            title: 'Live Job Data',
+            title: 'Live job data',
             icon: 'list_alt',
             showRefresh: true,
             visible: true,
@@ -21,7 +21,7 @@ export function createJobSearchBoxes(): Record<string, IBox> {
         },
         [JobSearchBoxes.BulkJobList]: {
             name: JobSearchBoxes.BulkJobList,
-            title: 'Bulk Job Data',
+            title: 'Bulk job data',
             icon: 'format_list_bulleted',
             showRefresh: true,
             visible: true,
@@ -38,7 +38,7 @@ export function createJobSearchBoxes(): Record<string, IBox> {
         },
         [JobSearchBoxes.ScanList]: {
             name: JobSearchBoxes.ScanList,
-            title: 'Scan Detail',
+            title: 'Scan detail',
             icon: 'document_scanner',
             showRefresh: false,
             visible: true,
@@ -54,7 +54,7 @@ export function createJobSearchBoxes(): Record<string, IBox> {
         },
         [JobSearchBoxes.DeliveryJourney]: {
             name: JobSearchBoxes.DeliveryJourney,
-            title: 'Delivery Journey',
+            title: 'Delivery journey',
             icon: 'rocket_launch',
             showRefresh: false,
             visible: true,

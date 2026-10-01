@@ -311,7 +311,7 @@ describe('ApiClient', () => {
                     statusText: 'Internal Server Error',
                     data: {message: 'Database connection failed'},
                 },
-                message: 'Server Error',
+                message: 'Server error',
             };
 
             await expect(errorHandler(axiosError)).rejects.toMatchObject({

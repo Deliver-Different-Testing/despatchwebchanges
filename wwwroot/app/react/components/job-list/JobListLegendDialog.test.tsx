@@ -22,15 +22,15 @@ describe('JobListLegendDialog', () => {
 
         // Status dots
         expect(screen.getByText('Urgent')).toBeInTheDocument();
-        expect(screen.getByText('In Transit')).toBeInTheDocument();
+        expect(screen.getByText('In transit')).toBeInTheDocument();
         expect(screen.getByText('Done')).toBeInTheDocument();
         expect(screen.getByText('Active')).toBeInTheDocument();
 
         // Job-type / attention / context markers
         expect(screen.getByText('Flight')).toBeInTheDocument();
         expect(screen.getByText('Chilled')).toBeInTheDocument();
-        expect(screen.getByText('Partner Job')).toBeInTheDocument();
-        expect(screen.getByText('Late Delivery')).toBeInTheDocument();
+        expect(screen.getByText('Partner job')).toBeInTheDocument();
+        expect(screen.getByText('Late delivery')).toBeInTheDocument();
         expect(screen.getByText('Related job')).toBeInTheDocument();
     });
 
@@ -41,7 +41,7 @@ describe('JobListLegendDialog', () => {
         expect(screen.getByText('Pickup leg')).toBeInTheDocument();
         expect(screen.getByText('Delivery leg')).toBeInTheDocument();
         // ...rather than four separate "Flight …" labels.
-        expect(screen.queryByText('Flight Pickup')).not.toBeInTheDocument();
+        expect(screen.queryByText('Flight pickup')).not.toBeInTheDocument();
         expect(screen.queryByText('Unknown Flight')).not.toBeInTheDocument();
     });
 

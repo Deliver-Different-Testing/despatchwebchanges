@@ -380,7 +380,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                             <TextInput
                                 size="xs"
                                 w={220}
-                                placeholder="Search deliveries"
+                                placeholder="Search deliveries…"
                                 aria-label="Search deliveries"
                                 value={search}
                                 onChange={(e) => setSearch(e.currentTarget.value)}

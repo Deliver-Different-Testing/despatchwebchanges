@@ -572,7 +572,7 @@ describe('NationwidePage', () => {
             await selectAJob();
 
             await user.click(screen.getByRole('button', {name: 'Job actions'}));
-            await user.click(screen.getByRole('menuitem', {name: 'Add Task'}));
+            await user.click(screen.getByRole('menuitem', {name: 'Add task'}));
 
             expect(openAddEventDialog).toHaveBeenCalledWith(expect.objectContaining({
                 job: expect.objectContaining({id: 5, jobNo: 'JOB-5'}),

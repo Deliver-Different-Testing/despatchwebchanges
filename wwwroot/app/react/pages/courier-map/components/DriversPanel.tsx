@@ -188,7 +188,7 @@ export function DriversPanel({
                 <Box px={16} pb={8} style={{flexShrink: 0}}>
                     <TextInput
                         size="xs"
-                        placeholder="Search by name or code..."
+                        placeholder="Search by name or code…"
                         value={searchInputValue}
                         onChange={(e) => onSearchChange(e.currentTarget.value)}
                         aria-label="Search drivers"

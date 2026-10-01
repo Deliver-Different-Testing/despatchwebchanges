@@ -51,7 +51,7 @@ describe('ChangeCourierDialog', () => {
         renderWithMantine(<ChangeCourierDialog {...createMockProps()} />);
 
         expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Change Paid Courier')).toBeInTheDocument();
+        expect(screen.getByText('Change paid courier')).toBeInTheDocument();
         // The invoicing-impact warning
         expect(screen.getByText(/changes which courier is invoiced and paid/i)).toBeInTheDocument();
         // Current courier shown read-only

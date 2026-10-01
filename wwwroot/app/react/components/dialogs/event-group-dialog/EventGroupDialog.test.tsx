@@ -37,7 +37,7 @@ const renderDialog = (props: Partial<EventGroupDialogProps> = {}) =>
     );
 
 describe('EventGroupDialog timezone display', () => {
-    it('shows the abbreviated timezone in the Due Date header, not the raw IANA name', () => {
+    it('shows the abbreviated timezone in the Due date header, not the raw IANA name', () => {
         renderDialog();
 
         expect(screen.getByText(/\(E[SD]T\)/)).toBeInTheDocument();

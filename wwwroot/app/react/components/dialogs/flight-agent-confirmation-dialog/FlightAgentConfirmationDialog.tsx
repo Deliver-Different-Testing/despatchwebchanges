@@ -173,8 +173,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
     // Dialog title
     const dialogTitle = mode === 'flight'
-        ? `Assign Flight${flight ? ` - ${flight.flightNumber}` : ''}`
-        : `Assign Agent${agent ? ` - ${agent.text}` : ''}`;
+        ? `Assign flight${flight ? ` - ${flight.flightNumber}` : ''}`
+        : `Assign agent${agent ? ` - ${agent.text}` : ''}`;
 
     // Initialize loading states
     const initializeLoadingStates = useCallback(() => {
@@ -271,7 +271,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             );
 
             const nextMorning = calculateNextMorningTime(pkgTime);
-            setNextMorningTime(`${nextMorning.format('MMM D')}, ${nextMorning.format('HH:mm')} (Cargo Opens)`);
+            setNextMorningTime(`${nextMorning.format('MMM D')}, ${nextMorning.format('HH:mm')} (cargo opens)`);
         }
     }, [cargoProcessing, calculateNextMorningTime]);
 
@@ -583,7 +583,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                         <Paper {...sectionPaperProps}>
                             <Group gap={8} mb={8} c="dimmed">
                                 <Icon tabler={IconTruck} size={18}/>
-                                <Text fz="sm">Cargo Facility</Text>
+                                <Text fz="sm">Cargo facility</Text>
                             </Group>
                             {isCalculatingTimes ? (
                                 <Loader size={20} aria-label="Calculating cargo facility hours"/>
@@ -602,7 +602,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                         <Paper {...sectionPaperProps}>
                             <Group gap={8} mb={8} c="dimmed">
                                 <Icon lucide={Clock} size={18}/>
-                                <Text fz="sm">Processing Time</Text>
+                                <Text fz="sm">Processing time</Text>
                             </Group>
                             {isCalculatingTimes ? (
                                 <Loader size={20} aria-label="Calculating processing time"/>
@@ -616,7 +616,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                             <Group justify="space-between" wrap="nowrap" mb={8}>
                                 <Group gap={8} c="dimmed">
                                     <Icon tabler={IconPackage} size={18}/>
-                                    <Text fz="sm">Package Ready</Text>
+                                    <Text fz="sm">Package ready</Text>
                                 </Group>
                                 <ActionIcon
                                     variant="subtle"
@@ -656,14 +656,14 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
                 {/* Warning Card */}
                 {showWarning && (
-                    <Alert color="yellow" variant="light" title="Package Available After Cargo Hours">
+                    <Alert color="yellow" variant="light" title="Package available after cargo hours">
                         <Text fz="sm" mb={16}>{warningMessage}</Text>
                         <Group gap={8}>
                             <Button variant="default" size="xs" onClick={handleSetNextMorning}>
                                 Set to {nextMorningTime}
                             </Button>
                             <Button variant="default" size="xs" onClick={handleSetBaggagePickup}>
-                                Baggage Carousel
+                                Baggage carousel
                             </Button>
                         </Group>
                     </Alert>
@@ -674,7 +674,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                     <Group gap={16} align="stretch" grow>
                         {/* Deliver By */}
                         <Paper {...sectionPaperProps}>
-                            <Text fz="sm" c="dimmed" mb={8}>Deliver By</Text>
+                            <Text fz="sm" c="dimmed" mb={8}>Deliver by</Text>
                             <DateTimePicker
                                 aria-label="Deliver by"
                                 value={pickerValue(deliveryByTime)}
@@ -692,7 +692,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
                         {/* Available Time */}
                         <Paper {...sectionPaperProps}>
-                            <Text fz="sm" c="dimmed" mb={8}>Available Time</Text>
+                            <Text fz="sm" c="dimmed" mb={8}>Available time</Text>
                             {isCalculatingTimes ? (
                                 <Loader size={20} aria-label="Calculating available time"/>
                             ) : availableTime ? (
@@ -722,8 +722,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 {/* Delivery Notes */}
                 <Textarea
                     rows={3}
-                    label="Delivery Instructions"
-                    placeholder="Add any delivery notes or instructions..."
+                    label="Delivery instructions"
+                    placeholder="Add any delivery notes or instructions…"
                     value={deliveryNotes}
                     onChange={(e) => setDeliveryNotes(e.currentTarget.value)}
                 />
@@ -731,7 +731,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 {/* AWB and Stop Jobs */}
                 <Group gap={16} align="flex-end" wrap="nowrap">
                     <TextInput
-                        label="AWB Number"
+                        label="AWB number"
                         style={{flex: 1}}
                         value={awb}
                         onChange={(e) => setAwb(e.currentTarget.value)}
@@ -757,7 +757,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleConfirm}
-                confirmLabel="Confirm Assignment"
+                confirmLabel="Confirm assignment"
                 confirmDisabled={mode === 'flight' && isCalculatingTimes}
             />
         </DialogShell>

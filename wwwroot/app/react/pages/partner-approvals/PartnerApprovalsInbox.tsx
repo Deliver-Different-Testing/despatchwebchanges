@@ -1,5 +1,5 @@
 /**
- * Partner Approvals Inbox — central queue of Pending change requests
+ * Partner approvals Inbox — central queue of Pending change requests
  * the local tenant must review. Closes the biggest UX gap in the partner-job
  * change-request flow: today, an approver only sees requests by happening
  * to open the relevant job's Details panel.
@@ -144,7 +144,7 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                 </ThemeIcon>
                 <Box style={{flex: 1, minWidth: 0}}>
                     <Text component="h2" m={0} fw={600} fz="lg" c={fg} truncate>
-                        Partner Approvals
+                        Partner approvals
                     </Text>
                     <Text fz="sm" c={fg} truncate style={{opacity: 0.85}}>
                         {subtitle}

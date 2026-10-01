@@ -90,7 +90,7 @@ describe('FlightItinerary', () => {
             renderWithTheme(
                 <FlightItinerary segments={[]} getConnectionTime={defaultGetConnectionTime} />
             );
-            expect(screen.queryByText('Flight Itinerary')).not.toBeInTheDocument();
+            expect(screen.queryByText('Flight itinerary')).not.toBeInTheDocument();
         });
 
         it('renders nothing when segments is undefined', () => {
@@ -100,17 +100,17 @@ describe('FlightItinerary', () => {
                     getConnectionTime={defaultGetConnectionTime}
                 />
             );
-            expect(screen.queryByText('Flight Itinerary')).not.toBeInTheDocument();
+            expect(screen.queryByText('Flight itinerary')).not.toBeInTheDocument();
         });
     });
 
     describe('Card Header', () => {
-        it('displays "Flight Itinerary" title', () => {
+        it('displays "Flight itinerary" title', () => {
             const segments = [createSegment()];
             renderWithTheme(
                 <FlightItinerary segments={segments} getConnectionTime={defaultGetConnectionTime} />
             );
-            expect(screen.getByText('Flight Itinerary')).toBeInTheDocument();
+            expect(screen.getByText('Flight itinerary')).toBeInTheDocument();
         });
     });
 

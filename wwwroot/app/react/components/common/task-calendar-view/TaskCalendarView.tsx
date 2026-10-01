@@ -654,17 +654,17 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                     radius={100}
                     data={[
                         {value: 'month', label: (
-                            <Tooltip label="Month View">
+                            <Tooltip label="Month view">
                                 <Icon lucide={CalendarDays} aria-label="Month view"/>
                             </Tooltip>
                         )},
                         {value: 'week', label: (
-                            <Tooltip label="Week View">
+                            <Tooltip label="Week view">
                                 <Icon lucide={Columns3} aria-label="Week view"/>
                             </Tooltip>
                         )},
                         {value: 'day', label: (
-                            <Tooltip label="Day View">
+                            <Tooltip label="Day view">
                                 <Icon lucide={Rows3} aria-label="Day view"/>
                             </Tooltip>
                         )},

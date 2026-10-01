@@ -448,7 +448,7 @@ function FieldValueInput({
                 value={textValue || null}
                 onChange={next => onTextChange(next ?? '')}
                 data={speedList.map(s => ({value: String(s.id), label: s.text ?? ''}))}
-                nothingFoundMessage="No speeds available"
+                nothingFoundMessage="No speeds found"
                 comboboxProps={{keepMounted: false}}
             />
         );
@@ -541,7 +541,7 @@ function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
                 {isUs && <TextInput label="State" value={value.addressLine5} onChange={set('addressLine5')}/>}
             </Group>
             <Group gap="xs" grow align="flex-start">
-                <TextInput label={isUs ? 'ZIP Code' : 'Postcode'} value={value.addressLine6} onChange={set('addressLine6')}/>
+                <TextInput label={isUs ? 'ZIP code' : 'Postcode'} value={value.addressLine6} onChange={set('addressLine6')}/>
                 <TextInput label="Country" value={value.addressLine7} onChange={set('addressLine7')}/>
             </Group>
         </Stack>

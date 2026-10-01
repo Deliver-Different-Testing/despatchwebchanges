@@ -110,13 +110,13 @@ export const RecurringJobsContextMenu: React.FC<RecurringJobsContextMenuProps> =
                     onClick={handleAddPickupStop}
                     leftSection={<Icon lucide={MapPin} size={16} color="var(--mantine-color-green-6)" data-stop-icon="pickup"/>}
                 >
-                    Add Pickup Stop
+                    Add pickup stop
                 </Menu.Item>
                 <Menu.Item
                     onClick={handleAddDeliveryStop}
                     leftSection={<Icon lucide={MapPin} size={16} color="var(--mantine-color-red-6)" data-stop-icon="delivery"/>}
                 >
-                    Add Delivery Stop
+                    Add delivery stop
                 </Menu.Item>
 
                 {isManual && !isChild && onInsertToLive && (

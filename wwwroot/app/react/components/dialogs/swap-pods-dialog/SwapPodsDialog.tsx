@@ -185,7 +185,7 @@ export function SwapPodsDialog({
                     onCancel={handleBackToInput}
                     cancelLabel="Back"
                     onConfirm={handleConfirmSwap}
-                    confirmLabel={loading ? 'Swapping...' : 'Confirm Swap'}
+                    confirmLabel={loading ? 'Swapping...' : 'Confirm swap'}
                     confirmIcon={<Icon lucide={ArrowLeftRight}/>}
                     submitting={loading}
                 />

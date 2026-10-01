@@ -41,13 +41,13 @@ describe('ComposeEmailDialog', () => {
         it('should render the dialog when open', () => {
             renderDialog();
 
-            expect(screen.getByText('Compose Email')).toBeInTheDocument();
+            expect(screen.getByText('Compose email')).toBeInTheDocument();
         });
 
         it('should not render dialog content when closed', () => {
             renderDialog({open: false});
 
-            expect(screen.queryByText('Compose Email')).not.toBeInTheDocument();
+            expect(screen.queryByText('Compose email')).not.toBeInTheDocument();
         });
 
         it('should display recipient count', () => {
@@ -77,46 +77,46 @@ describe('ComposeEmailDialog', () => {
             expect(screen.getByLabelText('Message')).toBeInTheDocument();
         });
 
-        it('should render Send Email and Cancel buttons', () => {
+        it('should render Send email and Cancel buttons', () => {
             renderDialog();
 
-            expect(screen.getByRole('button', {name: 'Send Email'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Send email'})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
         });
 
         it('should render all template buttons', () => {
             renderDialog();
 
-            expect(screen.getByRole('button', {name: 'Weekly Update'})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'Urgent Notice'})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'Schedule Change'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Weekly update'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Urgent notice'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Schedule change'})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: 'Announcement'})).toBeInTheDocument();
         });
     });
 
     describe('Templates', () => {
-        it('should populate subject and body when Weekly Update template is clicked', () => {
+        it('should populate subject and body when Weekly update template is clicked', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Weekly Update'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Weekly update'}));
 
             expect(screen.getByLabelText('Subject')).toHaveValue('Weekly Team Update');
             expect(screen.getByLabelText<HTMLTextAreaElement>('Message').value).toContain('weekly update');
         });
 
-        it('should populate subject and body when Urgent Notice template is clicked', () => {
+        it('should populate subject and body when Urgent notice template is clicked', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Urgent Notice'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Urgent notice'}));
 
             expect(screen.getByLabelText('Subject')).toHaveValue('URGENT: Important Notice');
             expect(screen.getByLabelText<HTMLTextAreaElement>('Message').value).toContain('URGENT NOTICE');
         });
 
-        it('should populate subject and body when Schedule Change template is clicked', () => {
+        it('should populate subject and body when Schedule change template is clicked', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Schedule Change'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Schedule change'}));
 
             expect(screen.getByLabelText('Subject')).toHaveValue('Schedule Change Notification');
             expect(screen.getByLabelText<HTMLTextAreaElement>('Message').value).toContain('schedule changes');
@@ -134,10 +134,10 @@ describe('ComposeEmailDialog', () => {
         it('should override previous template when a different one is selected', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Weekly Update'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Weekly update'}));
             expect(screen.getByLabelText('Subject')).toHaveValue('Weekly Team Update');
 
-            fireEvent.click(screen.getByRole('button', {name: 'Urgent Notice'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Urgent notice'}));
             expect(screen.getByLabelText('Subject')).toHaveValue('URGENT: Important Notice');
         });
 
@@ -145,11 +145,11 @@ describe('ComposeEmailDialog', () => {
             renderDialog();
 
             // Trigger validation errors
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
 
             // Apply template should clear errors
-            fireEvent.click(screen.getByRole('button', {name: 'Weekly Update'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Weekly update'}));
 
             expect(screen.queryByText('Please enter an email subject')).not.toBeInTheDocument();
             expect(screen.queryByText('Please enter an email message')).not.toBeInTheDocument();
@@ -160,7 +160,7 @@ describe('ComposeEmailDialog', () => {
         it('should show subject error when sending with empty subject', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
         });
@@ -168,7 +168,7 @@ describe('ComposeEmailDialog', () => {
         it('should show body error when sending with empty body', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
         });
@@ -176,7 +176,7 @@ describe('ComposeEmailDialog', () => {
         it('should show both errors when both fields are empty', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
             expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
@@ -185,7 +185,7 @@ describe('ComposeEmailDialog', () => {
         it('should not call onSend when validation fails', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(defaultProps.onSend).not.toHaveBeenCalled();
         });
@@ -195,7 +195,7 @@ describe('ComposeEmailDialog', () => {
             const user = setupUser();
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Test Subject'}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(screen.queryByText('Please enter an email subject')).not.toBeInTheDocument();
             expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
@@ -206,7 +206,7 @@ describe('ComposeEmailDialog', () => {
             const user = setupUser();
 
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Test body content'}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
             expect(screen.queryByText('Please enter an email message')).not.toBeInTheDocument();
@@ -218,7 +218,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: '   '}});
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Some body'}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
             expect(defaultProps.onSend).not.toHaveBeenCalled();
@@ -230,7 +230,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Valid subject'}});
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: '   '}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
             expect(defaultProps.onSend).not.toHaveBeenCalled();
@@ -240,7 +240,7 @@ describe('ComposeEmailDialog', () => {
             renderDialog();
             const user = setupUser();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'T'}});
@@ -252,7 +252,7 @@ describe('ComposeEmailDialog', () => {
             renderDialog();
             const user = setupUser();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
             expect(screen.getByText('Please enter an email message')).toBeInTheDocument();
 
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'T'}});
@@ -268,7 +268,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Test Subject'}});
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Test body content'}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(defaultProps.onSend).toHaveBeenCalledWith({
                 courierIds: [1, 2, 3],
@@ -283,7 +283,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: '  Padded Subject  '}});
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: '  Padded body  '}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(defaultProps.onSend).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -299,7 +299,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Subject'}});
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Body'}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             const sentData = defaultProps.onSend.mock.calls[0][0] as GroupEmailData;
             expect(sentData.courierIds).toEqual([1, 2, 3]);
@@ -311,7 +311,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Test Subject'}});
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Test body'}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(screen.getByLabelText('Subject')).toHaveValue('');
             expect(screen.getByLabelText('Message')).toHaveValue('');
@@ -320,8 +320,8 @@ describe('ComposeEmailDialog', () => {
         it('should send with template content', () => {
             renderDialog();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Urgent Notice'}));
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Urgent notice'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(defaultProps.onSend).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -338,7 +338,7 @@ describe('ComposeEmailDialog', () => {
 
             fireEvent.change(screen.getByLabelText('Subject'), {target: {value: 'Direct'}});
             fireEvent.change(screen.getByLabelText('Message'), {target: {value: 'Personal message'}});
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
 
             expect(defaultProps.onSend).toHaveBeenCalledWith({
                 courierIds: [1],
@@ -373,7 +373,7 @@ describe('ComposeEmailDialog', () => {
             renderDialog();
 
             // Trigger errors then cancel
-            fireEvent.click(screen.getByRole('button', {name: 'Send Email'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Send email'}));
             expect(screen.getByText('Please enter an email subject')).toBeInTheDocument();
 
             fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));

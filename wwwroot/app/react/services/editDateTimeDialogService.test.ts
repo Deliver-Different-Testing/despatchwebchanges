@@ -43,14 +43,14 @@ describe('editDateTimeDialogService', () => {
             mockShowEditTimeDialog.mockResolvedValue(expectedResult);
 
             const result = await showEditTimeDialog({
-                title: 'Edit Ready Time',
+                title: 'Edit ready time',
                 fieldName: 'readyTime',
                 dateTime: testDate,
                 defaultTimeZone: 'America/New_York',
             });
 
             expect(mockShowEditTimeDialog).toHaveBeenCalledWith({
-                title: 'Edit Ready Time',
+                title: 'Edit ready time',
                 fieldName: 'readyTime',
                 dateTime: testDate,
                 defaultTimeZone: 'America/New_York',
@@ -99,13 +99,13 @@ describe('editDateTimeDialogService', () => {
             mockShowEditDateDialog.mockResolvedValue(expectedResult);
 
             const result = await showEditDateDialog({
-                title: 'Edit Delivery Date',
+                title: 'Edit delivery date',
                 fieldName: 'deliveryDate',
                 dateTime: testDate,
             });
 
             expect(mockShowEditDateDialog).toHaveBeenCalledWith({
-                title: 'Edit Delivery Date',
+                title: 'Edit delivery date',
                 fieldName: 'deliveryDate',
                 dateTime: testDate,
                 showDate: true,

@@ -159,7 +159,7 @@ describe('VoidJobConfirmationDialog', () => {
 
         await userEvent.click(screen.getByRole('switch'));
 
-        expect(await screen.findByText('Related Jobs')).toBeInTheDocument();
+        expect(await screen.findByText('Related jobs')).toBeInTheDocument();
         expect(await screen.findByText('1 of 3 jobs selected')).toBeInTheDocument();
         expect(await screen.findByText('current')).toBeInTheDocument();
 
@@ -170,12 +170,12 @@ describe('VoidJobConfirmationDialog', () => {
             expect(screen.getByText('JOB-003 - Related Delivery')).toBeInTheDocument();
         });
 
-        // Select All
-        await userEvent.click(screen.getByRole('button', {name: 'Select All'}));
+        // Select all
+        await userEvent.click(screen.getByRole('button', {name: 'Select all'}));
         expect(await screen.findByText('3 of 3 jobs selected')).toBeInTheDocument();
 
-        // Deselect All
-        await userEvent.click(screen.getByRole('button', {name: 'Deselect All'}));
+        // Deselect all
+        await userEvent.click(screen.getByRole('button', {name: 'Deselect all'}));
         expect(await screen.findByText('0 of 3 jobs selected')).toBeInTheDocument();
 
         // Toggle individual job
@@ -188,7 +188,7 @@ describe('VoidJobConfirmationDialog', () => {
         renderWithTheme(<VoidJobConfirmationDialog {...createMockProps()} />);
 
         await userEvent.click(screen.getByRole('switch'));
-        await screen.findByText('Related Jobs');
+        await screen.findByText('Related jobs');
 
         const mainJob = await screen.findByRole('checkbox', {name: /JOB-001 - Main Job/});
         const pickup = screen.getByRole('checkbox', {name: /JOB-002 - Related Pickup/});

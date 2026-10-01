@@ -799,12 +799,12 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             opened={open}
             onClose={onClose}
             size={dialogSize.lg}
-            label="Accessorial Charges"
+            label="Accessorial charges"
         >
             {/* Header — the refresh action sits alongside the standard close */}
             <DialogHeader
                 icon={<Icon lucide={ReceiptText}/>}
-                title="Accessorial Charges"
+                title="Accessorial charges"
                 subtitle="Manage additional charges for this job"
                 onClose={onClose}
                 actions={
@@ -875,14 +875,14 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
 
                         {/* Section 1 — Applied Charges */}
                         <Box>
-                            <Text fw={600} mb="xs">Applied Charges</Text>
+                            <Text fw={600} mb="xs">Applied charges</Text>
                             <Paper withBorder radius="md" style={{overflow: 'hidden'}}>
                                 <Table>
                                     <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-1)'}}>
                                         <Table.Tr>
                                             <Table.Th>Service</Table.Th>
                                             <Table.Th>Stage</Table.Th>
-                                            <Table.Th>Input / Units</Table.Th>
+                                            <Table.Th>Input / units</Table.Th>
                                             <Table.Th ta="right">Amount</Table.Th>
                                             <Table.Th>Notes</Table.Th>
                                             <Table.Th ta="center">Actions</Table.Th>
@@ -1088,7 +1088,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
 
                         {/* Section 2 — Add Charges */}
                         <Box>
-                            <Text fw={600} mb="xs">Add Charges</Text>
+                            <Text fw={600} mb="xs">Add charges</Text>
                             <Paper withBorder radius="md" style={{overflow: 'hidden'}}>
                                 <Table highlightOnHover>
                                     <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-1)'}}>
@@ -1114,7 +1114,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                         }}
                                                     >
                                                         <Text size="sm" c="dimmed" fs="italic">
-                                                            No charges available for this group.
+                                                            No charges in this group yet.
                                                         </Text>
                                                     </Box>
                                                 </Table.Td>
@@ -1263,7 +1263,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                         >
                             {isAddingCharges
                                 ? 'Adding...'
-                                : `Add Selected Charges${selectedTotal > 0 ? ` (${formatCurrency(selectedTotal)})` : ''}`}
+                                : `Add selected charges${selectedTotal > 0 ? ` (${formatCurrency(selectedTotal)})` : ''}`}
                         </Button>
                     )}
                 </Group>

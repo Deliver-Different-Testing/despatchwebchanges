@@ -20,11 +20,11 @@ export const DeleteLayoutDialog: React.FC<DeleteLayoutDialogProps> = ({
     onClose,
     onConfirm,
 }) => (
-    <DialogShell opened={open} onClose={onClose} label="Delete Layout">
+    <DialogShell opened={open} onClose={onClose} label="Delete layout">
         <DialogHeader
             variant="error"
             icon={<Icon lucide={Trash2}/>}
-            title="Delete Layout"
+            title="Delete layout"
             subtitle={layoutName}
             onClose={onClose}
         />

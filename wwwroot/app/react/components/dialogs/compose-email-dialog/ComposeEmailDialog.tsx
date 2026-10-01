@@ -25,7 +25,7 @@ interface EmailTemplate {
 const EMAIL_TEMPLATES: EmailTemplate[] = [
     {
         key: 'weekly_update',
-        label: 'Weekly Update',
+        label: 'Weekly update',
         subject: 'Weekly Team Update',
         body: `Dear Team,
 
@@ -41,7 +41,7 @@ Best regards`,
     },
     {
         key: 'urgent_notice',
-        label: 'Urgent Notice',
+        label: 'Urgent notice',
         subject: 'URGENT: Important Notice',
         body: `URGENT NOTICE
 
@@ -61,7 +61,7 @@ Thank you for your immediate attention.`,
     },
     {
         key: 'schedule_change',
-        label: 'Schedule Change',
+        label: 'Schedule change',
         subject: 'Schedule Change Notification',
         body: `Dear Team,
 
@@ -162,7 +162,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
         <DialogShell opened={open} onClose={handleClose}>
             <DialogHeader
                 icon={<Icon lucide={Mail}/>}
-                title="Compose Email"
+                title="Compose email"
                 subtitle="Send an email to selected couriers"
                 onClose={handleClose}
             />
@@ -182,7 +182,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                 {/* Quick Templates */}
                 <Box>
                     <Text fz="xs" c="dimmed" mb={4}>
-                        Quick Templates
+                        Quick templates
                     </Text>
                     <Group gap="xs">
                         {EMAIL_TEMPLATES.map(t => (
@@ -217,7 +217,7 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSend}
-                confirmLabel="Send Email"
+                confirmLabel="Send email"
             />
         </DialogShell>
     );

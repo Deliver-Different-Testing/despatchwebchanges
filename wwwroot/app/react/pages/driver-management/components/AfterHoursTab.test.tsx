@@ -88,23 +88,23 @@ describe('AfterHoursTab', () => {
         renderWithProviders();
 
         // Column headers
-        expect(screen.getByText('Driver Name')).toBeInTheDocument();
-        expect(screen.getByText('Driver Code')).toBeInTheDocument();
+        expect(screen.getByText('Driver name')).toBeInTheDocument();
+        expect(screen.getByText('Driver code')).toBeInTheDocument();
         expect(screen.getByText('Days')).toBeInTheDocument();
-        expect(screen.getByText('Start Time')).toBeInTheDocument();
-        expect(screen.getByText('End Time')).toBeInTheDocument();
+        expect(screen.getByText('Start time')).toBeInTheDocument();
+        expect(screen.getByText('End time')).toBeInTheDocument();
         expect(screen.getByText('Duration')).toBeInTheDocument();
 
         // Stats display
-        expect(screen.getByText('Total Assignments')).toBeInTheDocument();
-        expect(screen.getByText('Active Drivers')).toBeInTheDocument();
+        expect(screen.getByText('Total assignments')).toBeInTheDocument();
+        expect(screen.getByText('Active drivers')).toBeInTheDocument();
     });
 
-    it('updates orderBy when the Driver Name header is clicked', () => {
+    it('updates orderBy when the Driver name header is clicked', () => {
         setupMocks();
         renderWithProviders();
 
-        fireEvent.click(screen.getByText('Driver Name'));
+        fireEvent.click(screen.getByText('Driver name'));
 
         const lastCall = mockUseAfterHoursSchedule.mock.calls[mockUseAfterHoursSchedule.mock.calls.length - 1][0];
         expect(lastCall.orderBy).toBe('courierName');
@@ -148,8 +148,8 @@ describe('AfterHoursTab', () => {
             });
             renderWithProviders();
 
-            expect(screen.getByText('No After Hours Schedules')).toBeInTheDocument();
-            expect(screen.getByText('No after hours schedules match your criteria.')).toBeInTheDocument();
+            expect(screen.getByText('No after hours schedules')).toBeInTheDocument();
+            expect(screen.getByText('No after hours schedules match your search.')).toBeInTheDocument();
         });
     });
 });

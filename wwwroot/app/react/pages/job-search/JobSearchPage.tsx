@@ -409,7 +409,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
 
-    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    // Archived-job "Change paid courier" flow: eligibility gate + dialog + blocked popup.
     const {openChangeCourier, changeCourierDialogs} = useChangeCourierFlow({
         showToast,
         onChanged: (jobId) => Promise.all([
@@ -647,7 +647,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 if (!currentJobId) {
                     return (
                         <NoData
-                            title="No Job Selected"
+                            title="No job selected"
                             message="Select a job from the list to see its details."
                             icon={<Icon lucide={Briefcase}/>}
                         />
@@ -706,7 +706,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 if (!currentJobId) {
                     return (
                         <NoData
-                            title="No Job Selected"
+                            title="No job selected"
                             message="Select a job to see its delivery journey."
                             icon={<Icon lucide={Route}/>}
                         />

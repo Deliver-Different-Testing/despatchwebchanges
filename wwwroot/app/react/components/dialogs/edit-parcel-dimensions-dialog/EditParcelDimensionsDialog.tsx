@@ -439,11 +439,11 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             opened={open}
             onClose={handleCancel}
             size={dialogSize.lg}
-            label="Edit Quantity"
+            label="Edit quantity"
         >
             <DialogHeader
                 icon={readOnly ? <Icon tabler={IconLock}/> : <Icon tabler={IconPackage}/>}
-                title="Edit Quantity"
+                title="Edit quantity"
                 subtitle={readOnly
                     ? 'View only — this job is locked'
                     : `${groups.length} type${groups.length !== 1 ? 's' : ''} · ${totalParcels} parcel${totalParcels !== 1 ? 's' : ''} total`}
@@ -600,7 +600,6 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                                 disabled={readOnly}
                                                 value={barcode}
                                                 onChange={e => updateBarcode(g.id, i, e.currentTarget.value)}
-                                                placeholder="Barcode"
                                                 label="Barcode"
                                             />
                                         </Table.Td>
@@ -643,13 +642,13 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     data={[
                         {
                             value: 'perItem',
-                            label: 'Per Item',
+                            label: 'Per item',
                             disabled: readOnly,
                             tooltip: "Per Item: each row's weight/dimensions apply to a single parcel and are multiplied by quantity",
                         },
                         {
                             value: 'perJob',
-                            label: 'Per Job',
+                            label: 'Per job',
                             disabled: readOnly,
                             tooltip: "Per Job: each row's weight/dimensions already represent the whole job — quantity isn't multiplied in",
                         },

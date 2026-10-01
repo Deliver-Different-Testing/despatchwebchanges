@@ -139,7 +139,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    // Archived-job "Change paid courier" flow: eligibility gate + dialog + blocked popup.
     const {openChangeCourier, changeCourierDialogs, changeCourierActive} = useChangeCourierFlow({
         showToast,
         onChanged: refresh,
@@ -168,7 +168,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleUnassignFlight = () => {
         closeAll();
         setConfirmDialogConfig({
-            title: 'Unassign Flight?',
+            title: 'Unassign flight?',
             message: `Are you sure you wish to unassign flight ${activeJob.assignedFlight?.flightNumber} from ${activeJob.jobNo}?`,
             icon: <Icon tabler={IconPlaneOff}/>,
             variant: 'warning',
@@ -188,7 +188,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleUnassignAgent = () => {
         closeAll();
         setConfirmDialogConfig({
-            title: 'Unassign Agent?',
+            title: 'Unassign agent?',
             message: `Are you sure you wish to unassign agent ${activeJob.assignedAgent?.agentName} from ${activeJob.jobNo}?`,
             icon: <Icon lucide={UserMinus}/>,
             variant: 'warning',
@@ -414,7 +414,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         const targetJob = dialogJobRef.current ?? activeJob;
         setConfirmDialogConfig({
-            title: 'Split Job',
+            title: 'Split job',
             message: 'Are you sure you wish to split this job?',
             icon: <Icon lucide={Split}/>,
             variant: 'primary',
@@ -433,7 +433,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleSetFirstJob = () => {
         closeAll();
         setConfirmDialogConfig({
-            title: 'Set First Job?',
+            title: 'Set first job?',
             message: 'Are you sure you wish to set this as the First Job?',
             icon: <Icon lucide={ChevronFirst}/>,
             variant: 'primary',
@@ -578,7 +578,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     <div style={menuTargetStyle} aria-hidden="true"/>
                 </Menu.Target>
                 <Menu.Dropdown style={{minWidth: 200, maxWidth: 320}}>
-                    {/* Mark Read / Unread */}
+                    {/* Mark read / Unread */}
                     {menuItem('read', {
                         icon: <Icon lucide={activeJob.hasBeenRead ? Mail : MailOpen} size={16}/>,
                         label: activeJob.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
@@ -590,21 +590,21 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Unassign Flight (Domestic only) */}
                     {appPage === AppPageDomestic && activeJob.assignedFlight && activeJob.isFlightJob && menuItem('unassign-flight', {
                         icon: <Icon tabler={IconPlaneOff} size={16}/>,
-                        label: 'Unassign Flight',
+                        label: 'Unassign flight',
                         onClick: handleUnassignFlight,
                     })}
 
                     {/* Unassign Agent (Domestic only) */}
                     {appPage === AppPageDomestic && activeJob.assignedAgent && menuItem('unassign-agent', {
                         icon: <Icon lucide={UserMinus} size={16}/>,
-                        label: 'Unassign Agent',
+                        label: 'Unassign agent',
                         onClick: handleUnassignAgent,
                     })}
 
                     {/* Add Stop (Agent jobs) */}
                     {activeJob.isAgentJob && menuItem('add-stop', {
                         icon: <Icon tabler={IconPinned} size={16}/>,
-                        label: activeJob.toAirportId && !activeJob.fromAirportId ? 'Add Pickup Stop' : 'Add Delivery Stop',
+                        label: activeJob.toAirportId && !activeJob.fromAirportId ? 'Add pickup stop' : 'Add delivery stop',
                         onClick: handleAddStop,
                     })}
 
@@ -612,14 +612,14 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && [
                         menuItem('late-pickup', {
                             icon: <Icon lucide={Clock} size={16}/>,
-                            label: 'Late Pickup',
+                            label: 'Late pickup',
                             onClick: handleLatePickup,
                             disabled: isPartnerJob,
                             tooltip: isPartnerJob ? partnerDisabledTooltip : undefined,
                         }),
                         menuItem('late-delivery', {
                             icon: <Icon tabler={IconTruck} size={16}/>,
-                            label: 'Late Delivery',
+                            label: 'Late delivery',
                             onClick: handleLateDelivery,
                             disabled: isPartnerJob,
                             tooltip: isPartnerJob ? partnerDisabledTooltip : undefined,
@@ -631,7 +631,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Reprice (Nationwide only) */}
                     {isNationwideSpeed && notReprice && !activeJob.preBook && menuItem('reprice', {
                         icon: <Icon lucide={BadgeDollarSign} size={16}/>,
-                        label: 'Reprice Job',
+                        label: 'Reprice job',
                         onClick: handleReprice,
                         disabled: isPartnerJob,
                         tooltip: isPartnerJob ? partnerDisabledTooltip : undefined,
@@ -640,12 +640,12 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Add Task / Task Groups */}
                     {menuItem('add-task', {
                         icon: <Icon lucide={Plus} size={16}/>,
-                        label: 'Add Task - Other',
+                        label: 'Add task - Other',
                         onClick: handleAddTaskOther,
                     })}
                     {menuItem('task-groups', {
                         icon: <Icon lucide={Calendar} size={16}/>,
-                        label: 'Task Groups',
+                        label: 'Task groups',
                         // Opening the submenu must not close the parent — closing it
                         // runs `closeAll`, which clears the anchor we just set.
                         closeMenuOnClick: false,
@@ -661,7 +661,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Send to Live (bulk jobs not done) */}
                     {activeJob.isBulkJob && !activeJob.released && menuItem('send-to-live', {
                         icon: <Icon lucide={Send} size={16}/>,
-                        label: 'Send to Live',
+                        label: 'Send to live',
                         onClick: handleSendToLive,
                     })}
 
@@ -669,7 +669,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         the DFRNT Partner radio pre-selected. */}
                     {menuItem('send-to-partner', {
                         icon: <Icon lucide={Send} size={16}/>,
-                        label: 'Send to Partner',
+                        label: 'Send to partner',
                         onClick: () => openDispatchDialog('DfrntPartner'),
                         disabled: Boolean(activeJob.assignedCourier) || isOutboundPartnerJob,
                         tooltip: isOutboundPartnerJob
@@ -680,7 +680,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Void Job */}
                     {menuItem('void', {
                         icon: <Icon lucide={Ban} size={16}/>,
-                        label: 'Void Job',
+                        label: 'Void job',
                         onClick: handleVoidJob,
                         disabled: isOutboundPartnerJob,
                         tooltip: isOutboundPartnerJob ? outboundPartnerDisabledTooltip : undefined,
@@ -696,7 +696,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Split Job */}
                     {activeJob.allowSplit && !hasChildren && !isPartnerJob && menuItem('split', {
                         icon: <Icon lucide={Split} size={16}/>,
-                        label: 'Split Job',
+                        label: 'Split job',
                         onClick: handleSplitJob,
                     })}
 
@@ -705,7 +705,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Set First Job */}
                     {!isOutboundPartnerJob && menuItem('set-first', {
                         icon: <Icon lucide={ChevronFirst} size={16}/>,
-                        label: 'Set First Job',
+                        label: 'Set first job',
                         onClick: handleSetFirstJob,
                     })}
 
@@ -729,7 +729,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         jobs are refused by the eligibility pre-check, which explains why. */}
                     {activeJob.isArchived && activeJob.done && !activeJob.isBulkJob && menuItem('change-courier', {
                         icon: <Icon tabler={IconTruck} size={16}/>,
-                        label: 'Change Paid Courier',
+                        label: 'Change paid courier',
                         onClick: () => void openChangeCourier({id: activeJob.id, jobNo: activeJob.jobNo}),
                     })}
 
@@ -746,7 +746,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Mark Missing */}
                     {menuItem('mark-missing', {
                         icon: <Icon lucide={CircleHelp} size={16}/>,
-                        label: 'Mark Missing',
+                        label: 'Mark missing',
                         onClick: handleMarkMissing,
                     })}
                 </Menu.Dropdown>
@@ -787,11 +787,11 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             <DialogShell
                 opened={lateDialogOpen}
                 onClose={closeLateDialog}
-                label={`Late ${lateType === 'pickup' ? 'Pickup' : 'Delivery'}`}
+                label={`Late ${lateType === 'pickup' ? 'pickup' : 'delivery'}`}
             >
                 <DialogHeader
                     icon={<Icon lucide={Clock}/>}
-                    title={`Late ${lateType === 'pickup' ? 'Pickup' : 'Delivery'}`}
+                    title={`Late ${lateType === 'pickup' ? 'pickup' : 'delivery'}`}
                     onClose={closeLateDialog}
                 />
                 <Box p="lg" style={{backgroundColor: dialogContentBg}}>

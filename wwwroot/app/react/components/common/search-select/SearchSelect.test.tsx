@@ -114,7 +114,7 @@ describe('SearchSelect', () => {
         await flushDebounce();
 
         expect(mockSearch).not.toHaveBeenCalled();
-        expect(within(dropdownFor(input)).getByText('Type at least 2 characters to search'))
+        expect(within(dropdownFor(input)).getByText('Enter at least 2 characters to search'))
             .toBeInTheDocument();
     });
 

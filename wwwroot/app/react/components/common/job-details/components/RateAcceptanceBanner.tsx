@@ -148,7 +148,7 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
                     <DialogFooter
                         onCancel={closeRejectDialog}
                         onConfirm={() => rejectMutation.mutate(reason.trim())}
-                        confirmLabel="Reject Rate"
+                        confirmLabel="Reject rate"
                         confirmColor="red"
                         confirmDisabled={!reason.trim()}
                         submitting={rejectMutation.isPending}

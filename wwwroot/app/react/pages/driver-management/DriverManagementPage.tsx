@@ -24,12 +24,12 @@ const TAB_KEY = `lastActiveTab-DriverManagement-${typeof ContactID !== 'undefine
 
 /** Ordered to match DriverManagementTabs — the index is the stored value. */
 const TAB_LABELS = [
-    'Driver Details',
-    "Today's Active",
-    'Driver Compliance',
-    'After Hours Schedule',
-    'Driver Emails',
-    'Driver Earnings',
+    'Driver details',
+    "Today's active",
+    'Driver compliance',
+    'After hours schedule',
+    'Driver emails',
+    'Driver earnings',
 ];
 
 function getInitialTab(): number {

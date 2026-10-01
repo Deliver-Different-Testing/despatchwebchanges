@@ -68,9 +68,9 @@ describe('JobListTable', () => {
         mockedSearch.mockResolvedValue([]);
     });
 
-    it('renders "No jobs to display" when jobs array is empty', () => {
+    it('renders "No jobs found" when jobs array is empty', () => {
         renderWithMantine(<JobListTable {...createDefaultProps({jobs: []})}/>);
-        expect(screen.getByText('No jobs to display')).toBeInTheDocument();
+        expect(screen.getByText('No jobs match the current view.')).toBeInTheDocument();
     });
 
     // ── Stale delivery address ──────────────────────────────────────
@@ -165,7 +165,7 @@ describe('JobListTable', () => {
             expect(screen.getByText('Date')).toBeInTheDocument();
             expect(screen.getByText('Time')).toBeInTheDocument();
             expect(screen.getByText('Speed')).toBeInTheDocument();
-            expect(screen.getByText('Job No')).toBeInTheDocument();
+            expect(screen.getByText('Job no')).toBeInTheDocument();
             expect(screen.getByText('Courier')).toBeInTheDocument();
             expect(screen.getByText('Status')).toBeInTheDocument();
             expect(screen.getByText('Client')).toBeInTheDocument(); // NZ customer
@@ -204,7 +204,7 @@ describe('JobListTable', () => {
 
             const row = screen.getByText('P001').closest('tr')!;
             await setupUser().hover(row.querySelector('[data-testid="indicator-partner"]')!);
-            expect(await screen.findByText('Partner Job')).toBeInTheDocument();
+            expect(await screen.findByText('Partner job')).toBeInTheDocument();
         });
     });
 
@@ -212,11 +212,11 @@ describe('JobListTable', () => {
     describe('Priority status dots', () => {
         // Each dot mirrors a top stats-header category. Hovering shows the meaning.
         const cases: Array<{label: string; overrides: Partial<DispatchJob>; tooltip: string}> = [
-            {label: 'in-transit (amber)', overrides: {jobNo: 'D-TRANSIT', statusId: 11}, tooltip: 'In Transit'},
+            {label: 'in-transit (amber)', overrides: {jobNo: 'D-TRANSIT', statusId: 11}, tooltip: 'In transit'},
             {
                 label: 'dispatched → in-transit (amber)',
                 overrides: {jobNo: 'D-DISPATCHED', statusId: 1, assignedCourier: {id: 5, text: '5 - R'}},
-                tooltip: 'In Transit',
+                tooltip: 'In transit',
             },
             {label: 'delivered (green)', overrides: {jobNo: 'D-DONE', statusId: 6}, tooltip: 'Done'},
             {
@@ -240,7 +240,7 @@ describe('JobListTable', () => {
         });
 
         it('does not show an in-transit dot for Warning-status jobs', () => {
-            // Warning (7) previously rendered an amber dot; amber now means In Transit only.
+            // Warning (7) previously rendered an amber dot; amber now means In transit only.
             const warningJob = createMockDispatchJob({id: 1, jobNo: 'D-WARN', statusId: 7, assignedCourier: {id: 5, text: '5 - R'}});
             renderWithMantine(<JobListTable {...createDefaultProps({jobs: [warningJob]})}/>);
 
@@ -291,7 +291,7 @@ describe('JobListTable', () => {
             const props = createDefaultProps({isJobSearchPage: true});
             renderWithMantine(<JobListTable {...props}/>);
 
-            await user.click(screen.getByText('Job No'));
+            await user.click(screen.getByText('Job no'));
             expect(props.onSortChange).toHaveBeenCalledWith('jobNo');
 
             await user.click(screen.getByText('Ref A'));
@@ -431,9 +431,9 @@ describe('JobListTable', () => {
             renderWithMantine(<JobListTable {...createDefaultProps()}/>);
 
             await user.click(screen.getByText('Assign'));
-            expect(screen.getByPlaceholderText('Search courier...')).toBeInTheDocument();
+            expect(screen.getByPlaceholderText('Search couriers…')).toBeInTheDocument();
 
-            await user.click(screen.getByPlaceholderText('Search courier...'));
+            await user.click(screen.getByPlaceholderText('Search couriers…'));
             await user.paste('John');
 
             await waitFor(() => {
@@ -448,7 +448,7 @@ describe('JobListTable', () => {
             renderWithMantine(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob({dgClass: 3})]})}/>);
 
             await user.click(screen.getByText('Assign'));
-            await user.click(screen.getByPlaceholderText('Search courier...'));
+            await user.click(screen.getByPlaceholderText('Search couriers…'));
             await user.paste('test');
 
             await waitFor(() => {
@@ -463,11 +463,11 @@ describe('JobListTable', () => {
             renderWithMantine(<JobListTable {...createDefaultProps()}/>);
 
             await user.click(screen.getByRole('button', {name: 'Assign'}));
-            expect(screen.getByPlaceholderText('Search courier...')).toBeInTheDocument();
+            expect(screen.getByPlaceholderText('Search couriers…')).toBeInTheDocument();
 
             await user.click(document.body);
 
-            expect(screen.queryByPlaceholderText('Search courier...')).not.toBeInTheDocument();
+            expect(screen.queryByPlaceholderText('Search couriers…')).not.toBeInTheDocument();
             expect(screen.getByRole('button', {name: 'Assign'})).toBeInTheDocument();
         });
 
@@ -481,7 +481,7 @@ describe('JobListTable', () => {
             await user.keyboard('{Escape}');
 
             const assign = screen.getByRole('button', {name: 'Assign'});
-            expect(screen.queryByPlaceholderText('Search courier...')).not.toBeInTheDocument();
+            expect(screen.queryByPlaceholderText('Search couriers…')).not.toBeInTheDocument();
             // Escape is a keyboard gesture, so the keyboard must not be stranded.
             expect(assign).toHaveFocus();
         });
@@ -494,7 +494,7 @@ describe('JobListTable', () => {
             renderWithMantine(<JobListTable {...props}/>);
 
             await user.click(screen.getByText('Assign'));
-            await user.click(screen.getByPlaceholderText('Search courier...'));
+            await user.click(screen.getByPlaceholderText('Search couriers…'));
             await user.paste('John');
 
             const option = await screen.findByText('101 - John Smith');

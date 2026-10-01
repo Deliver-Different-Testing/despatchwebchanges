@@ -51,7 +51,7 @@ describe('FlightInformation', () => {
     it('renders flight segment details and the Check Webhooks button', () => {
         const flight = createMockFlight();
         renderWithTheme(<FlightInformation flight={flight} jobId={1} />);
-        expect(screen.getByText('Flight Information')).toBeInTheDocument();
+        expect(screen.getByText('Flight information')).toBeInTheDocument();
         expect(screen.getByText('NZ123')).toBeInTheDocument();
         expect(screen.getByText('AKL')).toBeInTheDocument();
         expect(screen.getByText('SYD')).toBeInTheDocument();
@@ -122,36 +122,36 @@ describe('FlightInformation', () => {
         expect(screen.getByText(/45m connection/)).toBeInTheDocument();
     });
 
-    it('shows "Webhooks Active" when API returns active', async () => {
+    it('shows "Webhooks active" when API returns active', async () => {
         mockGetFlightWebhookStatus.mockResolvedValue({active: true});
         const flight = createMockFlight();
         renderWithTheme(<FlightInformation flight={flight} jobId={42} />);
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        expect(await screen.findByText('Webhooks Active')).toBeInTheDocument();
+        expect(await screen.findByText('Webhooks active')).toBeInTheDocument();
         expect(mockGetFlightWebhookStatus).toHaveBeenCalledWith(42);
     });
 
-    it('shows "Webhooks Inactive" when API returns inactive', async () => {
+    it('shows "Webhooks inactive" when API returns inactive', async () => {
         mockGetFlightWebhookStatus.mockResolvedValue({active: false});
         const flight = createMockFlight();
         renderWithTheme(<FlightInformation flight={flight} jobId={7} />);
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        expect(await screen.findByText('Webhooks Inactive')).toBeInTheDocument();
+        expect(await screen.findByText('Webhooks inactive')).toBeInTheDocument();
         expect(mockGetFlightWebhookStatus).toHaveBeenCalledWith(7);
     });
 
-    it('shows "Webhooks Inactive" when API call fails', async () => {
+    it('shows "Webhooks inactive" when API call fails', async () => {
         mockGetFlightWebhookStatus.mockRejectedValue(new Error('Network error'));
         const flight = createMockFlight();
         renderWithTheme(<FlightInformation flight={flight} jobId={1} />);
 
         await userEvent.click(screen.getByRole('button', {name: /check webhooks/i}));
 
-        expect(await screen.findByText('Webhooks Inactive')).toBeInTheDocument();
+        expect(await screen.findByText('Webhooks inactive')).toBeInTheDocument();
     });
 
     it('shows loading state while checking webhooks', async () => {
@@ -167,6 +167,6 @@ describe('FlightInformation', () => {
         expect(screen.getByRole('button', {name: /checking/i})).toBeDisabled();
 
         resolve!({active: true});
-        expect(await screen.findByText('Webhooks Active')).toBeInTheDocument();
+        expect(await screen.findByText('Webhooks active')).toBeInTheDocument();
     });
 });

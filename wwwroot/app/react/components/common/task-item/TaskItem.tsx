@@ -105,9 +105,9 @@ const factTone: Record<string, {bg: string; fg: string}> = {
 
 /**
  * A task may have no due date; guard against rendering the raw
- * "undefined"/"Invalid Date" string the formatters produce for one.
+ * "undefined"/"Invalid date" string the formatters produce for one.
  */
-const hasValidDate = (s?: string): boolean => Boolean(s) && s !== 'Invalid Date';
+const hasValidDate = (s?: string): boolean => Boolean(s) && s !== 'Invalid date';
 
 // Compute timezone abbreviation once at module level (it doesn't change per-render)
 const ianaTimeZone = getIanaTimezone(getTenantTimezone());
@@ -527,7 +527,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                 <Box p="xs" style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}>
                     <TextInput
                         size="xs"
-                        placeholder="Search staff..."
+                        placeholder="Search staff…"
                         value={staffSearchText}
                         onChange={(event) => setStaffSearchText(event.currentTarget.value)}
                         leftSection={<Icon lucide={Search} size={16}/>}

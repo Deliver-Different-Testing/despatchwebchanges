@@ -55,9 +55,9 @@ const SEARCH_FN: Record<'Courier' | 'Agent' | 'NP', (s: string) => Promise<ISugg
 };
 
 const PLACEHOLDERS: Record<'Courier' | 'Agent' | 'NP', string> = {
-    Courier: 'Search courier...',
-    Agent: 'Search agent...',
-    NP: 'Search Network Partner...',
+    Courier: 'Search couriers…',
+    Agent: 'Search agents…',
+    NP: 'Search network partners…',
 };
 
 function computeDfrntDisabled(mode: DispatchMode): {disabled: boolean; tooltip: string} {
@@ -293,8 +293,8 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     // job is heading down (and gives DFRNT Partner its own visual identity).
     const CONFIRM_LABELS: Record<DispatchType, {idle: string; busy: string}> = {
         Courier: {idle: 'Dispatch', busy: 'Dispatching...'},
-        DfrntPartner: {idle: 'Send to Partner', busy: 'Sending...'},
-        Agent: {idle: 'Send to Agent', busy: 'Sending...'},
+        DfrntPartner: {idle: 'Send to partner', busy: 'Sending...'},
+        Agent: {idle: 'Send to agent', busy: 'Sending...'},
         NP: {idle: 'Send to NP', busy: 'Sending...'},
     };
     const CONFIRM_ICONS: Record<DispatchType, React.ReactElement> = {
@@ -396,8 +396,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                             <Paper {...sectionPaperProps}>
                                 <Stack gap="sm">
                                     <TextInput
-                                        label="AWB Number"
-                                        placeholder="AWB Number..."
+                                        label="AWB number"
                                         value={existingConNote ?? awb}
                                         onChange={(event) => setAwb(event.currentTarget.value)}
                                         disabled={submitting || Boolean(existingConNote)}
@@ -429,7 +428,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                                     onChange={(value) => setSelectedPartnerId(value === null ? '' : Number(value))}
                                     disabled={submitting || partnerOptionsLoading}
                                     comboboxProps={{keepMounted: false}}
-                                    nothingFoundMessage="No active partners"
+                                    nothingFoundMessage="No active partners yet"
                                     data={partnerOptions.map((opt) => ({value: String(opt.id), label: opt.text}))}
                                 />
                             </Paper>

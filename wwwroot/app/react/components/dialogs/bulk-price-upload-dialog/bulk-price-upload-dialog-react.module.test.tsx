@@ -1,5 +1,5 @@
 /**
- * Bulk Price Upload Dialog React Module Tests
+ * Bulk price upload Dialog React Module Tests
  *
  * Tests for the module's open() method and window global registration.
  */

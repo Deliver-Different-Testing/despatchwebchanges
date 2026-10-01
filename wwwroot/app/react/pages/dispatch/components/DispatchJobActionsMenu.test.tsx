@@ -30,12 +30,12 @@ describe('DispatchJobActionsMenu', () => {
         await user.click(screen.getByRole('button', {name: 'Job actions'}));
 
         // A bare job exposes the always-available actions plus Lock.
-        expect(screen.getByRole('menuitem', {name: 'Dispatch to Courier'})).toBeInTheDocument();
-        expect(screen.getByRole('menuitem', {name: 'Lock Job'})).toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Dispatch to courier'})).toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Lock job'})).toBeInTheDocument();
         // Unlock requires a locked job, so it is hidden here.
-        expect(screen.queryByRole('menuitem', {name: 'Unlock Job'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Unlock job'})).not.toBeInTheDocument();
 
-        await user.click(screen.getByRole('menuitem', {name: 'Dispatch to Courier'}));
+        await user.click(screen.getByRole('menuitem', {name: 'Dispatch to courier'}));
         expect(onAction).toHaveBeenCalledWith('dispatch', job);
     });
 
@@ -47,14 +47,14 @@ describe('DispatchJobActionsMenu', () => {
 
         renderMenu({currentJob: jobWithAccessorials});
         await user.click(screen.getByRole('button', {name: 'Job actions'}));
-        expect(screen.getByRole('menuitem', {name: 'Accessorial Charges'})).toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Accessorial charges'})).toBeInTheDocument();
 
         (window as any).IsNetworkPartner = true;
         try {
             renderMenu({currentJob: jobWithAccessorials});
             const [, npMenuButton] = screen.getAllByRole('button', {name: 'Job actions'});
             await user.click(npMenuButton);
-            expect(screen.queryByRole('menuitem', {name: 'Accessorial Charges'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('menuitem', {name: 'Accessorial charges'})).not.toBeInTheDocument();
         } finally {
             delete (window as any).IsNetworkPartner;
         }

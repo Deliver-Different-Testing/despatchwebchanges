@@ -17,10 +17,10 @@ interface DriverEarningsTabProps {
 
 const columns: DataTableColumn<CourierDailyEarnings>[] = [
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
-    {key: 'hoursLogged', label: 'Hours Logged', sortable: true, width: '120px', align: 'right', render: (row) => `${row.hoursLogged.toFixed(1)}h`},
+    {key: 'hoursLogged', label: 'Hours logged', sortable: true, width: '120px', align: 'right', render: (row) => `${row.hoursLogged.toFixed(1)}h`},
     {key: 'deliveries', label: 'Deliveries', sortable: true, width: '110px', align: 'right', render: (row) => row.deliveries},
     {key: 'earnings', label: 'Earnings', sortable: true, width: '110px', align: 'right', render: (row) => formatCurrency(row.earnings)},
-    {key: 'hourlyRate', label: 'Hourly Rate', sortable: true, width: '110px', align: 'right', render: (row) => `${formatCurrency(row.hourlyRate)}/h`},
+    {key: 'hourlyRate', label: 'Hourly rate', sortable: true, width: '110px', align: 'right', render: (row) => `${formatCurrency(row.hourlyRate)}/h`},
 ];
 
 export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast}) => {
@@ -55,10 +55,10 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
         <Stack gap={16}>
             {/* Stats */}
             <Group gap={16}>
-                <StatCard value={formatCurrency(stats.totalEarningsToday)} label="Total Earnings Today" color="var(--mantine-color-green-6)" icon={<Icon lucide={DollarSign}/>} />
-                <StatCard value={formatCurrency(stats.averageHourlyRate)} label="Average Hourly Rate" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={TrendingUp}/>} />
-                <StatCard value={stats.totalActiveDrivers} label="Active Drivers" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users}/>} />
-                <StatCard value={stats.totalDeliveriesToday} label="Total Deliveries" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={Truck}/>} />
+                <StatCard value={formatCurrency(stats.totalEarningsToday)} label="Total earnings today" color="var(--mantine-color-green-6)" icon={<Icon lucide={DollarSign}/>} />
+                <StatCard value={formatCurrency(stats.averageHourlyRate)} label="Average hourly rate" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={TrendingUp}/>} />
+                <StatCard value={stats.totalActiveDrivers} label="Active drivers" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users}/>} />
+                <StatCard value={stats.totalDeliveriesToday} label="Total deliveries" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={Truck}/>} />
             </Group>
 
             {/* Filters */}
@@ -77,7 +77,7 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
                 <SearchField
                     value={query.searchTerm ?? ''}
                     onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
-                    placeholder="Search earnings..."
+                    placeholder="Search earnings…"
                 />
             </FilterToolbar>
 
@@ -92,8 +92,8 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
                 emptyIcon={<Icon lucide={DollarSign}/>}
-                emptyTitle="No Earnings Data"
-                emptyMessage="No earnings data matches your criteria."
+                emptyTitle="No earnings data"
+                emptyMessage="No earnings data matches your search."
             />
         </Stack>
     );

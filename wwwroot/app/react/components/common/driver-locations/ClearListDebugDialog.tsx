@@ -77,10 +77,10 @@ export function ClearListDebugButton({ courierId }: { courierId: number }) {
                     <Icon lucide={Info} size={14} />
                 </ActionIcon>
             </Tooltip>
-            <DialogShell opened={open} onClose={handleClose} label="Clear List Debug">
+            <DialogShell opened={open} onClose={handleClose} label="Clear list debug">
                 <DialogHeader
                     icon={<Icon lucide={Bug} />}
-                    title="Clear List Debug"
+                    title="Clear list debug"
                     subtitle="Driver placement diagnostics"
                     onClose={handleClose}
                 />
@@ -161,27 +161,27 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                 <InfoRow label="Channel ID" value={data.channelId} />
                 <InfoRow label="Fleet" value={data.fleetName} />
                 <InfoRow
-                    label="Logged In"
+                    label="Logged in"
                     value={
                         data.isLoggedIn
                             ? <Badge size="sm" color="green" variant="light">Yes</Badge>
                             : <Badge size="sm" color="gray" variant="light">No</Badge>
                     }
                 />
-                {data.loginTime && <InfoRow label="Login Time" value={data.loginTime} />}
+                {data.loginTime && <InfoRow label="Login time" value={data.loginTime} />}
             </SectionCard>
 
             {/* GPS Info */}
             <SectionCard
                 icon={<Icon lucide={LocateFixed} size={22} color="var(--mantine-color-green-6)" />}
-                title="GPS Location"
+                title="GPS location"
                 color="green"
             >
                 <InfoRow label="Polygon ID" value={data.gpsPolygonId} />
-                <InfoRow label="Polygon Name" value={data.gpsPolygonName} />
+                <InfoRow label="Polygon name" value={data.gpsPolygonName} />
                 {data.gpsPolygonSuburbs.length > 0 && (
                     <InfoRow
-                        label="Suburbs in Polygon"
+                        label="Suburbs in polygon"
                         value={
                             <Group gap={4} wrap="wrap">
                                 {data.gpsPolygonSuburbs.map(s => (
@@ -196,7 +196,7 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                     value={data.gpsLatitude != null ? `${data.gpsLatitude}, ${data.gpsLongitude}` : null}
                 />
                 <InfoRow
-                    label="GPS Age"
+                    label="GPS age"
                     value={
                         data.gpsAgeMinutes != null
                             ? (
@@ -207,16 +207,16 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                             : null
                     }
                 />
-                {data.gpsTimestamp && <InfoRow label="GPS Timestamp" value={data.gpsTimestamp} />}
+                {data.gpsTimestamp && <InfoRow label="GPS timestamp" value={data.gpsTimestamp} />}
             </SectionCard>
 
             {/* Admin Assignment */}
             <SectionCard
                 icon={<Icon lucide={ClipboardList} size={22} color="var(--mantine-color-reflex-6)" />}
-                title="Admin Assignment (TblClearListAreaOrder)"
+                title="Admin assignment (TblClearListAreaOrder)"
                 color="reflex"
             >
-                <InfoRow label="Assigned Area" value={data.assignedClearListAreaName} />
+                <InfoRow label="Assigned area" value={data.assignedClearListAreaName} />
                 <InfoRow label="Status" value={data.assignedStatusLabel} />
                 <Text fz="xs" c="dimmed">
                     This controls the row position (top/middle/bottom), NOT which area column the driver appears in.
@@ -226,7 +226,7 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
             {/* Polygon-to-Area Mappings */}
             <SectionCard
                 icon={<Icon tabler={IconMap} size={22} color="var(--mantine-color-orange-6)" />}
-                title="Polygon Area Mappings"
+                title="Polygon area mappings"
                 color="orange"
             >
                 <Text fz="xs" c="dimmed" display="block" mb={12}>
@@ -263,7 +263,7 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                                     variant="light"
                                     color={m.channelMatches ? 'green' : 'gray'}
                                 >
-                                    {m.channelMatches ? 'Channel Match' : 'No Match'}
+                                    {m.channelMatches ? 'Channel match' : 'No match'}
                                 </Badge>
                             </Group>
                         ))}

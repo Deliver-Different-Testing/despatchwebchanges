@@ -108,7 +108,7 @@ describe('JobChangeRequestsForJob', () => {
         }]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
 
-        expect(await screen.findByText('Pickup Address')).toBeInTheDocument();
+        expect(await screen.findByText('Pickup address')).toBeInTheDocument();
 
         // Two address blocks render side-by-side with overline labels.
         const currentBlock = screen.getByLabelText('Current address');
@@ -132,7 +132,7 @@ describe('JobChangeRequestsForJob', () => {
         }]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
 
-        expect(await screen.findByText('Agreed Rate')).toBeInTheDocument();
+        expect(await screen.findByText('Agreed rate')).toBeInTheDocument();
         // formatCurrency emits a $ prefix; matcher avoids locale-specific exact text.
         expect(screen.getByText(/\$150/)).toBeInTheDocument();
         expect(screen.getByText(/\$185\.50/)).toBeInTheDocument();
@@ -366,7 +366,7 @@ describe('JobChangeRequestsForJob', () => {
                 />,
             );
 
-            expect(await screen.findByText('Pickup Time')).toBeInTheDocument();
+            expect(await screen.findByText('Pickup time')).toBeInTheDocument();
             // Pickup-side TZ wins for PuTime — both Current and Requested chips
             // carry the pacific abbreviation (PST in winter, PDT in summer).
             const pacificChips = screen.getAllByText(/\(P[SD]T\)/);
@@ -389,7 +389,7 @@ describe('JobChangeRequestsForJob', () => {
                 />,
             );
 
-            expect(await screen.findByText('Deliver By')).toBeInTheDocument();
+            expect(await screen.findByText('Deliver by')).toBeInTheDocument();
             // Delivery-side TZ wins for DeliverBy — both chips carry the
             // eastern abbreviation (EST in winter, EDT in summer).
             const easternChips = screen.getAllByText(/\(E[SD]T\)/);

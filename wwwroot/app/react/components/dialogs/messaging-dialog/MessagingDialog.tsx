@@ -463,7 +463,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             return (
                 <>
                     <DialogHeader
-                        title="New Conversation"
+                        title="New conversation"
                         showBackButton
                         onBack={handleBackToMessaging}
                         onClose={onClose}
@@ -498,7 +498,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         return (
             <>
                 <DialogHeader
-                    title="Message Center"
+                    title="Message center"
                     subtitle="Send and receive messages"
                     onClose={onClose}
                 />
@@ -828,7 +828,7 @@ function ConversationsPanel({
                             leftSection={<Icon lucide={MessageCirclePlus} size={16}/>}
                             onClick={onNewChat}
                         >
-                            Start Conversation
+                            Start conversation
                         </Button>
                     }
                 />
@@ -840,7 +840,7 @@ function ConversationsPanel({
                     icon={<Icon lucide={SearchX} size={EMPTY_GLYPH_SIZE}/>}
                     message={unreadOnly && !filterText.trim()
                         ? 'No unread conversations'
-                        : 'No matching conversations'}
+                        : 'No conversations match your search.'}
                     action={
                         <Button
                             variant="subtle"
@@ -1015,7 +1015,7 @@ function ChatPanel({
                     style={{borderTop: '1px solid var(--mantine-color-default-border)'}}
                 >
                     <Group justify="space-between" mb={8}>
-                        <Text fz="xs" fw={500} c="dimmed" tt="uppercase">Quick Responses</Text>
+                        <Text fz="xs" fw={500} c="dimmed" tt="uppercase">Quick responses</Text>
                         <CloseButton size="sm" aria-label="Hide quick responses" onClick={onToggleQuickResponses}/>
                     </Group>
                     <Group gap={8}>
@@ -1056,7 +1056,7 @@ function ChatPanel({
                     radius="xl"
                     autosize
                     maxRows={4}
-                    placeholder="Type a message..."
+                    placeholder="Type a message…"
                     aria-label="Type a message"
                     value={newMessage}
                     onChange={(e) => onMessageChange(e.currentTarget.value)}
@@ -1285,7 +1285,7 @@ function NewChatView({
                     size="sm"
                     radius="xl"
                     style={{flex: 1}}
-                    placeholder="Search by name or ID..."
+                    placeholder="Search by name or ID…"
                     aria-label="Search by name or ID"
                     value={searchTerm}
                     onChange={(e) => onSearch(e.currentTarget.value)}
@@ -1385,7 +1385,7 @@ function NewChatView({
                         <Textarea
                             rows={3}
                             mb={12}
-                            placeholder="Type your message..."
+                            placeholder="Type your message…"
                             aria-label="Message to selected contacts"
                             value={newMessage}
                             onChange={(e) => onMessageChange(e.currentTarget.value)}

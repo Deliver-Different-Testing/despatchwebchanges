@@ -258,9 +258,9 @@ describe('DashboardSettingsDialog', () => {
 
             expect(screen.getByText('Current Work title')).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'Off'})).not.toBeChecked();
-            expect(screen.getByRole('radio', {name: 'Show Courier Name'})).not.toBeChecked();
-            expect(screen.getByRole('radio', {name: 'Show Courier Number'})).toBeChecked();
-            expect(screen.getByRole('radio', {name: 'Show Name and Number'})).not.toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show courier name'})).not.toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show courier number'})).toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show name and number'})).not.toBeChecked();
         });
 
         it('emits the newly-picked mode on save', async () => {
@@ -272,7 +272,7 @@ describe('DashboardSettingsDialog', () => {
                 onSave,
             })} />);
 
-            await user.click(screen.getByRole('radio', {name: 'Show Name and Number'}));
+            await user.click(screen.getByRole('radio', {name: 'Show name and number'}));
             await user.click(screen.getByRole('button', {name: /save/i}));
 
             expect(onSave).toHaveBeenCalledWith(

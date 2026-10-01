@@ -208,10 +208,10 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
     const ledgerLabelId = useId();
 
     return (
-        <DialogShell opened={open} onClose={handleClose} label="Inter-Courier Charge">
+        <DialogShell opened={open} onClose={handleClose} label="Inter-courier charge">
             <DialogHeader
                 icon={<Icon lucide={Banknote} />}
-                title="Inter-Courier Charge"
+                title="Inter-courier charge"
                 subtitle="Charge one courier and credit another"
                 onClose={handleClose}
                 closeDisabled={isSubmitting}
@@ -223,8 +223,8 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                         <Paper {...sectionPaperProps}>
                             <Stack gap="md">
                                 <SearchSelect<Suggestion>
-                                    label="From Courier"
-                                    placeholder="Search Courier..."
+                                    label="From courier"
+                                    placeholder="Search couriers…"
                                     value={fromCourier}
                                     onChange={setFromCourier}
                                     search={searchActiveCouriers}
@@ -235,8 +235,8 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                                     autoFocus
                                 />
                                 <SearchSelect<Suggestion>
-                                    label="To Courier"
-                                    placeholder="Search Courier..."
+                                    label="To courier"
+                                    placeholder="Search couriers…"
                                     value={toCourier}
                                     onChange={setToCourier}
                                     search={searchActiveCouriers}
@@ -255,7 +255,7 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                             <Stack gap="md">
                                 <SearchSelect<Suggestion>
                                     label="Client"
-                                    placeholder="Search Client..."
+                                    placeholder="Search clients…"
                                     value={client}
                                     onChange={setClient}
                                     search={searchActiveClients}
@@ -346,7 +346,7 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSubmit}
-                confirmLabel="Add Charge"
+                confirmLabel="Add charge"
                 confirmIcon={<Icon lucide={Plus} size={16} />}
                 submitting={isSubmitting}
             />

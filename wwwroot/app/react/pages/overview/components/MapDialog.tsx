@@ -112,7 +112,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                             <Group gap={4} mb={8} wrap="nowrap">
                                 <SymbolIcon name="timeline" size={16} />
                                 <Text fz="xs" fw={600}>
-                                    Delivery Route
+                                    Delivery route
                                 </Text>
                             </Group>
 

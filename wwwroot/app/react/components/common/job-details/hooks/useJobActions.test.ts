@@ -289,7 +289,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
             // The operator gets the box, seeded with whoever was on the job already
             expect(result.current.textDialog.open).toBe(true);
-            expect(result.current.textDialog.title).toBe('POD Name');
+            expect(result.current.textDialog.title).toBe('POD name');
             expect(result.current.textDialog.initialValue).toBe('Bob Smith');
 
             await act(() => result.current.handleTextDialogSubmit('Jane Doe'));
@@ -463,8 +463,8 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
             // The text dialog should now be open
             expect(result.current.textDialog.open).toBe(true);
-            expect(result.current.textDialog.title).toBe('POD Name');
-            expect(result.current.textDialog.okLabel).toBe('Complete Job');
+            expect(result.current.textDialog.title).toBe('POD name');
+            expect(result.current.textDialog.okLabel).toBe('Complete job');
 
             // Simulate user submitting the text dialog
             await act(() => result.current.handleTextDialogSubmit('Jane Doe'));
@@ -521,11 +521,11 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await flushDialogChain();
 
             expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
-                .toHaveBeenCalledWith(expect.objectContaining({title: 'POD Time'}));
+                .toHaveBeenCalledWith(expect.objectContaining({title: 'POD time'}));
 
             // Text dialog should now be open for POD name
             expect(result.current.textDialog.open).toBe(true);
-            expect(result.current.textDialog.title).toBe('POD Name');
+            expect(result.current.textDialog.title).toBe('POD name');
 
             // Submit POD name
             await act(() => result.current.handleTextDialogSubmit('Alice'));
@@ -659,7 +659,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
             // Text dialog opens as part of the guided flow
             expect(result.current.textDialog.open).toBe(true);
-            expect(result.current.textDialog.okLabel).toBe('Complete Job');
+            expect(result.current.textDialog.okLabel).toBe('Complete job');
 
             await act(() => result.current.handleTextDialogSubmit('Charlie'));
             await flushDialogChain();
@@ -682,9 +682,9 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                 result.current.handleEditPodName();
             });
 
-            // Should open text dialog for simple editing (no "Complete Job" button)
+            // Should open text dialog for simple editing (no "Complete job" button)
             expect(result.current.textDialog.open).toBe(true);
-            expect(result.current.textDialog.title).toBe('Edit POD Name');
+            expect(result.current.textDialog.title).toBe('Edit POD name');
             expect(result.current.textDialog.okLabel).toBeUndefined();
             // Clear affordance is offered so the name can be removed
             expect(result.current.textDialog.allowClear).toBe(true);
@@ -1560,7 +1560,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
 
         await act(async () => {
-            await result.current.editDateAndTime(JobProperty.PuTime, 'Pickup Time');
+            await result.current.editDateAndTime(JobProperty.PuTime, 'Pickup time');
         });
 
         expect(mockUpdateField).not.toHaveBeenCalled();
@@ -1590,7 +1590,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         const {result, mockOnRequestPartnerChange} = setupPartnerHook(job);
 
         await act(async () => {
-            await result.current.editDateAndTime(JobProperty.CompletedTime, 'POD Time');
+            await result.current.editDateAndTime(JobProperty.CompletedTime, 'POD time');
         });
 
         expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
@@ -1902,7 +1902,7 @@ describe('useJobActions — date cascade', () => {
         const {result} = setup();
 
         act(() => {
-            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked date');
         });
         await flushDialogChain();
 
@@ -1919,7 +1919,7 @@ describe('useJobActions — date cascade', () => {
         const {result, mockCheckForRateChanges, mockShowToast} = setup();
 
         act(() => {
-            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked date');
         });
         await flushDialogChain();
         await act(async () => {
@@ -1942,7 +1942,7 @@ describe('useJobActions — date cascade', () => {
         const {result} = setup();
 
         act(() => {
-            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked date');
         });
         await flushDialogChain();
         await act(async () => {
@@ -1962,7 +1962,7 @@ describe('useJobActions — date cascade', () => {
         const {result} = setup();
 
         act(() => {
-            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked date');
         });
         await flushDialogChain();
         await act(async () => {
@@ -1982,7 +1982,7 @@ describe('useJobActions — date cascade', () => {
         const {result, mockShowToast} = setup();
 
         await act(async () => {
-            await result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+            await result.current.editDateAndTime(JobProperty.BookedTime, 'Booked date');
         });
 
         expect(result.current.cascadeDialog.open).toBe(false);
@@ -2000,7 +2000,7 @@ describe('useJobActions — date cascade', () => {
         const {result, mockShowToast} = setup();
 
         act(() => {
-            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+            void result.current.editDateAndTime(JobProperty.BookedTime, 'Booked date');
         });
         await flushDialogChain();
         await act(async () => {
@@ -2039,7 +2039,7 @@ describe('useJobActions — date cascade', () => {
         );
 
         await act(async () => {
-            await result.current.editDateAndTime(JobProperty.BookedTime, 'Booked Date');
+            await result.current.editDateAndTime(JobProperty.BookedTime, 'Booked date');
         });
 
         expect(onRequestPartnerChange).toHaveBeenCalled();

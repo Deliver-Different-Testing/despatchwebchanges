@@ -78,7 +78,7 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
         <Card withBorder p={0} mt={16}>
             <PanelHeader
                 icon={<SymbolIcon name="inventory_2" />}
-                title="Open Jobs"
+                title="Open jobs"
                 action={
                     <>
                         {/* A Switch reads as on/off; this picks one of two views, so

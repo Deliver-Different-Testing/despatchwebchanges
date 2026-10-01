@@ -45,7 +45,7 @@ describe('ErrorBoundary', () => {
         );
 
         expect(screen.queryByText('Child content')).not.toBeInTheDocument();
-        expect(screen.getByText('Something Went Wrong')).toBeInTheDocument();
+        expect(screen.getByText('Something went wrong')).toBeInTheDocument();
         expect(screen.getByText('Boom! something blew up')).toBeInTheDocument();
     });
 
@@ -70,7 +70,7 @@ describe('ErrorBoundary', () => {
             </ErrorBoundary>
         );
 
-        expect(screen.getByText('Something Went Wrong')).toBeInTheDocument();
+        expect(screen.getByText('Something went wrong')).toBeInTheDocument();
 
         // The child stops throwing after the click — clicking "Try again" should
         // clear the boundary and the new render shows the child content.
@@ -85,7 +85,7 @@ describe('ErrorBoundary', () => {
         fireEvent.click(screen.getByRole('button', {name: /try again/i}));
 
         expect(screen.getByText('Child content')).toBeInTheDocument();
-        expect(screen.queryByText('Something Went Wrong')).not.toBeInTheDocument();
+        expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
     });
 
     it('calls onReset when "Try again" is clicked', () => {
@@ -108,7 +108,7 @@ describe('ErrorBoundary', () => {
             </ErrorBoundary>
         );
 
-        expect(screen.getByText('Something Went Wrong')).toBeInTheDocument();
+        expect(screen.getByText('Something went wrong')).toBeInTheDocument();
 
         rerender(
             <MantineTestProvider>
@@ -119,7 +119,7 @@ describe('ErrorBoundary', () => {
         );
 
         expect(screen.getByText('Child content')).toBeInTheDocument();
-        expect(screen.queryByText('Something Went Wrong')).not.toBeInTheDocument();
+        expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
     });
 
     it('reveals the component stack when "Show details" is clicked', () => {

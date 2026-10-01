@@ -83,7 +83,7 @@ describe('loadFlights', () => {
 
         await ctrl.loadFlights();
 
-        expect(ctrl.flightMessage).toContain('No flights available');
+        expect(ctrl.flightMessage).toContain('No flights match the selected criteria');
     });
 });
 

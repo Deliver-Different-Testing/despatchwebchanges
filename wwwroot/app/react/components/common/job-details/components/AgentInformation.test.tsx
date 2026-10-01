@@ -13,7 +13,7 @@ describe('AgentInformation', () => {
         const agent = createMockAgent();
         renderWithTheme(<AgentInformation agent={agent} />);
 
-        expect(screen.getByText('Agent Information')).toBeInTheDocument();
+        expect(screen.getByText('Agent information')).toBeInTheDocument();
         expect(screen.getByText('Test Agent')).toBeInTheDocument();
         expect(screen.getByText('09 555 6789')).toBeInTheDocument();
         expect(screen.getByText('agent@test.com')).toBeInTheDocument();

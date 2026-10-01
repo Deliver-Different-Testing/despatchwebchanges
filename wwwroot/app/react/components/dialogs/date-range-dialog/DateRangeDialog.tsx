@@ -107,11 +107,11 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
             opened={open}
             onClose={onClose}
             size={dialogSize.md}
-            label="Select Date Range"
+            label="Select date range"
         >
             <DialogHeader
                 icon={<Icon lucide={CalendarRange}/>}
-                title="Select Date Range"
+                title="Select date range"
                 subtitle="Choose a start and end date for your report"
                 onClose={onClose}
             />
@@ -145,20 +145,20 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
 
                 {/* A `Badge` is the tonal pill the MUI version built out of a Paper. */}
                 <Badge color={isValidRange ? 'green' : 'red'} variant="light" size="lg" tt="none">
-                    {isValidRange ? `${duration} Day${duration !== 1 ? 's' : ''}` : 'Invalid'}
+                    {isValidRange ? `${duration} day${duration !== 1 ? 's' : ''}` : 'Invalid'}
                 </Badge>
             </Group>
 
             <Box p="lg" bg={dialogContentBg}>
                 <Flex direction={{base: 'column', md: 'row'}} gap="lg" justify="center">
                     <CalendarCard
-                        title="Start Date"
+                        title="Start date"
                         value={startDate}
                         onChange={setStartDate}
                         maxDate={endDate.format(ISO_DATE)}
                     />
                     <CalendarCard
-                        title="End Date"
+                        title="End date"
                         value={endDate}
                         onChange={setEndDate}
                         minDate={startDate.format(ISO_DATE)}

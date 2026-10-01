@@ -54,8 +54,8 @@ export async function executeSplitJobFlow(options: SplitJobFlowOptions): Promise
     // ── Address dialog ──
     const meetingPointAddress = await openEditAddressDialog(
         job.deliveryAddress,
-        'Set Meeting Point',
-        'Split Job',
+        'Set meeting point',
+        'Split job',
     );
 
     if (!meetingPointAddress) {

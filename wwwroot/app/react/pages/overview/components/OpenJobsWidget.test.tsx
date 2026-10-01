@@ -48,7 +48,7 @@ describe('OpenJobsWidget', () => {
     describe('Header', () => {
         it('renders Open Jobs title', () => {
             renderWithTheme(<OpenJobsWidget openJobs={[]} isLoading={false} />);
-            expect(screen.getByText('Open Jobs')).toBeInTheDocument();
+            expect(screen.getByText('Open jobs')).toBeInTheDocument();
         });
 
         it('renders view mode toggle', () => {
@@ -114,7 +114,7 @@ describe('OpenJobsWidget', () => {
             fireEvent.click(screen.getByRole('radio', {name: 'Table'}));
 
             // Table headers should appear
-            expect(screen.getByText('Job Number')).toBeInTheDocument();
+            expect(screen.getByText('Job number')).toBeInTheDocument();
             expect(screen.getByText('Driver')).toBeInTheDocument();
             expect(screen.getByText('Status')).toBeInTheDocument();
         });
@@ -173,7 +173,7 @@ describe('OpenJobsWidget', () => {
             renderWithTheme(<OpenJobsWidget openJobs={jobs} isLoading={false} />);
 
             // Table headers should be visible since we restored table mode
-            expect(screen.getByText('Job Number')).toBeInTheDocument();
+            expect(screen.getByText('Job number')).toBeInTheDocument();
         });
     });
 });

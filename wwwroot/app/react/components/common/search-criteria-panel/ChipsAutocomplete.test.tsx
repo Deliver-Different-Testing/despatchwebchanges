@@ -76,13 +76,13 @@ describe('ChipsAutocomplete', () => {
             expect(props.onSearch).not.toHaveBeenCalled();
         });
 
-        it('shows "Type at least N characters" message when input too short', async () => {
+        it('shows "Enter at least N characters" message when input too short', async () => {
             const props = createChipsProps({minInputLength: 2});
             renderWithTheme(<ChipsAutocomplete {...props} />);
 
             await user.type(getInput(), 'a');
 
-            expect(await screen.findByText('Type at least 2 characters to search')).toBeInTheDocument();
+            expect(await screen.findByText('Enter at least 2 characters to search')).toBeInTheDocument();
         });
 
         it('shows singular message for minInputLength of 1', async () => {
@@ -92,7 +92,7 @@ describe('ChipsAutocomplete', () => {
             // Open autocomplete without typing any characters
             await user.click(getInput());
 
-            expect(await screen.findByText('Type at least 1 character to search')).toBeInTheDocument();
+            expect(await screen.findByText('Enter at least 1 character to search')).toBeInTheDocument();
         });
 
         it('calls onSearch after 300ms debounce when input meets minInputLength', async () => {

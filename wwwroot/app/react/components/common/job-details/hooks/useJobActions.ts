@@ -606,25 +606,25 @@ export function useJobActions({
     const handleEditFromContact = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit From Contact Name', 'From Contact Name...', JobProperty.FromContactName, j.fromContactName);
+        openTextDialog('Edit from contact name', 'From contact name…', JobProperty.FromContactName, j.fromContactName);
     }, [openTextDialog]);
 
     const handleEditToContact = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit To Contact Name', 'To Contact Name...', JobProperty.ToContactName, j.deliverToContact);
+        openTextDialog('Edit to contact name', 'To contact name…', JobProperty.ToContactName, j.deliverToContact);
     }, [openTextDialog]);
 
     const handleEditFromContactPhone = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit From Contact Phone', 'From Contact Phone...', JobProperty.FromContactPhone, j.fromContactNumber);
+        openTextDialog('Edit from contact phone', 'From contact phone…', JobProperty.FromContactPhone, j.fromContactNumber);
     }, [openTextDialog]);
 
     const handleEditToContactPhone = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit To Contact Phone', 'To Contact Phone...', JobProperty.ToContactPhone, j.toContactPhone);
+        openTextDialog('Edit to contact phone', 'To contact phone…', JobProperty.ToContactPhone, j.toContactPhone);
     }, [openTextDialog]);
 
     // ── Toggle Handlers ────────────────────────────────────────────
@@ -705,7 +705,7 @@ export function useJobActions({
             const current = jobRef.current ?? j;
             await ensureDateTimeDialog();
             const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
-                title: 'POD Time',
+                title: 'POD time',
                 fieldName: JobProperty.CompletedTime,
                 dateTime: current.completedTime,
                 defaultTimeZone: (current.deliveryTimeZone as any)?.text,
@@ -720,11 +720,11 @@ export function useJobActions({
         const collectPodName = async (): Promise<string | null> => {
             const current = jobRef.current ?? j;
             const name = await openTextDialogAsync(
-                'POD Name',
-                'POD Name...',
+                'POD name',
+                'POD name…',
                 JobProperty.PodName,
                 current.podName?.trim() ?? '',
-                'Complete Job',
+                'Complete job',
             );
             if (!name?.trim()) {
                 showToast('Enter a POD name to close this job.', 'warning');
@@ -964,7 +964,7 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (j.done) {
-            openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, j.podName, undefined, undefined, true);
+            openTextDialog('Edit POD name', 'POD name…', JobProperty.PodName, j.podName, undefined, undefined, true);
             return;
         }
         await markJobAsDone('name');
@@ -976,7 +976,7 @@ export function useJobActions({
         if (j.done) {
             // Clearing the POD time on an archived completed job is the same un-completion the
             // Done toggle refuses, so the dialog doesn't offer Clear there.
-            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone, !j.isArchived);
+            await editDateAndTime(JobProperty.CompletedTime, 'POD time', j.completedTime, j.deliveryTimeZone, !j.isArchived);
             return;
         }
         await markJobAsDone('time');
@@ -1021,7 +1021,7 @@ export function useJobActions({
             }
             const newRate = await openTextDialogAsync(
                 'New agreed rate',
-                'Agreed rate...',
+                'Agreed rate…',
                 'PartnerAgreedRate',
                 '',
                 'Continue',
@@ -1122,40 +1122,40 @@ export function useJobActions({
     }, [showSelectDialog]);
 
     const handleJobTypeClick = useCallback(() => {
-        return showSelectDialog(JOB_TYPE_OPTIONS, JobProperty.AcceptedJobTypeID, 'Job Type', jobRef.current?.jobTypeDescription);
+        return showSelectDialog(JOB_TYPE_OPTIONS, JobProperty.AcceptedJobTypeID, 'Job type', jobRef.current?.jobTypeDescription);
     }, [showSelectDialog]);
 
     const handleDgClassClick = useCallback(() => {
         const opts = Array.from({length: 9}, (_, i) => ({id: i + 1, text: String(i + 1)}));
-        return showSelectDialog(opts, JobProperty.DGClass, 'DG Class', jobRef.current?.dgClass ?? null, true, 'Has Documentation?');
+        return showSelectDialog(opts, JobProperty.DGClass, 'DG class', jobRef.current?.dgClass ?? null, true, 'Has Documentation?');
     }, [showSelectDialog]);
 
     const handleLeaveClick = useCallback(async () => {
         const list = await getLeaveList();
-        await showSelectDialog(list, JobProperty.DeliverToLeaveID, 'Leave Parcel', jobRef.current?.sigNotRequired || 'Signature Required');
+        await showSelectDialog(list, JobProperty.DeliverToLeaveID, 'Leave parcel', jobRef.current?.sigNotRequired || 'Signature Required');
     }, [showSelectDialog]);
 
     const handleTrackingMethodClick = useCallback(() => {
         const j = jobRef.current;
-        return showSelectDialog(TRACKING_OPTIONS, JobProperty.TrackingMethod, 'Tracking Method', j?.trackingMethod ? TRACKING_OPTIONS.find(t => t.id === j.trackingMethod)?.text : undefined);
+        return showSelectDialog(TRACKING_OPTIONS, JobProperty.TrackingMethod, 'Tracking method', j?.trackingMethod ? TRACKING_OPTIONS.find(t => t.id === j.trackingMethod)?.text : undefined);
     }, [showSelectDialog]);
 
     const handleContactClick = useCallback(async () => {
         const j = jobRef.current;
         if (!j?.clientId) return;
         const contacts = await getContactList(j.clientId);
-        await showSelectDialog(contacts, JobProperty.FromContactName, 'From Contact Name', j.fromContactName);
+        await showSelectDialog(contacts, JobProperty.FromContactName, 'From contact name', j.fromContactName);
     }, [showSelectDialog]);
 
     const handleClientClick = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
-        await showAutocompleteDialog('/home/ActiveClients', 'Start typing to enter new client...', JobProperty.ClientID, 'Client', {id: j.clientId, text: j.clientName}, true);
+        await showAutocompleteDialog('/home/ActiveClients', 'Start typing to enter new client…', JobProperty.ClientID, 'Client', {id: j.clientId, text: j.clientName}, true);
     }, [showAutocompleteDialog]);
 
     const handleInActiveByClick = useCallback(async () => {
         const staff = await getActiveStaff();
-        await showSelectDialog(staff, JobProperty.InActiveDate, 'InActive By', jobRef.current?.inActiveBy?.text ?? '');
+        await showSelectDialog(staff, JobProperty.InActiveDate, 'Inactive by', jobRef.current?.inActiveBy?.text ?? '');
     }, [showSelectDialog]);
 
     const handleEditDimensions = useCallback(async () => {
@@ -1204,49 +1204,49 @@ export function useJobActions({
     const handleEditRefA = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit RefA', 'RefA...', JobProperty.RefA, j.refA);
+        openTextDialog('Edit RefA', 'RefA…', JobProperty.RefA, j.refA);
     }, [openTextDialog]);
 
     const handleEditRefB = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit RefB', 'RefB...', JobProperty.RefB, j.refB);
+        openTextDialog('Edit RefB', 'RefB…', JobProperty.RefB, j.refB);
     }, [openTextDialog]);
 
     const handleEditOurRef = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit Our Reference', 'Our Reference...', JobProperty.OurRef, j.ourRef);
+        openTextDialog('Edit our reference', 'Our reference…', JobProperty.OurRef, j.ourRef);
     }, [openTextDialog]);
 
     const handleEditConNote = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit AWB', 'AWB...', JobProperty.ConNote, j.conNote);
+        openTextDialog('Edit AWB', 'AWB…', JobProperty.ConNote, j.conNote);
     }, [openTextDialog]);
 
     const handleEditWeight = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit Weight', 'Job Weight...', JobProperty.Weight, j.weight);
+        openTextDialog('Edit weight', 'Job weight…', JobProperty.Weight, j.weight);
     }, [openTextDialog]);
 
     const handleEditTrackingMobile = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit Tracking Mobile', 'Tracking Mobile...', JobProperty.TrackingMobile, j.trackingMobile);
+        openTextDialog('Edit tracking mobile', 'Tracking mobile…', JobProperty.TrackingMobile, j.trackingMobile);
     }, [openTextDialog]);
 
     const handleEditTrackingEmail = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit Tracking Email', 'Tracking Email...', JobProperty.TrackingEmail, j.trackingEmail);
+        openTextDialog('Edit tracking email', 'Tracking email…', JobProperty.TrackingEmail, j.trackingEmail);
     }, [openTextDialog]);
 
     const handleEditCustomJobName = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit Job Name', 'Job Name...', JobProperty.CustomJobName, j.customJobName);
+        openTextDialog('Edit job name', 'Job name…', JobProperty.CustomJobName, j.customJobName);
     }, [openTextDialog]);
 
     // ── POD Handlers ───────────────────────────────────────────────
@@ -1383,19 +1383,19 @@ export function useJobActions({
     const handleEditFirstDue = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        return editDate(JobProperty.FirstDue, 'First Due', j.firstDue);
+        return editDate(JobProperty.FirstDue, 'First due', j.firstDue);
     }, [editDate]);
 
     const handleEditStopDate = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        return editDate(JobProperty.StopDate, 'Stop Date', j.stopDate);
+        return editDate(JobProperty.StopDate, 'Stop date', j.stopDate);
     }, [editDate]);
 
     const handleEditRestartDate = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        return editDate(JobProperty.RestartDate, 'Restart Date', j.restartDate);
+        return editDate(JobProperty.RestartDate, 'Restart date', j.restartDate);
     }, [editDate]);
 
     // ── Saved Flight (recurring flight bookings) ───────────────────
@@ -1451,19 +1451,19 @@ export function useJobActions({
     const handleEditAmount = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit Amount', 'Amount...', JobProperty.Amount, j.charge);
+        openTextDialog('Edit amount', 'Amount…', JobProperty.Amount, j.charge);
     }, [openTextDialog]);
 
     const handleEditItems = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit Items', 'Items...', JobProperty.Items, j.items);
+        openTextDialog('Edit items', 'Items…', JobProperty.Items, j.items);
     }, [openTextDialog]);
 
     const handleEditClientCode = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        openTextDialog('Edit Client Code', 'Client Code...', JobProperty.ClientCode, (j as any).clientCode);
+        openTextDialog('Edit client code', 'Client code…', JobProperty.ClientCode, (j as any).clientCode);
     }, [openTextDialog]);
 
     // ── Lock/Unlock ────────────────────────────────────────────────
@@ -1495,7 +1495,7 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         const list = await getUndeliverableList();
-        await showSelectDialog(list, JobProperty.UndeliverableLocationID, 'Undeliverable Location', null);
+        await showSelectDialog(list, JobProperty.UndeliverableLocationID, 'Undeliverable location', null);
     }, [showSelectDialog]);
 
     // ── Internal Status ────────────────────────────────────────────
@@ -1505,7 +1505,7 @@ export function useJobActions({
         if (!j) return;
         const list = await getInternalStatusList();
         const items = list.map(s => ({id: s.id, text: s.text}));
-        await showSelectDialog(items, JobProperty.InternalStatusID, 'Internal Status', j.internalStatusId ?? null);
+        await showSelectDialog(items, JobProperty.InternalStatusID, 'Internal status', j.internalStatusId ?? null);
     }, [showSelectDialog]);
 
     // ── Push to Live (Bulk Jobs) ───────────────────────────────────

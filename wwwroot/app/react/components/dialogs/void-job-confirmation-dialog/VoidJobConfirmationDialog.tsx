@@ -62,8 +62,8 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
     ), [voidReasonText, voidSingleJobOnly, selectedCount, isSubmitting]);
 
     const confirmButtonText = useMemo(() => {
-        if (voidSingleJobOnly) return 'Void Job';
-        return `Void ${selectedCount} Job${selectedCount !== 1 ? 's' : ''}`;
+        if (voidSingleJobOnly) return 'Void job';
+        return `Void ${selectedCount} job${selectedCount !== 1 ? 's' : ''}`;
     }, [voidSingleJobOnly, selectedCount]);
 
     const handleReasonChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
@@ -203,13 +203,13 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                             py="sm"
                             style={{borderBottom: '1px solid var(--mantine-color-gray-3)', backgroundColor: 'var(--mantine-color-gray-1)'}}
                         >
-                            <Text fw={500} fz="sm">Related Jobs</Text>
+                            <Text fw={500} fz="sm">Related jobs</Text>
                             <Group gap="xs">
                                 <Button variant="subtle" size="compact-sm" onClick={selectAllJobs} disabled={isLoadingRelatedJobs || isSubmitting}>
-                                    Select All
+                                    Select all
                                 </Button>
                                 <Button variant="subtle" size="compact-sm" onClick={deselectAllJobs} disabled={isLoadingRelatedJobs || isSubmitting}>
-                                    Deselect All
+                                    Deselect all
                                 </Button>
                             </Group>
                         </Group>

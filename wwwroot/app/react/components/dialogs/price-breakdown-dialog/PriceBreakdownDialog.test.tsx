@@ -65,9 +65,9 @@ describe('PriceBreakdownDialog', () => {
         it('titles the dialog as the partner\'s pay and lists name + amount only', () => {
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({partnerView: true, priceBreakdowns: payLines})} />);
 
-            expect(screen.getByText('Your Pay')).toBeInTheDocument();
+            expect(screen.getByText('Your pay')).toBeInTheDocument();
             expect(screen.getByText('What you will be paid for this job')).toBeInTheDocument();
-            expect(screen.getByText('Pay Items')).toBeInTheDocument();
+            expect(screen.getByText('Pay items')).toBeInTheDocument();
             expect(screen.getByText('Base')).toBeInTheDocument();
             expect(screen.getByText('$57.00')).toBeInTheDocument();
             expect(screen.getByText('Fuel')).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('PriceBreakdownDialog', () => {
             expect(screen.queryByRole('columnheader', {name: 'Cost'})).not.toBeInTheDocument();
             expect(screen.queryByRole('columnheader', {name: 'Profit'})).not.toBeInTheDocument();
             expect(screen.queryByRole('columnheader', {name: 'Margin'})).not.toBeInTheDocument();
-            expect(screen.queryByText('Total Revenue')).not.toBeInTheDocument();
+            expect(screen.queryByText('Total revenue')).not.toBeInTheDocument();
         });
 
         it('is view-only even when readOnly is not passed', () => {
@@ -102,7 +102,7 @@ describe('PriceBreakdownDialog', () => {
 
     // ── Read-only: split child, managed on the parent ────────────────
     describe('managedElsewhere (split child)', () => {
-        it('shows a message naming the parent job and a link to it, and hides Add Item', () => {
+        it('shows a message naming the parent job and a link to it, and hides Add item', () => {
             const onNavigateToParent = jest.fn();
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({
                 readOnly: true,
@@ -133,16 +133,16 @@ describe('PriceBreakdownDialog', () => {
 
             // Dialog chrome
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Price Breakdown')).toBeInTheDocument();
+            expect(screen.getByText('Price breakdown')).toBeInTheDocument();
             expect(screen.getByText('Manage pricing components for this job')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /save & close/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /add item/i})).toBeInTheDocument();
 
             // Summary cards
-            expect(screen.getByText('Total Revenue')).toBeInTheDocument();
-            expect(screen.getByText('Total Cost')).toBeInTheDocument();
-            expect(screen.getByText('Gross Profit')).toBeInTheDocument();
+            expect(screen.getByText('Total revenue')).toBeInTheDocument();
+            expect(screen.getByText('Total cost')).toBeInTheDocument();
+            expect(screen.getByText('Gross profit')).toBeInTheDocument();
             // 100 + 25 + 15 = 140
             expect(screen.getAllByText('$140.00').length).toBeGreaterThanOrEqual(1);
             // 60 + 10 + 5 = 75
@@ -153,9 +153,9 @@ describe('PriceBreakdownDialog', () => {
             expect(screen.getByText(/46\.4% margin/)).toBeInTheDocument();
 
             // Price items table
-            expect(screen.getByText('Price Items')).toBeInTheDocument();
+            expect(screen.getByText('Price items')).toBeInTheDocument();
             expect(screen.getByText('3 items')).toBeInTheDocument();
-            expect(screen.getByText('Item Name')).toBeInTheDocument();
+            expect(screen.getByText('Item name')).toBeInTheDocument();
             expect(screen.getByText('Revenue')).toBeInTheDocument();
             expect(screen.getByText('Cost')).toBeInTheDocument();
             expect(screen.getByText('Profit')).toBeInTheDocument();
@@ -197,7 +197,7 @@ describe('PriceBreakdownDialog', () => {
             expect(screen.getByText('No price items yet')).toBeInTheDocument();
             expect(screen.getByText('Start by adding your first price breakdown item')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /add first item/i})).toBeInTheDocument();
-            expect(screen.queryByText('Total Revenue')).not.toBeInTheDocument();
+            expect(screen.queryByText('Total revenue')).not.toBeInTheDocument();
         });
     });
 
@@ -212,33 +212,33 @@ describe('PriceBreakdownDialog', () => {
         });
     });
 
-    // ── This Job Indicator ───────────────────────────────────────────
-    describe('This Job Indicator', () => {
-        it('displays This Job chip when childJobId matches jobId', () => {
+    // ── This job Indicator ───────────────────────────────────────────
+    describe('This job Indicator', () => {
+        it('displays This job chip when childJobId matches jobId', () => {
             const breakdowns: PriceBreakdown[] = [
                 {chargeId: 1, name: 'Base Charge', amount: 100, costAmount: 60, jobId: 100, childJobId: 100},
             ];
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({priceBreakdowns: breakdowns})} />);
-            expect(screen.getByText('This Job')).toBeInTheDocument();
+            expect(screen.getByText('This job')).toBeInTheDocument();
         });
 
-        it('does not display This Job chip when childJobId differs', () => {
+        it('does not display This job chip when childJobId differs', () => {
             const breakdowns: PriceBreakdown[] = [
                 {chargeId: 1, name: 'Base Charge', amount: 100, costAmount: 60, jobId: 100, childJobId: 999},
             ];
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({priceBreakdowns: breakdowns})} />);
-            expect(screen.queryByText('This Job')).not.toBeInTheDocument();
+            expect(screen.queryByText('This job')).not.toBeInTheDocument();
         });
     });
 
-    // ── Add Item ─────────────────────────────────────────────────────
-    describe('Add Item', () => {
-        it('shows add form with fields when Add Item is clicked', async () => {
+    // ── Add item ─────────────────────────────────────────────────────
+    describe('Add item', () => {
+        it('shows add form with fields when Add item is clicked', async () => {
             renderWithMantine(<PriceBreakdownDialog {...createMockProps()} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add item/i}));
 
-            expect(screen.getByText('Add New Price Item')).toBeInTheDocument();
+            expect(screen.getByText('Add new price item')).toBeInTheDocument();
             expect(screen.getByLabelText(/item name/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/revenue amount/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/cost amount/i)).toBeInTheDocument();
@@ -265,10 +265,10 @@ describe('PriceBreakdownDialog', () => {
             renderWithMantine(<PriceBreakdownDialog {...createMockProps()} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add item/i}));
-            expect(screen.getByText('Add New Price Item')).toBeInTheDocument();
+            expect(screen.getByText('Add new price item')).toBeInTheDocument();
 
             fireEvent.click(screen.getByRole('button', {name: /^cancel$/i}));
-            expect(screen.queryByText('Add New Price Item')).not.toBeInTheDocument();
+            expect(screen.queryByText('Add new price item')).not.toBeInTheDocument();
         });
     });
 
@@ -279,7 +279,7 @@ describe('PriceBreakdownDialog', () => {
 
             fireEvent.click(screen.getAllByRole('button', {name: /^edit /i})[0]);
 
-            expect(screen.getByText('Edit Price Item')).toBeInTheDocument();
+            expect(screen.getByText('Edit price item')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Base Charge')).toBeInTheDocument();
             expect(screen.getByDisplayValue('100')).toBeInTheDocument();
             expect(screen.getByDisplayValue('60')).toBeInTheDocument();
@@ -422,7 +422,7 @@ describe('PriceBreakdownDialog', () => {
     });
 
     describe('Save Functionality', () => {
-        it('calls onSave with total revenue when Save & Close is clicked', async () => {
+        it('calls onSave with total revenue when Save & close is clicked', async () => {
             const onSave = jest.fn();
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onSave})} />);
 
@@ -431,8 +431,8 @@ describe('PriceBreakdownDialog', () => {
         });
     });
 
-    // ── Live Preview ─────────────────────────────────────────────────
-    describe('Live Preview', () => {
+    // ── Live preview ─────────────────────────────────────────────────
+    describe('Live preview', () => {
         it('displays live preview with calculated profit', async () => {
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({priceBreakdowns: []})} />);
 
@@ -440,7 +440,7 @@ describe('PriceBreakdownDialog', () => {
             fireEvent.change(screen.getByLabelText(/revenue amount/i), {target: {value: '100'}});
             fireEvent.change(screen.getByLabelText(/cost amount/i), {target: {value: '60'}});
 
-            expect(screen.getByText('Live Preview')).toBeInTheDocument();
+            expect(screen.getByText('Live preview')).toBeInTheDocument();
             // Profit should be 100 - 60 = 40
             expect(screen.getByText('$40.00')).toBeInTheDocument();
         });

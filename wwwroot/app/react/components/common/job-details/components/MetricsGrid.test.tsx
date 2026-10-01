@@ -43,28 +43,28 @@ describe('MetricsGrid', () => {
         expect(screen.getByText('Pricing')).toBeInTheDocument();
         expect(screen.queryByText('Created')).not.toBeInTheDocument();
         expect(screen.getByText('Ready')).toBeInTheDocument();
-        expect(screen.getByText('PU Arrival')).toBeInTheDocument();
-        expect(screen.getByText('PU Time')).toBeInTheDocument();
-        expect(screen.getByText('Deliver By')).toBeInTheDocument();
+        expect(screen.getByText('PU arrival')).toBeInTheDocument();
+        expect(screen.getByText('PU time')).toBeInTheDocument();
+        expect(screen.getByText('Deliver by')).toBeInTheDocument();
 
         // Row 2
         expect(screen.getByText('Dispatched')).toBeInTheDocument();
-        expect(screen.getByText('Del Arrival')).toBeInTheDocument();
-        expect(screen.getByText('POD Name')).toBeInTheDocument();
-        expect(screen.getByText('POD Time')).toBeInTheDocument();
-        expect(screen.getByText('Follow Up')).toBeInTheDocument();
-        expect(screen.getByText('Client Name')).toBeInTheDocument();
+        expect(screen.getByText('Del arrival')).toBeInTheDocument();
+        expect(screen.getByText('POD name')).toBeInTheDocument();
+        expect(screen.getByText('POD time')).toBeInTheDocument();
+        expect(screen.getByText('Follow up')).toBeInTheDocument();
+        expect(screen.getByText('Client name')).toBeInTheDocument();
 
         // Values
         expect(screen.getByText('Bob Smith')).toBeInTheDocument();
         expect(screen.getByText('Test Client Ltd')).toBeInTheDocument();
     });
 
-    it('labels the pricing tile "Your Pay" for a network partner session', () => {
+    it('labels the pricing tile "Your pay" for a network partner session', () => {
         (window as any).IsNetworkPartner = true;
         try {
             renderWithTheme(<MetricsGrid {...createDefaultProps()} />);
-            expect(screen.getByText('Your Pay')).toBeInTheDocument();
+            expect(screen.getByText('Your pay')).toBeInTheDocument();
             expect(screen.queryByText('Pricing')).not.toBeInTheDocument();
         } finally {
             delete (window as any).IsNetworkPartner;
@@ -80,7 +80,7 @@ describe('MetricsGrid', () => {
         if (pricingButton) fireEvent.click(pricingButton);
         expect(onPricingClick).toHaveBeenCalledTimes(1);
 
-        const clientButton = screen.getByText('Client Name').closest('button');
+        const clientButton = screen.getByText('Client name').closest('button');
         if (clientButton) fireEvent.click(clientButton);
         expect(onClientClick).toHaveBeenCalledTimes(1);
     });
@@ -94,20 +94,20 @@ describe('MetricsGrid', () => {
         expect(showToast).toHaveBeenCalledWith("Dispatch time can't be edited", 'info');
     });
 
-    it('calls onEditPodName when POD Name card is clicked', () => {
+    it('calls onEditPodName when POD name card is clicked', () => {
         const onEditPodName = jest.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({onEditPodName})} />);
 
-        const podButton = screen.getByText('POD Name').closest('button');
+        const podButton = screen.getByText('POD name').closest('button');
         if (podButton) fireEvent.click(podButton);
         expect(onEditPodName).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onEditCompletedTime when POD Time card is clicked', () => {
+    it('calls onEditCompletedTime when POD time card is clicked', () => {
         const onEditCompletedTime = jest.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({onEditCompletedTime})} />);
 
-        const podTimeButton = screen.getByText('POD Time').closest('button');
+        const podTimeButton = screen.getByText('POD time').closest('button');
         if (podTimeButton) fireEvent.click(podTimeButton);
         expect(onEditCompletedTime).toHaveBeenCalledTimes(1);
     });
@@ -139,15 +139,15 @@ describe('MetricsGrid', () => {
         if (pricingButton) fireEvent.click(pricingButton);
         expect(onPricingClick).toHaveBeenCalledTimes(1);
 
-        const puTimeButton = screen.getByText('PU Time').closest('button');
+        const puTimeButton = screen.getByText('PU time').closest('button');
         expect(puTimeButton).not.toBeNull();
         if (puTimeButton) fireEvent.click(puTimeButton);
         expect(onEditDateAndTime).toHaveBeenCalled();
 
-        // POD Name (free-text) and Client Name (autocomplete) are out of the
+        // POD name (free-text) and Client name (autocomplete) are out of the
         // read-only subset — they stay disabled/non-clickable while locked.
-        expect(screen.getByText('POD Name').closest('button')).toBeNull();
-        expect(screen.getByText('Client Name').closest('button')).toBeNull();
+        expect(screen.getByText('POD name').closest('button')).toBeNull();
+        expect(screen.getByText('Client name').closest('button')).toBeNull();
     });
 
     describe('dense mode', () => {
@@ -157,15 +157,15 @@ describe('MetricsGrid', () => {
             expect(screen.getByText('Pricing')).toBeInTheDocument();
             expect(screen.queryByText('Created')).not.toBeInTheDocument();
             expect(screen.getByText('Ready')).toBeInTheDocument();
-            expect(screen.getByText('PU Arrival')).toBeInTheDocument();
-            expect(screen.getByText('PU Time')).toBeInTheDocument();
-            expect(screen.getByText('Deliver By')).toBeInTheDocument();
+            expect(screen.getByText('PU arrival')).toBeInTheDocument();
+            expect(screen.getByText('PU time')).toBeInTheDocument();
+            expect(screen.getByText('Deliver by')).toBeInTheDocument();
             expect(screen.getByText('Dispatched')).toBeInTheDocument();
-            expect(screen.getByText('Del Arrival')).toBeInTheDocument();
-            expect(screen.getByText('POD Name')).toBeInTheDocument();
-            expect(screen.getByText('POD Time')).toBeInTheDocument();
-            expect(screen.getByText('Follow Up')).toBeInTheDocument();
-            expect(screen.getByText('Client Name')).toBeInTheDocument();
+            expect(screen.getByText('Del arrival')).toBeInTheDocument();
+            expect(screen.getByText('POD name')).toBeInTheDocument();
+            expect(screen.getByText('POD time')).toBeInTheDocument();
+            expect(screen.getByText('Follow up')).toBeInTheDocument();
+            expect(screen.getByText('Client name')).toBeInTheDocument();
 
             const pricingButton = screen.getByText('Pricing').closest('button');
             if (pricingButton) fireEvent.click(pricingButton);

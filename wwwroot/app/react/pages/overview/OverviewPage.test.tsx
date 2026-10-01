@@ -232,7 +232,7 @@ describe('OverviewPage', () => {
             expect(screen.getByText('Open job JOB-123')).toBeInTheDocument();
             expect(onOpenJobDetail).not.toHaveBeenCalled();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Open Job'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Open job'}));
 
             expect(onOpenJobDetail).toHaveBeenCalledWith(123);
         });

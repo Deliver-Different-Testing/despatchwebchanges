@@ -247,7 +247,7 @@ export const FlightItinerary: React.FC<FlightItineraryProps> = ({
             {/* Card title */}
             <Group gap={12} mb={24}>
                 <Icon tabler={IconRoute} size={24}/>
-                <Text fz="lg" fw={600}>Flight Itinerary</Text>
+                <Text fz="lg" fw={600}>Flight itinerary</Text>
             </Group>
 
             {/* Timeline container */}

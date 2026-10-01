@@ -214,7 +214,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                 {(!views || views.length === 0) ? (
                     <Box p="lg" ta="center">
                         <Icon lucide={EyeOff} size={40} color="var(--mantine-color-gray-5)" />
-                        <Text fz="sm" c="dimmed" mt="xs">No views available</Text>
+                        <Text fz="sm" c="dimmed" mt="xs">No views yet</Text>
                     </Box>
                 ) : (
                     <>

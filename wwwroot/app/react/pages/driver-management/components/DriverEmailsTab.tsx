@@ -143,7 +143,7 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
                 <SearchField
                     value={query.searchTerm ?? ''}
                     onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
-                    placeholder="Search emails..."
+                    placeholder="Search emails…"
                 />
             </FilterToolbar>
 
@@ -172,8 +172,8 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
                 )}
                 isRowSelected={(row) => selectedIds.has(row.courierId)}
                 emptyIcon={<Icon lucide={Mail} size={40}/>}
-                emptyTitle="No Driver Emails"
-                emptyMessage="No driver emails match your criteria."
+                emptyTitle="No driver emails"
+                emptyMessage="No driver emails match your search."
             />
         </Stack>
     );

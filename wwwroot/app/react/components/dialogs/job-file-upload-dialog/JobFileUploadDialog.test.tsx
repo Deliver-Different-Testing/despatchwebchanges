@@ -103,7 +103,7 @@ describe('JobFileUploadDialog — normal (attached files) mode', () => {
         mockGetAttachedFiles.mockResolvedValue([normalFile]);
         renderDialog();
 
-        expect(screen.getByText('Attached Files')).toBeInTheDocument();
+        expect(screen.getByText('Attached files')).toBeInTheDocument();
         expect(screen.getByText('Manage attached files for this job')).toBeInTheDocument();
         expect(screen.getByText(/drag and drop files here or click to upload/i)).toBeInTheDocument();
         expect(screen.getByText(/accepted file types: images, pdf\. max size: 10mb/i)).toBeInTheDocument();
@@ -113,8 +113,8 @@ describe('JobFileUploadDialog — normal (attached files) mode', () => {
         expect(screen.getByText('Mar 4, 2026 09:30:00')).toBeInTheDocument();
 
         // Column headers — the normal table has no Description column.
-        expect(screen.getByText('File Name')).toBeInTheDocument();
-        expect(screen.getByText('Last Modified')).toBeInTheDocument();
+        expect(screen.getByText('File name')).toBeInTheDocument();
+        expect(screen.getByText('Last modified')).toBeInTheDocument();
         expect(screen.queryByText('Description')).not.toBeInTheDocument();
 
         // Normal mode loads attached files only; POD photos are not fetched.
@@ -168,7 +168,7 @@ describe('JobFileUploadDialog — POD-only mode', () => {
         mockGetAttachedFiles.mockResolvedValue([podFile]);
         renderDialog({initialUploadType: 'pod'});
 
-        expect(screen.getByText('POD Photos')).toBeInTheDocument();
+        expect(screen.getByText('POD photos')).toBeInTheDocument();
         expect(screen.getByText('Upload proof of delivery photos')).toBeInTheDocument();
         expect(screen.getByLabelText(/pod photo description/i)).toBeInTheDocument();
         expect(screen.getByText(/drag and drop pod photo here or click to upload/i)).toBeInTheDocument();
@@ -176,9 +176,9 @@ describe('JobFileUploadDialog — POD-only mode', () => {
 
         expect(await screen.findByText('signature.jpg')).toBeInTheDocument();
         expect(screen.getByText('Left with reception')).toBeInTheDocument();
-        expect(screen.getByText('Photo Name')).toBeInTheDocument();
+        expect(screen.getByText('Photo name')).toBeInTheDocument();
         expect(screen.getByText('Description')).toBeInTheDocument();
-        expect(screen.getByText('Upload Date')).toBeInTheDocument();
+        expect(screen.getByText('Upload date')).toBeInTheDocument();
 
         // POD mode also pulls the delivery photos for the current month.
         await waitFor(() => expect(mockGetJobDeliveryPhotos).toHaveBeenCalled());
@@ -214,7 +214,7 @@ describe('JobFileUploadDialog — both mode', () => {
         const user = setupUser();
         renderDialog({initialUploadType: 'both'});
 
-        expect(screen.getByText('File Upload')).toBeInTheDocument();
+        expect(screen.getByText('File upload')).toBeInTheDocument();
         expect(screen.getByText('Manage regular files and POD photos for this job')).toBeInTheDocument();
 
         const regularTab = screen.getByRole('tab', {name: /regular files/i});
@@ -304,7 +304,7 @@ describe('JobFileUploadDialog — uploading', () => {
         });
 
         expect(await screen.findByText('Uploading Files (0/1)')).toBeInTheDocument();
-        expect(screen.getByText('Overall Progress')).toBeInTheDocument();
+        expect(screen.getByText('Overall progress')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /complete/i})).toBeDisabled();
         expect(screen.getByRole('button', {name: /close/i})).toBeDisabled();
 

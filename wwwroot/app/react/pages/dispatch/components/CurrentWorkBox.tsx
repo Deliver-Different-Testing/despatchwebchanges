@@ -95,9 +95,9 @@ const EmptyMessage: React.FC<{children: React.ReactNode}> = ({children}) => (
 );
 
 /**
- * "Current Work" panel for the React dispatch page. Mirrors the AngularJS
+ * "Current work" panel for the React dispatch page. Mirrors the AngularJS
  * home `currentWork` partial:
- *   - US tenants browse an "All Drivers" overview (job counts) and drill into a
+ *   - US tenants browse an "All drivers" overview (job counts) and drill into a
  *     single driver's job list; a breadcrumb back-link returns to the overview.
  *   - Other tenants pick a courier via search and see their job list directly.
  * The focused courier is also seeded from the currently selected job.
@@ -172,7 +172,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     const courierName = pickedCourierName ?? selectedJobCourierName;
     const courierNumber = pickedCourierName ? undefined : selectedJobCourierNumber;
     const formattedCourierLabel = formatCourierDisplayLabel(courierDisplayMode, courierName, courierNumber);
-    const courierLabel = formattedCourierLabel ?? 'Selected Driver';
+    const courierLabel = formattedCourierLabel ?? 'Selected driver';
     const [truckStatusOpen, {open: openTruckStatus, close: closeTruckStatus}] = useDisclosure(false);
 
     const overviewQuery = useQuery({
@@ -241,8 +241,8 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                                 persistFocus({mode: value});
                             }}
                             data={[
-                                {value: 'overview', label: 'All Drivers'},
-                                {value: 'active', label: 'Active Drivers'},
+                                {value: 'overview', label: 'All drivers'},
+                                {value: 'active', label: 'Active drivers'},
                                 {
                                     value: 'detail',
                                     disabled: !courierId,

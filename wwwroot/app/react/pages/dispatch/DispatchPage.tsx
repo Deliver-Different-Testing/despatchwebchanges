@@ -78,11 +78,11 @@ const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
 export interface DispatchLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
     reloadFromStorage: () => void;
-    /** Opens the MUI "Save Layout" dialog and resolves with the entered name (or null if cancelled). */
+    /** Opens the MUI "Save layout" dialog and resolves with the entered name (or null if cancelled). */
     promptSaveLayout: () => Promise<string | null>;
-    /** Opens the MUI "Delete Layout" confirmation and resolves true if confirmed. */
+    /** Opens the MUI "Delete layout" confirmation and resolves true if confirmed. */
     promptDeleteLayout: (layoutName: string) => Promise<boolean>;
-    /** Opens the MUI "Rename Layout" dialog and resolves with the new name (or null if cancelled). */
+    /** Opens the MUI "Rename layout" dialog and resolves with the new name (or null if cancelled). */
     promptRenameLayout: (layoutName: string) => Promise<string | null>;
     /** Push new toolbar filters (selected views + date range) into the page. */
     updateFilters: (filters: Partial<DispatchFilters>) => void;
@@ -253,7 +253,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     const decoratedViewsRef = useRef(decoratedViews);
     const viewsListenerRef = useRef<((views: DfrntPageViewModel[]) => void) | null>(null);
     // Hold the first notification until the list has actually loaded, so the
-    // toolbar menu keeps its spinner instead of flashing "No views available".
+    // toolbar menu keeps its spinner instead of flashing "No views yet".
     const viewsLoadedRef = useRef(false);
     viewsLoadedRef.current = !viewsLoading;
     useEffect(() => {
@@ -646,7 +646,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 if (!currentJobId) {
                     return (
                         <NoData
-                            title="No Job Selected"
+                            title="No job selected"
                             message="Select a job from the list to see its details."
                             icon={<Icon lucide={Briefcase} size={48}/>}
                         />
