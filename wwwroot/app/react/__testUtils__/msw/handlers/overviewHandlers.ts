@@ -81,7 +81,7 @@ export const mockOpenJobDtos: IOpenJobResponseDto[] = [
     {
         jobId: 301,
         reference: 'OJ-001',
-        status: 'In Transit',
+        status: 'In transit',
         pickupTime: '2024-06-15T08:00:00',
         pickupName: 'Warehouse A',
         pickupAddress: '100 Depot Rd, Auckland',
