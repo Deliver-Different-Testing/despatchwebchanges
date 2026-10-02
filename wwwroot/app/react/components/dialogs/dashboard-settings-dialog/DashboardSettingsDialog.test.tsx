@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {screen} from '@testing-library/react';
+import {act, screen} from '@testing-library/react';
 import {
     DashboardSettingsConfig,
     DashboardSettingsDialog,
@@ -15,6 +15,10 @@ import {
 import { createProps, renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {ColorModeContext} from '../../../hooks/useColorMode';
+
+// Mantine's modal focus trap moves focus to its first tabbable on a zero-delay timeout; a click that lands
+// before that fires has its focus stolen, which closes the select dropdown it just opened.
+const settleModalFocus = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
 
 const mockRefreshOptions: RefreshOption[] = [
     {id: 0, text: 'Disabled'},
@@ -148,6 +152,7 @@ describe('DashboardSettingsDialog', () => {
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
             const select = screen.getByRole('combobox', {name: 'Job list'});
+            await settleModalFocus();
 
             await user.click(select);
             await user.click(await screen.findByRole('option', {name: '5 minutes'}));
@@ -184,6 +189,7 @@ describe('DashboardSettingsDialog', () => {
             expect(screen.getByText('Tasks')).toBeInTheDocument();
 
             const select = screen.getByRole('combobox', {name: 'Tasks'});
+            await settleModalFocus();
             await user.click(select);
             await user.click(await screen.findByRole('option', {name: '1 minute'}));
 

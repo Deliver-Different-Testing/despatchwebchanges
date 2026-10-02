@@ -91,6 +91,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             <Stack p="lg" gap="md" bg={dialogContentBg}>
                 {/* Select Dropdown */}
                 <Select
+                    data-autofocus
                     label={title}
                     data={items.map(item => ({value: String(item.id), label: item.text}))}
                     value={selectedItem ? String(selectedItem.id) : null}
