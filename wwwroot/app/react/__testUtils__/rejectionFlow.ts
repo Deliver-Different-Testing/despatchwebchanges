@@ -4,7 +4,7 @@ import type {UserEvent} from '@testing-library/user-event';
 /** Types a reason into the open inline rejection input, confirms, and asserts `reject` received it for request 1. */
 export async function confirmRejectionWithReason(
     user: UserEvent,
-    reject: jest.Mock,
+    reject: (...args: never[]) => unknown,
     reason = 'rate too low',
 ): Promise<void> {
     await user.click(screen.getByLabelText(/Reason for rejection/i));
