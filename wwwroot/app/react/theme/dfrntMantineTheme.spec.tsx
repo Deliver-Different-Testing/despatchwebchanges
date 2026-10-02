@@ -8,16 +8,14 @@ import {
     dfrntCssVariablesResolver,
     createDfrntTheme,
 } from './dfrntMantineTheme';
-import {GlassDropdownRoot} from '../components/common/glass/GlassDropdownRoot';
+import {GlassDropdownRoot, glassClassNames} from '@dfrnt/glass';
 import {contrastRatio, getMd3Scheme} from './md3';
 import {dfrntPrimaryPalette, urgentPrimaryPalette, inkBluePalette} from './palettes';
-
-jest.mock('./glass.module.css', () => ({__esModule: true, default: {glass: 'glass-mock', panel: 'panel-mock'}}));
 
 describe('dfrntTheme glass dropdowns', () => {
     it('gives Menu and Popover dropdowns the glass and panel classes', () => {
         for (const name of ['Menu', 'Popover'] as const) {
-            expect(dfrntTheme.components?.[name]?.classNames).toEqual({dropdown: 'glass-mock panel-mock'});
+            expect(dfrntTheme.components?.[name]?.classNames).toEqual({dropdown: `${glassClassNames.glass} ${glassClassNames.panel}`});
         }
     });
 

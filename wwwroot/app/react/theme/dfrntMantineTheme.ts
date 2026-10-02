@@ -24,8 +24,7 @@
  * (light) / charcoal #2c2a30 (dark). Elevation by tone, plus a soft shadow.
  */
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
-import {GlassDropdownRoot} from '../components/common/glass/GlassDropdownRoot';
-import glassClasses from './glass.module.css';
+import {GlassDropdownRoot, glassClassNames} from '@dfrnt/glass';
 import {getMd3Scheme} from './md3';
 import {isUsTenant} from './tenant';
 
@@ -274,11 +273,11 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             Autocomplete: {defaultProps: {radius: 'sm'}},
             Menu: {
                 defaultProps: {radius: 'sm', shadow: 'md'},
-                classNames: {dropdown: `${glassClasses.glass} ${glassClasses.panel}`},
+                classNames: {dropdown: `${glassClassNames.glass} ${glassClassNames.panel}`},
             },
             Popover: {
                 defaultProps: {radius: 'sm', shadow: 'md'},
-                classNames: {dropdown: `${glassClasses.glass} ${glassClasses.panel}`},
+                classNames: {dropdown: `${glassClassNames.glass} ${glassClassNames.panel}`},
             },
             // Menu renders through Popover, so this reaches both; Select/Autocomplete
             // dropdowns lack the glass class and render unchanged.

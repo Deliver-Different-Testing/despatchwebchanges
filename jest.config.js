@@ -9,7 +9,8 @@ const config = {
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
     transform: {
-        '^.+\\.(ts|tsx)$': ['@swc/jest', {
+        // `js` is for @dfrnt/glass, which ships ESM-only (its exports map has just "import").
+        '^.+\\.(ts|tsx|js)$': ['@swc/jest', {
             jsc: {
                 parser: { syntax: 'typescript', tsx: true, decorators: true },
                 transform: { react: { runtime: 'automatic' } },
@@ -17,7 +18,10 @@ const config = {
         }],
     },
 
+    transformIgnorePatterns: ['/node_modules/(?!@dfrnt/glass/)'],
+
     moduleNameMapper: {
+        '^@dfrnt/glass$': '<rootDir>/node_modules/@dfrnt/glass/dist/index.js',
         '^angular$': '<rootDir>/node_modules/angular/angular.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/wwwroot/app/tests/mocks/styleMock.ts',
         '\\.html$': '<rootDir>/wwwroot/app/tests/mocks/templateMock.ts',

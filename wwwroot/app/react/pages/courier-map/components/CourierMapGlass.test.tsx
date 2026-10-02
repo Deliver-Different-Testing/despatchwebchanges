@@ -12,8 +12,6 @@ jest.mock('../../../hooks/glassSupport', () => ({
     isLiquidGlassSupported: () => true,
 }));
 
-jest.mock('../../../theme/glass.module.css', () => ({__esModule: true, default: {glass: 'glass-mock', panel: 'panel-mock'}}));
-
 const panelProps = {
     drivers: [],
     totalActiveDrivers: 0,
@@ -43,8 +41,8 @@ describe('Courier Map liquid glass', () => {
 
     it('leaves the drivers card and map controls plain while Liquid Glass is off (the default)', () => {
         renderWithMantine(<><DriversPanel {...panelProps}/><MapControls {...controlsProps}/></>);
-        expect(screen.getByRole('button', {name: 'Toggle drivers panel'}).parentElement).not.toHaveClass('glass-mock');
-        expect(screen.getByRole('button', {name: 'Refresh data'}).closest('.mantine-Paper-root')).not.toHaveClass('glass-mock');
+        expect(screen.getByRole('button', {name: 'Toggle drivers panel'}).parentElement).not.toHaveClass('dfrnt-glass');
+        expect(screen.getByRole('button', {name: 'Refresh data'}).closest('.mantine-Paper-root')).not.toHaveClass('dfrnt-glass');
     });
 
     it('frosts the zoom/view rail and the dispatch rail only when on', () => {
@@ -63,25 +61,25 @@ describe('Courier Map liquid glass', () => {
         const railOf = (name: string) => screen.getByRole('button', {name}).closest('.mantine-Paper-root');
 
         const off = rails();
-        expect(railOf('Zoom in')).not.toHaveClass('glass-mock');
-        expect(railOf('Toggle auto zoom')).not.toHaveClass('glass-mock');
+        expect(railOf('Zoom in')).not.toHaveClass('dfrnt-glass');
+        expect(railOf('Toggle auto zoom')).not.toHaveClass('dfrnt-glass');
         off.unmount();
 
         localStorage.setItem('dd-liquid-glass', 'on');
         rails();
-        expect(railOf('Zoom in')).toHaveClass('glass-mock', 'panel-mock');
-        expect(railOf('Toggle auto zoom')).toHaveClass('glass-mock', 'panel-mock');
+        expect(railOf('Zoom in')).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');
+        expect(railOf('Toggle auto zoom')).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');
     });
 
     it('frosts the drivers card and map controls when on, but not the driver list', () => {
         localStorage.setItem('dd-liquid-glass', 'on');
         renderWithMantine(<><DriversPanel {...panelProps}/><MapControls {...controlsProps}/></>);
 
-        expect(screen.getByRole('button', {name: 'Toggle drivers panel'}).parentElement).toHaveClass('glass-mock', 'panel-mock');
-        expect(screen.getByRole('button', {name: 'Refresh data'}).closest('.mantine-Paper-root')).toHaveClass('glass-mock', 'panel-mock');
+        expect(screen.getByRole('button', {name: 'Toggle drivers panel'}).parentElement).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');
+        expect(screen.getByRole('button', {name: 'Refresh data'}).closest('.mantine-Paper-root')).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');
         const list = screen.getByText('No active drivers').closest('[style*="overflow-y"]') as HTMLElement;
         expect(list).toBeTruthy();
-        expect(list).not.toHaveClass('glass-mock');
+        expect(list).not.toHaveClass('dfrnt-glass');
         expect(list.style.backgroundColor).toBe('var(--mantine-color-body)');
     });
 });

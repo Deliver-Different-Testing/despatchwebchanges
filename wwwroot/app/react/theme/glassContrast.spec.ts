@@ -3,8 +3,9 @@ import path from 'path';
 import {contrastRatio, getMd3Scheme} from './md3';
 
 const react = path.resolve(__dirname, '..');
+const repoRoot = path.resolve(react, '../../..');
 const cssFiles = [
-    'theme/glass.module.css',
+    'node_modules/@dfrnt/glass/dist/glass.css',
     'components/dialogs/shared/mantine/DialogGlass.module.css',
     'components/common/box-shell/BoxShell.module.css',
 ];
@@ -24,11 +25,13 @@ const mix = (tintHex: string, alpha: number, backdropHex: string) =>
 interface Tint {file: string; selector: string; scheme: 'light' | 'dark'; token: keyof typeof tokens.light; percent: number}
 
 function tintsIn(file: string): Tint[] {
-    const css = fs.readFileSync(path.join(react, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const css = fs.readFileSync(path.join(file.startsWith('node_modules/') ? repoRoot : react, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     const found: Tint[] = [];
     for (const [, selector, body] of css.matchAll(/([^{}@]+)\{([^{}]*)\}/g)) {
+        // The lens backdrop layer (formerly glassLayer.module.css, never covered here) sits beneath the pane.
+        if (selector.includes('dfrnt-glass-backdrop')) continue;
         const scheme = selector.includes('dark') ? 'dark' : 'light';
-        for (const [, token, percent] of body.matchAll(/color-mix\(in srgb,\s*var\((--dd-[\w-]+)\)\s+(\d+)%/g)) {
+        for (const [, token, percent] of body.matchAll(/color-mix\(in srgb,\s*var\((--dd-[\w-]+)(?:,[^)]*)?\)\s+(\d+)%/g)) {
             found.push({file, selector: selector.trim().replace(/\s+/g, ' '), scheme, token: token as Tint['token'], percent: Number(percent)});
         }
     }

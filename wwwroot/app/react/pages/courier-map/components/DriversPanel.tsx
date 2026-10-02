@@ -6,7 +6,7 @@ import {
 import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import classes from './DriversPanel.module.css';
-import glassClasses from '../../../theme/glass.module.css';
+import {glassClassNames} from '@dfrnt/glass';
 import {useLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import { NoData } from '../../../components/common/no-data';
 import { matchesCourierSearch } from '../CourierMapPage.types';
@@ -105,7 +105,7 @@ export function DriversPanel({
             w={PANEL_WIDTH}
             // Glass covers the card chrome (header, stats, filters); the list area below keeps
             // its own opaque surface so driver rows stay readable over the map.
-            className={glassEnabled ? `${glassClasses.glass} ${glassClasses.panel}` : undefined}
+            className={glassEnabled ? `${glassClassNames.glass} ${glassClassNames.panel}` : undefined}
             style={{
                 position: 'absolute',
                 top: 16,
