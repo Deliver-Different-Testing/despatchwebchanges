@@ -276,6 +276,67 @@ public class AddStopJobServiceTests
     }
 
     [Fact]
+    public async Task AddStopInsertJobAsync_WithPackages_SplitsWeightAcrossLines()
+    {
+        // Arrange — 3 units, 100kg total: 33.3333 + 33.3333 + 33.3334
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.PickUpAddress.ShipmentDetails.Quantity = 3;
+        request.PickUpAddress.ShipmentDetails.Weight = 100;
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+
+        // Act
+        await service.AddStopInsertJobAsync(request);
+
+        // Assert — lines sum to the stop's total weight, not total x quantity
+        await _jobCommandRepositoryMock.Received().AddPackagesToJobAsync(
+            parentJob.UcjbId,
+            Arg.Is<List<TucJobItem>>(items => items!.Count == 3 && Math.Abs(items.Sum(i => i.Weight) - 100) < 0.00001));
+    }
+
+    [Fact]
+    public async Task AddStopInsertJobAsync_WithPackages_LastLineTakesRoundingRemainder()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.PickUpAddress.ShipmentDetails.Quantity = 3;
+        request.PickUpAddress.ShipmentDetails.Weight = 100;
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+
+        await service.AddStopInsertJobAsync(request);
+
+        await _jobCommandRepositoryMock.Received().AddPackagesToJobAsync(
+            parentJob.UcjbId,
+            Arg.Is<List<TucJobItem>>(items =>
+                items!.Count == 3
+                && items[0].Weight == 33.3333
+                && items[1].Weight == 33.3333
+                && items[2].Weight == 33.3334));
+    }
+
+    [Fact]
+    public async Task AddStopInsertJobAsync_WithPackages_TinyWeight_NeverProducesNegativeLine()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.PickUpAddress.ShipmentDetails.Quantity = 5;
+        request.PickUpAddress.ShipmentDetails.Weight = 0.0003;
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+
+        await service.AddStopInsertJobAsync(request);
+
+        await _jobCommandRepositoryMock.Received().AddPackagesToJobAsync(
+            parentJob.UcjbId,
+            Arg.Is<List<TucJobItem>>(items => items!.Count == 5 && items.All(i => i.Weight >= 0)));
+    }
+
+    [Fact]
     public async Task AddStopInsertRecurringJobAsync_NullRequest_ThrowsArgumentNullException()
     {
         // Arrange
