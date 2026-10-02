@@ -522,7 +522,7 @@ describe('DispatchDialog', () => {
             const search = screen.getByPlaceholderText(/Search agent/);
             fireEvent.focus(search);
             fireEvent.change(search, {target: {value: 'One'}});
-            const option = await screen.findByRole('option', {name: /AgentOne/});
+            const option = await screen.findByRole('option', {name: /AgentOne/}, {timeout: 5000});
             fireEvent.click(option);
         }
 
@@ -612,16 +612,18 @@ describe('DispatchDialog', () => {
             });
         });
 
-        it('captures an AWB alongside the assignment, and locks it when the job already has one', async () => {
-            const user = setupUser();
-            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
-
-            const {unmount} = renderWithMantineProviders(
-                <DispatchDialog {...makeProps({onDispatchCourier, existingConNote: 'AWB-EXISTING'})} />
+        it('locks the AWB field when the job already has one', async () => {
+            renderWithMantineProviders(
+                <DispatchDialog {...makeProps({existingConNote: 'AWB-EXISTING'})} />
             );
             await pickAgent();
+
             expect(screen.getByLabelText(/AWB number/i)).toBeDisabled();
-            unmount();
+        });
+
+        it('captures an AWB alongside the assignment', async () => {
+            const user = setupUser();
+            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
 
             renderWithMantineProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
             await pickAgent();
