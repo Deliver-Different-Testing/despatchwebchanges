@@ -1866,48 +1866,44 @@ public partial class JobRepository(
                     await Context.SaveChangesAsync();
                 }
 
-                var totalItemCount = await Context.TucJobItems
-                    .Where(i => i.JobId == effectiveJobId &&
-                                (childJobId == null || i.ChildJobId == childJobId))
-                    .CountAsync();
-
-                int? dimensionsType = calculateDimsOncePerJob is true ? 2 : null;
+                // Parent lines drive the family total; a stop job with its own lines is totalled on its
+                // own, and falls back to the parent's total when it has none (mirrors the read mapping).
+                var parentLines = Context.TucJobItems
+                    .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
+                    .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
 
                 if (childJobId == null)
                 {
-                    if (calculateDimsOncePerJob.HasValue)
-                    {
-                        await Context.TucJobs
-                            .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
-                            .ExecuteUpdateAsync(setters => setters
-                                .SetProperty(j => j.UcjbQty, (short)totalItemCount)
-                                .SetProperty(j => j.DimensionsType, dimensionsType));
-                    }
-                    else
-                    {
-                        await Context.TucJobs
-                            .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
-                            .ExecuteUpdateAsync(setters => setters
-                                .SetProperty(j => j.UcjbQty, (short)totalItemCount));
-                    }
+                    var (qty, weight) = await SumItemLinesAsync(parentLines);
+                    await Context.TucJobs
+                        .Where(j => (j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId) &&
+                                    !Context.TucJobItems.Any(i => i.ChildJobId == j.UcjbId))
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbQty, qty)
+                            .SetProperty(j => j.UcjbWeight, weight));
                 }
                 else
                 {
-                    if (calculateDimsOncePerJob.HasValue)
-                    {
-                        await Context.TucJobs
-                            .Where(j => j.UcjbId == jobId)
-                            .ExecuteUpdateAsync(setters => setters
-                                .SetProperty(j => j.UcjbQty, (short)totalItemCount)
-                                .SetProperty(j => j.DimensionsType, dimensionsType));
-                    }
-                    else
-                    {
-                        await Context.TucJobs
-                            .Where(j => j.UcjbId == jobId)
-                            .ExecuteUpdateAsync(setters => setters
-                                .SetProperty(j => j.UcjbQty, (short)totalItemCount));
-                    }
+                    var ownLines = Context.TucJobItems
+                        .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                        .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
+                    var (qty, weight) = await SumItemLinesAsync(
+                        await ownLines.AnyAsync() ? ownLines : parentLines);
+                    await Context.TucJobs
+                        .Where(j => j.UcjbId == jobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbQty, qty)
+                            .SetProperty(j => j.UcjbWeight, weight));
+                }
+
+                if (calculateDimsOncePerJob.HasValue)
+                {
+                    int? dimensionsType = calculateDimsOncePerJob.Value ? 2 : null;
+                    var dimsJobs = childJobId == null
+                        ? Context.TucJobs.Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+                        : Context.TucJobs.Where(j => j.UcjbId == jobId);
+                    await dimsJobs.ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.DimensionsType, dimensionsType));
                 }
 
                 await transaction.CommitAsync();
@@ -1988,11 +1984,40 @@ public partial class JobRepository(
                         Cubic = p.Cubic,
                         Notes = p.ItemName,
                         Barcode = p.Barcode,
+                        Items = 1,
                         ItemId = nextItemId++
                     }).ToList();
 
                     await Context.TblBulkJobItems.AddRangeAsync(newItems);
                     await Context.SaveChangesAsync();
+                }
+
+                var parentLines = Context.TblBulkJobItems
+                    .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
+                    .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
+
+                if (childJobId == null)
+                {
+                    var (qty, weight) = await SumItemLinesAsync(parentLines);
+                    await Context.TblBulkJobs
+                        .Where(j => (j.BulkJobId == effectiveJobId || j.RootParentId == effectiveJobId) &&
+                                    !Context.TblBulkJobItems.Any(i => i.ChildJobId == j.BulkJobId))
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.Qty, qty)
+                            .SetProperty(j => j.Weight, (decimal?)weight));
+                }
+                else
+                {
+                    var ownLines = Context.TblBulkJobItems
+                        .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                        .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
+                    var (qty, weight) = await SumItemLinesAsync(
+                        await ownLines.AnyAsync() ? ownLines : parentLines);
+                    await Context.TblBulkJobs
+                        .Where(j => j.BulkJobId == bulkJobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.Qty, qty)
+                            .SetProperty(j => j.Weight, (decimal?)weight));
                 }
 
                 if (calculateDimsOncePerJob.HasValue)
@@ -2017,6 +2042,23 @@ public partial class JobRepository(
     }
 
 
+    private sealed class ItemLine
+    {
+        public int Items { get; init; }
+        public double Weight { get; init; }
+    }
+
+    /// <summary>
+    /// Totals item lines for the job-row columns: units = SUM(Items), weight = SUM(Items * Weight)
+    /// (line Weight is per unit).
+    /// </summary>
+    private static async Task<(short Qty, double Weight)> SumItemLinesAsync(IQueryable<ItemLine> lines)
+    {
+        var qty = await lines.SumAsync(l => (int?)l.Items) ?? 0;
+        var weight = await lines.SumAsync(l => (double?)(l.Items * l.Weight)) ?? 0;
+        return ((short)qty, weight);
+    }
+
     public async Task AddPackagesToJobAsync(int effectiveJobId,
         List<TucJobItem> items)
     {
@@ -2028,6 +2070,22 @@ public partial class JobRepository(
 
         await Context.TucJobItems.AddRangeAsync(items);
         await Context.SaveChangesAsync();
+
+        foreach (var childJobId in items.Select(i => i.ChildJobId).Distinct())
+        {
+            var lines = Context.TucJobItems
+                .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
+            var (qty, weight) = await SumItemLinesAsync(lines);
+
+            var jobs = childJobId == null
+                ? Context.TucJobs.Where(j => (j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId) &&
+                                             !Context.TucJobItems.Any(i => i.ChildJobId == j.UcjbId))
+                : Context.TucJobs.Where(j => j.UcjbId == childJobId);
+            await jobs.ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcjbQty, qty)
+                .SetProperty(j => j.UcjbWeight, weight));
+        }
     }
 
     /// <summary>
@@ -5409,48 +5467,42 @@ public partial class JobRepository(
                 await Context.SaveChangesAsync();
             }
 
-            var totalItemCount = await Context.TucJobItemsArchives
-                .Where(i => i.JobId == effectiveJobId &&
-                            (childJobId == null || i.ChildJobId == childJobId))
-                .CountAsync();
-
-            int? dimensionsType = calculateDimsOncePerJob is true ? 2 : null;
+            var parentLines = Context.TucJobItemsArchives
+                .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
+                .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
 
             if (childJobId == null)
             {
-                if (calculateDimsOncePerJob.HasValue)
-                {
-                    await Context.TucJobArchives
-                        .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(j => j.UcjbQty, (short)totalItemCount)
-                            .SetProperty(j => j.DimensionsType, dimensionsType));
-                }
-                else
-                {
-                    await Context.TucJobArchives
-                        .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(j => j.UcjbQty, (short)totalItemCount));
-                }
+                var (qty, weight) = await SumItemLinesAsync(parentLines);
+                await Context.TucJobArchives
+                    .Where(j => (j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId) &&
+                                !Context.TucJobItemsArchives.Any(i => i.ChildJobId == j.UcjbId))
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.UcjbQty, qty)
+                        .SetProperty(j => j.UcjbWeight, weight));
             }
             else
             {
-                if (calculateDimsOncePerJob.HasValue)
-                {
-                    await Context.TucJobArchives
-                        .Where(j => j.UcjbId == jobId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(j => j.UcjbQty, (short)totalItemCount)
-                            .SetProperty(j => j.DimensionsType, dimensionsType));
-                }
-                else
-                {
-                    await Context.TucJobArchives
-                        .Where(j => j.UcjbId == jobId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(j => j.UcjbQty, (short)totalItemCount));
-                }
+                var ownLines = Context.TucJobItemsArchives
+                    .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                    .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
+                var (qty, weight) = await SumItemLinesAsync(
+                    await ownLines.AnyAsync() ? ownLines : parentLines);
+                await Context.TucJobArchives
+                    .Where(j => j.UcjbId == jobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(j => j.UcjbQty, qty)
+                        .SetProperty(j => j.UcjbWeight, weight));
+            }
+
+            if (calculateDimsOncePerJob.HasValue)
+            {
+                int? dimensionsType = calculateDimsOncePerJob.Value ? 2 : null;
+                var dimsJobs = childJobId == null
+                    ? Context.TucJobArchives.Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+                    : Context.TucJobArchives.Where(j => j.UcjbId == jobId);
+                await dimsJobs.ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.DimensionsType, dimensionsType));
             }
 
             await transaction.CommitAsync();
