@@ -1,10 +1,10 @@
 /*
  * Resize gutters for the shell's column/row panels.
  *
- * These cannot be props: the glow is driven by `data-resize-handle-state` on the
- * *parent* `PanelResizeHandle`, so both rules are ancestor-attribute selectors.
- * Same shape as the recurring-jobs gutters — transparent at rest, glowing on
- * hover, brighter while dragging.
+ * These cannot be props: the glow is driven by `data-separator` on the
+ * *parent* `Separator` (aliased as `PanelResizeHandle`), so both rules are
+ * ancestor-attribute selectors. Same shape as the recurring-jobs gutters —
+ * transparent at rest, glowing on hover, brighter while dragging.
  */
 
 .handle {
@@ -16,21 +16,37 @@
 }
 
 .horizontal {
-    width: 8px;
+    width: 2px;
+    height: 100%;
     cursor: col-resize;
 }
 
 .vertical {
-    height: 8px;
+    height: 2px;
+    width: 100%;
     cursor: row-resize;
 }
 
-[data-resize-handle-state='hover'] .handle {
+/*
+ * The Separator itself (not just the `.handle` child above) occupies flex
+ * space in the Group. Its own default box can be wider than the 2px visible
+ * sliver (the library reserves extra room for pointer hit-testing), so the
+ * track itself is pinned to 2px to match.
+ */
+.horizontalTrack {
+    flex: 0 0 2px;
+}
+
+.verticalTrack {
+    flex: 0 0 2px;
+}
+
+[data-separator='hover'] .handle {
     background-color: var(--mantine-primary-color-light);
     box-shadow: 0 0 8px var(--mantine-primary-color-light);
 }
 
-[data-resize-handle-state='drag'] .handle {
+[data-separator='active'] .handle {
     background-color: var(--mantine-primary-color-filled);
     box-shadow: 0 0 12px var(--mantine-primary-color-filled);
 }

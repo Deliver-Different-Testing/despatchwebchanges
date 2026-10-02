@@ -31,9 +31,9 @@ const ADDRESS_UPDATE_NOTE_TYPE_ID = 1101;
 
 /**
  * The sticky-note fills. Deliberately literal pastels rather than theme tokens:
- * they mimic physical note paper and carry the note's category, and the ink on
- * them is fixed dark regardless of colour scheme. All sit in the same luminance
- * band so `noteInk` stays legible on every one of them.
+ * they mimic physical note paper and carry the note's category. All sit in the
+ * same luminance band so the ink stays legible on every one of them. In dark mode
+ * the CSS tints them into the dark surface and switches to light ink.
  */
 export const NOTE_FILLS = {
     important: '#ffccbc', // Orange for important
@@ -86,15 +86,13 @@ export function getNoteFill(note: JobNote): string {
     return FILL_BY_NAME_WORD.find(([word]) => words.has(word))?.[1] ?? NOTE_FILLS.default;
 }
 
-/** Ink on the fixed pastel note paper, so these stay literal too. */
+/** Ink on the note paper; the values live in StickyNotes.module.css so they follow the colour scheme. */
 const noteInk = {
-    heading: 'rgba(0,0,0,0.7)',
-    body: 'rgba(0,0,0,0.8)',
-    // 0.62 rather than 0.54: this is xs text, and the lighter alpha fell short of
-    // the 4.5:1 contrast floor on the paler fills.
-    meta: 'rgba(0,0,0,0.62)',
-    author: 'rgba(0,0,0,0.5)',
-    glyph: 'rgba(0,0,0,0.6)',
+    heading: 'var(--note-ink-heading)',
+    body: 'var(--note-ink-body)',
+    meta: 'var(--note-ink-meta)',
+    author: 'var(--note-ink-author)',
+    glyph: 'var(--note-ink-glyph)',
 };
 
 // Pickup + delivery notes anchor to the bottom of the panel so they sit
@@ -396,7 +394,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             <Tooltip label="Delete Note">
                                 <ActionIcon
                                     variant="subtle"
-                                    color="dark"
+                                    style={{color: 'var(--note-ink-body)'}}
                                     size="sm"
                                     onClick={(e) => handleDeleteNote(e, note)}
                                     aria-label="Delete note"

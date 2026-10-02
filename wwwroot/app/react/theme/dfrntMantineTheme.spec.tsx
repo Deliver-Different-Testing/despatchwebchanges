@@ -109,6 +109,80 @@ describe('dfrntCssVariablesResolver', () => {
     });
 });
 
+describe('dfrntCssVariablesResolver — fixed Mantine grays in dark mode', () => {
+    const vars = dfrntCssVariablesResolver(dfrntTheme as never);
+    const dark = getMd3Scheme('dark');
+
+    it('remaps the subtle grays onto the dark tonal ladder so gray-backed fills stop being light', () => {
+        expect(vars.dark['--mantine-color-gray-0']).toBe(dark.surfaceContainerLow);
+        expect(vars.dark['--mantine-color-gray-1']).toBe(dark.surfaceContainerHigh);
+        expect(vars.dark['--mantine-color-gray-2']).toBe(dark.surfaceContainerHighest);
+    });
+
+    it('remaps the border grays onto the outline tones', () => {
+        expect(vars.dark['--mantine-color-gray-3']).toBe(dark.outlineVariant);
+        expect(vars.dark['--mantine-color-gray-4']).toBe(dark.outline);
+    });
+
+    it('keeps every remapped fill distinct from the card tone, so a fill on a card stays visible', () => {
+        for (const key of ['gray-0', 'gray-1', 'gray-2']) {
+            expect(vars.dark[`--mantine-color-${key}`]).not.toBe(vars.dark['--dd-surface-container']);
+        }
+    });
+
+    it('leaves light mode and white (used as text on fills) untouched', () => {
+        expect(vars.light['--mantine-color-gray-0']).toBeUndefined();
+        expect(vars.light['--mantine-color-gray-3']).toBeUndefined();
+        expect(vars.dark['--mantine-color-white']).toBeUndefined();
+        expect(vars.light['--mantine-color-white']).toBeUndefined();
+    });
+
+    it('keeps body text readable on every remapped fill at AA', () => {
+        for (const key of ['gray-0', 'gray-1', 'gray-2']) {
+            expect(contrastRatio(dark.onSurface, vars.dark[`--mantine-color-${key}`])).toBeGreaterThanOrEqual(4.5);
+        }
+    });
+});
+
+describe('dfrntCssVariablesResolver — gray component roles in dark mode', () => {
+    const vars = dfrntCssVariablesResolver(dfrntTheme as never);
+    const dark = getMd3Scheme('dark');
+
+    it('gives color="gray" glyphs and labels a readable tone instead of the remapped surface tone', () => {
+        for (const role of ['light-color', 'text', 'outline']) {
+            const tone = vars.dark[`--mantine-color-gray-${role}`];
+            expect(tone).toBe(dark.onSurfaceVariant);
+            expect(contrastRatio(tone, dark.surface)).toBeGreaterThanOrEqual(4.5);
+        }
+    });
+
+    it('keeps the gray tinted and filled roles distinct from the page and legible', () => {
+        expect(vars.dark['--mantine-color-gray-filled']).toBe(dark.surfaceContainerHighest);
+        expect(contrastRatio('#ffffff', vars.dark['--mantine-color-gray-filled'])).toBeGreaterThanOrEqual(4.5);
+        expect(vars.dark['--mantine-color-gray-light']).toContain('color-mix');
+        expect(vars.dark['--mantine-color-gray-light-hover']).toContain('color-mix');
+    });
+
+    it('leaves the light scheme roles to Mantine', () => {
+        expect(vars.light['--mantine-color-gray-light-color']).toBeUndefined();
+        expect(vars.light['--mantine-color-gray-filled']).toBeUndefined();
+    });
+});
+
+describe('dfrntCssVariablesResolver — dialog planes', () => {
+    const vars = dfrntCssVariablesResolver(dfrntTheme as never);
+    const dark = getMd3Scheme('dark');
+
+    it('lifts dialog sections above the header/footer bars, and the bars above the body, in both schemes', () => {
+        expect(vars.dark['--dd-dialog-section']).toBe(dark.surfaceContainerHigh);
+        expect(vars.dark['--dd-dialog-bar']).toBe(dark.surfaceContainer);
+        expect(vars.dark['--dd-dialog-body']).toBe(dark.surfaceContainerLow);
+        expect(vars.light['--dd-dialog-section']).toBe('var(--mantine-color-white)');
+        expect(vars.light['--dd-dialog-bar']).toBe('var(--mantine-color-gray-1)');
+        expect(vars.light['--dd-dialog-body']).toBe('var(--mantine-color-gray-2)');
+    });
+});
+
 describe('DFRNT brand contrast', () => {
     it.each([
         ['Cyan', dfrntBrand.cyan],

@@ -103,7 +103,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                                 bottom: 16,
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                backgroundColor: 'rgba(255,255,255,0.95)',
+                                backgroundColor: 'color-mix(in srgb, var(--dd-surface-container-high) 95%, transparent)',
                                 borderRadius: 8,
                                 boxShadow: 'var(--mantine-shadow-md)',
                                 overflowX: 'auto',

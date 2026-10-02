@@ -14,6 +14,7 @@ import {
 } from './DashboardSettingsDialog';
 import { createProps, renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
+import {ColorModeContext} from '../../../hooks/useColorMode';
 
 const mockRefreshOptions: RefreshOption[] = [
     {id: 0, text: 'Disabled'},
@@ -298,6 +299,85 @@ describe('DashboardSettingsDialog', () => {
             expect(screen.queryByText('Auto-mate Settings')).not.toBeInTheDocument();
             expect(screen.queryByText('Show Auto-mate briefings')).not.toBeInTheDocument();
             expect(screen.queryByText('Open automatically')).not.toBeInTheDocument();
+        });
+    });
+
+    // ── Switching to Nationwide v1 (classic) disables dark mode ─────
+    describe('Switching to Nationwide v1', () => {
+        const nwConfig = {...mockConfig, showNationwideBetaToggle: true};
+
+        function renderWithMode(mode: 'light' | 'dark', props: Partial<DashboardSettingsDialogProps>) {
+            const setPreference = jest.fn();
+            renderWithTheme(
+                <ColorModeContext.Provider value={{mode, preference: mode, setPreference}}>
+                    <DashboardSettingsDialog {...createMockProps({
+                        config: nwConfig,
+                        nationwideBetaEnabled: true,
+                        ...props,
+                    })} />
+                </ColorModeContext.Provider>,
+            );
+            return setPreference;
+        }
+
+        it('asks for confirmation in dark mode; confirming switches to light and saves', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            const setPreference = renderWithMode('dark', {onSave});
+
+            await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
+            await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+            expect(onSave).not.toHaveBeenCalled();
+            expect(screen.getByText(/disable dark mode/i)).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /switch to classic$/i}));
+
+            expect(setPreference).toHaveBeenCalledWith('light');
+            expect(onSave).toHaveBeenCalledWith(expect.objectContaining({nationwideBetaEnabled: false}));
+        });
+
+        it('cancelling the confirmation changes nothing and saves nothing', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            const setPreference = renderWithMode('dark', {onSave});
+
+            await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
+            await user.click(screen.getByRole('button', {name: /^save$/i}));
+            await user.click(screen.getAllByRole('button', {name: /cancel/i}).at(-1)!);
+
+            expect(setPreference).not.toHaveBeenCalled();
+            expect(onSave).not.toHaveBeenCalled();
+        });
+
+        it('saves straight away in light mode, with no confirmation', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            const setPreference = renderWithMode('light', {onSave});
+
+            await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
+            await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+            expect(screen.queryByText(/disable dark mode/i)).not.toBeInTheDocument();
+            expect(setPreference).not.toHaveBeenCalled();
+            expect(onSave).toHaveBeenCalledWith(expect.objectContaining({nationwideBetaEnabled: false}));
+        });
+
+        it('does not ask when staying on v2 in dark mode', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            renderWithMode('dark', {onSave});
+
+            await user.click(screen.getByRole('button', {name: /^save$/i}));
+
+            expect(screen.queryByText(/disable dark mode/i)).not.toBeInTheDocument();
+            expect(onSave).toHaveBeenCalledWith(expect.objectContaining({nationwideBetaEnabled: true}));
+        });
+
+        it('defaults the toggle to on (v2) when no value is supplied', () => {
+            renderWithMode('light', {nationwideBetaEnabled: undefined});
+
+            expect(screen.getByRole('switch', {name: /new nationwide/i})).toBeChecked();
         });
     });
 });

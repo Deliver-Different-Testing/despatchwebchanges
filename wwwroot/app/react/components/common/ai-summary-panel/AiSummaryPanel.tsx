@@ -220,7 +220,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     )}
 
                     {error && (
-                        <Text fz="sm" c="var(--mantine-color-red-6)">
+                        <Text fz="sm" c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))">
                             {error}
                         </Text>
                     )}

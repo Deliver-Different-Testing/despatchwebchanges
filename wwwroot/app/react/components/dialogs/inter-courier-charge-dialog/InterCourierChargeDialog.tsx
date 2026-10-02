@@ -320,7 +320,7 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                         <Paper
                             withBorder
                             radius="md"
-                            bg="var(--mantine-color-white)"
+                            bg="var(--dd-dialog-section)"
                             role="group"
                             aria-labelledby={ledgerLabelId}
                         >

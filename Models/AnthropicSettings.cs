@@ -43,44 +43,32 @@ public sealed class AiModelProfile
     [Range(0, 1000)] public decimal CacheWritePricePerMillion { get; init; }
 }
 
+/// <summary>
+/// Model, pricing and rate-limit values are configured in appsettings.json's
+/// "Anthropic" section (the single source of truth for all environments) rather than
+/// defaulted here, so a missing or incomplete profile fails validation at startup
+/// instead of silently running on a stale hardcoded value.
+/// </summary>
 public sealed class AnthropicSettings
 {
     /// <summary>
     /// Message, note and email drafts. A dispatcher reviews every one before sending,
     /// and is waiting on the button while it generates, so latency is the quality bar.
     /// </summary>
-    public AiModelProfile Drafting { get; init; } = new()
-    {
-        Model = "claude-haiku-4-5",
-        Effort = null,
-        MaxTokens = 1024,
-        InputPricePerMillion = 1.00m,
-        OutputPricePerMillion = 5.00m,
-        CacheReadPricePerMillion = 0.10m,
-        CacheWritePricePerMillion = 1.25m
-    };
+    public AiModelProfile Drafting { get; init; } = new();
 
     /// <summary>
     /// Structured briefings and insights. Low effort keeps the cost close to the
     /// drafting tier while retaining the stronger model's judgment.
     /// </summary>
-    public AiModelProfile Judgment { get; init; } = new()
-    {
-        Model = "claude-sonnet-5",
-        Effort = "low",
-        MaxTokens = 4096,
-        InputPricePerMillion = 2.00m,
-        OutputPricePerMillion = 10.00m,
-        CacheReadPricePerMillion = 0.20m,
-        CacheWritePricePerMillion = 2.50m
-    };
+    public AiModelProfile Judgment { get; init; } = new();
 
-    public int RateLimitPerUserPerMinute { get; init; } = 5;
-    public int RateLimitPerTenantPerMinute { get; init; } = 20;
+    public int RateLimitPerUserPerMinute { get; init; }
+    public int RateLimitPerTenantPerMinute { get; init; }
 
     // Deduplicate identical read-only AI requests (job/ops/compliance briefings,
     // insights) via a short-lived response cache. 0 disables it.
-    public int ResponseCacheSeconds { get; init; } = 90;
+    public int ResponseCacheSeconds { get; init; }
 
     public AiModelProfile For(AiTaskClass taskClass) =>
         taskClass == AiTaskClass.Judgment ? Judgment : Drafting;

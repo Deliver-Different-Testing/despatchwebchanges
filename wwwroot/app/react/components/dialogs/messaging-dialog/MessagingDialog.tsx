@@ -1159,7 +1159,7 @@ function MessageBubble({message, isLastInGroup = true, onRetry, avatarInitials}:
                 <Text fz="sm" style={MESSAGE_BODY_STYLE}>{message.message}</Text>
                 {isFailed ? meta(
                     <>
-                        <Box c="red.5" style={{display: 'flex'}}>
+                        <Box c="light-dark(var(--mantine-color-red-5), var(--mantine-color-red-5))" style={{display: 'flex'}}>
                             <Icon lucide={CircleAlert} size={14} aria-label="Failed to send"/>
                         </Box>
                         <Text fz="xs">Failed</Text>
@@ -1496,7 +1496,7 @@ interface ErrorStateProps {
 function ErrorState({message, onRetry}: ErrorStateProps) {
     return (
         <Stack flex={1} align="center" justify="center" gap={16} p={40}>
-            <Box c="red.6">
+            <Box c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))">
                 <Icon lucide={CircleAlert} size={64}/>
             </Box>
             <Title order={5}>Unable to load messages</Title>

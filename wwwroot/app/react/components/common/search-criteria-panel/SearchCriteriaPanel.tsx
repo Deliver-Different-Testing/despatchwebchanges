@@ -23,6 +23,7 @@ import classes from './SearchCriteriaPanel.module.css';
 import {Dayjs} from 'dayjs';
 import {DateRangePicker} from '../date-range-picker/DateRangePicker';
 import {ChipsAutocomplete} from './ChipsAutocomplete';
+import {isNetworkPartnerSession} from '../../dialogs/dispatch-dialog/dispatchSession';
 import {ISuggestion} from '../../../../interfaces/job.interface';
 
 /**
@@ -314,25 +315,30 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                             <Icon lucide={Download} size={20} />
                         </ActionIcon>
                     </Tooltip>
-                    {/* The <span> keeps the tooltip reachable while the button is
-                        disabled — a disabled button fires no pointer events. */}
-                    <Tooltip label="Client Report">
-                        <span>
-                            <ActionIcon
-                                {...actionProps}
-                                onClick={flushAndClientReport}
-                                disabled={!isClientReportEnabled}
-                                aria-label="Client Report"
-                            >
-                                <Icon lucide={FileText} size={20} />
-                            </ActionIcon>
-                        </span>
-                    </Tooltip>
-                    <Tooltip label="Price Detail Report">
-                        <ActionIcon {...actionProps} onClick={flushAndPriceDetailReport} aria-label="Price Detail Report">
-                            <Icon lucide={ReceiptText} size={20} />
-                        </ActionIcon>
-                    </Tooltip>
+                    {/* Report exports carry tenant revenue — not the partner's business to pull. */}
+                    {!isNetworkPartnerSession() && (
+                        <>
+                            {/* The <span> keeps the tooltip reachable while the button is
+                                disabled — a disabled button fires no pointer events. */}
+                            <Tooltip label="Client Report">
+                                <span>
+                                    <ActionIcon
+                                        {...actionProps}
+                                        onClick={flushAndClientReport}
+                                        disabled={!isClientReportEnabled}
+                                        aria-label="Client Report"
+                                    >
+                                        <Icon lucide={FileText} size={20} />
+                                    </ActionIcon>
+                                </span>
+                            </Tooltip>
+                            <Tooltip label="Price Detail Report">
+                                <ActionIcon {...actionProps} onClick={flushAndPriceDetailReport} aria-label="Price Detail Report">
+                                    <Icon lucide={ReceiptText} size={20} />
+                                </ActionIcon>
+                            </Tooltip>
+                        </>
+                    )}
                     <Tooltip label="Upload Prices">
                         <ActionIcon {...actionProps} onClick={onUpload} aria-label="Upload Prices">
                             <Icon lucide={Upload} size={20} />

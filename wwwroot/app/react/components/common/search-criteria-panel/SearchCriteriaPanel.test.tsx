@@ -108,6 +108,20 @@ describe('SearchCriteriaPanel', () => {
         expect(getClientReportButton()).toBeDisabled();
     });
 
+    // ── Network partner session: hide the two report exports, keep Download ─
+    it('hides Client Report and Price Detail Report for a network partner session, keeps Download', () => {
+        (window as any).IsNetworkPartner = true;
+        try {
+            renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
+
+            expect(screen.getByRole('button', {name: 'Download'})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Client Report'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Price Detail Report'})).not.toBeInTheDocument();
+        } finally {
+            delete (window as any).IsNetworkPartner;
+        }
+    });
+
     // ── Text Input Handlers: type and clear all fields (single render) ─
     it('calls onCriteriaChange for all text inputs on type and clear', async () => {
         const props = createDefaultProps();

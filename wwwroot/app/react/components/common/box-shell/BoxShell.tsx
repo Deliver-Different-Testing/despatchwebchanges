@@ -1,7 +1,7 @@
 import React, {Fragment, useCallback, useRef, useState} from 'react';
 import {ActionIcon, Badge, Box, Button, Group, Text} from '@mantine/core';
 import {Check, Columns3, Minus, Plus} from 'lucide-react';
-import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
+import {Group as PanelGroup, Panel, Separator as PanelResizeHandle} from 'react-resizable-panels';
 import {IBox, ILayout} from '../../../../interfaces/layout.interfaces';
 import {MAX_COLUMNS, MIN_COLUMNS, parsePercent} from './columnLayout';
 import {Icon} from '../../../components/common/icon/Icon';
@@ -65,7 +65,7 @@ export interface BoxShellProps {
 }
 
 // The gutter affordance lives in the stylesheet: its glow is keyed off
-// `data-resize-handle-state` on the parent handle, which no prop can express.
+// `data-separator` on the parent handle, which no prop can express.
 
 const boxCardStyle: React.CSSProperties = {
     display: 'flex',
@@ -89,12 +89,17 @@ const boxContentStyle: React.CSSProperties = {
 
 // Insets each card inside its panel so neighbouring cards get a small,
 // uniform gap. border-box keeps the card at the panel's full size minus
-// the padding, so it never overflows / triggers a scrollbar.
-const boxPanelPadStyle: React.CSSProperties = {
+// the padding, so it never overflows / triggers a scrollbar. Top/bottom
+// padding is dropped on edges that already back onto a resize handle (custom
+// layouts only) so the two don't stack into a double-wide gap.
+const boxPanelPadStyle = (padTop: boolean, padBottom: boolean): React.CSSProperties => ({
     height: '100%',
-    padding: 2,
+    paddingLeft: 2,
+    paddingRight: 2,
+    paddingTop: padTop ? 2 : 0,
+    paddingBottom: padBottom ? 2 : 0,
     boxSizing: 'border-box',
-};
+});
 
 // Per-card wrapper that owns the header-slot DOM node so a box can render its own
 // header controls (via createPortal) without lifting state. Header + content are
@@ -281,8 +286,10 @@ export const BoxShell: React.FC<BoxShellProps> = ({
             <Box style={{flex: 1, minHeight: 0}}>
             <PanelGroup
                 key={`columns-${layoutVersion}`}
-                direction="horizontal"
-                onLayout={sizes => afterInitialLayout('columns', () => onColumnSizes?.(sizes))}
+                orientation="horizontal"
+                onLayoutChanged={sizesById => afterInitialLayout('columns', () => onColumnSizes?.(
+                    layout.layout.columns.map(col => sizesById[col.id] ?? 0),
+                ))}
             >
                 {layout.layout.columns.map((column, columnIdx) => {
                     const visibleBoxes = column.boxes
@@ -300,13 +307,14 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                     return (
                         <Fragment key={column.id}>
                             {columnIdx > 0 && !isDefaultLayout && (
-                                <PanelResizeHandle>
+                                <PanelResizeHandle className={classes.horizontalTrack}>
                                     <Box className={`${classes.handle} ${classes.horizontal}`} />
                                 </PanelResizeHandle>
                             )}
                             <Panel
-                                defaultSize={parsePercent(column.width, 25)}
-                                minSize={10}
+                                id={column.id}
+                                defaultSize={`${parsePercent(column.width, 25)}%`}
+                                minSize="10%"
                             >
                                 <Box
                                     style={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0}}
@@ -332,10 +340,14 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                     ) : (
                                         <PanelGroup
                                             key={`column-${column.id}-${layoutVersion}`}
-                                            direction="vertical"
-                                            onLayout={sizes => afterInitialLayout(
+                                            orientation="vertical"
+                                            onLayoutChanged={sizesById => afterInitialLayout(
                                                 column.id,
-                                                () => onBoxHeights?.(column.id, sizes, visibleBoxNames),
+                                                () => onBoxHeights?.(
+                                                    column.id,
+                                                    visibleBoxNames.map(name => sizesById[name] ?? 0),
+                                                    visibleBoxNames,
+                                                ),
                                             )}
                                         >
                                             {visibleBoxes.map((item, vIdx) => {
@@ -363,12 +375,15 @@ export const BoxShell: React.FC<BoxShellProps> = ({
                                                 return (
                                                     <Fragment key={boxRef.name}>
                                                         {vIdx > 0 && !isDefaultLayout && (
-                                                            <PanelResizeHandle>
+                                                            <PanelResizeHandle className={classes.verticalTrack}>
                                                                 <Box className={`${classes.handle} ${classes.vertical}`} />
                                                             </PanelResizeHandle>
                                                         )}
-                                                        <Panel defaultSize={defaultSize} minSize={12}>
-                                                            <Box style={boxPanelPadStyle}>
+                                                        <Panel id={boxName} defaultSize={`${defaultSize}%`} minSize="12%">
+                                                            <Box style={boxPanelPadStyle(
+                                                                isDefaultLayout || vIdx === 0,
+                                                                isDefaultLayout || vIdx === visibleBoxes.length - 1,
+                                                            )}>
                                                                 <BoxCardBody
                                                                     onDragOver={handleDragOver}
                                                                     onDrop={handleDropOnBox(column.id, originalIndex)}

@@ -102,4 +102,24 @@ describe('JobSearchJobActionsMenu', () => {
         await openMenu(makeJob({allowSplit: true, isArchived: true}));
         expect(screen.queryByRole('menuitem', {name: 'Split Job'})).not.toBeInTheDocument();
     });
+
+    // Accessorials are tenant pricing to manage, not something a partner needs - and the dialog
+    // renders raw tenant amounts with no NP masking, so the action must not even be reachable.
+    it('hides Accessorial Charges for a network partner session, shows it otherwise', async () => {
+        const jobWithAccessorials = makeJob({accessorialChargeGroupId: 9} as Partial<DispatchJob>);
+
+        await openMenu(jobWithAccessorials);
+        expect(screen.getByRole('menuitem', {name: 'Accessorial Charges'})).toBeInTheDocument();
+
+        (window as any).IsNetworkPartner = true;
+        try {
+            const user = setupUser();
+            renderMenu({currentJob: jobWithAccessorials});
+            const [, npMenuButton] = screen.getAllByRole('button', {name: 'Job actions'});
+            await user.click(npMenuButton);
+            expect(screen.queryByRole('menuitem', {name: 'Accessorial Charges'})).not.toBeInTheDocument();
+        } finally {
+            delete (window as any).IsNetworkPartner;
+        }
+    });
 });

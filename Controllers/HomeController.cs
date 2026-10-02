@@ -20,6 +20,7 @@ public partial class HomeController(
     INetworkPartnerContextService networkPartnerContextService) : Controller
 {
     [Authorize]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public async Task<IActionResult> Index()
     {
         try

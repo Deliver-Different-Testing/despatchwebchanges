@@ -25,10 +25,10 @@
 }
 
 .row[data-selected] {
-    background-color: var(--mantine-color-brand-0);
+    background-color: var(--mantine-color-brand-light);
     border-left-color: var(--mantine-color-brand-5);
 }
 
 .row[data-selected]:hover {
-    background-color: var(--mantine-color-brand-1);
+    background-color: var(--mantine-color-brand-light-hover);
 }

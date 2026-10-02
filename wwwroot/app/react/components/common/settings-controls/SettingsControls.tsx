@@ -97,7 +97,7 @@ export function SettingRadioGroup<T extends string>({title, description, value, 
     title: string;
     description: React.ReactNode;
     value: T;
-    options: {value: T; label: string}[];
+    options: {value: T; label: string; disabled?: boolean}[];
     onChange: (value: T) => void;
     accent?: string;
 }) {
@@ -115,6 +115,7 @@ export function SettingRadioGroup<T extends string>({title, description, value, 
                             key={option.value}
                             value={option.value}
                             label={option.label}
+                            disabled={option.disabled}
                             styles={{radio: {'--radio-color': accent} as React.CSSProperties}}
                         />
                     ))}

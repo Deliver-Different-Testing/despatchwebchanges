@@ -96,6 +96,7 @@ export interface FlightAgentDataTableProps {
     showMissingAirportInfoMessage: boolean;
     showNoFlightsAvailableMessage: boolean;
     showFlightList: boolean;
+    isAssigningFlight?: boolean;
 
     // UI State Flags - Agent
     showNoAgentJobSelectedMessage: boolean;

@@ -14,6 +14,7 @@ import {JobProperty} from '../../../../../enums/job-property.enum';
 import JobInternalStatusEnum from '../../../../../enums/job-internal-status.enum';
 import {usePendingChangeForField} from '../../../job-change-requests/useJobChangeRequests';
 import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
+import {isNetworkPartnerSession} from '../../../dialogs/dispatch-dialog/dispatchSession';
 
 interface MetricsGridProps {
     job: IJob;
@@ -119,7 +120,7 @@ export const MetricsGrid = React.memo(({
             {/* Row 1: PRICING, READY, PU ARRIVAL, PU TIME, DELIVER BY */}
             <SimpleGrid {...gridProps}>
                 <MetricCard
-                    label="Pricing"
+                    label={isNetworkPartnerSession() ? 'Your Pay' : 'Pricing'}
                     value={job.charge != null ? formatCurrency(job.charge) : ''}
                     onClick={onPricingClick}
                     highlight

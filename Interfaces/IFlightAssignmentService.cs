@@ -9,7 +9,7 @@ public interface IFlightAssignmentService
     /// persists the flight assignment against the job. Shared by the manual
     /// assign endpoint and the recurring push-to-live auto-assign path.
     /// </summary>
-    Task AssignFlightAsync(AssignFlightToJobRequest request);
+    Task AssignFlightAsync(AssignFlightToJobRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Best-effort: for each job that came from a recurring booking with a

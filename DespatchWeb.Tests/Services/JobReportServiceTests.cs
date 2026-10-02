@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -20,14 +21,71 @@ public class JobReportServiceTests
     private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
+    private readonly IScopeProvider _scopeProviderMock = Substitute.For<IScopeProvider>();
+
+    public JobReportServiceTests() =>
+        _scopeProviderMock.Scope.Returns(new ScopeContext(ClientTypeId: (int)ClientType.Tenant, ClientId: null, NpAgentId: null));
 
     private JobReportService CreateService() => new(
         _jobQueryRepositoryMock,
         _jobCommandRepositoryMock,
         _recurringJobRepositoryMock,
         _clock,
-        _s3ClientMock
+        _s3ClientMock,
+        _scopeProviderMock
     );
+
+    // A network partner's export must not carry the tenant's cost-side columns at all -
+    // CourierPayment/CourierFuel would duplicate their own pay under a tenant-worded name,
+    // and Ppd/RawBaseAmount/CourierBonus are tenant-only figures.
+    [Fact]
+    public async Task GenerateJobsReportAsync_AsNetworkPartner_CsvOmitsTenantCostColumns()
+    {
+        _scopeProviderMock.Scope.Returns(new ScopeContext(ClientTypeId: (int)ClientType.NetworkPartner, ClientId: null, NpAgentId: 42));
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(), Arg.Any<IReadOnlyList<int>>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<IReadOnlyList<int>>())
+            .Returns([new JobDownloadModel { Id = 1, JobNumber = "NP-1", Amount = 114m, Fuel = 16m }]);
+
+        var service = CreateService();
+        var result = await service.GenerateJobsReportAsync(new PodSearchDownloadRequest
+        {
+            FromDate = DateTimeOffset.Now.AddDays(-1),
+            ToDate = DateTimeOffset.Now
+        });
+
+        var header = Encoding.UTF8.GetString(result.FileBytes).Split('\n')[0];
+        Assert.Contains("Amount", header);
+        Assert.Contains("Fuel", header);
+        Assert.DoesNotContain("CourierPayment", header);
+        Assert.DoesNotContain("CourierFuel", header);
+        Assert.DoesNotContain("CourierBonus", header);
+        Assert.DoesNotContain("RawBaseAmount", header);
+        Assert.DoesNotContain("Ppd", header);
+    }
+
+    [Fact]
+    public async Task GenerateJobsReportAsync_AsTenant_CsvIncludesTenantCostColumns()
+    {
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(), Arg.Any<IReadOnlyList<int>>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<IReadOnlyList<int>>())
+            .Returns([new JobDownloadModel { Id = 1, JobNumber = "T-1", Amount = 200m, Fuel = 16m }]);
+
+        var service = CreateService();
+        var result = await service.GenerateJobsReportAsync(new PodSearchDownloadRequest
+        {
+            FromDate = DateTimeOffset.Now.AddDays(-1),
+            ToDate = DateTimeOffset.Now
+        });
+
+        var header = Encoding.UTF8.GetString(result.FileBytes).Split('\n')[0];
+        Assert.Contains("CourierPayment", header);
+        Assert.Contains("CourierFuel", header);
+        Assert.Contains("CourierBonus", header);
+        Assert.Contains("RawBaseAmount", header);
+        Assert.Contains("Ppd", header);
+    }
 
     [Fact]
     public async Task ParseBulkPriceFileAsync_NullFile_ThrowsArgumentException()

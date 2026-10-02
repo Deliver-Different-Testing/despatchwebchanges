@@ -174,7 +174,7 @@ export const sectionPaperProps = {
     withBorder: true,
     radius: 'md',
     p: 'md',
-    bg: 'var(--mantine-color-white)',
+    bg: 'var(--dd-dialog-section)',
 } as const;
 
 /**
@@ -182,7 +182,7 @@ export const sectionPaperProps = {
  * their own plane instead of vanishing into the (white, in light mode) theme
  * default for `Modal.Content`.
  */
-export const dialogHeaderBg = 'var(--mantine-color-gray-1)';
+export const dialogHeaderBg = 'var(--dd-dialog-bar)';
 
 /** Footer bar background — the same tone as the header, bookending the dialog. */
 export const dialogFooterBg = dialogHeaderBg;
@@ -192,7 +192,7 @@ export const dialogFooterBg = dialogHeaderBg;
  * bars, so the scrolling body reads as its own plane between them. The white
  * `sectionPaperProps` sections sit on this.
  */
-export const dialogContentBg = 'var(--mantine-color-gray-2)';
+export const dialogContentBg = 'var(--dd-dialog-body)';
 
 /** Footer keyline (top border) colour. */
 export const dialogFooterBorder = '1px solid var(--mantine-color-gray-3)';

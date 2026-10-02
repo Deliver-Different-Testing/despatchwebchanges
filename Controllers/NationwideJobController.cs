@@ -264,13 +264,14 @@ public class NationwideJobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> AssignFlightToJob([FromBody] AssignFlightToJobRequest request)
+    public async Task<IActionResult> AssignFlightToJob(
+        [FromBody] AssignFlightToJobRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            await flightAssignmentService.AssignFlightAsync(request);
+            await flightAssignmentService.AssignFlightAsync(request, cancellationToken);
 
             return Ok();
         }

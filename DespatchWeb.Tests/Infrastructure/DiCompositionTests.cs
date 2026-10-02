@@ -29,7 +29,12 @@ public class DiCompositionTests
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Anthropic:ApiKey"] = "test-key"
+                ["Anthropic:ApiKey"] = "test-key",
+                // AnthropicSettings has no C# defaults; resolving AiResponseCache/AiClientService
+                // reads IOptions<AnthropicSettings>.Value, which validates the profiles.
+                ["Anthropic:Drafting:Model"] = "claude-haiku-4-5",
+                ["Anthropic:Judgment:Model"] = "claude-sonnet-5",
+                ["Anthropic:Judgment:Effort"] = "low"
             })
             .Build();
         services.AddSingleton<IConfiguration>(config);

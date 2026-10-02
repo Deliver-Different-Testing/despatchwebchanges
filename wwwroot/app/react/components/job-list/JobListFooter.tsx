@@ -46,7 +46,7 @@ export const JobListFooter: React.FC<JobListFooterProps> = ({
             <Text size="xs" c="dimmed" fw={500}>
                 {displayText}
             </Text>
-            <Text size="xs" c="var(--mantine-color-gray-5)">
+            <Text size="xs" c="light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2))">
                 {lastUpdated}
             </Text>
         </Group>
