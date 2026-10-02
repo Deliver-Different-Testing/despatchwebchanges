@@ -159,18 +159,18 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
     }, [queryClient, jobId, bulkJobId, isRecurringJob]);
 
     const getCategoryName = (): string => {
-        if (selectedCategory === 'all') return 'All Categories';
+        if (selectedCategory === 'all') return 'All categories';
         const category = noteCategories.find(cat => cat.id?.toString() === selectedCategory);
-        return category?.text || 'Unknown Category';
+        return category?.text || 'Unknown category';
     };
 
     const getNoNotesMessage = (): string => {
         if (notes.length > 0 && isFilterActive) {
             return `No ${getCategoryName()} notes found`;
         } else if (notes.length === 0) {
-            return 'No notes available for this job';
+            return 'No notes for this job yet.';
         }
-        return 'No notes found. Click "Add Note" to add a new note';
+        return 'No notes found. Click "Add note" to add a new note';
     };
 
     const categoryNoteCounts = useMemo(() => {
@@ -232,10 +232,10 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         try {
             await notesApi.deleteNote(note.noteId ?? 0, note.jobId ?? (isRecurringJob ? undefined : jobId));
             await invalidateNotes();
-            showSuccessToast?.('Note deleted successfully');
+            showSuccessToast?.('Note deleted');
         } catch (error) {
             console.error('Error deleting note:', error);
-            showErrorToast?.('Failed to delete note');
+            showErrorToast?.("Couldn't delete the note. Check your connection and try again.");
         }
     };
 
@@ -267,7 +267,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                         {/* Category filter */}
                         <Menu position="bottom-end">
                             <Menu.Target>
-                                <Tooltip label="Filter by Category">
+                                <Tooltip label="Filter by category">
                                     <ActionIcon
                                         variant="subtle"
                                         size="sm"
@@ -283,11 +283,11 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             </Menu.Target>
                             <Menu.Dropdown>
                                 {noteCategories.length === 0 ? (
-                                    <Menu.Item disabled>No note categories available.</Menu.Item>
+                                    <Menu.Item disabled>No note categories yet.</Menu.Item>
                                 ) : ([
                                     categoryItem(
                                         'all',
-                                        'All Categories',
+                                        'All categories',
                                         notes.length,
                                         selectedCategory === 'all',
                                         () => handleFilterByCategory('all'),
@@ -303,7 +303,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                                 ])}
                             </Menu.Dropdown>
                         </Menu>
-                        <Tooltip label="Add Note">
+                        <Tooltip label="Add note">
                             <ActionIcon
                                 variant="subtle"
                                 size="sm"
@@ -391,7 +391,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 
                         {/* Delete Action */}
                         <Box className={classes.noteActions}>
-                            <Tooltip label="Delete Note">
+                            <Tooltip label="Delete note">
                                 <ActionIcon
                                     variant="subtle"
                                     style={{color: 'var(--note-ink-body)'}}
@@ -424,7 +424,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             style={{marginBottom: 8, opacity: 0.5}}
                             aria-hidden
                         />
-                        <Text size="lg" c="dimmed" mb={4}>No Notes</Text>
+                        <Text size="lg" c="dimmed" mb={4}>No notes yet</Text>
                         <Text size="sm" c="dimmed" mb="md">{getNoNotesMessage()}</Text>
                         {isFilterActive && (
                             <Anchor

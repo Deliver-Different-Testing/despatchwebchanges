@@ -101,7 +101,7 @@ describe('CourierSearchField', () => {
         await user.keyboard('{Enter}');
 
         await waitFor(() =>
-            expect(showToast).toHaveBeenCalledWith('No courier found with code: 999', 'warning'));
+            expect(showToast).toHaveBeenCalledWith('No courier found with code 999', 'warning'));
         expect(onSelect).not.toHaveBeenCalled();
     });
 
@@ -115,7 +115,7 @@ describe('CourierSearchField', () => {
         await user.keyboard('{Enter}');
 
         await waitFor(() =>
-            expect(showToast).toHaveBeenCalledWith('Could not look up courier code: 78', 'error'));
+            expect(showToast).toHaveBeenCalledWith("Couldn't look up courier code 78. Check your connection and try again.", 'error'));
         expect(onSelect).not.toHaveBeenCalled();
     });
 });

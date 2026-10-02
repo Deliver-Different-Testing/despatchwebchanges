@@ -6,11 +6,11 @@ import type {StoredDateFilter} from '../../utils/dateFilterStorage';
 export interface NationwideLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
     reloadFromStorage: () => void;
-    /** Opens the shared Mantine "Save Layout" dialog; resolves the name, or null if cancelled. */
+    /** Opens the shared Mantine "Save layout" dialog; resolves the name, or null if cancelled. */
     promptSaveLayout: () => Promise<string | null>;
-    /** Opens the shared "Delete Layout" confirmation; resolves true if confirmed. */
+    /** Opens the shared "Delete layout" confirmation; resolves true if confirmed. */
     promptDeleteLayout: (layoutName: string) => Promise<boolean>;
-    /** Opens the shared "Rename Layout" dialog; resolves the new name, or null if cancelled. */
+    /** Opens the shared "Rename layout" dialog; resolves the new name, or null if cancelled. */
     promptRenameLayout: (layoutName: string) => Promise<string | null>;
     /** Copy the operator's V1 Nationwide layouts into this page's store. */
     importLegacyLayouts: () => ImportLayoutsResult;

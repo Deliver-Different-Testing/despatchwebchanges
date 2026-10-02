@@ -71,7 +71,7 @@ function getDialogManager(): ReactEditDateTimeDialogWindow {
  * @example
  * ```typescript
  * const result = await showEditTimeDialog({
- *     title: 'Edit Ready Time',
+ *     title: 'Edit ready time',
  *     fieldName: 'readyTime',
  *     dateTime: dayjs(),
  * });
@@ -100,7 +100,7 @@ export async function showEditTimeDialog(
  * @example
  * ```typescript
  * const result = await showEditDateDialog({
- *     title: 'Edit Delivery Date',
+ *     title: 'Edit delivery date',
  *     fieldName: 'deliveryDate',
  *     dateTime: dayjs(),
  * });
@@ -129,7 +129,7 @@ export async function showEditDateDialog(
  * @example
  * ```typescript
  * const result = await showEditDateAndTimeDialog({
- *     title: 'Edit Delivery By',
+ *     title: 'Edit delivery by',
  *     fieldName: 'deliverBy',
  *     dateTime: dayjs(),
  *     defaultTimeZone: 'America/New_York',

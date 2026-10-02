@@ -1,22 +1,4 @@
-/**
- * Insert-to-Live Dialog
- *
- * Manual-mode operator action — picks a service date + scope, then asks
- * the backend to materialise the selected parent recurring booking (and
- * its children, automatically) into live tucJob for that date.
- *
- * Each push rotates the family's ucbkJobNumber via the same
- * UTL_stpJob_Insert_JobNumber path uspPrebookSet uses for the nightly
- * cron, so there is no possibility of a ucjbNumber UNIQUE collision and
- * no conflict warning UI is needed. Source bookings stay on
- * RecurringMode = Manual after the push.
- *
- * **The insert date is a calendar date end to end.** Mantine's `DateInput` is
- * string-valued (`YYYY-MM-DD`) — the exact form the API binds to a `DateOnly` —
- * so the value can no longer be turned into an instant by accident, which is the
- * bug the comment on the API call below warns about.
- */
-
+import {pluralise} from '../../../utils/pluralise';
 import React, {useCallback, useMemo, useState} from 'react';
 import {Alert, Box, Paper, Radio, Stack, Text} from '@mantine/core';
 import {DateInput} from '@mantine/dates';
@@ -96,12 +78,12 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
 
             const dateLabel = insertDate.format(ISO_DATE);
             let message =
-                `Inserted ${result.jobsInserted} job(s) from ${result.bookingsMaterialised} parent booking(s) for ${dateLabel}.`;
+                `Inserted ${result.jobsInserted} ${pluralise(result.jobsInserted, 'job')} from ${result.bookingsMaterialised} parent ${pluralise(result.bookingsMaterialised, 'booking')} for ${dateLabel}.`;
             if (result.flightsAutoAssigned > 0) {
-                message += ` ${result.flightsAutoAssigned} flight(s) auto-assigned.`;
+                message += ` ${result.flightsAutoAssigned} ${pluralise(result.flightsAutoAssigned, 'flight')} auto-assigned.`;
             }
             if (result.flightsUnmatched > 0) {
-                message += ` ${result.flightsUnmatched} saved flight(s) couldn't be matched — assign manually.`;
+                message += ` ${result.flightsUnmatched} saved ${pluralise(result.flightsUnmatched, 'flight')} couldn't be matched — assign manually.`;
             }
             showToast(message, result.flightsUnmatched > 0 ? 'warning' : 'success');
             onSuccess(result);
@@ -110,7 +92,7 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
             // scope/mode failures so the operator sees what to fix.
             const message =
                 (error as { response?: { data?: string } })?.response?.data
-                || (error instanceof Error ? error.message : 'Insert-to-live failed.');
+                || (error instanceof Error ? error.message : "Couldn't insert the jobs to live. Try again.");
             console.error('Insert-to-live failed:', error);
             showToast(message, 'error');
         } finally {
@@ -193,7 +175,7 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleInsert}
-                confirmLabel={isSubmitting ? 'Inserting...' : 'Insert to live'}
+                confirmLabel={isSubmitting ? 'Inserting…' : 'Insert to live'}
                 confirmIcon={<Icon lucide={Rocket} size={16}/>}
                 confirmDisabled={isSubmitting || !insertDate}
                 submitting={isSubmitting}

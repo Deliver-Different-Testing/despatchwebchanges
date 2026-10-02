@@ -32,6 +32,11 @@ describe('JobDetailsMount', () => {
         expect(container.querySelector('#test-detail')).toBeInTheDocument();
     });
 
+    it('paints the themed panel background so the page ground never shows through before the panel renders', () => {
+        const {container} = render(<JobDetailsMount {...props}/>);
+        expect(container.querySelector('#test-detail')).toHaveStyle({backgroundColor: 'var(--mantine-color-gray-1)'});
+    });
+
     it('mounts the panel for the job', () => {
         render(<JobDetailsMount {...props}/>);
 

@@ -66,10 +66,10 @@ export const CourierSearchField: React.FC<CourierSearchFieldProps> = ({
         try {
             const match = await getExactCourierByCode(code);
             if (match) select(match);
-            else showToast?.(`No courier found with code: ${code}`, 'warning');
+            else showToast?.(`No courier found with code ${code}`, 'warning');
         } catch {
             // Distinct from "not found" — the code may well exist.
-            showToast?.(`Could not look up courier code: ${code}`, 'error');
+            showToast?.(`Couldn't look up courier code ${code}. Check your connection and try again.`, 'error');
         } finally {
             setLookingUp(false);
         }

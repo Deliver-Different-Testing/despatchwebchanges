@@ -82,22 +82,22 @@ describe('DriverComplianceTab', () => {
         // 'Type' also appears as filter label
         expect(screen.getAllByText('Type').length).toBeGreaterThanOrEqual(1);
         expect(screen.getByText('Item/Number')).toBeInTheDocument();
-        expect(screen.getByText('Expiry Date')).toBeInTheDocument();
+        expect(screen.getByText('Expiry date')).toBeInTheDocument();
         // 'Status' also appears as filter label
         expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
-        expect(screen.getByText('Days Until Expiry')).toBeInTheDocument();
+        expect(screen.getByText('Days until expiry')).toBeInTheDocument();
 
         // Stats: Expired
         expect(screen.getAllByText('Expired').length).toBeGreaterThanOrEqual(1);
 
-        // Stats: Expiring Soon
-        expect(screen.getByText('Expiring Soon')).toBeInTheDocument();
+        // Stats: Expiring soon
+        expect(screen.getAllByText('Expiring soon').length).toBeGreaterThan(0);
 
         // Stats: Valid
         expect(screen.getAllByText('Valid').length).toBeGreaterThanOrEqual(1);
 
-        // Stats: Total Drivers
-        expect(screen.getByText('Total Drivers')).toBeInTheDocument();
+        // Stats: Total drivers
+        expect(screen.getByText('Total drivers')).toBeInTheDocument();
     });
 
     it('should update orderBy when Name header is clicked', async () => {
@@ -144,7 +144,7 @@ describe('DriverComplianceTab', () => {
         setupMocks(undefined, true);
         renderWithProviders();
 
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        expect(screen.getByText('Loading…')).toBeInTheDocument();
     });
 
     it('should show empty message when no items', () => {
@@ -154,7 +154,7 @@ describe('DriverComplianceTab', () => {
         });
         renderWithProviders();
 
-        expect(screen.getByText('No Compliance Records')).toBeInTheDocument();
-        expect(screen.getByText('No compliance records match your criteria.')).toBeInTheDocument();
+        expect(screen.getByText('No compliance records')).toBeInTheDocument();
+        expect(screen.getByText('No compliance records match your search.')).toBeInTheDocument();
     });
 });

@@ -1,11 +1,5 @@
-/**
- * Job List Panel
- *
- * Main container for the React dispatch job list.
- * Manages local UI state (filtering, sorting, density, selection, context menu)
- * while receiving job data from AngularJS via props/callbacks.
- */
 
+import {pluralise} from '../../utils/pluralise';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Progress} from '@mantine/core';
 import {useDebouncedValue, useDisclosure, useHotkeys, useLocalStorage} from '@mantine/hooks';
@@ -692,13 +686,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             id => !jobs.find(j => j.id === id)?.isArchived,
         );
         if (ids.length === 0) {
-            showToast('Archived jobs can’t be restored', 'warning');
+            showToast("Archived jobs can't be restored", 'warning');
             return;
         }
         try {
             await Promise.all(ids.map(id => addRestoreEvent(id)));
             await restoreJobs(ids, removeCapturedImages);
-            showToast(`${ids.length} job(s) restored`, 'success');
+            showToast(`${ids.length} ${pluralise(ids.length, 'job')} restored`, 'success');
             multiSelect.clear();
             // Invalidate job detail (and related/photos) so an open detail panel reflects the
             // reset status, then refresh the list.
@@ -709,7 +703,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh();
             }
         } catch {
-            showToast('Failed to restore jobs', 'error');
+            showToast("Couldn't restore the jobs. Check your connection and try again.", 'error');
         }
     }, [multiSelect, jobs, showToast, fetchConfig, onRefresh]);
 
@@ -719,7 +713,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             id => !jobs.find(j => j.id === id)?.isArchived,
         );
         if (restorableIds.length === 0) {
-            showToast('Archived jobs can’t be restored', 'warning');
+            showToast("Archived jobs can't be restored", 'warning');
             return;
         }
         if (bulkRestoreChecking) return;
@@ -748,7 +742,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         const ids = [...multiSelect.selectedIds];
         try {
             await bulkUpdateReadStatus(ids, true);
-            showToast(`${ids.length} job(s) marked as read`, 'success');
+            showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as read`, 'success');
             multiSelect.clear();
             if (fetchConfig) {
                 hookDataRef.current.refresh();
@@ -756,7 +750,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh();
             }
         } catch {
-            showToast('Failed to mark jobs as read', 'error');
+            showToast("Couldn't mark the jobs as read. Check your connection and try again.", 'error');
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 
@@ -764,7 +758,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         const ids = [...multiSelect.selectedIds];
         try {
             await bulkUpdateReadStatus(ids, false);
-            showToast(`${ids.length} job(s) marked as unread`, 'success');
+            showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as unread`, 'success');
             multiSelect.clear();
             if (fetchConfig) {
                 hookDataRef.current.refresh();
@@ -772,7 +766,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh();
             }
         } catch {
-            showToast('Failed to mark jobs as unread', 'error');
+            showToast("Couldn't mark the jobs as unread. Check your connection and try again.", 'error');
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 
@@ -799,7 +793,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                     : await assignNpAgentToJobs(ids, destination.id);
 
                 const noun = type === 'Agent' ? 'agent' : 'network partner';
-                message = `${result.assigned} job(s) assigned to ${noun} ${destination.text}`;
+                message = `${result.assigned} ${pluralise(result.assigned, 'job')} assigned to ${noun} ${destination.text}`;
 
                 if (result.failed > 0) {
                     const reasons = [...new Set(
@@ -810,7 +804,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 }
             } else {
                 await allocateJobs(destination.id, ids);
-                message = `${ids.length} job(s) dispatched to ${destination.text}`;
+                message = `${ids.length} ${pluralise(ids.length, 'job')} dispatched to ${destination.text}`;
             }
 
             showToast(message, severity);
@@ -824,7 +818,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             }
         } catch (err) {
             // Re-throw so the dialog surfaces the error inline.
-            const message = err instanceof Error ? err.message : 'Failed to dispatch jobs';
+            const message = err instanceof Error ? err.message : "Couldn't dispatch the jobs. Check your connection and try again.";
             throw new Error(message, {cause: err});
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh, closeBulkDispatch]);
@@ -832,7 +826,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // Bulk DFRNT Partner is disabled in the dialog (per-job rates required),
     // so this should never fire — but the dialog still needs the prop.
     const handleBulkSendToPartner = useCallback(async () => {
-        throw new Error('DFRNT Partner is not available for bulk dispatch.');
+        throw new Error("DFRNT Partner can't be used for bulk dispatch. Dispatch these jobs one at a time.");
     }, []);
 
     const handleJobDispatch = useCallback(async (
@@ -876,7 +870,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         } catch {
             // Rollback — restore original job
             setPushedJobs(prev => prev.map(j => j.id === job.id ? job : j));
-            showToast('Failed to dispatch job', 'error');
+            showToast("Couldn't dispatch the job. Check your connection and try again.", 'error');
         }
     }, [showToast, fetchConfig, onRefresh]);
 

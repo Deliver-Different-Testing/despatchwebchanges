@@ -95,7 +95,7 @@ describe('DataTable', () => {
         it('should show loading indicator', () => {
             renderTable({isLoading: true});
 
-            expect(screen.getByText('Loading...')).toBeInTheDocument();
+            expect(screen.getByText('Loading…')).toBeInTheDocument();
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
         });
 
@@ -110,8 +110,8 @@ describe('DataTable', () => {
         it('should show default empty message when no rows', () => {
             renderTable({rows: [], totalCount: 0});
 
-            expect(screen.getByText('No Data')).toBeInTheDocument();
-            expect(screen.getByText('No records match your criteria.')).toBeInTheDocument();
+            expect(screen.getByText('No data found')).toBeInTheDocument();
+            expect(screen.getByText('No records match your search.')).toBeInTheDocument();
         });
 
         it('should show custom empty title and message', () => {

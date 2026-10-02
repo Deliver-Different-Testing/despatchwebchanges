@@ -96,7 +96,7 @@ describe('RecurringDeliveryJourney', () => {
     it('renders the empty state when bookingId is null', () => {
         renderWithProviders(<RecurringDeliveryJourney bookingId={null} />);
 
-        expect(screen.getByText('Recurring Log')).toBeInTheDocument();
+        expect(screen.getByText('Recurring log')).toBeInTheDocument();
         expect(screen.getByText('Select a recurring job to see its run history.')).toBeInTheDocument();
     });
 
@@ -104,7 +104,7 @@ describe('RecurringDeliveryJourney', () => {
         renderWithProviders(<RecurringDeliveryJourney bookingId={108} />);
 
         // Header badge + label
-        expect(screen.getByText('Recurring Log')).toBeInTheDocument();
+        expect(screen.getByText('Recurring log')).toBeInTheDocument();
         expect(screen.getByText('RECURRING')).toBeInTheDocument();
 
         // Parent chips render as clickable role=button

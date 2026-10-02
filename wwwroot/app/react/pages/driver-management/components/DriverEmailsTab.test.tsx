@@ -229,7 +229,7 @@ describe('DriverEmailsTab', () => {
             setupMocks(undefined, true);
             renderWithProviders();
 
-            expect(screen.getByText('Loading...')).toBeInTheDocument();
+            expect(screen.getByText('Loading…')).toBeInTheDocument();
         });
     });
 
@@ -238,8 +238,8 @@ describe('DriverEmailsTab', () => {
             setupMocks({items: [], total: 0, page: 1, pages: 0});
             renderWithProviders();
 
-            expect(screen.getByText('No Driver Emails')).toBeInTheDocument();
-            expect(screen.getByText('No driver emails match your criteria.')).toBeInTheDocument();
+            expect(screen.getByText('No driver emails')).toBeInTheDocument();
+            expect(screen.getByText('No driver emails match your search.')).toBeInTheDocument();
         });
     });
 });

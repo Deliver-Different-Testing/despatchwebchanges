@@ -215,7 +215,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
         );
 
         await user.click(screen.getByRole('button', {name: /increase quantity/i}));
-        await user.click(screen.getByRole('button', {name: /^save$/i}));
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
 
         await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
         const barcodes = savedParcels().map(p => p.barcode);
@@ -240,7 +240,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
         await user.clear(weightInputs[weightInputs.length - 1]);
         await user.paste('5');
 
-        await user.click(screen.getByRole('button', {name: /^save$/i}));
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
 
         await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
         expect(savedParcels().map(p => p.barcode)).toContain('55-1');
@@ -256,7 +256,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
         );
 
         await user.click(screen.getByRole('button', {name: /increase quantity/i}));
-        await user.click(screen.getByRole('button', {name: /^save$/i}));
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
 
         await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
         expect(savedParcels().some(p => p.barcode)).toBe(false);
@@ -316,7 +316,7 @@ describe('EditParcelDimensionsDialog partnerMode', () => {
             />,
         );
         expect(screen.getByRole('button', {name: /continue/i})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /^save$/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^save changes$/i})).not.toBeInTheDocument();
     });
 
     it('skips the UpdateJobPackages POST and resolves with captured parcels', async () => {

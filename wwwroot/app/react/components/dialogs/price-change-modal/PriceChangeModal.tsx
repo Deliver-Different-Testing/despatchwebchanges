@@ -56,12 +56,12 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
             opened={open}
             onClose={isApplying ? () => {} : onKeep}
             size={400}
-            label="Price Change"
+            label="Price change"
             trapFocus={false}
         >
             <DialogHeader
                 icon={<Icon lucide={BellRing}/>}
-                title="Price Change"
+                title="Price change"
                 subtitle={jobNumber}
                 variant="warning"
                 onClose={onKeep}
@@ -123,11 +123,11 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                     disabled={isApplying}
                     leftSection={<Icon lucide={Check} size={16}/>}
                 >
-                    {isApplying ? 'Applying…' : `Accept New Price ($${newPrice.toFixed(2)})`}
+                    {isApplying ? 'Applying…' : `Accept new price ($${newPrice.toFixed(2)})`}
                 </Button>
                 <Group gap="xs" grow>
                     <Button {...secondaryActionProps} onClick={onKeep} disabled={isApplying}>
-                        Keep Original
+                        Keep original
                     </Button>
                     <Button
                         {...secondaryActionProps}
@@ -135,7 +135,7 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                         disabled={isApplying}
                         leftSection={<Icon lucide={NotepadText} size={16}/>}
                     >
-                        Set Manually
+                        Set manually
                     </Button>
                 </Group>
             </Box>

@@ -245,7 +245,7 @@ describe('jobSearchApi integration', () => {
             server.use(
                 http.get('*/nationwidejob/nationwideJobListNew', () => {
                     return HttpResponse.json(
-                        {message: 'Server Error'},
+                        {message: 'Server error'},
                         {status: 500},
                     );
                 }),

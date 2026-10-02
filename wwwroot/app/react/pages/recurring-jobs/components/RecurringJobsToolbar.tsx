@@ -245,7 +245,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                 {/* Search Field */}
                 <TextInput
                     size="xs"
-                    placeholder="Search jobs..."
+                    placeholder="Search jobs…"
                     aria-label="Search jobs"
                     value={localSearchText}
                     onChange={handleSearchInputChange}

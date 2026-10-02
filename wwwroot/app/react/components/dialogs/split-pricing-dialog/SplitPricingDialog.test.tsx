@@ -1,6 +1,6 @@
 /**
  * SplitPricingDialog is now a thin wrapper around SplitPricingBreakdownDialog (mode="split") —
- * the deep behavioural coverage (share/cost editing, Confirm & Split payload shape, locks,
+ * the deep behavioural coverage (share/cost editing, Confirm & split payload shape, locks,
  * synthesised-line handling, unit labelling) lives in that shared component's own test file.
  * These tests only pin the wrapper's mapping: it renders the shared grid in split mode with the
  * given props, and passes the grid's result straight through to onClose.
@@ -43,7 +43,7 @@ describe('SplitPricingDialog', () => {
             <SplitPricingDialog open jobNo="KT1314V" preview={createPreview()} onClose={jest.fn()}/>,
         );
 
-        expect(screen.getByRole('heading', {name: 'Confirm Split Pricing'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Confirm split pricing'})).toBeInTheDocument();
         expect(screen.getByText(/KT1314V/)).toBeInTheDocument();
         expect(screen.getByText('Base')).toBeInTheDocument();
         expect(screen.getByText('Leg A')).toBeInTheDocument();

@@ -1,11 +1,3 @@
-/**
- * Messaging Dialog React Module
- *
- * Entry point for the React-based Messaging Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- * Uses native React API services instead of AngularJS dependencies.
- */
-
 import React from 'react';
 import { MessagingDialog } from './MessagingDialog';
 import { OpenMessagingDialogOptions } from './types';
@@ -36,7 +28,7 @@ const host = createDialogHost<void, void>({
 export function openMessagingDialog(options?: OpenMessagingDialogOptions): Promise<void> {
     if (!currentStaffId()) {
         console.error('[MessagingDialog] Unable to determine current staff member');
-        options?.toastService?.showToast('Unable to determine current staff member', 'error');
+        options?.toastService?.showToast("Couldn't open messaging. Refresh and try again.", 'error');
         return Promise.resolve();
     }
 

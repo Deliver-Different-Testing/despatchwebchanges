@@ -97,11 +97,11 @@ describe('RecurringJobFields', () => {
         const user = setupUser();
         const onHolidayOptionChange = jest.fn();
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onHolidayOptionChange})} />);
-        expect(screen.getByText('Recurring Schedule')).toBeInTheDocument();
-        expect(screen.getByText('Schedule Dates')).toBeInTheDocument();
-        expect(screen.getByText('First Due')).toBeInTheDocument();
-        expect(screen.getByText('Stop Date')).toBeInTheDocument();
-        expect(screen.getByText('Restart Date')).toBeInTheDocument();
+        expect(screen.getByText('Recurring schedule')).toBeInTheDocument();
+        expect(screen.getByText('Schedule dates')).toBeInTheDocument();
+        expect(screen.getByText('First due')).toBeInTheDocument();
+        expect(screen.getByText('Stop date')).toBeInTheDocument();
+        expect(screen.getByText('Restart date')).toBeInTheDocument();
         const frequencyLabels = screen.getAllByText('Frequency');
         expect(frequencyLabels.length).toBeGreaterThanOrEqual(1);
         const holidayLabels = screen.getAllByText('Holiday');
@@ -116,24 +116,24 @@ describe('RecurringJobFields', () => {
         const comboboxes = screen.getAllByRole('combobox');
         await user.click(comboboxes[1]);
         const holidayListbox = await screen.findByRole('listbox');
-        expect(within(holidayListbox).getByText("Don't Book")).toBeInTheDocument();
-        expect(within(holidayListbox).getByText('Deliver Next Day')).toBeInTheDocument();
-        expect(within(holidayListbox).getByText('Book Anyway')).toBeInTheDocument();
+        expect(within(holidayListbox).getByText("Don't book")).toBeInTheDocument();
+        expect(within(holidayListbox).getByText('Deliver next day')).toBeInTheDocument();
+        expect(within(holidayListbox).getByText('Book anyway')).toBeInTheDocument();
 
-        await user.click(within(holidayListbox).getByText('Book Anyway'));
+        await user.click(within(holidayListbox).getByText('Book anyway'));
         expect(onHolidayOptionChange).toHaveBeenCalledWith(2);
     });
 
-    it('calls onEditFirstDue when First Due is clicked', () => {
+    it('calls onEditFirstDue when First due is clicked', () => {
         const onEditFirstDue = jest.fn();
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onEditFirstDue})} />);
 
-        const firstDueRow = screen.getByText('First Due').closest('button');
+        const firstDueRow = screen.getByText('First due').closest('button');
         if (firstDueRow) fireEvent.click(firstDueRow);
         expect(onEditFirstDue).toHaveBeenCalled();
     });
 
-    it('calls onEditStopDate when Stop Date is clicked', () => {
+    it('calls onEditStopDate when Stop date is clicked', () => {
         const onEditStopDate = jest.fn();
         const job = createMockJob({preBook: true, _stopDateStr: '2026-04-01'});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onEditStopDate, job})} />);
@@ -174,7 +174,7 @@ describe('RecurringJobFields', () => {
         const tip = await screen.findByRole('tooltip');
         // ICU timezone short names follow DST — PST in winter, PDT in summer.
         expect(tip.textContent).toMatch(/\(P[SD]T\)/);
-        expect(tip.textContent).toMatch(/Stop Date/);
+        expect(tip.textContent).toMatch(/Stop date/);
     });
 
     it('renders an Add-flight card (not the saved-flight editor) for a flight job with no route yet and fires onAddFlight', () => {
@@ -183,7 +183,7 @@ describe('RecurringJobFields', () => {
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onAddFlight})} />);
 
         // The editable saved-flight card is absent; the add-flight prompt is shown.
-        expect(screen.queryByText('Saved Flight')).not.toBeInTheDocument();
+        expect(screen.queryByText('Saved flight')).not.toBeInTheDocument();
         expect(screen.getByText('Add flight')).toBeInTheDocument();
 
         fireEvent.click(screen.getByText('Add flight'));
@@ -193,7 +193,7 @@ describe('RecurringJobFields', () => {
     it('renders the Flight card with the saved flight number for a flight job with a route', () => {
         const job = createMockJob({preBook: true, isFlightJob: true, fromAirportId: 1, toAirportId: 2, savedFlightNumber: 'NZ123'});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
-        expect(screen.getByText('Saved Flight')).toBeInTheDocument();
+        expect(screen.getByText('Saved flight')).toBeInTheDocument();
         expect(screen.getByText('NZ123')).toBeInTheDocument();
     });
 
@@ -205,16 +205,16 @@ describe('RecurringJobFields', () => {
         // The Flight card's row shows "Not set" (date rows may too — scope to this row).
         // The rows are real <button> elements now (Mantine `UnstyledButton`), not
         // MUI's `role="button"` list items.
-        const flightRow = screen.getByText('Saved Flight').closest('button') as HTMLElement;
+        const flightRow = screen.getByText('Saved flight').closest('button') as HTMLElement;
         expect(within(flightRow).getByText('Not set')).toBeInTheDocument();
-        fireEvent.click(screen.getByText('Saved Flight'));
+        fireEvent.click(screen.getByText('Saved flight'));
         expect(onEditSavedFlight).toHaveBeenCalled();
     });
 
     it('shows no flight card for a non-flight job, even when airports are set', () => {
         const job = createMockJob({preBook: true, isFlightJob: false, fromAirportId: 1, toAirportId: 2, savedFlightNumber: 'NZ123'});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job})} />);
-        expect(screen.queryByText('Saved Flight')).not.toBeInTheDocument();
+        expect(screen.queryByText('Saved flight')).not.toBeInTheDocument();
         expect(screen.queryByText('Add flight')).not.toBeInTheDocument();
     });
 

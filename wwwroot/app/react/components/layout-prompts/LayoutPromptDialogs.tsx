@@ -30,7 +30,7 @@ export function LayoutPromptDialogs({prompts, layoutNames}: {
             <SaveLayoutDialog
                 open={renameDialogName !== null}
                 initialName={renameDialogName ?? ''}
-                title="Rename Layout"
+                title="Rename layout"
                 subtitle="Give this layout a new name"
                 confirmLabel="Rename"
                 existingNames={layoutNames.filter(n => n !== renameDialogName)}

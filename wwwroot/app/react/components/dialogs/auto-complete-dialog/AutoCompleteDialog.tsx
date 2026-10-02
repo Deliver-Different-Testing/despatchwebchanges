@@ -233,7 +233,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                     {showRerateOption && (
                         <Checkbox
                             mt="md"
-                            label="Re-Rate Job"
+                            label="Re-rate job"
                             checked={shouldRerate}
                             onChange={(e) => setShouldRerate(e.currentTarget.checked)}
                         />
@@ -243,7 +243,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSubmit}
-                confirmLabel="Save"
+                confirmLabel="Save changes"
                 confirmIcon={<Icon lucide={Check} />}
                 confirmDisabled={!selectedItem}
             />

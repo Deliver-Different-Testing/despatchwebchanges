@@ -57,6 +57,26 @@ describe('ColorModeProvider', () => {
         expect(mockSavePreference).toHaveBeenCalledWith(StaffPreferenceKey.Appearance, 'dark');
     });
 
+    it('keeps the pre-paint boot scheme attribute in step with the mode so switching to light drops the dark canvas', async () => {
+        const root = document.documentElement;
+        root.setAttribute('data-dd-boot-scheme', 'dark');
+        window.localStorage.setItem(COLOR_MODE_STORAGE_KEY, 'dark');
+        const Toggle: React.FC = () => {
+            const {setPreference} = useColorMode();
+            return <button onClick={() => setPreference('light')}>to-light</button>;
+        };
+        const user = setupUser();
+        render(<ColorModeProvider><Toggle/></ColorModeProvider>);
+        expect(root.getAttribute('data-dd-boot-scheme')).toBe('dark');
+
+        await user.click(screen.getByText('to-light'));
+        expect(root.hasAttribute('data-dd-boot-scheme')).toBe(false);
+
+        act(() => window.dispatchEvent(new CustomEvent('dd-color-mode-change', {detail: 'dark'})));
+        expect(root.getAttribute('data-dd-boot-scheme')).toBe('dark');
+        root.removeAttribute('data-dd-boot-scheme');
+    });
+
     it('updates every mounted provider live when one changes, and follows the OS while on system', async () => {
         const user = setupUser();
         const fireOsChange = mockMatchMedia(false);

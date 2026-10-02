@@ -1,7 +1,3 @@
-/**
- * JobListFooter Tests
- */
-
 import React from 'react';
 import {screen} from '@testing-library/react';
 import {renderWithMantine} from '../../__testUtils__';
@@ -41,6 +37,6 @@ describe('JobListFooter', () => {
             <JobListFooter displayedCount={10} totalCount={50} lastUpdated="Last updated: 3:00 PM" isLoadingMore/>,
         );
 
-        expect(screen.getByText('Loading more jobs...')).toBeInTheDocument();
+        expect(screen.getByText('Loading more jobs…')).toBeInTheDocument();
     });
 });

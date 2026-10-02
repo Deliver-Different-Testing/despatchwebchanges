@@ -78,7 +78,7 @@ describe('FilterPanel', () => {
         renderWithProviders(<FilterPanel {...defaultProps} />);
 
         // Quick Filters header
-        expect(screen.getByText('Quick Filters')).toBeInTheDocument();
+        expect(screen.getByText('Quick filters')).toBeInTheDocument();
 
         // Date Range section
         expect(screen.getByText('Date range')).toBeInTheDocument();

@@ -149,12 +149,12 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
             opened={open}
             onClose={onClose}
             size={dialogSize.md}
-            label="Flight Details"
+            label="Flight details"
             fullScreen={isFullscreen}
         >
             <DialogHeader
                 icon={<Icon tabler={IconPlane}/>}
-                title="Flight Details"
+                title="Flight details"
                 subtitle="View flight information and segments"
                 onClose={onClose}
             />

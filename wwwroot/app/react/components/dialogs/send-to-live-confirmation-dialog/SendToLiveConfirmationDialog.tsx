@@ -58,7 +58,7 @@ export const SendToLiveConfirmationDialog: React.FC<SendToLiveConfirmationDialog
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleConfirm}
-                confirmLabel={isSubmitting ? 'Sending...' : 'Send to Live'}
+                confirmLabel={isSubmitting ? 'Sending…' : 'Send to Live'}
                 confirmIcon={<Icon lucide={Send} size={16}/>}
                 submitting={isSubmitting}
             />

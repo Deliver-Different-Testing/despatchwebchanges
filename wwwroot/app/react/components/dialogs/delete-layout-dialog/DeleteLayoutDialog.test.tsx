@@ -22,7 +22,7 @@ function setup(overrides: Partial<React.ComponentProps<typeof DeleteLayoutDialog
 describe('DeleteLayoutDialog', () => {
     it('renders the title and the layout name when open', () => {
         setup();
-        expect(screen.getByText('Delete Layout')).toBeInTheDocument();
+        expect(screen.getByText('Delete layout')).toBeInTheDocument();
         // Name appears in the subtitle and the warning body.
         expect(screen.getAllByText(/Night Shift/).length).toBeGreaterThan(0);
     });

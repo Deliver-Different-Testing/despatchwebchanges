@@ -59,7 +59,7 @@ describe('ConfirmDialog', () => {
             renderWithMantine(
                 <ConfirmDialog
                     opened
-                    title="Flight Assignment Required"
+                    title="Flight assignment required"
                     message="Assign a flight before assigning an agent."
                     onClose={props.onClose}
                 />,

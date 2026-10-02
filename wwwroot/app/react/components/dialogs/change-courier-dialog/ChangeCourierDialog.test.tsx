@@ -42,7 +42,7 @@ const pickCourier = async () => {
 const advanceToConfirm = async (props: ChangeCourierDialogProps) => {
     renderWithMantine(<ChangeCourierDialog {...props} />);
     await pickCourier();
-    await userEvent.click(screen.getByRole('button', {name: /^save$/i}));
+    await userEvent.click(screen.getByRole('button', {name: /^save changes$/i}));
     await screen.findByRole('button', {name: /confirm change/i});
 };
 
@@ -51,13 +51,13 @@ describe('ChangeCourierDialog', () => {
         renderWithMantine(<ChangeCourierDialog {...createMockProps()} />);
 
         expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Change Paid Courier')).toBeInTheDocument();
+        expect(screen.getByText('Change paid courier')).toBeInTheDocument();
         // The invoicing-impact warning
         expect(screen.getByText(/changes which courier is invoiced and paid/i)).toBeInTheDocument();
         // Current courier shown read-only
         expect(screen.getByDisplayValue('Olive Old')).toBeInTheDocument();
         // Save disabled until a courier is picked
-        expect(screen.getByRole('button', {name: /^save$/i})).toBeDisabled();
+        expect(screen.getByRole('button', {name: /^save changes$/i})).toBeDisabled();
     });
 
     it('does not render when open is false', () => {
@@ -72,7 +72,7 @@ describe('ChangeCourierDialog', () => {
         await pickCourier();
         expect(props.searchCouriers).toHaveBeenCalledWith('Nina');
 
-        const save = screen.getByRole('button', {name: /^save$/i});
+        const save = screen.getByRole('button', {name: /^save changes$/i});
         expect(save).toBeEnabled();
         await userEvent.click(save);
 
@@ -91,7 +91,7 @@ describe('ChangeCourierDialog', () => {
 
         await userEvent.click(screen.getByRole('button', {name: /back/i}));
 
-        expect(screen.getByRole('button', {name: /^save$/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^save changes$/i})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /confirm change/i})).not.toBeInTheDocument();
     });
 
@@ -128,7 +128,7 @@ describe('ChangeCourierDialog', () => {
         const {rerender} = renderWithMantine(<ChangeCourierDialog {...props} />);
 
         await pickCourier();
-        await userEvent.click(screen.getByRole('button', {name: /^save$/i}));
+        await userEvent.click(screen.getByRole('button', {name: /^save changes$/i}));
         await screen.findByRole('button', {name: /confirm change/i});
 
         await act(async () => {
@@ -138,6 +138,6 @@ describe('ChangeCourierDialog', () => {
             rerender(<ChangeCourierDialog {...props} open={true} />);
         });
 
-        expect(screen.getByRole('button', {name: /^save$/i})).toBeDisabled();
+        expect(screen.getByRole('button', {name: /^save changes$/i})).toBeDisabled();
     });
 });

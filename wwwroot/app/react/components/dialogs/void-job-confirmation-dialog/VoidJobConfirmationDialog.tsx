@@ -1,7 +1,3 @@
-/**
- * React Void Job Confirmation Dialog (DFRNT / Mantine)
- */
-
 import React, {useState, useMemo, useEffect, useCallback} from 'react';
 import {Alert, Badge, Box, Button, Checkbox, Group, Loader, Paper, Stack, Switch, Text, Textarea} from '@mantine/core';
 import {Info, Trash2, TriangleAlert} from 'lucide-react';
@@ -62,8 +58,8 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
     ), [voidReasonText, voidSingleJobOnly, selectedCount, isSubmitting]);
 
     const confirmButtonText = useMemo(() => {
-        if (voidSingleJobOnly) return 'Void Job';
-        return `Void ${selectedCount} Job${selectedCount !== 1 ? 's' : ''}`;
+        if (voidSingleJobOnly) return 'Void job';
+        return `Void ${selectedCount} job${selectedCount !== 1 ? 's' : ''}`;
     }, [voidSingleJobOnly, selectedCount]);
 
     const handleReasonChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
@@ -80,7 +76,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 setRelatedJobs(jobs);
             } catch (error) {
                 console.error('Error loading related jobs:', error);
-                showToast('Failed to load related jobs.', 'error');
+                showToast("Couldn't load related jobs. Refresh and try again.", 'error');
                 setRelatedJobs([]);
             } finally {
                 setIsLoadingRelatedJobs(false);
@@ -106,14 +102,14 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
         if (!job) return;
 
         if (!voidReasonText || voidReasonText.trim() === '') {
-            showToast('Please enter a reason for voiding this job.', 'warning');
+            showToast('Enter a reason for voiding this job', 'warning');
             return;
         }
 
         const jobIds = voidSingleJobOnly ? undefined : selectedJobIds;
 
         if (!voidSingleJobOnly && (!jobIds || jobIds.length === 0)) {
-            showToast('Please select at least one job to void.', 'warning');
+            showToast('Select at least one job to void', 'warning');
             return;
         }
 
@@ -128,13 +124,13 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
 
             const voidedCount = voidSingleJobOnly ? 1 : jobIds?.length ?? 1;
             const message = voidedCount === 1
-                ? `${job.jobNo} has been voided successfully.`
-                : `${voidedCount} jobs have been voided successfully.`;
+                ? `${job.jobNo} voided`
+                : `${voidedCount} jobs voided`;
 
             showToast(message, 'success');
             onConfirm({success: true, voidedCount});
         } catch {
-            showToast('An error occurred while voiding the job. Please try again later.', 'error');
+            showToast("Couldn't void the job. Try again.", 'error');
             setIsSubmitting(false);
         }
     };
@@ -168,7 +164,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 {/* Reason */}
                 <Textarea
                     label="Reason for voiding (required)"
-                    placeholder="Please provide a reason for voiding this job"
+                    placeholder="Reason for voiding this job"
                     value={voidReasonText}
                     onChange={handleReasonChange}
                     disabled={isSubmitting}
@@ -203,13 +199,13 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                             py="sm"
                             style={{borderBottom: '1px solid var(--mantine-color-gray-3)', backgroundColor: 'var(--mantine-color-gray-1)'}}
                         >
-                            <Text fw={500} fz="sm">Related Jobs</Text>
+                            <Text fw={500} fz="sm">Related jobs</Text>
                             <Group gap="xs">
                                 <Button variant="subtle" size="compact-sm" onClick={selectAllJobs} disabled={isLoadingRelatedJobs || isSubmitting}>
-                                    Select All
+                                    Select all
                                 </Button>
                                 <Button variant="subtle" size="compact-sm" onClick={deselectAllJobs} disabled={isLoadingRelatedJobs || isSubmitting}>
-                                    Deselect All
+                                    Deselect all
                                 </Button>
                             </Group>
                         </Group>
@@ -218,7 +214,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                         {isLoadingRelatedJobs && (
                             <Group justify="center" gap="sm" py="lg">
                                 <Loader size={UI_ICON_SIZE}/>
-                                <Text fz="sm" c="dimmed">Loading related jobs...</Text>
+                                <Text fz="sm" c="dimmed">Loading related jobs…</Text>
                             </Group>
                         )}
 
@@ -288,7 +284,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 onConfirm={handleConfirm}
                 confirmColor="red"
                 confirmIcon={<Icon lucide={Trash2}/>}
-                confirmLabel={isSubmitting ? 'Voiding...' : confirmButtonText}
+                confirmLabel={isSubmitting ? 'Voiding…' : confirmButtonText}
                 confirmDisabled={isConfirmDisabled}
                 submitting={isSubmitting}
             />

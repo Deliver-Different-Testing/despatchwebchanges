@@ -1,8 +1,3 @@
-/**
- * Recurring Jobs Page Component
- *
- * React component for the recurring jobs list panel and job-details panel.
- */
 
 import React, {useCallback, useEffect, useState} from 'react';
 import {Box, Card, Stack, Text} from '@mantine/core';
@@ -132,12 +127,12 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         const modeLabel = RecurringMode[mode];
         try {
             await updateJobDetail(job.id, 'RecurringMode', String(mode), true);
-            showToast(`Mode changed to ${modeLabel}.`, 'success');
+            showToast(`Mode changed to ${modeLabel}`, 'success');
             await refetch();
         } catch (error) {
             const message = error instanceof Error
                 ? error.message
-                : `Failed to change mode to ${modeLabel}.`;
+                : `Couldn't change the mode to ${modeLabel}. Try again.`;
             console.error('Mode change failed:', error);
             showToast(message, 'error');
         }
@@ -158,12 +153,12 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     const handleExport = useCallback(async () => {
         setIsExporting(true);
         try {
-            showToast('Exporting recurring jobs...', 'info');
+            showToast('Exporting recurring jobs…', 'info');
             await recurringJobsApi.exportToCsv(query);
-            showToast('Recurring jobs exported successfully', 'success');
+            showToast('Recurring jobs exported', 'success');
         } catch (error) {
             console.error('Export failed:', error);
-            showToast('Failed to export recurring jobs', 'error');
+            showToast("Couldn't export recurring jobs. Check your connection and try again.", 'error');
         } finally {
             setIsExporting(false);
         }
@@ -291,7 +286,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 >
                     <PanelHeader
                         icon={<Icon lucide={Repeat}/>}
-                        title="Recurring Jobs"
+                        title="Recurring jobs"
                         count={data?.total || undefined}
                     />
                     <Box style={{flex: 1, overflow: 'hidden'}}>
@@ -330,7 +325,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 >
                     <PanelHeader
                         icon={<Icon lucide={Info}/>}
-                        title={selectedJobId ? `Job Details - Job #${selectedJobId}` : 'Job Details'}
+                        title={selectedJobId ? `Job details - Job #${selectedJobId}` : 'Job details'}
                     />
                     <Box style={{flex: 1, overflow: 'auto'}}>
                         <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
@@ -393,11 +388,11 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 opened={deactivateDialogOpen}
                 onClose={handleDeactivateCancel}
                 size={dialogSize.sm}
-                label="Deactivate Recurring Job"
+                label="Deactivate recurring job"
             >
                 <DialogHeader
                     icon={<Icon lucide={Repeat}/>}
-                    title="Deactivate Recurring Job"
+                    title="Deactivate recurring job"
                     onClose={handleDeactivateCancel}
                     closeDisabled={isDeactivating}
                     variant="warning"
@@ -411,8 +406,8 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 <DialogFooter
                     onCancel={handleDeactivateCancel}
                     onConfirm={handleDeactivateConfirm}
-                    cancelLabel="No"
-                    confirmLabel={isDeactivating ? 'Deactivating...' : 'Yes'}
+                    cancelLabel="Keep active"
+                    confirmLabel={isDeactivating ? 'Deactivating…' : 'Deactivate job'}
                     submitting={isDeactivating}
                 />
             </DialogShell>

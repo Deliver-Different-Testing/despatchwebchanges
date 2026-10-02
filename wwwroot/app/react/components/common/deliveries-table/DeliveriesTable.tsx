@@ -23,7 +23,7 @@ interface DeliveriesTableProps {
 
 const COLUMNS = [
     {key: 'expand', label: '', sortable: false, width: '48px'},
-    {key: 'jobName', label: 'Job Number', sortable: true},
+    {key: 'jobName', label: 'Job number', sortable: true},
     {key: 'status', label: 'Status', sortable: true},
     {key: 'completion', label: 'Completion', sortable: true},
     {key: 'pickup', label: 'Pickup', sortable: true},
@@ -199,13 +199,13 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                                     <Table.Td>{delivery.region}</Table.Td>
                                     <Table.Td style={{whiteSpace: 'nowrap'}}>
                                         {onShowMap && (
-                                            <Tooltip label="Open Map">
+                                            <Tooltip label="Open map">
                                                 <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => onShowMap(delivery)} aria-label="Open map">
                                                     <SymbolIcon name="map" size={20} />
                                                 </ActionIcon>
                                             </Tooltip>
                                         )}
-                                        <Tooltip label="View Job Details">
+                                        <Tooltip label="View job details">
                                             <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => onOpenJobDetail(delivery)} aria-label="View job details">
                                                 <SymbolIcon name="visibility" size={20} />
                                             </ActionIcon>

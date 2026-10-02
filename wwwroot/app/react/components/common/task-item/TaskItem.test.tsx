@@ -201,13 +201,13 @@ describe('TaskItem', () => {
 
         it.each([
             ['no due strings', {_dueDateString: undefined, _dueTimeString: undefined}],
-            ['"Invalid Date" strings', {_dueDateString: 'Invalid Date', _dueTimeString: 'Invalid Date'}],
+            ['"Invalid date" strings', {_dueDateString: 'Invalid date', _dueTimeString: 'Invalid date'}],
         ])('invites the operator to set a due instant given %s', (_label, overrides) => {
             const props = createDefaultProps({task: createMockTask(overrides)});
             renderWithProviders(<TaskItem {...props} />);
 
             expect(screen.getByText('Set due')).toBeInTheDocument();
-            expect(screen.queryByText(/undefined|Invalid Date/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/undefined|Invalid date/)).not.toBeInTheDocument();
         });
 
         it('keeps the absolute due date reachable on the control', () => {
@@ -262,7 +262,7 @@ describe('TaskItem', () => {
             await waitFor(() => {
                 expect(props.tasksService.updateTaskDate).toHaveBeenCalled();
             });
-            expect(props.showSuccessToast).toHaveBeenCalledWith('Task date updated successfully');
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task date updated');
             expect(await screen.findByLabelText('Hours')).toBeInTheDocument();
         });
 
@@ -279,7 +279,7 @@ describe('TaskItem', () => {
             await waitFor(() => {
                 expect(props.tasksService.updateTaskTime).toHaveBeenCalled();
             });
-            expect(props.showSuccessToast).toHaveBeenCalledWith('Task time updated successfully');
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task time updated');
             const committed = (props.tasksService.updateTaskTime as jest.Mock).mock.calls[0][1];
             expect(committed.format('HH:mm')).toBe('09:00');
         });
@@ -369,7 +369,7 @@ describe('TaskItem', () => {
             await waitFor(() => {
                 expect(props.tasksService.reassignTaskToStaff).toHaveBeenCalledWith(1, 101);
             });
-            expect(props.showSuccessToast).toHaveBeenCalledWith('Task reassigned successfully');
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task reassigned');
         });
 
         it('filters the staff list and reports when nothing matches', async () => {
@@ -378,7 +378,7 @@ describe('TaskItem', () => {
             await userEvent.click(assigneeControl());
             expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
 
-            const searchInput = screen.getByPlaceholderText('Search staff...');
+            const searchInput = screen.getByPlaceholderText('Search staff…');
             fireEvent.change(searchInput, {target: {value: 'Jane'}});
             expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
             expect(screen.queryByText('Bob Johnson')).not.toBeInTheDocument();
@@ -437,7 +437,7 @@ describe('TaskItem', () => {
             renderWithProviders(<TaskItem {...createDefaultProps({task})} />);
 
             await userEvent.click(assigneeControl());
-            expect(await screen.findByPlaceholderText('Search staff...')).toBeInTheDocument();
+            expect(await screen.findByPlaceholderText('Search staff…')).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: 'Unassign task'})).not.toBeInTheDocument();
         });
 
@@ -459,7 +459,7 @@ describe('TaskItem', () => {
             await waitFor(() => {
                 expect(props.tasksService.markTaskAsClosed).toHaveBeenCalledWith(1, true);
             });
-            expect(props.showSuccessToast).toHaveBeenCalledWith('Task completed successfully');
+            expect(props.showSuccessToast).toHaveBeenCalledWith('Task completed');
             expect(props.onTaskUpdated).toHaveBeenCalled();
         });
 

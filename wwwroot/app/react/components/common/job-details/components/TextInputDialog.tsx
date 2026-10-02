@@ -1,10 +1,3 @@
-/**
- * TextInputDialog - Small dialog for editing text fields
- *
- * Replaces $mdDialog.prompt() for editing text fields like
- * RefA, RefB, POD name, weight, tracking mobile/email, etc.
- */
-
 import React, {useState, useEffect} from 'react';
 import {Box, Button, TextInput} from '@mantine/core';
 import {Pencil} from 'lucide-react';
@@ -30,7 +23,7 @@ export function TextInputDialog({
     title,
     label,
     initialValue,
-    okLabel = 'Save',
+    okLabel = 'Save changes',
     cancelLabel = 'Cancel',
     required = true,
     allowClear = false,

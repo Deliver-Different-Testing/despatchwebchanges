@@ -14,24 +14,24 @@ describe('ErrorPage', () => {
         it('should render 404 page by default', () => {
             renderWithTheme(<ErrorPage />);
 
-            expect(screen.getByText('Page Not Found')).toBeInTheDocument();
+            expect(screen.getByText('Page not found')).toBeInTheDocument();
             expect(screen.getByText('The page you are looking for does not exist or has been moved.')).toBeInTheDocument();
             expect(screen.getByText('404')).toBeInTheDocument();
         });
 
-        it('should render Go Back button', () => {
+        it('should render Go back button', () => {
             renderWithTheme(<ErrorPage />);
 
             expect(screen.getByRole('button', {name: /go back/i})).toBeInTheDocument();
         });
 
-        it('should not render Go Home button when onGoHome is not provided', () => {
+        it('should not render Go home button when onGoHome is not provided', () => {
             renderWithTheme(<ErrorPage />);
 
             expect(screen.queryByRole('button', {name: /go home/i})).not.toBeInTheDocument();
         });
 
-        it('should render Go Home button when onGoHome is provided', () => {
+        it('should render Go home button when onGoHome is provided', () => {
             renderWithTheme(<ErrorPage onGoHome={() => {}} />);
 
             expect(screen.getByRole('button', {name: /go home/i})).toBeInTheDocument();
@@ -42,28 +42,28 @@ describe('ErrorPage', () => {
         it('should render notFound error', () => {
             renderWithTheme(<ErrorPage errorType="notFound" />);
 
-            expect(screen.getByText('Page Not Found')).toBeInTheDocument();
+            expect(screen.getByText('Page not found')).toBeInTheDocument();
             expect(screen.getByText('404')).toBeInTheDocument();
         });
 
         it('should render error type', () => {
             renderWithTheme(<ErrorPage errorType="error" />);
 
-            expect(screen.getByText('Something Went Wrong')).toBeInTheDocument();
+            expect(screen.getByText('Something went wrong')).toBeInTheDocument();
             expect(screen.getByText('Error')).toBeInTheDocument();
         });
 
         it('should render forbidden error', () => {
             renderWithTheme(<ErrorPage errorType="forbidden" />);
 
-            expect(screen.getByText('Access Denied')).toBeInTheDocument();
+            expect(screen.getByText('Access denied')).toBeInTheDocument();
             expect(screen.getByText('403')).toBeInTheDocument();
         });
 
         it('should render serverError', () => {
             renderWithTheme(<ErrorPage errorType="serverError" />);
 
-            expect(screen.getByText('Server Error')).toBeInTheDocument();
+            expect(screen.getByText('Server error')).toBeInTheDocument();
             expect(screen.getByText('500')).toBeInTheDocument();
         });
     });
@@ -73,7 +73,7 @@ describe('ErrorPage', () => {
             renderWithTheme(<ErrorPage customTitle="Custom Error Title" />);
 
             expect(screen.getByText('Custom Error Title')).toBeInTheDocument();
-            expect(screen.queryByText('Page Not Found')).not.toBeInTheDocument();
+            expect(screen.queryByText('Page not found')).not.toBeInTheDocument();
         });
 
         it('should use custom message when provided', () => {
@@ -96,7 +96,7 @@ describe('ErrorPage', () => {
     });
 
     describe('Interactions', () => {
-        it('should call onGoBack when Go Back button is clicked', () => {
+        it('should call onGoBack when Go back button is clicked', () => {
             const onGoBack = jest.fn();
             renderWithTheme(<ErrorPage onGoBack={onGoBack} />);
 
@@ -105,7 +105,7 @@ describe('ErrorPage', () => {
             expect(onGoBack).toHaveBeenCalledTimes(1);
         });
 
-        it('should call onGoHome when Go Home button is clicked', () => {
+        it('should call onGoHome when Go home button is clicked', () => {
             const onGoHome = jest.fn();
             renderWithTheme(<ErrorPage onGoHome={onGoHome} />);
 
@@ -114,7 +114,7 @@ describe('ErrorPage', () => {
             expect(onGoHome).toHaveBeenCalledTimes(1);
         });
 
-        it('should call window.history.back when Go Back is clicked without onGoBack handler', () => {
+        it('should call window.history.back when Go back is clicked without onGoBack handler', () => {
             const historyBackSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
             renderWithTheme(<ErrorPage />);
 

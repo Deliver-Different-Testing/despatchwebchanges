@@ -21,7 +21,7 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
     if (!jobId) {
         return (
             <NoData
-                title="No Job Selected"
+                title="No job selected"
                 message="Select a job to see its scan records."
                 icon={scanIcon}
             />
@@ -39,7 +39,7 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
     if (scans.length === 0) {
         return (
             <NoData
-                title="No Scan Records"
+                title="No scan records yet"
                 message="This job has no scan records. Use the driver application to scan the job items."
                 icon={scanIcon}
             />
@@ -54,7 +54,7 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
                 <Table.Thead>
                     <Table.Tr>
                         <Table.Th>Date/Time</Table.Th>
-                        <Table.Th>Scan Detail</Table.Th>
+                        <Table.Th>Scan detail</Table.Th>
                         <Table.Th>Courier</Table.Th>
                     </Table.Tr>
                 </Table.Thead>

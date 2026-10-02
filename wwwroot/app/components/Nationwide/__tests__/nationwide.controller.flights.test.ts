@@ -15,7 +15,7 @@ describe('loadFlights', () => {
     it('sets message and returns when no currentJob', async () => {
         const ctrl = setup({currentJob: undefined});
         await ctrl.loadFlights();
-        expect(ctrl.flightMessage).toContain('select a job');
+        expect(ctrl.flightMessage).toContain('Select a job');
     });
 
     it('returns early when flight already assigned', async () => {
@@ -37,7 +37,7 @@ describe('loadFlights', () => {
             selectedInboundAirport: {id: 1, text: 'WLG'},
         });
         await ctrl.loadFlights();
-        expect(ctrl.flightMessage).toContain('select both');
+        expect(ctrl.flightMessage).toContain('Select outbound and inbound airports');
     });
 
     it('calls service and sets results on success', async () => {
@@ -83,7 +83,7 @@ describe('loadFlights', () => {
 
         await ctrl.loadFlights();
 
-        expect(ctrl.flightMessage).toContain('No flights available');
+        expect(ctrl.flightMessage).toContain('No flights match the selected criteria');
     });
 });
 

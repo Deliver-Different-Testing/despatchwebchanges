@@ -55,7 +55,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
 
     const handleSubmit = useCallback(async () => {
         if (!selectedItem) {
-            showToast('Please select an option', 'warning');
+            showToast('Select an option', 'warning');
             return;
         }
 
@@ -72,7 +72,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             await onSubmit(result);
         } catch (error: unknown) {
             console.error('Error submitting selection:', error);
-            showToast(error instanceof Error ? error.message : 'Failed to save selection', 'error');
+            showToast(error instanceof Error ? `Couldn't save selection. ${error.message}` : "Couldn't save selection. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -91,6 +91,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             <Stack p="lg" gap="md" bg={dialogContentBg}>
                 {/* Select Dropdown */}
                 <Select
+                    data-autofocus
                     label={title}
                     data={items.map(item => ({value: String(item.id), label: item.text}))}
                     value={selectedItem ? String(selectedItem.id) : null}
@@ -122,7 +123,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSubmit}
-                confirmLabel={isLoading ? 'Saving...' : 'Save'}
+                confirmLabel={isLoading ? 'Saving…' : 'Save changes'}
                 confirmDisabled={!selectedItem}
                 submitting={isLoading}
             />

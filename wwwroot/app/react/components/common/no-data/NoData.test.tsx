@@ -21,8 +21,8 @@ describe('NoData', () => {
         it('renders with default props', () => {
             renderWithProviders(<NoData />);
 
-            expect(screen.getByText('No Data')).toBeInTheDocument();
-            expect(screen.getByText('No items to display.')).toBeInTheDocument();
+            expect(screen.getByText('No data')).toBeInTheDocument();
+            expect(screen.getByText('Nothing here yet.')).toBeInTheDocument();
         });
 
         it('renders custom title', () => {

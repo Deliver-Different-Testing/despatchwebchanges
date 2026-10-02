@@ -16,8 +16,8 @@ import classes from './NoData.module.css';
  * NoData Component - displays an empty state with icon, title, message, and optional action
  */
 export const NoData: React.FC<NoDataProps> = ({
-                                                  title = 'No Data',
-                                                  message = 'No items to display.',
+                                                  title = 'No data',
+                                                  message = 'Nothing here yet.',
                                                   icon = <Icon lucide={Info}/>,
                                                   showAction = false,
                                                   actionText = 'Refresh',

@@ -97,9 +97,11 @@ interface JobDetailsProps {
     config: MountJobDetailsConfig;
 }
 
+const PANEL_BACKGROUND = 'var(--mantine-color-gray-1)';
+
 const rootStyles = {
     container: (dense: boolean): React.CSSProperties => ({
-        backgroundColor: 'var(--mantine-color-gray-1)',
+        backgroundColor: PANEL_BACKGROUND,
         ...(dense ? {fontSize: '0.8125rem'} : {}),
     }),
     progressBar: {
@@ -291,7 +293,7 @@ export function JobDetails({config}: JobDetailsProps) {
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
     const showInfoToast = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
 
-    // Archived-job "Change Paid Courier" flow: eligibility gate + dialog + blocked popup.
+    // Archived-job "Change paid courier" flow: eligibility gate + dialog + blocked popup.
     const {openChangeCourier, changeCourierDialogs} = useChangeCourierFlow({
         showToast,
         onChanged: refreshAndNotify,
@@ -367,7 +369,7 @@ export function JobDetails({config}: JobDetailsProps) {
 
     const handleResetFieldVisibility = useCallback(() => {
         resetToDefaults();
-        showToast('Default Job Detail layout restored', 'success');
+        showToast('Default job detail layout restored', 'success');
     }, [resetToDefaults, showToast]);
 
     const handleToggleReadStatus = useCallback(async () => {
@@ -381,7 +383,7 @@ export function JobDetails({config}: JobDetailsProps) {
 
     if (isLoading && !job) {
         return (
-            <Box p="sm" data-testid="job-detail-loading">
+            <Box p="sm" style={{backgroundColor: PANEL_BACKGROUND}} data-testid="job-detail-loading">
                 <Stack gap="sm">
                     <Skeleton height={44} radius="xs"/>
                     <Skeleton height={100} radius="xs"/>
@@ -397,7 +399,7 @@ export function JobDetails({config}: JobDetailsProps) {
     if (!job) {
         return (
             <NoData
-                title="No Job Selected"
+                title="No job selected"
                 message="Select a job to view details"
                 icon={<Icon lucide={Briefcase}/>}
             />
@@ -543,7 +545,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     />
 
                     {isEditMode && (
-                        <CardVisibilityToggle label="Total Distance" fieldKey="totalMiles"
+                        <CardVisibilityToggle label="Total distance" fieldKey="totalMiles"
                                               isVisible={isFieldVisible('totalMiles')} onToggle={toggleField}/>
                     )}
                     <TotalDistance
@@ -598,7 +600,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     {job.isPartnerJob && (
                         <>
                             {isEditMode && (
-                                <CardVisibilityToggle label="Partner Change Requests" fieldKey="partnerChangeRequests"
+                                <CardVisibilityToggle label="Partner change requests" fieldKey="partnerChangeRequests"
                                                       isVisible={isFieldVisible('partnerChangeRequests')}
                                                       onToggle={toggleField}/>
                             )}

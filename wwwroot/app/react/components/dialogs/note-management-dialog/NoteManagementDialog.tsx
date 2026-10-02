@@ -1,10 +1,3 @@
-/**
- * React Note Management Dialog
- *
- * A dialog for creating and editing job notes with note type management.
- * Supports creating new note types inline and displays note metadata.
- */
-
 import React, {useEffect, useMemo, useState} from 'react';
 import {
     ActionIcon,
@@ -124,7 +117,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isNew = !note?.noteId;
-    const title = isNew ? 'Add Note' : 'Edit Note';
+    const title = isNew ? 'Add note' : 'Edit note';
 
     // Timezone for metadata display
     const formattedTimeZone = useMemo(() => {
@@ -179,7 +172,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             setNoteTypes(types);
         } catch (error) {
             console.error('Error loading note types:', error);
-            showToast('Failed to load note types', 'error');
+            showToast("Couldn't load note types. Refresh and try again.", 'error');
         } finally {
             setIsLoadingTypes(false);
         }
@@ -201,11 +194,11 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
     const validate = (): boolean => {
         if (!noteText.trim()) {
-            showToast('Note text is required', 'error');
+            showToast('Enter note text', 'error');
             return false;
         }
         if (noteTypeId === 0) {
-            showToast('Please select a note type', 'error');
+            showToast('Select a note type', 'error');
             return false;
         }
         return true;
@@ -226,7 +219,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     bulkJobId: note?.bulkJobId,
                 };
                 await onCreateNote(request);
-                showToast('Note created successfully', 'success');
+                showToast('Note created', 'success');
             } else {
                 const request: UpdateNoteRequest = {
                     noteId: note!.noteId!,
@@ -238,13 +231,13 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     bulkJobId: note?.bulkJobId,
                 };
                 await onUpdateNote(request);
-                showToast('Note updated successfully', 'success');
+                showToast('Note updated', 'success');
             }
             onSave();
             onClose();
         } catch (error) {
             console.error('Error saving note:', error);
-            showToast('Failed to save note', 'error');
+            showToast("Couldn't save note. Try again.", 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -252,7 +245,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
     const handleCreateNoteType = async () => {
         if (!newNoteTypeName.trim()) {
-            showToast('Note type name is required', 'error');
+            showToast('Enter a note type name', 'error');
             return;
         }
 
@@ -266,7 +259,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             };
 
             await onCreateNoteType(newType);
-            showToast('Note type created successfully', 'success');
+            showToast('Note type created', 'success');
 
             // Reload note types and select the new one
             const types = await onLoadNoteTypes();
@@ -281,7 +274,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             resetNoteTypeForm();
         } catch (error) {
             console.error('Error creating note type:', error);
-            showToast('Failed to create note type', 'error');
+            showToast("Couldn't create note type. Try again.", 'error');
         } finally {
             setIsCreatingNoteType(false);
         }
@@ -306,7 +299,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                 {/* Note Type Section */}
                 <Box mb="lg">
                     <Group justify="space-between" mb="sm" wrap="nowrap">
-                        <Text fw={600}>Note Type</Text>
+                        <Text fw={600}>Note type</Text>
                         <ActionIcon
                             variant="subtle"
                             color="gray"
@@ -318,7 +311,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     </Group>
 
                     <Select
-                        label="Select Note Type"
+                        label="Select note type"
                         data={noteTypeOptions}
                         value={noteTypeId ? String(noteTypeId) : null}
                         onChange={(value) => setNoteTypeId(Number(value) || 0)}
@@ -337,7 +330,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 onClick={toggleDescription}
                                 leftSection={<Icon lucide={showDescription ? ChevronUp : ChevronDown} size={16}/>}
                             >
-                                View Description
+                                View description
                             </Button>
                             <Collapse expanded={showDescription} keepMounted={false}>
                                 <Paper withBorder radius="md" mt="xs" p="md" bg="var(--mantine-color-gray-0)">
@@ -372,11 +365,11 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 borderBottom: '1px solid var(--mantine-color-default-border)',
                             }}
                         >
-                            <Text fw={600}>Create New Note Type</Text>
+                            <Text fw={600}>Create new note type</Text>
                         </Box>
                         <Stack p="md" gap="md">
                             <TextInput
-                                label="Note Type Name"
+                                label="Note type name"
                                 value={newNoteTypeName}
                                 onChange={(e) => setNewNoteTypeName(e.currentTarget.value)}
                                 size="sm"
@@ -396,7 +389,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 <Checkbox
                                     checked={newNoteTypeIsPublic}
                                     onChange={(e) => setNewNoteTypeIsPublic(e.currentTarget.checked)}
-                                    label="Is Public Note Type"
+                                    label="Is public note type"
                                 />
                                 {newNoteTypeIsPublic && (
                                     <Alert color="orange" icon={<Icon lucide={TriangleAlert}/>} mt="xs" radius="md">
@@ -408,7 +401,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 <Checkbox
                                     checked={newNoteTypeIsCourierFacing}
                                     onChange={(e) => setNewNoteTypeIsCourierFacing(e.currentTarget.checked)}
-                                    label="Is Courier Facing Note Type"
+                                    label="Is courier facing note type"
                                 />
                                 {newNoteTypeIsCourierFacing && (
                                     <Alert color="orange" icon={<Icon tabler={IconTruck}/>} mt="xs" radius="md">
@@ -442,7 +435,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 disabled={!newNoteTypeName.trim()}
                                 loading={isCreatingNoteType}
                             >
-                                Create Note Type
+                                Create note type
                             </Button>
                         </Group>
                     </Paper>
@@ -451,7 +444,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                 {/* Note Content Section */}
                 <Box mb="lg">
                     <Group justify="space-between" mb="sm" wrap="nowrap">
-                        <Text fw={600}>Note Content</Text>
+                        <Text fw={600}>Note content</Text>
                         <AiDraftButton
                             onClick={handleDraftNote}
                             isDrafting={isDrafting}
@@ -466,14 +459,14 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                         required
                         maxLength={MAX_NOTE_LENGTH}
                         description={`${noteText.length}/${MAX_NOTE_LENGTH} characters`}
-                        placeholder="Enter your note content here..."
+                        placeholder="Enter your note content…"
                         mb="md"
                     />
                     <Checkbox
                         checked={isImportant}
                         onChange={(e) => setIsImportant(e.currentTarget.checked)}
                         color="orange"
-                        label="Mark as Important"
+                        label="Mark as important"
                     />
                 </Box>
 
@@ -484,7 +477,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                             <Box c="dimmed" style={{display: 'flex'}}>
                                 <Icon lucide={Info} size={16}/>
                             </Box>
-                            <Text size="sm" c="dimmed" fw={500}>Note Information</Text>
+                            <Text size="sm" c="dimmed" fw={500}>Note information</Text>
                         </Group>
 
                         <Stack gap="sm">
@@ -517,7 +510,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel="Save Note"
+                confirmLabel="Save note"
                 confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={!isFormValid}
                 submitting={isSubmitting}

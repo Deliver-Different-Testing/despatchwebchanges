@@ -135,7 +135,7 @@ export const ACCEPTED_OPTIONS = [
 export const TRACKING_OPTIONS = [
     {id: 1, text: 'Email'},
     {id: 2, text: 'Mobile'},
-    {id: 3, text: 'Email & Mobile'},
+    {id: 3, text: 'Email & mobile'},
 ];
 
 /** Get tracking method display text */
@@ -143,7 +143,7 @@ export function getTrackingMethodText(method?: number): string {
     switch (method || 0) {
         case 1: return 'Email';
         case 2: return 'Mobile';
-        case 3: return 'Email & Mobile';
+        case 3: return 'Email & mobile';
         default: return '';
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Inter-Courier Charge Dialog React Module Tests
+ * Inter-courier charge Dialog React Module Tests
  *
  * Tests for the module's openInterCourierChargeDialog() function.
  */

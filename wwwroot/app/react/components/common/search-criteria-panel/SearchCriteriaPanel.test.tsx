@@ -70,19 +70,19 @@ describe('SearchCriteriaPanel', () => {
     // The button carries an explicit aria-label, so it keeps its accessible name
     // even while disabled inside the tooltip's <span> wrapper.
     const getClientReportButton = () =>
-        screen.getByRole('button', {name: 'Client Report'});
+        screen.getByRole('button', {name: 'Client report'});
 
     // ── Rendering: all labels, inputs, buttons, DateRangePicker (single render) ─
     it('renders all section labels, inputs, buttons, and DateRangePicker', () => {
         renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
 
         // Section labels (visible without expanding Advanced)
-        expect(screen.getByText('Date Range')).toBeInTheDocument();
+        expect(screen.getByText('Date range')).toBeInTheDocument();
         expect(screen.getByText('Clients')).toBeInTheDocument();
         expect(screen.getByText('Couriers')).toBeInTheDocument();
         expect(screen.getByText('Speeds')).toBeInTheDocument();
-        expect(screen.getByText('Job Number')).toBeInTheDocument();
-        expect(screen.getByText('General Search')).toBeInTheDocument();
+        expect(screen.getByText('Job number')).toBeInTheDocument();
+        expect(screen.getByText('General search')).toBeInTheDocument();
 
         // Advanced toggle button present
         expect(screen.getByRole('button', {name: /Advanced/})).toBeInTheDocument();
@@ -92,7 +92,7 @@ describe('SearchCriteriaPanel', () => {
 
         // Text inputs (visible without expanding)
         expect(screen.getByPlaceholderText('Enter job number')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Address, name, reference...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Address, name, reference…')).toBeInTheDocument();
 
         // Advanced fields hidden by default
         expect(screen.queryByPlaceholderText('Enter job ID')).not.toBeVisible();
@@ -102,21 +102,21 @@ describe('SearchCriteriaPanel', () => {
         expect(screen.getByRole('button', {name: 'Search'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Download'})).toBeInTheDocument();
         expect(getClientReportButton()).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Upload Prices'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Upload prices'})).toBeInTheDocument();
 
-        // Client Report disabled when no clients selected
+        // Client report disabled when no clients selected
         expect(getClientReportButton()).toBeDisabled();
     });
 
     // ── Network partner session: hide the two report exports, keep Download ─
-    it('hides Client Report and Price Detail Report for a network partner session, keeps Download', () => {
+    it('hides Client report and Price detail report for a network partner session, keeps Download', () => {
         (window as any).IsNetworkPartner = true;
         try {
             renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
 
             expect(screen.getByRole('button', {name: 'Download'})).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: 'Client Report'})).not.toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: 'Price Detail Report'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Client report'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Price detail report'})).not.toBeInTheDocument();
         } finally {
             delete (window as any).IsNetworkPartner;
         }
@@ -127,7 +127,7 @@ describe('SearchCriteriaPanel', () => {
         const props = createDefaultProps();
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
-        // Expand Advanced section to access Job ID and Bulk Job ID
+        // Expand Advanced section to access Job ID and Bulk job ID
         await user.click(screen.getByRole('button', {name: /Advanced/}));
 
         // Job ID
@@ -139,7 +139,7 @@ describe('SearchCriteriaPanel', () => {
         await user.clear(jobIdInput);
         expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', undefined);
 
-        // Bulk Job ID
+        // Bulk job ID
         (props.onCriteriaChange as jest.Mock).mockClear();
         const bulkJobIdInput = screen.getByPlaceholderText('Enter bulk job ID');
         await user.click(bulkJobIdInput);
@@ -149,7 +149,7 @@ describe('SearchCriteriaPanel', () => {
         await user.clear(bulkJobIdInput);
         expect(props.onCriteriaChange).toHaveBeenCalledWith('bulkJobId', undefined);
 
-        // Job Number
+        // Job number
         (props.onCriteriaChange as jest.Mock).mockClear();
         const jobNoInput = screen.getByPlaceholderText('Enter job number');
         await user.click(jobNoInput);
@@ -159,9 +159,9 @@ describe('SearchCriteriaPanel', () => {
         await user.clear(jobNoInput);
         expect(props.onCriteriaChange).toHaveBeenCalledWith('job', undefined);
 
-        // General Search
+        // General search
         (props.onCriteriaChange as jest.Mock).mockClear();
-        const wildInput = screen.getByPlaceholderText('Address, name, reference...');
+        const wildInput = screen.getByPlaceholderText('Address, name, reference…');
         await user.click(wildInput);
         await user.paste('test query');
         expect(props.onCriteriaChange).toHaveBeenLastCalledWith('wild', 'test query');
@@ -175,7 +175,7 @@ describe('SearchCriteriaPanel', () => {
         const props = createDefaultProps();
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
-        // Expand Advanced to access Job ID and Bulk Job ID
+        // Expand Advanced to access Job ID and Bulk job ID
         await user.click(screen.getByRole('button', {name: /Advanced/}));
 
         // Job ID
@@ -183,18 +183,18 @@ describe('SearchCriteriaPanel', () => {
         await user.keyboard('{Enter}');
         expect(props.onSearch).toHaveBeenCalledTimes(1);
 
-        // Bulk Job ID
+        // Bulk job ID
         await user.click(screen.getByPlaceholderText('Enter bulk job ID'));
         await user.keyboard('{Enter}');
         expect(props.onSearch).toHaveBeenCalledTimes(2);
 
-        // Job Number
+        // Job number
         await user.click(screen.getByPlaceholderText('Enter job number'));
         await user.keyboard('{Enter}');
         expect(props.onSearch).toHaveBeenCalledTimes(3);
 
-        // General Search
-        await user.click(screen.getByPlaceholderText('Address, name, reference...'));
+        // General search
+        await user.click(screen.getByPlaceholderText('Address, name, reference…'));
         await user.keyboard('{Enter}');
         expect(props.onSearch).toHaveBeenCalledTimes(4);
     });
@@ -213,10 +213,10 @@ describe('SearchCriteriaPanel', () => {
         await user.click(screen.getByRole('button', {name: 'Download'}));
         expect(props.onDownload).toHaveBeenCalledTimes(1);
 
-        await user.click(screen.getByRole('button', {name: 'Price Detail Report'}));
+        await user.click(screen.getByRole('button', {name: 'Price detail report'}));
         expect(props.onPriceDetailReport).toHaveBeenCalledTimes(1);
 
-        await user.click(screen.getByRole('button', {name: 'Upload Prices'}));
+        await user.click(screen.getByRole('button', {name: 'Upload prices'}));
         expect(props.onUpload).toHaveBeenCalledTimes(1);
     });
 
@@ -241,11 +241,11 @@ describe('SearchCriteriaPanel', () => {
         await user.click(screen.getByRole('button', {name: 'Download'}));
         expect(props.onDownload).toHaveBeenCalledWith(pickedDates);
 
-        await user.click(screen.getByRole('button', {name: 'Price Detail Report'}));
+        await user.click(screen.getByRole('button', {name: 'Price detail report'}));
         expect(props.onPriceDetailReport).toHaveBeenCalledWith(pickedDates);
 
-        // Client Report needs a selected client before it is enabled.
-        await user.type(screen.getByPlaceholderText('Search clients...'), 'ac');
+        // Client report needs a selected client before it is enabled.
+        await user.type(screen.getByPlaceholderText('Search clients…'), 'ac');
         await act(async () => {
             jest.advanceTimersByTime(300);
         });
@@ -258,15 +258,15 @@ describe('SearchCriteriaPanel', () => {
         expect(props.onToDateChange).toHaveBeenCalledWith(mockPickedTo);
     });
 
-    // ── Client Report: enabled when client selected, calls handler (single render) ─
-    it('enables Client Report when client selected and calls onClientReport', async () => {
+    // ── Client report: enabled when client selected, calls handler (single render) ─
+    it('enables Client report when client selected and calls onClientReport', async () => {
         const props = createDefaultProps({
             onClientSearch: jest.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
         });
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
         // Select a client
-        const clientsInput = screen.getByPlaceholderText('Search clients...');
+        const clientsInput = screen.getByPlaceholderText('Search clients…');
         await user.type(clientsInput, 'ac');
         await act(async () => {
             jest.advanceTimersByTime(300);
@@ -275,7 +275,7 @@ describe('SearchCriteriaPanel', () => {
         const option = await screen.findByRole('option', {name: 'Acme Corp'});
         await user.click(option);
 
-        // Client Report enabled and clickable
+        // Client report enabled and clickable
         expect(getClientReportButton()).toBeEnabled();
         await user.click(getClientReportButton());
         expect(props.onClientReport).toHaveBeenCalledTimes(1);
@@ -292,7 +292,7 @@ describe('SearchCriteriaPanel', () => {
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
         // Clients search + select
-        await user.type(screen.getByPlaceholderText('Search clients...'), 'ac');
+        await user.type(screen.getByPlaceholderText('Search clients…'), 'ac');
         await act(async () => {
             jest.advanceTimersByTime(300);
         });
@@ -303,14 +303,14 @@ describe('SearchCriteriaPanel', () => {
         expect(props.onCriteriaChange).toHaveBeenCalledWith('clients', [{id: 1, text: 'Acme Corp'}]);
 
         // Couriers search
-        await user.type(screen.getByPlaceholderText('Search couriers...'), 'j');
+        await user.type(screen.getByPlaceholderText('Search couriers…'), 'j');
         await act(async () => {
             jest.advanceTimersByTime(300);
         });
         expect(props.onCourierSearch).toHaveBeenCalledWith('j');
 
         // Speeds search
-        await user.type(screen.getByPlaceholderText('Search speeds...'), 's');
+        await user.type(screen.getByPlaceholderText('Search speeds…'), 's');
         await act(async () => {
             jest.advanceTimersByTime(300);
         });
@@ -318,7 +318,7 @@ describe('SearchCriteriaPanel', () => {
     });
 
     // ── Advanced section: collapsed by default, toggles open/closed ─
-    it('shows Job ID and Bulk Job ID fields when Advanced is expanded', async () => {
+    it('shows Job ID and Bulk job ID fields when Advanced is expanded', async () => {
         renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
 
         // Collapsed by default — fields not visible
@@ -335,11 +335,11 @@ describe('SearchCriteriaPanel', () => {
         });
         expect(screen.getByPlaceholderText('Enter bulk job ID')).toBeVisible();
         expect(screen.getByText('Job ID')).toBeVisible();
-        expect(screen.getByText('Bulk Job ID')).toBeVisible();
+        expect(screen.getByText('Bulk job ID')).toBeVisible();
     });
 
-    // ── Mutual exclusivity: Job ID and Bulk Job ID disable each other ─
-    it('disables Bulk Job ID when Job ID has a value and vice versa', async () => {
+    // ── Mutual exclusivity: Job ID and Bulk job ID disable each other ─
+    it('disables Bulk job ID when Job ID has a value and vice versa', async () => {
         const props = createDefaultProps();
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
@@ -353,7 +353,7 @@ describe('SearchCriteriaPanel', () => {
         expect(jobIdInput).toBeEnabled();
         expect(bulkJobIdInput).toBeEnabled();
 
-        // Type in Job ID — Bulk Job ID becomes disabled
+        // Type in Job ID — Bulk job ID becomes disabled
         await user.click(jobIdInput);
         await user.paste('5');
         expect(bulkJobIdInput).toBeDisabled();
@@ -363,7 +363,7 @@ describe('SearchCriteriaPanel', () => {
         await user.clear(jobIdInput);
         expect(bulkJobIdInput).toBeEnabled();
 
-        // Type in Bulk Job ID — Job ID becomes disabled
+        // Type in Bulk job ID — Job ID becomes disabled
         await user.click(bulkJobIdInput);
         await user.paste('99');
         expect(jobIdInput).toBeDisabled();

@@ -66,8 +66,8 @@ describe('RecurringJobsContextMenu', () => {
             // Menu items
             const menuItems = screen.getAllByRole('menuitem');
             expect(menuItems).toHaveLength(2);
-            expect(screen.getByText('Add Pickup Stop')).toBeInTheDocument();
-            expect(screen.getByText('Add Delivery Stop')).toBeInTheDocument();
+            expect(screen.getByText('Add pickup stop')).toBeInTheDocument();
+            expect(screen.getByText('Add delivery stop')).toBeInTheDocument();
 
             // Both stop items carry a pin glyph. Lucide emits no test hook of its
             // own, so each stamps which stop it is — a stronger assertion than the
@@ -100,7 +100,7 @@ describe('RecurringJobsContextMenu', () => {
         });
     });
 
-    describe('Add Pickup Stop', () => {
+    describe('Add pickup stop', () => {
         it('calls onAddPickupStop with job and then onClose when clicked', () => {
             const callOrder: string[] = [];
             const onAddPickupStop = jest.fn(() => callOrder.push('pickup'));
@@ -108,7 +108,7 @@ describe('RecurringJobsContextMenu', () => {
             const props = createMockProps({onAddPickupStop, onClose});
             renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
-            fireEvent.click(screen.getByText('Add Pickup Stop'));
+            fireEvent.click(screen.getByText('Add pickup stop'));
 
             expect(onAddPickupStop).toHaveBeenCalledWith(mockJob);
             expect(onClose).toHaveBeenCalled();
@@ -116,7 +116,7 @@ describe('RecurringJobsContextMenu', () => {
         });
     });
 
-    describe('Add Delivery Stop', () => {
+    describe('Add delivery stop', () => {
         it('calls onAddDeliveryStop with job and then onClose when clicked', () => {
             const callOrder: string[] = [];
             const onAddDeliveryStop = jest.fn(() => callOrder.push('delivery'));
@@ -124,7 +124,7 @@ describe('RecurringJobsContextMenu', () => {
             const props = createMockProps({onAddDeliveryStop, onClose});
             renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
-            fireEvent.click(screen.getByText('Add Delivery Stop'));
+            fireEvent.click(screen.getByText('Add delivery stop'));
 
             expect(onAddDeliveryStop).toHaveBeenCalledWith(mockJob);
             expect(onClose).toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe('RecurringJobsContextMenu', () => {
                 <RecurringJobsContextMenu {...createMockProps({onAddPickupStop, job: pickupJob})} />
             );
 
-            fireEvent.click(screen.getByText('Add Pickup Stop'));
+            fireEvent.click(screen.getByText('Add pickup stop'));
             expect(onAddPickupStop).toHaveBeenCalledWith(pickupJob);
             unmount();
 
@@ -173,7 +173,7 @@ describe('RecurringJobsContextMenu', () => {
                 <RecurringJobsContextMenu {...createMockProps({onAddDeliveryStop, job: deliveryJob})} />
             );
 
-            fireEvent.click(screen.getByText('Add Delivery Stop'));
+            fireEvent.click(screen.getByText('Add delivery stop'));
             expect(onAddDeliveryStop).toHaveBeenCalledWith(deliveryJob);
         });
     });
