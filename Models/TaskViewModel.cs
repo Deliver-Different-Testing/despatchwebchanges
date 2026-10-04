@@ -10,6 +10,10 @@ public sealed class TaskViewModel
 
     public DateTimeOffset DueDate { get; set; }
 
+    /// <summary>Server-side only: the UTC twin of the due time, preferred over <see cref="DueDate"/> when present.</summary>
+    [Newtonsoft.Json.JsonIgnore]
+    public DateTime? DueDateUtc { get; init; }
+
     public bool Closed { get; init; }
     
     public Suggestion Assignee { get; init; }
