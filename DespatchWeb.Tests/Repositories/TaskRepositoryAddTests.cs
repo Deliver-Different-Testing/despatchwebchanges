@@ -115,6 +115,32 @@ public class TaskRepositoryAddTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task CreateEventsForJobAsync_StampsCreatedAtUtc_FromUtcClock()
+    {
+        _infoServiceMock.GetStaffId().Returns(7);
+        await SeedAsync(Staff(7, "Jo", "Bloggs"), Job(558, contact: "Front desk"));
+
+        await CreateRepository().CreateEventsForJobAsync(558,
+            [new EventGroupViewModel { EventType = new Suggestion { Id = 3, Text = "Delivery" } }]);
+
+        var created = await SingleEventAsync();
+        Assert.Equal(_clock.UtcNow, created.UcevCreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task AddEventAsync_StampsCreatedAtUtc_FromUtcClock()
+    {
+        _infoServiceMock.GetStaffId().Returns(7);
+        _infoServiceMock.GetStaffInfoAsync().Returns(new Suggestion { Id = 7, Text = "Jo Bloggs" });
+        await SeedAsync(Job(559, contact: "Front desk"));
+
+        await CreateRepository().AddEventAsync(559, notes: "Chase POD", eventType: 3);
+
+        var created = await SingleEventAsync();
+        Assert.Equal(_clock.UtcNow, created.UcevCreatedAtUtc);
+    }
+
+    [Fact]
     public async Task AddEventAsync_TruncatesDespatcher_ToColumnLimit()
     {
         _infoServiceMock.GetStaffId().Returns(7);

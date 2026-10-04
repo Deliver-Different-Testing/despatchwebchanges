@@ -67,6 +67,8 @@ public partial class TucEvent
 
     public DateTime UcevDueTime { get; set; }
 
+    public DateTime? UcevCreatedAtUtc { get; set; }
+
     public virtual TucJobType Speed { get; set; }
 
     public virtual ICollection<TucEventAudit> TucEventAudits { get; set; } = new List<TucEventAudit>();

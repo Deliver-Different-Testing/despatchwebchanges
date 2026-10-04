@@ -5141,6 +5141,10 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucevDueTime");
             entity.Property(e => e.UcevEtatime)
+            entity.Property(e => e.UcevCreatedAtUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_tucEvent_ucevCreatedAtUtc")
+                .HasColumnType("datetime")
+                .HasColumnName("ucevCreatedAtUtc");
                 .HasColumnType("datetime")
                 .HasColumnName("ucevETATime");
             entity.Property(e => e.UcevIsScheduled).HasColumnName("ucevIsScheduled");
