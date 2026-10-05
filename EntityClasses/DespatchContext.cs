@@ -5160,15 +5160,9 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValueSql("(getdate())", "DF_tucEvent_ucevDueTime")
                 .HasColumnType("datetime")
                 .HasColumnName("ucevDueTime");
-            entity.Property(e => e.UcevDueTimeUtc)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevDueTimeUtc");
             entity.Property(e => e.UcevEtatime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevETATime");
-            entity.Property(e => e.UcevEtatimeUtc)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevEtatimeUtc");
             entity.Property(e => e.UcevIsScheduled).HasColumnName("ucevIsScheduled");
             entity.Property(e => e.UcevJobId).HasColumnName("ucevJobID");
             entity.Property(e => e.UcevJobNumber)
@@ -5185,24 +5179,15 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcevNotificationSentAt)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevNotificationSentAt");
-            entity.Property(e => e.UcevNotificationSentAtUtc)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevNotificationSentAtUtc");
             entity.Property(e => e.UcevOriginator).HasColumnName("ucevOriginator");
             entity.Property(e => e.UcevPageCourier).HasColumnName("ucevPageCourier");
             entity.Property(e => e.UcevPayload).HasColumnName("ucevPayload");
             entity.Property(e => e.UcevResponseTime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevResponseTime");
-            entity.Property(e => e.UcevResponseTimeUtc)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevResponseTimeUtc");
             entity.Property(e => e.UcevScheduledTime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevScheduledTime");
-            entity.Property(e => e.UcevScheduledTimeUtc)
-                .HasColumnType("datetime")
-                .HasColumnName("ucevScheduledTimeUtc");
             entity.Property(e => e.UcevStaffIdin).HasColumnName("ucevStaffIDIn");
             entity.Property(e => e.UcevStaffIdout).HasColumnName("ucevStaffIDOut");
             entity.Property(e => e.UcevTemplateDetailId).HasColumnName("ucevTemplateDetailID");
