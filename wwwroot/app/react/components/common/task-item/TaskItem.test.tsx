@@ -556,6 +556,37 @@ describe('TaskItem', () => {
         });
     });
 
+    describe('Sent chip', () => {
+        it('shows only the time for a task sent today, and the date too for an older one', () => {
+            const {unmount} = renderWithProviders(<TaskItem {...createDefaultProps({
+                task: createMockTask({createdAt: dayjs(), _createdDateString: 'Jan 15, 2025', _createdTimeString: '8:05 AM'}),
+            })} />);
+            expect(meta('sent')).toHaveTextContent('Sent8:05 AM');
+            unmount();
+
+            renderWithProviders(<TaskItem {...createDefaultProps({
+                task: createMockTask({
+                    createdAt: dayjs().subtract(2, 'day'),
+                    _createdDateString: 'Jan 13, 2025',
+                    _createdTimeString: '8:05 AM',
+                }),
+            })} />);
+            expect(meta('sent')).toHaveTextContent('SentJan 13, 2025 8:05 AM');
+        });
+
+        it('is absent without a creation time, and drops its label when compact', () => {
+            const {unmount} = renderWithProviders(<TaskItem {...createDefaultProps()} />);
+            expect(meta('sent')).toBeNull();
+            unmount();
+
+            renderWithProviders(<TaskItem {...createDefaultProps({
+                task: createMockTask({createdAt: dayjs(), _createdTimeString: '8:05 AM'}),
+                config: {compactView: true},
+            })} />);
+            expect(meta('sent')).toHaveTextContent(/^8:05 AM$/);
+        });
+    });
+
     describe('Config options', () => {
         it.each([
             ['job number', {showJobId: false}, 'jobNumber'],

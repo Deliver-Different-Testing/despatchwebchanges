@@ -45,6 +45,9 @@ public class TaskRepository(
         Closed = e.UcevClosed,
         DueDate = e.UcevDueTime,
         DueDateUtc = e.UcevDueTimeUtc,
+        CreatedAtUtc = e.UcevCreatedAtUtc,
+        CreatedDate = e.UcevDate,
+        CreatedTime = e.UcevTime,
         Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
         EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
         JobNumber = e.UcevJob.UcjbNumber,
@@ -78,6 +81,7 @@ public class TaskRepository(
         foreach (var task in tasks)
         {
             task.DueDate = ResolveDueDate(task, infoService, tenantTimeZone);
+            task.CreatedAt = ResolveCreatedAt(task, infoService, tenantTimeZone);
         }
 
         return tasks;
@@ -520,6 +524,20 @@ public class TaskRepository(
         task.DueDateUtc is { } dueUtc
             ? info.ConvertUtcToTenantTimeZone(dueUtc)
             : TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
+
+    /// <summary>
+    /// Resolves when a task was created in tenant time, preferring <c>ucevCreatedAtUtc</c> and falling back to the
+    /// legacy wall-clock date/time; null when the row has neither.
+    /// </summary>
+    internal static DateTimeOffset? ResolveCreatedAt(TaskViewModel task, ITenantInfoService info, string tenantTimeZone)
+    {
+        if (task.CreatedAtUtc is { } createdUtc)
+            return info.ConvertUtcToTenantTimeZone(createdUtc);
+
+        return task.CreatedDate is { } date
+            ? TimeZoneHelper.SetDateTimeWithTimeZone(date.CombineWithTime(task.CreatedTime), tenantTimeZone)
+            : null;
+    }
 
     // Row-level "UTC twin first, else legacy wall-clock" comparisons. Bounds are supplied in both
     // tenant wall-clock and UTC so each row is compared on the scale its own value is stored in.
