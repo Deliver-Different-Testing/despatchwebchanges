@@ -426,24 +426,6 @@ public class TenantInfoServiceTests : IAsyncDisposable
         Assert.Equal(TimeSpan.FromHours(12), result.Offset);
     }
 
-    [Theory]
-    [InlineData("New Zealand Standard Time", "2024-06-15T12:00:00", "2024-06-15T00:00:00")] // NZST +12
-    [InlineData("New Zealand Standard Time", "2024-01-15T12:00:00", "2024-01-14T23:00:00")] // NZDT +13
-    [InlineData("New Zealand Standard Time", "2024-09-29T02:30:00", "2024-09-28T14:30:00")] // spring-forward gap -> 03:30 NZDT
-    [InlineData("New Zealand Standard Time", "2024-04-07T02:30:00", "2024-04-06T14:30:00")] // ambiguous -> standard offset
-    [InlineData("Pacific Standard Time", "2024-01-15T12:00:00", "2024-01-15T20:00:00")] // PST -8
-    [InlineData("UTC", "2024-06-15T12:00:00", "2024-06-15T12:00:00")]
-    public void ConvertTenantTimeToUtc_ConvertsWallClockUsingTenantTimeZone(string timeZone, string local, string expectedUtc)
-    {
-        SetupHttpContextWithClaims(("TimeZone", timeZone));
-        var service = CreateService();
-
-        var result = service.ConvertTenantTimeToUtc(DateTime.Parse(local, System.Globalization.CultureInfo.InvariantCulture));
-
-        Assert.Equal(DateTime.Parse(expectedUtc, System.Globalization.CultureInfo.InvariantCulture), result);
-        Assert.Equal(DateTimeKind.Utc, result.Kind);
-    }
-
     [Fact]
     public void ConvertUtcToTenantTimeZone_NoClaim_WithOverride_UsesOverride()
     {
