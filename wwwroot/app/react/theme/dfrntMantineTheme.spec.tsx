@@ -8,8 +8,21 @@ import {
     dfrntCssVariablesResolver,
     createDfrntTheme,
 } from './dfrntMantineTheme';
+import {GlassDropdownRoot, glassClassNames} from '@dfrnt/glass';
 import {contrastRatio, getMd3Scheme} from './md3';
 import {dfrntPrimaryPalette, urgentPrimaryPalette, inkBluePalette} from './palettes';
+
+describe('dfrntTheme glass dropdowns', () => {
+    it('gives Menu and Popover dropdowns the glass and panel classes', () => {
+        for (const name of ['Menu', 'Popover'] as const) {
+            expect(dfrntTheme.components?.[name]?.classNames).toEqual({dropdown: `${glassClassNames.glass} ${glassClassNames.panel}`});
+        }
+    });
+
+    it('routes PopoverDropdown through GlassDropdownRoot', () => {
+        expect(dfrntTheme.components?.PopoverDropdown?.defaultProps?.component).toBe(GlassDropdownRoot);
+    });
+});
 
 describe('dfrntTheme', () => {
     it('uses the DFRNT brand ramp as primary with the Cyan seed at the primary shade', () => {

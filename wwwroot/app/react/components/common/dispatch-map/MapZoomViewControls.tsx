@@ -12,6 +12,7 @@ import {Check, Layers, Minus, Monitor, Moon, Mountain, Plus, Satellite, Sun, Tra
 import {IconMap} from '@tabler/icons-react';
 import {Icon} from '../icon/Icon';
 import {useMapTheme, type MapThemePreference} from '../../../hooks/useMapTheme';
+import {useMapGlassClassName} from '../../../hooks/useMapGlassClassName';
 import {applyMapTheme} from '../here-map/hereMapUtils';
 
 const ICON_SIZE = 20;
@@ -151,6 +152,7 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
     }, ref) {
     const {mode, preference: themePreference, setPreference: setThemePreference} = useMapTheme();
     const dark = mode === 'dark';
+    const glassClassName = useMapGlassClassName();
     const [themeMenuOpened, setThemeMenuOpened] = useState(false);
     const wasDarkRef = useRef(false);
     const isLeft = placement === 'left';
@@ -245,6 +247,7 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
 
     return (
         <Paper
+            className={glassClassName}
             shadow="md"
             radius="sm"
             style={{

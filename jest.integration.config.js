@@ -33,10 +33,11 @@ const config = {
 
     // MSW and its dependencies use ESM - need to transform them
     transformIgnorePatterns: [
-        'node_modules[\\\\/](?!(msw|@mswjs|until-async|rettime|@open-draft)[\\\\/])',
+        'node_modules[\\\\/](?!(msw|@mswjs|until-async|rettime|@open-draft|@dfrnt[\\\\/]glass)[\\\\/])',
     ],
 
     moduleNameMapper: {
+        '^@dfrnt/glass$': '<rootDir>/node_modules/@dfrnt/glass/dist/index.js',
         '^angular$': '<rootDir>/node_modules/angular/angular.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/wwwroot/app/tests/mocks/styleMock.ts',
         '\\.html$': '<rootDir>/wwwroot/app/tests/mocks/templateMock.ts',

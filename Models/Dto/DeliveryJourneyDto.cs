@@ -6,6 +6,7 @@ public sealed record DeliveryJourneyDto
     public string Description { get; init; }
     public DateTime? Date { get; init; }
     public DateTime? Time { get; init; }
+    public DateTime? CreatedAtUtc { get; init; }
     public bool Closed { get; init; }
     public string Despatcher { get; init; }
     

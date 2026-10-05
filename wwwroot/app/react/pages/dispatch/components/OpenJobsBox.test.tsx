@@ -70,7 +70,7 @@ describe('OpenJobsBox', () => {
         renderBox();
 
         expect(screen.getByRole('radio', {name: 'Table'})).toBeChecked();
-        expect(screen.getByRole('columnheader', {name: /Job Number/})).toBeInTheDocument();
+        expect(screen.getByRole('columnheader', {name: /Job number/})).toBeInTheDocument();
     });
 
     it('persists the view mode and restores it', () => {

@@ -1,0 +1,55 @@
+/*
+ * Liquid Glass bars for DialogHeader/DialogFooter. The scroll region runs underneath them
+ * (DialogShell), so scrolled content blurs and tints through the bar. A bar is a solid
+ * surface until content actually sits beneath it (`data-glass-active`, set by DialogShell on
+ * scroll): glass over nothing is pointless and costs a blur layer. Deliberately the cheap
+ * CSS material, not the SVG lens: the dialog animates in over the busy dispatch page.
+ * Applied only while glass is allowed (opt-in, see useGlassAllowed); otherwise the bars stay
+ * opaque. -webkit-backdrop-filter is hardcoded: Safari doesn't resolve var() in prefixed rules.
+ */
+.bar {
+  position: relative;
+  z-index: 2;
+  color: var(--mantine-color-text);
+  background: var(--dd-dialog-bar);
+}
+
+.bar[data-glass-active] {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(rgba(13, 12, 44, 0.035), rgba(13, 12, 44, 0.035)),
+    color-mix(in srgb, var(--dd-dialog-bar) 56%, transparent);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+}
+
+/* The edge facing the body catches the light: a bright specular line plus a soft inner rim. */
+.bar[data-glass-active].header {
+  box-shadow:
+    inset 0 -1px 0 rgba(255, 255, 255, 0.7),
+    0 1px 0 rgba(13, 12, 44, 0.14);
+}
+
+.bar[data-glass-active].footer {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 -1px 0 rgba(13, 12, 44, 0.14);
+}
+
+:global([data-mantine-color-scheme='dark']) .bar[data-glass-active] {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 55%),
+    color-mix(in srgb, var(--dd-dialog-bar) 78%, transparent);
+}
+
+:global([data-mantine-color-scheme='dark']) .bar[data-glass-active].header {
+  box-shadow:
+    inset 0 -1px 0 rgba(255, 255, 255, 0.16),
+    0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+:global([data-mantine-color-scheme='dark']) .bar[data-glass-active].footer {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 -1px 0 rgba(0, 0, 0, 0.4);
+}

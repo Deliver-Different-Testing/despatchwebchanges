@@ -19,7 +19,7 @@ const renderWithProviders = (
 ) => renderWithMantine(ui, options);
 
 /** The dropdown is a `Popover`, so the trigger is the only button until it opens. */
-const openMenu = () => fireEvent.click(screen.getByRole('button', {name: 'Date Filter'}));
+const openMenu = () => fireEvent.click(screen.getByRole('button', {name: 'Date filter'}));
 
 const selectOption = async (label: string) => {
     fireEvent.click(await screen.findByLabelText(label));
@@ -48,20 +48,20 @@ describe('DateFilterMenu', () => {
             // `:hover`/`:focus-visible` CSS-module rule, unreachable from `toHaveStyle`.
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
-            const trigger = screen.getByRole('button', {name: 'Date Filter'});
+            const trigger = screen.getByRole('button', {name: 'Date filter'});
             expect(trigger.style.color).toBe('var(--dd-on-shell)');
         });
 
         it('should render calendar icon button that opens menu with all options and action buttons', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
-            expect(screen.getByRole('button', {name: 'Date Filter'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Date filter'})).toBeInTheDocument();
 
             openMenu();
 
-            expect(await screen.findByText('Date Filter')).toBeInTheDocument();
-            expect(screen.getByLabelText('All Time')).toBeInTheDocument();
-            expect(screen.getByLabelText('Time Range')).toBeInTheDocument();
-            expect(screen.getByLabelText('Custom Dates')).toBeInTheDocument();
+            expect(await screen.findByText('Date filter')).toBeInTheDocument();
+            expect(screen.getByLabelText('All time')).toBeInTheDocument();
+            expect(screen.getByLabelText('Time range')).toBeInTheDocument();
+            expect(screen.getByLabelText('Custom dates')).toBeInTheDocument();
             expect(screen.getByLabelText('Today')).toBeInTheDocument();
             // The instant presets and the two that open a configurator are separated.
             expect(screen.getAllByRole('separator').length).toBeGreaterThan(0);
@@ -75,7 +75,7 @@ describe('DateFilterMenu', () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
             openMenu();
 
-            expect(await screen.findByLabelText('All Time')).toBeChecked();
+            expect(await screen.findByLabelText('All time')).toBeChecked();
         });
 
         /**
@@ -86,20 +86,20 @@ describe('DateFilterMenu', () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
             openMenu();
 
-            await selectOption('Custom Dates');
+            await selectOption('Custom dates');
 
             await waitFor(() => {
-                expect(screen.getByLabelText('Start Date')).toBeInTheDocument();
-                expect(screen.getByLabelText('End Date')).toBeInTheDocument();
+                expect(screen.getByLabelText('Start date')).toBeInTheDocument();
+                expect(screen.getByLabelText('End date')).toBeInTheDocument();
             });
         });
 
         it('date fields accept typed text directly (no menu keyboard handler to fight)', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
             openMenu();
-            await selectOption('Custom Dates');
+            await selectOption('Custom dates');
 
-            const start = await screen.findByLabelText('Start Date');
+            const start = await screen.findByLabelText('Start date');
             fireEvent.change(start, {target: {value: '15/06/2024'}});
             expect(start).toHaveValue('15/06/2024');
         });
@@ -115,9 +115,9 @@ describe('DateFilterMenu', () => {
         describe('calendar dropdown does not dismiss the panel', () => {
             const openStartCalendar = async () => {
                 openMenu();
-                await selectOption('Custom Dates');
+                await selectOption('Custom dates');
 
-                const start = await screen.findByLabelText('Start Date');
+                const start = await screen.findByLabelText('Start date');
                 fireEvent.click(start);
                 await waitFor(() => expect(document.querySelector('[data-dates-dropdown]')).toBeInTheDocument());
 
@@ -157,7 +157,7 @@ describe('DateFilterMenu', () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
             openMenu();
 
-            await selectOption('Time Range');
+            await selectOption('Time range');
 
             // Queried by its displayed value: `Select` pairs its visible input with a
             // hidden one, so the "Duration" label matches two elements.
@@ -174,8 +174,8 @@ describe('DateFilterMenu', () => {
 
         const openCustomDates = async () => {
             openMenu();
-            await selectOption('Custom Dates');
-            return screen.findByLabelText('Start Date');
+            await selectOption('Custom dates');
+            return screen.findByLabelText('Start date');
         };
 
         it('uses US format (MM/DD/YYYY) for US customers', async () => {
@@ -184,8 +184,8 @@ describe('DateFilterMenu', () => {
 
             await openCustomDates();
 
-            expect(screen.getByLabelText('Start Date')).toHaveValue('01/01/2024');
-            expect(screen.getByLabelText('End Date')).toHaveValue('01/31/2024'); // month-first
+            expect(screen.getByLabelText('Start date')).toHaveValue('01/01/2024');
+            expect(screen.getByLabelText('End date')).toHaveValue('01/31/2024'); // month-first
             expect(screen.getAllByPlaceholderText('MM/DD/YYYY')).toHaveLength(2);
         });
 
@@ -195,7 +195,7 @@ describe('DateFilterMenu', () => {
 
             await openCustomDates();
 
-            expect(screen.getByLabelText('End Date')).toHaveValue('31/01/2024'); // day-first
+            expect(screen.getByLabelText('End date')).toHaveValue('31/01/2024'); // day-first
             expect(screen.getAllByPlaceholderText('DD/MM/YYYY')).toHaveLength(2);
         });
     });
@@ -260,12 +260,12 @@ describe('DateFilterMenu', () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
             openMenu();
-            expect(await screen.findByText('Date Filter')).toBeInTheDocument();
+            expect(await screen.findByText('Date filter')).toBeInTheDocument();
 
             fireEvent.click(screen.getByText('Apply'));
 
             await waitFor(() => {
-                expect(screen.queryByText('Date Filter')).not.toBeInTheDocument();
+                expect(screen.queryByText('Date filter')).not.toBeInTheDocument();
             });
         });
     });
@@ -273,7 +273,7 @@ describe('DateFilterMenu', () => {
     describe('Timezone Display', () => {
         /** The header carries the title plus the tenant's long zone name beside it. */
         const headerText = async () => {
-            const title = await screen.findByText('Date Filter');
+            const title = await screen.findByText('Date filter');
             return title.parentElement!.textContent!;
         };
 
@@ -286,7 +286,7 @@ describe('DateFilterMenu', () => {
 
             // getTimezoneName returns the long Intl name, which shifts with DST, so the
             // assertion is that *something* beyond the title is rendered.
-            expect(await headerText()).not.toBe('Date Filter');
+            expect(await headerText()).not.toBe('Date filter');
         });
 
         it('should display default NZ timezone when not provided', async () => {
@@ -305,7 +305,7 @@ describe('DateFilterMenu', () => {
             );
 
             openMenu();
-            await selectOption('Custom Dates');
+            await selectOption('Custom dates');
 
             expect(localStorage.getItem('dateRangeOption-testPage')).toBe('custom_date');
         });
@@ -319,7 +319,7 @@ describe('DateFilterMenu', () => {
 
             openMenu();
 
-            expect(await screen.findByLabelText('Time Range')).toBeChecked();
+            expect(await screen.findByLabelText('Time range')).toBeChecked();
         });
 
         it('should restore today option from localStorage', async () => {
@@ -340,7 +340,7 @@ describe('DateFilterMenu', () => {
             renderWithProviders(
                 <DateFilterMenu {...defaultProps} dateFilterData={null} />
             );
-            expect(screen.getByRole('button', {name: 'Date Filter'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Date filter'})).toBeInTheDocument();
         });
     });
 

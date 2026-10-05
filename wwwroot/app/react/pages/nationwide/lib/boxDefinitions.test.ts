@@ -39,7 +39,7 @@ describe('createNationwideBoxes', () => {
     it('keeps V1 titles, which operators recognise', () => {
         expect(boxes[NationwideBoxes.PodJobs].title).toBe('Awaiting POD');
         expect(boxes[NationwideBoxes.FlightAgents].title).toBe('Available');
-        expect(boxes[NationwideBoxes.NewJobs].title).toBe('New Jobs');
+        expect(boxes[NationwideBoxes.NewJobs].title).toBe('New jobs');
     });
 
     it('marks only the job-detail panel as owning the detail buttons', () => {

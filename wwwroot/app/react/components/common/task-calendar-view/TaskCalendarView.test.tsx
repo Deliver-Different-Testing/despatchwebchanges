@@ -229,7 +229,7 @@ describe('TaskCalendarView', () => {
 
     describe('Task Interactions', () => {
         let errorSpy: jest.SpyInstance;
-        beforeEach(() => { errorSpy = suppressConsoleError('Error updating task'); });
+        beforeEach(() => { errorSpy = suppressConsoleError("Couldn't update the task. Check your connection and try again."); });
         afterEach(() => { errorSpy.mockRestore(); });
 
         it('calls onTaskClick when a task is clicked', async () => {
@@ -265,7 +265,7 @@ describe('TaskCalendarView', () => {
             await user.click(screen.getByRole('checkbox'));
 
             await waitFor(() => {
-                expect(props.showSuccessToast).toHaveBeenCalledWith('Task updated successfully');
+                expect(props.showSuccessToast).toHaveBeenCalledWith('Task updated');
             });
         });
 
@@ -293,12 +293,12 @@ describe('TaskCalendarView', () => {
             await user.click(screen.getByRole('checkbox'));
 
             await waitFor(() => {
-                expect(props.showErrorToast).toHaveBeenCalledWith('Failed to update task');
+                expect(props.showErrorToast).toHaveBeenCalledWith("Couldn't update the task. Check your connection and try again.");
             });
         });
     });
 
-    describe('Week View', () => {
+    describe('Week view', () => {
         it('renders time slots in week view', async () => {
             const user = setupUser();
             const props = createDefaultProps();
@@ -323,7 +323,7 @@ describe('TaskCalendarView', () => {
         });
     });
 
-    describe('Day View', () => {
+    describe('Day view', () => {
         it('renders time slots in day view', async () => {
             const user = setupUser();
             const props = createDefaultProps();

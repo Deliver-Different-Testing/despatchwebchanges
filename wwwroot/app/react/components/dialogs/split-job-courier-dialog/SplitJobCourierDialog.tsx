@@ -46,7 +46,7 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
         <DialogShell opened={open} onClose={cancel} size={420}>
             <DialogHeader
                 icon={<Icon tabler={IconTruck}/>}
-                title="Assign Courier to Delivery Leg"
+                title="Assign courier to delivery leg"
                 subtitle="Optionally assign a courier for delivery"
                 onClose={cancel}
             />
@@ -65,8 +65,8 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
                 >
                     <Combobox.Target>
                         <TextInput
-                            label="Search courier..."
-                            placeholder="Type at least 2 characters"
+                            label="Search courier"
+                            placeholder="Enter at least 2 characters"
                             data-autofocus
                             value={searchText}
                             rightSection={isFetching ? <Loader size={18} role="progressbar" aria-label="Searching"/> : null}
@@ -90,7 +90,7 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
                                 ))
                             ) : (
                                 <Combobox.Empty>
-                                    {searchText.length < 2 ? 'Type to search...' : 'No couriers found'}
+                                    {searchText.length < 2 ? 'Type to search…' : 'No couriers found'}
                                 </Combobox.Empty>
                             )}
                         </Combobox.Options>

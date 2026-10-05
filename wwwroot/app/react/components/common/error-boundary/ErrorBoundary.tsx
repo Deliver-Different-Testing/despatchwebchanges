@@ -104,10 +104,10 @@ function FallbackPanel({error, componentStack, onReset}: FallbackPanelProps) {
                         <Icon lucide={CircleAlert} size={32} color="var(--mantine-color-red-6)"/>
                         <Box>
                             <Title order={2} size="h6">
-                                Something Went Wrong
+                                Something went wrong
                             </Title>
                             <Text size="sm" c="dimmed">
-                                An unexpected error occurred in this page. Please try refreshing.
+                                Something went wrong on this page. Refresh to try again.
                             </Text>
                         </Box>
                     </Group>

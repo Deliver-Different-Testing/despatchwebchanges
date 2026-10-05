@@ -54,7 +54,7 @@ export const mockStaffSuggestions: StaffSuggestion[] = [
 ];
 
 export const mockEventTypeSuggestions: EventTypeSuggestion[] = [
-    { id: 1, text: 'Follow Up' },
+    { id: 1, text: 'Follow up' },
     { id: 2, text: 'Reminder' },
     { id: 3, text: 'Complaint' },
 ];

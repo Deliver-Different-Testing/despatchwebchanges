@@ -45,7 +45,7 @@ describe('AddEventDialog', () => {
             renderWithMantine(<AddEventDialog {...props} />);
 
             expect(await screen.findByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Add Task')).toBeInTheDocument();
+            expect(screen.getByText('Add task')).toBeInTheDocument();
             expect(await screen.findByDisplayValue('JOB-001')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Test Client')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe('AddEventDialog', () => {
             const props = createMockProps({ open: false });
             openDialog(props);
 
-            expect(await screen.findByRole('combobox', {name: /Task Type/})).toBeInTheDocument();
+            expect(await screen.findByRole('combobox', {name: /Task type/})).toBeInTheDocument();
         });
     });
 

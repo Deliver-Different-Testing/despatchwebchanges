@@ -216,11 +216,15 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
 
 export function transformTaskDTO(dto: ITaskDto): ITask {
     const dueDate = formatDateFromApi(dto.dueDate);
+    const createdAt = dto.createdAt ? formatDateFromApi(dto.createdAt) : undefined;
     return {
         ...dto,
         dueDate,
+        createdAt,
         _dueDateString: formatLongDate(dueDate),
-        _dueTimeString: formatMins(dueDate)
+        _dueTimeString: formatMins(dueDate),
+        _createdDateString: createdAt && formatLongDate(createdAt),
+        _createdTimeString: createdAt && formatMins(createdAt)
     }
 }
 

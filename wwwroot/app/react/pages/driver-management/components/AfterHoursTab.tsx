@@ -58,8 +58,8 @@ const fromHHmm = (hhmm?: string): string | undefined => {
 };
 
 const columns: DataTableColumn<AfterHoursCourierScheduleItem>[] = [
-    {key: 'courierName', label: 'Driver Name', sortable: true, render: (row) => row.courierName},
-    {key: 'courierCode', label: 'Driver Code', sortable: true, width: '120px', render: (row) => row.courierCode},
+    {key: 'courierName', label: 'Driver name', sortable: true, render: (row) => row.courierName},
+    {key: 'courierCode', label: 'Driver code', sortable: true, width: '120px', render: (row) => row.courierCode},
     {key: 'days', label: 'Days', sortable: true, render: (row) => (
         <Group gap={4}>
             {row.days.map(day => (
@@ -67,8 +67,8 @@ const columns: DataTableColumn<AfterHoursCourierScheduleItem>[] = [
             ))}
         </Group>
     )},
-    {key: 'startTime', label: 'Start Time', sortable: true, width: '110px', render: (row) => formatTime(row.startTime)},
-    {key: 'endTime', label: 'End Time', sortable: true, width: '110px', render: (row) => formatTime(row.endTime)},
+    {key: 'startTime', label: 'Start time', sortable: true, width: '110px', render: (row) => formatTime(row.startTime)},
+    {key: 'endTime', label: 'End time', sortable: true, width: '110px', render: (row) => formatTime(row.endTime)},
     {key: 'duration', label: 'Duration', sortable: true, width: '100px', render: (row) => row.duration},
     {key: 'actions', label: 'Actions', width: '100px', align: 'center', render: () => null},
 ];
@@ -123,9 +123,9 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 startTime: fromHHmm(result.startTime),
                 endTime: fromHHmm(result.endTime),
             } as AfterHoursCourierScheduleItem);
-            showToast('Schedule created successfully', 'success');
+            showToast('Schedule created', 'success');
         } catch {
-            showToast('Failed to create schedule', 'error');
+            showToast("Couldn't create the schedule. Check your connection and try again.", 'error');
         }
     };
 
@@ -155,9 +155,9 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 startTime: fromHHmm(result.startTime),
                 endTime: fromHHmm(result.endTime),
             } as AfterHoursCourierScheduleItem);
-            showToast('Schedule updated successfully', 'success');
+            showToast('Schedule updated', 'success');
         } catch {
-            showToast('Failed to edit schedule', 'error');
+            showToast("Couldn't update the schedule. Check your connection and try again.", 'error');
         }
     };
 
@@ -166,9 +166,9 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
         setDeleteDialogOpen(false);
         try {
             await deleteMutation.mutateAsync(scheduleToDelete.afterHoursScheduleId);
-            showToast('Schedule deleted successfully', 'success');
+            showToast('Schedule deleted', 'success');
         } catch {
-            showToast('Failed to delete schedule', 'error');
+            showToast("Couldn't delete the schedule. Check your connection and try again.", 'error');
         }
         setScheduleToDelete(null);
     };
@@ -184,7 +184,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
         try {
             await driverManagementApi.exportAfterHoursScheduleCsv(query, filters);
         } catch {
-            showToast('Failed to export data', 'error');
+            showToast("Couldn't export the data. Try again.", 'error');
         }
     };
 
@@ -224,8 +224,8 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
         <Stack gap={16}>
             {/* Stats */}
             <Group gap={16}>
-                <StatCard value={stats.totalAssignments} label="Total Assignments" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={CalendarDays}/>} />
-                <StatCard value={stats.activeDrivers} label="Active Drivers" color="var(--mantine-color-green-6)" icon={<Icon lucide={Car}/>} />
+                <StatCard value={stats.totalAssignments} label="Total assignments" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={CalendarDays}/>} />
+                <StatCard value={stats.activeDrivers} label="Active drivers" color="var(--mantine-color-green-6)" icon={<Icon lucide={Car}/>} />
             </Group>
 
             {/* Filters */}
@@ -254,7 +254,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 <SearchField
                     value={query.searchTerm ?? ''}
                     onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
-                    placeholder="Search schedules..."
+                    placeholder="Search schedules…"
                 />
                 <Stack gap={CRITERION_LABEL_GAP}>
                     <GroupLabel selected={filters.day !== 'all' ? 1 : 0}>Day</GroupLabel>
@@ -289,8 +289,8 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
                 emptyIcon={<Icon lucide={Moon}/>}
-                emptyTitle="No After Hours Schedules"
-                emptyMessage="No after hours schedules match your criteria."
+                emptyTitle="No after hours schedules"
+                emptyMessage="No after hours schedules match your search."
             />
 
             {/* Delete Confirmation Dialog */}

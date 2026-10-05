@@ -1,10 +1,3 @@
-/**
- * Price Breakdown Dialog React Module
- *
- * Entry point for the React-based Price Breakdown Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- */
-
 import React from 'react';
 import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';

@@ -1,11 +1,3 @@
-/**
- * Job address composition
- *
- * A job carries its addresses twice: the structured lines (`pickupAddress`/`deliveryAddress`)
- * and the free-text copy (`from`/`toAddress`). Both the grid, which displays them, and the
- * panel, which sorts by them, compose the same line selections, so the selections live here.
- */
-
 import type {AddressFieldKey, AddressFormatSides, AddressLineFormat, AddressViewModel} from '../../interfaces/address';
 import type {DispatchJob} from '../../interfaces/dispatchJob';
 
@@ -26,12 +18,12 @@ const ADDRESS_FIELD_LINE: Record<AddressFieldKey, keyof AddressViewModel> = {
 
 /** Every configurable field, in a sensible default order, for the field-order builder UI. */
 export const ADDRESS_FIELD_OPTIONS: {key: AddressFieldKey; label: string}[] = [
-    {key: 'building', label: 'Company / Building'},
-    {key: 'unit', label: 'Unit / Suite'},
-    {key: 'streetNumber', label: 'Street Number'},
-    {key: 'streetName', label: 'Street Name'},
-    {key: 'cityOrSuburb', label: 'City / Suburb'},
-    {key: 'stateOrCity', label: 'State / City'},
+    {key: 'building', label: 'Company / building'},
+    {key: 'unit', label: 'Unit / suite'},
+    {key: 'streetNumber', label: 'Street number'},
+    {key: 'streetName', label: 'Street name'},
+    {key: 'cityOrSuburb', label: 'City / suburb'},
+    {key: 'stateOrCity', label: 'State / city'},
     {key: 'postcode', label: 'Postcode'},
     {key: 'country', label: 'Country'},
 ];

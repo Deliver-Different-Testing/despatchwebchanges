@@ -299,7 +299,7 @@ describe('DispatchMap Control Buttons', () => {
         // The control host lives inside the map container, and the rails render into it.
         const host = screen.getByTestId('dispatch-map-controls-host');
         expect(wrapper).toContainElement(host);
-        expect(host).toContainElement(screen.getByLabelText('Toggle Auto Zoom'));
+        expect(host).toContainElement(screen.getByLabelText('Toggle auto zoom'));
     });
 
     it('shows control buttons when map is ready', () => {
@@ -309,7 +309,7 @@ describe('DispatchMap Control Buttons', () => {
         renderWithProviders(<DispatchMap {...props} />);
 
         // Control buttons should be visible
-        expect(screen.getByLabelText('Toggle Auto Zoom')).toBeInTheDocument();
+        expect(screen.getByLabelText('Toggle auto zoom')).toBeInTheDocument();
     });
 
     it('hides control buttons when map is not ready', () => {
@@ -319,7 +319,7 @@ describe('DispatchMap Control Buttons', () => {
         renderWithProviders(<DispatchMap {...props} />);
 
         // Control buttons should not be visible
-        expect(screen.queryByLabelText('Toggle Auto Zoom')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Toggle auto zoom')).not.toBeInTheDocument();
     });
 });
 

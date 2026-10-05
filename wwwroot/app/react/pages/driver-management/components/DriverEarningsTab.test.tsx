@@ -1,6 +1,3 @@
-/**
- * Optimised: read-only tests consolidated to reduce render count.
- */
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../__testUtils__';
@@ -67,26 +64,26 @@ describe('DriverEarningsTab', () => {
 
         // Column headers
         expect(screen.getByText('Name')).toBeInTheDocument();
-        expect(screen.getByText('Hours Logged')).toBeInTheDocument();
+        expect(screen.getByText('Hours logged')).toBeInTheDocument();
         expect(screen.getByText('Deliveries')).toBeInTheDocument();
         expect(screen.getByText('Earnings')).toBeInTheDocument();
-        expect(screen.getByText('Hourly Rate')).toBeInTheDocument();
+        expect(screen.getByText('Hourly rate')).toBeInTheDocument();
 
         // Stats: totalEarningsToday
         expect(screen.getByText('$150.00')).toBeInTheDocument();
-        expect(screen.getByText('Total Earnings Today')).toBeInTheDocument();
+        expect(screen.getByText('Total earnings today')).toBeInTheDocument();
 
         // Stats: averageHourlyRate
         expect(screen.getByText('$18.75')).toBeInTheDocument();
-        expect(screen.getByText('Average Hourly Rate')).toBeInTheDocument();
+        expect(screen.getByText('Average hourly rate')).toBeInTheDocument();
 
         // Stats: totalActiveDrivers
         expect(screen.getByText('2')).toBeInTheDocument();
-        expect(screen.getByText('Active Drivers')).toBeInTheDocument();
+        expect(screen.getByText('Active drivers')).toBeInTheDocument();
 
         // Stats: totalDeliveriesToday
         expect(screen.getByText('6')).toBeInTheDocument();
-        expect(screen.getByText('Total Deliveries')).toBeInTheDocument();
+        expect(screen.getByText('Total deliveries')).toBeInTheDocument();
 
         // Initial state: name as default sort column with asc direction
         const firstCall = mockUseDriverEarnings.mock.calls[0];
@@ -106,8 +103,8 @@ describe('DriverEarningsTab', () => {
         expect(lastCall().orderBy).toBe('name');
         expect(lastCall().sortDescending).toBe(true);
 
-        // Click Hours Logged
-        fireEvent.click(screen.getByText('Hours Logged'));
+        // Click Hours logged
+        fireEvent.click(screen.getByText('Hours logged'));
         expect(lastCall().orderBy).toBe('hoursLogged');
 
         // Click Deliveries
@@ -118,8 +115,8 @@ describe('DriverEarningsTab', () => {
         fireEvent.click(screen.getByText('Earnings', {selector: 'span'}));
         expect(lastCall().orderBy).toBe('earnings');
 
-        // Click Hourly Rate
-        fireEvent.click(screen.getByText('Hourly Rate'));
+        // Click Hourly rate
+        fireEvent.click(screen.getByText('Hourly rate'));
         expect(lastCall().orderBy).toBe('hourlyRate');
     });
 
@@ -154,11 +151,11 @@ describe('DriverEarningsTab', () => {
             mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1][0];
 
         // Clicking a different column should reset page to 1
-        fireEvent.click(screen.getByText('Hours Logged'));
+        fireEvent.click(screen.getByText('Hours logged'));
         expect(lastCall().page).toBe(1);
 
-        // Hours Logged is now active asc → click toggles to desc, verify sortDescending
-        fireEvent.click(screen.getByText('Hours Logged'));
+        // Hours logged is now active asc → click toggles to desc, verify sortDescending
+        fireEvent.click(screen.getByText('Hours logged'));
         expect(lastCall().sortDescending).toBe(true);
     });
 
@@ -166,7 +163,7 @@ describe('DriverEarningsTab', () => {
         setupMocks(undefined, true);
         renderWithProviders();
 
-        expect(screen.getByText('Loading...')).toBeInTheDocument();
+        expect(screen.getByText('Loading…')).toBeInTheDocument();
     });
 
     it('should show empty message when no items', () => {
@@ -177,7 +174,7 @@ describe('DriverEarningsTab', () => {
         });
         renderWithProviders();
 
-        expect(screen.getByText('No Earnings Data')).toBeInTheDocument();
-        expect(screen.getByText('No earnings data matches your criteria.')).toBeInTheDocument();
+        expect(screen.getByText('No earnings data')).toBeInTheDocument();
+        expect(screen.getByText('No earnings data matches your search.')).toBeInTheDocument();
     });
 });

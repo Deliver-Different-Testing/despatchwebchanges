@@ -17,7 +17,7 @@ describe('eventApi integration', () => {
             const result = await eventApi.getEventTypes();
 
             expect(result).toHaveLength(3);
-            expect(result[0]).toEqual({ id: 1, text: 'Follow Up' });
+            expect(result[0]).toEqual({ id: 1, text: 'Follow up' });
         });
 
         it('handles server errors', async () => {

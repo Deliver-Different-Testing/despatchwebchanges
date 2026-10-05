@@ -35,10 +35,10 @@ describe('MapControlButtons Component', () => {
             const props = createDefaultProps();
             renderWithTheme(<MapControlButtons {...props} />);
 
-            expect(screen.getByLabelText('Toggle Auto Zoom')).toBeInTheDocument();
-            expect(screen.getByLabelText('Toggle Couriers Only')).toBeInTheDocument();
-            expect(screen.getByLabelText('Toggle Urgent Army Filter')).toBeInTheDocument();
-            expect(screen.getByLabelText('Toggle Couriers Large View')).toBeInTheDocument();
+            expect(screen.getByLabelText('Toggle auto zoom')).toBeInTheDocument();
+            expect(screen.getByLabelText('Toggle couriers only')).toBeInTheDocument();
+            expect(screen.getByLabelText('Toggle Urgent Army filter')).toBeInTheDocument();
+            expect(screen.getByLabelText('Toggle couriers large view')).toBeInTheDocument();
         });
 
         it('renders buttons with correct tooltips when inactive', async () => {
@@ -53,10 +53,10 @@ describe('MapControlButtons Component', () => {
             renderWithTheme(<MapControlButtons {...props} />);
 
             // Buttons should exist
-            expect(screen.getByLabelText('Toggle Auto Zoom')).toBeInTheDocument();
-            expect(screen.getByLabelText('Toggle Couriers Only')).toBeInTheDocument();
-            expect(screen.getByLabelText('Toggle Urgent Army Filter')).toBeInTheDocument();
-            expect(screen.getByLabelText('Toggle Couriers Large View')).toBeInTheDocument();
+            expect(screen.getByLabelText('Toggle auto zoom')).toBeInTheDocument();
+            expect(screen.getByLabelText('Toggle couriers only')).toBeInTheDocument();
+            expect(screen.getByLabelText('Toggle Urgent Army filter')).toBeInTheDocument();
+            expect(screen.getByLabelText('Toggle couriers large view')).toBeInTheDocument();
         });
     });
 
@@ -66,7 +66,7 @@ describe('MapControlButtons Component', () => {
             const props = createDefaultProps({onToggleAutoZoom});
             renderWithTheme(<MapControlButtons {...props} />);
 
-            fireEvent.click(screen.getByLabelText('Toggle Auto Zoom'));
+            fireEvent.click(screen.getByLabelText('Toggle auto zoom'));
 
             expect(onToggleAutoZoom).toHaveBeenCalledTimes(1);
         });
@@ -76,7 +76,7 @@ describe('MapControlButtons Component', () => {
             const props = createDefaultProps({onToggleCouriersOnly});
             renderWithTheme(<MapControlButtons {...props} />);
 
-            fireEvent.click(screen.getByLabelText('Toggle Couriers Only'));
+            fireEvent.click(screen.getByLabelText('Toggle couriers only'));
 
             expect(onToggleCouriersOnly).toHaveBeenCalledTimes(1);
         });
@@ -86,7 +86,7 @@ describe('MapControlButtons Component', () => {
             const props = createDefaultProps({onToggleUrgentArmyOnly});
             renderWithTheme(<MapControlButtons {...props} />);
 
-            fireEvent.click(screen.getByLabelText('Toggle Urgent Army Filter'));
+            fireEvent.click(screen.getByLabelText('Toggle Urgent Army filter'));
 
             expect(onToggleUrgentArmyOnly).toHaveBeenCalledTimes(1);
         });
@@ -96,7 +96,7 @@ describe('MapControlButtons Component', () => {
             const props = createDefaultProps({onToggleCouriersLargeView});
             renderWithTheme(<MapControlButtons {...props} />);
 
-            fireEvent.click(screen.getByLabelText('Toggle Couriers Large View'));
+            fireEvent.click(screen.getByLabelText('Toggle couriers large view'));
 
             expect(onToggleCouriersLargeView).toHaveBeenCalledTimes(1);
         });
@@ -109,7 +109,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Couriers Only');
+            const button = screen.getByLabelText('Toggle couriers only');
             expect(button).toBeDisabled();
         });
 
@@ -119,7 +119,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Urgent Army Filter');
+            const button = screen.getByLabelText('Toggle Urgent Army filter');
             expect(button).toBeDisabled();
         });
 
@@ -129,7 +129,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Auto Zoom');
+            const button = screen.getByLabelText('Toggle auto zoom');
             expect(button).not.toBeDisabled();
         });
 
@@ -139,7 +139,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Couriers Large View');
+            const button = screen.getByLabelText('Toggle couriers large view');
             expect(button).not.toBeDisabled();
         });
     });
@@ -151,7 +151,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Auto Zoom');
+            const button = screen.getByLabelText('Toggle auto zoom');
             expect(button).toHaveAttribute('data-active', 'true');
         });
 
@@ -161,7 +161,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Auto Zoom');
+            const button = screen.getByLabelText('Toggle auto zoom');
             expect(button).toHaveAttribute('data-active', 'false');
         });
 
@@ -171,7 +171,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Couriers Only');
+            const button = screen.getByLabelText('Toggle couriers only');
             expect(button).toHaveAttribute('data-active', 'true');
         });
 
@@ -181,7 +181,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Urgent Army Filter');
+            const button = screen.getByLabelText('Toggle Urgent Army filter');
             expect(button).toHaveAttribute('data-active', 'true');
         });
 
@@ -191,7 +191,7 @@ describe('MapControlButtons Component', () => {
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
-            const button = screen.getByLabelText('Toggle Couriers Large View');
+            const button = screen.getByLabelText('Toggle couriers large view');
             expect(button).toHaveAttribute('data-active', 'true');
         });
     });

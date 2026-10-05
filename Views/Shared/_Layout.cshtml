@@ -118,6 +118,15 @@
             margin-bottom: 8px;
         }
 
+        .loader-logo-dark,
+        html[data-dd-boot-scheme='dark'] .loader-logo-light {
+            display: none;
+        }
+
+        html[data-dd-boot-scheme='dark'] .loader-logo-dark {
+            display: block;
+        }
+
         .loading-text {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-size: 14px;
@@ -212,7 +221,8 @@
 <!-- Full Screen Loader -->
 <div class="app-loader" id="appLoader" role="status" aria-live="polite">
     <div class="loader-content">
-        <img class="loader-logo" src="/images/dfrnt_logo.png" width="260" height="88" alt="DFRNT">
+        <img class="loader-logo loader-logo-light" src="/images/dfrnt_logo.png" width="260" height="88" alt="DFRNT">
+        <img class="loader-logo loader-logo-dark" src="/images/dfrnt_logo_reversed.png" width="260" height="88" alt="DFRNT">
         <div class="linear-progress" role="progressbar" aria-label="Loading Dispatch">
             <div class="linear-progress-bar"></div>
         </div>

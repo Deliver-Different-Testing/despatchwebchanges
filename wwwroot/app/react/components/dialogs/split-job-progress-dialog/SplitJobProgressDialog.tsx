@@ -1,11 +1,3 @@
-/**
- * SplitJobProgressDialog
- *
- * The non-dismissable progress dialog shown while a job is being split. Follows
- * the dialog design language — solid brand header + a content area with a white
- * section Paper — but uses a *bespoke* header without a close button, since a
- * progress dialog has no cancel path.
- */
 import React from 'react';
 import {Box, Paper, Progress, Text, ThemeIcon} from '@mantine/core';
 import {Split} from 'lucide-react';
@@ -27,7 +19,7 @@ export const SplitJobProgressDialog: React.FC<SplitJobProgressDialogProps> = ({o
     <DialogShell
         opened={open}
         onClose={() => {}}
-        label="Splitting Job"
+        label="Splitting job"
         closeOnClickOutside={false}
         closeOnEscape={false}
         withCloseButton={false}
@@ -38,7 +30,7 @@ export const SplitJobProgressDialog: React.FC<SplitJobProgressDialogProps> = ({o
             </ThemeIcon>
             <Box style={{flex: 1}}>
                 <Text component="h2" size="lg" fw={600}>
-                    Splitting Job
+                    Splitting job
                 </Text>
                 <Text size="sm" mt={2} style={{opacity: 0.85}}>
                     Job {jobNo}

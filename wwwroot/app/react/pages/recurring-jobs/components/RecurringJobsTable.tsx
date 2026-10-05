@@ -1,9 +1,3 @@
-/**
- * Recurring Jobs Table Component
- *
- * Data table with sorting, pagination, and row selection for recurring jobs.
- */
-
 import React from 'react';
 import {ActionIcon, Box, Text, Tooltip} from '@mantine/core';
 import {Power, Repeat} from 'lucide-react';
@@ -32,12 +26,12 @@ export interface RecurringJobsTableProps {
 const columns: RecurringJobColumn[] = [
     {key: 'booked', label: 'Booked', sortable: true, width: '110px'},
     {key: 'speed', label: 'Speed', sortable: true, width: '80px'},
-    {key: 'customJobName', label: 'Job Name', sortable: true},
+    {key: 'customJobName', label: 'Job name', sortable: true},
     {key: 'client', label: 'Client', sortable: true},
     {key: 'from', label: 'From', sortable: true},
     {key: 'to', label: 'To', sortable: true},
     {key: 'route', label: 'Route', sortable: false, width: '140px'},
-    {key: 'nextDueTime', label: 'Next Due', sortable: true, sortKey: 'nextDueTime', width: '110px'},
+    {key: 'nextDueTime', label: 'Next due', sortable: true, sortKey: 'nextDueTime', width: '110px'},
     {key: 'courier', label: 'Courier', sortable: true, width: '100px'},
     {key: 'actions', label: '', sortable: false, width: '60px', align: 'center'},
 ];
@@ -207,7 +201,7 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
             rowKey={(job) => job.id}
             totalCount={totalCount}
             isLoading={isLoading}
-            loadingMessage="Loading recurring jobs..."
+            loadingMessage="Loading recurring jobs…"
             sort={sort}
             onSortChange={(next) => onSortChange(next as RecurringJobSort)}
             page={page}
@@ -219,8 +213,8 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
             onRowContextMenu={onContextMenu}
             isRowSelected={(job) => selectedJobId === job.id}
             emptyIcon={<Icon lucide={Repeat} size={40}/>}
-            emptyTitle="No Recurring Jobs"
-            emptyMessage="No recurring jobs available"
+            emptyTitle="No recurring jobs yet"
+            emptyMessage="No recurring jobs match your search."
         />
     );
 };

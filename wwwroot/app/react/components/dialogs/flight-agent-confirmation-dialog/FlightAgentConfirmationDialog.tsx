@@ -1,10 +1,3 @@
-/**
- * Flight Agent Confirmation Dialog
- *
- * React replacement for the AngularJS flight-agent-conformation-dialog.
- * Handles both flight and agent assignment confirmation with cargo processing calculations.
- */
-
 import React, {useCallback, useEffect, useState} from 'react';
 import {
     ActionIcon,
@@ -173,27 +166,27 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
     // Dialog title
     const dialogTitle = mode === 'flight'
-        ? `Assign Flight${flight ? ` - ${flight.flightNumber}` : ''}`
-        : `Assign Agent${agent ? ` - ${agent.text}` : ''}`;
+        ? `Assign flight${flight ? ` - ${flight.flightNumber}` : ''}`
+        : `Assign agent${agent ? ` - ${agent.text}` : ''}`;
 
     // Initialize loading states
     const initializeLoadingStates = useCallback(() => {
         setCargoStatus({
             class: 'cargo-loading',
             icon: 'schedule',
-            hours: 'Loading...',
-            text: 'Loading cargo information...',
+            hours: 'Loading…',
+            text: 'Loading cargo information…',
         });
         setCargoIndicator({
             class: 'cargo-indicator loading',
             icon: 'schedule',
-            text: 'Loading...',
+            text: 'Loading…',
         });
         setAvailableTime({
             class: 'time-loading',
             icon: 'schedule',
-            text: 'Loading...',
-            subtext: 'Calculating times...',
+            text: 'Loading…',
+            subtext: 'Calculating times…',
         });
     }, []);
 
@@ -271,7 +264,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             );
 
             const nextMorning = calculateNextMorningTime(pkgTime);
-            setNextMorningTime(`${nextMorning.format('MMM D')}, ${nextMorning.format('HH:mm')} (Cargo Opens)`);
+            setNextMorningTime(`${nextMorning.format('MMM D')}, ${nextMorning.format('HH:mm')} (cargo opens)`);
         }
     }, [cargoProcessing, calculateNextMorningTime]);
 
@@ -291,7 +284,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setAvailableTime({
                 class: 'time-critical',
                 icon: 'error',
-                text: 'Invalid times',
+                text: 'Times unavailable',
                 subtext: 'Package ready time not available',
             });
             return;
@@ -303,8 +296,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setAvailableTime({
                 class: 'time-critical',
                 icon: 'cancel',
-                text: 'Invalid timing',
-                subtext: 'Delivery before package ready',
+                text: 'Delivery before ready time',
+                subtext: 'Delivery is set before the package is ready',
             });
         } else if (diffMinutes < 30) {
             setAvailableTime({
@@ -342,7 +335,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     // Calculate cargo processing times
     const calculateCargoProcessingTimes = useCallback(async (lastFlight: FlightSegment) => {
         if (!lastFlight.arrivalAirportId) {
-            showToast('No arrival airport ID found for cargo processing calculation', 'warning');
+            console.error('[FlightAgentConfirmationDialog] No arrival airport ID found for cargo processing calculation');
+            showToast("Couldn't calculate cargo processing times. The arrival airport is missing.", 'warning');
             return;
         }
 
@@ -367,15 +361,15 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 setCargoIndicator({
                     class: 'cargo-indicator invalid',
                     icon: 'error',
-                    text: 'Unable to verify cargo hours',
+                    text: "Couldn't verify cargo hours",
                 });
                 setAvailableTime({
                     class: 'time-critical',
                     icon: 'error',
                     text: 'Error',
-                    subtext: 'Unable to calculate times',
+                    subtext: "Couldn't calculate times",
                 });
-                showToast('Failed to calculate cargo processing times', 'error');
+                showToast("Couldn't calculate cargo processing times. Try again.", 'error');
                 setIsCalculatingTimes(false);
                 return;
             }
@@ -400,7 +394,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setIsCalculatingTimes(false);
         } catch (error) {
             console.error('Error calculating cargo processing times:', error);
-            showToast('Failed to calculate cargo processing times', 'error');
+            showToast("Couldn't calculate cargo processing times. Try again.", 'error');
             setIsCalculatingTimes(false);
         }
     }, [jobId, onCalculateCargoTimes, showToast, initializeLoadingStates]);
@@ -408,7 +402,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     // Process flight data
     const processFlightData = useCallback(async () => {
         if (!flight?.flightSegments || flight.flightSegments.length === 0) {
-            showToast('No flight segments available', 'error');
+            showToast("Couldn't load flight details. This flight has no segments.", 'error');
             return;
         }
 
@@ -582,7 +576,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                         <Paper {...sectionPaperProps}>
                             <Group gap={8} mb={8} c="dimmed">
                                 <Icon tabler={IconTruck} size={18}/>
-                                <Text fz="sm">Cargo Facility</Text>
+                                <Text fz="sm">Cargo facility</Text>
                             </Group>
                             {isCalculatingTimes ? (
                                 <Loader size={20} aria-label="Calculating cargo facility hours"/>
@@ -601,7 +595,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                         <Paper {...sectionPaperProps}>
                             <Group gap={8} mb={8} c="dimmed">
                                 <Icon lucide={Clock} size={18}/>
-                                <Text fz="sm">Processing Time</Text>
+                                <Text fz="sm">Processing time</Text>
                             </Group>
                             {isCalculatingTimes ? (
                                 <Loader size={20} aria-label="Calculating processing time"/>
@@ -615,7 +609,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                             <Group justify="space-between" wrap="nowrap" mb={8}>
                                 <Group gap={8} c="dimmed">
                                     <Icon tabler={IconPackage} size={18}/>
-                                    <Text fz="sm">Package Ready</Text>
+                                    <Text fz="sm">Package ready</Text>
                                 </Group>
                                 <ActionIcon
                                     variant="subtle"
@@ -655,14 +649,14 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
                 {/* Warning Card */}
                 {showWarning && (
-                    <Alert color="yellow" variant="light" title="Package Available After Cargo Hours">
+                    <Alert color="yellow" variant="light" title="Package available after cargo hours">
                         <Text fz="sm" mb={16}>{warningMessage}</Text>
                         <Group gap={8}>
                             <Button variant="default" size="xs" onClick={handleSetNextMorning}>
                                 Set to {nextMorningTime}
                             </Button>
                             <Button variant="default" size="xs" onClick={handleSetBaggagePickup}>
-                                Baggage Carousel
+                                Baggage carousel
                             </Button>
                         </Group>
                     </Alert>
@@ -673,7 +667,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                     <Group gap={16} align="stretch" grow>
                         {/* Deliver By */}
                         <Paper {...sectionPaperProps}>
-                            <Text fz="sm" c="dimmed" mb={8}>Deliver By</Text>
+                            <Text fz="sm" c="dimmed" mb={8}>Deliver by</Text>
                             <DateTimePicker
                                 aria-label="Deliver by"
                                 value={pickerValue(deliveryByTime)}
@@ -691,7 +685,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
                         {/* Available Time */}
                         <Paper {...sectionPaperProps}>
-                            <Text fz="sm" c="dimmed" mb={8}>Available Time</Text>
+                            <Text fz="sm" c="dimmed" mb={8}>Available time</Text>
                             {isCalculatingTimes ? (
                                 <Loader size={20} aria-label="Calculating available time"/>
                             ) : availableTime ? (
@@ -721,8 +715,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 {/* Delivery Notes */}
                 <Textarea
                     rows={3}
-                    label="Delivery Instructions"
-                    placeholder="Add any delivery notes or instructions..."
+                    label="Delivery instructions"
+                    placeholder="Add any delivery notes or instructions…"
                     value={deliveryNotes}
                     onChange={(e) => setDeliveryNotes(e.currentTarget.value)}
                 />
@@ -730,7 +724,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 {/* AWB and Stop Jobs */}
                 <Group gap={16} align="flex-end" wrap="nowrap">
                     <TextInput
-                        label="AWB Number"
+                        label="AWB number"
                         style={{flex: 1}}
                         value={awb}
                         onChange={(e) => setAwb(e.currentTarget.value)}
@@ -756,7 +750,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleConfirm}
-                confirmLabel="Confirm Assignment"
+                confirmLabel="Confirm assignment"
                 confirmDisabled={mode === 'flight' && isCalculatingTimes}
             />
         </DialogShell>

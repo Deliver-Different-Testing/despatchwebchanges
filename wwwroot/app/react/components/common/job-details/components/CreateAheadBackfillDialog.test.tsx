@@ -113,7 +113,7 @@ describe('CreateAheadBackfillDialog', () => {
         });
         expect(screen.getByText('Tue 18 Jun (2024-06-18)')).toBeInTheDocument();
         // Button label reflects the selected count.
-        expect(screen.getByRole('button', {name: /Create 2 booking\(s\)/})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /Create 2 bookings/})).toBeInTheDocument();
     });
 
     it('toggle-all clears the selection when everything is checked, then restores it', async () => {
@@ -122,9 +122,9 @@ describe('CreateAheadBackfillDialog', () => {
         await waitFor(() => screen.getByText('Mon 17 Jun (2024-06-17)'));
         const selectAll = screen.getByLabelText('Select all (2)');
         fireEvent.click(selectAll);
-        expect(screen.getByRole('button', {name: /Create 0 booking\(s\)/})).toBeDisabled();
+        expect(screen.getByRole('button', {name: /Create 0 bookings/})).toBeDisabled();
         fireEvent.click(selectAll);
-        expect(screen.getByRole('button', {name: /Create 2 booking\(s\)/})).toBeEnabled();
+        expect(screen.getByRole('button', {name: /Create 2 bookings/})).toBeEnabled();
     });
 
     it('renders the empty-candidates alert when no interim dates need backfilling', async () => {
@@ -134,7 +134,7 @@ describe('CreateAheadBackfillDialog', () => {
             expect(screen.getByText(/No interim dates need backfilling/i)).toBeInTheDocument();
         });
         // With zero candidates the create button is disabled.
-        expect(screen.getByRole('button', {name: /Create 0 booking\(s\)/})).toBeDisabled();
+        expect(screen.getByRole('button', {name: /Create 0 bookings/})).toBeDisabled();
     });
 
     it('renders already-existing dates and skipped reasons under their sections', async () => {
@@ -163,8 +163,8 @@ describe('CreateAheadBackfillDialog', () => {
         const showToast = jest.fn();
         renderDialog(createProps({jobId: 42, onSuccess, showToast}));
 
-        await waitFor(() => screen.getByRole('button', {name: /Create 2 booking\(s\)/}));
-        fireEvent.click(screen.getByRole('button', {name: /Create 2 booking\(s\)/}));
+        await waitFor(() => screen.getByRole('button', {name: /Create 2 bookings/}));
+        fireEvent.click(screen.getByRole('button', {name: /Create 2 bookings/}));
 
         await waitFor(() => {
             expect(mockCreate).toHaveBeenCalledWith({
@@ -176,7 +176,7 @@ describe('CreateAheadBackfillDialog', () => {
             expect(onSuccess).toHaveBeenCalled();
         });
         expect(showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Created 4 job(s)'),
+            expect.stringContaining('Created 4 jobs'),
             'success'
         );
     });
@@ -186,8 +186,8 @@ describe('CreateAheadBackfillDialog', () => {
         mockCreate.mockResolvedValue(createResult({jobsCreated: 2, duplicatesSkipped: 1}));
         const showToast = jest.fn();
         renderDialog(createProps({showToast}));
-        await waitFor(() => screen.getByRole('button', {name: /Create 2 booking\(s\)/}));
-        fireEvent.click(screen.getByRole('button', {name: /Create 2 booking\(s\)/}));
+        await waitFor(() => screen.getByRole('button', {name: /Create 2 bookings/}));
+        fireEvent.click(screen.getByRole('button', {name: /Create 2 bookings/}));
         await waitFor(() => {
             expect(showToast).toHaveBeenCalledWith(
                 expect.stringContaining('Skipped 1 duplicate'),
@@ -205,11 +205,11 @@ describe('CreateAheadBackfillDialog', () => {
         }));
         const showToast = jest.fn();
         renderDialog(createProps({showToast}));
-        await waitFor(() => screen.getByRole('button', {name: /Create 2 booking\(s\)/}));
-        fireEvent.click(screen.getByRole('button', {name: /Create 2 booking\(s\)/}));
+        await waitFor(() => screen.getByRole('button', {name: /Create 2 bookings/}));
+        fireEvent.click(screen.getByRole('button', {name: /Create 2 bookings/}));
         await waitFor(() => {
             expect(showToast).toHaveBeenCalledWith(
-                expect.stringContaining('1 date(s) failed'),
+                expect.stringContaining('1 date failed'),
                 'warning'
             );
         });
@@ -220,8 +220,8 @@ describe('CreateAheadBackfillDialog', () => {
         mockCreate.mockRejectedValue(new Error('SP crashed'));
         const showToast = jest.fn();
         renderDialog(createProps({showToast}));
-        await waitFor(() => screen.getByRole('button', {name: /Create 2 booking\(s\)/}));
-        fireEvent.click(screen.getByRole('button', {name: /Create 2 booking\(s\)/}));
+        await waitFor(() => screen.getByRole('button', {name: /Create 2 bookings/}));
+        fireEvent.click(screen.getByRole('button', {name: /Create 2 bookings/}));
         await waitFor(() => {
             expect(showToast).toHaveBeenCalledWith('SP crashed', 'error');
         });

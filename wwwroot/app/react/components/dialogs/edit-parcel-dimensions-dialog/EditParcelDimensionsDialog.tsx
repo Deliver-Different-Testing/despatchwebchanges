@@ -230,7 +230,8 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         } else if (bulkJobId) {
             apiClient.get<boolean>('job/IsBulkJobParent', {bulkJobId}).then(setIsParentJob).catch(() => {});
         } else {
-            showToast('No JobId or BulkJobId was provided. Something went wrong.', 'error');
+            console.error('[EditParcelDimensionsDialog] No JobId or BulkJobId was provided');
+            showToast("Couldn't load this job. Refresh and try again.", 'error');
         }
 
         const itemTypeParams = jobId ? {jobId} : bulkJobId ? {bulkJobId} : null;
@@ -410,15 +411,16 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             } else if (bulkJobId) {
                 await apiClient.post('job/UpdateBulkJobPackages', {bulkJobId, parcels: updatedParcels, calculateDimsOncePerJob: isPerJob});
             } else {
-                showToast('No JobId or BulkJobId was provided. Something went wrong.', 'error');
+                console.error('[EditParcelDimensionsDialog] No JobId or BulkJobId was provided');
+                showToast("Couldn't load this job. Refresh and try again.", 'error');
                 return;
             }
 
-            showToast(`Successfully updated ${totalParcels} ${totalParcels === 1 ? 'parcel' : 'parcels'}`, 'success');
+            showToast(`Updated ${totalParcels} ${totalParcels === 1 ? 'parcel' : 'parcels'}`, 'success');
             const result: EditParcelDimensionsDialogResult = {parcels: updatedParcels, totalWeight: parcelTotal, calculateDimsOncePerJob: isPerJob};
             onSubmit(result);
         } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Failed to update parcels', 'error');
+            showToast(error instanceof Error ? `Couldn't update parcels. ${error.message}` : "Couldn't update parcels. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -437,11 +439,11 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             opened={open}
             onClose={handleCancel}
             size={dialogSize.lg}
-            label="Edit Quantity"
+            label="Edit quantity"
         >
             <DialogHeader
                 icon={readOnly ? <Icon tabler={IconLock}/> : <Icon tabler={IconPackage}/>}
-                title="Edit Quantity"
+                title="Edit quantity"
                 subtitle={readOnly
                     ? 'View only — this job is locked'
                     : `${groups.length} type${groups.length !== 1 ? 's' : ''} · ${totalParcels} parcel${totalParcels !== 1 ? 's' : ''} total`}
@@ -598,7 +600,6 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                                 disabled={readOnly}
                                                 value={barcode}
                                                 onChange={e => updateBarcode(g.id, i, e.currentTarget.value)}
-                                                placeholder="Barcode"
                                                 label="Barcode"
                                             />
                                         </Table.Td>
@@ -641,13 +642,13 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     data={[
                         {
                             value: 'perItem',
-                            label: 'Per Item',
+                            label: 'Per item',
                             disabled: readOnly,
                             tooltip: "Per Item: each row's weight/dimensions apply to a single parcel and are multiplied by quantity",
                         },
                         {
                             value: 'perJob',
-                            label: 'Per Job',
+                            label: 'Per job',
                             disabled: readOnly,
                             tooltip: "Per Job: each row's weight/dimensions already represent the whole job — quantity isn't multiplied in",
                         },
@@ -734,7 +735,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         onCancel={handleCancel}
                         onConfirm={handleSubmit}
                         cancelLabel={readOnly ? 'Close' : 'Cancel'}
-                        confirmLabel={partnerMode ? 'Continue' : 'Save'}
+                        confirmLabel={partnerMode ? 'Continue' : 'Save changes'}
                         confirmDisabled={hasEmptyWeights || weightMismatch || cubicMismatch}
                         submitting={isLoading}
                         hideConfirm={readOnly}

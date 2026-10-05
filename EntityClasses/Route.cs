@@ -31,9 +31,27 @@ public partial class Route
 
     public int? ScheduleId { get; set; }
 
+    public byte Direction { get; set; }
+
+    public int? DepotId { get; set; }
+
+    public string OriginName { get; set; }
+
+    public string OriginAddress { get; set; }
+
+    public string OriginZip { get; set; }
+
+    public decimal? OriginLatitude { get; set; }
+
+    public decimal? OriginLongitude { get; set; }
+
+    public int? OriginRadiusM { get; set; }
+
     public virtual TucAgent DefaultAgent { get; set; }
 
     public virtual TucCourier DefaultCourier { get; set; }
+
+    public virtual TblBulkRegion Depot { get; set; }
 
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

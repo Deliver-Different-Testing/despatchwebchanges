@@ -66,13 +66,13 @@ const frequencyOptions = [
     {value: Frequency.SecondOfMonth, label: '2nd of Month'},
     {value: Frequency.ThirdOfMonth, label: '3rd of Month'},
     {value: Frequency.FirstWorkdayOfMonth, label: '1st Workday'},
-    {value: Frequency.LastWorkdayOfMonth, label: 'Last Workday'},
+    {value: Frequency.LastWorkdayOfMonth, label: 'Last workday'},
 ];
 
 const holidayOptions = [
-    {value: HolidayDeliveryOptions.DontBook, label: "Don't Book"},
-    {value: HolidayDeliveryOptions.DeliverNextDay, label: 'Deliver Next Day'},
-    {value: HolidayDeliveryOptions.BookAnyway, label: 'Book Anyway'},
+    {value: HolidayDeliveryOptions.DontBook, label: "Don't book"},
+    {value: HolidayDeliveryOptions.DeliverNextDay, label: 'Deliver next day'},
+    {value: HolidayDeliveryOptions.BookAnyway, label: 'Book anyway'},
 ];
 
 /** Mantine `Select` is string-keyed, so the numeric enums round-trip as strings. */
@@ -212,9 +212,9 @@ export function RecurringJobFields({
         onClick: () => void;
         tooltipDate: dayjs.Dayjs | undefined;
     }> = [
-        {label: 'First Due', value: firstDueDisplay, glyph: Calendar, onClick: onEditFirstDue, tooltipDate: job.firstDue},
-        {label: 'Stop Date', value: job._stopDateStr, glyph: CalendarX, onClick: onEditStopDate, tooltipDate: job.stopDate},
-        {label: 'Restart Date', value: job._restartDateStr, glyph: CalendarCheck, onClick: onEditRestartDate, tooltipDate: job.restartDate},
+        {label: 'First due', value: firstDueDisplay, glyph: Calendar, onClick: onEditFirstDue, tooltipDate: job.firstDue},
+        {label: 'Stop date', value: job._stopDateStr, glyph: CalendarX, onClick: onEditStopDate, tooltipDate: job.stopDate},
+        {label: 'Restart date', value: job._restartDateStr, glyph: CalendarCheck, onClick: onEditRestartDate, tooltipDate: job.restartDate},
     ];
 
     const innerDividerMx = dense ? 16 : 20;
@@ -254,12 +254,12 @@ export function RecurringJobFields({
             <Paper {...cardContainerProps}>
                 <SectionHeader
                     lucide={Repeat}
-                    title="Recurring Schedule"
+                    title="Recurring schedule"
                     subtitle="When this job repeats"
                     dense={dense}
                 />
                 <Box style={{paddingInline: bodyPx, paddingBlock: bodyPy}}>
-                    <Text c="dimmed" style={captionStyle}>Days of Week</Text>
+                    <Text c="dimmed" style={captionStyle}>Days of week</Text>
                     {/*
                       * Multi-select toggles, so these stay buttons with `aria-pressed`
                       * rather than a `Chip.Group` — Mantine chips are checkboxes, which
@@ -356,7 +356,7 @@ export function RecurringJobFields({
             <Paper {...cardContainerProps}>
                 <SectionHeader
                     lucide={Calendar}
-                    title="Schedule Dates"
+                    title="Schedule dates"
                     subtitle="Anchored to pickup timezone"
                     dense={dense}
                 />
@@ -384,7 +384,7 @@ export function RecurringJobFields({
                         dense={dense}
                     />
                     {detailRow({
-                        label: 'Saved Flight',
+                        label: 'Saved flight',
                         value: job.savedFlightNumber || undefined,
                         tabler: IconPlaneDeparture,
                         onClick: onEditSavedFlight,

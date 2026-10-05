@@ -365,14 +365,14 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
     const missingFields = useMemo<MissingField[]>(() => {
         const missing: MissingField[] = [];
         if (!selectedClient) missing.push({anchor: FIELD.client, label: 'Client'});
-        if (!isPositiveNumber(charge)) missing.push({anchor: FIELD.charge, label: 'Charge Amount'});
+        if (!isPositiveNumber(charge)) missing.push({anchor: FIELD.charge, label: 'Charge amount'});
         if (!isPositiveNumber(weight)) missing.push({anchor: FIELD.weight, label: weightLabel});
-        if (!jobDate?.isValid()) missing.push({anchor: FIELD.jobDate, label: 'Job Date'});
-        if (!selectedPickupAddress) missing.push({anchor: FIELD.pickupAddress, label: 'Pickup Address'});
-        if (!pickupContact.trim()) missing.push({anchor: FIELD.pickupContact, label: 'Pickup Contact'});
-        if (!selectedDeliveryAddress) missing.push({anchor: FIELD.deliveryAddress, label: 'Delivery Address'});
-        if (!deliveryContact.trim()) missing.push({anchor: FIELD.deliveryContact, label: 'Delivery Contact'});
-        if (!podName.trim()) missing.push({anchor: FIELD.podName, label: 'POD Name'});
+        if (!jobDate?.isValid()) missing.push({anchor: FIELD.jobDate, label: 'Job date'});
+        if (!selectedPickupAddress) missing.push({anchor: FIELD.pickupAddress, label: 'Pickup address'});
+        if (!pickupContact.trim()) missing.push({anchor: FIELD.pickupContact, label: 'Pickup contact'});
+        if (!selectedDeliveryAddress) missing.push({anchor: FIELD.deliveryAddress, label: 'Delivery address'});
+        if (!deliveryContact.trim()) missing.push({anchor: FIELD.deliveryContact, label: 'Delivery contact'});
+        if (!podName.trim()) missing.push({anchor: FIELD.podName, label: 'POD name'});
         if (!selectedVehicle) missing.push({anchor: FIELD.vehicle, label: 'Vehicle'});
         if (!selectedSpeed) missing.push({anchor: FIELD.speed, label: 'Speed'});
         return missing;
@@ -403,14 +403,14 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             // Process pickup address
             const pickupResult = await processAddress(selectedPickupAddress!);
             if (!pickupResult) {
-                showToast('An error occurred processing the pickup address. Please try again.', 'error');
+                showToast("Couldn't process the pickup address. Check it and try again.", 'error');
                 return;
             }
 
             // Process delivery address
             const deliveryResult = await processAddress(selectedDeliveryAddress!);
             if (!deliveryResult) {
-                showToast('An error occurred processing the delivery address. Please try again.', 'error');
+                showToast("Couldn't process the delivery address. Check it and try again.", 'error');
                 return;
             }
 
@@ -465,13 +465,13 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             if (selectedCourier) {
                 try {
                     await jobApi.allocateJobToCourier(selectedCourier.id, [newJobId]);
-                    showToast(`Job ${jobNumber} created and dispatched successfully${copySuffix}`, 'success');
+                    showToast(`Job ${jobNumber} created and dispatched${copySuffix}`, 'success');
                 } catch (dispatchError) {
                     console.error('[CreateJobDialog] Courier dispatch failed:', dispatchError);
-                    showToast(`Job ${jobNumber} created successfully, but could not be dispatched to the courier. The courier may be offline.`, 'warning');
+                    showToast(`Job ${jobNumber} created, but couldn't be dispatched to the courier. The courier may be offline.`, 'warning');
                 }
             } else {
-                showToast(`Job ${jobNumber} created successfully${copySuffix}`, 'success');
+                showToast(`Job ${jobNumber} created${copySuffix}`, 'success');
             }
 
             onSubmit(newJobId);
@@ -485,7 +485,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 }
                 return null;
             })();
-            showToast(serverMessage || 'Failed to create job. Please try again.', 'error');
+            showToast(serverMessage || "Couldn't create job. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -508,11 +508,11 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             opened={open}
             onClose={isLoading ? () => undefined : onClose}
             size={dialogSize.lg}
-            label="Add New Job"
+            label="Add new job"
         >
             <DialogHeader
                 icon={<Icon tabler={IconTruck}/>}
-                title="Add New Job"
+                title="Add new job"
                 subtitle="Create a new dispatch job"
                 onClose={onClose}
                 closeDisabled={isLoading}
@@ -554,7 +554,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             <Field anchor={FIELD.client}>
                                 <SearchSelect
                                     label="Client"
-                                    placeholder="Start typing to search clients"
+                                    placeholder="Search clients…"
                                     withAsterisk
                                     minSearchLength={3}
                                     value={selectedClient}
@@ -570,7 +570,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             <SimpleGrid cols={{base: 1, sm: 3}} spacing="md">
                                 <Field anchor={FIELD.charge}>
                                     <NumberInput
-                                        label="Charge Amount"
+                                        label="Charge amount"
                                         withAsterisk
                                         min={0.01}
                                         step={0.01}
@@ -599,7 +599,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                     stays a calendar date all the way to `formatDateForApi`. */}
                                 <Field anchor={FIELD.jobDate}>
                                     <DateInput
-                                        label="Job Date"
+                                        label="Job date"
                                         withAsterisk
                                         value={jobDate?.isValid() ? jobDate.format(ISO_DATE) : null}
                                         onChange={(value) => {
@@ -620,8 +620,8 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                 <LegHeader color={MARKER_COLORS.PICKUP} glyph={IconMapPin} label="Pickup"/>
                                 <Field anchor={FIELD.pickupAddress}>
                                     <SearchSelect
-                                        label="Pickup Address"
-                                        placeholder="Start typing to search addresses"
+                                        label="Pickup address"
+                                        placeholder="Search addresses…"
                                         withAsterisk
                                         minSearchLength={3}
                                         value={selectedPickupAddress}
@@ -636,7 +636,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                 </Field>
                                 <Field anchor={FIELD.pickupContact}>
                                     <TextInput
-                                        label="Pickup Contact"
+                                        label="Pickup contact"
                                         withAsterisk
                                         value={pickupContact}
                                         onChange={(e) => setPickupContact(e.currentTarget.value)}
@@ -645,7 +645,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                 </Field>
                                 <Box>
                                     <Textarea
-                                        label="Pickup Notes"
+                                        label="Pickup notes"
                                         autosize
                                         minRows={2}
                                         maxRows={4}
@@ -663,8 +663,8 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                 <LegHeader color={MARKER_COLORS.DELIVERY} glyph={IconFlag} label="Delivery"/>
                                 <Field anchor={FIELD.deliveryAddress}>
                                     <SearchSelect
-                                        label="Delivery Address"
-                                        placeholder="Start typing to search addresses"
+                                        label="Delivery address"
+                                        placeholder="Search addresses…"
                                         withAsterisk
                                         minSearchLength={3}
                                         value={selectedDeliveryAddress}
@@ -680,7 +680,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                 <SimpleGrid cols={{base: 1, md: 2}} spacing="md">
                                     <Field anchor={FIELD.deliveryContact}>
                                         <TextInput
-                                            label="Delivery Contact"
+                                            label="Delivery contact"
                                             withAsterisk
                                             value={deliveryContact}
                                             onChange={(e) => setDeliveryContact(e.currentTarget.value)}
@@ -689,7 +689,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                     </Field>
                                     <Field anchor={FIELD.podName}>
                                         <TextInput
-                                            label="POD Name"
+                                            label="POD name"
                                             withAsterisk
                                             value={podName}
                                             onChange={(e) => setPodName(e.currentTarget.value)}
@@ -699,7 +699,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                 </SimpleGrid>
                                 <Box>
                                     <Textarea
-                                        label="Delivery Notes"
+                                        label="Delivery notes"
                                         autosize
                                         minRows={2}
                                         maxRows={4}
@@ -745,7 +745,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                         </SimpleGrid>
                         <SearchSelect
                             label="Courier"
-                            placeholder="Start typing to search couriers"
+                            placeholder="Search couriers…"
                             description="Dispatch now, or leave empty to assign later."
                             minSearchLength={2}
                             value={selectedCourier}
@@ -780,7 +780,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             </SimpleGrid>
                             <Box>
                                 <Textarea
-                                    label="Job Notes"
+                                    label="Job notes"
                                     autosize
                                     minRows={3}
                                     maxRows={6}
@@ -797,7 +797,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSubmit}
-                confirmLabel="Create Job"
+                confirmLabel="Create job"
                 confirmIcon={<Icon lucide={Plus} size={16}/>}
                 submitting={isLoading}
             />

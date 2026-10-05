@@ -109,7 +109,7 @@ describe('DriverDetailsTab', () => {
             setupMocks({driver: mockDriverData});
             renderWithProviders();
 
-            expect(screen.getByText('Basic Information')).toBeInTheDocument();
+            expect(screen.getByText('Basic information')).toBeInTheDocument();
             // The summary bar is a PanelHeader now, so the code is part of its
             // single title line rather than a chip of its own.
             expect(screen.getAllByText(/JS001/).length).toBeGreaterThan(0);
@@ -121,7 +121,7 @@ describe('DriverDetailsTab', () => {
             setupMocks({driver: mockDriverData});
             renderWithProviders();
 
-            expect(screen.getByText('Contact Information')).toBeInTheDocument();
+            expect(screen.getByText('Contact information')).toBeInTheDocument();
             expect(screen.getByText('021-123-4567')).toBeInTheDocument();
         });
 
@@ -129,7 +129,7 @@ describe('DriverDetailsTab', () => {
             setupMocks({driver: mockDriverData});
             renderWithProviders();
 
-            expect(screen.getByText('Vehicle Information')).toBeInTheDocument();
+            expect(screen.getByText('Vehicle information')).toBeInTheDocument();
             expect(screen.getByText('ABC123')).toBeInTheDocument();
             expect(screen.getByText('Toyota Hiace')).toBeInTheDocument();
         });
@@ -145,7 +145,7 @@ describe('DriverDetailsTab', () => {
             setupMocks({driver: mockDriverData});
             renderWithProviders();
 
-            expect(screen.getByText('Banking & Emergency')).toBeInTheDocument();
+            expect(screen.getByText('Banking & emergency')).toBeInTheDocument();
             expect(screen.getByText('ANZ')).toBeInTheDocument();
         });
 
@@ -153,7 +153,7 @@ describe('DriverDetailsTab', () => {
             setupMocks({driver: mockDriverData});
             renderWithProviders();
 
-            expect(screen.getByText('Additional Information')).toBeInTheDocument();
+            expect(screen.getByText('Additional information')).toBeInTheDocument();
             expect(screen.getByText('Reliable driver')).toBeInTheDocument();
         });
 

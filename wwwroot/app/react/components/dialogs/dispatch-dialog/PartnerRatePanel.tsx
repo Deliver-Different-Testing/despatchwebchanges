@@ -1,15 +1,3 @@
-/**
- * PartnerRatePanel
- *
- * Renders the rate determination result for a given (partner, job) pair and
- * lets the dispatcher confirm or override the agreed rate. Extracted from the
- * original SendToPartnerDialog so it can sit inside the universal DispatchDialog.
- *
- * The panel owns its own rate state (loading, rateResult, manualRate, validation)
- * and emits the chosen rate + validity upward via onRateChange so the parent
- * dialog can drive the Confirm button.
- */
-
 import React, {useCallback, useEffect, useState} from 'react';
 import {Alert, Badge, Box, Group, Loader, NumberInput, Paper, Text} from '@mantine/core';
 import {SegmentedToggle} from '../../common/segmented-toggle';
@@ -83,7 +71,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
             <Group justify="center" gap="sm" py="lg">
                 <Loader size={24} role="progressbar" aria-label="Looking up rate"/>
                 <Text size="sm" c="dimmed">
-                    Looking up rate...
+                    Looking up rate…
                 </Text>
             </Group>
         );
@@ -136,7 +124,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 {rateResult.source === 'rate_card' && rateResult.rateCardRate != null && (
                     <Paper {...sectionPaperProps}>
                         <Group gap="sm" align="center">
-                            <Badge size="sm" color="brand">Rate Card</Badge>
+                            <Badge size="sm" color="brand">Rate card</Badge>
                             <Text size="sm">
                                 Pre-agreed rate: <strong>${rateResult.rateCardRate.toFixed(2)}</strong>
                             </Text>
@@ -147,7 +135,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 {rateResult.source === 'live_quote' && rateResult.liveQuotes.length > 0 && (
                     <Paper {...sectionPaperProps}>
                         <Group gap="sm" align="center" mb="xs">
-                            <Badge size="sm" color="brand">Live Quote</Badge>
+                            <Badge size="sm" color="brand">Live quote</Badge>
                             <Text size="sm" c="dimmed">
                                 {rateResult.liveQuotes.length} rate{rateResult.liveQuotes.length > 1 ? 's' : ''} from partner
                             </Text>
@@ -200,7 +188,7 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 {rateResult.source === 'cost_plus' && rateResult.liveQuotes.length > 0 && (
                     <Paper {...sectionPaperProps}>
                         <Group gap="sm" align="center" wrap="wrap">
-                            <Badge size="sm" color="brand">Cost Plus</Badge>
+                            <Badge size="sm" color="brand">Cost plus</Badge>
                             <Text size="sm">
                                 Partner quote: <strong>${rateResult.liveQuotes[0].totalCharge.toFixed(2)}</strong>
                                 {rateResult.marginPercent != null && rateResult.derivedRevenue != null && (
@@ -223,9 +211,9 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 )}
             </Box>
             <Box>
-                <Text {...sectionLabelProps}>Agreed Rate</Text>
+                <Text {...sectionLabelProps}>Agreed rate</Text>
                 <NumberInput
-                    label="Agreed Rate"
+                    label="Agreed rate"
                     value={manualRate}
                     onChange={(value) => {
                         setManualRate(value === '' || value === null ? '' : String(value));

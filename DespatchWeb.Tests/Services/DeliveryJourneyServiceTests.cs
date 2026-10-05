@@ -2,6 +2,7 @@
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
+using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
@@ -151,6 +152,55 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         Assert.Contains("Task", result[0].Tags);
         Assert.Contains("In Progress", result[0].Tags);
         Assert.Contains("Created by John Doe", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_TaskWithCreatedAtUtc_ConvertsFromUtcToTenantTime()
+    {
+        // Wall-clock columns hold a deliberately wrong value; the UTC column must win.
+        _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(callInfo => new DateTimeOffset(callInfo.Arg<DateTime>().AddHours(13), TimeSpan.FromHours(13)));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedEventsAsync(new TucEvent
+        {
+            UcevId = 1,
+            UcevJobId = 1,
+            UcevDescription = "Call customer",
+            UcevDate = new DateTime(2024, 1, 15),
+            UcevTime = new DateTime(1, 1, 1, 3, 0, 0),
+            UcevCreatedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0)
+        });
+
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        Assert.Equal(new DateTimeOffset(2024, 1, 15, 22, 0, 0, TimeSpan.FromHours(13)), result[0].Date);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_TaskWithoutCreatedAtUtc_FallsBackToWallClockDateAndTime()
+    {
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("Pacific/Auckland");
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedEventsAsync(new TucEvent
+        {
+            UcevId = 1,
+            UcevJobId = 1,
+            UcevDescription = "Legacy task",
+            UcevDate = new DateTime(2024, 1, 15),
+            UcevTime = new DateTime(1, 1, 1, 10, 30, 0)
+        });
+        // Insert applies the DB default, so null it afterwards to model a row from before the column existed.
+        await using (var context = _db.CreateContext())
+        {
+            await context.TucEvents.ExecuteUpdateAsync(
+                u => u.SetProperty(e => e.UcevCreatedAtUtc, (DateTime?)null),
+                TestContext.Current.CancellationToken);
+        }
+
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        Assert.Equal(new DateTimeOffset(2024, 1, 15, 10, 30, 0, TimeSpan.FromHours(13)), result[0].Date);
+        _tenantInfoServiceMock.DidNotReceive().ConvertUtcToTenantTimeZone(Arg.Any<DateTime>());
     }
 
     [Fact]
@@ -575,6 +625,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             UcevDescription = "Early task",
             UcevDate = new DateTime(2024, 1, 15),
             UcevTime = new DateTime(1, 1, 1, 8, 0, 0),
+            UcevCreatedAtUtc = new DateTime(2024, 1, 15, 8, 0, 0),
             UcevClosed = false,
             UcevDespatcher = "Admin"
         });

@@ -30,7 +30,7 @@ export const ALL_COLUMNS: ColumnDef[] = [
     {key: 'speed', label: 'Speed', sortable: true, width: 80},
     {key: 'isArchived', label: 'Archived', sortable: true, width: 80, showOnlyJobSearch: true},
     {key: 'vehicle', label: 'Vehicle', sortable: true, width: 100},
-    {key: 'jobNo', label: 'Job No', sortable: true, width: 130},
+    {key: 'jobNo', label: 'Job no', sortable: true, width: 130},
     {key: 'client', label: 'Client', sortable: true, width: 85, hideForUs: true},
     {key: 'refA', label: 'Ref A', sortable: true, width: 110, showOnlyJobSearch: true},
     {key: 'pickup', label: 'Pickup', sortable: true, width: 120},

@@ -177,7 +177,7 @@ export function SearchSelect<T>({
                                     <Text fz="sm" c="dimmed">No matches for &ldquo;{inputValue}&rdquo;</Text>
                                 </Group>
                             ) : (
-                                <Text fz="sm" c="dimmed">Type at least {minSearchLength} characters to search</Text>
+                                <Text fz="sm" c="dimmed">Enter at least {minSearchLength} characters to search</Text>
                             )}
                         </Combobox.Empty>
                     )}

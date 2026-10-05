@@ -14,7 +14,7 @@ export function defaultCourierDisplayMode(isUsCustomer: boolean): CourierDisplay
 /**
  * Formats the courier label for the requested mode. Falls back to whatever of
  * name/number is actually available — a manually-picked courier (search, or
- * the US "All Drivers" overview) never carries a number, so "number"/"both"
+ * the US "All drivers" overview) never carries a number, so "number"/"both"
  * degrade to the name rather than showing nothing.
  */
 export function formatCourierDisplayLabel(

@@ -33,7 +33,7 @@ describe('JobListViewOptions', () => {
         expect(screen.getByRole('radio', {name: 'Dense'})).toBeChecked();
         expect(screen.getByRole('radio', {name: 'Normal'})).not.toBeChecked();
 
-        await user.click(screen.getByRole('radio', {name: 'Ultra Dense'}));
+        await user.click(screen.getByRole('radio', {name: 'Ultra dense'}));
         expect(props.onDensityModeChange).toHaveBeenCalledWith('ultra-dense');
 
         await user.click(screen.getByRole('button', {name: 'Reset columns'}));
@@ -55,8 +55,8 @@ describe('JobListViewOptions', () => {
         const optionBody = (name: string) =>
             screen.getByRole('radio', {name}).parentElement!.querySelector('span')!;
 
-        await user.hover(optionBody('Ultra Dense'));
-        expect(await screen.findByRole('tooltip')).toHaveTextContent('Ultra Dense');
+        await user.hover(optionBody('Ultra dense'));
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Ultra dense');
 
         await user.hover(optionBody('Normal'));
         expect(await screen.findByRole('tooltip')).toHaveTextContent('Normal');

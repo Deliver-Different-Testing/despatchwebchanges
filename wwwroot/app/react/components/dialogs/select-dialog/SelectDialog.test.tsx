@@ -200,7 +200,7 @@ describe('SelectDialog', () => {
 
             await user.click(screen.getByRole('button', { name: /Save/i }));
 
-            expect(await screen.findByText('Saving...')).toBeInTheDocument();
+            expect(await screen.findByText('Saving…')).toBeInTheDocument();
         });
     });
 });

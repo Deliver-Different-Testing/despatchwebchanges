@@ -1,5 +1,5 @@
 /**
- * Compose Email Dialog React Module Tests
+ * Compose email Dialog React Module Tests
  *
  * Tests for the module's openComposeEmailDialog() function and
  * window global registration.

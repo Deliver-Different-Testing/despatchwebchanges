@@ -289,6 +289,7 @@ describe('JobDetails', () => {
             renderJobDetails();
 
             expect(screen.getByTestId('job-detail-loading')).toBeInTheDocument();
+            expect(screen.getByTestId('job-detail-loading')).toHaveStyle({backgroundColor: 'var(--mantine-color-gray-1)'});
             expect(screen.queryByTestId('job-detail-header')).not.toBeInTheDocument();
         });
 
@@ -676,7 +677,7 @@ describe('JobDetails', () => {
         it('shows the single-job modal for one price change', () => {
             renderWithPendingRates([rateRow(1, 'J100')]);
 
-            expect(screen.getByText('Price Change')).toBeInTheDocument();
+            expect(screen.getByText('Price change')).toBeInTheDocument();
             expect(screen.queryByText('Prices changed')).not.toBeInTheDocument();
         });
 
@@ -685,13 +686,13 @@ describe('JobDetails', () => {
 
             expect(screen.getByText('Prices changed')).toBeInTheDocument();
             expect(screen.getByText('2 jobs affected')).toBeInTheDocument();
-            expect(screen.queryByText('Price Change')).not.toBeInTheDocument();
+            expect(screen.queryByText('Price change')).not.toBeInTheDocument();
         });
 
         it('shows neither when nothing changed price', () => {
             renderWithPendingRates([]);
 
-            expect(screen.queryByText('Price Change')).not.toBeInTheDocument();
+            expect(screen.queryByText('Price change')).not.toBeInTheDocument();
             expect(screen.queryByText('Prices changed')).not.toBeInTheDocument();
         });
     });

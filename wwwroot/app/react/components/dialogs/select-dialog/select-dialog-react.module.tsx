@@ -1,12 +1,5 @@
-/**
- * Select Dialog React Module
- *
- * Entry point for the React-based Select Dialog.
- * Exposes global functions to open the dialog from AngularJS.
- */
 
 import React from 'react';
-
 import { SelectDialog } from './SelectDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import { SelectDialogResult, SelectDialogOptions } from './types';

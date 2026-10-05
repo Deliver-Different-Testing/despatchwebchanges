@@ -32,19 +32,19 @@ export function PricingSummaryCards({totals}: PricingSummaryCardsProps): React.R
                 <SummaryCard
                     color="green"
                     icon={<Icon lucide={TrendingUp} size={28}/>}
-                    label="Total Revenue"
+                    label="Total revenue"
                     value={formatCurrency(totals.totalRevenue)}
                 />
                 <SummaryCard
                     color="orange"
                     icon={<Icon lucide={Wallet} size={28}/>}
-                    label="Total Cost"
+                    label="Total cost"
                     value={formatCurrency(totals.totalCost)}
                 />
                 <SummaryCard
                     color="reflex"
                     icon={<Icon lucide={PiggyBank} size={28}/>}
-                    label="Gross Profit"
+                    label="Gross profit"
                     value={formatCurrency(totals.profit)}
                     footer={totals.totalRevenue > 0 ? (
                         <Badge size="sm" mt={4} color={getMarginColor(totals.margin)}>

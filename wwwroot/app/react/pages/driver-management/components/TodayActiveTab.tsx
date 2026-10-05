@@ -32,8 +32,8 @@ const columns: DataTableColumn<TodayActiveDriver>[] = [
     {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Badge size="sm" tt="none">{row.code}</Badge>},
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
     {key: 'fleet', label: 'Fleet', sortable: true, render: (row) => <Badge size="sm" tt="none" variant="outline" style={getFleetChipStyle(row.fleet)}>{row.fleet}</Badge>},
-    {key: 'loginTime', label: 'Login Time', sortable: true, width: '110px', render: (row) => row.loginTime ? dayjs(row.loginTime).format('HH:mm') : ''},
-    {key: 'logoutTime', label: 'Logout Time', sortable: true, width: '110px', render: (row) => row.logoutTime ? dayjs(row.logoutTime).format('HH:mm') : ''},
+    {key: 'loginTime', label: 'Login time', sortable: true, width: '110px', render: (row) => row.loginTime ? dayjs(row.loginTime).format('HH:mm') : ''},
+    {key: 'logoutTime', label: 'Logout time', sortable: true, width: '110px', render: (row) => row.logoutTime ? dayjs(row.logoutTime).format('HH:mm') : ''},
     {key: 'duration', label: 'Duration', sortable: true, width: '100px', render: (row) => row.duration},
     {key: 'deliveries', label: 'Deliveries', sortable: true, width: '100px', render: (row) => row.deliveries},
     {key: 'status', label: 'Status', sortable: true, width: '100px', render: (row) => <Badge size="sm" tt="none" color={row.status === 'Active' ? 'green' : 'gray'}>{row.status}</Badge>},
@@ -75,7 +75,7 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
         try {
             await driverManagementApi.exportTodayActiveDriversCsv(query, filters);
         } catch {
-            showToast('Failed to export data', 'error');
+            showToast("Couldn't export the data. Try again.", 'error');
         }
     };
 
@@ -83,10 +83,10 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
         <Stack gap={16}>
             {/* Stats */}
             <Group gap={16}>
-                <StatCard value={stats.totalActiveDrivers} label="Currently Online" color="var(--mantine-color-green-6)" icon={<Icon lucide={CircleDot} size={28} color="var(--mantine-color-green-6)"/>} />
-                <StatCard value={stats.onBreak} label="On Break" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={PauseCircle} size={28} color="var(--mantine-color-yellow-6)"/>} />
-                <StatCard value={stats.totalDriversActiveToday} label="Total Today" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users} size={28} color="var(--mantine-color-cyan-6)"/>} />
-                <StatCard value={stats.averageSession} label="Average Session" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={Clock} size={28} color="var(--mantine-primary-color-filled)"/>} />
+                <StatCard value={stats.totalActiveDrivers} label="Currently online" color="var(--mantine-color-green-6)" icon={<Icon lucide={CircleDot} size={28} color="var(--mantine-color-green-6)"/>} />
+                <StatCard value={stats.onBreak} label="On break" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={PauseCircle} size={28} color="var(--mantine-color-yellow-6)"/>} />
+                <StatCard value={stats.totalDriversActiveToday} label="Total today" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users} size={28} color="var(--mantine-color-cyan-6)"/>} />
+                <StatCard value={stats.averageSession} label="Average session" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={Clock} size={28} color="var(--mantine-primary-color-filled)"/>} />
             </Group>
 
             {/* Filters */}
@@ -147,7 +147,7 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
                 <SearchField
                     value={query.searchTerm ?? ''}
                     onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
-                    placeholder="Search drivers..."
+                    placeholder="Search drivers…"
                 />
             </FilterToolbar>
 
@@ -162,8 +162,8 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
                 emptyIcon={<Icon lucide={Car} size={40}/>}
-                emptyTitle="No Active Drivers"
-                emptyMessage="No active drivers match your criteria."
+                emptyTitle="No active drivers"
+                emptyMessage="No active drivers match your search."
             />
         </Stack>
     );

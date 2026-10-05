@@ -65,7 +65,7 @@ export const AiBlockersCard: React.FC<AiBlockersCardProps> = ({title, fetchBlock
             ) {
                 return;
             }
-            setError(e instanceof Error ? e.message : 'Failed to extract blockers');
+            setError(e instanceof Error ? e.message : "Couldn't extract blockers. Try again.");
         } finally {
             if (abortRef.current === controller) {
                 setLoading(false);

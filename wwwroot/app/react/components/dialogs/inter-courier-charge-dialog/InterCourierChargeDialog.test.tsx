@@ -77,8 +77,8 @@ async function fillForm() {
     mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
     mockSearchActiveClients.mockResolvedValue(clientSuggestions);
 
-    await fillAutocomplete('From Courier', 'Courier', 'Courier Alpha');
-    await fillAutocomplete('To Courier', 'Courier', 'Courier Beta');
+    await fillAutocomplete('From courier', 'Courier', 'Courier Alpha');
+    await fillAutocomplete('To courier', 'Courier', 'Courier Beta');
     await fillAutocomplete('Client', 'Client', 'Client One');
 
     fireEvent.change(screen.getByLabelText(/reference/i), {target: {value: 'REF-123'}});
@@ -105,7 +105,7 @@ describe('InterCourierChargeDialog', () => {
             renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Inter-Courier Charge')).toBeInTheDocument();
+            expect(screen.getByText('Inter-courier charge')).toBeInTheDocument();
             expect(screen.getByText('Charge one courier and credit another')).toBeInTheDocument();
             expect(screen.getByLabelText(/from courier/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/to courier/i)).toBeInTheDocument();
@@ -254,8 +254,8 @@ describe('InterCourierChargeDialog', () => {
             renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
-            await fillAutocomplete('From Courier', 'Courier', 'Courier Alpha');
-            await fillAutocomplete('To Courier', 'Courier', 'Courier Alpha');
+            await fillAutocomplete('From courier', 'Courier', 'Courier Alpha');
+            await fillAutocomplete('To courier', 'Courier', 'Courier Alpha');
 
             expect(screen.getByText("Pick a different courier. A charge can't go to and from the same one."))
                 .toBeInTheDocument();
@@ -393,7 +393,7 @@ describe('InterCourierChargeDialog', () => {
     });
 
     describe('Submit Guard', () => {
-        it('disables Cancel and Add Charge buttons while submitting', async () => {
+        it('disables Cancel and Add charge buttons while submitting', async () => {
             const user = setupUser({advanceTimers: jest.advanceTimersByTime});
             let resolveSubmit: () => void;
             mockCreateInterCourierCharge.mockImplementation(() =>

@@ -26,13 +26,13 @@ describe('DateRangeDialog', () => {
             renderWithMantine(<DateRangeDialog {...createMockProps()} />);
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Select Date Range')).toBeInTheDocument();
+            expect(screen.getByText('Select date range')).toBeInTheDocument();
             expect(screen.getByText('Choose a start and end date for your report')).toBeInTheDocument();
             expect(screen.getByText('From')).toBeInTheDocument();
             expect(screen.getByText('To')).toBeInTheDocument();
             // Each calendar is labelled by its card title, so they are distinguishable.
-            expect(screen.getByLabelText('Start Date')).toBeInTheDocument();
-            expect(screen.getByLabelText('End Date')).toBeInTheDocument();
+            expect(screen.getByLabelText('Start date')).toBeInTheDocument();
+            expect(screen.getByLabelText('End date')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
         });
@@ -57,7 +57,7 @@ describe('DateRangeDialog', () => {
 
             expect(screen.getByText('Jun 10, 2024')).toBeInTheDocument();
             expect(screen.getByText('Jun 15, 2024')).toBeInTheDocument();
-            expect(screen.getByText('6 Days')).toBeInTheDocument();
+            expect(screen.getByText('6 days')).toBeInTheDocument();
             expect(screen.queryByText('Invalid')).not.toBeInTheDocument();
         });
 
@@ -65,7 +65,7 @@ describe('DateRangeDialog', () => {
             const sameDay = new Date(2024, 0, 15);
             renderWithMantine(<DateRangeDialog {...createMockProps({initialRange: {start: sameDay, end: sameDay}})} />);
 
-            expect(screen.getByText('1 Day')).toBeInTheDocument();
+            expect(screen.getByText('1 day')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /apply/i})).not.toBeDisabled();
         });
     });
@@ -116,8 +116,8 @@ describe('DateRangeDialog', () => {
             const initialRange = {start: new Date(2024, 0, 10), end: new Date(2024, 0, 15)};
             renderWithMantine(<DateRangeDialog {...createMockProps({initialRange})} />);
 
-            const startCalendar = screen.getByLabelText('Start Date');
-            const endCalendar = screen.getByLabelText('End Date');
+            const startCalendar = screen.getByLabelText('Start date');
+            const endCalendar = screen.getByLabelText('End date');
 
             expect(dayIn(startCalendar, '14 January 2024')).toBeEnabled();
             expect(dayIn(startCalendar, '16 January 2024')).toBeDisabled();

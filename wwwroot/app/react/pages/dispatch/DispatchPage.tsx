@@ -78,11 +78,11 @@ const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
 export interface DispatchLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
     reloadFromStorage: () => void;
-    /** Opens the MUI "Save Layout" dialog and resolves with the entered name (or null if cancelled). */
+    /** Opens the MUI "Save layout" dialog and resolves with the entered name (or null if cancelled). */
     promptSaveLayout: () => Promise<string | null>;
-    /** Opens the MUI "Delete Layout" confirmation and resolves true if confirmed. */
+    /** Opens the MUI "Delete layout" confirmation and resolves true if confirmed. */
     promptDeleteLayout: (layoutName: string) => Promise<boolean>;
-    /** Opens the MUI "Rename Layout" dialog and resolves with the new name (or null if cancelled). */
+    /** Opens the MUI "Rename layout" dialog and resolves with the new name (or null if cancelled). */
     promptRenameLayout: (layoutName: string) => Promise<string | null>;
     /** Push new toolbar filters (selected views + date range) into the page. */
     updateFilters: (filters: Partial<DispatchFilters>) => void;
@@ -253,7 +253,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     const decoratedViewsRef = useRef(decoratedViews);
     const viewsListenerRef = useRef<((views: DfrntPageViewModel[]) => void) | null>(null);
     // Hold the first notification until the list has actually loaded, so the
-    // toolbar menu keeps its spinner instead of flashing "No views available".
+    // toolbar menu keeps its spinner instead of flashing "No views yet".
     const viewsLoadedRef = useRef(false);
     viewsLoadedRef.current = !viewsLoading;
     useEffect(() => {
@@ -334,7 +334,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             if (job) selectJob(job as unknown as DispatchJob);
         } catch (err) {
             console.error('[DispatchPage] failed to load job detail:', err);
-            showToast('Error loading job details', 'error');
+            showToast("Couldn't load the job details. Check your connection and try again.", 'error');
         }
     }, [selectJob, showToast]);
 
@@ -507,7 +507,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         if (!currentJob) return;
         const result = await sendToPartner(currentJob.id, partner.id, agreedRate);
         if (!result.success) {
-            throw new Error(result.message || 'Failed to send job to partner');
+            throw new Error(result.message || "Couldn't send the job to the partner. Try again.");
         }
         closeDispatchDialog();
         showToast(`Job ${currentJob.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`, 'success');
@@ -573,7 +573,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 case 'unlock': {
                     const locked = actionId === 'lock';
                     await setJobLocked(job.id, locked, !!job.preBook);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
+                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     await refreshLists();
                     refreshDetail();
                     return;
@@ -599,11 +599,12 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     return;
 
                 default:
-                    showToast(`Unknown FAB action: ${actionId}`, 'warning');
+                    console.error(`[DispatchPage] Unknown FAB action "${actionId}"`);
+                    showToast("That action isn't available here.", 'warning');
             }
         } catch (error) {
             console.error(`[DispatchPage] FAB action "${actionId}" failed:`, error);
-            showToast(`Failed to ${actionId}: ${error instanceof Error ? error.message : 'unknown error'}`, 'error');
+            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
         }
     }, [showToast, isUsCustomer, jobCreated]);
 
@@ -645,7 +646,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 if (!currentJobId) {
                     return (
                         <NoData
-                            title="No Job Selected"
+                            title="No job selected"
                             message="Select a job from the list to see its details."
                             icon={<Icon lucide={Briefcase} size={48}/>}
                         />

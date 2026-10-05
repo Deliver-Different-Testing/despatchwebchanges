@@ -61,6 +61,10 @@ public partial class TblBulkRunSchedule
 
     public int ScheduleId { get; set; }
 
+    public byte? CutoffDay { get; set; }
+
+    public TimeSpan? CutoffTime { get; set; }
+
     public virtual TucClient Client { get; set; }
 
     public virtual TucJobType ParentSpeed { get; set; }

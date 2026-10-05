@@ -70,7 +70,7 @@ export const JobDetailsMount: React.FC<JobDetailsMountProps> = ({
         (window as any).ReactJobDetails?.unmount?.();
     }, []);
 
-    return <div id={containerId} style={{height: '100%', overflow: 'auto'}}/>;
+    return <div id={containerId} style={{height: '100%', overflow: 'auto', backgroundColor: 'var(--mantine-color-gray-1)'}}/>;
 };
 
 export default JobDetailsMount;

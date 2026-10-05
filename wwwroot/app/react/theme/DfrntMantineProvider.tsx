@@ -13,9 +13,11 @@ import React, {useEffect} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {MantineProvider} from '@mantine/core';
 import {DatesProvider} from '@mantine/dates';
+import {GlassProvider} from '@dfrnt/glass';
 import {dfrntTheme, dfrntCssVariablesResolver} from './dfrntMantineTheme';
 import {ColorModeProvider, useColorMode} from '../hooks/useColorMode';
 import {ReactQueryProvider} from '../query';
+import {useLiquidGlassEnabled} from '../hooks/useLiquidGlassPreference';
 
 interface DfrntMantineProviderProps {
     children: React.ReactNode;
@@ -23,6 +25,7 @@ interface DfrntMantineProviderProps {
 
 const ThemedSubtree: React.FC<DfrntMantineProviderProps> = ({children}) => {
     const {mode} = useColorMode();
+    const glassEnabled = useLiquidGlassEnabled();
     // Native controls and scrollbars follow the scheme.
     useEffect(() => {
         document.documentElement.style.colorScheme = mode;
@@ -40,7 +43,9 @@ const ThemedSubtree: React.FC<DfrntMantineProviderProps> = ({children}) => {
               */}
             <DatesProvider settings={{}}>
                 <ReactQueryProvider>
-                    {children}
+                    <GlassProvider enabled={glassEnabled}>
+                        {children}
+                    </GlassProvider>
                 </ReactQueryProvider>
             </DatesProvider>
         </MantineProvider>

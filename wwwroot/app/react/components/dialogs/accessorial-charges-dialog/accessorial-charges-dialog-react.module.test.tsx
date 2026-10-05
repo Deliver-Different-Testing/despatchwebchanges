@@ -1,5 +1,5 @@
 /**
- * Accessorial Charges Dialog React Module Tests
+ * Accessorial charges Dialog React Module Tests
  *
  * Tests for the module's open() method which handles pre-validation
  * before opening the dialog.

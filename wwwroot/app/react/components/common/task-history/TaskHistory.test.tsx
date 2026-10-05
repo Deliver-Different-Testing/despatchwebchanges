@@ -124,11 +124,11 @@ describe('TaskHistory', () => {
     });
 
     describe('Rendering', () => {
-        it('renders "Select a Job" when no jobId is provided', () => {
+        it('renders "Select a job" when no jobId is provided', () => {
             const props = createDefaultProps({jobId: undefined});
             renderWithProviders(<TaskHistory {...props} />);
 
-            expect(screen.getByText('Select a Job')).toBeInTheDocument();
+            expect(screen.getByText('Select a job')).toBeInTheDocument();
             expect(screen.getByText('Select a job to view its delivery journey.')).toBeInTheDocument();
         });
 
@@ -180,9 +180,9 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            expect(await screen.findByText('No Journey Events')).toBeInTheDocument();
+            expect(await screen.findByText('No journey events yet')).toBeInTheDocument();
 
-            expect(screen.getByText('No delivery journey events found for this job.')).toBeInTheDocument();
+            expect(screen.getByText('This job has no delivery journey events.')).toBeInTheDocument();
         });
     });
 
@@ -222,7 +222,7 @@ describe('TaskHistory', () => {
             const refreshButton = buttons[1];
             await user.click(refreshButton);
 
-            expect(props.showInfoToast).toHaveBeenCalledWith('Refreshing delivery journey...');
+            expect(props.showInfoToast).toHaveBeenCalledWith('Refreshing delivery journey…');
         });
 
         it('calls tasksApi.getDeliveryJourney on refresh', async () => {

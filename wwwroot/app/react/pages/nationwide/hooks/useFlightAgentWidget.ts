@@ -145,12 +145,12 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
             setAgentOptions(agents);
             setAgentMessage(agents.length === 0
                 ? "Sorry, we couldn't find any agents that applied to this specific job. "
-                  + 'Please check the job information is correct and try again.'
+                  + 'Check the job details and try again.'
                 : undefined);
         } catch (error) {
             if (jobIdRef.current !== jobId) return;
             console.error('Error loading agents:', error);
-            setAgentMessage('Could not load agents for this job. Please try again.');
+            setAgentMessage("Couldn't load agents for this job. Check your connection and try again.");
         } finally {
             setAgentsLoading(false);
         }
@@ -235,7 +235,7 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
     /** "Next day": advance the cursor a day, snap to midnight, search again. */
     const loadNextDayFlights = useCallback(() => {
         if (!job) {
-            onWarning('Please select a job to view flight options');
+            onWarning('Select a job to view flight options');
             return;
         }
         lastDepartureTimeRef.current = nextDayDeparture(lastDepartureTimeRef.current, job.booked);

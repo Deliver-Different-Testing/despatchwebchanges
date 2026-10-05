@@ -33,7 +33,7 @@ export const AgentInformation = React.memo(({agent}: AgentInformationProps) => {
 
     return (
         <Paper {...cardContainerProps}>
-            <SectionHeader lucide={Headset} title="Agent Information"/>
+            <SectionHeader lucide={Headset} title="Agent information"/>
             <Box style={cardContentStyle(false)}>
                 {/* Agent name + ranking/rate chips */}
                 <Group justify="space-between" mb={12}>

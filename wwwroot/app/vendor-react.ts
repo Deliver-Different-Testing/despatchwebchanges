@@ -19,6 +19,8 @@
 import '@mantine/core/styles.layer.css';
 import '@mantine/dates/styles.layer.css';
 import '@mantine/notifications/styles.layer.css';
+// Shared Liquid Glass classes (.dfrnt-glass*) — global, unlayered, used by the dropdown/map/dialog glass.
+import '@dfrnt/glass/glass.css';
 
 // Mantine JS — bundled once here and exposed as window globals. Without this
 // every island embeds its own copy of Mantine core (~190 KB each). The global-shim plugin in build.ts

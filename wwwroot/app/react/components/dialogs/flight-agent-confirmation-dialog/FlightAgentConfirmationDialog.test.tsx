@@ -148,7 +148,7 @@ describe('FlightAgentConfirmationDialog', () => {
                     flight={createFlight()}
                 />
             );
-            expect(screen.getByText(/Assign Flight.*NZ123/)).toBeInTheDocument();
+            expect(screen.getByText(/Assign flight.*NZ123/)).toBeInTheDocument();
         });
 
         it('displays agent name in title for agent mode', () => {
@@ -159,7 +159,7 @@ describe('FlightAgentConfirmationDialog', () => {
                     agent={createAgent()}
                 />
             );
-            expect(screen.getByText(/Assign Agent.*Sydney Cargo Services/)).toBeInTheDocument();
+            expect(screen.getByText(/Assign agent.*Sydney Cargo Services/)).toBeInTheDocument();
         });
     });
 
@@ -201,7 +201,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            expect(await screen.findByText('Cargo Facility')).toBeInTheDocument();
+            expect(await screen.findByText('Cargo facility')).toBeInTheDocument();
         });
 
         it('displays processing time section', async () => {
@@ -213,7 +213,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            expect(await screen.findByText('Processing Time')).toBeInTheDocument();
+            expect(await screen.findByText('Processing time')).toBeInTheDocument();
         });
 
         it('displays package ready section', async () => {
@@ -225,7 +225,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            expect(await screen.findByText('Package Ready')).toBeInTheDocument();
+            expect(await screen.findByText('Package ready')).toBeInTheDocument();
         });
 
         it('displays cargo hours after calculation', async () => {
@@ -265,7 +265,7 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             expect(screen.queryByText('AKL')).not.toBeInTheDocument();
-            expect(screen.queryByText('Cargo Facility')).not.toBeInTheDocument();
+            expect(screen.queryByText('Cargo facility')).not.toBeInTheDocument();
         });
 
         it('shows include stop jobs checkbox when stopJobCount > 0', () => {
@@ -305,7 +305,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            expect(screen.getByLabelText('AWB Number')).toBeInTheDocument();
+            expect(screen.getByLabelText('AWB number')).toBeInTheDocument();
         });
 
         it('pre-fills AWB when existingAwb is provided', () => {
@@ -331,7 +331,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            expect(screen.getByLabelText('AWB Number')).toBeDisabled();
+            expect(screen.getByLabelText('AWB number')).toBeDisabled();
         });
 
         it('allows AWB input when no existingAwb', async () => {
@@ -350,7 +350,7 @@ describe('FlightAgentConfirmationDialog', () => {
              * focusable element on mount, and in jsdom that lands after the first
              * click — so a paste goes to the close button instead of this field.
              */
-            fireEvent.change(screen.getByLabelText('AWB Number'), {target: {value: '987-65432109'}});
+            fireEvent.change(screen.getByLabelText('AWB number'), {target: {value: '987-65432109'}});
 
             expect(screen.getByDisplayValue('987-65432109')).toBeInTheDocument();
         });
@@ -383,7 +383,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
     });
 
-    describe('Delivery Notes', () => {
+    describe('Delivery notes', () => {
         it('displays delivery notes field', () => {
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -393,7 +393,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            expect(screen.getByLabelText('Delivery Instructions')).toBeInTheDocument();
+            expect(screen.getByLabelText('Delivery instructions')).toBeInTheDocument();
         });
 
         it('allows entering delivery notes', async () => {
@@ -412,7 +412,7 @@ describe('FlightAgentConfirmationDialog', () => {
              * focusable element on mount, and in jsdom that lands after the first
              * click — so a paste goes to the close button instead of this field.
              */
-            fireEvent.change(screen.getByLabelText('Delivery Instructions'), {target: {value: 'Handle with care'}});
+            fireEvent.change(screen.getByLabelText('Delivery instructions'), {target: {value: 'Handle with care'}});
 
             expect(screen.getByDisplayValue('Handle with care')).toBeInTheDocument();
         });
@@ -456,10 +456,10 @@ describe('FlightAgentConfirmationDialog', () => {
              * focusable element on mount, and in jsdom that lands after the first
              * click — so a paste goes to the close button instead of this field.
              */
-            fireEvent.change(screen.getByLabelText('AWB Number'), {target: {value: '111-22233344'}});
+            fireEvent.change(screen.getByLabelText('AWB number'), {target: {value: '111-22233344'}});
 
             // Click confirm
-            await user.click(screen.getByText('Confirm Assignment'));
+            await user.click(screen.getByText('Confirm assignment'));
 
             expect(onConfirm).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -489,7 +489,7 @@ describe('FlightAgentConfirmationDialog', () => {
             await user.click(checkbox);
 
             // Click confirm
-            await user.click(screen.getByText('Confirm Assignment'));
+            await user.click(screen.getByText('Confirm assignment'));
 
             expect(onConfirm).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -512,7 +512,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
-            expect(await screen.findByText(/Package Available After Cargo Hours/)).toBeInTheDocument();
+            expect(await screen.findByText(/Package available after cargo hours/)).toBeInTheDocument();
         });
 
         it('provides option to set next morning time', async () => {
@@ -526,7 +526,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
-            expect(await screen.findByText(/Set to.*Cargo Opens/)).toBeInTheDocument();
+            expect(await screen.findByText(/Set to.*cargo opens/)).toBeInTheDocument();
         });
 
         it('provides baggage carousel option when package after hours', async () => {
@@ -540,7 +540,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
-            expect(await screen.findByText('Baggage Carousel')).toBeInTheDocument();
+            expect(await screen.findByText('Baggage carousel')).toBeInTheDocument();
         });
     });
 
@@ -569,7 +569,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
-            expect(screen.queryByText(/Package Available After Cargo Hours/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Package available after cargo hours/)).not.toBeInTheDocument();
         });
     });
 
@@ -588,7 +588,7 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('No flight segments available', 'error');
+                expect(showToast).toHaveBeenCalledWith("Couldn't load flight details. This flight has no segments.", 'error');
             });
         });
 
@@ -608,7 +608,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith(
-                    'Failed to calculate cargo processing times',
+                    "Couldn't calculate cargo processing times. Try again.",
                     'error'
                 );
             });
@@ -688,7 +688,7 @@ describe('FlightAgentConfirmationDialog', () => {
             expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
             // Click confirm
-            await user.click(screen.getByText('Confirm Assignment'));
+            await user.click(screen.getByText('Confirm assignment'));
 
             // Verify packageReadyTime is set correctly (arrival 10:30 + 90 mins = 12:00)
             expect(onConfirm).toHaveBeenCalledWith(
@@ -731,7 +731,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
-            await user.click(screen.getByText('Confirm Assignment'));
+            await user.click(screen.getByText('Confirm assignment'));
 
             const result = onConfirm.mock.calls[0][0];
             expect(result.packageReadyTime).toBeDefined();
@@ -836,7 +836,7 @@ describe('FlightAgentConfirmationDialog', () => {
             await user.click(bodyInput);
             await user.paste('Edited body for the agent');
 
-            await user.click(screen.getByText('Confirm Assignment'));
+            await user.click(screen.getByText('Confirm assignment'));
 
             expect(onConfirm).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -870,7 +870,7 @@ describe('FlightAgentConfirmationDialog', () => {
             await waitFor(() => expect(mockPreview).toHaveBeenCalled());
             expect(screen.queryByLabelText('Message')).not.toBeInTheDocument();
 
-            await user.click(screen.getByText('Confirm Assignment'));
+            await user.click(screen.getByText('Confirm assignment'));
 
             const result = onConfirm.mock.calls[0][0];
             expect(result.emailSubject).toBeUndefined();
@@ -901,7 +901,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
-            await user.click(screen.getByText('Confirm Assignment'));
+            await user.click(screen.getByText('Confirm assignment'));
 
             const result = onConfirm.mock.calls[0][0];
             expect(result.packageDeliverByTime).toBeDefined();
@@ -931,7 +931,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
             expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
-            await user.click(screen.getByText('Confirm Assignment'));
+            await user.click(screen.getByText('Confirm assignment'));
 
             const result = onConfirm.mock.calls[0][0];
             // deliverByTime should be undefined if not provided by API

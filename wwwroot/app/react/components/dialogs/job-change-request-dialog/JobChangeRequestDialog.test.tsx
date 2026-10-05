@@ -70,8 +70,8 @@ describe('JobChangeRequestDialog', () => {
         const user = setupUser();
         renderDialog();
         await user.click(screen.getByLabelText(/Field/));
-        await user.click(screen.getByRole('option', {name: /Agreed Rate/}));
-        expect(screen.getByRole('heading', {name: /Request change to Agreed Rate/})).toBeInTheDocument();
+        await user.click(screen.getByRole('option', {name: /Agreed rate/}));
+        expect(screen.getByRole('heading', {name: /Request change to Agreed rate/})).toBeInTheDocument();
     });
 
     it('validates that a requested value is provided', async () => {
@@ -111,15 +111,15 @@ describe('JobChangeRequestDialog', () => {
         expect(await screen.findByText(/Change applied/)).toBeInTheDocument();
     });
 
-    it('renders the Speed dropdown from getSpeedList when Service Speed is picked', async () => {
+    it('renders the Speed dropdown from getSpeedList when Service speed is picked', async () => {
         const user = setupUser();
         renderDialog();
         await user.click(screen.getByRole('combobox', {name: /Field/}));
-        await user.click(screen.getByRole('option', {name: /Service Speed/}));
+        await user.click(screen.getByRole('option', {name: /Service speed/}));
         await waitFor(() => {
             expect(mockGetSpeedList).toHaveBeenCalled();
         });
-        // Scope to the Service Speed combobox (distinct from the Field combobox above).
+        // Scope to the Service speed combobox (distinct from the Field combobox above).
         const speedSelect = await screen.findByRole('combobox', {name: /Service speed/i});
         await user.click(speedSelect);
         expect(await screen.findByRole('option', {name: 'Express'})).toBeInTheDocument();
@@ -248,7 +248,7 @@ describe('JobChangeRequestDialog', () => {
                 await user.paste('Portland');
                 await user.click(screen.getByLabelText(/^State$/i));
                 await user.paste('OR');
-                await user.click(screen.getByLabelText(/ZIP Code/i));
+                await user.click(screen.getByLabelText(/ZIP code/i));
                 await user.paste('97201');
 
                 await user.click(screen.getByRole('button', {name: /Submit/}));
@@ -275,7 +275,7 @@ describe('JobChangeRequestDialog', () => {
                 preselectedFieldName: 'PartnerAgreedRate',
                 preInitialValue: '123.45',
             });
-            expect(screen.getByRole('heading', {name: /Request change to Agreed Rate/})).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: /Request change to Agreed rate/})).toBeInTheDocument();
             expect(screen.getByRole('textbox', {name: /Agreed rate/i})).toHaveValue('123.45');
         });
 
@@ -345,7 +345,7 @@ describe('JobChangeRequestDialog', () => {
             expect(screen.queryByRole('textbox', {name: /Agreed rate/i})).not.toBeInTheDocument();
 
             // The header switches to confirmation copy.
-            expect(screen.getByRole('heading', {name: /Confirm Agreed Rate change/})).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: /Confirm Agreed rate change/})).toBeInTheDocument();
 
             // The summary surfaces the new value formatted as currency.
             expect(screen.getByText(/\$185\.50/)).toBeInTheDocument();

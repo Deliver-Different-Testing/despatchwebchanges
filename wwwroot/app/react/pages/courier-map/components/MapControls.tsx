@@ -9,6 +9,7 @@
 
 import React from 'react';
 import {ActionIcon, Divider, Loader, Paper, Tooltip} from '@mantine/core';
+import {useMapGlassClassName} from '../../../hooks/useMapGlassClassName';
 import {RefreshCw, Scan} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import type { MapControlsProps } from '../CourierMapPage.types';
@@ -34,8 +35,11 @@ export function MapControls({
     displaySettings,
     onDisplaySettingsChange,
 }: MapControlsProps) {
+    const glassClassName = useMapGlassClassName();
+
     return (
         <Paper
+            className={glassClassName}
             shadow="md"
             radius="sm"
             style={{

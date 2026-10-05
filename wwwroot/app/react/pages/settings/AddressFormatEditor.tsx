@@ -30,7 +30,7 @@ export interface AddressFormatEditorProps {
 type Zone = 'off' | 'line1' | 'line2';
 
 const ZONE_OPTIONS: {label: string; value: Zone}[] = [
-    {label: 'Off', value: 'off'},
+    {label: 'Hidden', value: 'off'},
     {label: 'Line 1', value: 'line1'},
     {label: 'Line 2', value: 'line2'},
 ];
@@ -84,7 +84,7 @@ const ZoneSection: React.FC<{
             <Text size="xs" fw={600} c="dimmed" mb={4} tt="uppercase">{title}</Text>
             <Stack gap={4}>
                 {fields.length === 0 && (
-                    <Text size="sm" c="dimmed" fs="italic">Nothing here</Text>
+                    <Text size="sm" c="dimmed" fs="italic">{zone === 'off' ? 'All fields are shown' : 'No fields on this line'}</Text>
                 )}
                 {fields.map((key, index) => (
                     <Group
@@ -107,7 +107,7 @@ const ZoneSection: React.FC<{
                         }}
                     >
                         {reorderable ? (
-                            <Tooltip label="Drag, or use the arrow keys, to reorder" withArrow>
+                            <Tooltip label="Drag or use arrow keys to reorder" withArrow>
                                 <ActionIcon
                                     size="md"
                                     variant="subtle"
@@ -159,7 +159,7 @@ export const AddressFormatEditor: React.FC<AddressFormatEditorProps> = ({value, 
         <Stack gap={8}>
             <ZoneSection title="Line 1" fields={value.line1} zone="line1" value={value} onChange={onChange} reorderable/>
             <ZoneSection title="Line 2" fields={value.line2} zone="line2" value={value} onChange={onChange} reorderable/>
-            <ZoneSection title="Not shown" fields={notShown} zone="off" value={value} onChange={onChange} reorderable={false}/>
+            <ZoneSection title="Hidden" fields={notShown} zone="off" value={value} onChange={onChange} reorderable={false}/>
         </Stack>
     );
 };

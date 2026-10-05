@@ -9,7 +9,7 @@ import {isNetworkPartnerSession} from '../../../components/dialogs/dispatch-dial
  * in `wwwroot/app/components/Nationwide/nationwide.template.html`; availability
  * conditions match the AngularJS `ng-if`s.
  *
- * Unlike Dispatch's FAB, Nationwide has no generic "Dispatch to Courier" action
+ * Unlike Dispatch's FAB, Nationwide has no generic "Dispatch to courier" action
  * (dispatch happens through the flight/agent widget) and no Split/Swap POD
  * actions in V1's speed-dial, so this menu is a subset of DispatchJobActionsMenu.
  */
@@ -28,17 +28,17 @@ export interface NationwideJobActionsMenuProps {
 }
 
 const ACTIONS: JobAction<NationwideJobActionId>[] = [
-    {id: 'addStop', label: 'Add Stop', icon: 'pin_drop',
+    {id: 'addStop', label: 'Add stop', icon: 'pin_drop',
         available: job => job.isAgentJob},
-    {id: 'accessorialCharges', label: 'Accessorial Charges', icon: 'receipt_long',
+    {id: 'accessorialCharges', label: 'Accessorial charges', icon: 'receipt_long',
         available: job => !!job.accessorialChargeGroupId && !isNetworkPartnerSession()},
     {id: 'attachments', label: 'Attachments', icon: 'cloud_upload',
         available: () => true},
-    {id: 'addTask', label: 'Add Task', icon: 'edit_calendar',
+    {id: 'addTask', label: 'Add task', icon: 'edit_calendar',
         available: () => true},
-    {id: 'unlock', label: 'Unlock Job', icon: 'lock_open',
+    {id: 'unlock', label: 'Unlock job', icon: 'lock_open',
         available: job => !!job.locked && !job.invoiced},
-    {id: 'lock', label: 'Lock Job', icon: 'lock',
+    {id: 'lock', label: 'Lock job', icon: 'lock',
         available: job => !job.locked && !job.invoiced},
 ];
 

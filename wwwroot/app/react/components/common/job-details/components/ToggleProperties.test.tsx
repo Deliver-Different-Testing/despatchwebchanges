@@ -63,8 +63,8 @@ describe('ToggleProperties', () => {
         renderWithTheme(
             <ToggleProperties {...createDefaultProps({job, isFieldVisible})} />
         );
-        expect(screen.queryByText('Truck Options')).not.toBeInTheDocument();
-        expect(screen.queryByText('Tail Lift PU')).not.toBeInTheDocument();
+        expect(screen.queryByText('Truck options')).not.toBeInTheDocument();
+        expect(screen.queryByText('Tail lift PU')).not.toBeInTheDocument();
     });
 
     it('calls onToggleProperty when a checkbox is clicked', () => {
@@ -131,15 +131,15 @@ describe('ToggleProperties', () => {
             <ToggleProperties {...createDefaultProps({job})} />
         );
 
-        expect(screen.getByText('Truck Options')).toBeInTheDocument();
-        expect(screen.getByText('Tail Lift PU')).toBeInTheDocument();
-        expect(screen.getByText('Tail Lift DO')).toBeInTheDocument();
+        expect(screen.getByText('Truck options')).toBeInTheDocument();
+        expect(screen.getByText('Tail lift PU')).toBeInTheDocument();
+        expect(screen.getByText('Tail lift DO')).toBeInTheDocument();
         expect(screen.getByText('Residential')).toBeInTheDocument();
     });
 
     it('hides truck options when truck is not checked', () => {
         renderWithTheme(<ToggleProperties {...createDefaultProps()} />);
-        expect(screen.queryByText('Truck Options')).not.toBeInTheDocument();
+        expect(screen.queryByText('Truck options')).not.toBeInTheDocument();
     });
 
     it('renders edit mode view with visibility toggle', () => {
@@ -175,8 +175,8 @@ describe('ToggleProperties', () => {
             renderWithTheme(
                 <ToggleProperties {...createDefaultProps({dense: true, job})} />
             );
-            expect(screen.getByText('Truck Options')).toBeInTheDocument();
-            expect(screen.getByText('Tail Lift PU')).toBeInTheDocument();
+            expect(screen.getByText('Truck options')).toBeInTheDocument();
+            expect(screen.getByText('Tail lift PU')).toBeInTheDocument();
             expect(screen.getByText('Residential')).toBeInTheDocument();
         });
 

@@ -134,7 +134,7 @@ export const JobFieldsSection = React.memo(({
                     <Paper {...cardContainerProps} style={cardFillStyle}>
                         <SectionHeader
                             tabler={IconPackage}
-                            title="Package Details"
+                            title="Package details"
                             dense={dense}
                             endAction={editEndAction('packageDetails')}
                         />
@@ -189,13 +189,13 @@ export const JobFieldsSection = React.memo(({
                     <Paper {...cardContainerProps} style={cardFillStyle}>
                         <SectionHeader
                             lucide={FileText}
-                            title="Additional Info"
+                            title="Additional info"
                             dense={dense}
                             endAction={editEndAction('additionalInfo')}
                         />
                         <Collapse expanded={isFieldVisible('additionalInfo')} keepMounted={false}>
                             <EditableField
-                                icon="warning" label="DG Class"
+                                icon="warning" label="DG class"
                                 value={job.dgClass ? `Class ${job.dgClass}` : undefined}
                                 onClick={onDgClassClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
@@ -204,12 +204,12 @@ export const JobFieldsSection = React.memo(({
                             />
                             {job.dgClass && (
                                 <EditableField
-                                    icon="description" label="DG Docs" value={hasDgDocs}
+                                    icon="description" label="DG docs" value={hasDgDocs}
                                     dense={dense}
                                 />
                             )}
                             <EditableField
-                                icon="package_2" label="Leave Parcel"
+                                icon="package_2" label="Leave parcel"
                                 value={job.sigNotRequired || 'Signature Required'}
                                 onClick={onLeaveClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
@@ -225,7 +225,7 @@ export const JobFieldsSection = React.memo(({
                     <Paper {...cardContainerProps}>
                         <SectionHeader
                             tabler={IconTruck}
-                            title="Delivery Details"
+                            title="Delivery details"
                             dense={dense}
                             endAction={editEndAction('deliveryDetails')}
                         />
@@ -244,13 +244,13 @@ export const JobFieldsSection = React.memo(({
                                 onToggleVisibility={onToggleField} fieldKey="courierName"
                             />
                             <EditableField
-                                icon="badge" label="Courier Number" value={job.courierData?.courierNumber}
+                                icon="badge" label="Courier number" value={job.courierData?.courierNumber}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('courierNumber')}
                                 onToggleVisibility={onToggleField} fieldKey="courierNumber"
                             />
                             <EditableField
-                                icon="phone_android" label="Courier Mobile" value={job.courierData?.courierMobile}
+                                icon="phone_android" label="Courier mobile" value={job.courierData?.courierMobile}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('courierMobile')}
                                 onToggleVisibility={onToggleField} fieldKey="courierMobile"
@@ -308,13 +308,13 @@ export const JobFieldsSection = React.memo(({
                     <Paper {...cardContainerProps}>
                         <SectionHeader
                             lucide={User}
-                            title="Booked By"
+                            title="Booked by"
                             dense={dense}
                             endAction={editEndAction('bookedBy')}
                         />
                         <Collapse expanded={isFieldVisible('bookedBy')} keepMounted={false}>
                             <EditableField
-                                icon="account_circle" label="Logged In" value={job.loggedInContactName}
+                                icon="account_circle" label="Logged in" value={job.loggedInContactName}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('loggedInContactName')}
                                 onToggleVisibility={onToggleField} fieldKey="loggedInContactName"
@@ -347,13 +347,13 @@ export const JobFieldsSection = React.memo(({
                     <Paper {...cardContainerProps}>
                         <SectionHeader
                             lucide={Briefcase}
-                            title="Job Details"
+                            title="Job details"
                             dense={dense}
                             endAction={editEndAction('jobDetails')}
                         />
                         <Collapse expanded={isFieldVisible('jobDetails')} keepMounted={false}>
                             <EditableField
-                                icon="label" label="Job Name" value={job.customJobName}
+                                icon="label" label="Job name" value={job.customJobName}
                                 onClick={onEditCustomJobName} disabled={locked}
                                 dense={dense}
                             />
@@ -371,7 +371,7 @@ export const JobFieldsSection = React.memo(({
                                 onToggleVisibility={onToggleField} fieldKey="notifiedSpeed"
                             />
                             <EditableField
-                                icon="category" label="Job Type" value={job.jobTypeDescription}
+                                icon="category" label="Job type" value={job.jobTypeDescription}
                                 onClick={onJobTypeClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('jobTypeDescription')}
@@ -399,7 +399,7 @@ export const JobFieldsSection = React.memo(({
                                 onToggleVisibility={onToggleField} fieldKey="refB"
                             />
                             <EditableField
-                                icon="tag" label="Our Ref" value={job.ourRef}
+                                icon="tag" label="Our ref" value={job.ourRef}
                                 onClick={onEditOurRef} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('ourRef')}
@@ -428,7 +428,7 @@ export const JobFieldsSection = React.memo(({
                     />
                     {job.inActiveBy && (
                         <EditableField
-                            icon="person_off" label="InActive By" value={job.inActiveBy?.text}
+                            icon="person_off" label="Inactive by" value={job.inActiveBy?.text}
                             onClick={onInActiveByClick} disabled={locked}
                             dense={dense}
                         />

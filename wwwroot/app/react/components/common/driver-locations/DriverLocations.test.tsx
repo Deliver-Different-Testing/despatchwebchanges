@@ -98,8 +98,8 @@ describe('DriverLocations', () => {
             const props = createDefaultProps({ showNoData: true, showData: false });
             renderWithProviders(<DriverLocations {...props} />);
 
-            expect(screen.getByText('No Driver Locations')).toBeInTheDocument();
-            expect(screen.getByText(/Please configure driver locations/)).toBeInTheDocument();
+            expect(screen.getByText('No driver locations yet')).toBeInTheDocument();
+            expect(screen.getByText(/Add driver locations in Admin Manager/)).toBeInTheDocument();
         });
 
         it('renders driver locations when showData is true', () => {
@@ -327,7 +327,7 @@ describe('DriverLocations', () => {
             });
             renderWithProviders(<DriverLocations {...props} />);
 
-            expect(screen.getByText('No Driver Locations')).toBeInTheDocument();
+            expect(screen.getByText('No driver locations yet')).toBeInTheDocument();
             expect(screen.queryByText(/North/)).not.toBeInTheDocument();
         });
     });

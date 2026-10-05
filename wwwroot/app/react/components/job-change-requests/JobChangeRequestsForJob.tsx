@@ -136,7 +136,7 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
             await invalidate();
             onChanged?.();
         } catch (e) {
-            setError((e as {message?: string})?.message ?? 'Approve failed');
+            setError((e as {message?: string})?.message ?? "Couldn't approve the request. Try again.");
         } finally {
             setActingOn(null);
         }
@@ -155,7 +155,7 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
             await invalidate();
             onChanged?.();
         } catch (e) {
-            setError((e as {message?: string})?.message ?? 'Reject failed');
+            setError((e as {message?: string})?.message ?? "Couldn't reject the request. Try again.");
         } finally {
             setActingOn(null);
         }
@@ -170,7 +170,7 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
             await invalidate();
             onChanged?.();
         } catch (e) {
-            setError((e as {message?: string})?.message ?? 'Cancel failed');
+            setError((e as {message?: string})?.message ?? "Couldn't cancel the request. Try again.");
         } finally {
             setActingOn(null);
         }
@@ -191,7 +191,7 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
             await invalidate();
             onModifyRequest({fieldName: row.fieldName, requestedValue: row.requestedValue});
         } catch (e) {
-            setError((e as {message?: string})?.message ?? 'Could not start modify');
+            setError((e as {message?: string})?.message ?? "Couldn't start the change. Try again.");
         } finally {
             setActingOn(null);
         }

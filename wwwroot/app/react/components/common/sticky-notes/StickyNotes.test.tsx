@@ -81,7 +81,7 @@ const createMockNotes = (): JobNote[] => [
 const createMockNoteTypes = (): NoteType[] => [
     {id: 1, text: 'Internal Note', isPublic: false},
     {id: 2, text: 'Client Note', isPublic: true},
-    {id: 3, text: 'Consignment Note', isPublic: true},
+    {id: 3, text: 'Consignment note', isPublic: true},
 ];
 
 const createDefaultProps = (overrides?: Partial<StickyNotesProps>): StickyNotesProps => {
@@ -157,20 +157,20 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            expect(await screen.findByText('No Notes')).toBeInTheDocument();
-            expect(screen.getByText('No notes available for this job')).toBeInTheDocument();
+            expect(await screen.findByText('No notes yet')).toBeInTheDocument();
+            expect(screen.getByText('No notes for this job yet.')).toBeInTheDocument();
         });
 
         it('does not load notes when no jobId provided', async () => {
             const props = createDefaultProps({jobId: undefined});
             renderWithProviders(<StickyNotes {...props} />);
 
-            expect(await screen.findByText('No Notes')).toBeInTheDocument();
+            expect(await screen.findByText('No notes yet')).toBeInTheDocument();
             expect(mockedNotesApi.getJobNotes).not.toHaveBeenCalled();
         });
     });
 
-    describe('Bulk Job Notes', () => {
+    describe('Bulk Job notes', () => {
         it('loads bulk job notes when bulkJobId is provided', async () => {
             const props = createDefaultProps({jobId: undefined, bulkJobId: 456});
             renderWithProviders(<StickyNotes {...props} />);
@@ -193,14 +193,14 @@ describe('StickyNotes', () => {
             expect(filterButton).toBeInTheDocument();
             fireEvent.click(filterButton!);
 
-            // Menu opens with All Categories header
-            expect(await screen.findByText('All Categories')).toBeInTheDocument();
+            // Menu opens with All categories header
+            expect(await screen.findByText('All categories')).toBeInTheDocument();
 
             // Check menu items
             const menu = screen.getByRole('menu');
             expect(within(menu).getByText('Internal Note')).toBeInTheDocument();
             expect(within(menu).getByText('Client Note')).toBeInTheDocument();
-            expect(within(menu).getByText('Consignment Note')).toBeInTheDocument();
+            expect(within(menu).getByText('Consignment note')).toBeInTheDocument();
         });
 
         it('does not produce Fragment children warning when category menu is open', async () => {
@@ -213,7 +213,7 @@ describe('StickyNotes', () => {
             const filterButton = screen.getByRole('button', {name: 'Filter by category'});
             fireEvent.click(filterButton!);
 
-            expect(await screen.findByText('All Categories')).toBeInTheDocument();
+            expect(await screen.findByText('All categories')).toBeInTheDocument();
 
             const fragmentWarnings = consoleErrorSpy.mock.calls.filter(
                 (args) => typeof args[0] === 'string' && args[0].includes('Fragment as a child')
@@ -265,7 +265,7 @@ describe('StickyNotes', () => {
         });
     });
 
-    describe('Add Note', () => {
+    describe('Add note', () => {
         it('opens note dialog when add button is clicked and reloads notes after dialog closes', async () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
@@ -293,7 +293,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            expect(await screen.findByText('No Notes')).toBeInTheDocument();
+            expect(await screen.findByText('No notes yet')).toBeInTheDocument();
 
             // After dialog resolves, return one new note on refetch
             const newNote: JobNote = {
@@ -313,7 +313,7 @@ describe('StickyNotes', () => {
 
             // The new note should appear after refetch
             expect(await screen.findByText('Brand new note')).toBeInTheDocument();
-            expect(screen.queryByText('No Notes')).not.toBeInTheDocument();
+            expect(screen.queryByText('No notes yet')).not.toBeInTheDocument();
         });
     });
 
@@ -339,7 +339,7 @@ describe('StickyNotes', () => {
         });
     });
 
-    describe('Delete Note', () => {
+    describe('Delete note', () => {
         it('calls deleteNote API when confirmed and shows success toast', async () => {
             const props = createDefaultProps();
 
@@ -358,7 +358,7 @@ describe('StickyNotes', () => {
 
             // Shows success toast after deleting
             await waitFor(() => {
-                expect(props.showSuccessToast).toHaveBeenCalledWith('Note deleted successfully');
+                expect(props.showSuccessToast).toHaveBeenCalledWith('Note deleted');
             });
 
             confirmSpy.mockRestore();
@@ -399,7 +399,7 @@ describe('StickyNotes', () => {
             [2, 'Client Note', NOTE_FILLS.client],
             [3, 'Flight Update', NOTE_FILLS.flightUpdate],
             [4, 'Agent Update', NOTE_FILLS.agentUpdate],
-            [5, 'Consignment Note', NOTE_FILLS.consignment],
+            [5, 'Consignment note', NOTE_FILLS.consignment],
             [9, 'Pickup Notes', NOTE_FILLS.pickup],
             [10, 'Delivery Notes', NOTE_FILLS.delivery],
             [1100, 'Pricing Update', NOTE_FILLS.pricingUpdate],
@@ -434,7 +434,7 @@ describe('StickyNotes', () => {
         it('applies the type fill to the rendered note card', async () => {
             mockedNotesApi.getJobNotes.mockResolvedValue([
                 ...createMockNotes(),
-                noteOfType(5, 'Consignment Note'),
+                noteOfType(5, 'Consignment note'),
             ]);
             renderWithProviders(<StickyNotes {...createDefaultProps()} />);
 

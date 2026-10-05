@@ -22,6 +22,7 @@ RUN GITLAB_NUGET_USERNAME=${GITLAB_NUGET_USERNAME} \
 # `npm ci` installs exactly what the lockfile pins, and keeping it ahead of `COPY . ./`
 # means editing source doesn't rebuild node_modules.
 COPY package.json package-lock.json ./
+COPY vendor/ ./vendor/
 RUN npm ci
 
 COPY . ./

@@ -64,7 +64,7 @@ describe('OpenJobsList', () => {
     it('renders no chrome of its own', () => {
         renderList({openJobs: [createMockOpenJob()]});
 
-        expect(screen.queryByText('Open Jobs')).not.toBeInTheDocument();
+        expect(screen.queryByText('Open jobs')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /Collapse|Expand open jobs/})).not.toBeInTheDocument();
         expect(screen.queryByRole('radio', {name: 'Cards'})).not.toBeInTheDocument();
     });
@@ -117,7 +117,7 @@ describe('OpenJobsList', () => {
             onSort,
         });
 
-        fireEvent.click(screen.getByRole('button', {name: /Job Number/}));
+        fireEvent.click(screen.getByRole('button', {name: /Job number/}));
 
         expect(onSort).toHaveBeenCalledWith({column: 'reference', direction: 'desc'});
     });

@@ -256,7 +256,7 @@ export function useJobUpdate(
                 });
                 return;
             }
-            showToast(message ?? 'Failed to update job. Please try again.', 'error');
+            showToast(message ?? "Couldn't update the job. Check your connection and try again.", 'error');
         },
     });
 
@@ -288,7 +288,7 @@ export function useJobUpdate(
             }
         },
         onError: () => {
-            showToast('Failed to update address. Please try again.', 'error');
+            showToast("Couldn't update the address. Check your connection and try again.", 'error');
         },
     });
 
@@ -301,7 +301,7 @@ export function useJobUpdate(
             // A 404 carries an authored message from the backend (e.g. the job no longer
             // exists) — show it rather than a generic failure the operator can't act on.
             const message = (error as {message?: string})?.message;
-            showToast(message || 'Failed to update POD details.', 'error');
+            showToast(message || "Couldn't update the POD details. Check your connection and try again.", 'error');
         },
     });
 
@@ -313,7 +313,7 @@ export function useJobUpdate(
         },
         onError: (_err, {hasBeenRead}) => {
             const actionText = hasBeenRead ? 'read' : 'unread';
-            showToast(`Failed to mark job as ${actionText}. Please try again.`, 'error');
+            showToast(`Couldn't mark the job as ${actionText}. Check your connection and try again.`, 'error');
         },
     });
 
@@ -341,12 +341,12 @@ export function useJobUpdate(
             if (courierDisplay) {
                 showToast(`Dispatched to ${courierDisplay}`, 'success');
             } else {
-                showToast('Job dispatched successfully', 'success');
+                showToast('Job dispatched', 'success');
             }
             await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
         },
         onError: () => {
-            showToast('Failed to dispatch job.', 'error');
+            showToast("Couldn't dispatch the job. Check your connection and try again.", 'error');
         },
     });
 

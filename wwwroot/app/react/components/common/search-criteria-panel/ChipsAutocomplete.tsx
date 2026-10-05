@@ -97,7 +97,7 @@ export const ChipsAutocomplete: React.FC<ChipsAutocompleteProps> = ({
 
     const nothingFound = inputValue.length >= minInputLength
         ? `No ${label.toLowerCase()} found`
-        : `Type at least ${minInputLength} character${minInputLength > 1 ? 's' : ''} to search`;
+        : `Enter at least ${minInputLength} character${minInputLength > 1 ? 's' : ''} to search`;
 
     return (
         <MultiSelect

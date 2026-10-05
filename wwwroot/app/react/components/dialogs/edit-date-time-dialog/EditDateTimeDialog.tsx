@@ -1,18 +1,3 @@
-/**
- * EditDateTimeDialog Component
- *
- * React replacement for the AngularJS edit-date-time-dialog.
- * Allows editing date and/or time values with timezone information.
- *
- * **Wall-clock, by construction.** Mantine's pickers are string-valued —
- * `DateInput` speaks `YYYY-MM-DD` and `TimePicker` speaks `HH:mm` — so nothing
- * here ever builds a `Date`, and there is no instant to convert. The dialog's own
- * state stays a `Dayjs` because that is what callers submit and receive, and the
- * pickers only ever set its calendar fields (`.year()/.month()/.date()`,
- * `.hour()/.minute()`), never re-anchor it to another zone. `selectedTimeZone` is
- * carried through to the result as a *label* for the value, exactly as before.
- */
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { DateInput, TimePicker } from '@mantine/dates';
@@ -141,7 +126,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
     // Handle form submission
     const handleSubmit = useCallback(async () => {
         if (!dateTime || !dateTime.isValid()) {
-            showToast('Please provide valid date/time information', 'warning');
+            showToast('Enter a date and time', 'warning');
             return;
         }
 
@@ -160,7 +145,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             await onSubmit(result);
         } catch (error: unknown) {
             console.error('Error submitting date/time:', error);
-            showToast(error instanceof Error ? error.message : 'Failed to save date/time', 'error');
+            showToast(error instanceof Error ? `Couldn't save date/time. ${error.message}` : "Couldn't save date/time. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -180,7 +165,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             });
         } catch (error: unknown) {
             console.error('Error clearing date/time:', error);
-            showToast(error instanceof Error ? error.message : 'Failed to clear date/time', 'error');
+            showToast(error instanceof Error ? `Couldn't clear date/time. ${error.message}` : "Couldn't clear date/time. Try again.", 'error');
         } finally {
             setIsLoading(false);
         }
@@ -260,7 +245,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                 onCancel={onClose}
                 cancelLabel={readOnly ? 'Close' : 'Cancel'}
                 onConfirm={handleSubmit}
-                confirmLabel={isLoading ? 'Saving...' : 'Save'}
+                confirmLabel={isLoading ? 'Saving…' : 'Save changes'}
                 hideConfirm={readOnly}
                 submitting={isLoading}
                 secondaryAction={!readOnly && allowClear ? (

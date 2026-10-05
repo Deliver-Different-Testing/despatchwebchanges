@@ -16,6 +16,7 @@
  *  - Reuses the InsertToLiveDialog pattern for toast + error surfacing.
  */
 
+import {pluralise} from '../../../../utils/pluralise';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Alert, Box, Checkbox, Divider, Group, Loader, Stack, Text} from '@mantine/core';
 import {CalendarPlus, Info, TriangleAlert} from 'lucide-react';
@@ -85,7 +86,7 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
                 if (cancelled) return;
                 const message =
                     (error as {response?: {data?: string}})?.response?.data
-                    || (error instanceof Error ? error.message : 'Failed to load backfill preview.');
+                    || (error instanceof Error ? error.message : "Couldn't load the backfill preview. Try again.");
                 setPreviewError(message);
             })
             .finally(() => {
@@ -143,12 +144,12 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
             });
 
             const parts: string[] = [];
-            parts.push(`Created ${result.jobsCreated} job(s) across ${result.createdDates.length} service date(s).`);
+            parts.push(`Created ${result.jobsCreated} ${pluralise(result.jobsCreated, 'job')} across ${result.createdDates.length} service ${pluralise(result.createdDates.length, 'date')}.`);
             if (result.duplicatesSkipped > 0) {
-                parts.push(`Skipped ${result.duplicatesSkipped} duplicate(s).`);
+                parts.push(`Skipped ${result.duplicatesSkipped} ${pluralise(result.duplicatesSkipped, 'duplicate')}.`);
             }
             if (result.errors.length > 0) {
-                parts.push(`${result.errors.length} date(s) failed — see log.`);
+                parts.push(`${result.errors.length} ${pluralise(result.errors.length, 'date')} failed — see log.`);
             }
             showToast(parts.join(' '), result.errors.length > 0 ? 'warning' : 'success');
             onSuccess();
@@ -156,7 +157,7 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
         } catch (error) {
             const message =
                 (error as {response?: {data?: string}})?.response?.data
-                || (error instanceof Error ? error.message : 'Backfill push failed.');
+                || (error instanceof Error ? error.message : "Couldn't create the backfill jobs. Try again.");
             showToast(message, 'error');
         } finally {
             setIsSubmitting(false);
@@ -184,7 +185,7 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
                     {isLoadingPreview && (
                         <Group gap="xs">
                             <Loader size={16} role="progressbar" aria-label="Loading preview"/>
-                            <Text size="sm">Loading preview...</Text>
+                            <Text size="sm">Loading preview…</Text>
                         </Group>
                     )}
 
@@ -264,7 +265,7 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
                 onCancel={handleClose}
                 cancelLabel={nothingToBackfill ? 'Close' : 'Skip backfill'}
                 onConfirm={handleCreate}
-                confirmLabel={isSubmitting ? 'Creating...' : `Create ${selectedDates.size} booking(s)`}
+                confirmLabel={isSubmitting ? 'Creating…' : `Create ${selectedDates.size} ${pluralise(selectedDates.size, 'booking')}`}
                 confirmDisabled={
                     isSubmitting
                     || isLoadingPreview

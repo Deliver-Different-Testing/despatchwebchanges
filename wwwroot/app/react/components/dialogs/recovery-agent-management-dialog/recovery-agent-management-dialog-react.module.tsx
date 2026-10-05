@@ -44,7 +44,7 @@ export async function openRecoveryAgentManagementDialog(
         return host.open({job});
     } catch (error) {
         console.error('Error loading recovery agent job:', error);
-        toastService.showToast('Failed to load recovery agent details', 'error');
+        toastService.showToast("Couldn't load recovery agent details. Refresh and try again.", 'error');
     }
 }
 

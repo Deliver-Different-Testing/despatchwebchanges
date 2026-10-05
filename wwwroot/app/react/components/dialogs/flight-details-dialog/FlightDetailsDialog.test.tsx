@@ -106,7 +106,7 @@ describe('FlightDetailsDialog', () => {
     // ---------------------------------------------------------------
     // Single-segment flight rendering (1 render)
     // Covers: dialog title, flight number, airline name, departure date,
-    //   airport codes, formatted duration, Flight Details Card sections,
+    //   airport codes, formatted duration, Flight details Card sections,
     //   aircraft info, departure time, arrival time
     // ---------------------------------------------------------------
     it('renders all expected content for a single-segment flight', () => {
@@ -119,7 +119,7 @@ describe('FlightDetailsDialog', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
 
         // Rendering: dialog title, flight number, airline, departure date
-        expect(screen.getByText('Flight Details')).toBeInTheDocument();
+        expect(screen.getByText('Flight details')).toBeInTheDocument();
         expect(screen.getByText('UA 1234')).toBeInTheDocument();
         expect(screen.getByText('United Airlines')).toBeInTheDocument();
         expect(screen.getByText('Fri, Mar 15, 2024')).toBeInTheDocument();
@@ -131,8 +131,8 @@ describe('FlightDetailsDialog', () => {
         // Duration: formatted (elapsedTime = 330 => 5h 30m)
         expect(screen.getByText('5h 30m')).toBeInTheDocument();
 
-        // Flight Details Card sections
-        expect(screen.getByText('Flight Information')).toBeInTheDocument();
+        // Flight details Card sections
+        expect(screen.getByText('Flight information')).toBeInTheDocument();
         expect(screen.getByText('Departure')).toBeInTheDocument();
         expect(screen.getByText('Arrival')).toBeInTheDocument();
 
@@ -150,7 +150,7 @@ describe('FlightDetailsDialog', () => {
     // ---------------------------------------------------------------
     // Single-segment negative tests (shared default flight)
     // Covers: renders nothing when not open, no tabs for single-segment,
-    //   no Flight Itinerary for single-segment
+    //   no Flight itinerary for single-segment
     // ---------------------------------------------------------------
     it('does not render dialog, tabs, or itinerary for a single-segment flight when closed or irrelevant', () => {
         // Not-open case
@@ -166,7 +166,7 @@ describe('FlightDetailsDialog', () => {
             <FlightDetailsDialog open={true} flight={flight} onClose={jest.fn()} />
         );
         expect(screen.queryByRole('tab', {name: /Overview/i})).not.toBeInTheDocument();
-        expect(screen.queryByText('Flight Itinerary')).not.toBeInTheDocument();
+        expect(screen.queryByText('Flight itinerary')).not.toBeInTheDocument();
     });
 
     // ---------------------------------------------------------------
@@ -202,7 +202,7 @@ describe('FlightDetailsDialog', () => {
     // ---------------------------------------------------------------
     // Multi-segment flight rendering (1 render)
     // Covers: tab navigation, Overview selected by default,
-    //   Flight Itinerary section, segment numbers, connection time,
+    //   Flight itinerary section, segment numbers, connection time,
     //   segment flight numbers, total duration, final destination,
     //   Terminal info
     // ---------------------------------------------------------------
@@ -221,8 +221,8 @@ describe('FlightDetailsDialog', () => {
         const overviewTab = screen.getByRole('tab', {name: /Overview/i});
         expect(overviewTab).toHaveAttribute('aria-selected', 'true');
 
-        // Flight Itinerary section
-        expect(screen.getByText('Flight Itinerary')).toBeInTheDocument();
+        // Flight itinerary section
+        expect(screen.getByText('Flight itinerary')).toBeInTheDocument();
 
         // Segment numbers in itinerary (appear in both tabs and itinerary)
         const segment1Elements = screen.getAllByText('Segment 1');

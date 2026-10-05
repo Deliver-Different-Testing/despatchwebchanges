@@ -73,9 +73,9 @@ describe('PodPhotosSection', () => {
             })} />
         );
 
-        expect(screen.getByText('Delivery Photos')).toBeInTheDocument();
+        expect(screen.getByText('Delivery photos')).toBeInTheDocument();
         expect(screen.getByText('2 photos')).toBeInTheDocument();
-        expect(screen.getByText('Pickup Photos')).toBeInTheDocument();
+        expect(screen.getByText('Pickup photos')).toBeInTheDocument();
     });
 
     it('hides pickup section when no pickup photos', () => {
@@ -84,8 +84,8 @@ describe('PodPhotosSection', () => {
             <PodPhotosSection {...createDefaultProps({deliveryPhotos, imageOnlyDeliveryPhotos: deliveryPhotos})} />
         );
 
-        expect(screen.getByText('Delivery Photos')).toBeInTheDocument();
-        expect(screen.queryByText('Pickup Photos')).not.toBeInTheDocument();
+        expect(screen.getByText('Delivery photos')).toBeInTheDocument();
+        expect(screen.queryByText('Pickup photos')).not.toBeInTheDocument();
     });
 
     it('renders action buttons and handles clicks', () => {
@@ -101,7 +101,7 @@ describe('PodPhotosSection', () => {
             })} />
         );
 
-        const uploadButton = screen.getByLabelText('Upload POD Photos');
+        const uploadButton = screen.getByLabelText('Upload POD photos');
         expect(uploadButton).toBeInTheDocument();
         fireEvent.click(uploadButton);
         expect(onUploadPhotos).toHaveBeenCalledTimes(1);

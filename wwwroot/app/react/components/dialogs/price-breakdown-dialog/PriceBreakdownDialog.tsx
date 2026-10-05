@@ -224,7 +224,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             setFormFuelChargeAmount(suggestion.fuelChargeAmount);
             setFormFuelCostAmount(suggestion.fuelCostAmount);
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to calculate suggested fuel charge.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't calculate the suggested fuel charge. Try again."), 'error');
         } finally {
             setIsFuelLoading(false);
         }
@@ -291,7 +291,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             handleCancelEdit();
         } catch (error) {
             const action = wasNew ? 'add' : 'update';
-            showToast?.(extractErrorMessage(error, `Failed to ${action} price item.`), 'error');
+            showToast?.(extractErrorMessage(error, `Couldn't ${action} price item. Try again.`), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -317,7 +317,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             showToast?.(`Deleted "${item.name}"`, 'success');
             setConfirmDelete(null);
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to delete price item.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't delete price item. Try again."), 'error');
         } finally {
             setIsDeleting(null);
         }
@@ -331,10 +331,10 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     const itemCountLabel = `${priceBreakdowns.length} ${priceBreakdowns.length === 1 ? 'item' : 'items'}`;
 
     return (
-        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label={partnerView ? 'Your Pay' : 'Price Breakdown'}>
+        <DialogShell opened={open} onClose={onClose} size={dialogSize.md} label={partnerView ? 'Your pay' : 'Price breakdown'}>
             <DialogHeader
                 icon={<Icon lucide={partnerView ? DollarSign : readOnly ? Lock : ReceiptText}/>}
-                title={partnerView ? 'Your Pay' : 'Price Breakdown'}
+                title={partnerView ? 'Your pay' : 'Price breakdown'}
                 subtitle={
                     partnerView ? 'What you will be paid for this job'
                         : managedElsewhere ? 'Managed on the parent job'
@@ -369,14 +369,14 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                         {/* Action Bar */}
                         <Group justify="space-between" mb="md" wrap="nowrap">
                             <Group gap="sm" wrap="nowrap">
-                                <Text fw={600} fz="lg">{partnerView ? 'Pay Items' : 'Price Items'}</Text>
+                                <Text fw={600} fz="lg">{partnerView ? 'Pay items' : 'Price items'}</Text>
                                 {priceBreakdowns.length > 0 && (
                                     <Badge size="sm" color="gray" variant="light">{itemCountLabel}</Badge>
                                 )}
                             </Group>
                             {!readOnly && (
                                 <Button leftSection={<Icon lucide={Plus}/>} onClick={handleAddNew}>
-                                    Add Item
+                                    Add item
                                 </Button>
                             )}
                         </Group>
@@ -387,7 +387,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                 <Table highlightOnHover>
                                     <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-0)'}}>
                                         <Table.Tr>
-                                            <Table.Th c="dimmed">Item Name</Table.Th>
+                                            <Table.Th c="dimmed">Item name</Table.Th>
                                             <Table.Th c="dimmed" ta="right">{partnerView ? 'Amount' : 'Revenue'}</Table.Th>
                                             {!partnerView && (
                                                 <>
@@ -418,7 +418,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                                         mt={4}
                                                                         leftSection={<Icon lucide={Briefcase} size={12}/>}
                                                                     >
-                                                                        This Job
+                                                                        This job
                                                                     </Badge>
                                                                 )}
                                                             </Box>
@@ -498,7 +498,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                 </Text>
                                 {!readOnly && (
                                     <Button leftSection={<Icon lucide={Plus}/>} onClick={handleAddNew}>
-                                        Add First Item
+                                        Add first item
                                     </Button>
                                 )}
                             </Paper>
@@ -524,22 +524,22 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                 <ThemeIcon size={40} radius="md" variant="default" c="light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))">
                                     <Icon lucide={isNew ? Plus : Pencil}/>
                                 </ThemeIcon>
-                                <Text fw={600} fz="lg">{isNew ? 'Add New Price Item' : 'Edit Price Item'}</Text>
+                                <Text fw={600} fz="lg">{isNew ? 'Add new price item' : 'Edit price item'}</Text>
                             </Group>
 
                             {/* Form Body */}
                             <Stack gap="lg" p="lg">
                                 <TextInput
-                                    label="Item Name"
+                                    label="Item name"
                                     value={formName}
                                     onChange={(e) => setFormName(e.currentTarget.value)}
                                     required
-                                    placeholder="e.g., Installation Services"
+                                    placeholder="e.g., Installation services"
                                 />
 
                                 <Group gap="md" grow align="flex-start">
                                     <NumberInput
-                                        label="Revenue Amount"
+                                        label="Revenue amount"
                                         value={formAmount}
                                         onChange={(value) => setFormAmount(value === '' || value == null ? '' : Number(value))}
                                         placeholder="0.00"
@@ -550,7 +550,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                         leftSection={moneyIcon}
                                     />
                                     <NumberInput
-                                        label="Cost Amount"
+                                        label="Cost amount"
                                         value={formCostAmount}
                                         onChange={(value) => setFormCostAmount(value === '' || value == null ? '' : Number(value))}
                                         placeholder="0.00"
@@ -578,7 +578,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                             disabled={typeof formAmount !== 'number' || formAmount <= 0}
                                             label={
                                                 <Box>
-                                                    <Text size="sm" fw={500}>Apply Fuel</Text>
+                                                    <Text size="sm" fw={500}>Apply fuel</Text>
                                                     <Text size="xs" c="dimmed">
                                                         Adds a companion &quot;{formName || 'Item'} Fuel&quot; line using this job&apos;s fuel rate
                                                     </Text>
@@ -589,7 +589,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                         {applyFuel && (
                                             <Group gap="md" mt="md" align="flex-start" wrap="nowrap">
                                                 <NumberInput
-                                                    label="Fuel Charge Amount"
+                                                    label="Fuel charge amount"
                                                     value={formFuelChargeAmount}
                                                     onChange={(value) => setFormFuelChargeAmount(value === '' || value == null ? '' : Number(value))}
                                                     placeholder="0.00"
@@ -602,7 +602,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                     style={{flex: 1}}
                                                 />
                                                 <NumberInput
-                                                    label="Fuel Cost Amount"
+                                                    label="Fuel cost amount"
                                                     value={formFuelCostAmount}
                                                     onChange={(value) => setFormFuelCostAmount(value === '' || value == null ? '' : Number(value))}
                                                     placeholder="0.00"
@@ -614,7 +614,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                     leftSection={moneyIcon}
                                                     style={{flex: 1}}
                                                 />
-                                                <Tooltip label="Recalculate from the current Revenue Amount">
+                                                <Tooltip label="Recalculate from the current revenue amount">
                                                     <ActionIcon
                                                         variant="subtle"
                                                         color="gray"
@@ -641,7 +641,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                         style={{backgroundColor: 'var(--mantine-color-gray-0)'}}
                                     >
                                         <Text size="xs" tt="uppercase" c="dimmed" mb="sm" display="block" style={{letterSpacing: 1}}>
-                                            Live Preview
+                                            Live preview
                                         </Text>
                                         <Group gap={32} justify="center">
                                             <Box ta="center">
@@ -684,7 +684,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     leftSection={<Icon lucide={isNew ? Plus : CircleCheck}/>}
                                     miw={140}
                                 >
-                                    {isNew ? 'Add Item' : 'Save Changes'}
+                                    {isNew ? 'Add item' : 'Save changes'}
                                 </Button>
                             </Group>
                         </Paper>

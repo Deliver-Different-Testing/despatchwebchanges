@@ -292,7 +292,7 @@ describe('tasksApi integration', () => {
             const result = await tasksApi.getEventTypes();
 
             expect(result).toHaveLength(3);
-            expect(result[0]).toEqual({ id: 1, text: 'Follow Up' });
+            expect(result[0]).toEqual({ id: 1, text: 'Follow up' });
         });
     });
 

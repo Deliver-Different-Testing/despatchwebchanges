@@ -45,14 +45,14 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
         mutationFn: () => acceptPartnerRate(jobId),
         onSuccess: (result) => {
             if (!result.success) {
-                setActionError(result.errorMessage ?? 'Failed to accept rate.');
+                setActionError(result.errorMessage ?? "Couldn't accept the rate. Try again.");
                 return;
             }
             setActionError(null);
             void queryClient.invalidateQueries({queryKey});
         },
         onError: (err: unknown) => {
-            setActionError(err instanceof Error ? err.message : 'Failed to accept rate.');
+            setActionError(err instanceof Error ? err.message : "Couldn't accept the rate. Try again.");
         },
     });
 
@@ -60,7 +60,7 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
         mutationFn: (text: string) => rejectPartnerRate(jobId, text),
         onSuccess: (result) => {
             if (!result.success) {
-                setActionError(result.errorMessage ?? 'Failed to reject rate.');
+                setActionError(result.errorMessage ?? "Couldn't reject the rate. Try again.");
                 return;
             }
             setActionError(null);
@@ -69,7 +69,7 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
             void queryClient.invalidateQueries({queryKey});
         },
         onError: (err: unknown) => {
-            setActionError(err instanceof Error ? err.message : 'Failed to reject rate.');
+            setActionError(err instanceof Error ? err.message : "Couldn't reject the rate. Try again.");
         },
     });
 
@@ -148,7 +148,7 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
                     <DialogFooter
                         onCancel={closeRejectDialog}
                         onConfirm={() => rejectMutation.mutate(reason.trim())}
-                        confirmLabel="Reject Rate"
+                        confirmLabel="Reject rate"
                         confirmColor="red"
                         confirmDisabled={!reason.trim()}
                         submitting={rejectMutation.isPending}

@@ -297,7 +297,7 @@ describe('ApiClient', () => {
             await expect(errorHandler(networkError)).rejects.toMatchObject({
                 status: 0,
                 statusText: 'Network Error',
-                message: 'Network Error',
+                message: "Couldn't reach the server. Check your connection and try again.",
             });
         });
 
@@ -311,7 +311,7 @@ describe('ApiClient', () => {
                     statusText: 'Internal Server Error',
                     data: {message: 'Database connection failed'},
                 },
-                message: 'Server Error',
+                message: 'Server error',
             };
 
             await expect(errorHandler(axiosError)).rejects.toMatchObject({

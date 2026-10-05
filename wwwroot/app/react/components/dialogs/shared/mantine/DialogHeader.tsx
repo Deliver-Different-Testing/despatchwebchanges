@@ -20,6 +20,7 @@ import {
 } from './styles';
 import {DialogHeaderProps} from "./DialogHeaderProps";
 import classes from './DialogHeader.module.css';
+import {useGlassAllowed} from '../../../../hooks/useGlassStrategy';
 
 export const DialogHeader: React.FC<DialogHeaderProps> = ({
     icon,
@@ -31,6 +32,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
     actions,
 }) => {
     const fg = headerOnColor(variant);
+    const glass = useGlassAllowed();
     return (
         <Group
             wrap="nowrap"
@@ -38,7 +40,7 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
             px="lg"
             py="sm"
             style={{
-                backgroundColor: dialogHeaderBg,
+                backgroundColor: glass ? 'transparent' : dialogHeaderBg,
                 color: fg,
                 borderBottom: dialogHeaderBorder,
                 ...dialogStickyChromeStyle('top'),

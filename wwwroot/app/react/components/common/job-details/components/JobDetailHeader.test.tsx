@@ -51,7 +51,7 @@ describe('JobDetailHeader', () => {
         expect(screen.queryByText('J-1001')).not.toBeInTheDocument();
         expect(screen.getByLabelText('Compact view')).toBeInTheDocument();
         expect(screen.getByLabelText('Show/Hide fields')).toBeInTheDocument();
-        expect(screen.getByLabelText('Lock Job')).toBeInTheDocument();
+        expect(screen.getByLabelText('Lock job')).toBeInTheDocument();
     });
 
     it('still renders the partner-job chip on a recurring partner job', () => {
@@ -59,7 +59,7 @@ describe('JobDetailHeader', () => {
         // should not accidentally hide the chip for recurring partner jobs.
         const job = createMockJob({preBook: true, isPartnerJob: true});
         renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-        expect(screen.getByText('Partner Job')).toBeInTheDocument();
+        expect(screen.getByText('Partner job')).toBeInTheDocument();
     });
 
     it('calls onStatusClick when status chip is clicked', () => {
@@ -135,12 +135,12 @@ describe('JobDetailHeader', () => {
         );
 
         fireEvent.click(screen.getByLabelText('Documents'));
-        for (const label of ['Download as PDF', 'Download as Excel', 'Email POD Report']) {
+        for (const label of ['Download as PDF', 'Download as Excel', 'Email POD report']) {
             expect(screen.getByText(label).closest('button')).toHaveAttribute('data-disabled');
         }
         fireEvent.click(screen.getByText('Download as PDF'));
         fireEvent.click(screen.getByText('Download as Excel'));
-        fireEvent.click(screen.getByText('Email POD Report'));
+        fireEvent.click(screen.getByText('Email POD report'));
         expect(onPodReport).not.toHaveBeenCalled();
         expect(onPodSpreadsheet).not.toHaveBeenCalled();
         expect(onSendPodEmail).not.toHaveBeenCalled();
@@ -266,23 +266,23 @@ describe('JobDetailHeader', () => {
     });
 
     describe('lock/unlock button', () => {
-        it('shows "Lock Job" tooltip and unlocked icon when job is not locked', () => {
+        it('shows "Lock job" tooltip and unlocked icon when job is not locked', () => {
             const job = createMockJob({locked: false});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-            expect(screen.getByLabelText('Lock Job')).toBeInTheDocument();
+            expect(screen.getByLabelText('Lock job')).toBeInTheDocument();
         });
 
-        it('shows "Unlock Job" tooltip and locked icon when job is locked', () => {
+        it('shows "Unlock job" tooltip and locked icon when job is locked', () => {
             const job = createMockJob({locked: true});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-            expect(screen.getByLabelText('Unlock Job')).toBeInTheDocument();
+            expect(screen.getByLabelText('Unlock job')).toBeInTheDocument();
         });
 
         it('calls onLockToggle when lock button is clicked', () => {
             const onLockToggle = jest.fn();
             renderWithTheme(<JobDetailHeader {...createDefaultProps({onLockToggle})} />);
-            const lockBtn = screen.getByLabelText('Lock Job').querySelector('button')
-                ?? screen.getByLabelText('Lock Job');
+            const lockBtn = screen.getByLabelText('Lock job').querySelector('button')
+                ?? screen.getByLabelText('Lock job');
             fireEvent.click(lockBtn);
             expect(onLockToggle).toHaveBeenCalledTimes(1);
         });
@@ -290,15 +290,15 @@ describe('JobDetailHeader', () => {
         it('applies warning color when job is locked', () => {
             const job = createMockJob({locked: true});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-            const lockBtn = screen.getByLabelText('Unlock Job').querySelector('button')
-                ?? screen.getByLabelText('Unlock Job');
+            const lockBtn = screen.getByLabelText('Unlock job').querySelector('button')
+                ?? screen.getByLabelText('Unlock job');
             expect(lockBtn).toHaveAttribute('data-locked');
         });
 
         it('is always visible regardless of preBook status', () => {
             const job = createMockJob({preBook: true});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-            expect(screen.getByLabelText('Lock Job')).toBeInTheDocument();
+            expect(screen.getByLabelText('Lock job')).toBeInTheDocument();
         });
 
         it('shows partner badge and keeps lock toggle interactive for partner jobs', () => {
@@ -307,15 +307,15 @@ describe('JobDetailHeader', () => {
             // toggle should remain usable so dispatchers can still pin a job locally.
             const job = createMockJob({locked: true, isPartnerJob: true});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-            expect(screen.getByText('Partner Job')).toBeInTheDocument();
-            const lockBtn = screen.getByLabelText('Unlock Job');
+            expect(screen.getByText('Partner job')).toBeInTheDocument();
+            const lockBtn = screen.getByLabelText('Unlock job');
             expect(lockBtn).toBeEnabled();
         });
 
         it('does not show partner badge for non-partner jobs', () => {
             const job = createMockJob({locked: false, isPartnerJob: false});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-            expect(screen.queryByText('Partner Job')).not.toBeInTheDocument();
+            expect(screen.queryByText('Partner job')).not.toBeInTheDocument();
         });
     });
 

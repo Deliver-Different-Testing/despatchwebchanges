@@ -158,7 +158,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         <Card withBorder p={0} h="100%" style={{display: 'flex', flexDirection: 'column'}}>
             <PanelHeader
                 icon={<SymbolIcon name="tune" />}
-                title="Quick Filters"
+                title="Quick filters"
             />
             {/*
               * One scrolling column of labelled criteria, matching job search's
@@ -286,7 +286,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                       */}
                     <ChipsAutocomplete
                         label="Couriers"
-                        placeholder="Search couriers..."
+                        placeholder="Search couriers…"
                         value={selectedCouriers}
                         minInputLength={1}
                         onSearch={searchCouriers}

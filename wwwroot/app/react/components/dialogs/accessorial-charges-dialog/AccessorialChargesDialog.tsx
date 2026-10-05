@@ -311,7 +311,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setIsLoadingApplied(false);
             return charges;
         } catch (error: unknown) {
-            showToastRef.current(`Error loading applied charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't load applied charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setIsLoadingApplied(false);
             return null;
         }
@@ -345,7 +345,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setIsLoadingAvailable(false);
             return charges;
         } catch (error: unknown) {
-            showToastRef.current(`Error loading available charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't load available charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setIsLoadingAvailable(false);
             return null;
         }
@@ -410,7 +410,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                 });
                 didSave = true;
             } catch (error: unknown) {
-                showToastRef.current(`Error updating percentage charge "${charge.name}": ${error instanceof Error ? error.message : String(error)}`, 'error');
+                showToastRef.current(`Couldn't update percentage charge "${charge.name}". ${error instanceof Error ? error.message : String(error)}`, 'error');
             }
         }
 
@@ -642,11 +642,11 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     isDeleting: false,
                 },
             }));
-            showToastRef.current(`Charge "${charge.name}" updated.`, 'success');
+            showToastRef.current(`Charge "${charge.name}" updated`, 'success');
             const applied = await loadAllRef.current();
             if (charge.chargeType !== 'percentage') await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Error saving charge: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't save charge. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setAppliedRowState(prev => ({
                 ...prev,
                 [charge.jobAccessorialChargeId]: { ...prev[charge.jobAccessorialChargeId], isSaving: false },
@@ -672,11 +672,11 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                 delete updated[charge.jobAccessorialChargeId];
                 return updated;
             });
-            showToastRef.current(`Charge "${charge.name}" removed.`, 'success');
+            showToastRef.current(`Charge "${charge.name}" removed`, 'success');
             const applied = await loadAllRef.current();
             await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Error deleting charge: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't delete charge. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setAppliedRowState(prev => ({
                 ...prev,
                 [charge.jobAccessorialChargeId]: { ...prev[charge.jobAccessorialChargeId], isDeleting: false },
@@ -769,11 +769,11 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setAvailableInputMap({});
             setAvailableNotesMap({});
             setIsAddingCharges(false);
-            showToastRef.current(`${toAdd.length} charge(s) added.`, 'success');
+            showToastRef.current(`${toAdd.length} charge${toAdd.length === 1 ? "" : "s"} added`, 'success');
             const applied = await loadAllRef.current();
             await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Error adding charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't add charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
             setIsAddingCharges(false);
         }
     }, [getActiveJobId, autoSavePercentageCharges]);
@@ -799,12 +799,12 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             opened={open}
             onClose={onClose}
             size={dialogSize.lg}
-            label="Accessorial Charges"
+            label="Accessorial charges"
         >
             {/* Header — the refresh action sits alongside the standard close */}
             <DialogHeader
                 icon={<Icon lucide={ReceiptText}/>}
-                title="Accessorial Charges"
+                title="Accessorial charges"
                 subtitle="Manage additional charges for this job"
                 onClose={onClose}
                 actions={
@@ -864,7 +864,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                             )}
                             {pricingResult && pricingResult.suggestions.length > 0 && (
                                 <Alert color="reflex">
-                                    Suggested {pricingResult.suggestions.length} charge(s), pre-selected below for review:{' '}
+                                    Suggested {pricingResult.suggestions.length} charge{pricingResult.suggestions.length === 1 ? "" : "s"}, pre-selected below for review:{' '}
                                     {pricingResult.suggestions.map(s => s.name).join(', ')}
                                 </Alert>
                             )}
@@ -875,14 +875,14 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
 
                         {/* Section 1 — Applied Charges */}
                         <Box>
-                            <Text fw={600} mb="xs">Applied Charges</Text>
+                            <Text fw={600} mb="xs">Applied charges</Text>
                             <Paper withBorder radius="md" style={{overflow: 'hidden'}}>
                                 <Table>
                                     <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-1)'}}>
                                         <Table.Tr>
                                             <Table.Th>Service</Table.Th>
                                             <Table.Th>Stage</Table.Th>
-                                            <Table.Th>Input / Units</Table.Th>
+                                            <Table.Th>Input / units</Table.Th>
                                             <Table.Th ta="right">Amount</Table.Th>
                                             <Table.Th>Notes</Table.Th>
                                             <Table.Th ta="center">Actions</Table.Th>
@@ -1088,7 +1088,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
 
                         {/* Section 2 — Add Charges */}
                         <Box>
-                            <Text fw={600} mb="xs">Add Charges</Text>
+                            <Text fw={600} mb="xs">Add charges</Text>
                             <Paper withBorder radius="md" style={{overflow: 'hidden'}}>
                                 <Table highlightOnHover>
                                     <Table.Thead style={{backgroundColor: 'var(--mantine-color-gray-1)'}}>
@@ -1114,7 +1114,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                         }}
                                                     >
                                                         <Text size="sm" c="dimmed" fs="italic">
-                                                            No charges available for this group.
+                                                            No charges in this group yet.
                                                         </Text>
                                                     </Box>
                                                 </Table.Td>
@@ -1262,8 +1262,8 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                             loading={isAddingCharges}
                         >
                             {isAddingCharges
-                                ? 'Adding...'
-                                : `Add Selected Charges${selectedTotal > 0 ? ` (${formatCurrency(selectedTotal)})` : ''}`}
+                                ? 'Adding…'
+                                : `Add selected charges${selectedTotal > 0 ? ` (${formatCurrency(selectedTotal)})` : ''}`}
                         </Button>
                     )}
                 </Group>

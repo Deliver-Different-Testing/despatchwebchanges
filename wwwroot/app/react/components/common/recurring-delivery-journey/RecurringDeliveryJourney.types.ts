@@ -5,7 +5,7 @@
  * Status is serialized as a string by JsonStringEnumConverter so the union
  * stays narrow on the frontend.
  *
- * Note: the user-visible label for this surface is "Recurring Log" — the
+ * Note: the user-visible label for this surface is "Recurring log" — the
  * "DeliveryJourney" naming is kept on the wire to mirror the backend.
  */
 

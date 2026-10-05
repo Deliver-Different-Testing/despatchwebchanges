@@ -418,8 +418,8 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     if (jobs.length === 0) {
         return (
             <NoData
-                title="No Jobs"
-                message="No jobs to display"
+                title="No jobs found"
+                message="No jobs match the current view."
                 icon={<Icon lucide={Briefcase} size={48}/>}
             />
         );
@@ -745,7 +745,7 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
             <Box onClick={(e) => e.stopPropagation()} onBlur={handleSearchBlur} onKeyDown={handleSearchKeyDown}>
                 <SearchSelect<CourierOption>
                     aria-label="Search courier"
-                    placeholder="Search courier..."
+                    placeholder="Search couriers…"
                     autoFocus
                     value={null}
                     onChange={handleSelect}

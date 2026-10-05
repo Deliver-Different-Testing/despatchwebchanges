@@ -191,6 +191,13 @@ export function ColorModeProvider({children}: {children: ReactNode}) {
         return () => mql.removeEventListener?.('change', onChange);
     }, []);
 
+    // _Layout's pre-paint attribute pins the canvas dark with !important; it must follow the live mode.
+    useEffect(() => {
+        const root = document.documentElement;
+        if (mode === 'dark') root.setAttribute('data-dd-boot-scheme', 'dark');
+        else root.removeAttribute('data-dd-boot-scheme');
+    }, [mode]);
+
     const value = useMemo(
         () => ({mode, preference, setPreference}),
         [mode, preference, setPreference],

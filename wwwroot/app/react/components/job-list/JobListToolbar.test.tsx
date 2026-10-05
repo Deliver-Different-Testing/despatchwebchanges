@@ -50,7 +50,7 @@ describe('JobListToolbar', () => {
         expect(screen.getByRole('radio', {name: 'Active'})).toBeInTheDocument();
         expect(screen.getByRole('radio', {name: 'Done'})).toBeInTheDocument();
         expect(screen.getByRole('radio', {name: 'All'})).toBeChecked();
-        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search jobs…')).toBeInTheDocument();
         expect(screen.getByRole('radiogroup', {name: 'Row density'})).toBeInTheDocument();
     });
 
@@ -76,7 +76,7 @@ describe('JobListToolbar', () => {
     it('omits the view options (density / logged-in) when they are relocated to the header', () => {
         renderWithMantine(<JobListToolbar {...createDefaultProps()} renderViewOptions={false}/>);
         // Category tabs + search stay; view options move to the panel header.
-        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search jobs…')).toBeInTheDocument();
         expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
         expect(screen.queryByLabelText('Row density')).not.toBeInTheDocument();
     });
@@ -86,7 +86,7 @@ describe('JobListToolbar', () => {
 
         // The gear is only reachable as an attribute — CSS modules mock to `{}`.
         expect(screen.getByRole('button', {name: 'Dispatch'})).toHaveAttribute('data-ab-variant', 'filled');
-        for (const name of ['Restore', 'Mark Read', 'Mark Unread']) {
+        for (const name of ['Restore', 'Mark read', 'Mark unread']) {
             expect(screen.getByRole('button', {name})).toHaveAttribute('data-ab-variant', 'chip');
         }
     });
@@ -100,7 +100,7 @@ describe('JobListToolbar', () => {
             );
             expect(screen.getByRole('button', {name: 'Dispatch'})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: 'Restore'})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'Mark Read'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Mark read'})).toBeInTheDocument();
             unmount();
         }
     });

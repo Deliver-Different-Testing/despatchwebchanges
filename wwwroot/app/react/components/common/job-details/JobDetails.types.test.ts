@@ -9,7 +9,7 @@ describe('getTrackingMethodText', () => {
     it.each([
         [1, 'Email'],
         [2, 'Mobile'],
-        [3, 'Email & Mobile'],
+        [3, 'Email & mobile'],
         [undefined, ''],
         [0, ''],
         [99, ''],

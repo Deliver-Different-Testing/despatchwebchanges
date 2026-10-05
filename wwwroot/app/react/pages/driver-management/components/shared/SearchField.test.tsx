@@ -21,21 +21,21 @@ describe('SearchField', () => {
     });
 
     it('should render input with placeholder', () => {
-        renderSearchField({placeholder: 'Search drivers...'});
+        renderSearchField({placeholder: 'Search drivers…'});
 
-        expect(screen.getByPlaceholderText('Search drivers...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search drivers…')).toBeInTheDocument();
     });
 
     it('should render default placeholder when none provided', () => {
         renderSearchField();
 
-        expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
     });
 
     it('should update local value on typing', () => {
         renderSearchField();
 
-        const input = screen.getByPlaceholderText('Search...') as HTMLInputElement;
+        const input = screen.getByPlaceholderText('Search…') as HTMLInputElement;
         fireEvent.change(input, {target: {value: 'test'}});
 
         expect(input.value).toBe('test');
@@ -45,7 +45,7 @@ describe('SearchField', () => {
         const onChange = jest.fn();
         renderSearchField({onChange});
 
-        const input = screen.getByPlaceholderText('Search...');
+        const input = screen.getByPlaceholderText('Search…');
         fireEvent.change(input, {target: {value: 'hello'}});
 
         // Not called immediately

@@ -104,7 +104,7 @@ export interface RefreshButtonProps {
 
 export const RefreshButton: React.FC<RefreshButtonProps> = ({onClick, loading = false}) => {
     return (
-        <Tooltip label={loading ? 'Refreshing...' : 'Refresh'}>
+        <Tooltip label={loading ? 'Refreshing…' : 'Refresh'}>
             {/* span wrapper so the tooltip still works while the button is disabled */}
             <span>
                 <ActionIcon
@@ -214,7 +214,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                 {(!views || views.length === 0) ? (
                     <Box p="lg" ta="center">
                         <Icon lucide={EyeOff} size={40} color="var(--mantine-color-gray-5)" />
-                        <Text fz="sm" c="dimmed" mt="xs">No views available</Text>
+                        <Text fz="sm" c="dimmed" mt="xs">No views yet</Text>
                     </Box>
                 ) : (
                     <>
