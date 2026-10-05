@@ -31,6 +31,7 @@ function transformTask(apiTask: TaskApiResponse): Task {
     return {
         ...apiTask,
         dueDate: parseDateFromApi(apiTask.dueDate),
+        createdAt: apiTask.createdAt ? parseDateFromApi(apiTask.createdAt) : undefined,
     };
 }
 
