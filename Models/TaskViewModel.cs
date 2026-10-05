@@ -10,10 +10,6 @@ public sealed class TaskViewModel
 
     public DateTimeOffset DueDate { get; set; }
 
-    /// <summary>Server-side only: the UTC twin of the due time, preferred over <see cref="DueDate"/> when present.</summary>
-    [Newtonsoft.Json.JsonIgnore]
-    public DateTime? DueDateUtc { get; init; }
-
     /// <summary>When the task was created (sent), in tenant time; null when the row carries no creation time.</summary>
     public DateTimeOffset? CreatedAt { get; set; }
 

@@ -72,12 +72,6 @@ public interface ITenantInfoService : IDisposable
     DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime);
 
     /// <summary>
-    /// Converts a tenant wall-clock DateTime (as stored in the legacy tucEvent columns) to UTC.
-    /// Nonexistent DST-gap times move forward; ambiguous times use the standard offset.
-    /// </summary>
-    DateTime ConvertTenantTimeToUtc(DateTime tenantLocal);
-
-    /// <summary>
     /// Supplies a tenant timezone for this request when the <c>TimeZone</c> claim
     /// is missing or empty. The claim still takes precedence when present; this is
     /// purely a fallback. Callers that have a reliable timezone the server-side

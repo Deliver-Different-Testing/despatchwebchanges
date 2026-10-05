@@ -44,7 +44,6 @@ public class TaskRepository(
         JobId = e.UcevJobId ?? 0,
         Closed = e.UcevClosed,
         DueDate = e.UcevDueTime,
-        DueDateUtc = e.UcevDueTimeUtc,
         CreatedAtUtc = e.UcevCreatedAtUtc,
         CreatedDate = e.UcevDate,
         CreatedTime = e.UcevTime,
@@ -67,10 +66,10 @@ public class TaskRepository(
 
         if (filters != null)
         {
-            query = ApplyFilters(query, filters, infoService.ConvertTenantTimeToUtc);
+            query = ApplyFilters(query, filters);
         }
 
-        query = ApplyOrdering(query, filters, today.DateTime, infoService.ConvertTenantTimeToUtc);
+        query = ApplyOrdering(query, filters, today.DateTime);
 
         query = query.Take(filters?.Limit is > 0 ? filters.Limit.Value : 500);
 
@@ -80,7 +79,7 @@ public class TaskRepository(
 
         foreach (var task in tasks)
         {
-            task.DueDate = ResolveDueDate(task, infoService, tenantTimeZone);
+            task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
             task.CreatedAt = ResolveCreatedAt(task, infoService, tenantTimeZone);
         }
 
@@ -158,8 +157,7 @@ public class TaskRepository(
                     await Context.TucEvents
                         .Where(e => e.UcevId == eventId)
                         .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(e => e.UcevDueTime, dueTime.DateTime)
-                            .SetProperty(e => e.UcevDueTimeUtc, infoService.ConvertTenantTimeToUtc(dueTime.DateTime)));
+                            .SetProperty(e => e.UcevDueTime, dueTime.DateTime));
 
                     await CreateEventAuditRecord(
                         eventId,
@@ -419,11 +417,9 @@ public class TaskRepository(
             UcevType = eventGroup.EventType.Id,
             UcevLateTime = null,
             UcevEtatime = null,
-            UcevEtatimeUtc = null,
             UcevStaffIdin = eventGroup.AssignTo?.Id,
             UcevStaffIdout = null,
             UcevResponseTime = null,
-            UcevResponseTimeUtc = null,
             UcevNotes = eventGroup.Notes.Truncate(NotesMaxLength),
             UcevPageCourier = false,
             UcevClosed = false,
@@ -433,8 +429,7 @@ public class TaskRepository(
             UcevJobId = job.UcjbId,
             UcevDespatcher = dispatcherName.Truncate(DespatcherMaxLength),
             UcevJobType = job.UcjbSpeed,
-            UcevDueTime = eventGroup.DueTime ?? currentDate,
-            UcevDueTimeUtc = infoService.ConvertTenantTimeToUtc(eventGroup.DueTime ?? currentDate)
+            UcevDueTime = eventGroup.DueTime ?? currentDate
         }).ToList();
 
         await Context.TucEvents.AddRangeAsync(events);
@@ -517,15 +512,6 @@ public class TaskRepository(
     }
 
     /// <summary>
-    /// Resolves a task's due date to the tenant's local time, preferring the UTC twin
-    /// (<c>ucevDueTimeUtc</c>) and falling back to the legacy wall-clock column for rows without one.
-    /// </summary>
-    internal static DateTimeOffset ResolveDueDate(TaskViewModel task, ITenantInfoService info, string tenantTimeZone) =>
-        task.DueDateUtc is { } dueUtc
-            ? info.ConvertUtcToTenantTimeZone(dueUtc)
-            : TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
-
-    /// <summary>
     /// Resolves when a task was created in tenant time, preferring <c>ucevCreatedAtUtc</c> and falling back to the
     /// legacy wall-clock date/time; null when the row has neither.
     /// </summary>
@@ -539,32 +525,15 @@ public class TaskRepository(
             : null;
     }
 
-    // Row-level "UTC twin first, else legacy wall-clock" comparisons. Bounds are supplied in both
-    // tenant wall-clock and UTC so each row is compared on the scale its own value is stored in.
-    private static Expression<Func<TucEvent, bool>> DueBefore(DateTime tenantLocal, DateTime utc) =>
-        e => e.UcevDueTimeUtc != null ? e.UcevDueTimeUtc < utc : e.UcevDueTime < tenantLocal;
-
-    private static Expression<Func<TucEvent, bool>> DueAtOrAfter(DateTime tenantLocal, DateTime utc) =>
-        e => e.UcevDueTimeUtc != null ? e.UcevDueTimeUtc >= utc : e.UcevDueTime >= tenantLocal;
-
-    private static Expression<Func<TucEvent, bool>> DueAtOrBefore(DateTime tenantLocal, DateTime utc) =>
-        e => e.UcevDueTimeUtc != null ? e.UcevDueTimeUtc <= utc : e.UcevDueTime <= tenantLocal;
-
     internal static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
-        DateTime today, Func<DateTime, DateTime> tenantToUtc)
+        DateTime today)
     {
-        var startOfToday = today.Date;
-        var startOfTodayUtc = tenantToUtc(startOfToday);
-        var nowUtc = tenantToUtc(today);
-        var offsetMinutes = (today - nowUtc).TotalMinutes;
-
         var overdueFirst = query
             .OrderByDescending(e =>
-                (e.UcevDueTimeUtc != null ? e.UcevDueTimeUtc < startOfTodayUtc : e.UcevDueTime < startOfToday) ||
-                (!e.UcevClosed &&
-                 (e.UcevDueTimeUtc != null
-                     ? e.UcevDueTimeUtc >= startOfTodayUtc && e.UcevDueTimeUtc < nowUtc
-                     : e.UcevDueTime >= startOfToday && e.UcevDueTime < today))
+                e.UcevDueTime.Date < today.Date ||
+                (e.UcevDueTime.Date == today.Date &&
+                 e.UcevDueTime.TimeOfDay < today.TimeOfDay &&
+                 !e.UcevClosed)
             );
 
         if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy))
@@ -574,38 +543,30 @@ public class TaskRepository(
             // return a different arbitrary page each call and a task can disappear between
             // refreshes. UcevId makes the order total.
             return overdueFirst
-                .ThenBy(e => e.UcevDueTimeUtc != null ? e.UcevDueTimeUtc.Value.AddMinutes(offsetMinutes) : e.UcevDueTime)
+                .ThenBy(e => e.UcevDueTime)
                 .ThenBy(e => e.UcevId);
         }
 
+        query = overdueFirst;
+
         var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
-        return ApplyDateTimeOrder(query, isDescending, today, tenantToUtc);
+        return filters.OrderBy.ToLowerInvariant() switch
+        {
+            _ =>
+                ApplyDateTimeOrder(query, isDescending, today)
+        };
     }
 
     private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending,
-        DateTime today, Func<DateTime, DateTime> tenantToUtc)
-    {
-        var startOfToday = today.Date;
-        var startOfTodayUtc = tenantToUtc(startOfToday);
-        // The ascending order groups by "due day is before `today`", which includes today itself
-        // whenever `today` carries a time of day.
-        var dayBoundary = today.TimeOfDay > TimeSpan.Zero ? startOfToday.AddDays(1) : startOfToday;
-        var dayBoundaryUtc = tenantToUtc(dayBoundary);
-        var offsetMinutes = (today - tenantToUtc(today)).TotalMinutes;
-
-        return isDescending
-            ? query.OrderByDescending(e => e.UcevDueTimeUtc != null
-                    ? e.UcevDueTimeUtc < startOfTodayUtc
-                    : e.UcevDueTime < startOfToday)
-                .ThenByDescending(e => e.UcevDueTimeUtc != null ? e.UcevDueTimeUtc.Value.AddMinutes(offsetMinutes) : e.UcevDueTime)
+        DateTime today) =>
+        isDescending
+            ? query.OrderByDescending(e => e.UcevDueTime.Date < today.Date)
+                .ThenByDescending(e => e.UcevDueTime)
                 .ThenBy(e => e.UcevId)
-            : query.OrderByDescending(e => e.UcevDueTimeUtc != null
-                    ? e.UcevDueTimeUtc < dayBoundaryUtc
-                    : e.UcevDueTime < dayBoundary)
-                .ThenBy(e => e.UcevDueTimeUtc != null ? e.UcevDueTimeUtc.Value.AddMinutes(offsetMinutes) : e.UcevDueTime)
+            : query.OrderByDescending(e => e.UcevDueTime.Date < today)
+                .ThenBy(e => e.UcevDueTime)
                 .ThenBy(e => e.UcevId);
-    }
 
     /// <summary>
     /// Restricts an event query to the groups that surface as actionable tasks in the task
@@ -620,30 +581,30 @@ public class TaskRepository(
 
     internal static IQueryable<TucEvent> ApplyFilters(
         IQueryable<TucEvent> query,
-        TaskTableFiltersRequest filters,
-        Func<DateTime, DateTime> tenantToUtc
+        TaskTableFiltersRequest filters
     )
     {
-        // The request dates carry the tenant's wall-clock plus its offset, so .DateTime is the
-        // tenant-local bound and the UTC bound is derived from the tenant timezone.
-        var start = filters.StartDate?.DateTime;
-        var end = filters.EndDate?.DateTime;
-
-        if (start.HasValue)
+        // Apply date filters based on the available parameters
+        if (filters.StartDate.HasValue && filters.EndDate.HasValue)
         {
-            query = query.Where(DueAtOrAfter(start.Value, tenantToUtc(start.Value)));
+            // If both start and end dates are provided, filter for events within that range
+            query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value &&
+                                     e.UcevDueTime <= filters.EndDate.Value);
         }
-
-        if (end.HasValue)
+        else if (filters.StartDate.HasValue)
         {
-            query = query.Where(DueAtOrBefore(end.Value, tenantToUtc(end.Value)));
+            // If only startDate is provided, filter for events on or after that date
+            query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value);
         }
-
-        if (!start.HasValue && !end.HasValue && filters.Date.HasValue)
+        else if (filters.EndDate.HasValue)
         {
-            // Fall back to the original date filter if no range is specified: due on or before that day.
-            var endOfDayExclusive = filters.Date.Value.DateTime.Date.AddDays(1);
-            query = query.Where(DueBefore(endOfDayExclusive, tenantToUtc(endOfDayExclusive)));
+            // If only endDate is provided, filter for events on or before that date
+            query = query.Where(e => e.UcevDueTime <= filters.EndDate.Value);
+        }
+        else if (filters.Date.HasValue)
+        {
+            // Fall back to the original date filter if no range is specified
+            query = query.Where(e => e.UcevDueTime.Date <= filters.Date);
         }
 
         if (filters.JobId.HasValue)
@@ -773,11 +734,9 @@ public class TaskRepository(
             UcevType = type,
             UcevLateTime = lateTime,
             UcevEtatime = etaTime?.DateTime,
-            UcevEtatimeUtc = etaTime is { } eta ? infoService.ConvertTenantTimeToUtc(eta.DateTime) : null,
             UcevStaffIdin = staffIdIn,
             UcevStaffIdout = staffIdOut,
             UcevResponseTime = responseTime?.DateTime,
-            UcevResponseTimeUtc = responseTime is { } response ? infoService.ConvertTenantTimeToUtc(response.DateTime) : null,
             UcevNotes = notes.Truncate(NotesMaxLength),
             UcevPageCourier = pageCourier,
             UcevClosed = closed,
@@ -787,8 +746,7 @@ public class TaskRepository(
             UcevJobId = jobId,
             UcevDespatcher = despatcher.Truncate(DespatcherMaxLength),
             UcevJobType = jobType,
-            UcevDueTime = dueTime?.DateTime ?? currentDate,
-            UcevDueTimeUtc = infoService.ConvertTenantTimeToUtc(dueTime?.DateTime ?? currentDate)
+            UcevDueTime = dueTime?.DateTime ?? currentDate
         };
 
         await Context.AddAsync(newEvent);

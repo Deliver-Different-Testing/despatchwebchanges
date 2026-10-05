@@ -275,22 +275,5 @@ public sealed class TenantInfoService(
         return new DateTimeOffset(tenantTime, offset);
     }
 
-    public DateTime ConvertTenantTimeToUtc(DateTime tenantLocal)
-    {
-        var unspecified = DateTime.SpecifyKind(tenantLocal, DateTimeKind.Unspecified);
-        var tenantTimeZoneInfo = GetTimeZoneInfo();
-
-        if (tenantTimeZoneInfo.IsInvalidTime(unspecified))
-        {
-            unspecified = unspecified.AddHours(1);
-        }
-
-        var offset = tenantTimeZoneInfo.IsAmbiguousTime(unspecified)
-            ? tenantTimeZoneInfo.BaseUtcOffset
-            : tenantTimeZoneInfo.GetUtcOffset(unspecified);
-
-        return DateTime.SpecifyKind(unspecified - offset, DateTimeKind.Utc);
-    }
-
     public void Dispose() => _context?.Dispose();
 }
