@@ -557,9 +557,20 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         </Popover>
     );
 
+    const sentValue = useMemo(() => {
+        if (!task.createdAt?.isValid() || !hasValidDate(task._createdTimeString)) return null;
+        return task.createdAt.isSame(dayjs(), 'day') || !hasValidDate(task._createdDateString)
+            ? task._createdTimeString!
+            : `${task._createdDateString} ${task._createdTimeString}`;
+    }, [task.createdAt, task._createdDateString, task._createdTimeString]);
+
     /** Every datum the task carries, each chip naming its own type. */
     const facts = (
         <>
+            {sentValue && (
+                <Fact stamp="sent" hideLabel={compact} label="Sent" value={sentValue}/>
+            )}
+
             {task.priority && priorityColor[task.priority] && (
                 <Fact
                     stamp="priority"

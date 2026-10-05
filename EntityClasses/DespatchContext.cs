@@ -1435,9 +1435,17 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100)
                 .HasDefaultValue("system", "DF_Routes_CreatedBy");
+            entity.Property(e => e.Direction).HasDefaultValue((byte)1, "DF_Routes_Direction");
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100);
+            entity.Property(e => e.OriginAddress).HasMaxLength(400);
+            entity.Property(e => e.OriginLatitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.OriginLongitude).HasColumnType("decimal(18, 9)");
+            entity.Property(e => e.OriginName).HasMaxLength(100);
+            entity.Property(e => e.OriginZip)
+                .HasMaxLength(20)
+                .IsUnicode(false);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(100);
 
@@ -1448,6 +1456,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.DefaultCourier).WithMany(p => p.Routes)
                 .HasForeignKey(d => d.DefaultCourierId)
                 .HasConstraintName("FK_Routes_tucCourier");
+
+            entity.HasOne(d => d.Depot).WithMany(p => p.Routes)
+                .HasForeignKey(d => d.DepotId)
+                .HasConstraintName("FK_Routes_DepotId");
         });
 
         modelBuilder.Entity<StaffDispatchLayout>(entity =>
@@ -1683,6 +1695,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.JobId, "IX_tblBulkJob_JobID");
 
             entity.HasIndex(e => new { e.JobNumber, e.ClientId }, "IX_tblBulkJob_JobNumber_ClientID").HasFilter("([JobNumber] IS NOT NULL)");
+
+            entity.HasIndex(e => e.LinehaulRunId, "IX_tblBulkJob_LinehaulRunID");
 
             entity.HasIndex(e => e.NpAgentId, "IX_tblBulkJob_NpAgentId");
 
@@ -2029,6 +2043,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.SpeedId, "idx_SpeedId");
 
+            entity.Property(e => e.CutoffTime).HasColumnType("time(0)");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.Name).HasMaxLength(250);
@@ -5071,6 +5086,7 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UccfName, "Name").IsUnique();
 
             entity.Property(e => e.UccfId).HasColumnName("uccfID");
+            entity.Property(e => e.Active).HasDefaultValue(true, "DF_tucCourierFleet_Active");
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
@@ -5125,6 +5141,10 @@ public partial class DespatchContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("ucevContact");
             entity.Property(e => e.UcevCourierId).HasColumnName("ucevCourierID");
+            entity.Property(e => e.UcevCreatedAtUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_tucEvent_ucevCreatedAtUtc")
+                .HasColumnType("datetime")
+                .HasColumnName("ucevCreatedAtUtc");
             entity.Property(e => e.UcevDate)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevDate");
@@ -5140,9 +5160,15 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValueSql("(getdate())", "DF_tucEvent_ucevDueTime")
                 .HasColumnType("datetime")
                 .HasColumnName("ucevDueTime");
+            entity.Property(e => e.UcevDueTimeUtc)
+                .HasColumnType("datetime")
+                .HasColumnName("ucevDueTimeUtc");
             entity.Property(e => e.UcevEtatime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevETATime");
+            entity.Property(e => e.UcevEtatimeUtc)
+                .HasColumnType("datetime")
+                .HasColumnName("ucevEtatimeUtc");
             entity.Property(e => e.UcevIsScheduled).HasColumnName("ucevIsScheduled");
             entity.Property(e => e.UcevJobId).HasColumnName("ucevJobID");
             entity.Property(e => e.UcevJobNumber)
@@ -5159,15 +5185,24 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcevNotificationSentAt)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevNotificationSentAt");
+            entity.Property(e => e.UcevNotificationSentAtUtc)
+                .HasColumnType("datetime")
+                .HasColumnName("ucevNotificationSentAtUtc");
             entity.Property(e => e.UcevOriginator).HasColumnName("ucevOriginator");
             entity.Property(e => e.UcevPageCourier).HasColumnName("ucevPageCourier");
             entity.Property(e => e.UcevPayload).HasColumnName("ucevPayload");
             entity.Property(e => e.UcevResponseTime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevResponseTime");
+            entity.Property(e => e.UcevResponseTimeUtc)
+                .HasColumnType("datetime")
+                .HasColumnName("ucevResponseTimeUtc");
             entity.Property(e => e.UcevScheduledTime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevScheduledTime");
+            entity.Property(e => e.UcevScheduledTimeUtc)
+                .HasColumnType("datetime")
+                .HasColumnName("ucevScheduledTimeUtc");
             entity.Property(e => e.UcevStaffIdin).HasColumnName("ucevStaffIDIn");
             entity.Property(e => e.UcevStaffIdout).HasColumnName("ucevStaffIDOut");
             entity.Property(e => e.UcevTemplateDetailId).HasColumnName("ucevTemplateDetailID");
@@ -5452,6 +5487,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CompletedXero).HasPrecision(3);
             entity.Property(e => e.ExternalJournalHeaderId).HasColumnName("ExternalJournalHeaderID");
             entity.Property(e => e.ItemCodeBonus).HasMaxLength(50);
+            entity.Property(e => e.LastRunBy).HasMaxLength(200);
+            entity.Property(e => e.LastRunError).HasMaxLength(2000);
             entity.Property(e => e.OarunReference).HasColumnName("OARunReference");
             entity.Property(e => e.PostedOa)
                 .HasColumnType("datetime")
@@ -5524,6 +5561,7 @@ public partial class DespatchContext : DbContext
                     tb.HasTrigger("tucJob_InsertJob");
                     tb.HasTrigger("tucJob_InsertScan");
                     tb.HasTrigger("tucJob_InsertUpdate_CalculateCourierPayment");
+                    tb.HasTrigger("tucJob_InsertUpdate_CalculateNetworkPartnerPayment");
                     tb.HasTrigger("tucJob_Insert_ClearListAreaOrder");
                     tb.HasTrigger("tucJob_Insert_DatacomCode");
                     tb.HasTrigger("tucJob_Insert_GPS");
@@ -6102,6 +6140,7 @@ public partial class DespatchContext : DbContext
                     tb.HasTrigger("tucJobArchive_Update_AutomaticSpeedUpdate");
                     tb.HasTrigger("tucJobArchive_Update_BlockChanges");
                     tb.HasTrigger("tucJobArchive_Update_CalculateCourierPayment");
+                    tb.HasTrigger("tucJobArchive_Update_CalculateNetworkPartnerPayment");
                     tb.HasTrigger("tucJobArchive_Update_PPD");
                     tb.HasTrigger("tucJobArchive_Update_RecalculateAmount");
                     tb.HasTrigger("tucJobArchive_Update_RecalculateFuelSurcharge");

@@ -27,6 +27,10 @@ interface Task {
     priority?: 'high' | 'medium' | 'low';
     _dueDateString?: string;
     _dueTimeString?: string;
+    /** When the task was created (sent); absent for rows with no creation time. */
+    createdAt?: Dayjs;
+    _createdDateString?: string;
+    _createdTimeString?: string;
 }
 
 export default Task
@@ -86,6 +90,7 @@ export interface TaskApiResponse {
     title: string;
     description: string;
     dueDate: string;
+    createdAt?: string;
     closed: boolean;
     assignee: TaskAssignee;
     jobId: number;

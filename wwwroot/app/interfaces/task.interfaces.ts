@@ -24,6 +24,9 @@ export interface ITask {
     priority?: 'high' | 'medium' | 'low';
     _dueDateString?: string;
     _dueTimeString?: string;
+    createdAt?: Dayjs;
+    _createdDateString?: string;
+    _createdTimeString?: string;
 }
 
 export interface ITaskDto {
@@ -31,6 +34,7 @@ export interface ITaskDto {
     title: string;
     description: string;
     dueDate: string;
+    createdAt?: string;
     closed: boolean;
     assignee: ITaskAssignee;
     jobId: number;

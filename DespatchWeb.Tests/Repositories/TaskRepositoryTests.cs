@@ -2,7 +2,9 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
+using DespatchWeb.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -16,6 +18,9 @@ public class TaskRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private static readonly int[] Expected = [4, 7, 9];
+
+    // Stand-in for ITenantInfoService.ConvertTenantTimeToUtc: a fixed NZST (+12) tenant.
+    private static DateTime NzToUtc(DateTime tenantLocal) => tenantLocal.AddHours(-12);
 
     public async ValueTask DisposeAsync()
     {
@@ -34,7 +39,7 @@ public class TaskRepositoryTests : IAsyncDisposable
     {
         await using var context = _db.CreateContext();
         var query = context.TucEvents.AsQueryable();
-        var filtered = TaskRepository.ApplyFilters(query, filters);
+        var filtered = TaskRepository.ApplyFilters(query, filters, NzToUtc);
         return await filtered.ToListAsync(TestContext.Current.CancellationToken);
     }
 
@@ -43,7 +48,7 @@ public class TaskRepositoryTests : IAsyncDisposable
         TaskTableFiltersRequest filters)
     {
         var query = events.AsQueryable();
-        var filtered = TaskRepository.ApplyFilters(query, filters);
+        var filtered = TaskRepository.ApplyFilters(query, filters, NzToUtc);
         return [.. filtered];
     }
 
@@ -384,7 +389,7 @@ public class TaskRepositoryTests : IAsyncDisposable
         TaskTableFiltersRequest filters,
         DateTime today) =>
     [
-        .. TaskRepository.ApplyOrdering(events.AsQueryable(), filters, today)
+        .. TaskRepository.ApplyOrdering(events.AsQueryable(), filters, today, NzToUtc)
             .Select(e => e.UcevId)
     ];
 
@@ -442,5 +447,168 @@ public class TaskRepositoryTests : IAsyncDisposable
         var results = ApplyOrderingInMemory(events, filters, today);
 
         Assert.Equal(Expected, results);
+    }
+
+    // ---- UTC-first due-time handling (ucevDueTimeUtc preferred, ucevDueTime fallback) ----
+
+    private static TucEvent UtcStamped(int id, DateTime wallClock, DateTime tenantLocalTruth) =>
+        CreateEvent(id, e =>
+        {
+            e.UcevDueTime = wallClock;
+            e.UcevDueTimeUtc = NzToUtc(tenantLocalTruth);
+        });
+
+    [Fact]
+    public void ApplyFilters_DateRange_PrefersUtcTwinOverWallClock_AndFallsBackWhenNull()
+    {
+        var filters = new TaskTableFiltersRequest
+        {
+            StartDate = new DateTimeOffset(2025, 6, 18, 0, 0, 0, TimeSpan.FromHours(12)),
+            EndDate = new DateTimeOffset(2025, 6, 18, 23, 59, 59, TimeSpan.FromHours(12))
+        };
+        var events = new[]
+        {
+            // wall-clock is wrong (15th) but the UTC twin says it is due on the 18th, tenant time
+            UtcStamped(1, new DateTime(2025, 6, 15, 9, 0, 0), new DateTime(2025, 6, 18, 9, 0, 0)),
+            // wall-clock says the 18th but the UTC twin says the 20th
+            UtcStamped(2, new DateTime(2025, 6, 18, 9, 0, 0), new DateTime(2025, 6, 20, 9, 0, 0)),
+            // legacy row, no twin: wall-clock on the 18th
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2025, 6, 18, 15, 0, 0)),
+            // legacy row, no twin: wall-clock on the 15th
+            CreateEvent(4, e => e.UcevDueTime = new DateTime(2025, 6, 15, 15, 0, 0))
+        };
+
+        var results = ApplyFiltersInMemory(events, filters);
+
+        Assert.Equal(new[] { 1, 3 }, results.Select(e => e.UcevId).Order());
+    }
+
+    [Fact]
+    public void ApplyFilters_StartDateOnly_And_EndDateOnly_UseUtcTwinWhenPresent()
+    {
+        var events = new[]
+        {
+            UtcStamped(1, new DateTime(2025, 6, 1, 9, 0, 0), new DateTime(2025, 6, 20, 9, 0, 0)),
+            UtcStamped(2, new DateTime(2025, 6, 30, 9, 0, 0), new DateTime(2025, 6, 10, 9, 0, 0)),
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2025, 6, 15, 9, 0, 0))
+        };
+        var boundary = new DateTimeOffset(2025, 6, 15, 12, 0, 0, TimeSpan.FromHours(12));
+
+        var after = ApplyFiltersInMemory(events, new TaskTableFiltersRequest { StartDate = boundary });
+        var before = ApplyFiltersInMemory(events, new TaskTableFiltersRequest { EndDate = boundary });
+
+        Assert.Equal(new[] { 1 }, after.Select(e => e.UcevId));
+        Assert.Equal(new[] { 2, 3 }, before.Select(e => e.UcevId).Order());
+    }
+
+    [Fact]
+    public void ApplyFilters_DateFilter_IncludesWholeTenantDay_UsingUtcTwinWhenPresent()
+    {
+        var filters = new TaskTableFiltersRequest { Date = new DateTimeOffset(2025, 6, 15, 0, 0, 0, TimeSpan.FromHours(12)) };
+        var events = new[]
+        {
+            UtcStamped(1, new DateTime(2025, 6, 20, 9, 0, 0), new DateTime(2025, 6, 15, 23, 30, 0)), // due late on the 15th
+            UtcStamped(2, new DateTime(2025, 6, 10, 9, 0, 0), new DateTime(2025, 6, 16, 0, 30, 0)), // due just after the 15th
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2025, 6, 15, 18, 0, 0)),
+            CreateEvent(4, e => e.UcevDueTime = new DateTime(2025, 6, 16, 1, 0, 0))
+        };
+
+        var results = ApplyFiltersInMemory(events, filters);
+
+        Assert.Equal(new[] { 1, 3 }, results.Select(e => e.UcevId).Order());
+    }
+
+    [Fact]
+    public void ApplyOrdering_FlagsOverdueFromUtcTwin_AndFallsBackToWallClock()
+    {
+        var today = new DateTime(2025, 6, 15, 12, 0, 0);
+        var events = new[]
+        {
+            UtcStamped(1, new DateTime(2025, 6, 25, 9, 0, 0), new DateTime(2025, 6, 10, 9, 0, 0)), // really overdue
+            UtcStamped(2, new DateTime(2025, 6, 5, 9, 0, 0), new DateTime(2025, 6, 25, 9, 0, 0)), // really future
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2025, 6, 12, 9, 0, 0)),             // legacy overdue
+            CreateEvent(4, e => e.UcevDueTime = new DateTime(2025, 6, 28, 9, 0, 0))              // legacy future
+        };
+
+        var results = ApplyOrderingInMemory(events, new TaskTableFiltersRequest(), today);
+
+        Assert.Equal(new[] { 1, 3 }, results.Take(2).Order());
+        Assert.Equal(new[] { 2, 4 }, results.Skip(2).Order());
+    }
+
+    [Fact]
+    public void ResolveDueDate_UsesUtcTwinConvertedToTenantTime_ElseLegacyWallClockWithOffset()
+    {
+        var info = Substitute.For<ITenantInfoService>();
+        info.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(c => new DateTimeOffset(c.Arg<DateTime>().AddHours(12), TimeSpan.FromHours(12)));
+
+        var withTwin = new TaskViewModel
+        {
+            DueDate = new DateTime(2025, 6, 1, 9, 0, 0),
+            DueDateUtc = new DateTime(2025, 6, 15, 0, 0, 0)
+        };
+        var legacy = new TaskViewModel { DueDate = new DateTime(2025, 6, 1, 9, 0, 0) };
+
+        Assert.Equal(new DateTimeOffset(2025, 6, 15, 12, 0, 0, TimeSpan.FromHours(12)),
+            TaskRepository.ResolveDueDate(withTwin, info, "Pacific/Auckland"));
+        Assert.Equal(new DateTimeOffset(2025, 6, 1, 9, 0, 0, TimeSpan.FromHours(12)),
+            TaskRepository.ResolveDueDate(legacy, info, "Pacific/Auckland"));
+    }
+
+    [Fact]
+    public void ResolveCreatedAt_UsesUtcStamp_ElseLegacyDateAndTime_ElseNull()
+    {
+        var info = Substitute.For<ITenantInfoService>();
+        info.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(c => new DateTimeOffset(c.Arg<DateTime>().AddHours(12), TimeSpan.FromHours(12)));
+
+        var withStamp = new TaskViewModel
+        {
+            CreatedAtUtc = new DateTime(2025, 6, 15, 0, 0, 0),
+            CreatedDate = new DateTime(2025, 6, 1),
+            CreatedTime = new DateTime(1900, 1, 1, 9, 0, 0)
+        };
+        var legacy = new TaskViewModel
+        {
+            CreatedDate = new DateTime(2025, 6, 1),
+            CreatedTime = new DateTime(1900, 1, 1, 9, 30, 0)
+        };
+
+        Assert.Equal(new DateTimeOffset(2025, 6, 15, 12, 0, 0, TimeSpan.FromHours(12)),
+            TaskRepository.ResolveCreatedAt(withStamp, info, "Pacific/Auckland"));
+        Assert.Equal(new DateTimeOffset(2025, 6, 1, 9, 30, 0, TimeSpan.FromHours(12)),
+            TaskRepository.ResolveCreatedAt(legacy, info, "Pacific/Auckland"));
+        Assert.Null(TaskRepository.ResolveCreatedAt(new TaskViewModel(), info, "Pacific/Auckland"));
+    }
+
+    [Fact]
+    public void ProjectToTaskViewModel_CarriesCreatedFields()
+    {
+        var ev = CreateEvent(1, e =>
+        {
+            e.UcevCreatedAtUtc = new DateTime(2025, 6, 15, 0, 0, 0);
+            e.UcevDate = new DateTime(2025, 6, 1);
+            e.UcevTime = new DateTime(1900, 1, 1, 9, 0, 0);
+            e.UcevJob = new TucJob();
+        });
+
+        var vm = ProjectInMemory(ev);
+
+        Assert.Equal(new DateTime(2025, 6, 15, 0, 0, 0), vm.CreatedAtUtc);
+        Assert.Equal(new DateTime(2025, 6, 1), vm.CreatedDate);
+        Assert.Equal(new DateTime(1900, 1, 1, 9, 0, 0), vm.CreatedTime);
+    }
+
+    [Fact]
+    public void ProjectToTaskViewModel_CarriesDueTimeUtc()
+    {
+        var ev = CreateEvent(1, e =>
+        {
+            e.UcevDueTimeUtc = new DateTime(2025, 6, 15, 0, 0, 0);
+            e.UcevJob = new TucJob();
+        });
+
+        Assert.Equal(new DateTime(2025, 6, 15, 0, 0, 0), ProjectInMemory(ev).DueDateUtc);
     }
 }

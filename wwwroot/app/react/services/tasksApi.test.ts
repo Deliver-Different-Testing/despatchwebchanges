@@ -77,6 +77,18 @@ describe('tasksApi', () => {
             expect(dayjs.isDayjs(result[0].dueDate)).toBe(true);
         });
 
+        it('should parse createdAt to Dayjs when present and leave it undefined otherwise', async () => {
+            mockApiClient.get.mockResolvedValueOnce([
+                {...mockTaskResponse[0], createdAt: '2024-01-14T08:30:00Z'},
+                mockTaskResponse[1],
+            ]);
+
+            const result = await getAllTasks();
+
+            expect(dayjs.isDayjs(result[0].createdAt)).toBe(true);
+            expect(result[1].createdAt).toBeUndefined();
+        });
+
         it.each([
             ['searchText', {searchText: 'follow up'}],
             ['staffId', {staffId: 5}],

@@ -47,5 +47,19 @@ public partial class TucInvoiceProcess
 
     public string ItemCodeBonus { get; set; }
 
+    public DateTime? LastRunStartedUtc { get; set; }
+
+    public DateTime? LastRunFinishedUtc { get; set; }
+
+    public byte? LastRunOutcome { get; set; }
+
+    public byte? LastRunStage { get; set; }
+
+    public string LastRunError { get; set; }
+
+    public int RunAttemptCount { get; set; }
+
+    public string LastRunBy { get; set; }
+
     public virtual ICollection<TucInvoiceNo> TucInvoiceNos { get; set; } = new List<TucInvoiceNo>();
 }

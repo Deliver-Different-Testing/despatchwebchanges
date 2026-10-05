@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -263,6 +263,7 @@ public sealed partial class DeliveryJourneyService(
                 Description = e.UcevDescription,
                 Date = e.UcevDate,
                 Time = e.UcevTime,
+                CreatedAtUtc = e.UcevCreatedAtUtc,
                 Closed = e.UcevClosed,
                 Despatcher = e.UcevDespatcher,
                 AssignedToFirstName =
@@ -295,9 +296,12 @@ public sealed partial class DeliveryJourneyService(
                 JobId = jobId,
                 Title = dto.Description,
                 Icon = "task",
-                Date = TimeZoneHelper.SetDateTimeWithTimeZone(
-                    (dto.Date ?? DateTime.MinValue).CombineWithTime(dto.Time),
-                    timezone),
+                // Rows predating ucevCreatedAtUtc only have the tenant wall-clock date/time.
+                Date = dto.CreatedAtUtc is { } createdAtUtc
+                    ? infoService.ConvertUtcToTenantTimeZone(createdAtUtc)
+                    : TimeZoneHelper.SetDateTimeWithTimeZone(
+                        (dto.Date ?? DateTime.MinValue).CombineWithTime(dto.Time),
+                        timezone),
                 // The task's creator — not CompletedBy, which is a later actor.
                 PerformedBy = string.IsNullOrWhiteSpace(dto.Despatcher) ? null : dto.Despatcher,
                 Tags =
