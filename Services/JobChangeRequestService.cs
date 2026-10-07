@@ -455,6 +455,134 @@ public sealed class JobChangeRequestService(
         };
     }
 
+    /// <summary>
+    /// The only fields the voice agent can raise. Each is applied by <see cref="ApplyFieldChangeAsync"/>
+    /// as a single-column update, so an approved request always lands. Notes, addresses and packages
+    /// are left out: the agent's notion of them doesn't map to one column.
+    /// </summary>
+    private static readonly HashSet<JobChangeField> AgentFields = new()
+    {
+        JobChangeField.PuTime, JobChangeField.DeliverBy, JobChangeField.RefA, JobChangeField.Speed,
+        JobChangeField.FromContactName, JobChangeField.FromContactPhone
+    };
+
+    public async Task<AgentInboundChangeRequestResult> RecordAgentCreateAsync(
+        AgentInboundChangeRequestPayload payload, CancellationToken ct)
+    {
+        if (payload.Changes.Count == 0)
+        {
+            return AgentFailure("No changes were supplied");
+        }
+
+        var parsed = new List<(AgentInboundFieldChange Change, JobChangeField Field)>();
+        foreach (var change in payload.Changes)
+        {
+            if (!Enum.TryParse<JobChangeField>(change.FieldName, ignoreCase: true, out var field)
+                || !AgentFields.Contains(field))
+            {
+                return AgentFailure($"The voice agent cannot request a change to '{change.FieldName}'");
+            }
+
+            if (!IsApplicableAgentValue(field, change.RequestedValue))
+            {
+                return AgentFailure($"'{change.RequestedValue}' is not a valid value for '{field}'");
+            }
+
+            parsed.Add((change, field));
+        }
+
+        if (parsed.Select(p => p.Field).Distinct().Count() != parsed.Count)
+        {
+            return AgentFailure("A field was supplied more than once");
+        }
+
+        await using var ctx = await contextFactory.CreateDbContextAsync(ct);
+
+        var job = await ctx.TucJobs.Where(j => j.UcjbId == payload.JobId).FirstOrDefaultAsync(ct);
+        if (job is null)
+        {
+            return AgentFailure($"Job {payload.JobId} not found");
+        }
+
+        var uuids = parsed.Select(p => p.Change.SourceRequestUuid).ToList();
+        var existing = await ctx.TucJobChangeRequests
+            .Where(r => uuids.Contains(r.UjcrSourceRequestUuid))
+            .ToListAsync(ct);
+
+        var stage = MapLifecycleStage(job.UcjbStatus);
+        var fresh = new List<TucJobChangeRequest>();
+        foreach (var (change, field) in parsed.Where(p => existing.All(e => e.UjcrSourceRequestUuid != p.Change.SourceRequestUuid)))
+        {
+            // The policy is consulted for "is this field open at this stage" and the rule code only. Its
+            // auto-apply decision is ignored: a voice agent never changes a job without a dispatcher.
+            var decision = policyService.Evaluate(field, "PartnerTenant", stage);
+            if (!decision.Allowed)
+            {
+                return AgentFailure(
+                    $"Change to '{field}' is prohibited at stage '{stage}' (rule {decision.RuleCode})");
+            }
+
+            var fieldName = field.ToString();
+            if (await ctx.TucJobChangeRequests
+                    .AnyAsync(r => r.UjcrJobId == job.UcjbId
+                                   && r.UjcrFieldName == fieldName
+                                   && (r.UjcrStatus == JobChangeRequestStatus.Pending
+                                       || r.UjcrStatus == JobChangeRequestStatus.Approved), ct))
+            {
+                return AgentFailure($"A pending request for '{field}' already exists on this job");
+            }
+
+            var reason = string.IsNullOrWhiteSpace(payload.Reason)
+                ? $"Requested by the 3CX voice agent, call {payload.CallId}"
+                : $"Requested by the 3CX voice agent, call {payload.CallId}: {payload.Reason}";
+
+            fresh.Add(new TucJobChangeRequest
+            {
+                UjcrJobId = job.UcjbId,
+                UjcrPairingId = null,
+                UjcrSourceRequestUuid = change.SourceRequestUuid,
+                UjcrOrigin = AgentOrigin,
+                UjcrRequestingPartyType = AgentOrigin,
+                UjcrApprovalPartyType = "OwnerTenant",
+                UjcrFieldName = fieldName,
+                UjcrCurrentValue = SnapshotCurrentValue(field, job),
+                UjcrRequestedValue = change.RequestedValue,
+                UjcrReason = Truncate(reason, 1000),
+                UjcrStatus = JobChangeRequestStatus.Pending,
+                UjcrApprovalMode = JobChangeApprovalMode.Manual.ToString(),
+                UjcrRuleCode = decision.RuleCode,
+                UjcrRequiresCommercialRefresh = decision.RequiresCommercialRefresh,
+                UjcrRequestedAtUtc = DateTime.UtcNow
+            });
+        }
+
+        if (fresh.Count > 0)
+        {
+            await ctx.TucJobChangeRequests.AddRangeAsync(fresh, ct);
+            await ctx.SaveChangesAsync(ct);
+        }
+
+        return new AgentInboundChangeRequestResult
+        {
+            Success = true,
+            Requests = [.. existing.Concat(fresh).Select(ToDto)]
+        };
+    }
+
+    private const string AgentOrigin = "VoiceAgent";
+
+    private static AgentInboundChangeRequestResult AgentFailure(string message) =>
+        new() { Success = false, Message = message };
+
+    /// <summary>Mirrors the parsing in <see cref="ApplyFieldChangeAsync"/>, which silently skips a value it can't parse.</summary>
+    private static bool IsApplicableAgentValue(JobChangeField field, string? value) => field switch
+    {
+        JobChangeField.Speed => int.TryParse(value, out _),
+        JobChangeField.PuTime or JobChangeField.DeliverBy => DateTimeOffset.TryParse(
+            value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out _),
+        _ => !string.IsNullOrWhiteSpace(value)
+    };
+
     public async Task<JobChangeRequestResult> RecordPeerCreateAsync(PeerInboundChangeRequestPayload payload,
         CancellationToken ct)
     {
@@ -679,7 +807,8 @@ public sealed class JobChangeRequestService(
         // doesn't N+1-fetch job details for every row.
         var query =
             from r in ctx.TucJobChangeRequests
-            where r.UjcrStatus == JobChangeRequestStatus.Pending && r.UjcrOrigin == "Peer"
+            where r.UjcrStatus == JobChangeRequestStatus.Pending
+                  && (r.UjcrOrigin == "Peer" || r.UjcrOrigin == AgentOrigin)
             join j in ctx.TucJobs on r.UjcrJobId equals j.UcjbId
             join c in ctx.TucClients on j.UcjbClientId equals c.UcclId into clients
             from c in clients.DefaultIfEmpty()

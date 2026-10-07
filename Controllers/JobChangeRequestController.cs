@@ -139,6 +139,22 @@ public class JobChangeRequestController(IJobChangeRequestService service) : Cont
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> AgentInbound([FromBody] AgentInboundChangeRequestPayload payload, CancellationToken ct)
+    {
+        try
+        {
+            var result = await service.RecordAgentCreateAsync(payload, ct);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobChangeRequestController), nameof(AgentInbound)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
     [HttpPost("JobChangeRequest/PeerDecision/{sourceUuid:guid}")]
     public async Task<IActionResult> PeerDecision(Guid sourceUuid, [FromBody] PeerInboundChangeDecisionPayload payload,
         CancellationToken ct)

@@ -25,6 +25,12 @@ public interface IJobChangeRequestService
     /// <summary>Apply a peer-initiated change request (Origin=Peer). Idempotent on <c>sourceUuid</c>.</summary>
     Task<JobChangeRequestResult> RecordPeerCreateAsync(PeerInboundChangeRequestPayload payload, CancellationToken ct);
 
+    /// <summary>
+    /// Record change requests raised by the 3CX voice agent (Origin=VoiceAgent). Always Pending for a
+    /// dispatcher to approve, never forwarded to a peer. Idempotent on each change's <c>SourceRequestUuid</c>.
+    /// </summary>
+    Task<AgentInboundChangeRequestResult> RecordAgentCreateAsync(AgentInboundChangeRequestPayload payload, CancellationToken ct);
+
     /// <summary>Apply a peer-side approve/reject decision. Idempotent on <c>sourceUuid</c>.</summary>
     Task<JobChangeRequestResult> RecordPeerDecisionAsync(Guid sourceUuid, PeerInboundChangeDecisionPayload payload, CancellationToken ct);
 
@@ -37,8 +43,8 @@ public interface IJobChangeRequestService
     Task<IReadOnlyList<JobChangeRequestDto>> ListForJobAsync(int jobId, CancellationToken ct);
 
     /// <summary>
-    /// Rows the local tenant must approve — Status='Pending' AND Origin='Peer'
-    /// (anything peer-originated where this side is the approval party). Joined
+    /// Rows the local tenant must approve — Status='Pending' AND Origin='Peer' or 'VoiceAgent'
+    /// (anything where this side is the approval party). Joined
     /// with <c>tucJob</c> for the job number and client name so the inbox page
     /// can render without per-row job fetches.
     /// </summary>

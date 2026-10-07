@@ -65,6 +65,30 @@ public sealed class PeerInboundChangeRequestPayload
     public string? PartnerTenantId { get; init; }
 }
 
+/// <summary>Body posted by Integration Manager when the 3CX voice agent asks for a change to a job.</summary>
+public sealed class AgentInboundChangeRequestPayload
+{
+    public int JobId { get; init; }
+    public string CallId { get; init; } = string.Empty;
+    public string? Reason { get; init; }
+    public List<AgentInboundFieldChange> Changes { get; init; } = [];
+}
+
+public sealed class AgentInboundFieldChange
+{
+    /// <summary>Stable per field per call, so a retried tool call lands on the same row.</summary>
+    public Guid SourceRequestUuid { get; init; }
+    public string FieldName { get; init; } = string.Empty;
+    public string? RequestedValue { get; init; }
+}
+
+public sealed class AgentInboundChangeRequestResult
+{
+    public bool Success { get; init; }
+    public string? Message { get; init; }
+    public IReadOnlyList<JobChangeRequestDto> Requests { get; init; } = [];
+}
+
 public sealed class PeerInboundChangeDecisionPayload
 {
     /// <summary>"Approved" or "Rejected".</summary>
