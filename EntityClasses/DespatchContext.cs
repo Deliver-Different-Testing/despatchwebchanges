@@ -4248,6 +4248,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.NpAgentId, "IX_tucClient_NpAgentId");
 
+            entity.HasIndex(e => new { e.UcclReferralSource, e.UcclDateJoined }, "IX_tucClient_ReferralSource_DateJoined");
+
             entity.HasIndex(e => e.UcclName, "Name").IsUnique();
 
             entity.HasIndex(e => e.SiteId, "SiteID");
