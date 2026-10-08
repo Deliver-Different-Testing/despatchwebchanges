@@ -8,6 +8,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Split;
 using DespatchWeb.Reporting;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -731,15 +732,6 @@ public class SplitJobService(
     }
 
     /// <summary>
-    /// The job numbers and letter suffixes generated for a split's two new legs.
-    /// </summary>
-    internal sealed record ChildJobNumbers(
-        string PickupJobNumber,
-        string PickupSuffix,
-        string DeliveryJobNumber,
-        string DeliverySuffix);
-
-    /// <summary>
     /// Divides the parent's pricing breakdown lines across the two new legs by writing
     /// <c>PricingBreakdownAllocation</c> rows against the root's own (never-deleted) items, then
     /// sets each leg's header totals from the result.
@@ -1317,19 +1309,6 @@ public class SplitJobService(
         {
             Log.Warning(ex, "Failed to consolidate MARS information for job {JobId}", jobId);
         }
-    }
-
-    /// <summary>
-    /// The parent's customer-facing figures, captured before a split or re-price touches anything.
-    /// </summary>
-    internal readonly record struct ParentPricing(
-        decimal? Amount,
-        decimal Fuel,
-        decimal? Cost,
-        decimal? Distance)
-    {
-        public static ParentPricing From(TucJob job) =>
-            new(job.UcjbAmount, job.FuelSurchargeAmount, job.CourierPayment, job.TotalDistance);
     }
 
     /// <summary>
