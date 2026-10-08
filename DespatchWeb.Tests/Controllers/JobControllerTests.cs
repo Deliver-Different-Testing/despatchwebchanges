@@ -2146,6 +2146,42 @@ public class JobControllerTests : IDisposable
         Assert.IsType<OkResult>(result);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task UpdateBulkJobAddress_ValidRequest_UsesBulkRepositoryOnly(bool isDelivery)
+    {
+        var request = new UpdateAddressRequest
+        {
+            JobId = 7,
+            Address = new AddressViewModel { AddressLine1 = "1 Bulk Rd" }
+        };
+        var addressType = isDelivery ? AddressType.Delivery : AddressType.Pickup;
+        var controller = CreateController();
+
+        var result = isDelivery
+            ? await controller.UpdateBulkJobDeliveryAddress(request)
+            : await controller.UpdateBulkJobPickupAddress(request);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).UpdateBulkJobAddressAsync(request, addressType);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().UpdateDeliveryAddressAsync(default!);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().UpdatePickupAddressAsync(default!);
+    }
+
+    [Fact]
+    public async Task UpdateBulkJobAddress_RepositoryThrows_Returns500()
+    {
+        var request = new UpdateAddressRequest { JobId = 7, Address = new AddressViewModel() };
+        _jobCommandRepositoryMock.UpdateBulkJobAddressAsync(request, AddressType.Delivery)
+            .Returns(Task.FromException(new ArgumentException("not found")));
+        var controller = CreateController();
+
+        var result = await controller.UpdateBulkJobDeliveryAddress(request);
+
+        Assert.Equal(500, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
     [Fact]
     public async Task UpdateDeliveryAddress_ValidRequest_ReturnsOk()
     {

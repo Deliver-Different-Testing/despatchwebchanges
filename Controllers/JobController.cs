@@ -2719,6 +2719,22 @@ public class JobController(
             isBooking: true);
     }
 
+    [HttpPost]
+    public Task<IActionResult> UpdateBulkJobPickupAddress([FromBody] UpdateAddressRequest request) =>
+        UpdateAddressAsync(
+            request,
+            r => jobCommandRepository.UpdateBulkJobAddressAsync(r, AddressType.Pickup),
+            AddressType.Pickup,
+            isBooking: false);
+
+    [HttpPost]
+    public Task<IActionResult> UpdateBulkJobDeliveryAddress([FromBody] UpdateAddressRequest request) =>
+        UpdateAddressAsync(
+            request,
+            r => jobCommandRepository.UpdateBulkJobAddressAsync(r, AddressType.Delivery),
+            AddressType.Delivery,
+            isBooking: false);
+
     private async Task<IActionResult> UpdateAddressAsync(
         UpdateAddressRequest request,
         Func<UpdateAddressRequest, Task> updateAddressAction,

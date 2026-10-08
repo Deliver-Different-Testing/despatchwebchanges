@@ -58,6 +58,7 @@ public interface IJobCommandRepository
 
     Task UpdateDeliveryAddressAsync(UpdateAddressRequest request);
     Task UpdatePickupAddressAsync(UpdateAddressRequest request);
+    Task UpdateBulkJobAddressAsync(UpdateAddressRequest request, AddressType addressType);
 
     Task UpdateJobAsync(
         int jobId,

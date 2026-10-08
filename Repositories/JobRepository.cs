@@ -1427,6 +1427,8 @@ public partial class JobRepository(
             {
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request));
             }
+
+            await CascadeAddressToFamilyLegAsync(request, JobLegRole.FinalMileDelivery, UpdateDeliveryAddressAsync);
         }
         catch (Exception ex)
         {
@@ -1434,6 +1436,30 @@ public partial class JobRepository(
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobRepository),
                     nameof(UpdateDeliveryAddressAsync)));
             throw;
+        }
+    }
+
+    /// <summary>
+    /// A linehaul family's parent carries the client-facing addresses, but the driver works the legs:
+    /// the delivery address belongs to the final-mile leg, the pickup address to the linehaul pickup
+    /// leg. Without this a parent edit leaves the leg pointing at the old address. Only open legs are
+    /// rewritten, so completed or voided work keeps its record; middle LH legs are depot-to-depot and
+    /// never take the client's address.
+    /// </summary>
+    private async Task CascadeAddressToFamilyLegAsync(
+        UpdateAddressRequest request,
+        JobLegRole targetRole,
+        Func<UpdateAddressRequest, Task> updateLeg)
+    {
+        var candidates = await Context.TucJobs
+            .Where(j => j.ParentId == request.JobId && j.UcjbId != request.JobId
+                                                    && !j.UcjbVoid && !j.UcjbJobDone)
+            .Select(j => new { j.UcjbId, j.UcjbNumber })
+            .ToListAsync();
+
+        foreach (var leg in candidates.Where(l => JobLegRoles.FromJobNumber(l.UcjbNumber) == targetRole))
+        {
+            await updateLeg(new UpdateAddressRequest { JobId = leg.UcjbId, Address = request.Address });
         }
     }
 
@@ -1492,6 +1518,8 @@ public partial class JobRepository(
             {
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request));
             }
+
+            await CascadeAddressToFamilyLegAsync(request, JobLegRole.LinehaulPickup, UpdatePickupAddressAsync);
         }
         catch (Exception ex)
         {
