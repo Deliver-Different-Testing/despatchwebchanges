@@ -460,11 +460,11 @@ public sealed class JobChangeRequestService(
     /// as a single-column update, so an approved request always lands. Notes, addresses and packages
     /// are left out: the agent's notion of them doesn't map to one column.
     /// </summary>
-    private static readonly HashSet<JobChangeField> AgentFields = new()
-    {
+    private static readonly HashSet<JobChangeField> AgentFields =
+    [
         JobChangeField.PuTime, JobChangeField.DeliverBy, JobChangeField.RefA, JobChangeField.Speed,
         JobChangeField.FromContactName, JobChangeField.FromContactPhone
-    };
+    ];
 
     public async Task<AgentInboundChangeRequestResult> RecordAgentCreateAsync(
         AgentInboundChangeRequestPayload payload, CancellationToken ct)
@@ -549,18 +549,24 @@ public sealed class JobChangeRequestService(
                 UjcrRequestedValue = change.RequestedValue,
                 UjcrReason = Truncate(reason, 1000),
                 UjcrStatus = JobChangeRequestStatus.Pending,
-                UjcrApprovalMode = JobChangeApprovalMode.Manual.ToString(),
+                UjcrApprovalMode = nameof(JobChangeApprovalMode.Manual),
                 UjcrRuleCode = decision.RuleCode,
                 UjcrRequiresCommercialRefresh = decision.RequiresCommercialRefresh,
                 UjcrRequestedAtUtc = DateTime.UtcNow
             });
         }
 
-        if (fresh.Count > 0)
+        if (fresh.Count <= 0)
         {
-            await ctx.TucJobChangeRequests.AddRangeAsync(fresh, ct);
-            await ctx.SaveChangesAsync(ct);
+            return new AgentInboundChangeRequestResult
+            {
+                Success = true,
+                Requests = [.. existing.Concat(fresh).Select(ToDto)]
+            };
         }
+
+        await ctx.TucJobChangeRequests.AddRangeAsync(fresh, ct);
+        await ctx.SaveChangesAsync(ct);
 
         return new AgentInboundChangeRequestResult
         {
@@ -792,7 +798,7 @@ public sealed class JobChangeRequestService(
             .OrderByDescending(r => r.UjcrId)
             .Take(ListForJobMaxRows)
             .ToListAsync(ct);
-        return rows.Select(ToDto).ToList();
+        return [.. rows.Select(ToDto)];
     }
 
     public async Task<IReadOnlyList<JobChangeRequestInboxItem>> ListPendingForApprovalAsync(int limit,
@@ -816,14 +822,16 @@ public sealed class JobChangeRequestService(
             select new { Row = r, JobNo = j.UcjbNumber, ClientName = c != null ? c.UcclName : null };
 
         var rows = await query.Take(limit).ToListAsync(ct);
-        return rows
-            .Select(x => new JobChangeRequestInboxItem
-            {
-                Request = ToDto(x.Row),
-                JobNo = x.JobNo ?? string.Empty,
-                ClientName = x.ClientName
-            })
-            .ToList();
+        return
+        [
+            .. rows
+                .Select(x => new JobChangeRequestInboxItem
+                {
+                    Request = ToDto(x.Row),
+                    JobNo = x.JobNo ?? string.Empty,
+                    ClientName = x.ClientName
+                })
+        ];
     }
 
     public async Task<bool> HasActivePartnersAsync(CancellationToken ct)

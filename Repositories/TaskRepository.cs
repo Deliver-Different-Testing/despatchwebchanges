@@ -518,7 +518,9 @@ public class TaskRepository(
     internal static DateTimeOffset? ResolveCreatedAt(TaskViewModel task, ITenantInfoService info, string tenantTimeZone)
     {
         if (task.CreatedAtUtc is { } createdUtc)
+        {
             return info.ConvertUtcToTenantTimeZone(createdUtc);
+        }
 
         return task.CreatedDate is { } date
             ? TimeZoneHelper.SetDateTimeWithTimeZone(date.CombineWithTime(task.CreatedTime), tenantTimeZone)
