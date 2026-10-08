@@ -33,9 +33,3 @@ public interface IJobChangeRequestPartnerClient
         decimal? newCommercialAmount,
         CancellationToken ct);
 }
-
-public sealed class PartnerForwardResult
-{
-    public bool Success { get; init; }
-    public string? Message { get; init; }
-}
