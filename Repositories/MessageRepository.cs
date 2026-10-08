@@ -164,6 +164,7 @@ public class MessageRepository(
         var message = new TucManualMessage
         {
             UcmmDate = currentDate,
+            UcmmCreatedAtUtc = clock.UtcNow,
             UcmmSendFromStaffId = staffId,
             UcmmAttempts = 0,
             UcmmMessage = request.Message
@@ -219,6 +220,7 @@ public class MessageRepository(
                 var message = new TucManualMessage
                 {
                     UcmmDate = currentDate,
+                    UcmmCreatedAtUtc = clock.UtcNow,
                     UcmmSendFromStaffId = currentStaffId,
                     UcmmAttempts = 0,
                     UcmmMessage = request.Message,
@@ -262,6 +264,7 @@ public class MessageRepository(
             var message = new TucManualMessage
             {
                 UcmmDate = currentDate,
+                UcmmCreatedAtUtc = clock.UtcNow,
                 UcmmSendFromStaffId = currentStaffId,
                 UcmmAttempts = 0,
                 UcmmMessage = request.Message

@@ -650,6 +650,28 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SendAgentRequestMessageAsync_StampsMessageWithTenantNow()
+    {
+        _clock = new FakeTenantClock(TestDates.Now.AddHours(12));
+        const int jobId = 100;
+        const int agentId = 1;
+        _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
+        var agent = CreateAgent(agentId, "Test Agent");
+        agent.UcagFax = "agent@example.com";
+        _context.TucAgents.Add(agent);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        _inboundAgentLinkServiceMock
+            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
+
+        await CreateRepository().SendAgentRequestMessageAsync(agentId, jobId);
+
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(_clock.TenantNow, message.UcmmDate);
+        Assert.Equal(_clock.UtcNow, message.UcmmCreatedAtUtc);
+    }
+
+    [Fact]
     public async Task SendAgentRequestMessageAsync_NonUsTenant_WeightShownInKg()
     {
         // Arrange

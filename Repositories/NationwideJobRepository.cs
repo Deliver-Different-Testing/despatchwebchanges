@@ -656,6 +656,8 @@ public class NationwideJobRepository(
         var request = new TucManualMessage
         {
             JobId = jobId,
+            UcmmDate = _clock.TenantNow,
+            UcmmCreatedAtUtc = _clock.UtcNow,
             Subject = subject,
             ReplyToEmailAddress = replyToAddress,
             UcmmMessage = htmlBody,

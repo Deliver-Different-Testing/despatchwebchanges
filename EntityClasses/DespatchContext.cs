@@ -7463,6 +7463,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcmmAttempts)
                 .HasDefaultValue(0, "DF_tucManualMessage_ucmmAttempts")
                 .HasColumnName("ucmmAttempts");
+            entity.Property(e => e.UcmmCreatedAtUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_tucManualMessage_ucmmCreatedAtUtc")
+                .HasColumnType("datetime")
+                .HasColumnName("ucmmCreatedAtUtc");
             entity.Property(e => e.UcmmDate)
                 .HasDefaultValueSql("(getdate())", "DF_tucManualMessage_ucmmDate")
                 .HasColumnType("datetime")

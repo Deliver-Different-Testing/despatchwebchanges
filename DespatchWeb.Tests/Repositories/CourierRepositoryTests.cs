@@ -51,6 +51,39 @@ public class CourierRepositoryTests : IAsyncDisposable
     private DespatchContext CreateContext() => _db.CreateContext();
 
     [Fact]
+    public async Task SendEmailToCouriersAsync_StampsMessagesWithTenantNow()
+    {
+        await using (var context = CreateContext())
+        {
+            context.TucCouriers.Add(new TucCourier
+            {
+                UccrId = 1,
+                Code = "C001",
+                UccrName = "John",
+                UccrSurname = "Doe",
+                UccrEmail = "courier@example.com",
+                Active = true,
+                CourierFleetId = 1,
+                CourierLogInOutId = 1,
+                UccrChannelId = 1,
+                Created = TestDates.Now,
+                CreatedBy = "Test",
+                LastModified = TestDates.Now,
+                LastModifiedBy = "Test"
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await CreateRepository().SendEmailToCouriersAsync(
+            new GroupEmailDataViewModel { CourierIds = [1], Subject = "Hi", Body = "Body" });
+
+        await using var assertContext = CreateContext();
+        var message = await assertContext.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(_clock.TenantNow, message.UcmmDate);
+        Assert.Equal(_clock.UtcNow, message.UcmmCreatedAtUtc);
+    }
+
+    [Fact]
     public async Task GetClearListsAsync_WithDespatchViewWithoutClearListArea_ReturnsEmptyViewModel()
     {
         // Arrange
