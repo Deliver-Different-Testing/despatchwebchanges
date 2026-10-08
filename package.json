@@ -3,6 +3,7 @@
   "version": "3.5.0",
   "main": "index.ts",
   "dependencies": {
+    "@deliver-different/glass": "^0.2.0",
     "@dfrnt/glass": "file:vendor/dfrnt-glass-0.2.0.tgz",
     "@mantine/core": "^9.6.3",
     "@mantine/dates": "^9.6.3",
