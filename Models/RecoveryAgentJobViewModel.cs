@@ -13,19 +13,3 @@ public sealed class RecoveryAgentJobViewModel
     public string Customer { get; init; }
     public IEnumerable<RecoveryJobViewModel> RecoveryJobs { get; init; }
 }
-
-public sealed class RecoveryJobViewModel
-{
-    public int JobId { get; init; }
-    public Suggestion AssignedAgent { get; init; }
-    public IEnumerable<RecoveryAgentViewModel> RecoveryAgents { get; init; }
-}
-
-public sealed class RecoveryAgentViewModel
-{
-    public int RecoveryId { get; init; }
-    public string AgentName { get; init; }
-    public string Airport { get; init; }
-    public bool PrimaryRecoveryAgent { get; init; }
-    public string AssignStatus { get; init; }
-}

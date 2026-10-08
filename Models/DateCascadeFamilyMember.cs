@@ -22,25 +22,3 @@ public sealed record DateCascadeFamilyMember(
     /// </summary>
     public bool Cascadable => !Locked && !IsPartnerJob;
 }
-
-/// <summary>
-/// The cascadable family of a parent job, plus the parent's relationship type so the
-/// caller can describe the family accurately.
-/// </summary>
-public sealed record DateCascadeFamily(
-    int? RelationshipTypeId,
-    IReadOnlyList<DateCascadeFamilyMember> Members)
-{
-    public static DateCascadeFamily Empty { get; } = new(null, []);
-}
-
-/// <summary>
-/// Outcome of a date cascade. A child failing must not strand the rest, so both the
-/// successes and the failures are reported back for the UI to surface.
-/// </summary>
-public sealed record DateCascadeResult(
-    IReadOnlyList<int> UpdatedJobIds,
-    IReadOnlyList<int> FailedJobIds)
-{
-    public static DateCascadeResult Empty { get; } = new([], []);
-}
