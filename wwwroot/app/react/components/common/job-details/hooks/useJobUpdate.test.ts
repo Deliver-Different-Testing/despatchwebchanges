@@ -14,6 +14,7 @@ jest.mock('../../../../services/jobDetailApi', () => ({
     updateBulkJobDetail: jest.fn(),
     updatePickupAddress: jest.fn(),
     updateDeliveryAddress: jest.fn(),
+    updateBulkJobAddress: jest.fn(),
     updatePodDetails: jest.fn(),
     updateJobReadStatus: jest.fn(),
     restoreJobs: jest.fn(),
@@ -29,6 +30,7 @@ import {
     updateBulkJobDetail,
     updatePickupAddress,
     updateDeliveryAddress,
+    updateBulkJobAddress,
     updatePodDetails,
     updateJobReadStatus,
     restoreJobs,
@@ -291,6 +293,22 @@ describe('useJobUpdate', () => {
     });
 
     describe('updateAddress', () => {
+        it.each([[true], [false]])('routes a bulk job to the bulk endpoint (isDelivery=%s)', async (isDelivery) => {
+            (updateBulkJobAddress as jest.Mock).mockResolvedValueOnce(undefined);
+            const {result} = renderUseJobUpdate();
+            const job = createMockJob({isBulkJob: true, jobNo: 'B200'});
+            const address = {line1: '1 Bulk Rd'} as any;
+
+            await act(async () => {
+                await result.current.updateAddress({job, address, isDelivery});
+            });
+
+            expect(updateBulkJobAddress).toHaveBeenCalledWith(1, isDelivery, address);
+            expect(mockUpdateDeliveryAddress).not.toHaveBeenCalled();
+            expect(mockUpdatePickupAddress).not.toHaveBeenCalled();
+            expect(mockShowToast).toHaveBeenCalledWith('B200 updated', 'success');
+        });
+
         it('calls updateDeliveryAddress when isDelivery is true', async () => {
             mockUpdateDeliveryAddress.mockResolvedValueOnce({});
             const {result} = renderUseJobUpdate();

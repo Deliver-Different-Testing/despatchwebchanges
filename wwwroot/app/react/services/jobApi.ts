@@ -73,11 +73,47 @@ export async function validateSwapPod(jobNo: string, options?: RequestOptions): 
     return apiClient.get<boolean>('Job/ValidateSwapPod', {job: jobNo}, options);
 }
 
+export interface SwapPodCandidate {
+    jobId: number;
+    number: string;
+    statusId: number;
+    statusName: string;
+    customer: string;
+    fromSuburb: string;
+    toSuburb: string;
+    courier: string | null;
+    date: string;
+    hasPod: boolean;
+}
+
+export interface SwapPodCandidateQuery {
+    term?: string;
+    statusId?: number;
+    customer?: string;
+    date?: string;
+    excludeJobNumber?: string;
+}
+
+export interface SwapPodResult {
+    movedPhotos: number;
+    failedPhotos: number;
+}
+
+/**
+ * Search jobs that can receive a POD swap
+ */
+export async function searchSwapPodCandidates(
+    query: SwapPodCandidateQuery,
+    options?: RequestOptions
+): Promise<SwapPodCandidate[]> {
+    return apiClient.get<SwapPodCandidate[]>('Job/SearchSwapPodCandidates', {...query}, options);
+}
+
 /**
  * Swap the POD between two jobs
  */
-export async function swapPod(job1: string, job2: string): Promise<void> {
-    await apiClient.post('Job/SwapPod', {job1, job2});
+export async function swapPod(job1: string, job2: string): Promise<SwapPodResult> {
+    return apiClient.post<SwapPodResult>('Job/SwapPod', {job1, job2});
 }
 
 export const jobApi = {
@@ -89,6 +125,7 @@ export const jobApi = {
     getVehicleSizes,
     allocateJobToCourier,
     validateSwapPod,
+    searchSwapPodCandidates,
     swapPod,
 };
 

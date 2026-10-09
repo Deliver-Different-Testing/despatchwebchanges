@@ -11,9 +11,3 @@ public sealed class RecentMessageViewModel
     public string LastMessage { get; init; }
     public DateTime LastMessageTime { get; init; }
 }
-
-public enum OtherMessagePartyType
-{
-    Courier,
-    Staff
-}

@@ -4248,6 +4248,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.NpAgentId, "IX_tucClient_NpAgentId");
 
+            entity.HasIndex(e => new { e.UcclReferralSource, e.UcclDateJoined }, "IX_tucClient_ReferralSource_DateJoined");
+
             entity.HasIndex(e => e.UcclName, "Name").IsUnique();
 
             entity.HasIndex(e => e.SiteId, "SiteID");
@@ -7461,6 +7463,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UcmmAttempts)
                 .HasDefaultValue(0, "DF_tucManualMessage_ucmmAttempts")
                 .HasColumnName("ucmmAttempts");
+            entity.Property(e => e.UcmmCreatedAtUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_tucManualMessage_ucmmCreatedAtUtc")
+                .HasColumnType("datetime")
+                .HasColumnName("ucmmCreatedAtUtc");
             entity.Property(e => e.UcmmDate)
                 .HasDefaultValueSql("(getdate())", "DF_tucManualMessage_ucmmDate")
                 .HasColumnType("datetime")

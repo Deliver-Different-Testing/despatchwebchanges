@@ -796,6 +796,7 @@ public class RecurringJobRepository(
 
         var origParentDate = parent.UcbkDate;
         var origParentInitialDays = parent.RecurringInitialDays;
+        var origParentMode = parent.RecurringMode;
         var origParentTime = parent.UcbkTime;
         var origParentJobNumber = parent.UcbkJobNumber;
 
@@ -815,6 +816,7 @@ public class RecurringJobRepository(
 
             parent.UcbkDate = insertDate;
             parent.RecurringInitialDays = 0;
+            parent.RecurringMode = (byte)RecurringMode.Manual;
             parent.UcbkJobNumber = jobNo.Value;
 
             foreach (var child in children)
@@ -858,6 +860,7 @@ public class RecurringJobRepository(
         {
             parent.UcbkDate = origParentDate;
             parent.RecurringInitialDays = origParentInitialDays;
+            parent.RecurringMode = origParentMode;
             parent.UcbkTime = origParentTime;
             parent.UcbkJobNumber = origParentJobNumber;
 

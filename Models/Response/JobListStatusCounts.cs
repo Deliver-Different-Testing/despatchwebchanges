@@ -41,6 +41,3 @@ public sealed record JobListStatusCounts
             .Select(g => new JobListBucketTally(g.Key, g.Count()))
             .ToList());
 }
-
-/// <summary>One row of the per-bucket tally the database groups into.</summary>
-public sealed record JobListBucketTally(JobListBucket Bucket, int Count);

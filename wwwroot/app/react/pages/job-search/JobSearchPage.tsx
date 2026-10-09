@@ -405,7 +405,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     }, [showToast, invalidateJob]);
 
     const openSwapPod = useCallback(async (job: DispatchJob) => {
-        await (window as any).ReactSwapPodsDialog?.open(job.jobNo, {showToast});
+        await (window as any).ReactSwapPodsDialog?.open(job.jobNo, {showToast}, job.client);
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
 

@@ -11,6 +11,7 @@ public static class SupportServiceCollectionExtensions
         services.AddScoped<IMessageHelperService, MessageHelperService>();
         services.AddScoped<IJobPhotoService, JobPhotoService>();
         services.AddScoped<IPodMediaService, PodMediaService>();
+        services.AddScoped<ISwapPodService, SwapPodService>();
         services.AddScoped<IAccessorialChargeService, AccessorialChargeService>();
 
         return services;

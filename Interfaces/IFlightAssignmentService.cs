@@ -19,5 +19,3 @@ public interface IFlightAssignmentService
     /// </summary>
     Task<FlightAutoAssignSummary> AutoAssignSavedFlightsAsync(IReadOnlyList<int> jobIds);
 }
-
-public readonly record struct FlightAutoAssignSummary(int Assigned, int Unmatched);

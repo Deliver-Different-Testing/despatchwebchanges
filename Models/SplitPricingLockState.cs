@@ -13,5 +13,3 @@ public sealed record SplitPricingLockState(
     bool ShareLocked,
     string? ShareLockReason,
     IReadOnlyDictionary<int, SplitPricingLegCostLock> PerLegCostLocks);
-
-public sealed record SplitPricingLegCostLock(bool Locked, string? Reason);

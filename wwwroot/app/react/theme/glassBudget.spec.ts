@@ -8,7 +8,7 @@ const react = path.resolve(__dirname, '..');
  * everything behind it every frame, and Apple says to keep glass to the few most important
  * floating controls. Adding an entry is a design decision: say where it floats and what is
  * behind it. Dense data surfaces (box headers, tables, list rows) must not appear here.
- * The shared `@dfrnt/glass` package (dropdown panels, map overlays, hero search, lens)
+ * The shared `@deliver-different/glass` package (dropdown panels, map overlays, hero search, lens)
  * lives in node_modules and is not scanned here.
  */
 const GLASS_SOURCES = [

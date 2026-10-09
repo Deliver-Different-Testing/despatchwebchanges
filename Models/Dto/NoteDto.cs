@@ -11,11 +11,3 @@ public sealed record NoteDto
     public string UpdatedByFirstName { get; init; }
     public string UpdatedByLastName { get; init; }
 }
-
-public sealed record ArchivedNoteDto
-{
-    public int NoteId { get; init; }
-    public string NoteText { get; init; }
-    public DateTime? CreatedDate { get; init; }
-    public DateTime? UpdatedDate { get; init; }
-}

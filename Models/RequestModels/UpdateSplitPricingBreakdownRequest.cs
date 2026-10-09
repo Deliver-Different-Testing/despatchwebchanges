@@ -13,20 +13,3 @@ public sealed class UpdateSplitPricingBreakdownRequest
     public IReadOnlyList<SplitPricingItemRevenueUpdate> ItemRevenues { get; init; } = [];
     public IReadOnlyList<SplitPricingAllocationUpdate> Allocations { get; init; } = [];
 }
-
-public sealed class SplitPricingItemRevenueUpdate
-{
-    public int PricingBreakdownId { get; init; }
-    public decimal Revenue { get; init; }
-    /// <summary>Null when the name wasn't touched; the grid always sends the full new name otherwise.</summary>
-    public string? Name { get; init; }
-}
-
-public sealed class SplitPricingAllocationUpdate
-{
-    public int PricingBreakdownId { get; init; }
-    public int LegJobId { get; init; }
-    public decimal? SharePercent { get; init; }
-    public decimal? CostOverride { get; init; }
-    public bool ResetCostOverride { get; init; }
-}
