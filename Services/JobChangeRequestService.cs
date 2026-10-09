@@ -165,7 +165,7 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests.AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
+        var row = await InCallerScope(ctx).AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
         {
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
@@ -313,7 +313,7 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests.AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
+        var row = await InCallerScope(ctx).AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
         {
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
@@ -390,7 +390,7 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests.AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
+        var row = await InCallerScope(ctx).AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
         {
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
@@ -790,10 +790,15 @@ public sealed class JobChangeRequestService(
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
 
+    // Request rows carry no scope columns of their own, so visibility follows the job: the TucJobs
+    // global query filter applies inside the subquery. Staff/tenant/internal scopes bypass it unchanged.
+    private static IQueryable<TucJobChangeRequest> InCallerScope(DespatchContext ctx) =>
+        ctx.TucJobChangeRequests.Where(r => ctx.TucJobs.Any(j => j.UcjbId == r.UjcrJobId));
+
     public async Task<IReadOnlyList<JobChangeRequestDto>> ListForJobAsync(int jobId, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var rows = await ctx.TucJobChangeRequests
+        var rows = await InCallerScope(ctx)
             .Where(r => r.UjcrJobId == jobId)
             .OrderByDescending(r => r.UjcrId)
             .Take(ListForJobMaxRows)

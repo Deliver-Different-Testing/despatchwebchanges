@@ -64,15 +64,29 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync() => await _db.DisposeAsync();
 
-    private JobChangeRequestService CreateService() =>
-        new(CreateFactory(), _policy, _partnerClient, _sendToPartner, _tenantInfo, _jobCommandRepository);
+    private JobChangeRequestService CreateService(ScopeContext? scope = null) =>
+        new(CreateFactory(scope), _policy, _partnerClient, _sendToPartner, _tenantInfo, _jobCommandRepository);
 
-    private IDbContextFactory<DespatchContext> CreateFactory()
+    private IDbContextFactory<DespatchContext> CreateFactory(ScopeContext? scope = null)
     {
+        var scopeProvider = Substitute.For<IScopeProvider>();
+        scopeProvider.Scope.Returns(scope ?? ScopeContext.BackgroundContext);
         var mock = Substitute.For<IDbContextFactory<DespatchContext>>();
-        mock.CreateDbContext().Returns(_ => new TestDespatchContext(_options));
-        mock.CreateDbContextAsync(Arg.Any<CancellationToken>()).Returns(_ => new TestDespatchContext(_options));
+        mock.CreateDbContext().Returns(_ => new TestDespatchContext(_options, scopeProvider));
+        mock.CreateDbContextAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => new TestDespatchContext(_options, scopeProvider));
         return mock;
+    }
+
+    private static ScopeContext NpScope(int npAgentId) =>
+        new(ClientTypeId: (int)ClientType.NetworkPartner, ClientId: null, NpAgentId: npAgentId);
+
+    private async Task SetJobNpAgentAsync(int jobId, int? npAgentId)
+    {
+        await using var ctx = CreateContext();
+        await ctx.TucJobs.Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(s => s.SetProperty(j => j.NpAgentId, npAgentId),
+                TestContext.Current.CancellationToken);
     }
 
     private TestDespatchContext CreateContext() => new(_options);
@@ -1358,6 +1372,55 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         await _partnerClient.DidNotReceiveWithAnyArgs().ForwardDecisionAsync(default, default, default!, default, default);
     }
 
+    [Fact]
+    public async Task ListForJobAsync_hides_requests_for_a_job_outside_the_callers_scope()
+    {
+        await SeedJobAsync();
+        await SeedPairingAsync();
+        await CreateService().CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1, FieldName = nameof(JobChangeField.Quantity), RequestedValue = "9"
+        }, CancellationToken.None);
+
+        await SetJobNpAgentAsync(1, 88);
+        var otherAgent = await CreateService(NpScope(77)).ListForJobAsync(1, CancellationToken.None);
+        await SetJobNpAgentAsync(1, 77);
+        var owningAgent = await CreateService(NpScope(77)).ListForJobAsync(1, CancellationToken.None);
+
+        Assert.Empty(otherAgent);
+        Assert.Single(owningAgent);
+    }
+
+    [Fact]
+    public async Task Approve_Reject_Cancel_treat_a_request_outside_the_callers_scope_as_not_found()
+    {
+        await SeedJobAsync();
+        await SeedPairingAsync();
+        var created = await CreateService().CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1, FieldName = nameof(JobChangeField.Quantity), RequestedValue = "9"
+        }, CancellationToken.None);
+        var id = created.Request!.Id;
+        await SetJobNpAgentAsync(1, 88);
+        var outsider = CreateService(NpScope(77));
+
+        var approve = await outsider.ApproveAsync(id, new ApproveJobChangeRequestRequest { RequestId = id },
+            CancellationToken.None);
+        var reject = await outsider.RejectAsync(id, new RejectJobChangeRequestRequest { RequestId = id },
+            CancellationToken.None);
+        var cancel = await outsider.CancelAsync(id, new CancelJobChangeRequestRequest { RequestId = id },
+            CancellationToken.None);
+
+        Assert.All([approve, reject, cancel], r =>
+        {
+            Assert.False(r.Success);
+            Assert.Equal("Change request not found", r.Message);
+        });
+        await using var ctx = CreateContext();
+        var status = ctx.TucJobChangeRequests.Where(x => x.UjcrId == id).Select(x => x.UjcrStatus).Single();
+        Assert.Equal("Pending", status);
+    }
+
     private async Task SeedJobAsync(short initialQty = 3, decimal? initialAgreedRate = null,
         bool unsetPartnerJobGuid = false, string? initialNotes = "original notes",
         string? pickupLine1 = null, string? pickupLine2 = null,
@@ -1413,8 +1476,17 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     /// the byte[]). Production code still uses the unmodified <see cref="DespatchContext"/>
     /// against SQL Server, which autofills the rowversion column.
     /// </summary>
-    private sealed class TestDespatchContext(DbContextOptions<DespatchContext> options) : DespatchContext(options)
+    private sealed class TestDespatchContext : DespatchContext
     {
+        public TestDespatchContext(DbContextOptions<DespatchContext> options) : base(options)
+        {
+        }
+
+        public TestDespatchContext(DbContextOptions<DespatchContext> options, IScopeProvider scopeProvider)
+            : base(options, scopeProvider)
+        {
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
