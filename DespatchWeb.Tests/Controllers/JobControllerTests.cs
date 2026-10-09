@@ -30,6 +30,7 @@ public class JobControllerTests : IDisposable
     private readonly IFlightAssignmentService _flightAssignmentServiceMock = Substitute.For<IFlightAssignmentService>();
     private readonly IArrivalWaitRerateService _arrivalWaitRerateServiceMock = Substitute.For<IArrivalWaitRerateService>();
     private readonly IAccessorialChargeRepository _accessorialChargeRepositoryMock = Substitute.For<IAccessorialChargeRepository>();
+    private readonly ISwapPodService _swapPodServiceMock = Substitute.For<ISwapPodService>();
     private readonly HttpClient _httpClient = new();
     private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
@@ -111,7 +112,8 @@ public class JobControllerTests : IDisposable
             _partnerJobGateMock,
             _flightAssignmentServiceMock,
             _arrivalWaitRerateServiceMock,
-            _accessorialChargeRepositoryMock);
+            _accessorialChargeRepositoryMock,
+            _swapPodServiceMock);
     }
 
     /// <summary>
@@ -2165,8 +2167,8 @@ public class JobControllerTests : IDisposable
 
         Assert.IsType<OkResult>(result);
         await _jobCommandRepositoryMock.Received(1).UpdateBulkJobAddressAsync(request, addressType);
-        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().UpdateDeliveryAddressAsync(default!);
-        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().UpdatePickupAddressAsync(default!);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().UpdateDeliveryAddressAsync(null!);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().UpdatePickupAddressAsync(null!);
     }
 
     [Fact]
@@ -3683,14 +3685,13 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task SwapPod_ValidJobs_ReturnsOk()
+    public async Task SwapPod_ValidJobs_ReturnsServiceResult()
     {
         // Arrange
         const string job1 = "JOB001";
         const string job2 = "JOB002";
 
-        _jobCommandRepositoryMock.SwapPodAsync(job1, job2)
-            .Returns(Task.CompletedTask);
+        _swapPodServiceMock.SwapAsync(job1, job2).Returns(new SwapPodResult(2, 1));
 
         var controller = CreateController();
 
@@ -3698,7 +3699,47 @@ public class JobControllerTests : IDisposable
         var result = await controller.SwapPod(job1, job2);
 
         // Assert
-        Assert.IsType<OkResult>(result);
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Equal(new SwapPodResult(2, 1), json.Value);
+    }
+
+    [Fact]
+    public async Task SwapPod_ServiceRejectsSwap_ReturnsBadRequestAndSkipsPostSteps()
+    {
+        _swapPodServiceMock.SwapAsync("JOB001", "JOB002")
+            .ThrowsAsync(new SwapPodException("Job JOB001 has no POD to swap."));
+
+        var result = await CreateController().SwapPod("JOB001", "JOB002");
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Job JOB001 has no POD to swap.", bad.Value);
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .ReSendSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>());
+    }
+
+    [Fact]
+    public async Task SwapPod_ServiceThrowsUnexpected_Returns500()
+    {
+        _swapPodServiceMock.SwapAsync("JOB001", "JOB002").ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await CreateController().SwapPod("JOB001", "JOB002");
+
+        Assert.Equal(500, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task SearchSwapPodCandidates_ReturnsRepositoryRows()
+    {
+        var rows = new List<SwapPodCandidate>
+        {
+            new(1, "JOB002", 0, "New", "Acme", "A", "B", "Bob", TestDates.Now, false)
+        };
+        var date = new DateTime(2026, 10, 9);
+        _jobQueryRepositoryMock.SearchSwapPodCandidatesAsync("002", 0, "Acme", date, "JOB001").Returns(rows);
+
+        var result = await CreateController().SearchSwapPodCandidates("002", 0, "Acme", date, "JOB001");
+
+        Assert.Same(rows, Assert.IsType<JsonResult>(result).Value);
     }
 
     [Fact]
@@ -3718,7 +3759,7 @@ public class JobControllerTests : IDisposable
 
         var result = await controller.SwapPod(job1, job2);
 
-        Assert.IsType<OkResult>(result);
+        Assert.IsType<JsonResult>(result);
         await _jobCommandRepositoryMock.Received(1)
             .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids!.Count == 1 && ids[0] == 20));
         await _jobCommandRepositoryMock.Received(1)
@@ -3743,7 +3784,7 @@ public class JobControllerTests : IDisposable
 
         var result = await controller.SwapPod(job1, job2);
 
-        Assert.IsType<OkResult>(result);
+        Assert.IsType<JsonResult>(result);
         await _jobCommandRepositoryMock.DidNotReceive()
             .ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>());
         await _jobCommandRepositoryMock.Received(1)

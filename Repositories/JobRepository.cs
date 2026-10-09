@@ -462,12 +462,190 @@ public partial class JobRepository(
         }
     }
 
+    private static readonly int[] PodParentRelationshipTypes = [2, 8, 12];
+
+    private sealed record PodState(
+        bool Done,
+        string PodName,
+        DateTime? ComplTime,
+        int? LeaveId,
+        int? PrivateBusiness,
+        byte[] Signature,
+        byte[] Photo,
+        int? Status);
+
+    private static PodState CapturePod(TucJob j) => new(j.UcjbJobDone, j.UcjbPodname, j.UcjbComplTime,
+        j.DeliverToLeaveId, j.DeliverToPrivateBusiness, j.DeliverySignature, j.DeliveryPhoto, j.UcjbStatus);
+
+    private static void ApplyPod(TucJob j, PodState s)
+    {
+        var becameDone = s.Done && !j.UcjbJobDone;
+        j.UcjbJobDone = s.Done;
+        j.UcjbPodname = s.PodName;
+        j.UcjbComplTime = s.ComplTime;
+        j.DeliverToLeaveId = s.LeaveId;
+        j.DeliverToPrivateBusiness = s.PrivateBusiness;
+        j.DeliverySignature = s.Signature;
+        j.DeliveryPhoto = s.Photo;
+        j.UcjbStatus = s.Status;
+        if (becameDone)
+        {
+            j.InternalStatus = (int)InternalJobStatus.Reprice;
+        }
+    }
+
     /// <summary>
-    /// Swaps POD (proof of delivery) data between two jobs.
+    /// Moves job 1's POD onto job 2 (job 1 reverts to Accepted if dispatched, else New). When job 2
+    /// is also done the two PODs are exchanged and statuses travel with them.
     /// </summary>
-    public async Task SwapPodAsync(string job1,
-        string job2) =>
-        await Context.Procedures.DESWEB_qdfSwapPODAsync(job1, job2);
+    public async Task SwapPodStateAsync(int jobId1, int jobId2)
+    {
+        if (jobId1 == jobId2)
+        {
+            throw new SwapPodException("A job's POD cannot be swapped with itself.");
+        }
+
+        var jobs = await Context.TucJobs
+            .AsTracking()
+            .Where(j => j.UcjbId == jobId1 || j.UcjbId == jobId2)
+            .ToListAsync();
+        var a = jobs.FirstOrDefault(j => j.UcjbId == jobId1);
+        var b = jobs.FirstOrDefault(j => j.UcjbId == jobId2);
+        if (a == null || b == null)
+        {
+            throw new SwapPodException("Both jobs must be live (not archived) to swap a POD.");
+        }
+
+        if (a.UcjbVoid || b.UcjbVoid)
+        {
+            throw new SwapPodException("A voided job cannot take part in a POD swap.");
+        }
+
+        if (!a.UcjbJobDone)
+        {
+            throw new SwapPodException($"Job {a.UcjbNumber} has no POD to swap.");
+        }
+
+        var aPod = CapturePod(a);
+        var bPod = CapturePod(b);
+        var twoSided = b.UcjbJobDone;
+
+        var cleared = new PodState(false, null, null, null, null, null, null,
+            a.UcjbCourierId != null ? (int)JobStatus.Accepted : (int)JobStatus.New);
+
+        ApplyPod(b, twoSided ? aPod : aPod with { Status = (int)JobStatus.Completed });
+        ApplyPod(a, twoSided ? bPod : cleared);
+
+        var legsWithParent = jobs
+            .Where(j => j.ParentId != null && j.ParentId != j.UcjbId && j.UcjbNumber != null &&
+                        j.UcjbNumber.EndsWith('2'))
+            .ToList();
+        if (legsWithParent.Count > 0)
+        {
+            var parentIds = legsWithParent.Select(j => j.ParentId!.Value).Distinct().ToList();
+            var parents = await Context.TucJobs
+                .AsTracking()
+                .Where(p => parentIds.Contains(p.UcjbId) && p.JobRelationshipTypeId != null &&
+                            PodParentRelationshipTypes.Contains(p.JobRelationshipTypeId.Value))
+                .ToListAsync();
+            foreach (var leg in legsWithParent)
+            {
+                var parent = parents.FirstOrDefault(p => p.UcjbId == leg.ParentId);
+                if (parent != null)
+                {
+                    ApplyPod(parent, CapturePod(leg));
+                }
+            }
+        }
+
+        var staffId = _infoService.GetStaffIdOrNull();
+        var updatedAt = DateTime.UtcNow;
+        foreach (var (job, other) in new[] { (a, b), (b, a) })
+        {
+            Context.JobDeliveryJourneys.Add(new JobDeliveryJourney
+            {
+                JobId = job.UcjbId,
+                ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                FieldName = "PodSwap",
+                OldValue = job.UcjbNumber,
+                NewValue = other.UcjbNumber,
+                Comments = $"POD swapped with {other.UcjbNumber}",
+                StaffId = staffId,
+                UpdatedAt = updatedAt,
+                UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId)
+            });
+        }
+
+        await Context.SaveChangesAsync();
+    }
+
+    public async Task<SwapPodJob> GetSwapPodJobAsync(string jobNumber) =>
+        await Context.TucJobs
+            .Where(j => j.UcjbNumber == jobNumber && !j.UcjbVoid)
+            .OrderByDescending(j => j.UcjbId)
+            .Select(j => new SwapPodJob(j.UcjbId, j.UcjbNumber, j.UcjbJobDone, j.UcjbComplTime))
+            .FirstOrDefaultAsync();
+
+    public async Task<IReadOnlyList<SwapPodCandidate>> SearchSwapPodCandidatesAsync(
+        string term, int? statusId, string customer, DateTime? date, string excludeJobNumber)
+    {
+        var query = Context.TucJobs.Where(j => !j.UcjbVoid);
+
+        if (!string.IsNullOrWhiteSpace(excludeJobNumber))
+        {
+            query = query.Where(j => j.UcjbNumber != excludeJobNumber);
+        }
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            var t = term.Trim();
+            query = query.Where(j => j.UcjbNumber.Contains(t));
+        }
+
+        if (statusId.HasValue)
+        {
+            query = query.Where(j => j.UcjbStatus == statusId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(customer))
+        {
+            var c = customer.Trim();
+            query = query.Where(j => j.UcjbClient.UcclName.Contains(c));
+        }
+
+        if (date.HasValue)
+        {
+            var from = date.Value.Date;
+            var to = from.AddDays(1);
+            query = query.Where(j => j.UcjbDate >= from && j.UcjbDate < to);
+        }
+
+        var rows = await query
+            .OrderByDescending(j => j.UcjbDate)
+            .ThenByDescending(j => j.UcjbId)
+            .Take(20)
+            .Select(j => new
+            {
+                j.UcjbId,
+                j.UcjbNumber,
+                j.UcjbStatus,
+                StatusName = j.UcjbStatusNavigation.UcjsName,
+                Customer = j.UcjbClient.UcclName,
+                From = j.UcjbFromNavigation.UcsuName,
+                To = j.UcjbToNavigation.UcsuName,
+                CourierName = j.UcjbCourier.UccrName,
+                CourierSurname = j.UcjbCourier.UccrSurname,
+                j.UcjbDate,
+                j.UcjbJobDone
+            })
+            .ToListAsync();
+
+        return rows.Select(r => new SwapPodCandidate(
+                r.UcjbId, r.UcjbNumber, r.UcjbStatus, r.StatusName, r.Customer, r.From, r.To,
+                string.Join(' ', new[] { r.CourierName, r.CourierSurname }.Where(n => !string.IsNullOrWhiteSpace(n))),
+                r.UcjbDate, r.UcjbJobDone))
+            .ToList();
+    }
 
     /// <summary>
     /// Restores selected jobs back to dispatch status.
@@ -4578,21 +4756,10 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Validates that a job exists and was booked today for POD swap operation.
+    /// Validates that a live (non-archived), non-void job exists with this number, so it can take part in a POD swap.
     /// </summary>
-    /// <param name="jobNumber">The job number to validate.</param>
-    /// <returns>True if the job is valid for POD swap.</returns>
-    public async Task<bool> ValidatePodSwapAsync(string jobNumber)
-    {
-        var today = _clock.TenantToday;
-
-        var isValid = await Context.TblJobs
-            .Where(j => j.Number == jobNumber)
-            .Where(j => j.Date.HasValue && j.Date.Value.Date == today.Date)
-            .AnyAsync();
-
-        return isValid;
-    }
+    public async Task<bool> ValidatePodSwapAsync(string jobNumber) =>
+        await Context.TucJobs.AnyAsync(j => j.UcjbNumber == jobNumber && !j.UcjbVoid);
 
     /// <summary>
     /// Resolves a job number to its canonical job id. Returns null when no job

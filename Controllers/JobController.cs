@@ -46,7 +46,8 @@ public class JobController(
     IPartnerJobGate partnerJobGate,
     IFlightAssignmentService flightAssignmentService,
     IArrivalWaitRerateService arrivalWaitRerateService,
-    IAccessorialChargeRepository accessorialChargeRepository
+    IAccessorialChargeRepository accessorialChargeRepository,
+    ISwapPodService swapPodService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -1052,9 +1053,42 @@ public class JobController(
         }
     }
 
+    public async Task<IActionResult> SearchSwapPodCandidates(
+        string term, int? statusId, string customer, DateTime? date, string excludeJobNumber)
+    {
+        try
+        {
+            var candidates = await jobQueryRepository.SearchSwapPodCandidatesAsync(
+                term, statusId, customer, date, excludeJobNumber);
+            return Json(candidates);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(SearchSwapPodCandidates)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     public async Task<IActionResult> SwapPod(string job1, string job2)
     {
-        await jobCommandRepository.SwapPodAsync(job1, job2);
+        SwapPodResult result;
+        try
+        {
+            result = await swapPodService.SwapAsync(job1, job2);
+        }
+        catch (SwapPodException e)
+        {
+            Log.Warning(e, "POD swap rejected for {Job1} and {Job2}: {Message}", job1, job2, e.Message);
+            return BadRequest(e.Message);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(SwapPod)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
 
         try
         {
@@ -1082,7 +1116,7 @@ public class JobController(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(SwapPod)));
         }
 
-        return Ok();
+        return Json(result);
     }
 
     public async Task<IActionResult> BulkSearch([FromQuery] PodSearchRequest request)
@@ -1373,12 +1407,7 @@ public class JobController(
 
             await jobCommandRepository.VoidJobAsync(request);
 
-            if (!parentId.HasValue || isParentBeingVoided)
-            {
-                return Ok();
-            }
-
-            if (Debugger.IsAttached)
+            if (!parentId.HasValue || isParentBeingVoided || Debugger.IsAttached)
             {
                 return Ok();
             }

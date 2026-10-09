@@ -1236,8 +1236,8 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             Assert.Contains("call-9", r.UjcrReason);
         });
         Assert.Equal("PO-77", rows.Single(r => r.UjcrFieldName == nameof(JobChangeField.RefA)).UjcrRequestedValue);
-        await _partnerClient.DidNotReceiveWithAnyArgs().ForwardCreateAsync(default, default, default, default!, default,
-            default, default, default!, default, default);
+        await _partnerClient.DidNotReceiveWithAnyArgs().ForwardCreateAsync(0, Guid.Empty, Guid.Empty, null!, null,
+            null, null, null!, false, CancellationToken.None);
     }
 
     [Fact]
@@ -1369,7 +1369,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.True(result.Success);
         await using var ctx = CreateContext();
         Assert.Equal("PO-1", await ctx.TucJobs.Where(j => j.UcjbId == 1).Select(j => j.UcjbClientRefa).SingleAsync());
-        await _partnerClient.DidNotReceiveWithAnyArgs().ForwardDecisionAsync(default, default, default!, default, default);
+        await _partnerClient.DidNotReceiveWithAnyArgs().ForwardDecisionAsync(0, Guid.Empty, null!, null, CancellationToken.None);
     }
 
     [Fact]

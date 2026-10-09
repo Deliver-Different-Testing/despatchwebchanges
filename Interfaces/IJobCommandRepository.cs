@@ -12,7 +12,10 @@ public interface IJobCommandRepository
     Task<IReadOnlySet<int>> UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data);
     Task UpdateJobVoidStatusAsync(IReadOnlyList<int> jobIds);
 
-    Task SwapPodAsync(string job1, string job2);
+    /// <summary>
+    /// Moves job 1's POD state onto job 2 (exchanging when both are done) in one save, with journey rows.
+    /// </summary>
+    Task SwapPodStateAsync(int jobId1, int jobId2);
     Task ReDispatchSelectedJobsAsync(IReadOnlyList<int> jobIds);
     Task ReSendSelectedJobsAsync(IReadOnlyList<int> jobIds);
     Task ReAssignSelectedJobsAsync(IReadOnlyList<int> jobIds);
