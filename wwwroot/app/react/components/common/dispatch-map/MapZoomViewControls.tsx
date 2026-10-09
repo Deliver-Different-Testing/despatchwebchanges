@@ -8,7 +8,7 @@
 
 import React, {useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {ActionIcon, Divider, Menu, Paper, Tooltip} from '@mantine/core';
-import {Check, Layers, Minus, Monitor, Moon, Mountain, Plus, Satellite, Sun, TrafficCone, TriangleAlert} from 'lucide-react';
+import {Check, Layers, Minus, Monitor, Moon, Mountain, Plus, Satellite, Sun, TrafficCone} from 'lucide-react';
 import {IconMap} from '@tabler/icons-react';
 import {Icon} from '../icon/Icon';
 import {useMapTheme, type MapThemePreference} from '../../../hooks/useMapTheme';
@@ -59,7 +59,6 @@ interface MapZoomViewControlsProps {
     platform: any | null;
     defaultLayers: any | null;
     showTraffic?: boolean;
-    showIncidents?: boolean;
     showViewPicker?: boolean;
     /** Show the map light/dark picker. Defaults to true. */
     showThemePicker?: boolean;
@@ -103,47 +102,17 @@ function getLayer(defaultLayers: any, view: ViewType, dark = false): any | null 
     }
 }
 
-function getTrafficLayer(defaultLayers: any, platform: any): any | null {
-    const fromDefaults =
-        defaultLayers?.vector?.normal?.traffic ??
-        defaultLayers?.raster?.normal?.traffic ??
-        defaultLayers?.raster?.traffic?.flow ??
-        null;
-    if (fromDefaults) return fromDefaults;
-
-    if (!platform || typeof platform.getMapTileService !== 'function') return null;
-    try {
-        const trafficService = platform.getMapTileService({type: 'traffic'});
-        return trafficService.createTileLayer('traffictile', 'normal.day', 256, 'png8', {style: 'flow'});
-    } catch {
-        return null;
-    }
-}
-
-function getTrafficIncidentsLayer(defaultLayers: any, platform: any): any | null {
-    const fromDefaults =
-        defaultLayers?.vector?.normal?.trafficincidents ??
-        defaultLayers?.raster?.normal?.trafficincidents ??
-        defaultLayers?.raster?.traffic?.incidents ??
-        null;
-    if (fromDefaults) return fromDefaults;
-
-    if (!platform || typeof platform.getMapTileService !== 'function') return null;
-    try {
-        const trafficService = platform.getMapTileService({type: 'traffic'});
-        return trafficService.createTileLayer('traffictile', 'normal.day', 256, 'png8', {style: 'incidents'});
-    } catch {
-        return null;
-    }
+/** Vector traffic overlay (flow + incident markers) from the HERE Traffic Vector Tile API. */
+function getTrafficLayer(defaultLayers: any, dark: boolean): any | null {
+    const traffic = defaultLayers?.vector?.traffic;
+    return (dark ? traffic?.litenight : null) ?? traffic?.map ?? null;
 }
 
 export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, MapZoomViewControlsProps>(
     function MapZoomViewControls({
         map,
-        platform,
         defaultLayers,
         showTraffic = true,
-        showIncidents = true,
         showViewPicker = true,
         showThemePicker = true,
         placement = 'right',
@@ -161,8 +130,6 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
     const [viewMenuOpened, setViewMenuOpened] = useState(false);
     const [trafficEnabled, setTrafficEnabled] = useState(false);
     const trafficLayerRef = useRef<any>(null);
-    const [incidentsEnabled, setIncidentsEnabled] = useState(false);
-    const incidentsLayerRef = useRef<any>(null);
 
     const handleZoomIn = () => {
         if (!map) return;
@@ -187,15 +154,17 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
     /** Adds/removes the traffic layer to reach `enabled`, unless it's already there. */
     const applyTraffic = (enabled: boolean) => {
         if (!map || enabled === trafficEnabled) return;
-        if (!trafficLayerRef.current) {
-            trafficLayerRef.current = getTrafficLayer(defaultLayers, platform);
-        }
-        const layer = trafficLayerRef.current;
-        if (!layer) return;
         if (enabled) {
+            const layer = getTrafficLayer(defaultLayers, dark);
+            if (!layer) {
+                console.warn('[MapZoomViewControls] SDK exposes no vector traffic layer; traffic not shown');
+                return;
+            }
             map.addLayer(layer);
-        } else {
-            map.removeLayer(layer);
+            trafficLayerRef.current = layer;
+        } else if (trafficLayerRef.current) {
+            map.removeLayer(trafficLayerRef.current);
+            trafficLayerRef.current = null;
         }
         setTrafficEnabled(enabled);
     };
@@ -221,6 +190,17 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
         // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to mode/map only
     }, [map, dark]);
 
+    // The traffic overlay has a night variant; swap it live while it is showing.
+    useEffect(() => {
+        if (!map || !trafficLayerRef.current) return;
+        const layer = getTrafficLayer(defaultLayers, dark);
+        if (!layer || layer === trafficLayerRef.current) return;
+        map.removeLayer(trafficLayerRef.current);
+        map.addLayer(layer);
+        trafficLayerRef.current = layer;
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to mode only
+    }, [dark]);
+
     // Apply the initial view/traffic the parent asked for, once, when the map first mounts —
     // e.g. a display-settings preset ("Live" = satellite + traffic) applied at page load.
     useEffect(() => {
@@ -229,21 +209,6 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
         applyTraffic(defaultTrafficEnabled);
         // eslint-disable-next-line react-hooks/exhaustive-deps -- apply once when the map becomes available
     }, [map]);
-
-    const handleToggleIncidents = () => {
-        if (!map) return;
-        if (!incidentsLayerRef.current) {
-            incidentsLayerRef.current = getTrafficIncidentsLayer(defaultLayers, platform);
-        }
-        const layer = incidentsLayerRef.current;
-        if (!layer) return;
-        if (incidentsEnabled) {
-            map.removeLayer(layer);
-        } else {
-            map.addLayer(layer);
-        }
-        setIncidentsEnabled(!incidentsEnabled);
-    };
 
     return (
         <Paper
@@ -285,23 +250,6 @@ export const MapZoomViewControls = React.forwardRef<MapZoomViewControlsHandle, M
                             active={trafficEnabled}
                         >
                             <Icon lucide={TrafficCone} size={ICON_SIZE}/>
-                        </RailButton>
-                    </Tooltip>
-                </>
-            )}
-            {showIncidents && (
-                <>
-                    <Divider/>
-                    <Tooltip
-                        label={incidentsEnabled ? 'Hide traffic incidents' : 'Show traffic incidents'}
-                        position={tooltipPlacement}
-                    >
-                        <RailButton
-                            label="Toggle traffic incidents"
-                            onClick={handleToggleIncidents}
-                            active={incidentsEnabled}
-                        >
-                            <Icon lucide={TriangleAlert} size={ICON_SIZE}/>
                         </RailButton>
                     </Tooltip>
                 </>
