@@ -222,6 +222,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             defaultCategory="in-progress"
             fetchConfig={fetchConfig}
             hideLoggedInSwitch
+            undeliverableIsDone
             onJobSelect={onJobSelect}
         />
     ) : (

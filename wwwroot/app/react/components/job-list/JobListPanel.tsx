@@ -35,7 +35,7 @@ import {
 } from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
-import {isDelivered, isInTransit, isUrgent, JOB_STATUS, needsDispatch, priorityRank} from './jobListHelpers';
+import {isDelivered, isDone, isInTransit, isUrgent, JOB_STATUS, needsDispatch, priorityRank} from './jobListHelpers';
 import {
     jobListStorageKey,
     loadJobListCategory,
@@ -61,14 +61,14 @@ const DEFAULT_STORAGE_PREFIX = 'jobListReact';
 
 // ── Filter / Sort Helpers ────────────────────────────────────────────
 
-function matchesCategory(job: DispatchJob, category: JobCategory): boolean {
+function matchesCategory(job: DispatchJob, category: JobCategory, undeliverableIsDone: boolean): boolean {
     switch (category) {
         case 'needs-dispatch':
             return needsDispatch(job);
         case 'in-progress':
-            return !isDelivered(job);
+            return !isDone(job, undeliverableIsDone);
         case 'delivered':
-            return isDelivered(job);
+            return isDone(job, undeliverableIsDone);
         default:
             return true;
     }
@@ -241,6 +241,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
+                                                              undeliverableIsDone,
                                                               headerSlot,
                                                               topSlot,
                                                               setJobsCallback,
@@ -463,10 +464,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         // Category filter
         if (selectedCategory !== 'all') {
             filtered = filtered.filter((job) => {
-                if (matchesCategory(job, selectedCategory)) return true;
+                if (matchesCategory(job, selectedCategory, !!undeliverableIsDone)) return true;
                 // Include multipart parents if any children match
                 if (job.isParentOrSingle && job._groupChildren?.length) {
-                    return job._groupChildren.some((child) => matchesCategory(child, selectedCategory));
+                    return job._groupChildren.some((child) => matchesCategory(child, selectedCategory, !!undeliverableIsDone));
                 }
                 return false;
             });
@@ -482,7 +483,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         filtered = sortJobs(filtered, sortState, isUsCustomer, addressFormat);
 
         return filtered;
-    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, addressFormat, fetchConfig]);
+    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, addressFormat, fetchConfig, undeliverableIsDone]);
 
     // ── Computed: stats header ───────────────────────────────────────
     // The header describes the whole list, so the server counts it — before any category filter and
