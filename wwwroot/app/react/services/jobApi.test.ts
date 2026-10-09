@@ -14,6 +14,7 @@ import {
     allocateJobToCourier,
     validateSwapPod,
     swapPod,
+    searchSwapPodCandidates,
 } from './jobApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
@@ -269,25 +270,27 @@ describe('jobApi', () => {
         });
     });
 
-    describe('swapPod', () => {
-        it('should call apiClient.post with correct URL and body', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
+    describe('searchSwapPodCandidates', () => {
+        it('should GET the candidates endpoint with the query and abort signal', async () => {
+            mockApiClient.get.mockResolvedValueOnce([{jobId: 2, number: 'JOB-002'}]);
+            const signal = new AbortController().signal;
+            const query = {term: 'JOB', statusId: 0, customer: 'Acme', date: '2026-10-09', excludeJobNumber: 'JOB-001'};
 
-            await swapPod('JOB-001', 'JOB-002');
+            const result = await searchSwapPodCandidates(query, {signal});
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('Job/SwapPod', {
-                job1: 'JOB-001',
-                job2: 'JOB-002',
-            });
+            expect(mockApiClient.get).toHaveBeenCalledWith('Job/SearchSwapPodCandidates', query, {signal});
+            expect(result).toEqual([{jobId: 2, number: 'JOB-002'}]);
         });
+    });
 
-        it('should pass both job numbers in the correct order', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
+    describe('swapPod', () => {
+        it('should post both job numbers in order and return the photo counts', async () => {
+            mockApiClient.post.mockResolvedValueOnce({movedPhotos: 3, failedPhotos: 1});
 
-            await swapPod('ABC-100', 'XYZ-200');
+            const result = await swapPod('ABC-100', 'XYZ-200');
 
-            const callArgs = mockApiClient.post.mock.calls[0];
-            expect(callArgs[1]).toEqual({job1: 'ABC-100', job2: 'XYZ-200'});
+            expect(mockApiClient.post).toHaveBeenCalledWith('Job/SwapPod', {job1: 'ABC-100', job2: 'XYZ-200'});
+            expect(result).toEqual({movedPhotos: 3, failedPhotos: 1});
         });
     });
 

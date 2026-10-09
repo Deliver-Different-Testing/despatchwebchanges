@@ -1,19 +1,10 @@
-/**
- * JobListContextMenu Tests
- *
- * Covers menu rendering/visibility based on job state, action handlers,
- * inline dialogs (late call + confirmation), callback props,
- * window global dialogs, event groups submenu, and menu closing.
- */
-
 import React from 'react';
 import {fireEvent, screen, waitFor, act} from '@testing-library/react';
 import { renderWithMantine } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
 import {JobListContextMenu} from './JobListContextMenu';
-import type {DispatchJob, AppPage} from '../../interfaces/dispatchJob';
+import type {AppPage} from '../../interfaces/dispatchJob';
 import {AppPage as AppPageEnum} from '../../interfaces/dispatchJob';
-import dayjs from 'dayjs';
 
 // ── Mocks ─────────────────────────────────────────────────────────────
 
@@ -560,7 +551,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(await screen.findByRole('button', {name: 'Swap POD'}));
 
             await waitFor(() => {
-                expect((window as any).ReactSwapPodsDialog.open).toHaveBeenCalledWith('J001', expect.anything());
+                expect((window as any).ReactSwapPodsDialog.open).toHaveBeenCalledWith('J001', expect.anything(), 'Test Client');
             });
             expect(mockedApi.restoreJobs).not.toHaveBeenCalled();
         });
@@ -1002,6 +993,7 @@ describe('JobListContextMenu', () => {
                 expect((window as any).ReactSwapPodsDialog.open).toHaveBeenCalledWith(
                     'J001',
                     {showToast: props.showToast},
+                    'Test Client',
                 );
             });
             expect(props.onRefresh).toHaveBeenCalled();

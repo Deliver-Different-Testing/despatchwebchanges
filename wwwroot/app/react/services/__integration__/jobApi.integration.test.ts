@@ -519,10 +519,10 @@ describe('jobApi integration', () => {
             expect(capturedBody).toEqual({ job1: 'ABC-100', job2: 'XYZ-200' });
         });
 
-        it('resolves without a value on success (void return)', async () => {
+        it('resolves with the moved and failed photo counts', async () => {
             const result = await jobApi.swapPod('JOB-001', 'JOB-002');
 
-            expect(result).toBeUndefined();
+            expect(result).toEqual({ movedPhotos: 0, failedPhotos: 0 });
         });
 
         it('handles a job not found error', async () => {

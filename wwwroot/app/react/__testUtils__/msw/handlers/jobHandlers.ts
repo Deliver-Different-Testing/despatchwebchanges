@@ -161,6 +161,15 @@ export const jobHandlers = [
         return HttpResponse.json(true);
     }),
 
+    // Search candidate jobs for a POD swap
+    http.get('*/Job/SearchSwapPodCandidates', ({ request }) => {
+        const exclude = new URL(request.url).searchParams.get('excludeJobNumber');
+        const candidates = [
+            { jobId: 2, number: 'JOB-002', statusId: 0, statusName: 'New', customer: 'Acme Ltd', fromSuburb: 'Penrose', toSuburb: 'Albany', courier: null, date: '2026-10-09T00:00:00', hasPod: false },
+        ];
+        return HttpResponse.json(candidates.filter(c => c.number !== exclude));
+    }),
+
     // Swap the POD between two jobs
     http.post('*/Job/SwapPod', async ({ request }) => {
         const rejected = rejectWithoutCsrf(request);
@@ -176,6 +185,6 @@ export const jobHandlers = [
             return new HttpResponse('Invalid job numbers', { status: 400 });
         }
 
-        return new HttpResponse(null, { status: 200 });
+        return HttpResponse.json({ movedPhotos: 0, failedPhotos: 0 });
     }),
 ];

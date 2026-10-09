@@ -397,7 +397,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         try {
             if (window.ReactSwapPodsDialog) {
-                const result = await window.ReactSwapPodsDialog.open(activeJob.jobNo, {showToast});
+                const result = await window.ReactSwapPodsDialog.open(activeJob.jobNo, {showToast}, activeJob.client);
                 if (result) refresh();
             }
         } catch {
