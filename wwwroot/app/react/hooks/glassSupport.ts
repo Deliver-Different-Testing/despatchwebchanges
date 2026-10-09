@@ -1,1 +1,1 @@
-export {isChromiumEngine, isLiquidGlassSupported} from '@dfrnt/glass';
+export {isChromiumEngine, isLiquidGlassSupported} from '@deliver-different/glass';

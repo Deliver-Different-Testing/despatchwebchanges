@@ -8,7 +8,7 @@ import {
     dfrntCssVariablesResolver,
     createDfrntTheme,
 } from './dfrntMantineTheme';
-import {GlassDropdownRoot, glassClassNames} from '@dfrnt/glass';
+import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
 import {contrastRatio, getMd3Scheme} from './md3';
 import {dfrntPrimaryPalette, urgentPrimaryPalette, inkBluePalette} from './palettes';
 

@@ -6,7 +6,7 @@ import {
 import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import classes from './DriversPanel.module.css';
-import {glassClassNames} from '@dfrnt/glass';
+import {glassClassNames} from '@deliver-different/glass';
 import {useLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import { NoData } from '../../../components/common/no-data';
 import { matchesCourierSearch } from '../CourierMapPage.types';
