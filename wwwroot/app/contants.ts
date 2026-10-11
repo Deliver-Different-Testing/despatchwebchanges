@@ -1,6 +1,7 @@
-const FirstName: string = window.FirstName || '';
-const ContactID: number = window.ContactID || 0;
-const TimeZone: string = window.TimeZone || '';
+import {getSession} from './react/session';
+const FirstName: string = getSession().firstName;
+const ContactID: number = getSession().contactId;
+const TimeZone: string = getSession().timeZone;
 const NationwideSpeedId = 415;
 
 export {FirstName, ContactID, TimeZone, NationwideSpeedId};

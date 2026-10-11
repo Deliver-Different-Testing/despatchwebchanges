@@ -1,3 +1,4 @@
+import {getSession} from '../../session';
 /**
  * Storage helpers for the job list's per-user preferences.
  *
@@ -76,7 +77,7 @@ export function persistJobListColumnsToServer(storagePrefix: string, prefs: JobL
 }
 
 export function jobListStorageKey(storagePrefix: string, suffix: string): string {
-    return `${storagePrefix}_${suffix}_${window.ContactID ?? 0}`;
+    return `${storagePrefix}_${suffix}_${getSession().contactId}`;
 }
 
 /** The stored category, or null when nothing valid is stored. */

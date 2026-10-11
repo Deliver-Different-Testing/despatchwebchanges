@@ -71,6 +71,7 @@ declare global {
         // ── Server-injected user/tenant globals ──────────────────────────
         FirstName?: string;
         FullName?: string;
+        Dispatcher?: string;
         ContactID?: number;
         ClientInternal?: boolean;
         IsNetworkPartner?: boolean;

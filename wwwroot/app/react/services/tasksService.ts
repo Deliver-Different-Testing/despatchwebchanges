@@ -7,6 +7,7 @@
  */
 
 import {TaskFiltersRequest, Task, StaffSuggestion, EventTypeSuggestion} from '../interfaces';
+import {getSession} from '../session';
 
 /**
  * App page types for filter storage
@@ -41,7 +42,7 @@ export type TaskFilterType = 'mine' | 'unassigned' | 'newest' | 'oldest' | 'all'
  * Get the current contact ID from window
  */
 function getContactId(): number {
-    return window.ContactID || 0;
+    return getSession().contactId;
 }
 
 /**

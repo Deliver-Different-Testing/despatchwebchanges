@@ -12,12 +12,13 @@ import { EditDateTimeDialogResult, EditDateTimeDialogOptions } from './types';
 import type { ToastService } from '../../../services/toastService';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {createDialogHost} from '../../../utils/reactDialogHost';
+import {getSession} from '../../../session';
 
 /**
  * Get the US customer flag from server config
  */
 function getIsUSCustomer(): boolean {
-    return window.serverConfig?.isUSCustomer ?? false;
+    return getSession().isUsCustomer ?? false;
 }
 
 type EditDateTimePayload = Required<Pick<EditDateTimeDialogOptions, 'title' | 'fieldName'>>

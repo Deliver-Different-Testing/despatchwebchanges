@@ -1,3 +1,4 @@
+import {getSession} from '../session';
 import {useEffect, useSyncExternalStore} from 'react';
 import {StaffPreferenceKey} from '../../enums/staff-preference-key.enum';
 import {getPreference, savePreference} from '../services/preferencesApi';
@@ -50,7 +51,7 @@ export function setLiquidGlassEnabled(enabled: boolean): void {
 
 /** Only a signed-in staff member (Razor sets ContactID) has a server preference to sync. */
 function canSyncWithServer(): boolean {
-    return Number((window as unknown as {ContactID?: number}).ContactID) > 0;
+    return Number(getSession().contactId) > 0;
 }
 
 /**

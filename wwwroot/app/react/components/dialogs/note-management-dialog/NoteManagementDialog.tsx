@@ -1,3 +1,4 @@
+import {getSession} from '../../../session';
 import React, {useEffect, useMemo, useState} from 'react';
 import {
     ActionIcon,
@@ -121,7 +122,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
     // Timezone for metadata display
     const formattedTimeZone = useMemo(() => {
-        return getTimezoneAbbreviation((window as unknown as Record<string, string>).TimeZone || '');
+        return getTimezoneAbbreviation(getSession().timeZone);
     }, []);
 
     // Edit history

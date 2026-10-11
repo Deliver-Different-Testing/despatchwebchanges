@@ -1,3 +1,4 @@
+import {getSession} from '../session';
 /**
  * Date Utilities for React Components
  *
@@ -18,14 +19,14 @@ dayjs.extend(timezone);
  * Get the current tenant timezone from the window global
  */
 export function getTenantTimezone(): string {
-    return window.TimeZone || 'UTC';
+    return getSession().timeZone || 'UTC';
 }
 
 /**
  * Check if the current tenant is a US customer
  */
 export function isUsCustomer(): boolean {
-    return window.serverConfig?.isUSCustomer ?? true;
+    return getSession().isUsCustomer ?? true;
 }
 
 /**
@@ -219,7 +220,7 @@ export function formatRelativeDateTime(dateTimeString: string): string {
     // offset (DeliveryJourneyService converts UTC rows via ConvertUtcToTenantTimeZone and
     // stamps local rows via SetDateTimeWithTimeZone). parseDateFromApi preserves that
     // wall-clock + offset, so display it as-is — matching formatLongDateTime/formatTime.
-    // Do NOT re-project with .tz(window.TimeZone): that double-converts and flips the day
+    // Do NOT re-project with .tz(tenant timezone): that double-converts and flips the day
     // when the offsets disagree (showed a 16:24 booking as "Tomorrow 04:24").
     const now = dayjs().utcOffset(parsed.utcOffset());
     const isToday = parsed.isSame(now, 'day');

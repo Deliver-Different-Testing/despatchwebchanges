@@ -6,6 +6,7 @@
 
 import countSubJobs from '../../../../functions/countSubJobs';
 import type {ISuggestion} from '../../../../interfaces/job.interface';
+import {getSession} from '../../../session';
 
 /**
  * Whether the signed-in user is a network partner. Sourced from the Razor-rendered
@@ -13,7 +14,7 @@ import type {ISuggestion} from '../../../../interfaces/job.interface';
  * boolean. `RazorScriptGlobalsTests` guards that.
  */
 export function isNetworkPartnerSession(): boolean {
-    return window.IsNetworkPartner === true;
+    return getSession().isNetworkPartner;
 }
 
 /**

@@ -1,3 +1,4 @@
+import {getSession} from '../../session';
 /**
  * TaskDashboard Page Component
  *
@@ -78,17 +79,17 @@ import {isAiEnabled, isAiAutoOpenEnabled} from '../../../functions/aiSettings';
 
 // Local storage keys
 const getViewPreferenceKey = () => {
-    const contactId = window.ContactID || 0;
+    const contactId = getSession().contactId;
     return `taskDashboardViewPreference-${contactId}`;
 };
 
 const getDateFilterKey = () => {
-    const contactId = window.ContactID || 0;
+    const contactId = getSession().contactId;
     return `dateFilter-task-dashboard-${contactId}`;
 };
 
 const getRefreshIntervalKey = () => {
-    const contactId = window.ContactID || 0;
+    const contactId = getSession().contactId;
     return `taskDashboardRefreshInterval-${contactId}`;
 };
 

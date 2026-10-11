@@ -1,9 +1,10 @@
+import {getSession} from '../session';
 // Cached Intl.NumberFormat instance per currency code
 let _cachedFormatter: Intl.NumberFormat | null = null;
 let _cachedCurrencyCode: string | null = null;
 
 export const formatCurrency = (amount: number): string => {
-    const code = window.CurrencyCode || 'NZD';
+    const code = getSession().currencyCode || 'NZD';
     if (_cachedCurrencyCode !== code) {
         _cachedFormatter = new Intl.NumberFormat('en-NZ', {
             style: 'currency',

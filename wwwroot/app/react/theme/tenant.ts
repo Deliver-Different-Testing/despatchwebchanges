@@ -1,7 +1,8 @@
+import {getSession} from '../session';
 /**
  * Which tenant the theme layer is painting for.
  *
- * `window.serverConfig` is written by `Views/Home/Index.cshtml` in a plain script
+ * the `serverConfig` global is written by `Views/Home/Index.cshtml` in a plain script
  * ahead of every bundle, so this resolves at module-eval time — which the theme
  * consts need, since both `theme` (MUI) and `dfrntTheme` (Mantine) are built at
  * import time.
@@ -14,5 +15,5 @@ export function isUsTenant(): boolean {
     // The theme modules are also pulled into node-environment tests through the
     // shared test utils, where there is no window at all.
     if (typeof window === 'undefined') return true;
-    return window.serverConfig?.isUSCustomer ?? true;
+    return getSession().isUsCustomer ?? true;
 }

@@ -1,3 +1,4 @@
+import {getSession} from '../session';
 /**
  * DFRNT light/dark colour-mode provider + hook. Ported from the
  * `dfrnt-brand-theming` skill (`assets/useColorMode.tsx`).
@@ -95,7 +96,7 @@ function saveToServer(preference: ColorModePreference): void {
 
 /** Only a signed-in staff member (Razor sets ContactID) has a server preference to sync. */
 function canSyncWithServer(): boolean {
-    return typeof window !== 'undefined' && Number((window as unknown as {ContactID?: number}).ContactID) > 0;
+    return Number(getSession().contactId) > 0;
 }
 
 /**

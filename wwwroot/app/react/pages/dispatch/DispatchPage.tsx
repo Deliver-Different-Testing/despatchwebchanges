@@ -1,3 +1,4 @@
+import {getSession} from '../../session';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -415,7 +416,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             endDate: filters.endDate,
             useTime: filters.useTime,
             despatchViewIds: filters.despatchViewIds,
-            isInternal: window.ClientInternal ?? false,
+            isInternal: getSession().clientInternal,
             page: 0,
             pageSize: 50,
             // Seeds the dispatcher's Unassigned/Active choice on mount; from then on the

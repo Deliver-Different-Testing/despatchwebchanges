@@ -1,3 +1,4 @@
+import {getSession} from '../../../session';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Box, Group, Stack, Text} from '@mantine/core';
@@ -39,7 +40,7 @@ interface CurrentWorkFocus {
     appliedJobCourierId?: number;
 }
 
-const focusStorageKey = (): string => `dispatchCurrentWorkFocus_${window.ContactID ?? 0}`;
+const focusStorageKey = (): string => `dispatchCurrentWorkFocus_${getSession().contactId}`;
 
 function readFocus(): CurrentWorkFocus | null {
     try {

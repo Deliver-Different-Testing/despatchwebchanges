@@ -1,3 +1,4 @@
+import {getSession} from '../session';
 /**
  * Which DespatchWeb dashboards the signed-in session may open.
  *
@@ -26,10 +27,7 @@ export const dashboardFeatureKeys = {
 
 /** The granted keys, or `null` when this session is not gated. */
 export function visibleDashboards(): string[] | null {
-    const granted = window.VisibleFeatures;
-    // A non-array value can only mean the global was mis-emitted; failing open
-    // keeps a serialization bug from taking the nav away from everyone.
-    return Array.isArray(granted) ? granted : null;
+    return getSession().visibleFeatures;
 }
 
 /** True when `key` is reachable — always true for an ungated session. */

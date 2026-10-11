@@ -1,3 +1,4 @@
+import {getSession} from '../../session';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {ContactID} from '../../../contants';
@@ -626,7 +627,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             startDate: dateFilter.startDate,
             endDate: dateFilter.endDate,
             useTime: dateFilter.useTime,
-            isInternal: window.ClientInternal ?? false,
+            isInternal: getSession().clientInternal,
             despatchViewIds: selectedViewIds,
             page: 0,
             pageSize: 50,
