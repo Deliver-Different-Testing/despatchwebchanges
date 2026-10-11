@@ -43,7 +43,8 @@ export interface ExtendedTask extends Task {
 }
 
 export interface MountTaskDashboardConfig {
-    showToast: ShowToastFn;
+    /** Ignored: the module supplies toasts from the Mantine toastService. */
+    showToast?: ShowToastFn;
     isUsCustomer: boolean;
 }
 

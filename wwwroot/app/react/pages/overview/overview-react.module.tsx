@@ -7,10 +7,19 @@
 
 import React from 'react';
 import {OverviewPage} from './OverviewPage';
-import {MountOverviewConfig} from './OverviewPage.interfaces';
+import {MountOverviewConfig, ShowToastFn} from './OverviewPage.interfaces';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {islandTree} from '../../theme/DfrntMantineProvider';
 import {createPageHost} from '../../utils/reactPageHost';
+import {toastService} from '../../services/toastService';
+
+// Page toasts use the Mantine toastService; the AngularJS host no longer supplies one.
+const showMantineToast: ShowToastFn = {
+    showSuccessToast: (m) => toastService.showSuccessToast(m),
+    showWarningToast: (m) => toastService.showWarningToast(m),
+    showErrorToast: (m) => toastService.showErrorToast(m ?? 'Something went wrong'),
+    showInfoToast: (m) => toastService.showInfoToast(m),
+};
 
 let refreshCallback: (() => void) | null = null;
 
@@ -19,7 +28,7 @@ const host = createPageHost<MountOverviewConfig>({
     render: (config) => islandTree(
         <ErrorBoundary>
             <OverviewPage
-                showToast={config.showToast}
+                showToast={showMantineToast}
                 isUsCustomer={config.isUsCustomer}
                 onOpenJobDetail={config.onOpenJobDetail}
                 setRefreshCallback={(cb) => {

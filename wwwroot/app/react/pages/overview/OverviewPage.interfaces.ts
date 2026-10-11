@@ -3,7 +3,8 @@ import type {Dayjs} from 'dayjs';
 // ── Mount config (passed from AngularJS controller) ──
 
 export interface MountOverviewConfig {
-    showToast: ShowToastFn;
+    /** Ignored: the module supplies toasts from the Mantine toastService. */
+    showToast?: ShowToastFn;
     isUsCustomer: boolean;
     onOpenJobDetail: (jobId: number) => void;
 }

@@ -28,7 +28,10 @@ import {
     setCurrentLayoutName as setCurrentLayoutNameOnBridge,
 } from "../../utils/layoutUtils";
 
-export interface MountNationwidePageConfig extends NationwidePageProps {}
+export interface MountNationwidePageConfig extends Omit<NationwidePageProps, 'showToast'> {
+    /** Ignored: the module supplies toasts from the Mantine toastService. */
+    showToast?: ShowToastFn;
+}
 
 let layoutBridge: NationwideLayoutBridge | null = null;
 // The host toolbar registers its Views-menu listener as soon as its controller

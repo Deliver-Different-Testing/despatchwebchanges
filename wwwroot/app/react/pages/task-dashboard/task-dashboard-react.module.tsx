@@ -11,6 +11,12 @@ import {MountTaskDashboardConfig} from './TaskDashboardPage.interfaces';
 import {islandTree} from '../../theme/DfrntMantineProvider';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {createPageHost} from '../../utils/reactPageHost';
+import {toastService} from '../../services/toastService';
+import type {ShowToastFn} from '../../services/toastTypes';
+
+// Page toasts use the Mantine toastService; the AngularJS host no longer supplies one.
+const showMantineToast: ShowToastFn = (message, type, action) =>
+    toastService.showToast(message, type, action);
 
 // Store config for refresh functionality
 let refreshCallback: (() => void) | null = null;
@@ -22,7 +28,7 @@ const host = createPageHost<MountTaskDashboardConfig>({
     render: (config) => islandTree(
         <ErrorBoundary>
             <TaskDashboardPage
-                showToast={config.showToast}
+                showToast={showMantineToast}
                 isUsCustomer={config.isUsCustomer}
                 setRefreshCallback={(cb) => {
                     refreshCallback = cb;

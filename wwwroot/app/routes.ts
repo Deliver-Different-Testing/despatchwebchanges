@@ -207,15 +207,6 @@ class RouterConfig {
                     $http: angular.IHttpService,
                     $interval: angular.IIntervalService
                 ) {
-                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
-                        switch (type) {
-                            case 'success': toastrService.showSuccessToast(message); break;
-                            case 'warning': toastrService.showWarningToast(message); break;
-                            case 'error': toastrService.showErrorToast(message); break;
-                            case 'info': toastrService.showInfoToast(message); break;
-                        }
-                    };
-
                     // ── Layout storage keys — must match useBoxLayout in DispatchPage ──
                     const layoutStorageKeys = {
                         layoutsKey: `layoutV2-${window.ContactID}`,
@@ -469,7 +460,6 @@ class RouterConfig {
                         : undefined;
 
                     window.ReactDispatch!.mount('react-dispatch-v2', {
-                        showToast,
                         isUsCustomer: appConfig.US_Customer,
                         timeZone: window.TimeZone || 'New Zealand Standard Time',
                         timeZoneShort: undefined,
@@ -930,15 +920,6 @@ class RouterConfig {
                     },
                     appConfig: { US_Customer: boolean }
                 ) {
-                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
-                        switch (type) {
-                            case 'success': toastrService.showSuccessToast(message); break;
-                            case 'warning': toastrService.showWarningToast(message); break;
-                            case 'error': toastrService.showErrorToast(message); break;
-                            case 'info': toastrService.showInfoToast(message); break;
-                        }
-                    };
-
                     // ── Layout storage keys — must match useBoxLayout in JobSearchPage ──
                     const layoutStorageKeys = {
                         layoutsKey: `layoutsCSV2-${window.ContactID}`,
@@ -1070,7 +1051,6 @@ class RouterConfig {
                         : undefined;
 
                     window.ReactJobSearch!.mount('react-job-search-v2', {
-                        showToast,
                         isUsCustomer: appConfig.US_Customer,
                         timeZone: window.TimeZone || 'New Zealand Standard Time',
                         timeZoneShort: undefined,
@@ -1146,41 +1126,17 @@ class RouterConfig {
                     });
                 }]
             },
-            controller: ['$scope', 'toastrService', 'jobAddStopService', 'APP_CONFIG',
+            controller: ['$scope', 'jobAddStopService', 'APP_CONFIG',
                 function (
                     $scope: angular.IScope,
-                    toastrService: {
-                        showSuccessToast: (m: string) => void;
-                        showWarningToast: (m: string) => void;
-                        showErrorToast: (m: string) => void;
-                        showInfoToast: (m: string) => void
-                    },
                     jobAddStopService: { addRecurringJobStop: (job: unknown, isPickup: boolean) => Promise<void> },
                     appConfig: { US_Customer: boolean }
                 ) {
-                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
-                        switch (type) {
-                            case 'success':
-                                toastrService.showSuccessToast(message);
-                                break;
-                            case 'warning':
-                                toastrService.showWarningToast(message);
-                                break;
-                            case 'error':
-                                toastrService.showErrorToast(message);
-                                break;
-                            case 'info':
-                                toastrService.showInfoToast(message);
-                                break;
-                        }
-                    };
-
                     const onAddStop = async (job: unknown, isPickup: boolean) => {
                         await jobAddStopService.addRecurringJobStop(job, isPickup);
                     };
 
                     window.ReactRecurringJobs!.mount('react-recurring-jobs-list', {
-                        showToast,
                         isUsCustomer: appConfig.US_Customer,
                         onAddStop,
                     });
@@ -1229,26 +1185,12 @@ class RouterConfig {
                     return $ocLazyLoad.load(islandFiles(manifest, 'overviewReact'));
                 }]
             },
-            controller: ['$scope', 'toastrService', 'APP_CONFIG',
+            controller: ['$scope', 'APP_CONFIG',
                 function (
                     $scope: angular.IScope,
-                    toastrService: {
-                        showSuccessToast: (m: string) => void;
-                        showWarningToast: (m: string) => void;
-                        showErrorToast: (m?: string) => void;
-                        showInfoToast: (m: string) => void;
-                    },
                     appConfig: { US_Customer: boolean }
                 ) {
-                    const showToast = {
-                        showSuccessToast: (m: string) => toastrService.showSuccessToast(m),
-                        showWarningToast: (m: string) => toastrService.showWarningToast(m),
-                        showErrorToast: (m?: string) => toastrService.showErrorToast(m),
-                        showInfoToast: (m: string) => toastrService.showInfoToast(m),
-                    };
-
                     window.ReactOverview!.mount('react-overview', {
-                        showToast,
                         isUsCustomer: appConfig.US_Customer,
                         onOpenJobDetail: (jobId: number) => openJobInSearch(jobId),
                     });
@@ -1300,36 +1242,12 @@ class RouterConfig {
                     });
                 }]
             },
-            controller: ['$scope', 'toastrService', 'APP_CONFIG',
+            controller: ['$scope', 'APP_CONFIG',
                 function (
                     $scope: angular.IScope,
-                    toastrService: {
-                        showSuccessToast: (m: string) => void;
-                        showWarningToast: (m: string) => void;
-                        showErrorToast: (m: string) => void;
-                        showInfoToast: (m: string) => void
-                    },
                     appConfig: { US_Customer: boolean }
                 ) {
-                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
-                        switch (type) {
-                            case 'success':
-                                toastrService.showSuccessToast(message);
-                                break;
-                            case 'warning':
-                                toastrService.showWarningToast(message);
-                                break;
-                            case 'error':
-                                toastrService.showErrorToast(message);
-                                break;
-                            case 'info':
-                                toastrService.showInfoToast(message);
-                                break;
-                        }
-                    };
-
                     window.ReactTaskDashboard!.mount('react-task-dashboard', {
-                        showToast,
                         isUsCustomer: appConfig.US_Customer,
                     });
 
@@ -1383,36 +1301,12 @@ class RouterConfig {
                     });
                 }]
             },
-            controller: ['$scope', 'toastrService', 'APP_CONFIG',
+            controller: ['$scope', 'APP_CONFIG',
                 function (
                     $scope: angular.IScope,
-                    toastrService: {
-                        showSuccessToast: (m: string) => void;
-                        showWarningToast: (m: string) => void;
-                        showErrorToast: (m: string) => void;
-                        showInfoToast: (m: string) => void
-                    },
                     appConfig: { US_Customer: boolean }
                 ) {
-                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
-                        switch (type) {
-                            case 'success':
-                                toastrService.showSuccessToast(message);
-                                break;
-                            case 'warning':
-                                toastrService.showWarningToast(message);
-                                break;
-                            case 'error':
-                                toastrService.showErrorToast(message);
-                                break;
-                            case 'info':
-                                toastrService.showInfoToast(message);
-                                break;
-                        }
-                    };
-
                     window.ReactDriverManagement!.mount('react-driver-management', {
-                        showToast,
                         isUsCustomer: appConfig.US_Customer,
                     });
 

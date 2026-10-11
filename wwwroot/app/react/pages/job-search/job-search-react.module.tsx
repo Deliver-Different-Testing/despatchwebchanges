@@ -26,7 +26,10 @@ import {
     setCurrentLayoutName as setCurrentLayoutNameOnBridge,
 } from "../../utils/layoutUtils";
 
-export interface MountJobSearchPageConfig extends JobSearchPageProps {}
+export interface MountJobSearchPageConfig extends Omit<JobSearchPageProps, 'showToast'> {
+    /** Ignored: the module supplies toasts from the Mantine toastService. */
+    showToast?: ShowToastFn;
+}
 
 let layoutBridge: JobSearchLayoutBridge | null = null;
 

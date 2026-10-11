@@ -197,6 +197,7 @@ export interface DriverManagementPageProps {
 }
 
 export interface MountDriverManagementConfig {
-    showToast: ShowToastFn;
+    /** Ignored: the module supplies toasts from the Mantine toastService. */
+    showToast?: ShowToastFn;
     isUsCustomer?: boolean;
 }

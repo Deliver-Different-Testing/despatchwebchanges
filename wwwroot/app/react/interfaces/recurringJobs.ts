@@ -285,7 +285,8 @@ export function transformPaginatedResponse(
 }
 
 export interface MountRecurringJobsConfig {
-    showToast: ShowToastFn;
+    /** Ignored: the module supplies toasts from the Mantine toastService. */
+    showToast?: ShowToastFn;
     isUsCustomer?: boolean;
     onAddStop?: (job: PrebookListModel, isPickup: boolean) => void;
 }

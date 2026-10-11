@@ -28,7 +28,10 @@ import {
     setCurrentLayoutName as setCurrentLayoutNameOnBridge,
 } from "../../utils/layoutUtils";
 
-export interface MountDispatchPageConfig extends DispatchPageProps {}
+export interface MountDispatchPageConfig extends Omit<DispatchPageProps, 'showToast'> {
+    /** Ignored: the module supplies toasts from the Mantine toastService. */
+    showToast?: ShowToastFn;
+}
 
 let layoutBridge: DispatchLayoutBridge | null = null;
 // Filters pushed by the AngularJS toolbar before the React bridge is ready
