@@ -27,6 +27,12 @@ public interface IPricingPermissionService
     Task<bool> CanModifyPriceBreakdownAsync();
 
     /// <summary>
+    /// Checks if the current user has permission to export/download reports containing pricing
+    /// (job search export, client jobs report, price detail report). False for a network partner.
+    /// </summary>
+    Task<bool> CanExportPricingAsync();
+
+    /// <summary>
     /// Validates that the current user has access to a specific job.
     /// Throws UnauthorizedAccessException if access is denied.
     /// </summary>

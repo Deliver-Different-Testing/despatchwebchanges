@@ -28,7 +28,7 @@ export interface DriverLocationsBoxProps {
 }
 
 /**
- * "Driver Locations" panel for the React dispatch page. Fetches the clear-list
+ * "Driver locations" panel for the React dispatch page. Fetches the clear-list
  * view model for the dispatcher's selected views + date range and renders the
  * existing presentational `DriverLocations` component. Clicking an area reports
  * its clear-list id up so the Map box can filter to that area's couriers

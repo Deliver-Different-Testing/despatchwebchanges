@@ -13,7 +13,7 @@ interface SearchFieldProps {
 
 const DEBOUNCE_DELAY = 300;
 
-export const SearchField: React.FC<SearchFieldProps> = ({value, onChange, placeholder = 'Search...'}) => {
+export const SearchField: React.FC<SearchFieldProps> = ({value, onChange, placeholder = 'Search…'}) => {
     const [localValue, setLocalValue] = useState(value);
 
     useEffect(() => {

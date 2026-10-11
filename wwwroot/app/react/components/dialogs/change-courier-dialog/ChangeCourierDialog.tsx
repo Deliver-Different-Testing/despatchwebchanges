@@ -29,12 +29,12 @@ const CourierChip: React.FC<{label: string; value: string}> = ({label, value}) =
         style={{
             flex: 1,
             borderRadius: 'var(--mantine-radius-sm)',
-            backgroundColor: 'var(--mantine-color-brand-0)',
+            backgroundColor: 'var(--mantine-color-brand-light)',
             border: '1px solid var(--mantine-color-brand-3)',
         }}
     >
         <Text fz="xs" c="dimmed">{label}</Text>
-        <Text fz="lg" fw={700} c="brand.7">{value}</Text>
+        <Text fz="lg" fw={700} c="var(--mantine-color-brand-light-color)">{value}</Text>
     </Box>
 );
 
@@ -108,10 +108,10 @@ export function ChangeCourierDialog({
         setSaving(true);
         try {
             await onSave(newCourier.id);
-            showToast('Paid courier changed successfully.', 'success');
+            showToast('Paid courier changed', 'success');
             onClose();
         } catch {
-            showToast('An error occurred while changing the courier. Please try again.', 'error');
+            showToast("Couldn't change the courier. Try again.", 'error');
             setSaving(false);
         }
     };
@@ -120,7 +120,7 @@ export function ChangeCourierDialog({
         <DialogShell opened={open} onClose={saving ? () => {} : onClose} size={520} label="Change paid courier">
             <DialogHeader
                 icon={<Icon tabler={IconTruck}/>}
-                title="Change Paid Courier"
+                title="Change paid courier"
                 subtitle={`Job ${jobNo}`}
                 variant="warning"
                 onClose={onClose}
@@ -136,7 +136,7 @@ export function ChangeCourierDialog({
                         <TextInput label="Current courier" value={currentCourierName ?? 'Unassigned'} disabled/>
                         <SearchSelect<ISuggestion>
                             aria-label="New courier"
-                            placeholder="Search courier..."
+                            placeholder="Search couriers…"
                             autoFocus
                             autoHighlight
                             value={newCourier}
@@ -167,7 +167,7 @@ export function ChangeCourierDialog({
                 <DialogFooter
                     onCancel={onClose}
                     onConfirm={() => setPhase('confirm')}
-                    confirmLabel="Save"
+                    confirmLabel="Save changes"
                     confirmDisabled={!newCourier}
                 />
             ) : (
@@ -175,7 +175,7 @@ export function ChangeCourierDialog({
                     onCancel={() => setPhase('input')}
                     cancelLabel="Back"
                     onConfirm={handleConfirmChange}
-                    confirmLabel={saving ? 'Saving...' : 'Confirm Change'}
+                    confirmLabel={saving ? 'Saving…' : 'Confirm change'}
                     confirmColor="orange"
                     submitting={saving}
                 />

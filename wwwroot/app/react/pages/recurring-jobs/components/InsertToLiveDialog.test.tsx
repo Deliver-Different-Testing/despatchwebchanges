@@ -1,10 +1,3 @@
-/**
- * InsertToLiveDialog Component Tests
- *
- * Covers the restyled push-to-live dialog: rendering of the canonical
- * dialog chrome, scope selection, and the insert flow (success + error).
- */
-
 import React from 'react';
 import { renderWithMantine } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
@@ -148,7 +141,7 @@ describe('InsertToLiveDialog', () => {
                 scope: InsertToLiveScope.Group,
             });
         });
-        expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Inserted 1 job(s)'), 'success');
+        expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Inserted 1 job'), 'success');
         expect(onSuccess).toHaveBeenCalledWith(result);
     });
 

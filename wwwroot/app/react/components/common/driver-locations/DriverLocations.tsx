@@ -92,6 +92,7 @@ const DriverRow = React.memo(function DriverRow({
                 display: 'flex',
                 alignItems: 'center',
                 backgroundColor: getRowBackgroundColor(variant, isActive, isHovered),
+                color: C.text,
                 borderBottom: '1px solid',
                 borderColor: variant === 'top' ? C.top.border :
                     variant === 'middle' ? C.middle.border : C.bottom.border,
@@ -121,6 +122,7 @@ const DriverRow = React.memo(function DriverRow({
                                 padding: '2px 4px',
                                 display: 'inline-block',
                                 backgroundColor: C.destination.bg,
+                                color: C.text,
                                 border: `1px solid ${C.destination.border}`,
                                 margin: '2px 0 2px 4px',
                                 borderRadius: 4,
@@ -303,8 +305,8 @@ export const DriverLocations = React.memo(function DriverLocations({
             {/* No data state */}
             {showNoData && (
                 <NoData
-                    title="No Driver Locations"
-                    message="Please configure driver locations in Admin Manager to continue."
+                    title="No driver locations yet"
+                    message="Add driver locations in Admin Manager to see them here."
                     icon={<Icon tabler={IconUserPin}/>}
                 />
             )}

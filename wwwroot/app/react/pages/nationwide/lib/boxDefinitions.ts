@@ -41,7 +41,7 @@ export function createNationwideBoxes(): Record<string, IBox> {
         },
         [NationwideBoxes.NewJobs]: {
             name: NationwideBoxes.NewJobs,
-            title: 'New Jobs',
+            title: 'New jobs',
             icon: 'new_releases',
             showRefresh: true,
             visible: true,
@@ -49,7 +49,7 @@ export function createNationwideBoxes(): Record<string, IBox> {
         },
         [NationwideBoxes.JobDetail]: {
             name: NationwideBoxes.JobDetail,
-            title: 'Job Detail',
+            title: 'Job detail',
             icon: 'assignment',
             showRefresh: true,
             showDetailButtons: true,

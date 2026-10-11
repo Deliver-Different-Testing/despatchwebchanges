@@ -215,7 +215,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     const decoratedViewsRef = useRef(decoratedViews);
     const viewsListenerRef = useRef<((views: DfrntPageViewModel[]) => void) | null>(null);
     // Hold the first notification until the list has actually loaded, so the
-    // toolbar menu keeps its spinner instead of flashing "No views available".
+    // toolbar menu keeps its spinner instead of flashing "No views yet".
     const viewsLoadedRef = useRef(false);
     viewsLoadedRef.current = !viewsLoading;
     useEffect(() => {
@@ -317,7 +317,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             if (job) setCurrentJob(job);
         } catch (error) {
             console.error('Could not load job', jobId, error);
-            showToast('Could not open that job. Please try again.', 'error');
+            showToast("Couldn't open that job. Check your connection and try again.", 'error');
         }
     }, [showToast]);
 
@@ -365,8 +365,10 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         void queryClient.invalidateQueries({queryKey: queryKeys.nationwide.all});
     }, []);
 
+    const [isAssigningFlight, setIsAssigningFlight] = useState(false);
+
     const handleAddFlightToJob = useCallback(async (flight: FlightViewModel) => {
-        if (!flightAgentJob) return;
+        if (!flightAgentJob || isAssigningFlight) return;
 
         const result = await openFlightConfirmationDialog({
             jobId: flightAgentJob.id,
@@ -377,48 +379,67 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         });
         if (!result?.shouldAssign) return;
 
+        setIsAssigningFlight(true);
         try {
-            await nationwideApi.assignFlightToJob({
-                jobId: flightAgentJob.id,
-                fromAirportId: widget.selectedOutboundAirport?.id,
-                toAirportId: widget.selectedInboundAirport?.id,
-                flightNumber: flight.flightNumber,
-                departureDate: formatDateForApiWithTzs(flight.departureTime, flight.departureTimeZone),
-                flightSegments: (flight.flightSegments ?? []).map(segment => ({
-                    ...segment,
-                    departureTime: formatDateForApiWithTzs(segment.departureTime, segment.departureAirportTimeZone),
-                    arrivalTime: formatDateForApiWithTzs(segment.arrivalTime, segment.arrivalAirportTimeZone),
-                })),
-                packageReadyTime: result.packageReadyTime
-                    ? formatDateForApiWithTzs(result.packageReadyTime, flight.arrivalTimeZone)
-                    : undefined,
-                packageDeliverByTime: result.packageDeliverByTime
-                    ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone)
-                    : undefined,
-                packageDeliveryNotes: result.packageDeliveryNotes,
-            });
-
-            // V1 wrote a returned AWB back to the job's ConNote.
-            if (result.awb) {
-                await apiClient.post('job/UpdateJob', {
+            try {
+                await nationwideApi.assignFlightToJob({
                     jobId: flightAgentJob.id,
-                    property: JobProperty.ConNote,
-                    value: result.awb,
+                    fromAirportId: widget.selectedOutboundAirport?.id,
+                    toAirportId: widget.selectedInboundAirport?.id,
+                    flightNumber: flight.flightNumber,
+                    departureDate: formatDateForApiWithTzs(flight.departureTime, flight.departureTimeZone),
+                    flightSegments: (flight.flightSegments ?? []).map(segment => ({
+                        ...segment,
+                        departureTime: formatDateForApiWithTzs(segment.departureTime, segment.departureAirportTimeZone),
+                        arrivalTime: formatDateForApiWithTzs(segment.arrivalTime, segment.arrivalAirportTimeZone),
+                    })),
+                    packageReadyTime: result.packageReadyTime
+                        ? formatDateForApiWithTzs(result.packageReadyTime, flight.arrivalTimeZone)
+                        : undefined,
+                    packageDeliverByTime: result.packageDeliverByTime
+                        ? formatDateForApiWithTzs(result.packageDeliverByTime, flight.arrivalTimeZone)
+                        : undefined,
+                    packageDeliveryNotes: result.packageDeliveryNotes,
                 });
+            } catch (error) {
+                console.error('Error assigning flight:', error);
+                showToast("Couldn't assign the flight. Check your connection and try again.", 'error');
+                return;
             }
 
+            // The assignment above is the authoritative write and has already
+            // succeeded -- tell the user now, before any best-effort follow-up
+            // work below, so a failure there can never be reported as a failed
+            // assignment.
             refreshLists();
             showToast('Flight assigned to job', 'success');
-            // V1 refetched and re-selected the job so the widget and job-detail
-            // panel immediately reflect the new assignedFlight, matching the
-            // other two mutation handlers in this file.
-            await selectJobById(flightAgentJob.id);
-        } catch (error) {
-            console.error('Error assigning flight:', error);
-            showToast('Could not assign the flight. Please try again.', 'error');
+
+            try {
+                // V1 wrote a returned AWB back to the job's ConNote.
+                if (result.awb) {
+                    await apiClient.post('job/UpdateJob', {
+                        jobId: flightAgentJob.id,
+                        property: JobProperty.ConNote,
+                        value: result.awb,
+                    });
+                }
+
+                // V1 refetched and re-selected the job so the widget and job-detail
+                // panel immediately reflect the new assignedFlight, matching the
+                // other two mutation handlers in this file.
+                await selectJobById(flightAgentJob.id);
+            } catch (error) {
+                console.error('Error finishing flight assignment follow-up:', error);
+                showToast(
+                    "Flight assigned, but the job details didn't refresh. Refresh the page to see the change.",
+                    'warning',
+                );
+            }
+        } finally {
+            setIsAssigningFlight(false);
         }
-    }, [flightAgentJob, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast, refreshLists,
-        selectJobById]);
+    }, [flightAgentJob, isAssigningFlight, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast,
+        refreshLists, selectJobById]);
 
     const handleAddAgentToJob = useCallback(async (agent: Agent) => {
         if (!flightAgentJob) return;
@@ -427,7 +448,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         const allowed = await canAssignAgentToJob(flightAgentJob.id).catch(() => true);
         if (!allowed) {
             setConfirm({
-                title: 'Flight Assignment Required',
+                title: 'Flight assignment required',
                 message: 'Assign a flight to this job before assigning an agent.',
             });
             return;
@@ -440,7 +461,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         if (!flightAgentJob) return;
 
         setConfirm({
-            title: 'Send Quote Request',
+            title: 'Send quote request',
             message: `Send a quote request to ${agent.agentName} for job ${flightAgentJob.jobNo}?`,
             onConfirm: async () => {
                 closeConfirm();
@@ -449,7 +470,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                     showToast('Quote request sent', 'success');
                 } catch (error) {
                     console.error('Error sending quote request:', error);
-                    showToast('Could not send the quote request. Please try again.', 'error');
+                    showToast("Couldn't send the quote request. Check your connection and try again.", 'error');
                 }
             },
         });
@@ -468,7 +489,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         // V1's handleJobDispatch() refused courier dispatch for isUsCustomer;
         // the shared DispatchDialog has no such gate, so this page applies it.
         if (isUsCustomer && confirmation.type === 'Courier') {
-            showToast('Courier dispatch is not supported for US customers', 'warning');
+            showToast("Courier dispatch isn't available for US customers.", 'warning');
             closeDispatchDialog();
             return;
         }
@@ -493,7 +514,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
 
         const result = await sendToPartner(flightAgentJob.id, partner.id, agreedRate);
         if (!result.success) {
-            throw new Error(result.message || 'Failed to send job to partner');
+            throw new Error(result.message || "Couldn't send the job to the partner. Try again.");
         }
 
         closeDispatchDialog();
@@ -509,7 +530,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         if (!flightAgentJob) return;
 
         const picked = await openAutoCompleteDialog(
-            'Search Agents',
+            'Search agents',
             'Start typing an agent name',
             (term: string) => apiClient.get('nationwideJob/GetAllAgentsSearch', {searchTerm: term}),
         );
@@ -581,7 +602,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                 case 'unlock': {
                     const locked = actionId === 'lock';
                     await setJobLocked(job.id, locked, !!job.preBook);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}.`, 'success');
+                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     refreshLists();
                     refreshDetail();
                     return;
@@ -592,7 +613,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             }
         } catch (error) {
             console.error(`[NationwidePage] Job action '${actionId}' failed:`, error);
-            showToast('Something went wrong. Please try again.', 'error');
+            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
         }
     }, [isUsCustomer, showToast, refreshLists, selectJobById]);
 
@@ -717,6 +738,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                         onOutboundAirportChange={widget.onOutboundAirportChange as never}
                         onInboundAirportChange={widget.onInboundAirportChange as never}
                         onAddFlightToJob={handleAddFlightToJob as never}
+                        isAssigningFlight={isAssigningFlight}
                         onLoadMoreFlights={widget.loadMoreFlights}
                         onLoadNextDayFlights={widget.loadNextDayFlights}
                         onAddAgentToJob={handleAddAgentToJob as never}

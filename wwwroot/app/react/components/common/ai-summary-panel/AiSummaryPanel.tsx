@@ -73,7 +73,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             if (e instanceof Error && (e.name === 'AbortError' || e.name === 'CanceledError') || controller.signal.aborted) {
                 return;
             }
-            const message = e instanceof Error ? e.message : 'Failed to generate Auto-mate summary';
+            const message = e instanceof Error ? e.message : "Couldn't generate the Auto-mate summary. Try again.";
             setError(message);
         } finally {
             if (abortControllerRef.current === controller) {
@@ -101,7 +101,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
         if (!summary) return;
         try {
             await navigator.clipboard.writeText(summary);
-            setCopyTooltip('Copied!');
+            setCopyTooltip('Copied');
         } catch {
             setCopyTooltip('Copy failed');
         }
@@ -220,7 +220,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     )}
 
                     {error && (
-                        <Text fz="sm" c="var(--mantine-color-red-6)">
+                        <Text fz="sm" c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))">
                             {error}
                         </Text>
                     )}

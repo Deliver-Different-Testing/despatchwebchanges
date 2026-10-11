@@ -80,7 +80,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                         style={{position: 'absolute', inset: 0, zIndex: 10}}
                     >
                         <Loader size={60} role="progressbar" aria-label="Loading map data"/>
-                        <Text fz="sm">Loading map data...</Text>
+                        <Text fz="sm">Loading map data…</Text>
                     </Stack>
                 )}
 
@@ -103,7 +103,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                                 bottom: 16,
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                backgroundColor: 'rgba(255,255,255,0.95)',
+                                backgroundColor: 'color-mix(in srgb, var(--dd-surface-container-high) 95%, transparent)',
                                 borderRadius: 8,
                                 boxShadow: 'var(--mantine-shadow-md)',
                                 overflowX: 'auto',
@@ -112,7 +112,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                             <Group gap={4} mb={8} wrap="nowrap">
                                 <SymbolIcon name="timeline" size={16} />
                                 <Text fz="xs" fw={600}>
-                                    Delivery Route
+                                    Delivery route
                                 </Text>
                             </Group>
 

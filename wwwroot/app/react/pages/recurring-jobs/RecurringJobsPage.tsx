@@ -1,8 +1,3 @@
-/**
- * Recurring Jobs Page Component
- *
- * React component for the recurring jobs list panel and job-details panel.
- */
 
 import React, {useCallback, useEffect, useState} from 'react';
 import {Box, Card, Stack, Text} from '@mantine/core';
@@ -10,7 +5,7 @@ import {Info, Repeat, SlidersHorizontal} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
 import {DialogFooter, DialogHeader, DialogShell, dialogContentBg, dialogSize} from '../../components/dialogs/shared/mantine';
 import classes from './RecurringJobsPage.module.css';
-import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
+import {Group as PanelGroup, Panel, Separator as PanelResizeHandle, useDefaultLayout} from 'react-resizable-panels';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
 import {PanelHeader} from '../../components/common/panel-header';
@@ -43,8 +38,8 @@ const DEFAULT_QUERY: RecurringJobQuery = {
 };
 
 // The gutter's look lives in RecurringJobsPage.module.css: react-resizable-panels
-// stamps data-resize-handle-state on the PanelResizeHandle root, so the rule has to
-// select from that parent down to this child.
+// stamps data-separator on the Separator (aliased as PanelResizeHandle) root, so
+// the rule has to select from that parent down to this child.
 
 export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                                                                         showToast,
@@ -132,12 +127,12 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         const modeLabel = RecurringMode[mode];
         try {
             await updateJobDetail(job.id, 'RecurringMode', String(mode), true);
-            showToast(`Mode changed to ${modeLabel}.`, 'success');
+            showToast(`Mode changed to ${modeLabel}`, 'success');
             await refetch();
         } catch (error) {
             const message = error instanceof Error
                 ? error.message
-                : `Failed to change mode to ${modeLabel}.`;
+                : `Couldn't change the mode to ${modeLabel}. Try again.`;
             console.error('Mode change failed:', error);
             showToast(message, 'error');
         }
@@ -158,12 +153,12 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     const handleExport = useCallback(async () => {
         setIsExporting(true);
         try {
-            showToast('Exporting recurring jobs...', 'info');
+            showToast('Exporting recurring jobs…', 'info');
             await recurringJobsApi.exportToCsv(query);
-            showToast('Recurring jobs exported successfully', 'success');
+            showToast('Recurring jobs exported', 'success');
         } catch (error) {
             console.error('Export failed:', error);
-            showToast('Failed to export recurring jobs', 'error');
+            showToast("Couldn't export recurring jobs. Check your connection and try again.", 'error');
         } finally {
             setIsExporting(false);
         }
@@ -240,11 +235,18 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         }
     }, [onAddStop]);
 
+    const {defaultLayout, onLayoutChanged} = useDefaultLayout({id: 'recurring-jobs-layout'});
+
     return (
         <Box h="100%" p={8} bg="var(--mantine-color-body)">
-            <PanelGroup direction="horizontal" autoSaveId="recurring-jobs-layout">
+            <PanelGroup
+                orientation="horizontal"
+                id="recurring-jobs-layout"
+                defaultLayout={defaultLayout}
+                onLayoutChanged={onLayoutChanged}
+            >
             {/* Left Panel: Filters + Table (~40%) */}
-            <Panel defaultSize={40} minSize={25}>
+            <Panel id="filters-table" defaultSize="40%" minSize="25%">
             <Stack gap={16} h="100%" miw={0} style={{minHeight: 0}}>
                 {/* Filters Card */}
                 <Card withBorder p={0} style={{flexShrink: 0, overflow: 'hidden'}}>
@@ -284,7 +286,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 >
                     <PanelHeader
                         icon={<Icon lucide={Repeat}/>}
-                        title="Recurring Jobs"
+                        title="Recurring jobs"
                         count={data?.total || undefined}
                     />
                     <Box style={{flex: 1, overflow: 'hidden'}}>
@@ -314,7 +316,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             </PanelResizeHandle>
 
             {/* Middle Panel: Job Details (~35%) */}
-            <Panel defaultSize={35} minSize={20}>
+            <Panel id="job-details" defaultSize="35%" minSize="20%">
             <Stack gap={0} h="100%" miw={0} style={{minHeight: 0}}>
                 <Card
                     withBorder
@@ -323,7 +325,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 >
                     <PanelHeader
                         icon={<Icon lucide={Info}/>}
-                        title={selectedJobId ? `Job Details - Job #${selectedJobId}` : 'Job Details'}
+                        title={selectedJobId ? `Job details - Job #${selectedJobId}` : 'Job details'}
                     />
                     <Box style={{flex: 1, overflow: 'auto'}}>
                         <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
@@ -349,7 +351,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             </PanelResizeHandle>
 
             {/* Right Panel: Recurring Log (~25%) */}
-            <Panel defaultSize={25} minSize={20}>
+            <Panel id="recurring-log" defaultSize="25%" minSize="20%">
             <Stack gap={0} h="100%" miw={0} style={{minHeight: 0}}>
                 <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
                     <RecurringDeliveryJourney bookingId={selectedJobId} />
@@ -386,11 +388,11 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 opened={deactivateDialogOpen}
                 onClose={handleDeactivateCancel}
                 size={dialogSize.sm}
-                label="Deactivate Recurring Job"
+                label="Deactivate recurring job"
             >
                 <DialogHeader
                     icon={<Icon lucide={Repeat}/>}
-                    title="Deactivate Recurring Job"
+                    title="Deactivate recurring job"
                     onClose={handleDeactivateCancel}
                     closeDisabled={isDeactivating}
                     variant="warning"
@@ -404,8 +406,8 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 <DialogFooter
                     onCancel={handleDeactivateCancel}
                     onConfirm={handleDeactivateConfirm}
-                    cancelLabel="No"
-                    confirmLabel={isDeactivating ? 'Deactivating...' : 'Yes'}
+                    cancelLabel="Keep active"
+                    confirmLabel={isDeactivating ? 'Deactivating…' : 'Deactivate job'}
                     submitting={isDeactivating}
                 />
             </DialogShell>

@@ -10,6 +10,19 @@ public sealed class TaskViewModel
 
     public DateTimeOffset DueDate { get; set; }
 
+    /// <summary>When the task was created (sent), in tenant time; null when the row carries no creation time.</summary>
+    public DateTimeOffset? CreatedAt { get; set; }
+
+    [Newtonsoft.Json.JsonIgnore]
+    public DateTime? CreatedAtUtc { get; init; }
+
+    /// <summary>Server-side only: legacy tenant wall-clock creation date/time for rows predating <see cref="CreatedAtUtc"/>.</summary>
+    [Newtonsoft.Json.JsonIgnore]
+    public DateTime? CreatedDate { get; init; }
+
+    [Newtonsoft.Json.JsonIgnore]
+    public DateTime? CreatedTime { get; init; }
+
     public bool Closed { get; init; }
     
     public Suggestion Assignee { get; init; }

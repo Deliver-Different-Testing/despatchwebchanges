@@ -1,19 +1,3 @@
-/**
- * Job Change Request Dialog
- *
- * Lets a dispatcher submit a change request against an inter-tenant partner job.
- * Auto-apply fields (Notes / ProgressNote / PodNote / references / tracking)
- * apply immediately on the local job; manual fields open a task on the
- * partner's dashboard and await approval.
- *
- * Each field gets a typed input matched to its semantic — currency for the
- * agreed rate, integer stepper for quantity, the live speed list for
- * service speed, native datetime for dates, structured fields for
- * pickup/delivery address — so the dialog can't silently file a malformed
- * request. The title, helper hint, and dropdown glyphs all come from the
- * shared formatter so labels match the history panel and approver inbox.
- */
-
 import React, {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import {Alert, Box, Group, NumberInput, Paper, Select, Stack, Text, TextInput, Textarea} from '@mantine/core';
 import {ArrowLeftRight, CircleX, Info, Send} from 'lucide-react';
@@ -219,12 +203,12 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             pairingId: pairingId ?? undefined,
         }).then((result) => {
             if (!result.success) {
-                toast.update(result.message ?? 'Submission failed', 'error');
+                toast.update(result.message ?? "Couldn't submit the change. Try again.", 'error');
                 return;
             }
             if (result.peerForwardWarning) {
                 toast.update(
-                    `Saved locally, but ${partnerLabel} was not notified (${result.peerForwardWarning}). Please retry or contact support.`,
+                    `Saved locally, but ${partnerLabel} was not notified (${result.peerForwardWarning}). Retry or contact support.`,
                     'warning',
                 );
             } else {
@@ -237,7 +221,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             }
             onSubmitted?.(result);
         }).catch((e: unknown) => {
-            const msg = (e as { message?: string })?.message ?? 'Submission failed';
+            const msg = (e as { message?: string })?.message ?? "Couldn't submit the change. Try again.";
             toast.update(msg, 'error');
         });
     }, [fieldName, submitValue, meta.category, meta.mode, meta.label, reason, jobId, partnerLabel, pairingId, onClose, onSubmitted]);
@@ -448,7 +432,7 @@ function FieldValueInput({
                 value={textValue || null}
                 onChange={next => onTextChange(next ?? '')}
                 data={speedList.map(s => ({value: String(s.id), label: s.text ?? ''}))}
-                nothingFoundMessage="No speeds available"
+                nothingFoundMessage="No speeds found"
                 comboboxProps={{keepMounted: false}}
             />
         );
@@ -541,7 +525,7 @@ function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
                 {isUs && <TextInput label="State" value={value.addressLine5} onChange={set('addressLine5')}/>}
             </Group>
             <Group gap="xs" grow align="flex-start">
-                <TextInput label={isUs ? 'ZIP Code' : 'Postcode'} value={value.addressLine6} onChange={set('addressLine6')}/>
+                <TextInput label={isUs ? 'ZIP code' : 'Postcode'} value={value.addressLine6} onChange={set('addressLine6')}/>
                 <TextInput label="Country" value={value.addressLine7} onChange={set('addressLine7')}/>
             </Group>
         </Stack>

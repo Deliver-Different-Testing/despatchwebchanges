@@ -104,7 +104,7 @@ export interface RefreshButtonProps {
 
 export const RefreshButton: React.FC<RefreshButtonProps> = ({onClick, loading = false}) => {
     return (
-        <Tooltip label={loading ? 'Refreshing...' : 'Refresh'}>
+        <Tooltip label={loading ? 'Refreshing…' : 'Refresh'}>
             {/* span wrapper so the tooltip still works while the button is disabled */}
             <span>
                 <ActionIcon
@@ -189,7 +189,8 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                           * The Indicator carries no `c`: style props land on its root, which
                           * wraps the glyph, so a colour there leaks onto the eye through
                           * currentColor and puts it out of step with the rest of the bar. The
-                          * badge digits come from the theme's `autoContrast` against the pill.
+                          * badge digits are pinned to the bar colour: autoContrast can't
+                          * read the pill's `var()` fill, so it guessed white-on-white in dark mode.
                           */}
                         {loading ? (
                             <Loader size={TOOLBAR_ICON_SIZE} color="currentColor" role="progressbar" aria-label="Loading views" />
@@ -197,7 +198,9 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                             <Indicator
                                 label={selectedCount > 0 ? selectedCount : undefined}
                                 disabled={selectedCount === 0}
-                                color="gray.0"
+                                color="var(--dd-on-shell)"
+                                autoContrast={false}
+                                styles={{indicator: {color: 'var(--dd-shell-bar)'}}}
                                 size={16}
                                 offset={2}
                             >
@@ -211,7 +214,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                 {(!views || views.length === 0) ? (
                     <Box p="lg" ta="center">
                         <Icon lucide={EyeOff} size={40} color="var(--mantine-color-gray-5)" />
-                        <Text fz="sm" c="dimmed" mt="xs">No views available</Text>
+                        <Text fz="sm" c="dimmed" mt="xs">No views yet</Text>
                     </Box>
                 ) : (
                     <>
@@ -427,7 +430,7 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                     </Box>
                                     <Text
                                         fz="sm"
-                                        c={isActive ? 'brand.7' : undefined}
+                                        c={isActive ? 'light-dark(var(--mantine-color-brand-7), var(--mantine-color-brand-3))' : undefined}
                                         style={{fontWeight: isActive ? 600 : 400}}
                                     >
                                         {layout.name}

@@ -484,6 +484,10 @@ public sealed class AddStopJobService(
             return;
         }
 
+        // extras.Weight is the stop's total, so split it across the lines; the last line takes
+        // the rounding remainder so the lines still sum to the total.
+        var perLineWeight = Math.Round(extras.Weight / quantity, 4);
+
         var parcels = new List<TucJobItem>();
         for (var x = 1; x < quantity + 1; x++)
         {
@@ -496,7 +500,7 @@ public sealed class AddStopJobService(
                 Depth = extras.Depth,
                 Height = extras.Height,
                 Length = extras.Length,
-                Weight = extras.Weight
+                Weight = x < quantity ? perLineWeight : Math.Max(0, Math.Round(extras.Weight - perLineWeight * (quantity - 1), 4))
             };
             parcels.Add(parcel);
         }

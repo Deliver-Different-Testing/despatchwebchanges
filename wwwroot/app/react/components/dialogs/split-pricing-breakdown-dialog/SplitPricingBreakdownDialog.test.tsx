@@ -127,7 +127,7 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(screen.getByText('This job')).toBeInTheDocument();
     });
 
-    it('an archived parent that is not locked stays fully editable, including Add Item and Delete', () => {
+    it('an archived parent that is not locked stays fully editable, including Add item and Delete', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({breakdown: {...workedExample, isArchived: true}})} />);
 
         expect(screen.getByDisplayValue('Base')).toBeInTheDocument();
@@ -149,7 +149,7 @@ describe('SplitPricingBreakdownDialog', () => {
         expect(onSave.mock.calls[0][0]).toMatchObject({jobId: 4071, isArchived: true});
     });
 
-    it('Save & Close is disabled until something changes', () => {
+    it('Save & close is disabled until something changes', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps()} />);
         expect(screen.getByRole('button', {name: /save & close/i})).toBeDisabled();
     });
@@ -323,7 +323,7 @@ describe('SplitPricingBreakdownDialog', () => {
         });
     });
 
-    it('locks revenue and Add Item when the parent is invoiced', () => {
+    it('locks revenue and Add item when the parent is invoiced', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({
             breakdown: {
                 ...workedExample,
@@ -438,7 +438,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
     it('renders the preview: header, basis banner, leg strip, and item revenue', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview())} />);
 
-        expect(screen.getByRole('heading', {name: 'Confirm Split Pricing'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Confirm split pricing'})).toBeInTheDocument();
         expect(screen.getByText(/split by road distance per leg/i)).toBeInTheDocument();
         expect(screen.getByText(/splitting does not change what the client is invoiced/i)).toBeInTheDocument();
 
@@ -454,7 +454,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
         expect(screen.getByText('rev $19.20')).toBeInTheDocument();
     });
 
-    it('has no Add Item button or per-row delete — nothing to add/remove before the job exists', () => {
+    it('has no Add item button or per-row delete — nothing to add/remove before the job exists', () => {
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview())} />);
 
         expect(screen.queryByRole('button', {name: /add item/i})).not.toBeInTheDocument();
@@ -512,7 +512,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
         });
     });
 
-    it('sets a per-leg cost override at split time and carries the synced share in the Confirm & Split payload', () => {
+    it('sets a per-leg cost override at split time and carries the synced share in the Confirm & split payload', () => {
         const onClose = jest.fn();
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
 

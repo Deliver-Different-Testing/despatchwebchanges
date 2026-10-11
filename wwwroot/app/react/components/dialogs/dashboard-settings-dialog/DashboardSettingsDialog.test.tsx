@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {screen} from '@testing-library/react';
+import {act, screen} from '@testing-library/react';
 import {
     DashboardSettingsConfig,
     DashboardSettingsDialog,
@@ -14,6 +14,11 @@ import {
 } from './DashboardSettingsDialog';
 import { createProps, renderWithMantine as renderWithTheme } from '../../../__testUtils__';
 import { setupUser } from '../../../__testUtils__/setupUser';
+import {ColorModeContext} from '../../../hooks/useColorMode';
+
+// Mantine's modal focus trap moves focus to its first tabbable on a zero-delay timeout; a click that lands
+// before that fires has its focus stolen, which closes the select dropdown it just opened.
+const settleModalFocus = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
 
 const mockRefreshOptions: RefreshOption[] = [
     {id: 0, text: 'Disabled'},
@@ -147,6 +152,7 @@ describe('DashboardSettingsDialog', () => {
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
             const select = screen.getByRole('combobox', {name: 'Job list'});
+            await settleModalFocus();
 
             await user.click(select);
             await user.click(await screen.findByRole('option', {name: '5 minutes'}));
@@ -183,6 +189,7 @@ describe('DashboardSettingsDialog', () => {
             expect(screen.getByText('Tasks')).toBeInTheDocument();
 
             const select = screen.getByRole('combobox', {name: 'Tasks'});
+            await settleModalFocus();
             await user.click(select);
             await user.click(await screen.findByRole('option', {name: '1 minute'}));
 
@@ -257,9 +264,9 @@ describe('DashboardSettingsDialog', () => {
 
             expect(screen.getByText('Current Work title')).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'Off'})).not.toBeChecked();
-            expect(screen.getByRole('radio', {name: 'Show Courier Name'})).not.toBeChecked();
-            expect(screen.getByRole('radio', {name: 'Show Courier Number'})).toBeChecked();
-            expect(screen.getByRole('radio', {name: 'Show Name and Number'})).not.toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show courier name'})).not.toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show courier number'})).toBeChecked();
+            expect(screen.getByRole('radio', {name: 'Show name and number'})).not.toBeChecked();
         });
 
         it('emits the newly-picked mode on save', async () => {
@@ -271,7 +278,7 @@ describe('DashboardSettingsDialog', () => {
                 onSave,
             })} />);
 
-            await user.click(screen.getByRole('radio', {name: 'Show Name and Number'}));
+            await user.click(screen.getByRole('radio', {name: 'Show name and number'}));
             await user.click(screen.getByRole('button', {name: /save/i}));
 
             expect(onSave).toHaveBeenCalledWith(
@@ -298,6 +305,85 @@ describe('DashboardSettingsDialog', () => {
             expect(screen.queryByText('Auto-mate Settings')).not.toBeInTheDocument();
             expect(screen.queryByText('Show Auto-mate briefings')).not.toBeInTheDocument();
             expect(screen.queryByText('Open automatically')).not.toBeInTheDocument();
+        });
+    });
+
+    // ── Switching to Nationwide v1 (classic) disables dark mode ─────
+    describe('Switching to Nationwide v1', () => {
+        const nwConfig = {...mockConfig, showNationwideBetaToggle: true};
+
+        function renderWithMode(mode: 'light' | 'dark', props: Partial<DashboardSettingsDialogProps>) {
+            const setPreference = jest.fn();
+            renderWithTheme(
+                <ColorModeContext.Provider value={{mode, preference: mode, setPreference}}>
+                    <DashboardSettingsDialog {...createMockProps({
+                        config: nwConfig,
+                        nationwideBetaEnabled: true,
+                        ...props,
+                    })} />
+                </ColorModeContext.Provider>,
+            );
+            return setPreference;
+        }
+
+        it('asks for confirmation in dark mode; confirming switches to light and saves', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            const setPreference = renderWithMode('dark', {onSave});
+
+            await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
+            await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+            expect(onSave).not.toHaveBeenCalled();
+            expect(screen.getByText(/disable dark mode/i)).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /switch to classic$/i}));
+
+            expect(setPreference).toHaveBeenCalledWith('light');
+            expect(onSave).toHaveBeenCalledWith(expect.objectContaining({nationwideBetaEnabled: false}));
+        });
+
+        it('cancelling the confirmation changes nothing and saves nothing', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            const setPreference = renderWithMode('dark', {onSave});
+
+            await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
+            await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+            await user.click(screen.getAllByRole('button', {name: /cancel/i}).at(-1)!);
+
+            expect(setPreference).not.toHaveBeenCalled();
+            expect(onSave).not.toHaveBeenCalled();
+        });
+
+        it('saves straight away in light mode, with no confirmation', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            const setPreference = renderWithMode('light', {onSave});
+
+            await user.click(screen.getByRole('switch', {name: /new nationwide/i}));
+            await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+            expect(screen.queryByText(/disable dark mode/i)).not.toBeInTheDocument();
+            expect(setPreference).not.toHaveBeenCalled();
+            expect(onSave).toHaveBeenCalledWith(expect.objectContaining({nationwideBetaEnabled: false}));
+        });
+
+        it('does not ask when staying on v2 in dark mode', async () => {
+            const user = setupUser();
+            const onSave = jest.fn();
+            renderWithMode('dark', {onSave});
+
+            await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+            expect(screen.queryByText(/disable dark mode/i)).not.toBeInTheDocument();
+            expect(onSave).toHaveBeenCalledWith(expect.objectContaining({nationwideBetaEnabled: true}));
+        });
+
+        it('defaults the toggle to on (v2) when no value is supplied', () => {
+            renderWithMode('light', {nationwideBetaEnabled: undefined});
+
+            expect(screen.getByRole('switch', {name: /new nationwide/i})).toBeChecked();
         });
     });
 });

@@ -6,6 +6,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import {renderWithMantine} from '../../../__testUtils__';
 import { DriverLocations } from './DriverLocations';
+import { driverLocationColors } from '../../../theme/designTokens';
 import type {
     DriverLocationsProps,
     IClearListViewModelWithColumns,
@@ -98,8 +99,8 @@ describe('DriverLocations', () => {
             const props = createDefaultProps({ showNoData: true, showData: false });
             renderWithProviders(<DriverLocations {...props} />);
 
-            expect(screen.getByText('No Driver Locations')).toBeInTheDocument();
-            expect(screen.getByText(/Please configure driver locations/)).toBeInTheDocument();
+            expect(screen.getByText('No driver locations yet')).toBeInTheDocument();
+            expect(screen.getByText(/Add driver locations in Admin Manager/)).toBeInTheDocument();
         });
 
         it('renders driver locations when showData is true', () => {
@@ -132,6 +133,16 @@ describe('DriverLocations', () => {
 
             expect(screen.getAllByText('Auckland CBD').length).toBeGreaterThan(0);
             expect(screen.getAllByText('Newmarket').length).toBeGreaterThan(0);
+        });
+    });
+
+    describe('Text contrast on fixed pastel rows', () => {
+        it('sets explicit dark text on rows and destination chips so dark mode does not inherit white', () => {
+            const { container } = renderWithProviders(<DriverLocations {...createDefaultProps()} />);
+
+            const row = container.querySelector('tr[data-courier="001"]') as HTMLElement;
+            expect(row).toHaveStyle({ color: driverLocationColors.text });
+            expect(screen.getAllByText('Auckland CBD')[0]).toHaveStyle({ color: driverLocationColors.text });
         });
     });
 
@@ -327,7 +338,7 @@ describe('DriverLocations', () => {
             });
             renderWithProviders(<DriverLocations {...props} />);
 
-            expect(screen.getByText('No Driver Locations')).toBeInTheDocument();
+            expect(screen.getByText('No driver locations yet')).toBeInTheDocument();
             expect(screen.queryByText(/North/)).not.toBeInTheDocument();
         });
     });

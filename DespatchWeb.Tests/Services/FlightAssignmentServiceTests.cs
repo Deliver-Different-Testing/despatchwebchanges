@@ -77,6 +77,57 @@ public class FlightAssignmentServiceTests
     }
 
     [Fact]
+    public async Task AssignFlightAsync_TokenAlreadyCancelled_ThrowsBeforeAnyWork()
+    {
+        var request = new AssignFlightToJobRequest
+        {
+            JobId = 100,
+            FlightNumber = "NZ123",
+            DepartureDate = DateTimeOffset.Parse("2026-07-08T08:00:00Z"),
+            FlightSegments = [Segment("NZ", "123")]
+        };
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => CreateService().AssignFlightAsync(request, cts.Token));
+
+        await _flightService.DidNotReceiveWithAnyArgs()
+            .CreateFlightRuleByDepartureAsync(default, default, default);
+        await _repository.DidNotReceiveWithAnyArgs()
+            .AddJobNationwideAsync(default, default, default);
+    }
+
+    [Fact]
+    public async Task AssignFlightAsync_ClientDisconnectsAfterExternalWorkStarts_StillCompletesAndPersists()
+    {
+        // A cancelled token must never abort work after webhook creation has
+        // begun -- that could leave an external Cirium alert registered with
+        // no matching DB row. Once started, the assignment always finishes.
+        var request = new AssignFlightToJobRequest
+        {
+            JobId = 100,
+            FlightNumber = "NZ123",
+            DepartureDate = DateTimeOffset.Parse("2026-07-08T08:00:00Z"),
+            FlightSegments = [Segment("NZ", "123")]
+        };
+        using var cts = new CancellationTokenSource();
+        _flightService.CreateFlightRuleByDepartureAsync(Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<string>())
+            .Returns(_ =>
+            {
+                cts.Cancel();
+                return Task.FromResult("wh-1");
+            });
+
+        await CreateService().AssignFlightAsync(request, cts.Token);
+
+        await _repository.Received(1).AddJobNationwideAsync(
+            request,
+            Arg.Any<IReadOnlyList<string>>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task AutoAssignSavedFlightsAsync_MatchingFlight_AssignsAndCounts()
     {
         _repository.GetSavedFlightCandidatesAsync(Arg.Any<IReadOnlyList<int>>())

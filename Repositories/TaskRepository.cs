@@ -44,6 +44,9 @@ public class TaskRepository(
         JobId = e.UcevJobId ?? 0,
         Closed = e.UcevClosed,
         DueDate = e.UcevDueTime,
+        CreatedAtUtc = e.UcevCreatedAtUtc,
+        CreatedDate = e.UcevDate,
+        CreatedTime = e.UcevTime,
         Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
         EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
         JobNumber = e.UcevJob.UcjbNumber,
@@ -77,6 +80,7 @@ public class TaskRepository(
         foreach (var task in tasks)
         {
             task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
+            task.CreatedAt = ResolveCreatedAt(task, infoService, tenantTimeZone);
         }
 
         return tasks;
@@ -409,6 +413,7 @@ public class TaskRepository(
             UcevContact = job.UcjbContact.Truncate(ContactMaxLength),
             UcevDate = currentDate,
             UcevTime = currentDate,
+            UcevCreatedAtUtc = clock.UtcNow,
             UcevType = eventGroup.EventType.Id,
             UcevLateTime = null,
             UcevEtatime = null,
@@ -504,6 +509,20 @@ public class TaskRepository(
             jobType: job.UcjbSpeed,
             dueTime: dueDate
         );
+    }
+
+    /// <summary>
+    /// Resolves when a task was created in tenant time, preferring <c>ucevCreatedAtUtc</c> and falling back to the
+    /// legacy wall-clock date/time; null when the row has neither.
+    /// </summary>
+    internal static DateTimeOffset? ResolveCreatedAt(TaskViewModel task, ITenantInfoService info, string tenantTimeZone)
+    {
+        if (task.CreatedAtUtc is { } createdUtc)
+            return info.ConvertUtcToTenantTimeZone(createdUtc);
+
+        return task.CreatedDate is { } date
+            ? TimeZoneHelper.SetDateTimeWithTimeZone(date.CombineWithTime(task.CreatedTime), tenantTimeZone)
+            : null;
     }
 
     internal static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
@@ -711,6 +730,7 @@ public class TaskRepository(
             UcevContact = contact.Truncate(ContactMaxLength),
             UcevDate = date.DateTime,
             UcevTime = time.DateTime,
+            UcevCreatedAtUtc = clock.UtcNow,
             UcevType = type,
             UcevLateTime = lateTime,
             UcevEtatime = etaTime?.DateTime,

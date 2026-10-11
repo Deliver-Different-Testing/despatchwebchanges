@@ -37,5 +37,7 @@ public partial class TucCourierFleet
 
     public bool? AllowSchedules { get; set; }
 
+    public bool Active { get; set; }
+
     public virtual ICollection<TucCourier> TucCouriers { get; set; } = new List<TucCourier>();
 }

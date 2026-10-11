@@ -9,25 +9,15 @@
  * Mantine's component stylesheet is loaded once via `vendor-react.css` (see
  * vendor-react.ts), so this provider only injects the theme CSS variables.
  */
-import React from 'react';
+import React, {useEffect} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {MantineProvider} from '@mantine/core';
 import {DatesProvider} from '@mantine/dates';
+import {GlassProvider} from '@dfrnt/glass';
 import {dfrntTheme, dfrntCssVariablesResolver} from './dfrntMantineTheme';
 import {ColorModeProvider, useColorMode} from '../hooks/useColorMode';
 import {ReactQueryProvider} from '../query';
-
-/**
- * Dark mode is built but not yet user-selectable.
- *
- * Every unmigrated MUI island, the AngularJS/Angular-Material pages, Bootstrap and
- * `app.css` are light-only, so a dark Mantine subtree on a real page reads as a
- * rendering bug rather than a theme. Flip this on once the app shell, dialogs,
- * dispatch board and job detail are all Mantine (migration Phase 6), and add the
- * `document.documentElement.style.colorScheme` sync at the same time so native
- * controls follow.
- */
-export const DARK_MODE_ENABLED = false;
+import {useLiquidGlassEnabled} from '../hooks/useLiquidGlassPreference';
 
 interface DfrntMantineProviderProps {
     children: React.ReactNode;
@@ -35,11 +25,16 @@ interface DfrntMantineProviderProps {
 
 const ThemedSubtree: React.FC<DfrntMantineProviderProps> = ({children}) => {
     const {mode} = useColorMode();
+    const glassEnabled = useLiquidGlassEnabled();
+    // Native controls and scrollbars follow the scheme.
+    useEffect(() => {
+        document.documentElement.style.colorScheme = mode;
+    }, [mode]);
     return (
         <MantineProvider
             theme={dfrntTheme}
             cssVariablesResolver={dfrntCssVariablesResolver}
-            forceColorScheme={DARK_MODE_ENABLED ? mode : 'light'}
+            forceColorScheme={mode}
         >
             {/*
               * Date values in this app are wall-clock (stored and shown as-entered,
@@ -48,7 +43,9 @@ const ThemedSubtree: React.FC<DfrntMantineProviderProps> = ({children}) => {
               */}
             <DatesProvider settings={{}}>
                 <ReactQueryProvider>
-                    {children}
+                    <GlassProvider enabled={glassEnabled}>
+                        {children}
+                    </GlassProvider>
                 </ReactQueryProvider>
             </DatesProvider>
         </MantineProvider>

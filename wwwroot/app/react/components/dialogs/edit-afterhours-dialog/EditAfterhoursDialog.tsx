@@ -1,12 +1,3 @@
-/**
- * React Edit Afterhours Dialog
- *
- * A modern replacement for the AngularJS edit-afterhours-dialog.
- * Allows users to create or edit afterhours schedules for couriers.
- *
- * Uses React Query for data fetching with automatic caching and loading states.
- */
-
 import React, {useState, useCallback, useEffect, useMemo} from 'react';
 import {Alert, Box, Group, MultiSelect, Paper, Select, Stack, Text, TextInput, alpha} from '@mantine/core';
 import {Calendar, Clock, Save, Timer, TriangleAlert, User} from 'lucide-react';
@@ -92,13 +83,13 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
     // Show error toasts for query failures
     useEffect(() => {
         if (courierSearchError) {
-            showToast('An error occurred while searching. Please try again later.', 'error');
+            showToast("Couldn't search couriers. Try again.", 'error');
         }
     }, [courierSearchError, showToast]);
 
     useEffect(() => {
         if (timeZoneError) {
-            showToast('Failed to load time zone options.', 'error');
+            showToast("Couldn't load time zones. Refresh and try again.", 'error');
         }
     }, [timeZoneError, showToast]);
 
@@ -192,23 +183,23 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
         const errors: ValidationErrors = {};
 
         if (!courierId) {
-            errors.courier = 'Please select a courier';
+            errors.courier = 'Select a courier';
         }
 
         if (selectedDays.length === 0) {
-            errors.days = 'Please select at least one day';
+            errors.days = 'Select at least one day';
         }
 
         if (!startTime) {
-            errors.startTime = 'Please set a start time';
+            errors.startTime = 'Enter a start time';
         }
 
         if (!endTime) {
-            errors.endTime = 'Please set an end time';
+            errors.endTime = 'Enter an end time';
         }
 
         if (isUsTenant && !selectedTimeZone) {
-            errors.timeZone = 'Please select a time zone';
+            errors.timeZone = 'Select a time zone';
         }
 
         if (startTime && endTime && startTime === endTime) {
@@ -259,7 +250,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
 
     if (!open) return null;
 
-    const title = `${isNewSchedule ? 'Create' : 'Edit'} Afterhours Schedule`;
+    const title = `${isNewSchedule ? 'Create' : 'Edit'} afterhours schedule`;
 
     return (
         <DialogShell opened={open} onClose={onClose} label={title}>
@@ -278,12 +269,12 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                         <Box c="dimmed" style={{display: 'flex'}}>
                             <Icon lucide={User}/>
                         </Box>
-                        <Text fw={500}>{isNewSchedule ? 'Select' : 'Change'} Driver</Text>
+                        <Text fw={500}>{isNewSchedule ? 'Select' : 'Change'} driver</Text>
                     </Group>
 
                     <SearchSelect<CourierSuggestion>
-                        label="Search driver..."
-                        placeholder="Type at least 2 characters"
+                        label="Search driver"
+                        placeholder="Enter at least 2 characters"
                         value={selectedCourier}
                         onChange={handleCourierSelect}
                         options={courierOptions}
@@ -321,14 +312,14 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                         <Box c="dimmed" style={{display: 'flex'}}>
                             <Icon lucide={Clock}/>
                         </Box>
-                        <Text fw={500}>Schedule Details</Text>
+                        <Text fw={500}>Schedule details</Text>
                     </Group>
 
                     <Stack gap="lg">
                         {/* Days of Week Selection */}
                         <Box>
                             <MultiSelect
-                                label="Days of Week"
+                                label="Days of week"
                                 data={[...DAYS_OF_WEEK]}
                                 value={selectedDays}
                                 onChange={setSelectedDays}
@@ -347,14 +338,14 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                               * wall-clock "HH:mm" strings that must round-trip unchanged.
                               */}
                             <TextInput
-                                label="Start Time"
+                                label="Start time"
                                 type="time"
                                 value={startTime}
                                 onChange={(e) => setStartTime(e.currentTarget.value)}
                                 error={validationErrors.startTime}
                             />
                             <TextInput
-                                label="End Time"
+                                label="End time"
                                 type="time"
                                 value={endTime}
                                 onChange={(e) => setEndTime(e.currentTarget.value)}
@@ -387,10 +378,10 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                                     borderRadius: 'var(--mantine-radius-sm)',
                                 }}
                             >
-                                <Box c="reflex.6" style={{display: 'flex'}}>
+                                <Box c="light-dark(var(--mantine-color-reflex-6), var(--mantine-color-reflex-4))" style={{display: 'flex'}}>
                                     <Icon lucide={Timer}/>
                                 </Box>
-                                <Text size="sm" c="dimmed">Total Duration</Text>
+                                <Text size="sm" c="dimmed">Total duration</Text>
                                 <Text fw={600} ml="auto">{duration}</Text>
                             </Group>
                         )}
@@ -414,7 +405,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel={isSubmitting ? 'Saving...' : `${isNewSchedule ? 'Create' : 'Save'} Schedule`}
+                confirmLabel={isSubmitting ? 'Saving…' : `${isNewSchedule ? 'Create' : 'Save'} schedule`}
                 confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={!isFormValid || isSubmitting}
                 submitting={isSubmitting}

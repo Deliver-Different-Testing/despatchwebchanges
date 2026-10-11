@@ -84,7 +84,7 @@ describe('AgentInfoDialog', () => {
             renderWithMantine(<AgentInfoDialog {...props} />);
 
             // Header now shows title and agent name separately
-            expect(screen.getByText('Agent Details')).toBeInTheDocument();
+            expect(screen.getByText('Agent details')).toBeInTheDocument();
             // Agent name appears in header subtitle and potentially elsewhere
             const agentNames = screen.getAllByText('John Smith');
             expect(agentNames.length).toBeGreaterThanOrEqual(1);
@@ -101,7 +101,7 @@ describe('AgentInfoDialog', () => {
             const props = createMockProps();
             renderWithMantine(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByRole('dialog')).toHaveAccessibleName('Agent Details');
+            expect(screen.getByRole('dialog')).toHaveAccessibleName('Agent details');
         });
     });
 
@@ -117,11 +117,11 @@ describe('AgentInfoDialog', () => {
             const props = createMockProps({ isLoading: true, agent: undefined });
             renderWithMantine(<AgentInfoDialog {...props} />);
 
-            expect(screen.queryByText('Basic Information')).not.toBeInTheDocument();
+            expect(screen.queryByText('Basic information')).not.toBeInTheDocument();
         });
     });
 
-    describe('Agent Basic Information', () => {
+    describe('Agent Basic information', () => {
         it('displays agent name', () => {
             const props = createMockProps();
             renderWithMantine(<AgentInfoDialog {...props} />);
@@ -189,7 +189,7 @@ describe('AgentInfoDialog', () => {
             const props = createMockProps({ agent: agentNoAddress });
             renderWithMantine(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByText('No address available')).toBeInTheDocument();
+            expect(screen.getByText('No address yet')).toBeInTheDocument();
         });
     });
 
@@ -206,16 +206,16 @@ describe('AgentInfoDialog', () => {
             const props = createMockProps({ agent: agentNoNotes });
             renderWithMantine(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByText('No notes available.')).toBeInTheDocument();
+            expect(screen.getByText('No notes yet.')).toBeInTheDocument();
         });
     });
 
-    describe('Assigned Airports', () => {
+    describe('Assigned airports', () => {
         it('displays assigned airports section', () => {
             const props = createMockProps();
             renderWithMantine(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByText('Assigned Airports')).toBeInTheDocument();
+            expect(screen.getByText('Assigned airports')).toBeInTheDocument();
         });
 
         it.each([
@@ -279,7 +279,7 @@ describe('AgentInfoDialog', () => {
             const props = createMockProps({ agent: undefined, isLoading: false });
             renderWithMantine(<AgentInfoDialog {...props} />);
 
-            expect(screen.getByText('No agent data available')).toBeInTheDocument();
+            expect(screen.getByText('No agent data found.')).toBeInTheDocument();
         });
     });
 

@@ -10,7 +10,7 @@
  * Used by:
  *  - JobChangeRequestsForJob (per-job history panel)
  *  - JobChangeRequestDialog (helper hint + summary)
- *  - The Partner Approvals inbox
+ *  - The Partner approvals inbox
  *  - In-place pending badges on Job Details cards
  */
 
@@ -67,7 +67,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '✎',
     },
     ProgressNote: {
-        label: 'Progress Note',
+        label: 'Progress note',
         hint: 'Appended to job notes immediately on both sides',
         category: 'note',
         mode: 'auto',
@@ -75,7 +75,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '✎',
     },
     PodNote: {
-        label: 'POD Note',
+        label: 'POD note',
         hint: 'Appended to job notes immediately on both sides',
         category: 'note',
         mode: 'auto',
@@ -85,7 +85,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
 
     // Auto — customer-visible non-rated
     ConNote: {
-        label: 'Consignment Note',
+        label: 'Consignment note',
         hint: 'Applies immediately; syncs to the partner',
         category: 'reference',
         mode: 'auto',
@@ -109,7 +109,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '#',
     },
     OurRef: {
-        label: 'Our Reference',
+        label: 'Our reference',
         hint: 'Applies immediately; syncs to the partner',
         category: 'reference',
         mode: 'auto',
@@ -117,7 +117,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '#',
     },
     Attention: {
-        label: 'Attention Flag',
+        label: 'Attention flag',
         hint: 'Applies immediately; syncs to the partner',
         category: 'flag',
         mode: 'auto',
@@ -125,7 +125,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '⚑',
     },
     TrackingMobile: {
-        label: 'Tracking Mobile',
+        label: 'Tracking mobile',
         hint: 'Applies immediately; syncs to the partner',
         category: 'tracking',
         mode: 'auto',
@@ -133,7 +133,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '📱',
     },
     TrackingEmail: {
-        label: 'Tracking Email',
+        label: 'Tracking email',
         hint: 'Applies immediately; syncs to the partner',
         category: 'tracking',
         mode: 'auto',
@@ -141,7 +141,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '✉',
     },
     TrackingMethod: {
-        label: 'Tracking Method',
+        label: 'Tracking method',
         hint: 'Applies immediately; syncs to the partner',
         category: 'tracking',
         mode: 'auto',
@@ -157,7 +157,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '#',
     },
     DeliverToLeaveID: {
-        label: 'Signature Requirement',
+        label: 'Signature requirement',
         hint: 'Applies immediately; syncs to the partner',
         category: 'flag',
         mode: 'auto',
@@ -167,7 +167,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
 
     // Manual — contact fields (no commercial refresh)
     FromContactName: {
-        label: 'Pickup Contact Name',
+        label: 'Pickup contact name',
         hint: 'Requires partner approval',
         category: 'contact',
         mode: 'manual',
@@ -175,7 +175,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '👤',
     },
     FromContactPhone: {
-        label: 'Pickup Contact Phone',
+        label: 'Pickup contact phone',
         hint: 'Requires partner approval',
         category: 'contact',
         mode: 'manual',
@@ -183,7 +183,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '☎',
     },
     ToContactName: {
-        label: 'Delivery Contact Name',
+        label: 'Delivery contact name',
         hint: 'Requires partner approval',
         category: 'contact',
         mode: 'manual',
@@ -191,7 +191,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '👤',
     },
     ToContactPhone: {
-        label: 'Delivery Contact Phone',
+        label: 'Delivery contact phone',
         hint: 'Requires partner approval',
         category: 'contact',
         mode: 'manual',
@@ -201,7 +201,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
 
     // Manual — commercial / operational
     PartnerAgreedRate: {
-        label: 'Agreed Rate',
+        label: 'Agreed rate',
         hint: 'Requires partner approval; locked after settlement',
         category: 'rate',
         mode: 'manual',
@@ -217,7 +217,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '#',
     },
     Speed: {
-        label: 'Service Speed',
+        label: 'Service speed',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'commercial',
         mode: 'manual',
@@ -241,7 +241,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '🕒',
     },
     PuTime: {
-        label: 'Pickup Time',
+        label: 'Pickup time',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'datetime',
         mode: 'manual',
@@ -249,7 +249,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '🕒',
     },
     DeliverBy: {
-        label: 'Deliver By',
+        label: 'Deliver by',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'datetime',
         mode: 'manual',
@@ -257,7 +257,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '🕒',
     },
     BookedTime: {
-        label: 'Booked Time',
+        label: 'Booked time',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'datetime',
         mode: 'manual',
@@ -265,7 +265,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '📅',
     },
     AcceptedJobTypeID: {
-        label: 'Job Type',
+        label: 'Job type',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'commercial',
         mode: 'manual',
@@ -273,7 +273,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '⚙',
     },
     Direct: {
-        label: 'Direct Flag',
+        label: 'Direct flag',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'flag',
         mode: 'manual',
@@ -281,7 +281,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '⚑',
     },
     DGClass: {
-        label: 'Dangerous Goods Class',
+        label: 'Dangerous goods class',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'flag',
         mode: 'manual',
@@ -289,7 +289,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '⚠',
     },
     DGDocumentation: {
-        label: 'Dangerous Goods Documentation',
+        label: 'Dangerous goods documentation',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'flag',
         mode: 'manual',
@@ -305,7 +305,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '📦',
     },
     PickupAddress: {
-        label: 'Pickup Address',
+        label: 'Pickup address',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'address',
         mode: 'manual',
@@ -313,7 +313,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
         glyph: '📍',
     },
     DeliveryAddress: {
-        label: 'Delivery Address',
+        label: 'Delivery address',
         hint: 'Requires partner approval; re-rates on approval',
         category: 'address',
         mode: 'manual',

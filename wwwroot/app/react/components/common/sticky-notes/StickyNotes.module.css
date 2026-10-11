@@ -6,10 +6,31 @@
  * The per-note tilt and fill come in as `--note-rotate` / `--note-fill`.
  */
 .note {
+    --note-ink-heading: rgba(0, 0, 0, 0.7);
+    --note-ink-body: rgba(0, 0, 0, 0.8);
+    /* 0.62 rather than 0.54: xs text fell short of 4.5:1 on the paler fills. */
+    --note-ink-meta: rgba(0, 0, 0, 0.62);
+    --note-ink-author: rgba(0, 0, 0, 0.5);
+    --note-ink-glyph: rgba(0, 0, 0, 0.6);
+    --note-paper: var(--note-fill);
     position: relative;
     transform: rotate(var(--note-rotate, 0deg));
-    background-color: var(--note-fill);
+    background-color: var(--note-paper);
     transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+/* Dark mode: keep each category's hue but sink it into the dark surface, with light ink. */
+:global([data-mantine-color-scheme='dark']) .note {
+    --note-paper: color-mix(in srgb, var(--note-fill) 26%, var(--mantine-color-dark-7));
+    --note-ink-heading: rgba(255, 255, 255, 0.92);
+    --note-ink-body: rgba(255, 255, 255, 0.9);
+    --note-ink-meta: rgba(255, 255, 255, 0.72);
+    --note-ink-author: rgba(255, 255, 255, 0.65);
+    --note-ink-glyph: rgba(255, 255, 255, 0.8);
+}
+
+:global([data-mantine-color-scheme='dark']) .note::after {
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 .note:hover {

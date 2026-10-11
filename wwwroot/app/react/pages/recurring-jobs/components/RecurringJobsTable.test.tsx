@@ -63,7 +63,7 @@ describe('RecurringJobsTable', () => {
         it('should show empty message when no jobs', () => {
             renderWithTheme(<RecurringJobsTable {...defaultProps} />);
 
-            expect(screen.getByText('No recurring jobs available')).toBeInTheDocument();
+            expect(screen.getByText('No recurring jobs match your search.')).toBeInTheDocument();
         });
     });
 
@@ -71,7 +71,7 @@ describe('RecurringJobsTable', () => {
         it('should show loading indicator', () => {
             renderWithTheme(<RecurringJobsTable {...defaultProps} isLoading={true}/>);
 
-            expect(screen.getByText('Loading recurring jobs...')).toBeInTheDocument();
+            expect(screen.getByText('Loading recurring jobs…')).toBeInTheDocument();
         });
     });
 
@@ -82,11 +82,11 @@ describe('RecurringJobsTable', () => {
         // Column headers
         expect(screen.getByText('Booked')).toBeInTheDocument();
         expect(screen.getByText('Speed')).toBeInTheDocument();
-        expect(screen.getByText('Job Name')).toBeInTheDocument();
+        expect(screen.getByText('Job name')).toBeInTheDocument();
         expect(screen.getByText('Client')).toBeInTheDocument();
         expect(screen.getByText('From')).toBeInTheDocument();
         expect(screen.getByText('To')).toBeInTheDocument();
-        expect(screen.getByText('Next Due')).toBeInTheDocument();
+        expect(screen.getByText('Next due')).toBeInTheDocument();
         expect(screen.getByText('Courier')).toBeInTheDocument();
 
         // Job data - client, speed, custom name, pickup address, delivery address, courier

@@ -20,6 +20,7 @@ public class ClientJobsReportCsvTests
     private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
+    private readonly IScopeProvider _scopeProviderMock = Substitute.For<IScopeProvider>();
 
     private JobReportService CreateService() =>
         new(
@@ -27,7 +28,8 @@ public class ClientJobsReportCsvTests
             _jobCommandRepositoryMock,
             _recurringJobRepositoryMock,
             _clock,
-            _s3ClientMock
+            _s3ClientMock,
+            _scopeProviderMock
         );
 
     [Fact]

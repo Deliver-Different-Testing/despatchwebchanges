@@ -37,7 +37,7 @@ const host = createDialogHost<{events: EventGroupViewModel[]; users: StaffSugges
             onSave={async (events: EventGroupViewModel[]) => {
                 await saveTasks(payload.jobId, events);
                 const taskCount = events.length;
-                showToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added successfully`, 'success');
+                showToast(`${taskCount} task${taskCount !== 1 ? 's' : ''} added`, 'success');
                 close(true);
             }}
             onOpenAdminManager={openAdminManager}

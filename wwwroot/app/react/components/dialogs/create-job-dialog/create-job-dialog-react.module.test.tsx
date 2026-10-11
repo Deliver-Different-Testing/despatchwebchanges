@@ -1,5 +1,5 @@
 /**
- * Create Job Dialog React Module Tests
+ * Create job Dialog React Module Tests
  *
  * Tests for the module's open() method and window global registration.
  */

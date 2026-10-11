@@ -74,10 +74,10 @@ describe('PartnerRatePanel', () => {
     it('shows rate card and pre-fills the input with the rate-card rate', async () => {
         renderPanel();
 
-        expect(await screen.findByText(/Rate Card/)).toBeInTheDocument();
+        expect(await screen.findByText(/Rate card/)).toBeInTheDocument();
         expect(screen.getByText(/85\.00/)).toBeInTheDocument();
 
-        const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
+        const input = screen.getByLabelText(/Agreed rate/) as HTMLInputElement;
         expect(input.value).toBe('85.00');
     });
 
@@ -93,11 +93,11 @@ describe('PartnerRatePanel', () => {
     it('shows live quotes as a radio group with the first quote pre-selected', async () => {
         renderPanel({fetchRate: jest.fn().mockResolvedValue(liveQuoteResponse)});
 
-        expect(await screen.findByText(/Live Quote/)).toBeInTheDocument();
+        expect(await screen.findByText(/Live quote/)).toBeInTheDocument();
         expect(screen.getByText(/Standard Delivery/)).toBeInTheDocument();
         expect(screen.getByText(/Express Delivery/)).toBeInTheDocument();
 
-        const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
+        const input = screen.getByLabelText(/Agreed rate/) as HTMLInputElement;
         expect(input.value).toBe('60.00');
     });
 
@@ -108,7 +108,7 @@ describe('PartnerRatePanel', () => {
         expect(await screen.findByText(/Express Delivery/)).toBeInTheDocument();
         await user.click(screen.getByText(/Express Delivery/));
 
-        const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
+        const input = screen.getByLabelText(/Agreed rate/) as HTMLInputElement;
         expect(input.value).toBe('95.00');
     });
 
@@ -118,7 +118,7 @@ describe('PartnerRatePanel', () => {
         expect(await screen.findByText(/Percentage/)).toBeInTheDocument();
         expect(screen.getByText(/60% of the job amount/)).toBeInTheDocument();
 
-        const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
+        const input = screen.getByLabelText(/Agreed rate/) as HTMLInputElement;
         expect(input.value).toBe('60.00');
         expect(screen.getByText(/substitutes this rate at dispatch/i)).toBeInTheDocument();
     });
@@ -126,10 +126,10 @@ describe('PartnerRatePanel', () => {
     it('shows the cost-plus hint and pre-fills with the partner quote (Mode 3)', async () => {
         renderPanel({fetchRate: jest.fn().mockResolvedValue(costPlusResponse)});
 
-        expect(await screen.findByText(/Cost Plus/)).toBeInTheDocument();
+        expect(await screen.findByText(/Cost plus/)).toBeInTheDocument();
         expect(screen.getByText(/margin 25%/)).toBeInTheDocument();
 
-        const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
+        const input = screen.getByLabelText(/Agreed rate/) as HTMLInputElement;
         expect(input.value).toBe('80.00');
         expect(screen.getByText(/rewrite the job amount/i)).toBeInTheDocument();
     });
@@ -158,9 +158,9 @@ describe('PartnerRatePanel', () => {
         const user = setupUser();
         renderPanel({onRateChange});
 
-        expect(await screen.findByLabelText(/Agreed Rate/)).toBeInTheDocument();
+        expect(await screen.findByLabelText(/Agreed rate/)).toBeInTheDocument();
 
-        const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
+        const input = screen.getByLabelText(/Agreed rate/) as HTMLInputElement;
         await user.clear(input);
 
         await waitFor(() => {

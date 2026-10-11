@@ -125,7 +125,7 @@ const BASIS_LABELS: Record<SplitPricingBasis, string> = {
     RoadMiles: 'Split by road distance per leg',
     StraightLine: 'Split by straight-line distance per leg',
     UserConfirmed: 'Split by your adjusted shares',
-    LegRates: 'Split by each leg’s calculated rate',
+    LegRates: "Split by each leg's calculated rate",
     EvenSplit: 'No distance available for either leg — split evenly',
 };
 
@@ -450,7 +450,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             showToast?.('Split pricing breakdown saved', 'success');
             props.onClose();
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to save the split pricing breakdown.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't save the split pricing breakdown. Try again."), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -506,7 +506,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             setAddRevenue('');
             showToast?.(`Added "${addName}"`, 'success');
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to add price item.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't add price item. Try again."), 'error');
         } finally {
             setIsAddSaving(false);
         }
@@ -521,7 +521,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             setConfirmDeleteItemId(null);
             showToast?.('Price item deleted', 'success');
         } catch (error) {
-            showToast?.(extractErrorMessage(error, 'Failed to delete price item.'), 'error');
+            showToast?.(extractErrorMessage(error, "Couldn't delete price item. Try again."), 'error');
         } finally {
             setIsDeleting(false);
         }
@@ -535,15 +535,15 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             onClose={handleCancel}
             size={computeDialogWidth(legKeys.length)}
             maw="95vw"
-            label={isEdit ? 'Price Breakdown' : 'Confirm Split Pricing'}
+            label={isEdit ? 'Price breakdown' : 'Confirm split pricing'}
         >
             <DialogHeader
                 icon={<Icon lucide={isEdit ? ReceiptText : Split}/>}
-                title={isEdit ? 'Price Breakdown' : 'Confirm Split Pricing'}
+                title={isEdit ? 'Price breakdown' : 'Confirm split pricing'}
                 subtitle={isEdit
                     ? (readOnly
-                        ? `The parent’s original items, split across ${legKeys.length} legs — view only`
-                        : `The parent’s original items, split across ${legKeys.length} legs — each leg’s cost is derived and editable below`)
+                        ? `The parent's original items, split across ${legKeys.length} legs — view only`
+                        : `The parent's original items, split across ${legKeys.length} legs — each leg's cost is derived and editable below`)
                     : `${(props as SplitModeProps).jobNo} · ${formatCurrency(totals.totalRevenue)} to divide`}
                 onClose={handleCancel}
             />
@@ -568,7 +568,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                         One breakdown for the whole split, the same from the parent or either leg.
                         Revenue changes are divided across the legs by their share, so the legs
                         always add up to the parent.
-                        {highlightLegId != null && ' You are viewing this job’s leg below, highlighted.'}
+                        {highlightLegId != null && " You are viewing this job's leg below, highlighted."}
                     </Alert>
                 )}
             </Box>
@@ -669,7 +669,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                 </Group>
 
                 <Group justify="space-between" mb="md" wrap="nowrap">
-                    <Text fw={600} fz="lg">Price Items</Text>
+                    <Text fw={600} fz="lg">Price items</Text>
                     {canEdit && (
                         <Button
                             leftSection={<Icon lucide={Plus}/>}
@@ -677,7 +677,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                             onClick={() => setIsAdding(true)}
                             disabled={revenueLocked}
                         >
-                            Add Item
+                            Add item
                         </Button>
                     )}
                 </Group>
@@ -686,7 +686,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                     <Paper withBorder radius="md" p="md" mb="md">
                         <Group gap="md" align="flex-end" wrap="wrap">
                             <TextInput
-                                label="Item Name"
+                                label="Item name"
                                 value={addName}
                                 onChange={(e) => setAddName(e.currentTarget.value)}
                                 required
@@ -740,7 +740,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                         </Stack>
                                     </Table.Th>
                                 ))}
-                                <Table.Th c="dimmed" ta="right">Total Cost</Table.Th>
+                                <Table.Th c="dimmed" ta="right">Total cost</Table.Th>
                                 <Table.Th c="dimmed" ta="right">Profit</Table.Th>
                                 <Table.Th c="dimmed" ta="center">Margin</Table.Th>
                                 {canEdit && <Table.Th c="dimmed" ta="center" w={60}/>}
@@ -833,7 +833,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                             <Text size="sm" c="dimmed">{formatCurrency(totalCost)}</Text>
                                         </Table.Td>
                                         <Table.Td ta="right">
-                                            <Text size="sm" fw={600} c={profit >= 0 ? 'green.6' : 'red.6'}>
+                                            <Text size="sm" fw={600} c={profit >= 0 ? 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))' : 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))'}>
                                                 {formatCurrency(profit)}
                                             </Text>
                                         </Table.Td>
@@ -941,7 +941,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                 py="md"
                 wrap="nowrap"
                 style={{
-                    backgroundColor: 'var(--mantine-color-white)',
+                    backgroundColor: 'var(--dd-surface-container-high)',
                     borderTop: '1px solid var(--mantine-color-gray-3)',
                 }}
             >
@@ -973,7 +973,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
                                 disabled={isEdit && !hasPendingEdits}
                                 miw={140}
                             >
-                                {isEdit ? 'Save & Close' : 'Confirm & Split'}
+                                {isEdit ? 'Save & close' : 'Confirm & split'}
                             </Button>
                         </>
                     )}

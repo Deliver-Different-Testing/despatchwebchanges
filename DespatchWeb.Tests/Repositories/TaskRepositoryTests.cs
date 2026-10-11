@@ -1,8 +1,10 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -442,5 +444,49 @@ public class TaskRepositoryTests : IAsyncDisposable
         var results = ApplyOrderingInMemory(events, filters, today);
 
         Assert.Equal(Expected, results);
+    }
+
+    [Fact]
+    public void ResolveCreatedAt_UsesUtcStamp_ElseLegacyDateAndTime_ElseNull()
+    {
+        var info = Substitute.For<ITenantInfoService>();
+        info.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(c => new DateTimeOffset(c.Arg<DateTime>().AddHours(12), TimeSpan.FromHours(12)));
+
+        var withStamp = new TaskViewModel
+        {
+            CreatedAtUtc = new DateTime(2025, 6, 15, 0, 0, 0),
+            CreatedDate = new DateTime(2025, 6, 1),
+            CreatedTime = new DateTime(1900, 1, 1, 9, 0, 0)
+        };
+        var legacy = new TaskViewModel
+        {
+            CreatedDate = new DateTime(2025, 6, 1),
+            CreatedTime = new DateTime(1900, 1, 1, 9, 30, 0)
+        };
+
+        Assert.Equal(new DateTimeOffset(2025, 6, 15, 12, 0, 0, TimeSpan.FromHours(12)),
+            TaskRepository.ResolveCreatedAt(withStamp, info, "Pacific/Auckland"));
+        Assert.Equal(new DateTimeOffset(2025, 6, 1, 9, 30, 0, TimeSpan.FromHours(12)),
+            TaskRepository.ResolveCreatedAt(legacy, info, "Pacific/Auckland"));
+        Assert.Null(TaskRepository.ResolveCreatedAt(new TaskViewModel(), info, "Pacific/Auckland"));
+    }
+
+    [Fact]
+    public void ProjectToTaskViewModel_CarriesCreatedFields()
+    {
+        var ev = CreateEvent(1, e =>
+        {
+            e.UcevCreatedAtUtc = new DateTime(2025, 6, 15, 0, 0, 0);
+            e.UcevDate = new DateTime(2025, 6, 1);
+            e.UcevTime = new DateTime(1900, 1, 1, 9, 0, 0);
+            e.UcevJob = new TucJob();
+        });
+
+        var vm = ProjectInMemory(ev);
+
+        Assert.Equal(new DateTime(2025, 6, 15, 0, 0, 0), vm.CreatedAtUtc);
+        Assert.Equal(new DateTime(2025, 6, 1), vm.CreatedDate);
+        Assert.Equal(new DateTime(1900, 1, 1, 9, 0, 0), vm.CreatedTime);
     }
 }

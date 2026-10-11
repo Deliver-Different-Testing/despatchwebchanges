@@ -51,7 +51,7 @@ describe('AccessorialChargesDialog — Auto-Mate suggest', () => {
         renderDialog();
 
         // wait for the dialog to finish loading
-        expect(await screen.findByText('Add Charges')).toBeInTheDocument();
+        expect(await screen.findByText('Add charges')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /suggest charges/i})).not.toBeInTheDocument();
     });
 

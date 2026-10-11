@@ -39,12 +39,12 @@ describe('TruckLoadingStatusDialog', () => {
 
     it('fetches and shows the courier truck status with computed available weight', async () => {
         renderDialog();
-        expect(screen.getByText('Truck Loading Status')).toBeInTheDocument();
+        expect(screen.getByText('Truck loading status')).toBeInTheDocument();
         expect(screen.getByText('101 - Alice')).toBeInTheDocument();
 
         // availableWeight = maxPayLoad(1000) - currentWeight(250) = 750
         expect(await screen.findByText('750')).toBeInTheDocument();
-        expect(screen.getByText(/Max Weight \(kg\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Max weight \(kg\)/)).toBeInTheDocument();
         expect(fetchTruckCourierStatusMock).toHaveBeenCalledWith(42, expect.anything());
     });
 

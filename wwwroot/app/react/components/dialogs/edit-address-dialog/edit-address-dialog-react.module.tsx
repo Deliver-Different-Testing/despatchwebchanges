@@ -1,11 +1,3 @@
-/**
- * Edit Address Dialog React Module
- *
- * Entry point for the React-based Edit Address Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- * Uses React Query for data fetching with automatic caching.
- */
-
 import React from 'react';
 import {EditAddressDialog} from './EditAddressDialog';
 import {EditAddressDialogViewModel} from '../../../interfaces';
@@ -57,7 +49,7 @@ const host = createDialogHost<EditAddressPayload, EditAddressDialogViewModel | n
  */
 export function openEditAddressDialog(
     addressDetails: EditAddressDialogViewModel | null,
-    title: string = 'Edit Address',
+    title: string = 'Edit address',
     submitLabel: string = 'Save',
     showContactInfo: boolean = false,
     isUsTenant: boolean = false,

@@ -98,16 +98,16 @@ const priorityColor: Partial<Record<NonNullable<Task['priority']>, string>> = {
  * number for all three is what makes a "filled" chip disappear.
  */
 const factTone: Record<string, {bg: string; fg: string}> = {
-    gray: {bg: 'gray.3', fg: 'gray.8'},
-    red: {bg: 'red.2', fg: 'red.9'},
-    orange: {bg: 'orange.2', fg: 'orange.9'},
+    gray: {bg: 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))', fg: 'light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-0))'},
+    red: {bg: 'light-dark(var(--mantine-color-red-2), var(--mantine-color-red-9))', fg: 'light-dark(var(--mantine-color-red-9), var(--mantine-color-red-1))'},
+    orange: {bg: 'light-dark(var(--mantine-color-orange-2), var(--mantine-color-orange-9))', fg: 'light-dark(var(--mantine-color-orange-9), var(--mantine-color-orange-1))'},
 };
 
 /**
  * A task may have no due date; guard against rendering the raw
- * "undefined"/"Invalid Date" string the formatters produce for one.
+ * "undefined"/"Invalid date" string the formatters produce for one.
  */
-const hasValidDate = (s?: string): boolean => Boolean(s) && s !== 'Invalid Date';
+const hasValidDate = (s?: string): boolean => Boolean(s) && s !== 'Invalid date';
 
 // Compute timezone abbreviation once at module level (it doesn't change per-render)
 const ianaTimeZone = getIanaTimezone(getTenantTimezone());
@@ -236,7 +236,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             showSuccessToast?.('Task assigned to you');
             onTaskUpdated?.();
         } catch (error) {
-            showErrorToast?.('Error assigning task');
+            showErrorToast?.("Couldn't assign the task. Check your connection and try again.");
             console.error('Error assigning task to current user:', error);
         }
     }, [currentUserId, task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
@@ -262,7 +262,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             onTaskUpdated?.();
             closePopover();
         } catch (error) {
-            showErrorToast?.('Error unassigning task');
+            showErrorToast?.("Couldn't unassign the task. Check your connection and try again.");
             console.error('Error unassigning task:', error);
         } finally {
             setIsUnassigning(false);
@@ -276,10 +276,10 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
-            showSuccessToast?.('Task completed successfully');
+            showSuccessToast?.('Task completed');
             onTaskUpdated?.();
         } catch (error) {
-            showErrorToast?.('Error updating task');
+            showErrorToast?.("Couldn't update the task. Check your connection and try again.");
             console.error('Error updating task:', error);
         } finally {
             setIsCompleting(false);
@@ -305,7 +305,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             setStaffList(staff || []);
         } catch (error) {
             console.error('Error loading staff:', error);
-            showErrorToast?.('Error loading staff list');
+            showErrorToast?.("Couldn't load the staff list. Check your connection and try again.");
         } finally {
             setLoadingStaff(false);
         }
@@ -323,11 +323,11 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
 
         try {
             await tasksService.updateTaskDate(task.id, newDate);
-            showSuccessToast?.('Task date updated successfully');
+            showSuccessToast?.('Task date updated');
             onTaskUpdated?.();
             setDueTab('time');
         } catch (error) {
-            showErrorToast?.('Error updating task date');
+            showErrorToast?.("Couldn't update the task date. Check your connection and try again.");
             console.error('Error updating task date:', error);
         }
     }, [task.id, task.dueDate, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
@@ -346,11 +346,11 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
 
         try {
             await tasksService.updateTaskTime(task.id, newTime);
-            showSuccessToast?.('Task time updated successfully');
+            showSuccessToast?.('Task time updated');
             onTaskUpdated?.();
             closePopover();
         } catch (error) {
-            showErrorToast?.('Error updating task time');
+            showErrorToast?.("Couldn't update the task time. Check your connection and try again.");
             console.error('Error updating task time:', error);
         }
     }, [timeDraft, task.id, task.dueDate, tasksService, showSuccessToast, showErrorToast, onTaskUpdated, closePopover]);
@@ -358,11 +358,11 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const handleAssigneeSelect = useCallback(async (staffId: number) => {
         try {
             await tasksService.reassignTaskToStaff(task.id, staffId);
-            showSuccessToast?.('Task reassigned successfully');
+            showSuccessToast?.('Task reassigned');
             onTaskUpdated?.();
             closePopover();
         } catch (error) {
-            showErrorToast?.('Error reassigning task');
+            showErrorToast?.("Couldn't reassign the task. Check your connection and try again.");
             console.error('Error reassigning task:', error);
         }
     }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated, closePopover]);
@@ -527,7 +527,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                 <Box p="xs" style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}>
                     <TextInput
                         size="xs"
-                        placeholder="Search staff..."
+                        placeholder="Search staff…"
                         value={staffSearchText}
                         onChange={(event) => setStaffSearchText(event.currentTarget.value)}
                         leftSection={<Icon lucide={Search} size={16}/>}
@@ -557,9 +557,20 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
         </Popover>
     );
 
+    const sentValue = useMemo(() => {
+        if (!task.createdAt?.isValid() || !hasValidDate(task._createdTimeString)) return null;
+        return task.createdAt.isSame(dayjs(), 'day') || !hasValidDate(task._createdDateString)
+            ? task._createdTimeString!
+            : `${task._createdDateString} ${task._createdTimeString}`;
+    }, [task.createdAt, task._createdDateString, task._createdTimeString]);
+
     /** Every datum the task carries, each chip naming its own type. */
     const facts = (
         <>
+            {sentValue && (
+                <Fact stamp="sent" hideLabel={compact} label="Sent" value={sentValue}/>
+            )}
+
             {task.priority && priorityColor[task.priority] && (
                 <Fact
                     stamp="priority"

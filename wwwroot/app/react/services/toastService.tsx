@@ -16,10 +16,24 @@ import {createRoot} from 'react-dom/client';
 import {Button, Group, MantineProvider} from '@mantine/core';
 import {Notifications, notifications} from '@mantine/notifications';
 import {dfrntTheme, dfrntCssVariablesResolver} from '../theme/dfrntMantineTheme';
-import {DARK_MODE_ENABLED} from '../theme/DfrntMantineProvider';
+import {ColorModeProvider, useColorMode} from '../hooks/useColorMode';
 import type {ToastAction, ToastHandle, ToastService, ToastType} from './toastTypes';
 
 export type {ShowToastFn, ToastAction, ToastHandle, ToastService, ToastType} from './toastTypes';
+
+/** Own root, so it reads the colour mode itself rather than inheriting an island's. */
+const ToastHost: React.FC = () => {
+    const {mode} = useColorMode();
+    return (
+        <MantineProvider
+            theme={dfrntTheme}
+            cssVariablesResolver={dfrntCssVariablesResolver}
+            forceColorScheme={mode}
+        >
+            <Notifications position="top-right" zIndex={TOAST_Z_INDEX}/>
+        </MantineProvider>
+    );
+};
 
 /** Maps a toast type onto its Mantine theme colour (the DFRNT semantic ramp). */
 export function toastColor(type: ToastType): string {
@@ -56,13 +70,7 @@ class ToastServiceImpl implements ToastService {
         el.id = NOTIFICATIONS_ROOT_ID;
         document.body.appendChild(el);
         createRoot(el).render(
-            <MantineProvider
-                theme={dfrntTheme}
-                cssVariablesResolver={dfrntCssVariablesResolver}
-                forceColorScheme={DARK_MODE_ENABLED ? undefined : 'light'}
-            >
-                <Notifications position="top-right" zIndex={TOAST_Z_INDEX}/>
-            </MantineProvider>,
+            <ColorModeProvider><ToastHost/></ColorModeProvider>,
         );
         this.mounted = true;
     }

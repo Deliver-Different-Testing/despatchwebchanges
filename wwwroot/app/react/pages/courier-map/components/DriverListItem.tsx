@@ -104,7 +104,7 @@ export function DriverListItem({ driver, onClick, isSelected }: DriverListItemPr
                     )}
 
                     {hasOverdue && (
-                        <Group gap={2} c="var(--mantine-color-red-6)" wrap="nowrap">
+                        <Group gap={2} c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))" wrap="nowrap">
                             <Icon lucide={TriangleAlert} size={12} />
                             <Text component="span" fz={11} fw={600} lh={1}>
                                 {driver.overDueJobs} late

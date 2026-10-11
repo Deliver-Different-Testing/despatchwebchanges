@@ -54,12 +54,12 @@ describe('DriverManagementPage', () => {
         it('should render all 6 tab labels', () => {
             renderPage();
 
-            expect(screen.getByText('Driver Details')).toBeInTheDocument();
-            expect(screen.getByText("Today's Active")).toBeInTheDocument();
-            expect(screen.getByText('Driver Compliance')).toBeInTheDocument();
-            expect(screen.getByText('After Hours Schedule')).toBeInTheDocument();
-            expect(screen.getByText('Driver Emails')).toBeInTheDocument();
-            expect(screen.getByText('Driver Earnings')).toBeInTheDocument();
+            expect(screen.getByText('Driver details')).toBeInTheDocument();
+            expect(screen.getByText("Today's active")).toBeInTheDocument();
+            expect(screen.getByText('Driver compliance')).toBeInTheDocument();
+            expect(screen.getByText('After hours schedule')).toBeInTheDocument();
+            expect(screen.getByText('Driver emails')).toBeInTheDocument();
+            expect(screen.getByText('Driver earnings')).toBeInTheDocument();
         });
 
         it('should show DriverDetailsTab by default', () => {
@@ -72,7 +72,7 @@ describe('DriverManagementPage', () => {
         it('should switch to TodayActive tab when clicked', () => {
             renderPage();
 
-            fireEvent.click(screen.getByText("Today's Active"));
+            fireEvent.click(screen.getByText("Today's active"));
 
             expect(screen.getByTestId('today-active-tab')).toBeInTheDocument();
             expect(screen.queryByTestId('driver-details-tab')).not.toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('DriverManagementPage', () => {
         it('should switch to Compliance tab when clicked', () => {
             renderPage();
 
-            fireEvent.click(screen.getByText('Driver Compliance'));
+            fireEvent.click(screen.getByText('Driver compliance'));
 
             expect(screen.getByTestId('compliance-tab')).toBeInTheDocument();
         });
@@ -89,7 +89,7 @@ describe('DriverManagementPage', () => {
         it('should switch to After Hours tab when clicked', () => {
             renderPage();
 
-            fireEvent.click(screen.getByText('After Hours Schedule'));
+            fireEvent.click(screen.getByText('After hours schedule'));
 
             expect(screen.getByTestId('after-hours-tab')).toBeInTheDocument();
         });
@@ -97,7 +97,7 @@ describe('DriverManagementPage', () => {
         it('should switch to Emails tab when clicked', () => {
             renderPage();
 
-            fireEvent.click(screen.getByText('Driver Emails'));
+            fireEvent.click(screen.getByText('Driver emails'));
 
             expect(screen.getByTestId('emails-tab')).toBeInTheDocument();
         });
@@ -105,7 +105,7 @@ describe('DriverManagementPage', () => {
         it('should switch to Earnings tab when clicked', () => {
             renderPage();
 
-            fireEvent.click(screen.getByText('Driver Earnings'));
+            fireEvent.click(screen.getByText('Driver earnings'));
 
             expect(screen.getByTestId('earnings-tab')).toBeInTheDocument();
         });

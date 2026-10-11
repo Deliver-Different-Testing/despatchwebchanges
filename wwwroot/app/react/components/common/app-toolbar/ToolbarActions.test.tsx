@@ -163,6 +163,8 @@ describe('ViewsMenu', () => {
         expect(screen.getByRole('button')).toBeInTheDocument();
         // 2 views are selected
         expect(screen.getByText('2')).toBeInTheDocument();
+        // Digits take the bar colour so they read against the pill in both colour modes.
+        expect(screen.getByText('2').closest('.mantine-Indicator-indicator')).toHaveStyle({color: 'var(--dd-shell-bar)'});
     });
 
     it('should open menu with views and a selection header that clears', async () => {
@@ -206,20 +208,20 @@ describe('ViewsMenu', () => {
         expect(onToggleView).toHaveBeenCalledWith(mockViews[1]);
     });
 
-    it('should show "No views available" when views is empty', async () => {
+    it('should show "No views yet" when views is empty', async () => {
         renderWithMantine(<ViewsMenu {...defaultProps} views={[]} />);
 
         fireEvent.click(screen.getByRole('button'));
 
-        expect(await screen.findByText('No views available')).toBeInTheDocument();
+        expect(await screen.findByText('No views yet')).toBeInTheDocument();
     });
 
-    it('should show "No views available" when views is null', async () => {
+    it('should show "No views yet" when views is null', async () => {
         renderWithMantine(<ViewsMenu {...defaultProps} views={null} />);
 
         fireEvent.click(screen.getByRole('button'));
 
-        expect(await screen.findByText('No views available')).toBeInTheDocument();
+        expect(await screen.findByText('No views yet')).toBeInTheDocument();
     });
 
     it('should show loading spinner when loading', () => {

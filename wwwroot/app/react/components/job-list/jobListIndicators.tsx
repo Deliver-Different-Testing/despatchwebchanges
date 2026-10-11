@@ -66,20 +66,20 @@ const RELATED = 'var(--mantine-color-reflex-3)';
 
 /** Flight legs, keyed by the last character of the job number (see `getFlightIcon`). */
 export const FLIGHT_INDICATORS = {
-    pickup: {label: 'Flight Pickup', description: 'Pickup leg', marker: iconMarker('flight-pickup', <Icon tabler={IconPlaneDeparture} color={INFO}/>)},
-    job: {label: 'Flight Job', description: 'In-flight', marker: iconMarker('flight-job', <Icon tabler={IconPlane} color={INFO}/>)},
-    delivery: {label: 'Flight Delivery', description: 'Delivery leg', marker: iconMarker('flight-delivery', <Icon tabler={IconPlaneArrival} color={INFO}/>)},
+    pickup: {label: 'Flight pickup', description: 'Pickup leg', marker: iconMarker('flight-pickup', <Icon tabler={IconPlaneDeparture} color={INFO}/>)},
+    job: {label: 'Flight job', description: 'In-flight', marker: iconMarker('flight-job', <Icon tabler={IconPlane} color={INFO}/>)},
+    delivery: {label: 'Flight delivery', description: 'Delivery leg', marker: iconMarker('flight-delivery', <Icon tabler={IconPlaneArrival} color={INFO}/>)},
     unknown: {label: 'Unknown', description: 'Leg not known', marker: iconMarker('flight-unknown', <Icon tabler={IconQuestionMark} color={INFO}/>)},
 } satisfies Record<string, IndicatorDef>;
 
 export const INDICATORS = {
     chilled: {label: 'Chilled', description: 'Needs a temperature-controlled (chilled or frozen) vehicle.', marker: iconMarker('chilled', <Icon tabler={IconSnowflake} color={INFO}/>)},
-    multiPart: {label: 'Multi-Part', description: 'The parent of several linked deliveries grouped as one job.', marker: iconMarker('multi-part', <Icon lucide={Network} color={MUTED}/>)},
-    partner: {label: 'Partner Job', description: 'Shared with a network partner.', marker: iconMarker('partner', <Icon lucide={Handshake} color={BRAND}/>)},
-    latePickup: {label: 'Late Pickup', description: 'Pickup is overdue.', marker: iconMarker('late-pickup', <Icon tabler={IconClock} color={ERROR}/>)},
-    lateDelivery: {label: 'Late Delivery', description: 'Delivery is overdue.', marker: iconMarker('late-delivery', <Icon tabler={IconTruck} color={ERROR}/>)},
+    multiPart: {label: 'Multi-part', description: 'The parent of several linked deliveries grouped as one job.', marker: iconMarker('multi-part', <Icon lucide={Network} color={MUTED}/>)},
+    partner: {label: 'Partner job', description: 'Shared with a network partner.', marker: iconMarker('partner', <Icon lucide={Handshake} color={BRAND}/>)},
+    latePickup: {label: 'Late pickup', description: 'Pickup is overdue.', marker: iconMarker('late-pickup', <Icon tabler={IconClock} color={ERROR}/>)},
+    lateDelivery: {label: 'Late delivery', description: 'Delivery is overdue.', marker: iconMarker('late-delivery', <Icon tabler={IconTruck} color={ERROR}/>)},
     urgent: {label: 'Urgent', description: 'Due to be delivered within the next 30 minutes.', marker: dotMarker(ERROR)},
-    inTransit: {label: 'In Transit', description: 'Picked up and on the way.', marker: dotMarker(WARNING)},
+    inTransit: {label: 'In transit', description: 'Picked up and on the way.', marker: dotMarker(WARNING)},
     done: {label: 'Done', description: 'Delivered — job complete.', marker: dotMarker(SUCCESS)},
     active: {label: 'Active', description: 'Ready to dispatch — no courier assigned yet.', marker: dotMarker(INFO)},
     related: {label: 'Related job', description: "Linked to the job you've selected.", marker: iconMarker('related', <Icon lucide={LinkIcon} size={16} color={RELATED}/>)},

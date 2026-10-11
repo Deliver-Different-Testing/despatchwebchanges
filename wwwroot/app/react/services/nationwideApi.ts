@@ -203,7 +203,10 @@ export class NationwideApiService {
      * `POST nationwideJob/AssignFlightToJob` takes the request `[FromBody]`.
      */
     async assignFlightToJob(request: AssignFlightToJobRequest): Promise<void> {
-        await apiClient.post<void>('nationwideJob/AssignFlightToJob', request);
+        // Multi-segment flights register external flight-tracking webhooks
+        // sequentially before the DB write, which can exceed the default
+        // 30s timeout well before the server-side assignment actually fails.
+        await apiClient.post<void>('nationwideJob/AssignFlightToJob', request, {timeout: 90000});
     }
 
     /**

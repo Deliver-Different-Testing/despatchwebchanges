@@ -1,10 +1,3 @@
-/**
- * SimplePriceEditDialog Component
- *
- * React replacement for the AngularJS simple-price-edit-dialog.
- * Provides a fallback pricing interface for non-US customers without price breakdowns.
- * Supports three pricing modes: recalculate, raw base amount, and gross amount.
- */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Button, Divider, Group, Loader, Radio, Stack, Text, TextInput, ThemeIcon, alpha, NumberInput} from '@mantine/core';
@@ -26,7 +19,7 @@ interface ModeOption {
 const MODE_OPTIONS: ModeOption[] = [
     {
         mode: 'recalculate',
-        title: 'Auto-Calculate Prices',
+        title: 'Auto-calculate prices',
         description: 'Recalculate from job details & current rates',
         icon: <Icon lucide={RefreshCw} size={22} />,
     },
@@ -48,9 +41,9 @@ const scrim = (opacity: number) => alpha('var(--mantine-color-black)', opacity);
 
 const getSubmitButtonText = (mode: PricingMode) => {
     switch (mode) {
-        case 'recalculate': return 'Recalculate & Save';
-        case 'base': return 'Apply Base Amount';
-        case 'gross': return 'Apply Final Amount';
+        case 'recalculate': return 'Recalculate & save';
+        case 'base': return 'Apply base amount';
+        case 'gross': return 'Apply final amount';
     }
 };
 
@@ -163,7 +156,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             setShowResult(true);
         } catch (error: unknown) {
             console.error('Error saving price:', error);
-            const msg = error instanceof Error ? error.message : 'Failed to save price. Please try again.';
+            const msg = error instanceof Error ? `Couldn't save price. ${error.message}` : "Couldn't save price. Try again.";
             setErrorMessage(msg);
             showToast(msg, 'error');
         } finally {
@@ -215,7 +208,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 borderWidth: 2,
                                 cursor: (disabled || readOnly) ? 'default' : 'pointer',
                                 opacity: disabled ? 0.5 : 1,
-                                backgroundColor: isSelected ? alpha(modeColor, 0.06) : 'var(--mantine-color-white)',
+                                backgroundColor: isSelected ? alpha(modeColor, 0.06) : 'var(--dd-dialog-section)',
                             } as React.CSSProperties}
                         >
                             <Group gap={14} wrap="nowrap">
@@ -249,7 +242,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     <Divider my="md" color={scrim(0.08)}/>
                     <Box>
                     <Text size="sm" fw={500} c="dimmed" mb={10}>
-                        {selectedMode === 'base' ? 'Enter Base Amount' : 'Enter Final Amount'}
+                        {selectedMode === 'base' ? 'Enter base amount' : 'Enter final amount'}
                     </Text>
                     <NumberInput
                         value={amount || ''}
@@ -261,7 +254,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         decimalScale={2}
                         min={0}
                         leftSection={<Text size="xl" fw={500} c="dimmed">$</Text>}
-                        aria-label={selectedMode === 'base' ? 'Enter Base Amount' : 'Enter Final Amount'}
+                        aria-label={selectedMode === 'base' ? 'Enter base amount' : 'Enter final amount'}
                         styles={{
                             input: {
                                 fontSize: 28,
@@ -296,12 +289,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                             : alpha('var(--mantine-color-green-6)', 0.25)}`,
                     }}
                 >
-                    <Text size="xs" fw={500} c={hasChildSumMismatch ? 'red.6' : 'green.6'}>
+                    <Text size="xs" fw={500} c={hasChildSumMismatch ? 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))' : 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))'}>
                         {hasChildSumMismatch
                             ? `Parent must equal children total — set to $${childSum.toFixed(2)}`
                             : 'Parent matches children total'}
                     </Text>
-                    <Text size="xs" fw={700} c={hasChildSumMismatch ? 'red.6' : 'green.6'}>
+                    <Text size="xs" fw={700} c={hasChildSumMismatch ? 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))' : 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))'}>
                         ${childSum.toFixed(2)}
                     </Text>
                 </Group>
@@ -313,7 +306,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     <Divider my="md" color={scrim(0.08)}/>
                     <Box>
                     <Group justify="space-between" mb="sm" wrap="nowrap">
-                        <Text size="sm" fw={500} c="dimmed">Child Jobs</Text>
+                        <Text size="sm" fw={500} c="dimmed">Child jobs</Text>
                         {(selectedMode === 'gross' || selectedMode === 'base') && amount > 0 && (
                             <Button
                                 variant="subtle"
@@ -392,7 +385,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
 
             {/* Error message */}
             {errorMessage && (
-                <Text c="red.6" size="sm" mt="md">{errorMessage}</Text>
+                <Text c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))" size="sm" mt="md">{errorMessage}</Text>
             )}
         </Box>
     );
@@ -400,16 +393,16 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     const renderLoadingState = () => (
         <Stack align="center" justify="center" gap="md" py={60} px="lg">
             <Loader size={48} role="progressbar" aria-label="Saving price" />
-            <Text fw={500} c="dimmed">Saving price...</Text>
+            <Text fw={500} c="dimmed">Saving price…</Text>
         </Stack>
     );
 
     const renderSuccessState = () => (
         <Box py="xl" px="lg" ta="center">
-            <Box c="green.6" mb="md" style={{display: 'flex', justifyContent: 'center'}}>
+            <Box c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))" mb="md" style={{display: 'flex', justifyContent: 'center'}}>
                 <Icon lucide={CircleCheck} size={56} />
             </Box>
-            <Text fw={600} fz="lg" mb="xs">Price Updated</Text>
+            <Text fw={600} fz="lg" mb="xs">Price updated</Text>
             <Text size="sm" c="dimmed" mb="lg">{getModeSubtitle(selectedMode)}</Text>
 
             {/* New Price Display */}
@@ -423,9 +416,9 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 }}
             >
                 <Text size="xs" c="dimmed" tt="uppercase" display="block" mb={4} style={{letterSpacing: 0.5}}>
-                    New Price
+                    New price
                 </Text>
-                <Text fz={36} fw={700} c="green.6">${savedAmount.toFixed(2)}</Text>
+                <Text fz={36} fw={700} c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))">${savedAmount.toFixed(2)}</Text>
             </Box>
 
             {/* Price Comparison */}
@@ -439,15 +432,15 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     style={{backgroundColor: scrim(0.03), borderRadius: 'var(--mantine-radius-lg)'}}
                 >
                     <Box ta="center">
-                        <Text size="xs" c="dimmed" display="block" mb={4}>Previous Price</Text>
+                        <Text size="xs" c="dimmed" display="block" mb={4}>Previous price</Text>
                         <Text fw={600} c="dimmed">${currentCharge.toFixed(2)}</Text>
                     </Box>
                     <Box c="dimmed" style={{display: 'flex'}}>
                         <Icon lucide={ArrowRight} size={20} />
                     </Box>
                     <Box ta="center">
-                        <Text size="xs" c="dimmed" display="block" mb={4}>New Price</Text>
-                        <Text fw={600} c="green.6">${savedAmount.toFixed(2)}</Text>
+                        <Text size="xs" c="dimmed" display="block" mb={4}>New price</Text>
+                        <Text fw={600} c="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))">${savedAmount.toFixed(2)}</Text>
                     </Box>
                 </Group>
             )}
@@ -466,12 +459,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             opened={open}
             onClose={handleClose}
             size={childJobs && childJobs.length > 0 ? 480 : 420}
-            label="Edit Price"
+            label="Edit price"
         >
             {/* Header */}
             <DialogHeader
                 icon={<Icon lucide={readOnly ? Lock : Tag} />}
-                title="Edit Price"
+                title="Edit price"
                 subtitle={readOnly ? 'View only — this job is locked' : 'Adjust the job price'}
                 onClose={onClose}
                 closeDisabled={isLoading}

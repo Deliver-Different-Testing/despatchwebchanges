@@ -1,9 +1,3 @@
-/**
- * FlightAgentDataTable Component Tests
- *
- * Optimised: read-only tests consolidated to reduce render count.
- */
-
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import { setupUser } from '../../../__testUtils__/setupUser';
@@ -174,9 +168,9 @@ describe('FlightAgentDataTable', () => {
         // ── Flight empty states (single render each) ────────────────
         describe('Empty States', () => {
             it.each([
-                ['showNoJobSelectedMessage', 'No Job Selected'],
-                ['showJobHasAssignedFlightMessage', 'Flight Already Assigned'],
-                ['showMissingAirportInfoMessage', 'Missing Airport Info'],
+                ['showNoJobSelectedMessage', 'No job selected'],
+                ['showJobHasAssignedFlightMessage', 'Flight already assigned'],
+                ['showMissingAirportInfoMessage', 'Missing airport info'],
             ] as const)('shows %s message', (propName, expectedText) => {
                 renderWithTheme(
                     <FlightAgentDataTable {...createMockProps({[propName]: true, showFlightList: false})} />
@@ -193,7 +187,7 @@ describe('FlightAgentDataTable', () => {
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
                 // No flights message
-                expect(screen.getByText('No Flights Available')).toBeInTheDocument();
+                expect(screen.getByText('No flights found')).toBeInTheDocument();
                 expect(screen.getByText('No flights found for this route')).toBeInTheDocument();
 
                 // Airline filter chips visible
@@ -264,8 +258,8 @@ describe('FlightAgentDataTable', () => {
                 expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
 
                 // Action buttons
-                expect(screen.getAllByRole('button', {name: 'Assign Flight'}).length).toBeGreaterThan(0);
-                expect(screen.getAllByRole('button', {name: 'More Info'}).length).toBeGreaterThan(0);
+                expect(screen.getAllByRole('button', {name: 'Assign flight'}).length).toBeGreaterThan(0);
+                expect(screen.getAllByRole('button', {name: 'More info'}).length).toBeGreaterThan(0);
                 expect(screen.getByRole('button', {name: /^more$/i})).toBeInTheDocument();
                 expect(screen.getByRole('button', {name: /next day/i})).toBeInTheDocument();
 
@@ -347,8 +341,20 @@ describe('FlightAgentDataTable', () => {
                 const props = createMockProps();
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                fireEvent.click(screen.getAllByRole('button', {name: 'Assign Flight'})[0]);
+                fireEvent.click(screen.getAllByRole('button', {name: 'Assign flight'})[0]);
                 expect(props.onAddFlightToJob).toHaveBeenCalled();
+            });
+
+            it('disables Assign flight while an assignment is in flight, but leaves More info enabled', () => {
+                const props = createMockProps({isAssigningFlight: true});
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                for (const button of screen.getAllByRole('button', {name: 'Assign flight'})) {
+                    expect(button).toBeDisabled();
+                }
+                for (const button of screen.getAllByRole('button', {name: 'More info'})) {
+                    expect(button).not.toBeDisabled();
+                }
             });
 
             it('opens flight details dialog when clicking info button', () => {
@@ -356,7 +362,7 @@ describe('FlightAgentDataTable', () => {
                 mockOpen.mockClear();
                 renderWithTheme(<FlightAgentDataTable {...createMockProps()} />);
 
-                fireEvent.click(screen.getAllByRole('button', {name: 'More Info'})[0]);
+                fireEvent.click(screen.getAllByRole('button', {name: 'More info'})[0]);
                 expect(mockOpen).toHaveBeenCalledWith(expect.objectContaining({flightNumber: 'AA100', airline: 'AA'}));
             });
 
@@ -564,8 +570,8 @@ describe('FlightAgentDataTable', () => {
         // ── Agent empty states ──────────────────────────────────────
         describe('Empty States', () => {
             it.each([
-                ['showNoAgentJobSelectedMessage', 'No Job Selected'],
-                ['showNotDeliveryJobMessage', 'Not a Delivery Job'],
+                ['showNoAgentJobSelectedMessage', 'No job selected'],
+                ['showNotDeliveryJobMessage', 'Not a delivery job'],
             ] as const)('shows %s message', (propName, expectedText) => {
                 renderWithTheme(
                     <FlightAgentDataTable {...createMockProps({
@@ -585,10 +591,10 @@ describe('FlightAgentDataTable', () => {
                 });
                 renderWithTheme(<FlightAgentDataTable {...props} />);
 
-                expect(screen.getByText('Agent Already Assigned')).toBeInTheDocument();
-                expect(screen.getByText('Manage Recovery Agent(s)')).toBeInTheDocument();
+                expect(screen.getByText('Agent already assigned')).toBeInTheDocument();
+                expect(screen.getByText('Manage recovery agents')).toBeInTheDocument();
 
-                await userEvent.click(screen.getByText('Manage Recovery Agent(s)'));
+                await userEvent.click(screen.getByText('Manage recovery agents'));
                 expect(props.onOpenRecoveryAgentDialog).toHaveBeenCalled();
             });
 
@@ -601,7 +607,7 @@ describe('FlightAgentDataTable', () => {
                         agentMessage: 'No agents service this area',
                     })} />
                 );
-                expect(screen.getByText('No Agents Available')).toBeInTheDocument();
+                expect(screen.getByText('No agents found')).toBeInTheDocument();
             });
         });
 
@@ -628,11 +634,11 @@ describe('FlightAgentDataTable', () => {
                 expect(props.onOpenAgentSearchDialog).toHaveBeenCalled();
 
                 // Assign agent
-                fireEvent.click(screen.getAllByRole('button', {name: 'Assign Job'})[0]);
+                fireEvent.click(screen.getAllByRole('button', {name: 'Assign job'})[0]);
                 expect(props.onAddAgentToJob).toHaveBeenCalledWith(mockAgent);
 
                 // Quote request
-                fireEvent.click(screen.getAllByRole('button', {name: 'Send Quote Request'})[0]);
+                fireEvent.click(screen.getAllByRole('button', {name: 'Send quote request'})[0]);
                 expect(props.onSendQuoteRequest).toHaveBeenCalledWith(mockAgent);
             });
 
@@ -641,7 +647,7 @@ describe('FlightAgentDataTable', () => {
                 mockOpen.mockClear();
                 renderWithTheme(<FlightAgentDataTable {...createMockProps(agentListProps)} />);
 
-                fireEvent.click(screen.getAllByRole('button', {name: 'More Info'})[0]);
+                fireEvent.click(screen.getAllByRole('button', {name: 'More info'})[0]);
                 expect(mockOpen).toHaveBeenCalledWith({agentId: mockAgent.agentId});
             });
         });

@@ -1,11 +1,3 @@
-/**
- * React Edit Address Dialog
- *
- * A modern replacement for the AngularJS edit-address-dialog using MUI components.
- * Allows users to search addresses, edit address fields, and optionally add shipment details.
- * Supports both US and NZ address formats with interactive HERE Maps integration.
- */
-
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Box, Button, Collapse, Group, Loader, NumberInput, Paper, Select, Stack, Text, TextInput, Textarea} from '@mantine/core';
 import {ChevronDown, ChevronUp, Lock, Map as MapGlyph, Save, Search} from 'lucide-react';
@@ -253,7 +245,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             };
         } catch (error) {
             console.error('[EditAddressDialog] Error initializing HERE Maps:', error);
-            showToast('Error loading map. Please try again.', 'error');
+            showToast("Couldn't load the map. Refresh and try again.", 'error');
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- map init only after dialog transition/apiKey; lat/lng/addMarker change during drag
     }, [dialogFullyOpen, hereMapsApiKey]);
@@ -465,7 +457,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             }
         } catch (error) {
             console.error('[EditAddressDialog] Error fetching nearest address:', error);
-            showToast('Error retrieving address information.', 'error');
+            showToast("Couldn't get address details. Try again.", 'error');
         } finally {
             setIsLoadingAddress(false);
         }
@@ -504,7 +496,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             }
         } catch (error) {
             console.error('[EditAddressDialog] Error processing selected address:', error);
-            showToast('Error processing selected address.', 'error');
+            showToast("Couldn't use the selected address. Try again.", 'error');
         } finally {
             setIsLoadingAddress(false);
         }
@@ -627,14 +619,14 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 <Paper {...sectionPaperProps}>
                     <Group gap={8} mb={16} c="dimmed">
                         <Icon lucide={Search}/>
-                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Address Lookup</Text>
+                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Address lookup</Text>
                     </Group>
 
                     {/* Object-valued and searched on the server, which is the case
                         Mantine's Autocomplete cannot cover. */}
                     <SearchSelect
-                        label="Search Address"
-                        placeholder="Type at least 3 characters to search..."
+                        label="Search address"
+                        placeholder="Enter at least 3 characters to search…"
                         disabled={readOnly}
                         minSearchLength={3}
                         value={null}
@@ -649,7 +641,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     {isLoadingAddress && (
                         <Group gap={8} mt={8}>
                             <Loader size={16} aria-label="Loading address details"/>
-                            <Text fz="sm" c="dimmed">Loading address details...</Text>
+                            <Text fz="sm" c="dimmed">Loading address details…</Text>
                         </Group>
                     )}
                 </Paper>
@@ -658,7 +650,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 <Paper {...sectionPaperProps}>
                     <Group gap={8} mb={16} c="dimmed">
                         <Icon tabler={IconMapPin}/>
-                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Address Details</Text>
+                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Address details</Text>
                     </Group>
 
                     <Stack gap={16}>
@@ -680,14 +672,14 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 style={{flex: '0 0 25%'}}
                             />
                             <TextInput
-                                label="Street Number"
+                                label="Street number"
                                 value={addressLine3}
                                 onChange={(e) => setAddressLine3(e.currentTarget.value)}
                                 disabled={isLoadingAddress || readOnly}
                                 style={{flex: '0 0 20%'}}
                             />
                             <TextInput
-                                label="Street Name"
+                                label="Street name"
                                 value={addressLine4}
                                 onChange={(e) => setAddressLine4(e.currentTarget.value)}
                                 error={validationErrors.addressLine4}
@@ -724,7 +716,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                     style={{flex: '0 0 30%'}}
                                 />
                                 <TextInput
-                                    label="ZIP Code"
+                                    label="ZIP code"
                                     withAsterisk
                                     value={addressLine7}
                                     onChange={(e) => setAddressLine7(e.currentTarget.value)}
@@ -755,7 +747,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                     style={{flex: '0 0 40%'}}
                                 />
                                 <TextInput
-                                    label="Post Code"
+                                    label="Post code"
                                     withAsterisk
                                     value={addressLine7}
                                     onChange={(e) => setAddressLine7(e.currentTarget.value)}
@@ -814,7 +806,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             rightSection={<Icon lucide={isContactCardExpanded ? ChevronUp : ChevronDown}/>}
                             onClick={() => setIsContactCardExpanded(!isContactCardExpanded)}
                         >
-                            <Text fz="md" fw={500}>Shipment Details</Text>
+                            <Text fz="md" fw={500}>Shipment details</Text>
                         </Button>
 
                         <Collapse expanded={isContactCardExpanded}>
@@ -822,13 +814,13 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 {/* Contact Info */}
                                 <Group gap={16} align="flex-start" grow>
                                     <TextInput
-                                        label="Contact Name"
+                                        label="Contact name"
                                         value={contactName}
                                         onChange={(e) => setContactName(e.currentTarget.value)}
                                         disabled={readOnly}
                                     />
                                     <TextInput
-                                        label="Contact Phone"
+                                        label="Contact phone"
                                         type="tel"
                                         value={contactMobile}
                                         onChange={(e) => setContactMobile(e.currentTarget.value)}
@@ -887,7 +879,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 {/* Notes */}
                                 <Textarea
                                     label="Notes"
-                                    placeholder="Additional notes or special instructions..."
+                                    placeholder="Additional notes or special instructions…"
                                     rows={3}
                                     maxLength={150}
                                     value={jobNotes}
@@ -903,7 +895,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 <Paper {...sectionPaperProps}>
                     <Group gap={8} mb={16} c="dimmed">
                         <Icon lucide={MapGlyph}/>
-                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Location Preview</Text>
+                        <Text fz="md" fw={500} c="var(--mantine-color-text)">Location preview</Text>
                         {!readOnly && (
                             <Text fz="sm" c="dimmed" ml="auto">Click on the map to set coordinates</Text>
                         )}
@@ -944,7 +936,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel={isSubmitting ? 'Saving...' : submitLabel}
+                confirmLabel={isSubmitting ? 'Saving…' : submitLabel}
                 cancelLabel={readOnly ? 'Close' : 'Cancel'}
                 confirmIcon={<Icon lucide={Save}/>}
                 confirmDisabled={isSubmitting}

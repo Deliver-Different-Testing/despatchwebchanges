@@ -1,8 +1,3 @@
-/**
- * RecurringJobsToolbar Component Tests
- * Optimised: read-only tests consolidated to reduce render count.
- */
-
 import React from 'react';
 import { setupUser } from '../../../__testUtils__/setupUser';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
@@ -98,7 +93,7 @@ describe('RecurringJobsToolbar', () => {
         renderWithProviders(createDefaultProps());
 
         // Search input
-        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search jobs…')).toBeInTheDocument();
 
         // Active / Manual / Inactive mode selector
         expect(screen.getByText('Active')).toBeInTheDocument();
@@ -155,7 +150,7 @@ describe('RecurringJobsToolbar', () => {
             const onSearchChange = jest.fn();
             renderWithProviders(createDefaultProps({onSearchChange}));
 
-            const searchInput = screen.getByPlaceholderText('Search jobs...');
+            const searchInput = screen.getByPlaceholderText('Search jobs…');
             const user = setupUser();
             await user.click(searchInput);
             await user.paste('test');
@@ -390,7 +385,7 @@ describe('RecurringJobsToolbar', () => {
             renderWithProviders(createDefaultProps({isLoading: true}));
 
             // Search input disabled
-            expect(screen.getByPlaceholderText('Search jobs...')).toBeDisabled();
+            expect(screen.getByPlaceholderText('Search jobs…')).toBeDisabled();
 
             // Active/Inactive toggle disabled
             expect(screen.getByText('Active').closest('button')).toBeDisabled();

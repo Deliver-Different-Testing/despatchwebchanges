@@ -44,7 +44,7 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
         <Paper {...cardContainerProps}>
             <SectionHeader
                 lucide={List}
-                title="Pallet Information"
+                title="Pallet information"
                 subtitle={`${pallets.length} ${pallets.length === 1 ? 'pallet' : 'pallets'}`}
             />
             <Table highlightOnHover>
@@ -56,7 +56,7 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                         <Table.Th style={headerCellStyle}>Dimensions ({dimUnit})</Table.Th>
                         <Table.Th style={headerCellStyle} ta="right">Volume ({volUnit})</Table.Th>
                         <Table.Th style={headerCellStyle}>Status</Table.Th>
-                        <Table.Th style={headerCellStyle}>DG Class</Table.Th>
+                        <Table.Th style={headerCellStyle}>DG class</Table.Th>
                         <Table.Th style={headerCellStyle}>Notes</Table.Th>
                     </Table.Tr>
                 </Table.Thead>

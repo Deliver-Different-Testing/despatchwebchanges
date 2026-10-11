@@ -96,7 +96,7 @@ describe('CreateJobDialog', () => {
 
             // Dialog and title
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Add New Job')).toBeInTheDocument();
+            expect(screen.getByText('Add new job')).toBeInTheDocument();
 
             // Four sections, grouped by what the operator is deciding
             expect(screen.getByText('Job')).toBeInTheDocument();
@@ -178,8 +178,8 @@ describe('CreateJobDialog', () => {
             expect(showToast).not.toHaveBeenCalled();
 
             // Every incomplete field is listed in the summary as a shortcut to itself
-            ['Client', 'Charge Amount', 'Weight (lbs)', 'Pickup Address', 'Pickup Contact',
-                'Delivery Address', 'Delivery Contact', 'POD Name', 'Vehicle', 'Speed']
+            ['Client', 'Charge amount', 'Weight (lbs)', 'Pickup address', 'Pickup contact',
+                'Delivery address', 'Delivery contact', 'POD name', 'Vehicle', 'Speed']
                 .forEach(label => {
                     expect(within(summary).getByRole('button', {name: label})).toBeInTheDocument();
                 });
@@ -199,13 +199,13 @@ describe('CreateJobDialog', () => {
             expect(onSubmit).not.toHaveBeenCalled();
 
             // A summary entry moves focus to its field
-            await user.click(within(summary).getByRole('button', {name: 'POD Name'}));
+            await user.click(within(summary).getByRole('button', {name: 'POD name'}));
             expect(screen.getByLabelText(/pod name/i)).toHaveFocus();
 
             // Filling a field drops it from the summary
             fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
             expect(screen.getByRole('alert')).toHaveTextContent('Complete 9 fields to create this job');
-            expect(within(screen.getByRole('alert')).queryByRole('button', {name: 'POD Name'}))
+            expect(within(screen.getByRole('alert')).queryByRole('button', {name: 'POD name'}))
                 .not.toBeInTheDocument();
         });
     });
@@ -366,7 +366,7 @@ describe('CreateJobDialog', () => {
             fireEvent.click(option);
         }
 
-        /** Fill every required field so the Create Job button will submit. */
+        /** Fill every required field so the Create job button will submit. */
         async function fillRequiredFields(weightLabel: RegExp) {
             await selectAutocomplete(screen.getByRole('combobox', {name: /client/i}), 'Test', 'Test Client');
             fireEvent.change(screen.getByLabelText(/charge amount/i), {target: {value: '10'}});

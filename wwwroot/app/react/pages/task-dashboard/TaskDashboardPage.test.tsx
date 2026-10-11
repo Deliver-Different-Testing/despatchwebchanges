@@ -198,7 +198,7 @@ describe('TaskDashboardPage', () => {
         expect(screen.getByRole('button', {name: /^Filters/})).toBeInTheDocument();
 
         // Job Details panel (rendered directly in React, no AngularJS bridge)
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        expect(screen.getByText('Job details')).toBeInTheDocument();
 
         // Two-column layout: tasks panel + job details
         expect(screen.getByText(/Tasks \(/)).toBeInTheDocument();
@@ -283,16 +283,16 @@ describe('TaskDashboardPage', () => {
         await screen.findByText('Overdue follow up call');
 
         // No side panel — the details header only appears once the drawer opens.
-        expect(screen.queryByText('Job Details')).not.toBeInTheDocument();
+        expect(screen.queryByText('Job details')).not.toBeInTheDocument();
 
         await user.click(screen.getByText('Overdue follow up call'));
 
-        expect(await screen.findByText(/Job Details - Job #100/)).toBeInTheDocument();
+        expect(await screen.findByText(/Job details - Job #100/)).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /Close job details/i}));
 
         await waitFor(() => {
-            expect(screen.queryByText(/Job Details - Job #100/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Job details - Job #100/)).not.toBeInTheDocument();
         });
     });
 
@@ -320,7 +320,7 @@ describe('TaskDashboardPage', () => {
         );
 
         // Job Details still visible in two-column layout
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        expect(screen.getByText('Job details')).toBeInTheDocument();
     });
 
     // ── Load view preference from localStorage ──────────────────────
@@ -415,11 +415,11 @@ describe('TaskDashboardPage', () => {
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        expect(screen.getByText('Job details')).toBeInTheDocument();
 
         await user.click(screen.getByText('Overdue follow up call'));
 
-        expect(await screen.findByText(/Job Details - Job #100/)).toBeInTheDocument();
+        expect(await screen.findByText(/Job details - Job #100/)).toBeInTheDocument();
     });
 
     // ── Error Handling ──────────────────────────────────────────────
@@ -443,7 +443,7 @@ describe('TaskDashboardPage', () => {
         await screen.findByText('Overdue follow up call');
 
         expect(screen.getByText(/Tasks \(\d+\)/)).toBeInTheDocument();
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        expect(screen.getByText('Job details')).toBeInTheDocument();
     });
 
     // ── Auto-refresh: default off ───────────────────────────────────
@@ -509,9 +509,9 @@ describe('TaskDashboardPage', () => {
         await screen.findByText('Overdue follow up call');
 
         // Job Details panel is present (rendered directly, not via AngularJS)
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        expect(screen.getByText('Job details')).toBeInTheDocument();
 
-        // No "Delivery Journey" panel (replaced by Job Details)
-        expect(screen.queryByText('Delivery Journey')).not.toBeInTheDocument();
+        // No "Delivery journey" panel (replaced by Job Details)
+        expect(screen.queryByText('Delivery journey')).not.toBeInTheDocument();
     });
 });

@@ -602,7 +602,7 @@ describe('DispatchPage', () => {
 
             // The action menu appears once a job is selected; the kebab opens it.
             await user.click(screen.getByRole('button', {name: 'Job actions'}));
-            await user.click(screen.getByRole('menuitem', {name: 'Dispatch to Courier'}));
+            await user.click(screen.getByRole('menuitem', {name: 'Dispatch to courier'}));
             expect(await screen.findByTestId('mock-dispatch-dialog')).toBeInTheDocument();
 
             await user.click(screen.getByRole('button', {name: 'confirm-dispatch'}));

@@ -38,7 +38,7 @@ export const ActionsMenu: React.FC<ActionsMenuProps> = ({
             </Menu.Target>
             <Menu.Dropdown>
                 <Menu.Item leftSection={<Icon lucide={Plus} size={16} />} onClick={onCreateNewJob}>
-                    Add New Job
+                    Add new job
                 </Menu.Item>
                 <Menu.Item leftSection={<Icon lucide={DollarSign} size={16} />} onClick={onInterCourierCharge}>
                     Inter-Courier Charge

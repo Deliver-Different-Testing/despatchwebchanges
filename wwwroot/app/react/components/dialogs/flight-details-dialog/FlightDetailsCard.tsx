@@ -111,7 +111,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
             {/* Card title */}
             <Group gap={12} mb={24}>
                 <Icon lucide={Info} size={24}/>
-                <Text fz="lg" fw={600}>Flight Information</Text>
+                <Text fz="lg" fw={600}>Flight information</Text>
             </Group>
 
             {/*

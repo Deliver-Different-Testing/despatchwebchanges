@@ -35,13 +35,13 @@ export interface OpenJobsListProps {
 }
 
 const TABLE_COLUMNS = [
-    {key: 'reference', label: 'Job Number', sortable: true},
+    {key: 'reference', label: 'Job number', sortable: true},
     {key: 'driverName', label: 'Driver', sortable: true},
     {key: 'status', label: 'Status', sortable: true},
     {key: 'pickup', label: 'Pickup', sortable: true},
-    {key: 'pickupAddress', label: 'Pickup Location', sortable: true},
+    {key: 'pickupAddress', label: 'Pickup location', sortable: true},
     {key: 'delivery', label: 'Delivery', sortable: true},
-    {key: 'deliveryAddress', label: 'Delivery Location', sortable: true},
+    {key: 'deliveryAddress', label: 'Delivery location', sortable: true},
     {key: 'package', label: 'Package', sortable: false},
     {key: 'mileage', label: 'Mileage', sortable: true},
 ];
@@ -331,7 +331,7 @@ const DriverCard: React.FC<{
                         <Text fz="xs">
                             Last completed:{' '}
                             {initialDriver.lastCompleted === 'N/A' ? (
-                                <Text component="span" fz="xs" c="var(--mantine-color-yellow-6)">N/A</Text>
+                                <Text component="span" fz="xs" c="light-dark(var(--mantine-color-yellow-6), var(--mantine-color-yellow-4))">N/A</Text>
                             ) : (
                                 initialDriver.lastCompleted
                             )}

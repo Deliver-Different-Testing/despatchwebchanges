@@ -10,7 +10,7 @@ export function createDispatchBoxes(): Record<string, IBox> {
     return {
         [DispatchBoxes.JobsList]: {
             name: DispatchBoxes.JobsList,
-            title: 'Job List',
+            title: 'Job list',
             icon: 'list_alt',
             showRefresh: true,
             visible: true,
@@ -27,7 +27,7 @@ export function createDispatchBoxes(): Record<string, IBox> {
         },
         [DispatchBoxes.CurrentWork]: {
             name: DispatchBoxes.CurrentWork,
-            title: 'Current Work',
+            title: 'Current work',
             icon: 'local_shipping',
             showRefresh: true,
             visible: true,
@@ -43,7 +43,7 @@ export function createDispatchBoxes(): Record<string, IBox> {
         },
         [DispatchBoxes.DriverLocations]: {
             name: DispatchBoxes.DriverLocations,
-            title: 'Driver Locations',
+            title: 'Driver locations',
             icon: 'my_location',
             showRefresh: false,
             visible: true,
@@ -73,7 +73,7 @@ export function createDispatchBoxes(): Record<string, IBox> {
         },
         [DispatchBoxes.OpenJobs]: {
             name: DispatchBoxes.OpenJobs,
-            title: 'Open Jobs',
+            title: 'Open jobs',
             icon: 'timeline',
             showRefresh: true,
             visible: false,

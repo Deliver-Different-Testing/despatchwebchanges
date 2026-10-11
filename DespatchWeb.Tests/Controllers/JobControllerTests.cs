@@ -71,6 +71,7 @@ public class JobControllerTests : IDisposable
         _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(true);
         _pricingPermissionServiceMock.CanBulkUpdatePricesAsync().Returns(true);
         _pricingPermissionServiceMock.CanModifyPriceBreakdownAsync().Returns(true);
+        _pricingPermissionServiceMock.CanExportPricingAsync().Returns(true);
         _pricingPermissionServiceMock.CanUsePricingModeAsync(Arg.Any<string>()).Returns(true);
         _pricingPermissionServiceMock.ValidateJobAccessAsync(Arg.Any<int>()).Returns(Task.CompletedTask);
         _pricingPermissionServiceMock.ValidateJobsAccessAsync(Arg.Any<IReadOnlyList<int>>()).Returns([]);
@@ -2602,6 +2603,60 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task ClientJobsReportDownload_NetworkPartner_ReturnsForbid()
+    {
+        // Arrange
+        _pricingPermissionServiceMock.CanExportPricingAsync().Returns(false);
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.ClientJobsReportDownload(new ClientJobsReportRequest());
+
+        // Assert
+        Assert.IsType<ForbidResult>(result);
+        await _jobReportServiceMock.DidNotReceive().GenerateClientJobsReportCsvAsync(Arg.Any<ClientJobsReportRequest>());
+    }
+
+    [Fact]
+    public async Task PriceDetailReportDownload_ValidRequest_ReturnsFile()
+    {
+        // Arrange
+        var request = new PriceDetailReportRequest
+        {
+            FromDate = DateTimeOffset.Now.AddDays(-7),
+            ToDate = DateTimeOffset.Now
+        };
+
+        _priceReportServiceMock.GeneratePriceDetailReportAsync(request)
+            .Returns((new byte[] { 1, 2, 3 }, "price_detail.xlsx"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.PriceDetailReportDownload(request);
+
+        // Assert
+        Assert.IsType<FileContentResult>(result);
+        var fileResult = (FileContentResult)result;
+        Assert.Equal("price_detail.xlsx", fileResult.FileDownloadName);
+    }
+
+    [Fact]
+    public async Task PriceDetailReportDownload_NetworkPartner_ReturnsForbid()
+    {
+        // Arrange
+        _pricingPermissionServiceMock.CanExportPricingAsync().Returns(false);
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.PriceDetailReportDownload(new PriceDetailReportRequest());
+
+        // Assert
+        Assert.IsType<ForbidResult>(result);
+        await _priceReportServiceMock.DidNotReceive().GeneratePriceDetailReportAsync(Arg.Any<PriceDetailReportRequest>());
+    }
+
+    [Fact]
     public async Task PreBookJobs_ValidRequest_ReturnsRecurringJobs()
     {
         // Arrange
@@ -2649,6 +2704,21 @@ public class JobControllerTests : IDisposable
         Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
         Assert.Equal("recurring_jobs.csv", fileResult.FileDownloadName);
+    }
+
+    [Fact]
+    public async Task RecurringJobsExportCsv_NetworkPartner_ReturnsForbid()
+    {
+        // Arrange
+        _pricingPermissionServiceMock.CanExportPricingAsync().Returns(false);
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.RecurringJobsExportCsv(new RecurringJobQueryRequest());
+
+        // Assert
+        Assert.IsType<ForbidResult>(result);
+        await _jobReportServiceMock.DidNotReceive().GenerateRecurringJobsCsvAsync(Arg.Any<RecurringJobQueryRequest>());
     }
 
     [Fact]

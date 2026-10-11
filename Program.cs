@@ -206,7 +206,11 @@ app.UseStaticFiles(distStaticFiles.CreateStaticFileOptions());
 
 app.UseStaticFiles(new StaticFileOptions
 {
-    ContentTypeProvider = provider
+    ContentTypeProvider = provider,
+    // Unlike /dist's hashed bundles, these paths (AngularJS ng-include partials, etc.)
+    // aren't content-hashed, so without an explicit header browsers fall back to RFC 7234
+    // heuristic freshness and can keep serving a stale copy well past a deploy.
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
 });
 
 app.UseCsrfProtection();

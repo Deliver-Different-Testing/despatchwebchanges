@@ -102,7 +102,7 @@ export const ToggleProperties = React.memo(({
                     color="gray"
                     size="sm"
                     onClick={() => onToggleField('checkboxes')}
-                    aria-label={visible ? 'Hide Properties' : 'Show Properties'}
+                    aria-label={visible ? 'Hide properties' : 'Show properties'}
                 >
                     <Icon lucide={visible ? Eye : EyeOff} size={18}/>
                 </ActionIcon>
@@ -115,7 +115,7 @@ export const ToggleProperties = React.memo(({
     return (
         <Collapse expanded={isFieldVisible('checkboxes')} keepMounted={false}>
             <Paper {...cardContainerProps}>
-                <SectionHeader lucide={SlidersHorizontal} title="Job Properties" dense={dense}/>
+                <SectionHeader lucide={SlidersHorizontal} title="Job properties" dense={dense}/>
                 <Box style={togglesBodyStyle(dense)}>
                     <Group justify="center" gap={dense ? 2 : 4} wrap="wrap">
                         <PropertyCheckbox
@@ -163,20 +163,20 @@ export const ToggleProperties = React.memo(({
                         )}
                     </Group>
 
-                    {/* Truck Options */}
+                    {/* Truck options */}
                     <Collapse expanded={isFieldVisible('truckOptions') && !!job.truck} keepMounted={false}>
                         <Divider my={4}/>
                         <Text size="xs" c="dimmed" fw={500} mb={4}>
-                            Truck Options
+                            Truck options
                         </Text>
                         <Group justify="center" wrap="wrap" gap={0}>
                             <PropertyCheckbox
-                                label="Tail Lift PU" checked={job.tailLiftPu} dense={dense}
+                                label="Tail lift PU" checked={job.tailLiftPu} dense={dense}
                                 onChange={onTailLiftPickupClick}
                                 disabled={locked || job.isBulkJob}
                             />
                             <PropertyCheckbox
-                                label="Tail Lift DO" checked={job.tailLiftDo} dense={dense}
+                                label="Tail lift DO" checked={job.tailLiftDo} dense={dense}
                                 onChange={onTailLiftDropOffClick}
                                 disabled={locked || job.isBulkJob}
                             />

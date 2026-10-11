@@ -6,7 +6,7 @@
  * parent or child chip prompts the user to open that job in Job Search.
  *
  * Wire-level naming is "DeliveryJourney" (matching the backend) but the
- * user-facing label is "Recurring Log".
+ * user-facing label is "Recurring log".
  */
 
 import React, {useCallback, useState} from 'react';
@@ -54,7 +54,7 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
         <Card withBorder p={0} style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0}}>
             <PanelHeader
                 icon={<Icon lucide={ScrollText}/>}
-                title="Recurring Log"
+                title="Recurring log"
                 badge="RECURRING"
                 action={
                     <ActionIcon
@@ -91,7 +91,7 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
 
                 {bookingId && isError && (
                     <Alert color="red" m={16}>
-                        Failed to load recurring log: {error?.message ?? 'unknown error'}
+                        Couldn't load the recurring log. {error?.message ?? 'Try again.'}
                     </Alert>
                 )}
 

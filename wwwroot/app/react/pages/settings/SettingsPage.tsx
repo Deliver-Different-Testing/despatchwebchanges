@@ -10,12 +10,17 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Badge, Box, Button, Group, Stack, Text, Title} from '@mantine/core';
-import {ArrowLeftRight, EyeOff, MapPin, RotateCcw, Save, TriangleAlert} from 'lucide-react';
-import {SectionHeading, SettingRow} from '../../components/common/settings-controls/SettingsControls';
+import {Badge, Box, Button, Group, Stack, Text, Title, Tooltip} from '@mantine/core';
+import styles from './SettingsPage.module.css';
+import {ArrowLeftRight, EyeOff, MapPin, Palette, RotateCcw, Save, TriangleAlert} from 'lucide-react';
+import {SectionHeading, SettingRadioGroup, SettingRow} from '../../components/common/settings-controls/SettingsControls';
 import {AutoMateLogo} from '../../components/common/auto-mate-logo/AutoMateLogo';
 import {Icon} from '../../components/common/icon/Icon';
 import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../../components/common/action-button';
+import {useColorMode, type ColorModePreference} from '../../hooks/useColorMode';
+import {setLiquidGlassEnabled, useLiquidGlassEnabled} from '../../hooks/useLiquidGlassPreference';
+import {isLiquidGlassSupported} from '../../hooks/glassSupport';
+import {getNationwideBetaEnabled} from '../nationwide/lib/betaPreference';
 import {aiAccentColor} from '../../theme/designTokens';
 import {
     isAiEnabled,
@@ -36,11 +41,25 @@ import {StaffPreferenceKey} from '../../../enums/staff-preference-key.enum';
 import {deletePreference, getPreference, savePreference} from '../../services/preferencesApi';
 import {getTenantAddressFormatDefault} from '../../services/tenantSettingsApi';
 import {DialogShell, dialogSize, DialogHeader, DialogFooter} from '../../components/dialogs/shared/mantine';
+import {toastService} from '../../services/toastService';
 import {registerUnsavedChangesGuard, type LeaveDecision} from '../../services/unsavedChangesGuard';
 
 const EMPTY_FORMAT: AddressLineFormat = {line1: [], line2: []};
 
+const APPEARANCE_OPTIONS: {value: ColorModePreference; label: string}[] = [
+    {value: 'system', label: 'Match device'},
+    {value: 'light', label: 'Light'},
+    {value: 'dark', label: 'Dark'},
+];
+
 export const SettingsPage: React.FC = () => {
+    const {preference: colorPreference, setPreference: setColorPreference} = useColorMode();
+    const darkModeBlocked = !getNationwideBetaEnabled();
+    const appearanceOptions = darkModeBlocked
+        ? APPEARANCE_OPTIONS.map(o => ({...o, disabled: o.value !== 'light'}))
+        : APPEARANCE_OPTIONS;
+    const liquidGlassEnabled = useLiquidGlassEnabled();
+    const liquidGlassSupported = isLiquidGlassSupported();
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
     const [aiAutoOpen, setAiAutoOpenState] = useState<boolean>(isAiAutoOpenEnabled);
     const [hideButtonEnabled, setHideButtonEnabledState] = useState<boolean>(isPanelHideButtonEnabled);
@@ -170,12 +189,19 @@ export const SettingsPage: React.FC = () => {
 
     const handleSaveClick = () => {
         void saveAddressFormat(pickupDraft, deliveryDraft)
-            .catch((error) => console.error('Failed to save address format preference:', error));
+            .then(() => toastService.showSuccessToast('Address format saved'))
+            .catch((error) => {
+                console.error('Failed to save address format preference:', error);
+                toastService.showErrorToast("Couldn't save address format. Check your connection and try again.");
+            });
     };
 
     const handleResetAddressFormat = () => {
         void deletePreference(StaffPreferenceKey.DispatchAddressFormat)
-            .catch((error) => console.error('Failed to reset address format preference:', error));
+            .catch((error) => {
+                console.error('Failed to reset address format preference:', error);
+                toastService.showErrorToast("Couldn't reset address format. Check your connection and try again.");
+            });
         void getTenantAddressFormatDefault()
             .then((tenantJson) => {
                 const tenantSides = parseAddressFormatJson(tenantJson);
@@ -222,133 +248,176 @@ export const SettingsPage: React.FC = () => {
     };
 
     return (
-        <Box p={24} maw={720}>
-            <Title order={3} fw={600} mb={24}>Settings</Title>
+        <Box className={styles.page}>
+            <Title order={3} fw={600} mb={4}>Settings</Title>
+            <Text fz="sm" c="dimmed" mb={24}>These settings apply to your account only.</Text>
 
-            <Box>
-                <SectionHeading
-                    icon={<AutoMateLogo size={28}/>}
-                    title="Auto-mate Settings"
-                    accent={aiAccentColor}
-                />
+            <div className={styles.columns}>
+                <div className={styles.preferences}>
+                    <Box>
+                        <SectionHeading
+                            icon={<AutoMateLogo size={28}/>}
+                            title="Auto-mate"
+                            accent={aiAccentColor}
+                        />
 
-                <Stack gap={16}>
-                    <SettingRow
-                        title="Show Auto-mate briefings"
-                        badge={
-                            <Badge
-                                size="xs"
-                                c="white"
-                                style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
-                            >
-                                BETA
-                            </Badge>
-                        }
-                        description="Adds a short AI briefing — verdict, what needs attention, and key facts —
-                            to the job details, task dashboard, operations, and driver compliance pages.
-                            Applies to your account only."
-                        accent={aiAccentColor}
-                        checked={aiEnabled}
-                        onToggle={toggleAiEnabled}
+                        <Stack gap={16}>
+                            <SettingRow
+                                title="Show Auto-mate briefings"
+                                badge={
+                                    <Badge
+                                        size="xs"
+                                        c="white"
+                                        style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
+                                    >
+                                        BETA
+                                    </Badge>
+                                }
+                                description="Adds a short AI briefing to job details, the task dashboard, operations and
+                                    driver compliance pages: what's happening, what needs attention, and key facts."
+                                accent={aiAccentColor}
+                                checked={aiEnabled}
+                                onToggle={toggleAiEnabled}
+                            />
+
+                            {/* Only meaningful while briefings are on, so the row is
+                                disabled and dimmed when they are off. */}
+                            <SettingRow
+                                title="Expand briefings automatically"
+                                description={`Show briefings expanded instead of waiting for a click.${aiEnabled ? '' : ' Turn on briefings first.'}`}
+                                accent={aiAccentColor}
+                                checked={aiAutoOpen}
+                                disabled={!aiEnabled}
+                                onToggle={toggleAiAutoOpen}
+                            />
+                        </Stack>
+                    </Box>
+
+                    <Box>
+                        <SectionHeading
+                            icon={<Icon lucide={Palette} size={20}/>}
+                            title="Appearance"
+                        />
+
+                        <SettingRadioGroup
+                            title="Theme"
+                            description={darkModeBlocked
+                                ? `Dark mode isn't available while Nationwide v1 is on. Switch to Nationwide v2 in
+                                    the Nationwide dashboard settings to unlock it.`
+                                : 'Choose Light or Dark, or Match device.'}
+                            value={colorPreference}
+                            options={appearanceOptions}
+                            onChange={setColorPreference}
+                        />
+
+                        <Box mt={16}>
+                            <SettingRow
+                                title="Liquid Glass"
+                                badge={
+                                    <Badge
+                                        size="xs"
+                                        c="white"
+                                        style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
+                                    >
+                                        BETA
+                                    </Badge>
+                                }
+                                description={liquidGlassSupported
+                                    ? 'Gives dialogs and menus a frosted glass look. Works in Chromium browsers such as Chrome, Edge, Brave and Opera.'
+                                    : `Your browser doesn't support Liquid Glass. Use Chrome, Edge, Brave or Opera to turn it on.`}
+                                checked={liquidGlassEnabled}
+                                disabled={!liquidGlassSupported}
+                                onToggle={() => setLiquidGlassEnabled(!liquidGlassEnabled)}
+                            />
+                        </Box>
+                    </Box>
+
+                    <Box>
+                        <SectionHeading
+                            icon={<Icon lucide={EyeOff} size={20}/>}
+                            title="Dashboard"
+                        />
+
+                        <SettingRow
+                            title="Show hide button on each panel"
+                            description="Adds a hide icon to each panel header on custom Dispatch and Job Search
+                                layouts. You can still use the Show/Hide Panels dialog."
+                            checked={hideButtonEnabled}
+                            onToggle={toggleHideButtonEnabled}
+                        />
+                    </Box>
+                </div>
+
+                <Box className={styles.addressFormat}>
+                    <SectionHeading
+                        icon={<Icon lucide={MapPin} size={20}/>}
+                        title="Address format"
                     />
 
-                    {/* Only meaningful while briefings are on, so the row is
-                        disabled and dimmed when they are off. */}
-                    <SettingRow
-                        title="Open automatically"
-                        description="Opens the Auto-mate briefing expanded instead of waiting for a click.
-                            Applies to your account only."
-                        accent={aiAccentColor}
-                        checked={aiAutoOpen}
-                        disabled={!aiEnabled}
-                        onToggle={toggleAiAutoOpen}
-                    />
-                </Stack>
-            </Box>
-
-            <Box mt={32}>
-                <SectionHeading
-                    icon={<Icon lucide={EyeOff} size={20}/>}
-                    title="Dashboard"
-                />
-
-                <SettingRow
-                    title="Show per-panel hide button"
-                    description="Adds a quick hide icon to each panel's header on custom Dispatch and
-                        Job Search layouts, alongside the Show/Hide Panels dialog. Applies to your
-                        account only."
-                    checked={hideButtonEnabled}
-                    onToggle={toggleHideButtonEnabled}
-                />
-            </Box>
-
-            <Box mt={32}>
-                <SectionHeading
-                    icon={<Icon lucide={MapPin} size={20}/>}
-                    title="Address Format"
-                />
-
-                <Text fz="sm" c="dimmed" mb={12}>
-                    Choose which fields show for pickup and delivery addresses, and which of the
-                    two display lines each sits on. Applies to your account only — your tenant
-                    admin sets the default everyone else sees. Edits here are a draft until you
-                    click Save.
-                </Text>
-
-                {addressLoadError && (
-                    <Text fz="sm" c="orange" mb={12}>
-                        Couldn&apos;t load the tenant address format default — showing your last
-                        saved settings instead.
+                    <Text fz="sm" c="dimmed" mb={12}>
+                        Choose which fields appear in pickup and delivery addresses, and which line each
+                        sits on. Your admin sets the default. Changes aren&apos;t applied until you save.
                     </Text>
-                )}
 
-                <Group align="flex-start" grow>
-                    <Stack gap={8}>
-                        <Group justify="space-between">
-                            <Text fz="sm" fw={600}>Pickup</Text>
-                            <ActionButton
-                                size="compact"
-                                leftSection={<Icon lucide={ArrowLeftRight} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                                onClick={() => setDeliveryDraft(pickupDraft)}
-                            >
-                                Copy to delivery
-                            </ActionButton>
-                        </Group>
-                        <AddressFormatEditor value={pickupDraft} onChange={setPickupDraft}/>
-                    </Stack>
+                    {addressLoadError && (
+                        <Text fz="sm" c="orange" mb={12}>
+                            Couldn&apos;t load your organisation&apos;s default format. Showing your saved
+                            format instead. Refresh to try again.
+                        </Text>
+                    )}
 
-                    <Stack gap={8}>
-                        <Group justify="space-between">
-                            <Text fz="sm" fw={600}>Delivery</Text>
-                            <ActionButton
-                                size="compact"
-                                leftSection={<Icon lucide={ArrowLeftRight} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                                onClick={() => setPickupDraft(deliveryDraft)}
-                            >
-                                Copy to pickup
-                            </ActionButton>
-                        </Group>
-                        <AddressFormatEditor value={deliveryDraft} onChange={setDeliveryDraft}/>
-                    </Stack>
-                </Group>
+                    <div className={styles.editors}>
+                        <Stack gap={8}>
+                            <Group justify="space-between">
+                                <Text fz="sm" fw={600}>Pickup</Text>
+                                <ActionButton
+                                    size="compact"
+                                    leftSection={<Icon lucide={ArrowLeftRight} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                                    onClick={() => setDeliveryDraft(pickupDraft)}
+                                >
+                                    Copy to delivery
+                                </ActionButton>
+                            </Group>
+                            <AddressFormatEditor value={pickupDraft} onChange={setPickupDraft}/>
+                        </Stack>
 
-                <Group justify="space-between" mt={8}>
-                    <ActionButton
-                        leftSection={<Icon lucide={RotateCcw} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                        onClick={handleResetAddressFormat}
-                        disabled={!hasAddressOverride}
-                    >
-                        Reset to default
-                    </ActionButton>
-                    <ActionButton
-                        leftSection={<Icon lucide={Save} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                        onClick={handleSaveClick}
-                        disabled={!isDirty}
-                    >
-                        Save
-                    </ActionButton>
-                </Group>
-            </Box>
+                        <Stack gap={8}>
+                            <Group justify="space-between">
+                                <Text fz="sm" fw={600}>Delivery</Text>
+                                <ActionButton
+                                    size="compact"
+                                    leftSection={<Icon lucide={ArrowLeftRight} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                                    onClick={() => setPickupDraft(deliveryDraft)}
+                                >
+                                    Copy to pickup
+                                </ActionButton>
+                            </Group>
+                            <AddressFormatEditor value={deliveryDraft} onChange={setDeliveryDraft}/>
+                        </Stack>
+                    </div>
+
+                    <Group justify="space-between" mt={16}>
+                        <Tooltip label="Already using the default" disabled={hasAddressOverride}>
+                            <span>
+                                <ActionButton
+                                    leftSection={<Icon lucide={RotateCcw} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                                    onClick={handleResetAddressFormat}
+                                    disabled={!hasAddressOverride}
+                                >
+                                    Reset to default
+                                </ActionButton>
+                            </span>
+                        </Tooltip>
+                        <ActionButton
+                            leftSection={<Icon lucide={Save} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                            onClick={handleSaveClick}
+                            disabled={!isDirty}
+                        >
+                            Save changes
+                        </ActionButton>
+                    </Group>
+                </Box>
+            </div>
 
             <DialogShell
                 opened={leaveResolver !== null}
@@ -360,15 +429,14 @@ export const SettingsPage: React.FC = () => {
                     variant="warning"
                     icon={<Icon lucide={TriangleAlert}/>}
                     title="Unsaved changes"
-                    subtitle="Your address format edits haven't been saved"
                     onClose={() => resolveLeavePrompt('stay')}
                 />
                 <Box p={24}>
-                    <Text>Save your address format changes before leaving, or they&apos;ll be lost.</Text>
+                    <Text>Leaving now will discard your address format edits.</Text>
                 </Box>
                 <DialogFooter
                     onCancel={() => resolveLeavePrompt('stay')}
-                    cancelLabel="Cancel"
+                    cancelLabel="Stay on page"
                     onConfirm={() => resolveLeavePrompt('save-and-leave')}
                     confirmLabel="Save and leave"
                     secondaryAction={

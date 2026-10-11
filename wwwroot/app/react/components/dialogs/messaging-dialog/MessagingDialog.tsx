@@ -1,10 +1,3 @@
-/**
- * React Messaging Dialogue
- *
- * A modern replacement for the AngularJS messaging-dialog using MUI components.
- * Features real-time messaging, conversation list, quick responses, and multi-recipient support.
- */
-
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     ActionIcon,
@@ -275,7 +268,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         } catch (err) {
             console.error('Failed to send message:', err);
             updateMessage(tempId, {status: 'failed'});
-            showToast('Failed to send message', 'error');
+            showToast("Couldn't send message. Check your connection and try again.", 'error');
         }
     }, [selectedConversation, messageDeliveryType, currentStaffId, addOptimisticMessage, updateMessage, updateConversation, showToast]);
 
@@ -328,7 +321,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             showToast(`Message sent to ${courierIds.length + staffIds.length} contacts`, 'success');
         } catch (err) {
             console.error('Failed to send multi message:', err);
-            showToast('Failed to send message to all contacts', 'error');
+            showToast("Couldn't send message to all contacts. Check your connection and try again.", 'error');
         } finally {
             setIsSending(false);
         }
@@ -463,7 +456,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             return (
                 <>
                     <DialogHeader
-                        title="New Conversation"
+                        title="New conversation"
                         showBackButton
                         onBack={handleBackToMessaging}
                         onClose={onClose}
@@ -498,7 +491,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         return (
             <>
                 <DialogHeader
-                    title="Message Center"
+                    title="Message center"
                     subtitle="Send and receive messages"
                     onClose={onClose}
                 />
@@ -785,7 +778,7 @@ function ConversationsPanel({
                                                         {conv.unreadCount > 0 ? `${conv.otherPartyName}: ` : 'You: '}
                                                     </Text>
                                                     {conv.lastMessage.substring(0, 40)}
-                                                    {conv.lastMessage.length > 40 ? '...' : ''}
+                                                    {conv.lastMessage.length > 40 ? '…' : ''}
                                                 </>
                                             ) : null}
                                         </Text>
@@ -828,7 +821,7 @@ function ConversationsPanel({
                             leftSection={<Icon lucide={MessageCirclePlus} size={16}/>}
                             onClick={onNewChat}
                         >
-                            Start Conversation
+                            Start conversation
                         </Button>
                     }
                 />
@@ -840,7 +833,7 @@ function ConversationsPanel({
                     icon={<Icon lucide={SearchX} size={EMPTY_GLYPH_SIZE}/>}
                     message={unreadOnly && !filterText.trim()
                         ? 'No unread conversations'
-                        : 'No matching conversations'}
+                        : 'No conversations match your search.'}
                     action={
                         <Button
                             variant="subtle"
@@ -1015,7 +1008,7 @@ function ChatPanel({
                     style={{borderTop: '1px solid var(--mantine-color-default-border)'}}
                 >
                     <Group justify="space-between" mb={8}>
-                        <Text fz="xs" fw={500} c="dimmed" tt="uppercase">Quick Responses</Text>
+                        <Text fz="xs" fw={500} c="dimmed" tt="uppercase">Quick responses</Text>
                         <CloseButton size="sm" aria-label="Hide quick responses" onClick={onToggleQuickResponses}/>
                     </Group>
                     <Group gap={8}>
@@ -1056,7 +1049,7 @@ function ChatPanel({
                     radius="xl"
                     autosize
                     maxRows={4}
-                    placeholder="Type a message..."
+                    placeholder="Type a message…"
                     aria-label="Type a message"
                     value={newMessage}
                     onChange={(e) => onMessageChange(e.currentTarget.value)}
@@ -1159,7 +1152,7 @@ function MessageBubble({message, isLastInGroup = true, onRetry, avatarInitials}:
                 <Text fz="sm" style={MESSAGE_BODY_STYLE}>{message.message}</Text>
                 {isFailed ? meta(
                     <>
-                        <Box c="red.5" style={{display: 'flex'}}>
+                        <Box c="light-dark(var(--mantine-color-red-5), var(--mantine-color-red-5))" style={{display: 'flex'}}>
                             <Icon lucide={CircleAlert} size={14} aria-label="Failed to send"/>
                         </Box>
                         <Text fz="xs">Failed</Text>
@@ -1285,7 +1278,7 @@ function NewChatView({
                     size="sm"
                     radius="xl"
                     style={{flex: 1}}
-                    placeholder="Search by name or ID..."
+                    placeholder="Search by name or ID…"
                     aria-label="Search by name or ID"
                     value={searchTerm}
                     onChange={(e) => onSearch(e.currentTarget.value)}
@@ -1309,7 +1302,7 @@ function NewChatView({
             {isSearching && (
                 <Group justify="center" gap={12} p={24}>
                     <Loader size={24} aria-label="Searching"/>
-                    <Text c="dimmed">Searching...</Text>
+                    <Text c="dimmed">Searching…</Text>
                 </Group>
             )}
 
@@ -1385,7 +1378,7 @@ function NewChatView({
                         <Textarea
                             rows={3}
                             mb={12}
-                            placeholder="Type your message..."
+                            placeholder="Type your message…"
                             aria-label="Message to selected contacts"
                             value={newMessage}
                             onChange={(e) => onMessageChange(e.currentTarget.value)}
@@ -1496,10 +1489,10 @@ interface ErrorStateProps {
 function ErrorState({message, onRetry}: ErrorStateProps) {
     return (
         <Stack flex={1} align="center" justify="center" gap={16} p={40}>
-            <Box c="red.6">
+            <Box c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))">
                 <Icon lucide={CircleAlert} size={64}/>
             </Box>
-            <Title order={5}>Unable to load messages</Title>
+            <Title order={5}>Couldn't load messages</Title>
             <Text c="dimmed">{message}</Text>
             <Button leftSection={<Icon lucide={RefreshCw} size={16}/>} onClick={onRetry}>
                 Retry

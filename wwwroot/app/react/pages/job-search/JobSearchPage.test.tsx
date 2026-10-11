@@ -168,12 +168,12 @@ describe('JobSearchPage', () => {
 
         // Box headers
         expect(screen.getByText('Filters')).toBeInTheDocument();
-        expect(screen.getByText('Live Job Data')).toBeInTheDocument();
-        expect(screen.getByText('Bulk Job Data')).toBeInTheDocument();
+        expect(screen.getByText('Live job data')).toBeInTheDocument();
+        expect(screen.getByText('Bulk job data')).toBeInTheDocument();
         expect(screen.getByText('Detail')).toBeInTheDocument();
-        expect(screen.getByText('Scan Detail')).toBeInTheDocument();
+        expect(screen.getByText('Scan detail')).toBeInTheDocument();
         expect(screen.getByText('Map')).toBeInTheDocument();
-        expect(screen.getByText('Delivery Journey')).toBeInTheDocument();
+        expect(screen.getByText('Delivery journey')).toBeInTheDocument();
 
         // Empty-state placeholders
         expect(screen.getByText(/select a job from the list/i)).toBeInTheDocument();

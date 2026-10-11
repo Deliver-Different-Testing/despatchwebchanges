@@ -1,9 +1,3 @@
-/**
- * RecurringJobsPage Component Tests
- *
- * Optimised: tests sharing identical setup consolidated into single renders.
- */
-
 import React from 'react';
 import {act, fireEvent, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
 import {renderWithMantine} from '../../__testUtils__';
@@ -101,7 +95,7 @@ const createMockJob = (id: number, client: string = 'Test Client'): PrebookListM
     clientId: 100 + id,
     courier: 'John Courier',
     speed: 'Standard',
-    customJobName: `Job Name ${id}`,
+    customJobName: `Job name ${id}`,
     pickupAddress: createMockAddress('123 Pickup St', '123 Pickup St, London'),
     deliveryAddress: createMockAddress('456 Delivery Ave', '456 Delivery Ave, Manchester'),
 });
@@ -171,12 +165,12 @@ describe('RecurringJobsPage', () => {
         renderWithProviders(createDefaultProps({showToast, setRefreshCallback}));
 
         // Toolbar
-        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search jobs…')).toBeInTheDocument();
         expect(screen.getByText('Active')).toBeInTheDocument();
         expect(screen.getByText('Inactive')).toBeInTheDocument();
 
         // Empty state
-        expect(screen.getByText('No recurring jobs available')).toBeInTheDocument();
+        expect(screen.getByText('No recurring jobs match your search.')).toBeInTheDocument();
 
         // Refresh callback
         expect(setRefreshCallback).toHaveBeenCalledWith(expect.any(Function));
@@ -201,13 +195,13 @@ describe('RecurringJobsPage', () => {
         fireEvent.click(exportButton!);
 
         await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith('Exporting recurring jobs...', 'info');
+            expect(showToast).toHaveBeenCalledWith('Exporting recurring jobs…', 'info');
         });
         await waitFor(() => {
             expect(mockRecurringJobsApi.exportToCsv).toHaveBeenCalled();
         });
         await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith('Recurring jobs exported successfully', 'success');
+            expect(showToast).toHaveBeenCalledWith('Recurring jobs exported', 'success');
         });
     });
 
@@ -245,11 +239,11 @@ describe('RecurringJobsPage', () => {
 
         renderWithProviders(createDefaultProps());
 
-        expect(screen.getByText('Loading recurring jobs...')).toBeInTheDocument();
+        expect(screen.getByText('Loading recurring jobs…')).toBeInTheDocument();
     });
 
-    // ── Job list + selection + Job Details panel ──────────────────────
-    it('displays jobs, shows Job Details panel, and updates header on click', () => {
+    // ── Job list + selection + Job details panel ──────────────────────
+    it('displays jobs, shows Job details panel, and updates header on click', () => {
         const jobs = [createMockJob(1, 'ABC Corp'), createMockJob(2, 'XYZ Inc')];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
@@ -264,12 +258,12 @@ describe('RecurringJobsPage', () => {
         expect(screen.getByText('ABC Corp')).toBeInTheDocument();
         expect(screen.getByText('XYZ Inc')).toBeInTheDocument();
 
-        // Job Details panel rendered directly in React (no AngularJS bridge)
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        // Job details panel rendered directly in React (no AngularJS bridge)
+        expect(screen.getByText('Job details')).toBeInTheDocument();
 
         // Select job → header updates with job ID
         fireEvent.click(screen.getByText('ABC Corp').closest('tr')!);
-        expect(screen.getByText(/Job Details - Job #1/)).toBeInTheDocument();
+        expect(screen.getByText(/Job details - Job #1/)).toBeInTheDocument();
     });
 
     // ── Deactivate: dialog open / cancel / confirm (single render) ──
@@ -291,22 +285,22 @@ describe('RecurringJobsPage', () => {
 
         // Open dialog
         fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
-        expect(screen.getByText('Deactivate Recurring Job')).toBeInTheDocument();
+        expect(screen.getByText('Deactivate recurring job')).toBeInTheDocument();
         expect(screen.getByText(/this will deactivate this recurring job/i)).toBeInTheDocument();
 
         // Cancel with No → dialog closes
-        fireEvent.click(screen.getByText('No'));
+        fireEvent.click(screen.getByText('Keep active'));
         await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
         expect(mockUpdateJobDetail).not.toHaveBeenCalled();
 
         // Re-open and confirm with Yes
         fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
-        fireEvent.click(screen.getByText('Yes'));
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate job'}));
 
         // Toast fires only after updateJobDetail resolves, so a single
         // waitFor on the toast covers both — no double-poll needed.
         await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith('Mode changed to Inactive.', 'success');
+            expect(showToast).toHaveBeenCalledWith('Mode changed to Inactive', 'success');
         });
         expect(mockUpdateJobDetail).toHaveBeenCalledWith(1, 'RecurringMode', '0', true);
         expect(refetch).toHaveBeenCalled();
@@ -317,7 +311,7 @@ describe('RecurringJobsPage', () => {
         jest.useFakeTimers();
         renderWithProviders(createDefaultProps());
 
-        const searchInput = screen.getByPlaceholderText('Search jobs...');
+        const searchInput = screen.getByPlaceholderText('Search jobs…');
         fireEvent.change(searchInput, {target: {value: 'test search'}});
 
         act(() => {
@@ -394,15 +388,15 @@ describe('RecurringJobsPage', () => {
         const row = screen.getByText('Test Client').closest('tr')!;
         fireEvent.contextMenu(row);
 
-        expect(screen.getByText('Add Pickup Stop')).toBeInTheDocument();
-        expect(screen.getByText('Add Delivery Stop')).toBeInTheDocument();
+        expect(screen.getByText('Add pickup stop')).toBeInTheDocument();
+        expect(screen.getByText('Add delivery stop')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByText('Add Pickup Stop'));
+        fireEvent.click(screen.getByText('Add pickup stop'));
         expect(onAddStop).toHaveBeenCalledWith(jobs[0], true);
     });
 
-    // ── Two-column layout with Job Details ───────────────────────────
-    it('renders in a two-column layout with Job Details in the right panel', () => {
+    // ── Two-column layout with Job details ───────────────────────────
+    it('renders in a two-column layout with Job details in the right panel', () => {
         const jobs = [createMockJob(1)];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
@@ -413,12 +407,12 @@ describe('RecurringJobsPage', () => {
 
         renderWithProviders(createDefaultProps());
 
-        // Left panel: Filters + Recurring Jobs table
+        // Left panel: Filters + Recurring jobs table
         expect(screen.getByText('Filters')).toBeInTheDocument();
-        expect(screen.getByText(/Recurring Jobs/)).toBeInTheDocument();
+        expect(screen.getByText(/Recurring jobs/)).toBeInTheDocument();
 
-        // Right panel: Job Details (rendered directly in React, no AngularJS bridge)
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        // Right panel: Job details (rendered directly in React, no AngularJS bridge)
+        expect(screen.getByText('Job details')).toBeInTheDocument();
     });
 
     // ── Panel header consistency ─────────────────────────────────────
@@ -426,7 +420,7 @@ describe('RecurringJobsPage', () => {
     // PanelHeader instead of the old dense Toolbar. Assert by visible header
     // text (per the query-by-text rule) — every title rendering confirms each
     // panel mounted a PanelHeader, and the "(n)" count proves the count prop.
-    it('renders all panel headers (Filters / Recurring Jobs (n) / Job Details) via PanelHeader', () => {
+    it('renders all panel headers (Filters / Recurring jobs (n) / Job details) via PanelHeader', () => {
         const jobs = [createMockJob(1), createMockJob(2)];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
@@ -438,8 +432,8 @@ describe('RecurringJobsPage', () => {
         renderWithProviders(createDefaultProps());
 
         expect(screen.getByText('Filters')).toBeInTheDocument();
-        expect(screen.getByText('Recurring Jobs (2)')).toBeInTheDocument();
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        expect(screen.getByText('Recurring jobs (2)')).toBeInTheDocument();
+        expect(screen.getByText('Job details')).toBeInTheDocument();
     });
 
     // ── No onJobSelect prop (bridge removed) ────────────────────────
@@ -457,7 +451,7 @@ describe('RecurringJobsPage', () => {
 
         renderWithProviders(props);
 
-        // Job Details is present (rendered directly, not via AngularJS bridge)
-        expect(screen.getByText('Job Details')).toBeInTheDocument();
+        // Job details is present (rendered directly, not via AngularJS bridge)
+        expect(screen.getByText('Job details')).toBeInTheDocument();
     });
 });

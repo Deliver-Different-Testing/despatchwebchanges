@@ -121,21 +121,21 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
             {/* Driver Information Grid */}
             {!isLoadingDetails && driver && (
                 <SimpleGrid cols={{base: 1, md: 2, lg: 3}} spacing={16}>
-                    <InfoCard icon={<Icon lucide={IdCard}/>} title="Basic Information">
+                    <InfoCard icon={<Icon lucide={IdCard}/>} title="Basic information">
                         <InfoRow label="Code" value={driver.basicInformation.code} />
                         <InfoRow label="Name" value={`${driver.basicInformation.firstName} ${driver.basicInformation.surname}`} />
                         <InfoRow label="Email" value={driver.basicInformation.email} />
                         <InfoRow label="Address" value={driver.basicInformation.address} />
                     </InfoCard>
 
-                    <InfoCard icon={<Icon lucide={Phone}/>} title="Contact Information">
-                        <InfoRow label="Home Phone" value={driver.contactInformation.home || '\u2014'} />
+                    <InfoCard icon={<Icon lucide={Phone}/>} title="Contact information">
+                        <InfoRow label="Home phone" value={driver.contactInformation.home || '\u2014'} />
                         <InfoRow label="Mobile" value={driver.contactInformation.mobile} />
-                        <InfoRow label="GST Number" value={driver.contactInformation.gstNumber || '\u2014'} />
-                        <InfoRow label="IRD Number" value={driver.contactInformation.irdNumber || '\u2014'} />
+                        <InfoRow label="GST number" value={driver.contactInformation.gstNumber || '\u2014'} />
+                        <InfoRow label="IRD number" value={driver.contactInformation.irdNumber || '\u2014'} />
                     </InfoCard>
 
-                    <InfoCard icon={<Icon lucide={Car}/>} title="Vehicle Information">
+                    <InfoCard icon={<Icon lucide={Car}/>} title="Vehicle information">
                         <InfoRow label="Registration" value={driver.vehicleInformation.rego} />
                         <InfoRow label="Model" value={driver.vehicleInformation.vehicleModel} />
                         <InfoRow label="Year" value={driver.vehicleInformation.vehicleYear ?? '\u2014'} />
@@ -143,21 +143,21 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                     </InfoCard>
 
                     <InfoCard icon={<Icon lucide={ShieldCheck}/>} title="Compliance">
-                        <InfoRow label="Dangerous Goods" value={<BoolBadge value={driver.compliance.dangerousGoods} />} />
-                        <InfoRow label="DG Expiry" value={formatDate(driver.compliance.dangerousGoodsExpiry)} />
-                        <InfoRow label="License Expiry" value={formatDate(driver.compliance.driversLicenceExpiry)} />
+                        <InfoRow label="Dangerous goods" value={<BoolBadge value={driver.compliance.dangerousGoods} />} />
+                        <InfoRow label="DG expiry" value={formatDate(driver.compliance.dangerousGoodsExpiry)} />
+                        <InfoRow label="License expiry" value={formatDate(driver.compliance.driversLicenceExpiry)} />
                     </InfoCard>
 
-                    <InfoCard icon={<Icon lucide={Landmark}/>} title="Banking & Emergency">
-                        <InfoRow label="Emergency Contact" value={<BoolBadge value={driver.bankingAndEmergency.emergencyContact} />} />
+                    <InfoCard icon={<Icon lucide={Landmark}/>} title="Banking & emergency">
+                        <InfoRow label="Emergency contact" value={<BoolBadge value={driver.bankingAndEmergency.emergencyContact} />} />
                         <InfoRow label="Bank" value={driver.bankingAndEmergency.bank || '\u2014'} />
-                        <InfoRow label="Security Check" value={<BoolBadge value={driver.bankingAndEmergency.securityCheck} />} />
+                        <InfoRow label="Security check" value={<BoolBadge value={driver.bankingAndEmergency.securityCheck} />} />
                     </InfoCard>
 
-                    <InfoCard icon={<Icon lucide={Info}/>} title="Additional Information">
-                        <InfoRow label="Contract Date" value={formatDate(driver.additionalInformation.contactSignDate)} />
-                        <InfoRow label="Mobile Insurance" value={driver.additionalInformation.mobileInsurence ?? '\u2014'} />
-                        <InfoRow label="Daily Profit Adjust" value={driver.additionalInformation.dailyProfitAdjust || '\u2014'} />
+                    <InfoCard icon={<Icon lucide={Info}/>} title="Additional information">
+                        <InfoRow label="Contract date" value={formatDate(driver.additionalInformation.contactSignDate)} />
+                        <InfoRow label="Mobile insurance" value={driver.additionalInformation.mobileInsurence ?? '\u2014'} />
+                        <InfoRow label="Daily profit adjust" value={driver.additionalInformation.dailyProfitAdjust || '\u2014'} />
                         <InfoRow label="Notes" value={driver.additionalInformation.notes || '\u2014'} />
                     </InfoCard>
                 </SimpleGrid>

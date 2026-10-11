@@ -54,9 +54,9 @@ describe('JobSearchJobActionsMenu', () => {
         await user.click(screen.getByRole('button', {name: 'Job actions'}));
 
         expect(screen.getByRole('menuitem', {name: 'Attachments'})).toBeInTheDocument();
-        expect(screen.getByRole('menuitem', {name: 'Lock Job'})).toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Lock job'})).toBeInTheDocument();
         // Unlock requires a locked job, so it is hidden here.
-        expect(screen.queryByRole('menuitem', {name: 'Unlock Job'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Unlock job'})).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('menuitem', {name: 'Attachments'}));
         expect(onAction).toHaveBeenCalledWith('attachments', job);
@@ -64,42 +64,62 @@ describe('JobSearchJobActionsMenu', () => {
 
     it('offers Restore for a live, courier-assigned, not-done job', async () => {
         await openMenu(makeJob());
-        expect(screen.getByRole('menuitem', {name: 'Restore Job'})).toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Restore job'})).toBeInTheDocument();
     });
 
     it('does not offer Restore for an archived job', async () => {
         await openMenu(makeJob({isArchived: true}));
-        expect(screen.queryByRole('menuitem', {name: 'Restore Job'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Restore job'})).not.toBeInTheDocument();
     });
 
     it('offers Change Paid Courier only for an archived, completed job', async () => {
         await openMenu(makeJob({isArchived: true, done: true}));
-        expect(screen.getByRole('menuitem', {name: 'Change Paid Courier'})).toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Change paid courier'})).toBeInTheDocument();
     });
 
     it('does not offer Change Paid Courier for a live or incomplete job', async () => {
         await openMenu(makeJob({isArchived: false, done: true}));
-        expect(screen.queryByRole('menuitem', {name: 'Change Paid Courier'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Change paid courier'})).not.toBeInTheDocument();
     });
 
     it('does not offer Change Paid Courier for an archived job that is not done', async () => {
         await openMenu(makeJob({isArchived: true, done: false}));
-        expect(screen.queryByRole('menuitem', {name: 'Change Paid Courier'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Change paid courier'})).not.toBeInTheDocument();
     });
 
     it('offers Split for a splittable job', async () => {
         await openMenu(makeJob({allowSplit: true}));
-        expect(screen.getByRole('menuitem', {name: 'Split Job'})).toBeInTheDocument();
+        expect(screen.getByRole('menuitem', {name: 'Split job'})).toBeInTheDocument();
     });
 
     it('does not offer Split for a job that is already a leg', async () => {
         // allowSplit is false server-side once a job has a parent (JobMappings.Core).
         await openMenu(makeJob({allowSplit: false}));
-        expect(screen.queryByRole('menuitem', {name: 'Split Job'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Split job'})).not.toBeInTheDocument();
     });
 
     it('does not offer Split for an archived job', async () => {
         await openMenu(makeJob({allowSplit: true, isArchived: true}));
-        expect(screen.queryByRole('menuitem', {name: 'Split Job'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Split job'})).not.toBeInTheDocument();
+    });
+
+    // Accessorials are tenant pricing to manage, not something a partner needs - and the dialog
+    // renders raw tenant amounts with no NP masking, so the action must not even be reachable.
+    it('hides Accessorial Charges for a network partner session, shows it otherwise', async () => {
+        const jobWithAccessorials = makeJob({accessorialChargeGroupId: 9} as Partial<DispatchJob>);
+
+        await openMenu(jobWithAccessorials);
+        expect(screen.getByRole('menuitem', {name: 'Accessorial charges'})).toBeInTheDocument();
+
+        (window as any).IsNetworkPartner = true;
+        try {
+            const user = setupUser();
+            renderMenu({currentJob: jobWithAccessorials});
+            const [, npMenuButton] = screen.getAllByRole('button', {name: 'Job actions'});
+            await user.click(npMenuButton);
+            expect(screen.queryByRole('menuitem', {name: 'Accessorial charges'})).not.toBeInTheDocument();
+        } finally {
+            delete (window as any).IsNetworkPartner;
+        }
     });
 });

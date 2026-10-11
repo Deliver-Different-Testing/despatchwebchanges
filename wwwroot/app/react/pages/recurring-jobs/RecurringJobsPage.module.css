@@ -1,10 +1,10 @@
 /*
  * The resize gutter, and only the gutter. react-resizable-panels stamps
- * data-resize-handle-state on the PanelResizeHandle root, so the styling is
- * selected from that *parent* down to this child — an ancestor-attribute
- * selector no prop can express. Mirrors the AngularJS .rg-right gutter
- * (udispatch.less:326-349) so the affordance matches job-search, nationwide
- * and home.
+ * data-separator on the Separator (aliased as PanelResizeHandle) root, so the
+ * styling is selected from that *parent* down to this child — an
+ * ancestor-attribute selector no prop can express. Mirrors the AngularJS
+ * .rg-right gutter (udispatch.less:326-349) so the affordance matches
+ * job-search, nationwide and home.
  */
 
 .resizeHandle {
@@ -19,12 +19,12 @@
         box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[data-resize-handle-state='hover'] .resizeHandle {
+[data-separator='hover'] .resizeHandle {
     background-color: color-mix(in srgb, var(--mantine-primary-color-filled) 30%, transparent);
     box-shadow: 0 0 8px color-mix(in srgb, var(--mantine-primary-color-filled) 30%, transparent);
 }
 
-[data-resize-handle-state='drag'] .resizeHandle {
+[data-separator='active'] .resizeHandle {
     background-color: color-mix(in srgb, var(--mantine-primary-color-filled) 50%, transparent);
     box-shadow: 0 0 12px color-mix(in srgb, var(--mantine-primary-color-filled) 50%, transparent);
 }

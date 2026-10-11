@@ -26,7 +26,7 @@ function renderDriverSearch() {
         />
     );
 
-    return {user, searchInput: screen.getByPlaceholderText('Search courier...')};
+    return {user, searchInput: screen.getByPlaceholderText('Search couriers…')};
 }
 
 describe('CurrentWorkAllDrivers', () => {
@@ -91,8 +91,8 @@ describe('CurrentWorkAllDrivers', () => {
                 />
             );
 
-            expect(screen.getByText('No Drivers Available')).toBeInTheDocument();
-            expect(screen.getByText('No active drivers found')).toBeInTheDocument();
+            expect(screen.getByText('No drivers yet')).toBeInTheDocument();
+            expect(screen.getByText('No active drivers yet.')).toBeInTheDocument();
         });
 
         it('should show loading indicator when loading', () => {
@@ -200,7 +200,7 @@ describe('CurrentWorkAllDrivers', () => {
             await user.click(searchInput);
             await user.paste('NonExistent');
 
-            expect(screen.getByText('No Drivers Found')).toBeInTheDocument();
+            expect(screen.getByText('No drivers found')).toBeInTheDocument();
             expect(screen.getByText('No drivers match "NonExistent"')).toBeInTheDocument();
         });
 
@@ -275,7 +275,7 @@ describe('CurrentWorkAllDrivers', () => {
             await user.click(sortButton);
 
             // Search for "Driver"
-            const searchInput = screen.getByPlaceholderText('Search courier...');
+            const searchInput = screen.getByPlaceholderText('Search couriers…');
             await user.click(searchInput);
             await user.paste('Driver');
 
@@ -428,7 +428,7 @@ describe('CurrentWorkAllDrivers', () => {
             const longNameDriver: IDriverWorkOverview[] = [
                 {
                     courierId: 1,
-                    name: 'This Is A Very Long Driver Name That Might Overflow The Container',
+                    name: 'This Is A Very Long Driver name That Might Overflow The Container',
                     vehicleType: 'Van',
                     jobCount: 1,
                     driverStatusText: 'Active'
@@ -442,7 +442,7 @@ describe('CurrentWorkAllDrivers', () => {
                 />
             );
 
-            expect(screen.getByText('This Is A Very Long Driver Name That Might Overflow The Container')).toBeInTheDocument();
+            expect(screen.getByText('This Is A Very Long Driver name That Might Overflow The Container')).toBeInTheDocument();
         });
 
         it('should handle rapid sort toggling', async () => {

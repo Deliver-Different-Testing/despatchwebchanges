@@ -14,6 +14,7 @@ import {JobProperty} from '../../../../../enums/job-property.enum';
 import JobInternalStatusEnum from '../../../../../enums/job-internal-status.enum';
 import {usePendingChangeForField} from '../../../job-change-requests/useJobChangeRequests';
 import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
+import {isNetworkPartnerSession} from '../../../dialogs/dispatch-dialog/dispatchSession';
 
 interface MetricsGridProps {
     job: IJob;
@@ -81,37 +82,37 @@ export const MetricsGrid = React.memo(({
     useEffect(() => { jobRef.current = job; }, [job]);
 
     const handleDispatchedClick = useCallback(() => {
-        showToast('Dispatch Time is not editable', 'info');
+        showToast("Dispatch time can't be edited", 'info');
     }, [showToast]);
 
     const handleReadyClick = useCallback(() => {
         const j = jobRef.current;
-        onEditDateAndTime(JobProperty.BookedTime, 'Booked Date', j.booked, j.pickUpTimeZone);
+        onEditDateAndTime(JobProperty.BookedTime, 'Booked date', j.booked, j.pickUpTimeZone);
     }, [onEditDateAndTime]);
 
     const handlePuArrivalClick = useCallback(() => {
         const j = jobRef.current;
-        onEditDateAndTime(JobProperty.PickupArrivalTime, 'Pickup Arrival Time', j.pickupArrivalTime, j.pickUpTimeZone);
+        onEditDateAndTime(JobProperty.PickupArrivalTime, 'Pickup arrival time', j.pickupArrivalTime, j.pickUpTimeZone);
     }, [onEditDateAndTime]);
 
     const handlePuTimeClick = useCallback(() => {
         const j = jobRef.current;
-        onEditDateAndTime(JobProperty.PuTime, 'Pick Up Time', j.puTime, j.pickUpTimeZone);
+        onEditDateAndTime(JobProperty.PuTime, 'Pick up time', j.puTime, j.pickUpTimeZone);
     }, [onEditDateAndTime]);
 
     const handleDeliverByClick = useCallback(() => {
         const j = jobRef.current;
-        onEditDateAndTime(JobProperty.DeliverBy, 'Deliver By', j.deliverByTime, j.deliveryTimeZone);
+        onEditDateAndTime(JobProperty.DeliverBy, 'Deliver by', j.deliverByTime, j.deliveryTimeZone);
     }, [onEditDateAndTime]);
 
     const handleDelArrivalClick = useCallback(() => {
         const j = jobRef.current;
-        onEditDateAndTime(JobProperty.DeliveryArrivalTime, 'Delivery Arrival Time', j.deliveryArrivalTime, j.deliveryTimeZone);
+        onEditDateAndTime(JobProperty.DeliveryArrivalTime, 'Delivery arrival time', j.deliveryArrivalTime, j.deliveryTimeZone);
     }, [onEditDateAndTime]);
 
     const handleFollowUpClick = useCallback(() => {
         const j = jobRef.current;
-        onEditDateAndTime(JobProperty.FollowupTime, 'Follow Up Time', j.followupTime, j.deliveryTimeZone);
+        onEditDateAndTime(JobProperty.FollowupTime, 'Follow up time', j.followupTime, j.deliveryTimeZone);
     }, [onEditDateAndTime]);
 
     return (
@@ -119,7 +120,7 @@ export const MetricsGrid = React.memo(({
             {/* Row 1: PRICING, READY, PU ARRIVAL, PU TIME, DELIVER BY */}
             <SimpleGrid {...gridProps}>
                 <MetricCard
-                    label="Pricing"
+                    label={isNetworkPartnerSession() ? 'Your pay' : 'Pricing'}
                     value={job.charge != null ? formatCurrency(job.charge) : ''}
                     onClick={onPricingClick}
                     highlight
@@ -138,7 +139,7 @@ export const MetricsGrid = React.memo(({
                     overlay={pendingBooked && <PendingChangeBadge request={pendingBooked}/>}
                 />
                 <MetricCard
-                    label="PU Arrival"
+                    label="PU arrival"
                     value={job.pickupArrivalTime ? `${job._pickupArrivalTimeStr} ${job._pickUpTimeZoneStr || puTz}` : '-'}
                     onClick={handlePuArrivalClick}
                     category="time"
@@ -146,7 +147,7 @@ export const MetricsGrid = React.memo(({
                     dense={dense}
                 />
                 <MetricCard
-                    label="PU Time"
+                    label="PU time"
                     value={job.puTime ? `${job._puTimeStr} ${job._pickUpTimeZoneStr || puTz}` : '-'}
                     onClick={handlePuTimeClick}
                     category="time"
@@ -155,7 +156,7 @@ export const MetricsGrid = React.memo(({
                     overlay={pendingPuTime && <PendingChangeBadge request={pendingPuTime}/>}
                 />
                 <MetricCard
-                    label="Deliver By"
+                    label="Deliver by"
                     value={job.deliverByTime ? `${job._deliverByTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
                     onClick={handleDeliverByClick}
                     overlay={pendingDeliverBy && <PendingChangeBadge request={pendingDeliverBy}/>}
@@ -176,7 +177,7 @@ export const MetricsGrid = React.memo(({
                     dense={dense}
                 />
                 <MetricCard
-                    label="Del Arrival"
+                    label="Del arrival"
                     value={job.deliveryArrivalTime ? `${job._deliveryArrivalTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
                     onClick={handleDelArrivalClick}
                     category="time"
@@ -184,7 +185,7 @@ export const MetricsGrid = React.memo(({
                     dense={dense}
                 />
                 <MetricCard
-                    label="POD Name"
+                    label="POD name"
                     value={job.podName || '-'}
                     onClick={onEditPodName}
                     disabled={isLocked}
@@ -193,7 +194,7 @@ export const MetricsGrid = React.memo(({
                     dense={dense}
                 />
                 <MetricCard
-                    label="POD Time"
+                    label="POD time"
                     value={job.completedTime ? `${job._completedTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
                     onClick={onEditCompletedTime}
                     category="pod"
@@ -201,7 +202,7 @@ export const MetricsGrid = React.memo(({
                     dense={dense}
                 />
                 <MetricCard
-                    label="Follow Up"
+                    label="Follow up"
                     value={job.followupTime ? `${job._followupTimeStr} ${defaultTz}` : '-'}
                     onClick={handleFollowUpClick}
                     disabled={!canEditFollowUp}
@@ -210,7 +211,7 @@ export const MetricsGrid = React.memo(({
                     dense={dense}
                 />
                 <MetricCard
-                    label="Client Name"
+                    label="Client name"
                     value={job.clientName || '-'}
                     onClick={onClientClick}
                     disabled={isLocked}
@@ -245,8 +246,8 @@ export const MetricsGrid = React.memo(({
 
 function getInternalStatusLabel(id: number): string {
     switch (id) {
-        case JobInternalStatusEnum.NewJobs: return 'New Jobs';
-        case JobInternalStatusEnum.ActionRequired: return 'Action Required';
+        case JobInternalStatusEnum.NewJobs: return 'New jobs';
+        case JobInternalStatusEnum.ActionRequired: return 'Action required';
         case JobInternalStatusEnum.AwaitingPod: return 'Awaiting POD';
         case JobInternalStatusEnum.Reprice: return 'Reprice';
         case JobInternalStatusEnum.OvernightCp: return 'Overnight CP';

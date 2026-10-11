@@ -1,14 +1,3 @@
-/**
- * JobFileUploadDialog Component
- *
- * React replacement for the AngularJS job-file-upload-dialog.
- * Supports regular file uploads and POD (Proof of Delivery) photo uploads
- * with drag-and-drop, progress tracking, and file management.
- *
- * All upload/download/delete logic lives in the useFileUpload hook;
- * this component is purely presentational.
- */
-
 import React, {useEffect, useCallback, useRef, useState} from 'react';
 import {
     ActionIcon,
@@ -62,9 +51,9 @@ function dropBoxStyle(isPodMode: boolean, isDragOver: boolean): React.CSSPropert
             ? 'var(--mantine-color-brand-6)'
             : 'var(--mantine-color-gray-4)';
     const background = isDragOver
-        ? 'var(--mantine-color-green-0)'
+        ? 'var(--mantine-color-green-light)'
         : isPodMode
-            ? 'var(--mantine-color-brand-0)'
+            ? 'var(--mantine-color-brand-light)'
             : 'var(--mantine-color-gray-0)';
     return {
         display: 'block',
@@ -133,7 +122,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                     onDragOver={upload.handleDragOver}
                     onDragLeave={upload.handleDragLeave}
                 >
-                    <Box mb="xs" c={isPodMode ? 'brand.6' : 'gray.6'} style={{display: 'flex', justifyContent: 'center'}}>
+                    <Box mb="xs" c={isPodMode ? 'light-dark(var(--mantine-color-brand-6), var(--mantine-color-brand-4))' : 'light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2))'} style={{display: 'flex', justifyContent: 'center'}}>
                         <Icon lucide={isPodMode ? Camera : CloudUpload} size={48}/>
                     </Box>
                     <Text>
@@ -151,10 +140,10 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
         <Table mt="md" verticalSpacing="xs" horizontalSpacing="xs">
             <Table.Thead>
                 <Table.Tr>
-                    <Table.Th>{isPodMode ? 'Photo Name' : 'File Name'}</Table.Th>
+                    <Table.Th>{isPodMode ? 'Photo name' : 'File name'}</Table.Th>
                     {isPodMode && <Table.Th>Description</Table.Th>}
                     <Table.Th>Size</Table.Th>
-                    <Table.Th>{isPodMode ? 'Upload Date' : 'Last Modified'}</Table.Th>
+                    <Table.Th>{isPodMode ? 'Upload date' : 'Last modified'}</Table.Th>
                     <Table.Th>Actions</Table.Th>
                 </Table.Tr>
             </Table.Thead>
@@ -208,7 +197,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                 </Text>
                 {/* Overall progress */}
                 <Group justify="space-between" mb={4}>
-                    <Text size="sm">Overall Progress</Text>
+                    <Text size="sm">Overall progress</Text>
                     <Text size="sm">{upload.overallProgress}%</Text>
                 </Group>
                 <Progress value={upload.overallProgress} mb="xs"/>
@@ -244,7 +233,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
     const renderPodContent = () => (
         <>
             <TextInput
-                label="POD Photo Description"
+                label="POD photo description"
                 placeholder="Enter description for POD photo"
                 value={upload.podDescription}
                 onChange={e => upload.setPodDescription(e.currentTarget.value)}
@@ -260,7 +249,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
     }, [upload.isUploading, onClose]);
 
     // Determine header icon and title
-    const headerTitle = isPODOnly ? 'POD Photos' : isBothMode ? 'File Upload' : 'Attached Files';
+    const headerTitle = isPODOnly ? 'POD photos' : isBothMode ? 'File upload' : 'Attached files';
     const headerSubtitle = isPODOnly
         ? 'Upload proof of delivery photos'
         : isBothMode
@@ -299,8 +288,8 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                             mb="md"
                         >
                             <Tabs.List mb="md">
-                                <Tabs.Tab value="normal">Regular Files</Tabs.Tab>
-                                <Tabs.Tab value="pod">POD Photos</Tabs.Tab>
+                                <Tabs.Tab value="normal">Regular files</Tabs.Tab>
+                                <Tabs.Tab value="pod">POD photos</Tabs.Tab>
                             </Tabs.List>
                             <Tabs.Panel value="normal">{renderNormalContent()}</Tabs.Panel>
                             <Tabs.Panel value="pod">{renderPodContent()}</Tabs.Panel>

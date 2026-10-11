@@ -1,14 +1,3 @@
-/**
- * React Swap PODs Dialog
- *
- * Allows operators to move a POD signature from one job to another,
- * correcting cases where a driver signed off the wrong job.
- *
- * Two-phase flow:
- *   Phase 1 — Input:   Enter second job number and validate
- *   Phase 2 — Confirm: Review both job numbers and confirm the swap
- */
-
 import React, {useState} from 'react';
 import {Alert, Box, Group, Paper, Stack, Text, TextInput} from '@mantine/core';
 import {ArrowLeftRight, CircleCheck, Info} from 'lucide-react';
@@ -24,12 +13,12 @@ const JobChip: React.FC<{label: string; value: string}> = ({label, value}) => (
         style={{
             flex: 1,
             borderRadius: 'var(--mantine-radius-sm)',
-            backgroundColor: 'var(--mantine-color-brand-0)',
+            backgroundColor: 'var(--mantine-color-brand-light)',
             border: '1px solid var(--mantine-color-brand-3)',
         }}
     >
         <Text fz="xs" c="dimmed">{label}</Text>
-        <Text fz="lg" fw={700} c="brand.7">{value}</Text>
+        <Text fz="lg" fw={700} c="var(--mantine-color-brand-light-color)">{value}</Text>
     </Box>
 );
 
@@ -70,12 +59,12 @@ export function SwapPodsDialog({
     const handleValidate = async (): Promise<void> => {
         const trimmed = secondJobNo.trim();
         if (!trimmed) {
-            setError('Please enter a job number.');
+            setError('Enter a job number');
             return;
         }
 
         if (trimmed === jobNo) {
-            setError('The second job cannot be the same as the current job.');
+            setError('Enter a different job number from the current job');
             return;
         }
 
@@ -87,10 +76,10 @@ export function SwapPodsDialog({
             if (isValid) {
                 setPhase('confirm');
             } else {
-                setError(`Job ${trimmed} is not eligible for a POD swap.`);
+                setError(`Job ${trimmed} isn't eligible for a POD swap`);
             }
         } catch {
-            setError('Failed to validate job. Please check the job number and try again.');
+            setError("Couldn't check this job. Check the job number and try again.");
         } finally {
             setLoading(false);
         }
@@ -100,10 +89,10 @@ export function SwapPodsDialog({
         setLoading(true);
         try {
             await onSwap(jobNo, secondJobNo.trim());
-            showToast('PODs swapped successfully.', 'success');
+            showToast('PODs swapped', 'success');
             onClose();
         } catch {
-            showToast('An error occurred while swapping PODs. Please try again.', 'error');
+            showToast("Couldn't swap PODs. Try again.", 'error');
             setLoading(false);
         }
     };
@@ -175,7 +164,7 @@ export function SwapPodsDialog({
                 <DialogFooter
                     onCancel={onClose}
                     onConfirm={handleValidate}
-                    confirmLabel={loading ? 'Validating...' : 'Validate'}
+                    confirmLabel={loading ? 'Validating…' : 'Validate'}
                     confirmIcon={<Icon lucide={ArrowLeftRight}/>}
                     confirmDisabled={loading || !secondJobNo.trim()}
                     submitting={loading}
@@ -185,7 +174,7 @@ export function SwapPodsDialog({
                     onCancel={handleBackToInput}
                     cancelLabel="Back"
                     onConfirm={handleConfirmSwap}
-                    confirmLabel={loading ? 'Swapping...' : 'Confirm Swap'}
+                    confirmLabel={loading ? 'Swapping…' : 'Confirm swap'}
                     confirmIcon={<Icon lucide={ArrowLeftRight}/>}
                     submitting={loading}
                 />

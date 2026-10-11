@@ -229,7 +229,7 @@ describe('overviewApi integration', () => {
             expect(result[0]).toMatchObject({
                 jobId: 301,
                 reference: 'OJ-001',
-                status: 'In Transit',
+                status: 'In transit',
                 driverName: 'John Smith',
                 completedToday: 3,
                 quantity: 2,

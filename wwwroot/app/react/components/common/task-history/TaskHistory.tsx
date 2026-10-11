@@ -150,7 +150,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
     useEffect(() => {
         if (fetchError) {
             console.error('Error loading delivery journey:', fetchError);
-            showErrorToast?.('Failed to load delivery journey');
+            showErrorToast?.("Couldn't load the delivery journey. Check your connection and try again.");
         }
     }, [fetchError, showErrorToast]);
 
@@ -185,7 +185,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
     }, [densityMode]);
 
     const handleRefresh = useCallback(async (): Promise<void> => {
-        showInfoToast?.('Refreshing delivery journey...');
+        showInfoToast?.('Refreshing delivery journey…');
         setShouldAnimate(false);
         await refetch();
         setShouldAnimate(true);
@@ -206,7 +206,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
             <Box data-testid="task-history-root" style={containerStyle}>
                 <EmptyState
                     icon={<Icon lucide={SquareDashedMousePointer} size={48}/>}
-                    title="Select a Job"
+                    title="Select a job"
                     message="Select a job to view its delivery journey."
                 />
             </Box>
@@ -312,8 +312,8 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                 ) : !loading ? (
                     <EmptyState
                         icon={<Icon tabler={IconPackage} size={48}/>}
-                        title="No Journey Events"
-                        message="No delivery journey events found for this job."
+                        title="No journey events yet"
+                        message="This job has no delivery journey events."
                     />
                 ) : null}
             </Box>

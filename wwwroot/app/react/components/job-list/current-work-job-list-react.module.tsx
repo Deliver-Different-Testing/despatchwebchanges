@@ -1,7 +1,7 @@
 /**
  * Current Work Job List React Module
  *
- * Separate bridge module for the "Current Work" panel (selected courier's jobs), so it
+ * Separate bridge module for the "Current work" panel (selected courier's jobs), so it
  * and the dispatch job list can coexist independently.
  */
 

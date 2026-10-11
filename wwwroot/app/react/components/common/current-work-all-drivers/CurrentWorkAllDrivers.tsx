@@ -110,7 +110,7 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
                 <Group gap="xs" align="center" wrap="nowrap">
                     <TextInput
                         size="xs"
-                        placeholder="Search courier..."
+                        placeholder="Search couriers…"
                         value={searchText}
                         onChange={handleSearchChange}
                         style={{ flex: 1 }}
@@ -151,11 +151,11 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
             <Box style={{ flex: 1, overflow: 'auto' }}>
                 {filteredAndSortedDrivers.length === 0 ? (
                     <NoData
-                        title={searchText ? 'No Drivers Found' : 'No Drivers Available'}
+                        title={searchText ? 'No drivers found' : 'No drivers yet'}
                         message={
                             searchText
                                 ? `No drivers match "${searchText}"`
-                                : 'No active drivers found'
+                                : 'No active drivers yet.'
                         }
                     />
                 ) : (

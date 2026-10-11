@@ -26,8 +26,8 @@ export interface BoxHeaderProps {
     showHideButton?: boolean;
     /** Hide this panel from the current layout. */
     onHide?: () => void;
-    /** Wired as the drag handle's draggable=… attribute. Leave undefined to disable drag. */
-    onDragStart?: (event: React.DragEvent<HTMLElement>) => void;
+    /** Pointer-down on the drag handle begins a pointer drag. Leave undefined to disable drag. */
+    onGrab?: (event: React.PointerEvent<HTMLElement>) => void;
     onRefresh?: () => void;
     /** Keyboard reorder: move this panel up among its visible siblings. Undefined at the top. */
     onMoveUp?: () => void;
@@ -76,7 +76,7 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
     showDragHandle,
     showHideButton,
     onHide,
-    onDragStart,
+    onGrab,
     onRefresh,
     onMoveUp,
     onMoveDown,
@@ -138,11 +138,10 @@ export const BoxHeader: React.FC<BoxHeaderProps> = ({
                         ref={dragHandleRef}
                         aria-label={`Reorder ${title} — use the up and down arrow keys`}
                         aria-roledescription="sortable"
-                        draggable={!!onDragStart}
-                        onDragStart={onDragStart}
+                        onPointerDown={onGrab}
                         onKeyDown={handleReorderKeyDown}
                         opacity={0.85}
-                        style={{cursor: 'grab'}}
+                        style={{cursor: 'grab', touchAction: 'none'}}
                     >
                         <Icon lucide={GripVertical} size={PANEL_CONTROL_GLYPH_SIZE}/>
                     </ActionIcon>

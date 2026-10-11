@@ -25,6 +25,7 @@ import {Icon} from '../icon/Icon';
 import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 import {getNationwideBetaEnabled} from '../../../pages/nationwide/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
+import {ColorModeSwitcher} from './ColorModeSwitcher';
 import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
 import classes from './SideNav.module.css';
 
@@ -242,8 +243,11 @@ export const SideNav: React.FC<SideNavProps> = ({
                     pt={24}
                     pb={20}
                     ta="center"
-                    style={{backgroundColor: shell.appBar, color: shell.textPrimary}}
+                    style={{position: 'relative', backgroundColor: shell.appBar, color: shell.textPrimary}}
                 >
+                    <Box style={{position: 'absolute', top: 12, insetInlineEnd: 12}}>
+                        <ColorModeSwitcher />
+                    </Box>
                     <Avatar
                         data-testid="sidenav-avatar"
                         size={56}

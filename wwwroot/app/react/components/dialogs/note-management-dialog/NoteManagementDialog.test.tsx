@@ -75,12 +75,12 @@ async function CreateNewNoteTypeTest(props: any) {
         expect(props.onLoadNoteTypes).toHaveBeenCalled();
     });
 
-    // Open the "Create New Note Type" sub-form
+    // Open the "Create new note type" sub-form
     await act(async () => {
         await userEvent.click(screen.getByRole('button', {name: 'Add note type'}));
     });
 
-    expect(await screen.findByText('Create New Note Type')).toBeInTheDocument();
+    expect(await screen.findByText('Create new note type')).toBeInTheDocument();
 }
 
 describe('NoteManagementDialog', () => {
@@ -92,11 +92,11 @@ describe('NoteManagementDialog', () => {
         });
 
         expect(await screen.findByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Add Note')).toBeInTheDocument();
+        expect(screen.getByText('Add note')).toBeInTheDocument();
         expect(props.onLoadNoteTypes).toHaveBeenCalled();
 
         // No metadata section for new notes
-        expect(screen.queryByText('Note Information')).not.toBeInTheDocument();
+        expect(screen.queryByText('Note information')).not.toBeInTheDocument();
 
         // Character count
         expect(screen.getByText('0/1000 characters')).toBeInTheDocument();
@@ -122,10 +122,10 @@ describe('NoteManagementDialog', () => {
             renderWithTheme(<NoteManagementDialog {...props} />);
         });
 
-        expect(await screen.findByText('Edit Note')).toBeInTheDocument();
+        expect(await screen.findByText('Edit note')).toBeInTheDocument();
         expect(screen.getByDisplayValue('This is an existing note')).toBeInTheDocument();
 
-        expect(await screen.findByText('Note Information')).toBeInTheDocument();
+        expect(await screen.findByText('Note information')).toBeInTheDocument();
         expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
 
@@ -141,9 +141,9 @@ describe('NoteManagementDialog', () => {
         });
 
         // Toggle description
-        expect(await screen.findByText('View Description')).toBeInTheDocument();
+        expect(await screen.findByText('View description')).toBeInTheDocument();
         await act(async () => {
-            await userEvent.click(screen.getByText('View Description'));
+            await userEvent.click(screen.getByText('View description'));
         });
         expect(await screen.findByText('General notes')).toBeInTheDocument();
 
@@ -190,7 +190,7 @@ describe('NoteManagementDialog', () => {
 
         // Submit the new type
         await act(async () => {
-            await userEvent.click(screen.getByRole('button', {name: 'Create Note Type'}));
+            await userEvent.click(screen.getByRole('button', {name: 'Create note type'}));
         });
 
         await waitFor(() => {
@@ -201,7 +201,7 @@ describe('NoteManagementDialog', () => {
     });
 
     // ── Tall content must not strand the footer (the shell's scroll container) ─
-    it('keeps Save Note reachable once the note-type creator expands the dialog', async () => {
+    it('keeps Save note reachable once the note-type creator expands the dialog', async () => {
         const props = createMockProps();
 
         await CreateNewNoteTypeTest(props);
@@ -210,7 +210,7 @@ describe('NoteManagementDialog', () => {
         // the body scrolls and the footer sits outside it, always on screen.
         const scrollRegion = screen.getByRole('dialog').querySelector<HTMLElement>('[data-dialog-scroll]')!;
         expect(scrollRegion.style.overflowY).toBe('auto');
-        expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Save Note'}));
+        expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Save note'}));
     });
 
     // ── Note content: type text, toggle important, save enabled (single render) ─
@@ -224,10 +224,10 @@ describe('NoteManagementDialog', () => {
             expect(props.onLoadNoteTypes).toHaveBeenCalled();
         });
 
-        expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
+        expect(await screen.findByPlaceholderText('Enter your note content…')).toBeInTheDocument();
 
         // Type text
-        const textarea = screen.getByPlaceholderText('Enter your note content here...');
+        const textarea = screen.getByPlaceholderText('Enter your note content…');
         fireEvent.change(textarea, {target: {value: 'My test note'}});
         expect(screen.getByDisplayValue('My test note')).toBeInTheDocument();
 
@@ -261,8 +261,8 @@ describe('NoteManagementDialog', () => {
         expect(props.onClose).toHaveBeenCalled();
 
         // Fill text and save
-        expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
-        const textarea = screen.getByPlaceholderText('Enter your note content here...');
+        expect(await screen.findByPlaceholderText('Enter your note content…')).toBeInTheDocument();
+        const textarea = screen.getByPlaceholderText('Enter your note content…');
         fireEvent.change(textarea, {target: {value: 'New note content'}});
 
         const saveButton = screen.getByRole('button', {name: /save note/i});
@@ -272,7 +272,7 @@ describe('NoteManagementDialog', () => {
 
         await waitFor(() => {
             expect(props.onCreateNote).toHaveBeenCalled();
-            expect(props.showToast).toHaveBeenCalledWith('Note created successfully', 'success');
+            expect(props.showToast).toHaveBeenCalledWith('Note created', 'success');
         });
     });
 
@@ -327,7 +327,7 @@ describe('NoteManagementDialog', () => {
         });
 
         await waitFor(() => {
-            expect(props.showToast).toHaveBeenCalledWith('Failed to save note', 'error');
+            expect(props.showToast).toHaveBeenCalledWith("Couldn't save note. Try again.", 'error');
         });
     });
 });

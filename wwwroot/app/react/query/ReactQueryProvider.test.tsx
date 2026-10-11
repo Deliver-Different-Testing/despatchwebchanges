@@ -1,7 +1,3 @@
-/**
- * ReactQueryProvider Component Tests
- */
-
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {useQuery} from '@tanstack/react-query';
@@ -14,7 +10,7 @@ const TestComponent: React.FC<{queryKey: string[]}> = ({queryKey}) => {
         queryFn: async () => 'test data',
     });
 
-    if (isLoading) return <div>Loading...</div>;
+    if (isLoading) return <div>Loading…</div>;
     if (isError) return <div>Error</div>;
     return <div>Data: {data}</div>;
 };
@@ -65,7 +61,7 @@ describe('ReactQueryProvider', () => {
             );
 
             // Should show loading initially, then data
-            expect(screen.getByText('Loading...')).toBeInTheDocument();
+            expect(screen.getByText('Loading…')).toBeInTheDocument();
 
             // Wait for data to load
             expect(await screen.findByText(/Data: test data/)).toBeInTheDocument();
@@ -84,7 +80,7 @@ describe('ReactQueryProvider', () => {
                     queryFn,
                 });
 
-                if (isLoading) return <div>Loading...</div>;
+                if (isLoading) return <div>Loading…</div>;
                 return <div>Data: {data}</div>;
             };
 
@@ -114,7 +110,7 @@ describe('ReactQueryProvider', () => {
                     queryFn: async () => 'config data',
                 });
 
-                if (isLoading) return <div>Loading...</div>;
+                if (isLoading) return <div>Loading…</div>;
                 return (
                     <div>
                         <span>Data: {data}</span>

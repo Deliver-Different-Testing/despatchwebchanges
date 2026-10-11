@@ -3,11 +3,11 @@ import type {ImportLayoutsResult} from "../../components/common/box-shell/layout
 export interface JobSearchLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
     reloadFromStorage: () => void;
-    /** Opens the MUI "Save Layout" dialog and resolves with the entered name (or null if cancelled). */
+    /** Opens the MUI "Save layout" dialog and resolves with the entered name (or null if cancelled). */
     promptSaveLayout: () => Promise<string | null>;
-    /** Opens the MUI "Delete Layout" confirmation and resolves true if confirmed. */
+    /** Opens the MUI "Delete layout" confirmation and resolves true if confirmed. */
     promptDeleteLayout: (layoutName: string) => Promise<boolean>;
-    /** Opens the MUI "Rename Layout" dialog and resolves with the new name (or null if cancelled). */
+    /** Opens the MUI "Rename layout" dialog and resolves with the new name (or null if cancelled). */
     promptRenameLayout: (layoutName: string) => Promise<string | null>;
     /** Set layout edit mode (driven by the toolbar's Layouts → Edit layout toggle). */
     resetCurrentLayout: () => void;

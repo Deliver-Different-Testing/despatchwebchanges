@@ -1,9 +1,3 @@
-/**
- * Job List Footer
- *
- * Shows the count of displayed jobs and last updated timestamp.
- */
-
 import React from 'react';
 import {Group, Text} from '@mantine/core';
 
@@ -34,7 +28,7 @@ export const JobListFooter: React.FC<JobListFooterProps> = ({
 
     let displayText: string;
     if (isLoadingMore) {
-        displayText = 'Loading more jobs...';
+        displayText = 'Loading more jobs…';
     } else if (totalCount > 0 && !allJobsLoaded) {
         displayText = `Showing ${displayedCount} of ${totalCount} jobs`;
     } else {
@@ -46,7 +40,7 @@ export const JobListFooter: React.FC<JobListFooterProps> = ({
             <Text size="xs" c="dimmed" fw={500}>
                 {displayText}
             </Text>
-            <Text size="xs" c="var(--mantine-color-gray-5)">
+            <Text size="xs" c="light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2))">
                 {lastUpdated}
             </Text>
         </Group>

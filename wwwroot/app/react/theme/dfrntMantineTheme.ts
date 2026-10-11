@@ -24,6 +24,7 @@
  * (light) / charcoal #2c2a30 (dark). Elevation by tone, plus a soft shadow.
  */
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
+import {GlassDropdownRoot, glassClassNames} from '@dfrnt/glass';
 import {getMd3Scheme} from './md3';
 import {isUsTenant} from './tenant';
 
@@ -189,7 +190,10 @@ export const codeBlockPalette = {
  * into rounded squares, which was never part of the "less rounded" complaint.
  */
 export const tokens = {
-    radius: {xs: 2, sm: 8, md: 10, lg: 14, xl: 28, full: 9999, tile: 2},
+    // `card` (16px) is deliberately larger than `md`/`lg` — Apple-HIG-style
+    // content containers (Card/Paper) read as roomier than the controls
+    // sitting inside them (`sm`, 8px).
+    radius: {xs: 2, sm: 8, md: 10, lg: 14, xl: 28, full: 9999, tile: 2, card: 16},
     duration: {instant: 100, fast: 150, normal: 200, slow: 350},
     shadow: {
         sm: '0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1)',
@@ -249,13 +253,16 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             // NOT a `bg` defaultProp, so a component's own inline `style={{background}}`
             // still wins.
             Card: {
-                defaultProps: {radius: 'md', shadow: 'sm'},
+                defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
                 styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
             },
             Paper: {
-                defaultProps: {radius: 'md', shadow: 'sm'},
+                defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
                 styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
             },
+            // Not given the `card` radius or glass `overlayProps` defaults: every dialog
+            // goes through DialogShell, which composes `Modal.Root`/`Overlay`/`Content`
+            // directly and applies the glass overlay itself.
             Modal: {
                 defaultProps: {radius: 'md', centered: true, shadow: 'md'},
                 styles: {content: {backgroundColor: 'var(--dd-surface-container-high)'}},
@@ -266,8 +273,15 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             Autocomplete: {defaultProps: {radius: 'sm'}},
             Menu: {
                 defaultProps: {radius: 'sm', shadow: 'md'},
-                styles: {dropdown: {backgroundColor: 'var(--dd-surface-container-high)'}},
+                classNames: {dropdown: `${glassClassNames.glass} ${glassClassNames.panel}`},
             },
+            Popover: {
+                defaultProps: {radius: 'sm', shadow: 'md'},
+                classNames: {dropdown: `${glassClassNames.glass} ${glassClassNames.panel}`},
+            },
+            // Menu renders through Popover, so this reaches both; Select/Autocomplete
+            // dropdowns lack the glass class and render unchanged.
+            PopoverDropdown: {defaultProps: {component: GlassDropdownRoot}},
             Tooltip: {defaultProps: {radius: 'sm', color: 'ink'}},
             Badge: {defaultProps: {radius: 'sm'}},
             Chip: {defaultProps: {radius: 'sm'}},
@@ -316,12 +330,40 @@ export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
             '--dd-surface': light.surface,
             '--dd-surface-container': light.surfaceContainerLowest, // #ffffff cards
             '--dd-surface-container-high': light.surfaceContainerLowest, // #ffffff menus/dialogs
+            '--dd-outline-variant': light.outlineVariant, // #e7e5e4 keyline divider / hairline border
+            '--dd-dialog-section': 'var(--mantine-color-white)',
+            '--dd-dialog-bar': 'var(--mantine-color-gray-1)',
+            '--dd-dialog-body': 'var(--mantine-color-gray-2)',
         },
         dark: {
             '--mantine-color-body': dk.surface, // #2c2a30 page
             '--dd-surface': dk.surface,
             '--dd-surface-container': dk.surfaceContainer, // #37353c cards
             '--dd-surface-container-high': dk.surfaceContainerHigh, // #413f47 menus/dialogs
+            '--dd-outline-variant': dk.outlineVariant, // #56535c keyline divider / hairline border
+            // Dialog planes by elevation: sections sit on the bars, which sit on the body.
+            '--dd-dialog-section': dk.surfaceContainerHigh,
+            '--dd-dialog-bar': dk.surfaceContainer,
+            '--dd-dialog-body': dk.surfaceContainerLow,
+            // Mantine's gray-0..4 are fixed palette values that never flip, and the app uses
+            // them as quiet fills (zebra rows, headers, hovers) and hairline borders. Remap
+            // them onto the dark ladder so those follow the scheme. `white` is left alone:
+            // it is used as text on filled badges and buttons.
+            '--mantine-color-gray-0': dk.surfaceContainerLow,
+            '--mantine-color-gray-1': dk.surfaceContainerHigh,
+            '--mantine-color-gray-2': dk.surfaceContainerHighest,
+            '--mantine-color-gray-3': dk.outlineVariant,
+            '--mantine-color-gray-4': dk.outline,
+            // Mantine derives `color="gray"` roles from gray-0/-8 in dark mode, which the remap
+            // above turned into near-page surface tones (glyphs vanished). Set the roles directly.
+            '--mantine-color-gray-light-color': dk.onSurfaceVariant,
+            '--mantine-color-gray-text': dk.onSurfaceVariant,
+            '--mantine-color-gray-outline': dk.onSurfaceVariant,
+            '--mantine-color-gray-outline-hover': `color-mix(in srgb, ${dk.onSurfaceVariant} 10%, transparent)`,
+            '--mantine-color-gray-light': `color-mix(in srgb, ${dk.onSurfaceVariant} 12%, transparent)`,
+            '--mantine-color-gray-light-hover': `color-mix(in srgb, ${dk.onSurfaceVariant} 20%, transparent)`,
+            '--mantine-color-gray-filled': dk.surfaceContainerHighest,
+            '--mantine-color-gray-filled-hover': dk.surfaceBright,
         },
     };
 };

@@ -21,12 +21,14 @@ import {
 } from '../shared/mantine';
 import {SectionHeading, SettingRadioGroup, SettingRow} from '../../common/settings-controls/SettingsControls';
 import type {CourierDisplayMode} from '../../../interfaces';
+import {useColorMode} from '../../../hooks/useColorMode';
+import {ConfirmDialog} from '../confirm-dialog/ConfirmDialog';
 
 const COURIER_DISPLAY_MODE_OPTIONS: {value: CourierDisplayMode; label: string}[] = [
     {value: 'off', label: 'Off'},
-    {value: 'name', label: 'Show Courier Name'},
-    {value: 'number', label: 'Show Courier Number'},
-    {value: 'both', label: 'Show Name and Number'},
+    {value: 'name', label: 'Show courier name'},
+    {value: 'number', label: 'Show courier number'},
+    {value: 'both', label: 'Show name and number'},
 ];
 
 // Types that mirror the AngularJS interfaces
@@ -143,7 +145,22 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
         initialCourierDisplayMode ?? 'off',
     );
 
+    const {mode, setPreference: setColorPreference} = useColorMode();
+    const [confirmingV1, setConfirmingV1] = useState(false);
+
+    const switchingToV1 = Boolean(config.showNationwideBetaToggle)
+        && (initialNationwideBetaEnabled ?? true)
+        && !nationwideBetaEnabled;
+
     const handleSave = () => {
+        if (switchingToV1 && mode === 'dark') {
+            setConfirmingV1(true);
+            return;
+        }
+        emitSave();
+    };
+
+    const emitSave = () => {
         onSave({
             selectedRefreshInterval: refreshInterval,
             selectedDriverLocationRefreshInterval: driverLocationInterval,
@@ -201,10 +218,10 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                 <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Nationwide version"/>
                 <SettingRow
                     title="Try the new Nationwide"
-                    description="A rebuilt Nationwide page — faster loads, modern dialogs, and saved
-                        layouts that follow your account across browsers and computers. It is still
-                        being proven, so the classic page stays the default: turn this on to try it,
-                        and off again at any time if you hit a problem. Applies to your account only."
+                    description="The rebuilt Nationwide page (v2) — faster loads, modern dialogs, saved
+                        layouts that follow your account across browsers and computers, and dark mode.
+                        Turn it off to use the classic page (v1), which doesn't support dark mode.
+                        Applies to your account only."
                     checked={nationwideBetaEnabled}
                     onToggle={() => setNationwideBetaEnabled((prev) => !prev)}
                 />
@@ -246,7 +263,20 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             <DialogFooter
                 onCancel={onClose}
                 onConfirm={handleSave}
-                confirmLabel="Save"
+                confirmLabel="Save changes"
+            />
+            <ConfirmDialog
+                opened={confirmingV1}
+                title="Switch to classic Nationwide?"
+                message="The classic Nationwide (v1) doesn't support dark mode. Switching to it will disable dark mode and set your theme to Light. Switch back to Nationwide v2 at any time to use dark mode again."
+                confirmLabel="Switch to classic"
+                variant="warning"
+                onClose={() => setConfirmingV1(false)}
+                onConfirm={() => {
+                    setConfirmingV1(false);
+                    setColorPreference('light');
+                    emitSave();
+                }}
             />
         </DialogShell>
     );

@@ -52,7 +52,7 @@ export const OpenJobConfirmDialog: React.FC<OpenJobConfirmDialogProps> = ({
             <DialogFooter
                 onCancel={onCancel}
                 onConfirm={onConfirm}
-                confirmLabel="Open Job"
+                confirmLabel="Open job"
                 confirmIcon={<Icon lucide={ExternalLink}/>}
             />
         </DialogShell>

@@ -45,6 +45,18 @@
 
     <link rel="preload" as="image" href="/images/dfrnt_logo.png" fetchpriority="high">
 
+    <script>
+        // Resolve the saved colour mode before first paint so the loader doesn't flash
+        // light. A separate attribute from Mantine's: Angular-only pages never mount a
+        // React island, so they must stay light once the loader clears. Mirrors hooks/useColorMode.tsx (key, 'system' default).
+        (function () {
+            try {
+                var pref = localStorage.getItem('dd-color-mode');
+                var dark = pref === 'dark' || (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (dark) document.documentElement.setAttribute('data-dd-boot-scheme', 'dark');
+            } catch (e) { /* storage or matchMedia unavailable — stay light */ }
+        })();
+    </script>
     <style>
         /* DFRNT brand hex is inlined rather than tokenised here: this block paints
            before any bundle stylesheet and before app.ts defines the theme vars. */
@@ -57,6 +69,21 @@
 
         html, body {
             background-color: #f4f2f1;
+        }
+
+        /* Dark start: the canvas must be dark too, or the page paints light before the
+           loader exists. !important because udispatch.less pins html/body to the light
+           background with !important once app.css loads, which is the white flash.
+           The attribute is dropped with the loader unless a React island took over
+           (see hideLoader), so Angular-only pages still end up light.
+           Values are the DFRNT dark surface ladder. */
+        html[data-dd-boot-scheme='dark'],
+        html[data-dd-boot-scheme='dark'] body {
+            background-color: #2c2a30 !important;
+        }
+
+        html[data-dd-boot-scheme='dark'] .app-loader {
+            background-color: #2c2a30;
         }
 
         .app-loader {
@@ -89,6 +116,15 @@
             height: 88px;
             object-fit: contain;
             margin-bottom: 8px;
+        }
+
+        .loader-logo-dark,
+        html[data-dd-boot-scheme='dark'] .loader-logo-light {
+            display: none;
+        }
+
+        html[data-dd-boot-scheme='dark'] .loader-logo-dark {
+            display: block;
         }
 
         .loading-text {
@@ -185,7 +221,8 @@
 <!-- Full Screen Loader -->
 <div class="app-loader" id="appLoader" role="status" aria-live="polite">
     <div class="loader-content">
-        <img class="loader-logo" src="/images/dfrnt_logo.png" width="260" height="88" alt="DFRNT">
+        <img class="loader-logo loader-logo-light" src="/images/dfrnt_logo.png" width="260" height="88" alt="DFRNT">
+        <img class="loader-logo loader-logo-dark" src="/images/dfrnt_logo_reversed.png" width="260" height="88" alt="DFRNT">
         <div class="linear-progress" role="progressbar" aria-label="Loading Dispatch">
             <div class="linear-progress-bar"></div>
         </div>
@@ -246,6 +283,10 @@
                 setTimeout(function () {
                     if (loaderElement.parentNode) {
                         loaderElement.parentNode.removeChild(loaderElement);
+                    }
+                    var root = document.documentElement;
+                    if (!root.hasAttribute('data-mantine-color-scheme')) {
+                        root.removeAttribute('data-dd-boot-scheme');
                     }
                 }, 400);
             }

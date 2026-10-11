@@ -14,7 +14,7 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
         return (
             <Group gap="xs" mt="md" wrap="nowrap">
                 <Loader size={16} role="progressbar" aria-label="Loading edit history"/>
-                <Text size="sm" c="dimmed">Loading edit history...</Text>
+                <Text size="sm" c="dimmed">Loading edit history…</Text>
             </Group>
         );
     }

@@ -73,6 +73,7 @@ export const driverLocationColors = {
         border: '#efcea9',
     },
     area: accentPalette[300],
+    text: shellColors.appBar,
     destination: {
         bg: sharedColors.surface.default,
         border: sharedColors.divider,

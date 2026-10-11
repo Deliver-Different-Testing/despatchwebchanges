@@ -1,10 +1,3 @@
-/**
- * Note Management Dialog React Module
- *
- * Entry point for the React-based Note Management Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- */
-
 import React from 'react';
 import {NoteManagementDialog} from './NoteManagementDialog';
 import {islandTree} from '../../../theme/DfrntMantineProvider';

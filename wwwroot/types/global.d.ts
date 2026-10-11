@@ -365,7 +365,8 @@ declare global {
                     updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
                     deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
                     getSuggestedFuelCharge: (jobId: number, chargeAmount: number, isPrebook: boolean, isArchived: boolean) => Promise<{ fuelChargeAmount: number; fuelCostAmount: number }>;
-                }
+                },
+                options?: {partnerView?: boolean}
             ) => Promise<number | null>;
             setToastService: (service: ToastService) => void;
         };

@@ -51,7 +51,7 @@ describe('useChangeCourierFlow', () => {
 
         await userEvent.click(screen.getByRole('button', {name: 'trigger'}));
 
-        expect(await screen.findByText('Change Paid Courier')).toBeInTheDocument();
+        expect(await screen.findByText('Change paid courier')).toBeInTheDocument();
         expect(screen.getByDisplayValue('Olive Old')).toBeInTheDocument();
         expect(mockedEligibility).toHaveBeenCalledWith(42);
     });
@@ -64,7 +64,7 @@ describe('useChangeCourierFlow', () => {
 
         expect(await screen.findByText(/already been invoiced and the courier can no longer be changed/i))
             .toBeInTheDocument();
-        expect(screen.queryByText('Change Paid Courier')).not.toBeInTheDocument();
+        expect(screen.queryByText('Change paid courier')).not.toBeInTheDocument();
         // Acknowledge-only: OK dismisses
         await userEvent.click(screen.getByRole('button', {name: /ok/i}));
         await waitFor(() => {
@@ -102,12 +102,12 @@ describe('useChangeCourierFlow', () => {
 
         renderWithMantine(<Harness/>);
         await userEvent.click(screen.getByRole('button', {name: 'trigger'}));
-        await screen.findByText('Change Paid Courier');
+        await screen.findByText('Change paid courier');
 
         const search = screen.getByPlaceholderText(/Search courier/);
         await userEvent.type(search, 'Nina');
         await userEvent.click(await screen.findByRole('option', {name: /Nina New/}));
-        await userEvent.click(screen.getByRole('button', {name: /^save$/i}));
+        await userEvent.click(screen.getByRole('button', {name: /^save changes$/i}));
         await userEvent.click(await screen.findByRole('button', {name: /confirm change/i}));
 
         await waitFor(() => {

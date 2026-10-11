@@ -1,4 +1,4 @@
-import {createMapTooltipElement, removeStaleMarkers, safeRemoveObject, safeRemoveObjects} from './hereMapUtils';
+import {applyMapTheme, createMapTooltipElement, removeStaleMarkers, safeRemoveObject, safeRemoveObjects} from './hereMapUtils';
 
 describe('safeRemoveObject', () => {
     it('does nothing when target is null', () => {
@@ -155,5 +155,28 @@ describe('removeStaleMarkers', () => {
 
         expect(group.removeObjects).not.toHaveBeenCalled();
         expect(markers.size).toBe(1);
+    });
+});
+
+
+describe('map theming', () => {
+    it('builds tooltip chrome from map theme variables, with white as the fallback', () => {
+        const el = document.createElement('div');
+        const tooltip = createMapTooltipElement({getElement: () => el});
+
+        expect(tooltip.innerHTML).toContain('var(--map-surface, white)');
+        expect(tooltip.innerHTML).toContain('var(--map-on-surface');
+    });
+
+    it('applyMapTheme sets distinct dark and light surfaces and tolerates a missing element', () => {
+        const el = document.createElement('div');
+        applyMapTheme(el, 'light');
+        const light = el.style.getPropertyValue('--map-surface');
+        applyMapTheme(el, 'dark');
+
+        expect(el.dataset.mapTheme).toBe('dark');
+        expect(el.style.getPropertyValue('--map-surface')).not.toBe(light);
+        expect(el.style.getPropertyValue('--map-outline')).not.toBe('transparent');
+        expect(() => applyMapTheme(null, 'dark')).not.toThrow();
     });
 });

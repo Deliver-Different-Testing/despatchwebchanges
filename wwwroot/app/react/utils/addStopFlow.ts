@@ -26,15 +26,15 @@ export async function executeAddStopFlow(
     const isDelivery = suffix === JobSuffix.Delivery;
 
     if (!isPickup && !isDelivery) {
-        showToast('Cannot add stop to this job', 'warning');
+        showToast("Stops can't be added to this job.", 'warning');
         return undefined;
     }
 
-    const title = isPickup ? 'Add Pick Up Stop' : 'Add Delivery Stop';
+    const title = isPickup ? 'Add pick up stop' : 'Add delivery stop';
     const address = await openEditAddressDialog(
         null,
         title,
-        'Add Stop',
+        'Add stop',
         true,
         isUsCustomer,
         {showToast},
@@ -48,7 +48,7 @@ export async function executeAddStopFlow(
             : await addStopToJob(job.id, undefined, address);
     } catch (err) {
         console.error('[addStopFlow] failed to add stop:', err);
-        showToast('Failed to add stop to job', 'error');
+        showToast("Couldn't add the stop. Check your connection and try again.", 'error');
         return undefined;
     }
 }

@@ -8,7 +8,7 @@ describe('SplitJobProgressDialog', () => {
         renderWithMantine(<SplitJobProgressDialog open jobNo="JOB-001"/>);
 
         expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: 'Splitting Job'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Splitting job'})).toBeInTheDocument();
         expect(screen.getByText('Job JOB-001')).toBeInTheDocument();
         expect(screen.getByText(/Splitting job JOB-001/)).toBeInTheDocument();
         expect(screen.getByRole('progressbar')).toBeInTheDocument();

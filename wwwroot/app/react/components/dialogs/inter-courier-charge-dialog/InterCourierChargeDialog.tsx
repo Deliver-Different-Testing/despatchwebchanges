@@ -1,14 +1,3 @@
-/**
- * Inter-Courier Charge Dialog (React)
- *
- * An inter-courier charge is a double entry: the backend writes one phantom job
- * against the from-courier for a negative amount and one against the to-courier
- * for the positive (see `JobRepository.BuildIccJobPair`). The dialog showed six
- * flat fields and none of that, so a from/to mix-up was invisible until two
- * uncorrectable jobs existed. The ledger strip below the form now shows exactly
- * what will be recorded, before it is.
- */
-
 import React, {useState, useCallback, useEffect, useId, useMemo} from 'react';
 import {Anchor, Badge, Box, Divider, Group, Paper, Stack, Text, TextInput, NumberInput} from '@mantine/core';
 import {Banknote, Plus} from 'lucide-react';
@@ -208,10 +197,10 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
     const ledgerLabelId = useId();
 
     return (
-        <DialogShell opened={open} onClose={handleClose} label="Inter-Courier Charge">
+        <DialogShell opened={open} onClose={handleClose} label="Inter-courier charge">
             <DialogHeader
                 icon={<Icon lucide={Banknote} />}
-                title="Inter-Courier Charge"
+                title="Inter-courier charge"
                 subtitle="Charge one courier and credit another"
                 onClose={handleClose}
                 closeDisabled={isSubmitting}
@@ -223,8 +212,8 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                         <Paper {...sectionPaperProps}>
                             <Stack gap="md">
                                 <SearchSelect<Suggestion>
-                                    label="From Courier"
-                                    placeholder="Search Courier..."
+                                    label="From courier"
+                                    placeholder="Search couriers…"
                                     value={fromCourier}
                                     onChange={setFromCourier}
                                     search={searchActiveCouriers}
@@ -235,8 +224,8 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                                     autoFocus
                                 />
                                 <SearchSelect<Suggestion>
-                                    label="To Courier"
-                                    placeholder="Search Courier..."
+                                    label="To courier"
+                                    placeholder="Search couriers…"
                                     value={toCourier}
                                     onChange={setToCourier}
                                     search={searchActiveCouriers}
@@ -255,7 +244,7 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                             <Stack gap="md">
                                 <SearchSelect<Suggestion>
                                     label="Client"
-                                    placeholder="Search Client..."
+                                    placeholder="Search clients…"
                                     value={client}
                                     onChange={setClient}
                                     search={searchActiveClients}
@@ -320,7 +309,7 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                         <Paper
                             withBorder
                             radius="md"
-                            bg="var(--mantine-color-white)"
+                            bg="var(--dd-dialog-section)"
                             role="group"
                             aria-labelledby={ledgerLabelId}
                         >
@@ -346,7 +335,7 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
             <DialogFooter
                 onCancel={handleClose}
                 onConfirm={handleSubmit}
-                confirmLabel="Add Charge"
+                confirmLabel="Add charge"
                 confirmIcon={<Icon lucide={Plus} size={16} />}
                 submitting={isSubmitting}
             />

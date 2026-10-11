@@ -105,7 +105,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
         if (!VALID_EXTENSIONS.includes(extension)) {
-            setErrorMessage('Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.');
+            setErrorMessage('Upload an Excel (.xls, .xlsx) or CSV file');
             return;
         }
 
@@ -161,11 +161,11 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
     const applyButtonText = useMemo((): string => {
         switch (selectedMode) {
             case 'recalculate':
-                return 'Recalculate & Save';
+                return 'Recalculate & save';
             case 'base':
-                return 'Apply Base Amounts';
+                return 'Apply base amounts';
             case 'gross':
-                return 'Apply Final Amounts';
+                return 'Apply final amounts';
             default:
                 return 'Apply';
         }
@@ -177,7 +177,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
 
         setCurrentState('loading');
         setIsLoading(true);
-        setLoadingMessage('Applying price changes...');
+        setLoadingMessage('Applying price changes…');
         setErrorMessage('');
 
         try {
@@ -202,7 +202,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
 
             if (updatedCount === 0 && skippedCount > 0) {
                 showToast(
-                    `No prices were updated. ${skippedCount} ${skippedCount === 1 ? 'job' : 'jobs'} could not be updated.`,
+                    `No prices were updated. ${skippedCount} ${skippedCount === 1 ? 'job' : 'jobs'} couldn't be updated.`,
                     'error',
                 );
             } else if (skippedCount > 0) {
@@ -211,11 +211,11 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     'warning',
                 );
             } else {
-                showToast(`Successfully updated prices for ${updatedCount} jobs.`, 'success');
+                showToast(`Updated prices for ${updatedCount} jobs`, 'success');
             }
         } catch (error: unknown) {
             console.error('Error applying prices:', error);
-            const msg = error instanceof Error ? error.message : 'Failed to apply prices. Please try again.';
+            const msg = error instanceof Error ? `Couldn't apply prices. ${error.message}` : "Couldn't apply prices. Try again.";
             setErrorMessage(msg);
             setCurrentState('mode-select');
             setIsLoading(false);
@@ -285,10 +285,10 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             p={12}
             mb={16}
             wrap="nowrap"
-            c="var(--mantine-color-red-8)"
+            c="var(--mantine-color-red-light-color)"
             style={{
                 borderRadius: 'var(--mantine-radius-md)',
-                background: 'var(--mantine-color-red-0)',
+                background: 'var(--mantine-color-red-light)',
             }}
         >
             <Icon lucide={CircleAlert} size={20}/>
@@ -341,7 +341,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
 
                 {/* File format info */}
                 <Paper radius="md" p={16} bg="var(--mantine-color-gray-0)">
-                    <Text fz="sm" fw={600} mb={8}>Expected File Format</Text>
+                    <Text fz="sm" fw={600} mb={8}>Expected file format</Text>
                     <Text fz="sm" c="dimmed" mb={8}>
                         Your spreadsheet should contain a column named <strong>Id</strong> with job IDs, and optionally:
                     </Text>
@@ -375,7 +375,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         const modes: { value: PricingMode; title: string; desc: string; icon: React.ReactNode }[] = [
             {
                 value: 'recalculate',
-                title: 'Auto-Calculate Prices',
+                title: 'Auto-calculate prices',
                 desc: 'Recalculate from job details & current rates',
                 icon: <Icon lucide={RefreshCw} size={22}/>,
             },
@@ -496,7 +496,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         return (
             <Stack align="center" justify="center" py={60} px={24} gap={16}>
                 <Loader size={48} aria-label={loadingMessage || 'Processing'}/>
-                <Text fz="md" fw={500} c="dimmed">{loadingMessage || 'Processing...'}</Text>
+                <Text fz="md" fw={500} c="dimmed">{loadingMessage || 'Processing…'}</Text>
             </Stack>
         );
     };
@@ -505,7 +505,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         const noneUpdated = totalJobs === 0 && skippedJobs > 0;
         const partial = totalJobs > 0 && skippedJobs > 0;
         const headerColor = noneUpdated ? 'red' : partial ? 'yellow' : 'green';
-        const headerTitle = noneUpdated ? 'No Prices Updated' : partial ? 'Partially Updated' : 'Prices Updated';
+        const headerTitle = noneUpdated ? 'No prices updated' : partial ? 'Partially updated' : 'Prices updated';
         const headerGlyph = noneUpdated ? CircleAlert : partial ? TriangleAlert : CircleCheck;
 
         /** One figure of the summary strip. */
@@ -543,13 +543,13 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         background: 'var(--mantine-color-gray-0)',
                     }}
                 >
-                    <Stat value={totalJobs} label="Jobs Updated"/>
+                    <Stat value={totalJobs} label="Jobs updated"/>
                     {skippedJobs > 0 && <Stat value={skippedJobs} label="Skipped" color="yellow.7"/>}
-                    <Stat value={formatCurrency(totalOldAmount)} label="Previous Total"/>
+                    <Stat value={formatCurrency(totalOldAmount)} label="Previous total"/>
                     <Box c="dimmed" style={{flexShrink: 0}}>
                         <Icon lucide={ArrowRight} size={20}/>
                     </Box>
-                    <Stat value={formatCurrency(totalNewAmount)} label="New Total"/>
+                    <Stat value={formatCurrency(totalNewAmount)} label="New total"/>
                     <Stat
                         value={formatChange(amountChange)}
                         label="Change"
@@ -562,7 +562,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     <TextInput
                         size="sm"
                         style={{flex: 1}}
-                        placeholder="Search by job number..."
+                        placeholder="Search by job number…"
                         aria-label="Search by job number"
                         value={searchTerm}
                         onChange={handleSearchChange}
@@ -584,7 +584,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                 <Table.Th tt="uppercase" fz="xs">Job #</Table.Th>
                                 <Table.Th tt="uppercase" fz="xs">Field</Table.Th>
                                 <Table.Th tt="uppercase" fz="xs" ta="right">Previous</Table.Th>
-                                <Table.Th tt="uppercase" fz="xs" ta="right">New Amount</Table.Th>
+                                <Table.Th tt="uppercase" fz="xs" ta="right">New amount</Table.Th>
                                 <Table.Th tt="uppercase" fz="xs" ta="right">Change</Table.Th>
                             </Table.Tr>
                         </Table.Thead>
@@ -594,12 +594,12 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                 return (
                                     <Table.Tr
                                         key={`${row.jobId}_${row.field}`}
-                                        bg={row.skipped ? 'var(--mantine-color-yellow-0)' : undefined}
+                                        bg={row.skipped ? 'var(--mantine-color-yellow-light)' : undefined}
                                     >
                                         <Table.Td fw={500}>
                                             <Group gap={4} wrap="nowrap">
                                                 {row.skipped && (
-                                                    <Box c="yellow.7" style={{display: 'flex'}}>
+                                                    <Box c="var(--mantine-color-yellow-light-color)" style={{display: 'flex'}}>
                                                         <Icon lucide={TriangleAlert} size={16}/>
                                                     </Box>
                                                 )}
@@ -608,7 +608,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                         </Table.Td>
                                         <Table.Td>
                                             {row.skipped
-                                                ? <Text fz="xs" c="yellow.8">{row.error || 'Skipped'}</Text>
+                                                ? <Text fz="xs" c="var(--mantine-color-yellow-light-color)">{row.error || 'Skipped'}</Text>
                                                 : row.field}
                                         </Table.Td>
                                         {/* Tabular figures so the columns line up down the page. */}
@@ -636,7 +636,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                         <Box c="dimmed" mb={8} style={{display: 'flex', justifyContent: 'center'}}>
                                             <Icon lucide={SearchX} size={40}/>
                                         </Box>
-                                        <Text fz="sm" c="dimmed">No jobs match your search</Text>
+                                        <Text fz="sm" c="dimmed">No jobs match your search.</Text>
                                     </Table.Td>
                                 </Table.Tr>
                             )}
@@ -652,11 +652,11 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             opened={open}
             onClose={isLoading ? () => undefined : onClose}
             size={dialogSize.sm}
-            label="Bulk Price Upload"
+            label="Bulk price upload"
         >
             <DialogHeader
                 icon={<Icon lucide={FileUp}/>}
-                title="Bulk Price Upload"
+                title="Bulk price upload"
                 subtitle="Upload prices from a spreadsheet"
                 onClose={onClose}
                 closeDisabled={isLoading}

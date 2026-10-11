@@ -187,7 +187,7 @@ describe('useJobUpdate', () => {
                 } catch { /* expected */ }
             });
 
-            expect(mockShowToast).toHaveBeenCalledWith('Failed to update job. Please try again.', 'error');
+            expect(mockShowToast).toHaveBeenCalledWith("Couldn't update the job. Check your connection and try again.", 'error');
         });
 
         describe('partner-job gate (onPartnerJobBlocked)', () => {
@@ -367,7 +367,7 @@ describe('useJobUpdate', () => {
                 } catch { /* expected */ }
             });
 
-            expect(mockShowToast).toHaveBeenCalledWith('Failed to update address. Please try again.', 'error');
+            expect(mockShowToast).toHaveBeenCalledWith("Couldn't update the address. Check your connection and try again.", 'error');
         });
     });
 
@@ -395,7 +395,7 @@ describe('useJobUpdate', () => {
                 } catch { /* expected */ }
             });
 
-            expect(mockShowToast).toHaveBeenCalledWith('Failed to mark job as read. Please try again.', 'error');
+            expect(mockShowToast).toHaveBeenCalledWith("Couldn't mark the job as read. Check your connection and try again.", 'error');
         });
 
         it('shows error toast with correct action text for marking as unread', async () => {
@@ -408,7 +408,7 @@ describe('useJobUpdate', () => {
                 } catch { /* expected */ }
             });
 
-            expect(mockShowToast).toHaveBeenCalledWith('Failed to mark job as unread. Please try again.', 'error');
+            expect(mockShowToast).toHaveBeenCalledWith("Couldn't mark the job as unread. Check your connection and try again.", 'error');
         });
     });
 
@@ -478,7 +478,7 @@ describe('useJobUpdate', () => {
                 await result.current.dispatchJob({job, courierId: 5});
             });
 
-            expect(mockShowToast).toHaveBeenCalledWith('Job dispatched successfully', 'success');
+            expect(mockShowToast).toHaveBeenCalledWith('Job dispatched', 'success');
         });
 
         it('shows error toast when dispatch fails', async () => {
@@ -492,7 +492,7 @@ describe('useJobUpdate', () => {
                 } catch { /* expected */ }
             });
 
-            expect(mockShowToast).toHaveBeenCalledWith('Failed to dispatch job.', 'error');
+            expect(mockShowToast).toHaveBeenCalledWith("Couldn't dispatch the job. Check your connection and try again.", 'error');
         });
 
         it('invalidates job queries on successful dispatch', async () => {
@@ -552,7 +552,7 @@ describe('useJobUpdate', () => {
                 } catch { /* expected */ }
             });
 
-            expect(mockShowToast).toHaveBeenCalledWith('Failed to update POD details.', 'error');
+            expect(mockShowToast).toHaveBeenCalledWith("Couldn't update the POD details. Check your connection and try again.", 'error');
         });
     });
 

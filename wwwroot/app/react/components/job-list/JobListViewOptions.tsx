@@ -37,7 +37,7 @@ interface JobListViewOptionsProps {
 const DENSITY_OPTIONS: {value: DensityMode; label: string; icon: React.ComponentProps<typeof Icon>['lucide']}[] = [
     {value: 'normal', label: 'Normal', icon: Rows3},
     {value: 'dense', label: 'Dense', icon: Rows4},
-    {value: 'ultra-dense', label: 'Ultra Dense', icon: AlignJustify},
+    {value: 'ultra-dense', label: 'Ultra dense', icon: AlignJustify},
 ];
 
 // The options render as glyphs only, so each carries its name as a tooltip —

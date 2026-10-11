@@ -124,7 +124,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
         const clean = email.trim().toLowerCase();
         if (!clean) return;
         if (!isValidEmail(clean)) {
-            setFreeError('Invalid email address');
+            setFreeError('Email address must include @ and a domain');
             return;
         }
         if (recipients.includes(clean)) {
@@ -205,7 +205,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
         <DialogShell opened={open} onClose={handleClose}>
             <DialogHeader
                 icon={<Icon lucide={FileText}/>}
-                title="Send Proof of Delivery"
+                title="Send proof of delivery"
                 subtitle={<>Booking {jobData.jobNo} &middot; {jobData.clientName}</>}
                 onClose={handleClose}
             />
@@ -268,7 +268,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                 Add
                             </Button>
                         </Group>
-                        <Text fz="xs" mt={6} c={freeError ? 'red.6' : 'dimmed'}>
+                        <Text fz="xs" mt={6} c={freeError ? 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))' : 'dimmed'}>
                             {freeError || 'Press Enter or comma to add multiple'}
                         </Text>
                     </Paper>

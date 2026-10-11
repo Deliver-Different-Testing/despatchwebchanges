@@ -116,10 +116,10 @@ describe('AccessorialChargesDialog — chrome and loading', () => {
     it('renders the header, both sections and the available charges', async () => {
         renderDialog();
 
-        expect(await screen.findByText('Add Charges')).toBeInTheDocument();
-        expect(screen.getByText('Accessorial Charges')).toBeInTheDocument();
+        expect(await screen.findByText('Add charges')).toBeInTheDocument();
+        expect(screen.getByText('Accessorial charges')).toBeInTheDocument();
         expect(screen.getByText('Manage additional charges for this job')).toBeInTheDocument();
-        expect(screen.getByText('Applied Charges')).toBeInTheDocument();
+        expect(screen.getByText('Applied charges')).toBeInTheDocument();
 
         expect(screen.getByText('Tail-lift')).toBeInTheDocument();
         expect(screen.getByText('Tail lift required')).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('AccessorialChargesDialog — chrome and loading', () => {
         renderDialog();
 
         expect(await screen.findByText('No charges have been applied to this job.')).toBeInTheDocument();
-        expect(screen.getByText('No charges available for this group.')).toBeInTheDocument();
+        expect(screen.getByText('No charges in this group yet.')).toBeInTheDocument();
     });
 
     it('renders nothing when closed', () => {
@@ -144,7 +144,7 @@ describe('AccessorialChargesDialog — chrome and loading', () => {
 
     it('closes from the footer and the header', async () => {
         const {props} = renderDialog();
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
 
         // The header X and the footer button both dismiss; the shared header
         // labels its close "Close dialog", the footer button reads "Close".
@@ -156,7 +156,7 @@ describe('AccessorialChargesDialog — chrome and loading', () => {
 
     it('reloads both lists when Refresh is clicked', async () => {
         renderDialog();
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
         expect(api.getAppliedCharges).toHaveBeenCalledTimes(1);
 
         fireEvent.click(screen.getByRole('button', {name: 'Refresh'}));
@@ -254,7 +254,7 @@ describe('AccessorialChargesDialog — applied charges', () => {
 describe('AccessorialChargesDialog — adding charges', () => {
     it('offers the add action only once something is selected, then sends it', async () => {
         const {props} = renderDialog();
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
 
         expect(screen.queryByRole('button', {name: /add selected charges/i})).not.toBeInTheDocument();
 
@@ -273,7 +273,7 @@ describe('AccessorialChargesDialog — adding charges', () => {
 
     it('carries a per-row note through to the request', async () => {
         renderDialog();
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
 
         const row = screen.getByText('Tail-lift').closest('tr') as HTMLElement;
         fireEvent.click(within(row).getByRole('checkbox'));
@@ -288,7 +288,7 @@ describe('AccessorialChargesDialog — adding charges', () => {
 
     it('blocks the add and flags the field when a non-flat charge has no input', async () => {
         renderDialog();
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
 
         const row = screen.getByText('Waiting Time').closest('tr') as HTMLElement;
         fireEvent.click(within(row).getByRole('checkbox'));
@@ -301,7 +301,7 @@ describe('AccessorialChargesDialog — adding charges', () => {
 
     it('sends the typed input value for a per-unit charge', async () => {
         renderDialog();
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
 
         const row = screen.getByText('Waiting Time').closest('tr') as HTMLElement;
         fireEvent.click(within(row).getByRole('checkbox'));
@@ -317,7 +317,7 @@ describe('AccessorialChargesDialog — adding charges', () => {
     it('reports an add failure through the toast', async () => {
         (api.addCharges as jest.Mock).mockRejectedValue(new Error('nope'));
         const {props} = renderDialog();
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
 
         const row = screen.getByText('Tail-lift').closest('tr') as HTMLElement;
         fireEvent.click(within(row).getByRole('checkbox'));
@@ -338,7 +338,7 @@ describe('AccessorialChargesDialog — portion jobs', () => {
 
     it('renders a tab per portion and loads the chosen leg', async () => {
         renderDialog({job: portionJob});
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
 
         expect(screen.getByRole('tab', {name: 'Leg 1'})).toBeInTheDocument();
         fireEvent.click(screen.getByRole('tab', {name: 'Leg 2'}));
@@ -349,7 +349,7 @@ describe('AccessorialChargesDialog — portion jobs', () => {
 
     it('exposes the portion strip as a tablist and marks only the active leg selected', async () => {
         renderDialog({job: portionJob});
-        await screen.findByText('Add Charges');
+        await screen.findByText('Add charges');
 
         expect(screen.getByRole('tablist')).toBeInTheDocument();
         expect(screen.getByRole('tab', {name: 'Leg 1'})).toHaveAttribute('aria-selected', 'true');

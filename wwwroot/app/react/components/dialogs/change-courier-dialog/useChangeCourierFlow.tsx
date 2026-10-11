@@ -56,7 +56,7 @@ export function useChangeCourierFlow({showToast, onChanged}: ChangeCourierFlowOp
             }
             setTarget({jobId: job.id, jobNo: job.jobNo, currentCourierName: eligibility.currentCourierName});
         } catch {
-            showToast('Could not check whether the courier can be changed. Please try again.', 'error');
+            showToast("Couldn't check whether the courier can be changed. Try again.", 'error');
         } finally {
             setChecking(false);
         }

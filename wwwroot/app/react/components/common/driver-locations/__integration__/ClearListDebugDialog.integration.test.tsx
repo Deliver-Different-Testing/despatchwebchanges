@@ -16,7 +16,7 @@ describe('ClearListDebugDialog integration', () => {
 
         await user.click(screen.getByRole('button'));
 
-        expect(await screen.findByText('Clear List Debug')).toBeInTheDocument();
+        expect(await screen.findByText('Clear list debug')).toBeInTheDocument();
         expect(screen.getByText('C042')).toBeInTheDocument();
         expect(screen.getByText('Test Driver')).toBeInTheDocument();
         expect(screen.getByText('Zone A')).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe('ClearListDebugDialog integration', () => {
 
         renderWithTheme(<ClearListDebugButton courierId={99} />);
         await user.click(screen.getByRole('button'));
-        await screen.findByText('Clear List Debug');
+        await screen.findByText('Clear list debug');
 
         expect(capturedUrl).toContain('courierId=99');
     });
@@ -90,6 +90,6 @@ describe('ClearListDebugDialog integration', () => {
         renderWithTheme(<ClearListDebugButton courierId={42} />);
         await user.click(screen.getByRole('button'));
 
-        expect(await screen.findByText('Clear List Debug')).toBeInTheDocument();
+        expect(await screen.findByText('Clear list debug')).toBeInTheDocument();
     });
 });

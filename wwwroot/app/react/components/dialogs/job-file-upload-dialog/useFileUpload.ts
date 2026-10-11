@@ -95,7 +95,7 @@ export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUplo
             if (showNormalTab) setFiles(allFiles.filter(f => !f.isPOD));
             if (showPodTab) setPodFiles(allFiles.filter(f => f.isPOD));
         } catch {
-            showToast('Failed to load files. Please try again.', 'error');
+            showToast("Couldn't load files. Try again.", 'error');
         }
 
         if (showPodTab) {
@@ -128,7 +128,7 @@ export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUplo
                     });
                 }
             } catch {
-                showToast('Failed to load POD photos. Please try again.', 'error');
+                showToast("Couldn't load POD photos. Try again.", 'error');
             }
         }
     }, [jobId, showNormalTab, showPodTab, showToast]);
@@ -138,13 +138,13 @@ export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUplo
 
         const invalidType = selectedFiles.filter(f => f.type && !ACCEPTED_MIME_PATTERN.test(f.type));
         if (invalidType.length) {
-            showToast(`Invalid file type: ${invalidType.map(f => f.name).join(', ')}. Only images and PDFs are accepted.`, 'error');
+            showToast(`Can't upload ${invalidType.map(f => f.name).join(', ')}. Only images and PDFs are accepted.`, 'error');
             return;
         }
 
         const oversized = selectedFiles.filter(f => f.size > MAX_FILE_SIZE);
         if (oversized.length) {
-            showToast(`Files exceed 10MB limit: ${oversized.map(f => f.name).join(', ')}`, 'error');
+            showToast(`Can't upload ${oversized.map(f => f.name).join(', ')}. Files must be under 10MB.`, 'error');
             return;
         }
 
@@ -186,9 +186,9 @@ export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUplo
                 setOverallProgress(Math.round((completed * 100) / total));
 
                 const fileType = isPOD ? 'POD photo' : 'file';
-                showToast(`Success ${file.name} uploaded as ${fileType}`, 'success');
+                showToast(`${file.name} uploaded as ${fileType}`, 'success');
             } catch {
-                showToast(`Failed to upload ${isPOD ? 'POD photo' : 'file'}: ${file.name}`, 'error');
+                showToast(`Couldn't upload ${file.name}. Try again.`, 'error');
             }
         }
 
@@ -203,9 +203,9 @@ export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUplo
     const downloadFileEntry = useCallback(async (file: JobFile) => {
         try {
             await downloadFile(file.s3Key, file.fileName);
-            showToast('File downloaded successfully', 'success');
+            showToast('File downloaded', 'success');
         } catch {
-            showToast('Failed to download file. Please try again.', 'error');
+            showToast("Couldn't download file. Try again.", 'error');
         }
     }, [showToast]);
 
@@ -216,14 +216,14 @@ export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUplo
         try {
             if (isPodFile) {
                 await deleteJobDeliveryPhotoOrSignature(jobId, file.s3Key);
-                showToast('POD photo deleted successfully', 'success');
+                showToast('POD photo deleted', 'success');
             } else {
                 await deleteJobFile(jobId, file.s3Key);
-                showToast('File deleted successfully', 'success');
+                showToast('File deleted', 'success');
             }
             await loadFiles();
         } catch {
-            showToast(`Failed to delete ${isPodFile ? 'POD photo' : 'file'}. Please try again.`, 'error');
+            showToast(`Couldn't delete ${isPodFile ? 'POD photo' : 'file'}. Try again.`, 'error');
         }
     }, [jobId, showToast, loadFiles]);
 

@@ -64,9 +64,9 @@ describe('FlightDetailsCard', () => {
     };
 
     describe('Section Headings', () => {
-        it('displays "Flight Information" title', () => {
+        it('displays "Flight information" title', () => {
             renderWithTheme(<FlightDetailsCard {...defaultProps} />);
-            expect(screen.getByText('Flight Information')).toBeInTheDocument();
+            expect(screen.getByText('Flight information')).toBeInTheDocument();
         });
 
         it('displays "Departure" section heading', () => {

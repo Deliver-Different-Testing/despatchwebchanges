@@ -126,6 +126,7 @@ import {setupUser} from '../../__testUtils__/setupUser';
 import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 import {openFlightConfirmationDialog} from '../../components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module';
 import {formatDateForApiWithTzs} from '../../utils/dateUtils';
+import {apiClient} from '../../services/apiClient';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof NationwidePage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -324,7 +325,7 @@ describe('NationwidePage', () => {
             });
 
             await waitFor(() => expect(showToast).toHaveBeenCalledWith(
-                'Courier dispatch is not supported for US customers',
+                "Courier dispatch isn't available for US customers.",
                 'warning',
             ));
             expect(executeDispatchConfirmationMock).not.toHaveBeenCalled();
@@ -462,6 +463,93 @@ describe('NationwidePage', () => {
 
             await waitFor(() => expect(getDispatchJobDetailMock).toHaveBeenCalledWith(9));
         });
+
+        it('warns rather than reporting a failed assignment when the flight is assigned but the AWB write fails', async () => {
+            const showToast = jest.fn();
+            renderPage({showToast});
+            await selectAFlightJob();
+
+            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+                shouldAssign: true,
+                awb: 'AWB123',
+                packageReadyTime,
+                packageDeliverByTime,
+            });
+            const postSpy = jest.spyOn(apiClient, 'post').mockRejectedValueOnce(new Error('UpdateJob failed'));
+            getDispatchJobDetailMock.mockResolvedValueOnce(undefined);
+
+            const onAddFlight = widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>;
+            await act(async () => {
+                await onAddFlight(mockFlight);
+            });
+
+            expect(assignFlightToJobMock).toHaveBeenCalled();
+            expect(showToast).toHaveBeenCalledWith('Flight assigned to job', 'success');
+            expect(showToast).toHaveBeenCalledWith(
+                "Flight assigned, but the job details didn't refresh. Refresh the page to see the change.",
+                'warning',
+            );
+            expect(showToast).not.toHaveBeenCalledWith("Couldn't assign the flight. Check your connection and try again.", 'error');
+            postSpy.mockRestore();
+        });
+
+        it('shows the generic error and never attempts the AWB write when the assignment itself fails', async () => {
+            const showToast = jest.fn();
+            renderPage({showToast});
+            await selectAFlightJob();
+
+            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+                shouldAssign: true,
+                awb: 'AWB123',
+                packageReadyTime,
+                packageDeliverByTime,
+            });
+            assignFlightToJobMock.mockRejectedValueOnce(new Error('network error'));
+            const postSpy = jest.spyOn(apiClient, 'post');
+
+            const onAddFlight = widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>;
+            await act(async () => {
+                await onAddFlight(mockFlight);
+            });
+
+            expect(showToast).toHaveBeenCalledWith("Couldn't assign the flight. Check your connection and try again.", 'error');
+            expect(postSpy).not.toHaveBeenCalledWith('job/UpdateJob', expect.anything());
+            postSpy.mockRestore();
+        });
+
+        it('ignores a second click while an assignment is already in flight', async () => {
+            renderPage();
+            await selectAFlightJob();
+
+            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+                shouldAssign: true,
+                packageReadyTime,
+                packageDeliverByTime,
+            });
+            let resolveAssign: () => void = () => {};
+            assignFlightToJobMock.mockImplementationOnce(() => new Promise<void>(resolve => {
+                resolveAssign = () => resolve(undefined);
+            }));
+
+            let firstCall!: Promise<void>;
+            act(() => {
+                firstCall = (widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>)(mockFlight);
+            });
+            await waitFor(() => expect(assignFlightToJobMock).toHaveBeenCalledTimes(1));
+
+            // Re-read the callback: it's a fresh closure now that isAssigningFlight
+            // has flipped true, matching how the row button always calls the
+            // latest handler from current props rather than a stale reference.
+            await act(async () => {
+                await (widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>)(mockFlight);
+            });
+            expect(openFlightConfirmationDialog).toHaveBeenCalledTimes(1);
+
+            resolveAssign();
+            await act(async () => {
+                await firstCall;
+            });
+        });
     });
 
     describe('job actions menu', () => {
@@ -484,7 +572,7 @@ describe('NationwidePage', () => {
             await selectAJob();
 
             await user.click(screen.getByRole('button', {name: 'Job actions'}));
-            await user.click(screen.getByRole('menuitem', {name: 'Add Task'}));
+            await user.click(screen.getByRole('menuitem', {name: 'Add task'}));
 
             expect(openAddEventDialog).toHaveBeenCalledWith(expect.objectContaining({
                 job: expect.objectContaining({id: 5, jobNo: 'JOB-5'}),

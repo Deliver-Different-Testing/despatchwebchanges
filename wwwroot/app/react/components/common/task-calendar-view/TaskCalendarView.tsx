@@ -251,11 +251,11 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
-            showSuccessToast?.('Task updated successfully');
+            showSuccessToast?.('Task updated');
             onTaskStatusChange?.(task);
         } catch (error) {
             task.closed = !newClosedState;
-            showErrorToast?.('Failed to update task');
+            showErrorToast?.("Couldn't update the task. Check your connection and try again.");
             console.error('Error updating task:', error);
         }
     }, [tasksService, showSuccessToast, showErrorToast, onTaskStatusChange]);
@@ -386,7 +386,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                                 fw={600}
                                 fz="0.75rem"
                                 mr={6}
-                                c={isTaskOverdue(task) ? 'var(--mantine-color-red-8)' : 'var(--mantine-color-yellow-8)'}
+                                c={isTaskOverdue(task) ? 'light-dark(var(--mantine-color-red-8), var(--mantine-color-red-2))' : 'light-dark(var(--mantine-color-yellow-8), var(--mantine-color-yellow-2))'}
                             >
                                 {dayjs(task.dueDate).format('h:mm a')}
                             </Text>
@@ -596,7 +596,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                         p={16}
                         gap={8}
                         wrap="nowrap"
-                        c="var(--mantine-color-red-8)"
+                        c="light-dark(var(--mantine-color-red-8), var(--mantine-color-red-2))"
                         style={{backgroundColor: alpha('var(--mantine-color-red-6)', 0.08)}}
                     >
                         <Icon lucide={TriangleAlert} color="var(--mantine-color-red-6)"/>
@@ -654,17 +654,17 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
                     radius={100}
                     data={[
                         {value: 'month', label: (
-                            <Tooltip label="Month View">
+                            <Tooltip label="Month view">
                                 <Icon lucide={CalendarDays} aria-label="Month view"/>
                             </Tooltip>
                         )},
                         {value: 'week', label: (
-                            <Tooltip label="Week View">
+                            <Tooltip label="Week view">
                                 <Icon lucide={Columns3} aria-label="Week view"/>
                             </Tooltip>
                         )},
                         {value: 'day', label: (
-                            <Tooltip label="Day View">
+                            <Tooltip label="Day view">
                                 <Icon lucide={Rows3} aria-label="Day view"/>
                             </Tooltip>
                         )},

@@ -201,8 +201,8 @@ const SegmentItem: React.FC<SegmentItemProps> = ({ segment, isLast, connectionTi
                     py={12}
                     style={{
                         borderRadius: 'var(--mantine-radius-sm)',
-                        background: 'var(--mantine-color-yellow-0)',
-                        color: 'var(--mantine-color-yellow-9)',
+                        background: 'var(--mantine-color-yellow-light)',
+                        color: 'var(--mantine-color-yellow-light-color)',
                     }}
                 >
                     <Icon lucide={Clock} size={20}/>
@@ -247,7 +247,7 @@ export const FlightItinerary: React.FC<FlightItineraryProps> = ({
             {/* Card title */}
             <Group gap={12} mb={24}>
                 <Icon tabler={IconRoute} size={24}/>
-                <Text fz="lg" fw={600}>Flight Itinerary</Text>
+                <Text fz="lg" fw={600}>Flight itinerary</Text>
             </Group>
 
             {/* Timeline container */}

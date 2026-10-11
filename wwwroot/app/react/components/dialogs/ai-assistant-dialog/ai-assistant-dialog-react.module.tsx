@@ -22,7 +22,7 @@ function renderSummaryPanel(container: HTMLElement, jobId: number): void {
     }
     root.render(islandTree(
     <AiSummaryCard
-        title="Auto-mate Job Briefing"
+        title="Auto-mate job briefing"
         fetchSummary={(signal) => summarizeJob(jobId, {signal})}
     />
 
@@ -37,7 +37,7 @@ function renderOperationsInsightsPanel(container: HTMLElement): void {
     }
     root.render(islandTree(
         <AiSummaryCard
-            title="Auto-mate Operations Insights"
+            title="Auto-mate operations insights"
             fetchSummary={(signal) => summarizeOperations({signal})}
         />
     ));

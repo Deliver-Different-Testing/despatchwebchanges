@@ -60,7 +60,7 @@ describe('DeliveriesTable', () => {
         it('renders column headers', () => {
             renderWithTheme(<DeliveriesTable {...defaultProps} />);
 
-            expect(screen.getByText('Job Number')).toBeInTheDocument();
+            expect(screen.getByText('Job number')).toBeInTheDocument();
             expect(screen.getByText('Status')).toBeInTheDocument();
             expect(screen.getByText('Completion')).toBeInTheDocument();
             expect(screen.getByText('Pickup')).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe('DeliveriesTable', () => {
         it('calls onSort when a sortable column header is clicked', () => {
             renderWithTheme(<DeliveriesTable {...defaultProps} />);
 
-            fireEvent.click(screen.getByText('Job Number'));
+            fireEvent.click(screen.getByText('Job number'));
 
             expect(defaultProps.onSort).toHaveBeenCalledWith({
                 column: 'jobName',
@@ -133,7 +133,7 @@ describe('DeliveriesTable', () => {
                 />,
             );
 
-            fireEvent.click(screen.getByText('Job Number'));
+            fireEvent.click(screen.getByText('Job number'));
 
             expect(defaultProps.onSort).toHaveBeenCalledWith({
                 column: 'jobName',

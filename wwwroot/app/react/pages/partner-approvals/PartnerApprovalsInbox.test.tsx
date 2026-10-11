@@ -7,6 +7,7 @@ import {screen, waitFor} from '@testing-library/react';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
 import { renderWithMantineProviders } from '../../__testUtils__';
 import { setupUser } from '../../__testUtils__/setupUser';
+import { confirmRejectionWithReason } from '../../__testUtils__/rejectionFlow';
 import {jobChangeRequestApi} from '../../services/jobChangeRequestApi';
 import type {JobChangeRequestInboxItem} from '../../interfaces/jobChangeRequest';
 
@@ -126,17 +127,7 @@ describe('PartnerApprovalsInbox', () => {
         await user.click(screen.getByRole('button', {name: /^Reject$/}));
         expect(screen.getByLabelText(/Reason for rejection/i)).toBeInTheDocument();
 
-        await user.click(screen.getByLabelText(/Reason for rejection/i));
-        await user.paste('rate too low');
-        await user.click(screen.getByRole('button', {name: /Confirm reject/}));
-
-        await waitFor(() => {
-            expect(mockApi.reject).toHaveBeenCalledWith({
-                requestId: 1,
-                rowVersion: undefined,
-                reason: 'rate too low',
-            });
-        });
+        await confirmRejectionWithReason(user, mockApi.reject);
     });
 
     it('clicking the job number invokes onOpenJob', async () => {
@@ -170,7 +161,7 @@ describe('PartnerApprovalsInbox', () => {
         mockApi.pendingForApproval.mockResolvedValueOnce([addressItem]);
         renderWithMantineProviders(<PartnerApprovalsInbox/>);
 
-        expect(await screen.findByText('Pickup Address')).toBeInTheDocument();
+        expect(await screen.findByText('Pickup address')).toBeInTheDocument();
         expect(screen.getByText(/7 Lambton Quay, Wellington/)).toBeInTheDocument();
     });
 });

@@ -79,7 +79,7 @@ const host = createDialogHost<OpenDispatchDialogOptions, DispatchDialogOutcome |
                 onSendToPartner={async (partner, agreedRate) => {
                     const result = await sendToPartner(jobId, partner.id, agreedRate);
                     if (!result.success) {
-                        throw new Error(result.message || 'Failed to send job to partner');
+                        throw new Error(result.message || "Couldn't send job to partner. Try again.");
                     }
                     close({
                         type: 'DfrntPartner',

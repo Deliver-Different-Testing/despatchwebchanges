@@ -92,7 +92,7 @@ describe('MessagingDialog', () => {
         const onClose = jest.fn();
         renderWithTheme(<MessagingDialog {...defaultProps} onClose={onClose} />);
 
-        expect(await screen.findByText('Message Center')).toBeInTheDocument();
+        expect(await screen.findByText('Message center')).toBeInTheDocument();
         expect(screen.getByText('Conversations')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: 'Close message center'}));
@@ -106,12 +106,12 @@ describe('MessagingDialog', () => {
         const onClose = jest.fn();
         renderWithTheme(<MessagingDialog {...defaultProps} onClose={onClose} />);
 
-        expect(await screen.findByText('Message Center')).toBeInTheDocument();
+        expect(await screen.findByText('Message center')).toBeInTheDocument();
 
         // Clicking the dimmed backdrop outside the panel must NOT close it.
         await user.click(screen.getByTestId('messaging-overlay'));
         expect(onClose).not.toHaveBeenCalled();
-        expect(screen.getByText('Message Center')).toBeInTheDocument();
+        expect(screen.getByText('Message center')).toBeInTheDocument();
 
         // The header close button still dismisses.
         await user.click(screen.getByRole('button', {name: 'Close message center'}));
@@ -122,7 +122,7 @@ describe('MessagingDialog', () => {
     it('does not render drawer content when closed', () => {
         setupApiDefaults();
         renderWithTheme(<MessagingDialog {...defaultProps} open={false}/>);
-        expect(screen.queryByText('Message Center')).not.toBeInTheDocument();
+        expect(screen.queryByText('Message center')).not.toBeInTheDocument();
     });
 
     // ── Accessibility: labelled controls + live region ─────────────
@@ -191,23 +191,23 @@ describe('MessagingDialog', () => {
         // Message previews
         expect(screen.getByText(/See you tomorrow/)).toBeInTheDocument();
         // Truncated long message
-        expect(screen.getByText(new RegExp('A{40}\\.\\.\\.'))).toBeInTheDocument();
+        expect(screen.getByText(new RegExp('A{40}…'))).toBeInTheDocument();
 
         // Sender prefixes: "You:" for read (unread=0), "Bob:" for unread >0
         expect(screen.getByText('You:')).toBeInTheDocument();
         expect(screen.getByText('Bob Smith:')).toBeInTheDocument();
     });
 
-    // ── Empty state + Start Conversation → new chat search ──────────
+    // ── Empty state + Start conversation → new chat search ──────────
     it('shows empty state and navigates to new conversation search view', async () => {
         const user = setupUser();
         setupApiDefaults([]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
         expect(await screen.findByText('No conversations yet')).toBeInTheDocument();
-        expect(screen.getByText('Start Conversation')).toBeInTheDocument();
+        expect(screen.getByText('Start conversation')).toBeInTheDocument();
 
-        await user.click(screen.getByText('Start Conversation'));
+        await user.click(screen.getByText('Start conversation'));
         expect(await screen.findByText('Search to start a conversation')).toBeInTheDocument();
     });
 
@@ -218,7 +218,7 @@ describe('MessagingDialog', () => {
         mockApi.getQuickResponses.mockResolvedValue([]);
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
-        expect(await screen.findByText('Unable to load messages')).toBeInTheDocument();
+        expect(await screen.findByText("Couldn't load messages")).toBeInTheDocument();
         expect(screen.getByText('Server error')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /Retry/i})).toBeInTheDocument();
 
@@ -257,7 +257,7 @@ describe('MessagingDialog', () => {
             expect(screen.getAllByText('Alice').length).toBeGreaterThanOrEqual(2);
         });
         expect(await screen.findByText(/Courier/)).toBeInTheDocument();
-        expect(await screen.findByPlaceholderText('Type a message...')).toBeInTheDocument();
+        expect(await screen.findByPlaceholderText('Type a message…')).toBeInTheDocument();
         expect(await screen.findByRole('combobox', {name: 'Delivery method'})).toHaveValue('Smart');
 
         // Empty messages state
@@ -309,14 +309,14 @@ describe('MessagingDialog', () => {
 
             expect(await screen.findByText('John Driver')).toBeInTheDocument();
             await user.click(screen.getByText('John Driver'));
-            expect(await screen.findByPlaceholderText('Type a message...')).toBeInTheDocument();
+            expect(await screen.findByPlaceholderText('Type a message…')).toBeInTheDocument();
 
             // Send button disabled when empty
             const sendButton = screen.getByRole('button', {name: 'Send message'});
             expect(sendButton).toBeDisabled();
 
             // Type and send
-            await user.click(screen.getByPlaceholderText('Type a message...'));
+            await user.click(screen.getByPlaceholderText('Type a message…'));
             await user.paste('Hello driver!');
 
             await user.click(sendButton!);
@@ -342,20 +342,20 @@ describe('MessagingDialog', () => {
 
             expect(await screen.findByText('John Driver')).toBeInTheDocument();
             await user.click(screen.getByText('John Driver'));
-            expect(await screen.findByPlaceholderText('Type a message...')).toBeInTheDocument();
+            expect(await screen.findByPlaceholderText('Type a message…')).toBeInTheDocument();
 
-            await user.click(screen.getByPlaceholderText('Type a message...'));
+            await user.click(screen.getByPlaceholderText('Type a message…'));
             await user.paste('Fail');
 
             await user.click(screen.getByRole('button', {name: 'Send message'}));
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Failed to send message', 'error');
+                expect(showToast).toHaveBeenCalledWith("Couldn't send message. Check your connection and try again.", 'error');
             });
         }, 30000);
     });
 
-    // ── Quick Responses ─────────────────────────────────────────────
+    // ── Quick responses ─────────────────────────────────────────────
     it('toggles quick responses panel', async () => {
         const user = setupUser();
         const quickResponses: QuickResponse[] = [
@@ -368,11 +368,11 @@ describe('MessagingDialog', () => {
 
         expect(await screen.findByText('John Driver')).toBeInTheDocument();
         await user.click(screen.getByText('John Driver'));
-        expect(await screen.findByPlaceholderText('Type a message...')).toBeInTheDocument();
+        expect(await screen.findByPlaceholderText('Type a message…')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: 'Quick responses'}));
 
-        expect(await screen.findByText('Quick Responses')).toBeInTheDocument();
+        expect(await screen.findByText('Quick responses')).toBeInTheDocument();
     });
 
     // ── New Chat View: navigation, back button, Multi mode, recent conversations (single render) ─
@@ -389,8 +389,8 @@ describe('MessagingDialog', () => {
 
         await user.click(screen.getByRole('button', {name: 'New conversation'}));
 
-        expect(await screen.findByText('New Conversation')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Search by name or ID...')).toBeInTheDocument();
+        expect(await screen.findByText('New conversation')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search by name or ID…')).toBeInTheDocument();
         expect(screen.getByText('Multi')).toBeInTheDocument();
 
         // Recent conversations shown
@@ -398,7 +398,7 @@ describe('MessagingDialog', () => {
 
         // Back button returns to main
         await user.click(screen.getByRole('button', {name: 'Back'}));
-        expect(await screen.findByText('Message Center')).toBeInTheDocument();
+        expect(await screen.findByText('Message center')).toBeInTheDocument();
     });
 
     // ── Conversation list filter: by name and unread-only ───────────
@@ -472,7 +472,7 @@ describe('MessagingDialog', () => {
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
         await user.click(await screen.findByText('John Driver'));
-        await user.click(await screen.findByPlaceholderText('Type a message...'));
+        await user.click(await screen.findByPlaceholderText('Type a message…'));
         await user.paste('Pending msg');
         await user.click(screen.getByRole('button', {name: /send message/i}));
 
@@ -492,7 +492,7 @@ describe('MessagingDialog', () => {
         renderWithTheme(<MessagingDialog {...defaultProps} />);
 
         await user.click(await screen.findByText('John Driver'));
-        await user.click(await screen.findByPlaceholderText('Type a message...'));
+        await user.click(await screen.findByPlaceholderText('Type a message…'));
         await user.paste('Retry me');
         await user.click(screen.getByRole('button', {name: /send message/i}));
 

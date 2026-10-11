@@ -22,11 +22,11 @@ function setup(overrides: Partial<React.ComponentProps<typeof SaveLayoutDialog>>
 describe('SaveLayoutDialog', () => {
     it('renders the header title and name field when open', () => {
         setup();
-        expect(screen.getByText('Save Layout')).toBeInTheDocument();
+        expect(screen.getByText('Save layout')).toBeInTheDocument();
         expect(screen.getByLabelText('Layout name')).toBeInTheDocument();
     });
 
-    it('disables Add Layout when the name is empty and enables it once a valid name is typed', async () => {
+    it('disables Add layout when the name is empty and enables it once a valid name is typed', async () => {
         const user = setupUser();
         setup();
 
@@ -38,7 +38,7 @@ describe('SaveLayoutDialog', () => {
         expect(addButton).not.toBeDisabled();
     });
 
-    it('rejects a duplicate name (case-insensitive) with an error and keeps Add Layout disabled', async () => {
+    it('rejects a duplicate name (case-insensitive) with an error and keeps Add layout disabled', async () => {
         const user = setupUser();
         setup({existingNames: ['Default', 'Dispatch']});
 
