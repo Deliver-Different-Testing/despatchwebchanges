@@ -21,9 +21,8 @@ RUN GITLAB_NUGET_USERNAME=${GITLAB_NUGET_USERNAME} \
 # Copy the npm manifests for install layer caching, mirroring the restore layer above.
 # `npm ci` installs exactly what the lockfile pins, and keeping it ahead of `COPY . ./`
 # means editing source doesn't rebuild node_modules.
-COPY package.json package-lock.json ./
-COPY vendor/ ./vendor/
-RUN npm ci
+COPY package.json package-lock.json .npmrc ./
+RUN GITLAB_NUGET_TOKEN=${GITLAB_NUGET_TOKEN} npm ci
 
 COPY . ./
 RUN dotnet publish DespatchWeb.csproj -c Release -o /publish

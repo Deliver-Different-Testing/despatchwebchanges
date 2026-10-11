@@ -12,17 +12,20 @@ import {jobApi} from '../../../services/jobApi';
 import type {ToastService} from '../../../services/toastService';
 import {createDialogHost} from '../../../utils/reactDialogHost';
 
-const host = createDialogHost<{jobNo: string}, boolean | null>({
+const host = createDialogHost<{jobNo: string; customer?: string}, boolean | null>({
     containerId: 'react-swap-pods-dialog-root',
     render: ({open, payload, close, showToast}) => islandTree(
         <SwapPodsDialog
             open={open}
             jobNo={payload.jobNo}
+            customer={payload.customer}
             onClose={() => close(null)}
             onValidate={(jobNo: string) => jobApi.validateSwapPod(jobNo)}
+            onSearch={(query, options) => jobApi.searchSwapPodCandidates(query, options)}
             onSwap={async (job1: string, job2: string) => {
-                await jobApi.swapPod(job1, job2);
+                const result = await jobApi.swapPod(job1, job2);
                 close(true);
+                return result;
             }}
             showToast={showToast}
         />
@@ -31,9 +34,10 @@ const host = createDialogHost<{jobNo: string}, boolean | null>({
 
 export function openSwapPodsDialog(
     jobNo: string,
-    toastService?: ToastService
+    toastService?: ToastService,
+    customer?: string
 ): Promise<boolean | null> {
-    return host.open({jobNo}, toastService);
+    return host.open({jobNo, customer}, toastService);
 }
 
 window.ReactSwapPodsDialog = {

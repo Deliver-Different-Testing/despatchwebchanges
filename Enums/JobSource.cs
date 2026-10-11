@@ -1,4 +1,4 @@
-﻿namespace DespatchWeb.Enums;
+namespace DespatchWeb.Enums;
 
 public enum JobSource
 {
@@ -9,5 +9,6 @@ public enum JobSource
     RunViewer = 8,
     MobileBookingPage = 11,
     PrebookMonitorJob = 12,
-    DespatchWeb = 13
+    DespatchWeb = 13,
+    ThreeCxVoiceAgent = 14
 }

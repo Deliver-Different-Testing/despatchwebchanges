@@ -398,6 +398,46 @@ describe('EditDateTimeDialog', () => {
                 expect(result.value.minute()).toBe(30);
             });
         });
+
+        it('keeps the date while the time is typed key by key', async () => {
+            const user = setupUser();
+            const onSubmit = jest.fn();
+            renderWithProviders(createDefaultProps({onSubmit}));
+            const dateInput = screen.getByLabelText('Date');
+
+            await user.click(screen.getByLabelText('Hours'));
+            await user.keyboard('09');
+            expect(dateInput).toHaveValue('2024-03-15');
+            await user.keyboard('45');
+            expect(dateInput).toHaveValue('2024-03-15');
+            await user.click(screen.getByRole('button', {name: /Save/i}));
+
+            await waitFor(() => {
+                const result = onSubmit.mock.calls[0][0];
+                expect(result.value.format('YYYY-MM-DD HH:mm')).toBe('2024-03-15 09:45');
+            });
+        });
+
+        it('keeps the date when the typed time is cleared and retyped', async () => {
+            const user = setupUser();
+            const onSubmit = jest.fn();
+            renderWithProviders(createDefaultProps({onSubmit}));
+
+            await user.click(screen.getByLabelText('Hours'));
+            await user.keyboard('{Backspace}{Backspace}');
+            await user.click(screen.getByLabelText('Minutes'));
+            await user.keyboard('{Backspace}{Backspace}');
+            expect(screen.getByLabelText('Date')).toHaveValue('2024-03-15');
+
+            await user.click(screen.getByLabelText('Hours'));
+            await user.keyboard('0730');
+            await user.click(screen.getByRole('button', {name: /Save/i}));
+
+            await waitFor(() => {
+                const result = onSubmit.mock.calls[0][0];
+                expect(result.value.format('YYYY-MM-DD HH:mm')).toBe('2024-03-15 07:30');
+            });
+        });
     });
 
     // ── Loading State ───────────────────────────────────────────────

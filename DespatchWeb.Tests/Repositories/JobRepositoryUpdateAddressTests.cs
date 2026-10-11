@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -237,5 +238,113 @@ public class JobRepositoryUpdateAddressTests : IAsyncDisposable
         var job = await _context.TucJobs.AsNoTracking()
             .FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
         Assert.Equal(881, job.UcjbFrom);
+    }
+
+    [Theory]
+    [InlineData(AddressType.Delivery)]
+    [InlineData(AddressType.Pickup)]
+    public async Task UpdateBulkJobAddressAsync_WritesBulkRowAndLeavesSameNumberedLiveJobUntouched(AddressType type)
+    {
+        const int sharedId = 400;
+        _context.TblBulkJobs.Add(new TblBulkJob { BulkJobId = sharedId });
+        _context.TucJobs.Add(new TucJob { UcjbId = sharedId, UcjbNumber = "JOB-400", DeliveryAddressLine1 = "Original", PickupAddressLine1 = "Original" });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdateBulkJobAddressAsync(
+            new UpdateAddressRequest { JobId = sharedId, Address = BuildAddress("New Zealand") }, type);
+
+        var bulk = await _context.TblBulkJobs.AsNoTracking()
+            .FirstAsync(j => j.BulkJobId == sharedId, TestContext.Current.CancellationToken);
+        var live = await _context.TucJobs.AsNoTracking()
+            .FirstAsync(j => j.UcjbId == sharedId, TestContext.Current.CancellationToken);
+        var isDelivery = type == AddressType.Delivery;
+        Assert.Equal("New Zealand", isDelivery ? bulk.DeliveryAddressLine8 : bulk.PickupAddressLine8);
+        Assert.Equal("Unit 5", isDelivery ? bulk.DeliveryAddressLine1 : bulk.PickupAddressLine1);
+        Assert.Equal("-36.8485", isDelivery ? bulk.DeliveryLatitude : bulk.PickUpLatitude);
+        Assert.Equal("174.7633", isDelivery ? bulk.DeliveryLongitude : bulk.PickUpLongitude);
+        Assert.Contains("Main Street", isDelivery ? bulk.ToAddress : bulk.FromAddress);
+        Assert.Equal("Original", live.DeliveryAddressLine1);
+        Assert.Equal("Original", live.PickupAddressLine1);
+    }
+
+    [Fact]
+    public async Task UpdateBulkJobAddressAsync_UnknownBulkJob_Throws()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateRepository().UpdateBulkJobAddressAsync(
+            new UpdateAddressRequest { JobId = 999, Address = BuildAddress("New Zealand") }, AddressType.Delivery));
+    }
+
+    private async Task SeedLinehaulFamilyAsync(bool delDone = false)
+    {
+        TucJob Leg(int id, string number, bool done = false) => new()
+        {
+            UcjbId = id,
+            UcjbNumber = number,
+            ParentId = 500,
+            UcjbJobDone = done,
+            DeliveryAddressLine1 = "Original",
+            PickupAddressLine1 = "Original"
+        };
+
+        _context.TucJobs.AddRange(
+            Leg(500, "5000"),
+            Leg(501, "5000LHP"),
+            Leg(502, "5000LH1"),
+            Leg(503, "5000DEL", delDone));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task<TucJob> LoadJobAsync(int id) =>
+        await _context.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == id, TestContext.Current.CancellationToken);
+
+    [Fact]
+    public async Task UpdateDeliveryAddressAsync_LinehaulParent_CascadesToFinalMileLegOnly()
+    {
+        await SeedLinehaulFamilyAsync();
+
+        await CreateRepository().UpdateDeliveryAddressAsync(
+            new UpdateAddressRequest { JobId = 500, Address = BuildAddress("New Zealand") });
+
+        Assert.Equal("Unit 5", (await LoadJobAsync(500)).DeliveryAddressLine1);
+        Assert.Equal("Unit 5", (await LoadJobAsync(503)).DeliveryAddressLine1);
+        Assert.Equal("Original", (await LoadJobAsync(501)).DeliveryAddressLine1);
+        Assert.Equal("Original", (await LoadJobAsync(502)).DeliveryAddressLine1);
+        Assert.Equal("Original", (await LoadJobAsync(503)).PickupAddressLine1);
+    }
+
+    [Fact]
+    public async Task UpdatePickupAddressAsync_LinehaulParent_CascadesToLinehaulPickupLegOnly()
+    {
+        await SeedLinehaulFamilyAsync();
+
+        await CreateRepository().UpdatePickupAddressAsync(
+            new UpdateAddressRequest { JobId = 500, Address = BuildAddress("New Zealand") });
+
+        Assert.Equal("Unit 5", (await LoadJobAsync(501)).PickupAddressLine1);
+        Assert.Equal("Original", (await LoadJobAsync(502)).PickupAddressLine1);
+        Assert.Equal("Original", (await LoadJobAsync(503)).PickupAddressLine1);
+    }
+
+    [Fact]
+    public async Task UpdateDeliveryAddressAsync_CompletedFinalMileLeg_IsNotRewritten()
+    {
+        await SeedLinehaulFamilyAsync(delDone: true);
+
+        await CreateRepository().UpdateDeliveryAddressAsync(
+            new UpdateAddressRequest { JobId = 500, Address = BuildAddress("New Zealand") });
+
+        Assert.Equal("Original", (await LoadJobAsync(503)).DeliveryAddressLine1);
+    }
+
+    [Fact]
+    public async Task UpdateDeliveryAddressAsync_EditingTheLegDirectly_DoesNotTouchParent()
+    {
+        await SeedLinehaulFamilyAsync();
+
+        await CreateRepository().UpdateDeliveryAddressAsync(
+            new UpdateAddressRequest { JobId = 503, Address = BuildAddress("New Zealand") });
+
+        Assert.Equal("Unit 5", (await LoadJobAsync(503)).DeliveryAddressLine1);
+        Assert.Equal("Original", (await LoadJobAsync(500)).DeliveryAddressLine1);
     }
 }

@@ -593,7 +593,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 }
 
                 case 'swapPod':
-                    await w.ReactSwapPodsDialog?.open(job.jobNo, {showToast});
+                    await w.ReactSwapPodsDialog?.open(job.jobNo, {showToast}, job.client);
                     await refreshLists();
                     refreshDetail();
                     return;

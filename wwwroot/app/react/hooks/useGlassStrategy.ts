@@ -2,11 +2,11 @@ import {
   useGlassAllowed as usePackageGlassAllowed,
   useGlassStrategy as usePackageGlassStrategy,
   type GlassStrategy,
-} from '@dfrnt/glass';
+} from '@deliver-different/glass';
 import { useLiquidGlassEnabled } from './useLiquidGlassPreference';
 
-export { isChromiumEngine, isLiquidGlassSupported, pickGlassStrategy } from '@dfrnt/glass';
-export type { GlassCapabilities, GlassStrategy } from '@dfrnt/glass';
+export { isChromiumEngine, isLiquidGlassSupported, pickGlassStrategy } from '@deliver-different/glass';
+export type { GlassCapabilities, GlassStrategy } from '@deliver-different/glass';
 
 /**
  * The package decides from the browser and `GlassProvider`; despatchweb additionally gates on the

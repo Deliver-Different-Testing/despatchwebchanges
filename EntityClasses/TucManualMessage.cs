@@ -59,6 +59,8 @@ public partial class TucManualMessage
 
     public int? UcmmSendFromStaffId { get; set; }
 
+    public DateTime? UcmmCreatedAtUtc { get; set; }
+
     public virtual TucCourier UcmmSendFromCourier { get; set; }
 
     public virtual TucStaff UcmmSendFromStaff { get; set; }

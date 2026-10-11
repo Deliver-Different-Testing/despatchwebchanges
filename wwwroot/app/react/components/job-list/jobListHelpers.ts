@@ -37,6 +37,11 @@ export function isDelivered(job: DispatchJob): boolean {
     return resolvedStatusId(job) === JOB_STATUS.Completed;
 }
 
+/** Finished work for a list that files Undeliverable under Done rather than leaving it Active. */
+export function isDone(job: DispatchJob, undeliverableIsDone: boolean): boolean {
+    return isDelivered(job) || (undeliverableIsDone && resolvedStatusId(job) === JOB_STATUS.Undeliverable);
+}
+
 // "In transit" = assigned and being worked (dispatched through to in-transit),
 // as opposed to "Active" (needs a courier) or "Done" (delivered).
 const IN_TRANSIT_STATUSES: number[] = [

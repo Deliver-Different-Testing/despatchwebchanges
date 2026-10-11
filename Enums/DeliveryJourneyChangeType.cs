@@ -20,13 +20,6 @@ public enum DeliveryJourneyChangeType
     JobCreated
 }
 
-public enum DeliveryJourneyUpdatedByType
-{
-    Staff,
-    Courier,
-    System
-}
-
 public static class DeliveryJourneyUpdatedBy
 {
     /// <summary>

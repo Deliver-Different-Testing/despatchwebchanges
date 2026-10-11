@@ -201,6 +201,40 @@ public class JobChangeRequestControllerTests
     }
 
     [Fact]
+    public async Task AgentInbound_ServiceSucceeds_ReturnsOk()
+    {
+        var payload = new AgentInboundChangeRequestPayload { JobId = 1, CallId = "c1" };
+        var expected = new AgentInboundChangeRequestResult { Success = true };
+        _service.RecordAgentCreateAsync(payload, Arg.Any<CancellationToken>()).Returns(expected);
+
+        var result = await CreateController().AgentInbound(payload, CancellationToken.None);
+
+        Assert.Same(expected, Assert.IsType<OkObjectResult>(result).Value);
+    }
+
+    [Fact]
+    public async Task AgentInbound_ServiceReturnsFailure_ReturnsBadRequest()
+    {
+        _service.RecordAgentCreateAsync(Arg.Any<AgentInboundChangeRequestPayload>(), Arg.Any<CancellationToken>())
+            .Returns(new AgentInboundChangeRequestResult { Success = false, Message = "no" });
+
+        var result = await CreateController().AgentInbound(new AgentInboundChangeRequestPayload(), CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task AgentInbound_ServiceThrows_Returns500()
+    {
+        _service.RecordAgentCreateAsync(Arg.Any<AgentInboundChangeRequestPayload>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("boom"));
+
+        var result = await CreateController().AgentInbound(new AgentInboundChangeRequestPayload(), CancellationToken.None);
+
+        Assert.Equal(500, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
     public async Task PeerInbound_ServiceSucceeds_ReturnsOk()
     {
         var payload = new PeerInboundChangeRequestPayload

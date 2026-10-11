@@ -186,8 +186,7 @@ public sealed partial class DeliveryJourneyService(
                 case RecurringJourneyStatus.Pending:
                 case RecurringJourneyStatus.InProgress: pendingCount++; break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(status), status,
-                        "Unhandled recurring journey status.");
+                    throw new InvalidOperationException($"Unhandled recurring journey status: {status}.");
             }
 
             RecurringJourneyPodDto pod = null;
@@ -413,6 +412,7 @@ public sealed partial class DeliveryJourneyService(
                 MessageId = m.UcmmId,
                 Subject = m.Subject,
                 UcmmDate = m.UcmmDate,
+                UcmmCreatedAtUtc = m.UcmmCreatedAtUtc,
                 UcmmMessage = m.UcmmMessage,
                 UcmmSendToCourierId = m.UcmmSendToCourierId,
                 UcmmSendToStaffId = m.UcmmSendToStaffId,
@@ -438,7 +438,10 @@ public sealed partial class DeliveryJourneyService(
                 Id = Guid.NewGuid(),
                 JobId = jobId,
                 Title = m.Subject,
-                Date = TimeZoneHelper.SetDateTimeWithTimeZone(m.UcmmDate, timezone),
+                // Rows predating ucmmCreatedAtUtc only have the wall-clock ucmmDate.
+                Date = m.UcmmCreatedAtUtc is { } createdAtUtc
+                    ? infoService.ConvertUtcToTenantTimeZone(createdAtUtc)
+                    : TimeZoneHelper.SetDateTimeWithTimeZone(m.UcmmDate, timezone),
                 Description = m.UcmmMessage,
                 Icon = "sms",
                 PerformedBy = FormatActor(m.SendFromStaffFirstName, m.SendFromStaffLastName)

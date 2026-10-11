@@ -5,6 +5,7 @@ public sealed record ManualMessageDto
     public int MessageId { get; init; }
     public string Subject { get; init; }
     public DateTime UcmmDate { get; init; }
+    public DateTime? UcmmCreatedAtUtc { get; init; }
     public string UcmmMessage { get; init; }
     public int? UcmmSendToCourierId { get; init; }
     public int? UcmmSendToStaffId { get; init; }

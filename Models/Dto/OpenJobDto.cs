@@ -38,9 +38,3 @@ public sealed record OpenJobDto
     public DateTime? DeliveryTime { get; init; }
     public int? SpeedMinutes { get; init; }
 }
-
-public sealed record CourierCompletionData
-{
-    public int CompletedToday { get; init; }
-    public DateTime? LastCompleted { get; init; }
-}

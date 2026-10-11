@@ -1,20 +1,8 @@
 using DespatchWeb.Models;
+using DespatchWeb.Models.Ai;
 using DespatchWeb.Models.Response;
 
 namespace DespatchWeb.Services;
-
-public sealed record JobSignal(SummarySeverity Severity, string Line);
-
-public sealed class JobSignals
-{
-    public List<JobSignal> Items { get; init; } = [];
-
-    public SummarySeverity MaxSeverity =>
-        Items.Count == 0 ? SummarySeverity.Ok : Items.Max(s => s.Severity);
-
-    public IEnumerable<string> Lines =>
-        Items.Select(s => $"SIGNAL [{s.Severity.ToString().ToUpper()}]: {s.Line}");
-}
 
 /// <summary>
 /// Pure-function heuristic signal calculator. Pre-computes the salient

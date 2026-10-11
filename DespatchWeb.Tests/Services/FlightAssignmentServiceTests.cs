@@ -93,9 +93,9 @@ public class FlightAssignmentServiceTests
             () => CreateService().AssignFlightAsync(request, cts.Token));
 
         await _flightService.DidNotReceiveWithAnyArgs()
-            .CreateFlightRuleByDepartureAsync(default, default, default);
+            .CreateFlightRuleByDepartureAsync(null, default, null);
         await _repository.DidNotReceiveWithAnyArgs()
-            .AddJobNationwideAsync(default, default, default);
+            .AddJobNationwideAsync(null, null, CancellationToken.None);
     }
 
     [Fact]

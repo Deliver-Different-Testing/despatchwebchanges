@@ -1,171 +1,169 @@
 /**
  * SwapPodsDialog Component Tests
  *
- * Optimised: tests sharing identical setup consolidated into single renders.
- * Covers the two-phase flow: input/validation → confirmation/swap.
+ * Covers the two-phase flow: candidate search/selection + validation → confirmation/swap.
  */
 
 import React from 'react';
-import {act, fireEvent, screen, waitFor} from '@testing-library/react';
-import { setupUser } from '../../../__testUtils__/setupUser';
-import { renderWithMantine } from '../../../__testUtils__';
+import {act, screen, waitFor} from '@testing-library/react';
+import {setupUser} from '../../../__testUtils__/setupUser';
+import {renderWithMantine} from '../../../__testUtils__';
 import {SwapPodsDialog, SwapPodsDialogProps} from './SwapPodsDialog';
+import {dayjs, getInputDateFormat} from '../../../utils/dateUtils';
+import type {SwapPodCandidate} from '../../../services/jobApi';
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
 const renderWithTheme = (ui: React.ReactElement) => renderWithMantine(ui);
 
+const candidate = (overrides: Partial<SwapPodCandidate> = {}): SwapPodCandidate => ({
+    jobId: 2,
+    number: 'JOB-002',
+    statusId: 0,
+    statusName: 'New',
+    customer: 'Acme Ltd',
+    fromSuburb: 'Penrose',
+    toSuburb: 'Albany',
+    courier: 'Sam Courier',
+    date: '2026-10-09T00:00:00',
+    hasPod: false,
+    ...overrides,
+});
+
 const createMockProps = (overrides: Partial<SwapPodsDialogProps> = {}): SwapPodsDialogProps => ({
     open: true,
     jobNo: 'JOB-001',
     onClose: jest.fn(),
     onValidate: jest.fn().mockResolvedValue(true),
+    onSearch: jest.fn().mockResolvedValue([candidate()]),
     onSwap: jest.fn().mockResolvedValue(undefined),
     showToast: jest.fn(),
     ...overrides,
 });
 
-/** Shared helper: render and advance the dialog to phase 2 */
-const advanceToPhase2 = async (props: SwapPodsDialogProps, secondJob = 'JOB-002') => {
+/** Open the picker and choose the option showing this job number */
+const pickCandidate = async (number = 'JOB-002') => {
+    await userEvent.click(screen.getByLabelText(/Second job/i));
+    await userEvent.click(await screen.findByText(number));
+};
+
+/** Render and advance the dialog to phase 2 */
+const advanceToPhase2 = async (props: SwapPodsDialogProps) => {
     renderWithTheme(<SwapPodsDialog {...props} />);
-    fireEvent.change(screen.getByLabelText(/Second job number/i), { target: { value: secondJob } });
+    await pickCandidate();
     await userEvent.click(screen.getByRole('button', {name: /validate/i}));
     await screen.findByRole('button', {name: /confirm swap/i});
 };
 
 describe('SwapPodsDialog', () => {
-    // ── Rendering: all phase 1 elements (single render) ─────────────
-    it('renders dialog with all phase 1 elements, pre-filled job, and disabled Validate', () => {
-        renderWithTheme(<SwapPodsDialog {...createMockProps({jobNo: 'JOB-001'})} />);
+    it('renders phase 1 with filters, picker and a disabled Validate; renders nothing when closed', () => {
+        const {unmount} = renderWithTheme(<SwapPodsDialog {...createMockProps()} />);
 
         expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Swap PODs')).toBeInTheDocument();
-        expect(screen.getByText(/JOB-001/)).toBeInTheDocument();
         expect(screen.getByDisplayValue('JOB-001')).toBeInTheDocument();
-        expect(screen.getByLabelText(/Second job number/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /validate/i})).toBeInTheDocument();
-        // Validate disabled when empty
+        expect(screen.getByLabelText(/Second job/i)).toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: 'Status'})).toBeInTheDocument();
+        expect(screen.getByLabelText('Customer')).toBeInTheDocument();
+        expect(screen.getByLabelText('Date')).toHaveValue(dayjs().format(getInputDateFormat()));
+        expect(screen.queryByLabelText('Same customer')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: /validate/i})).toBeDisabled();
-    });
+        unmount();
 
-    // ── Closed dialog ───────────────────────────────────────────────
-    it('should not render the dialog when open is false', () => {
         renderWithTheme(<SwapPodsDialog {...createMockProps({open: false})} />);
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    // ── Phase 1: input validation (single render) ───────────────────
-    it('enables Validate on input, blocks same job number, trims whitespace, and clears error on re-type', async () => {
-        const props = createMockProps({jobNo: 'JOB-001'});
-        renderWithTheme(<SwapPodsDialog {...props} />);
-        const input = screen.getByLabelText(/Second job number/i);
-
-        // Enable on input
-        fireEvent.change(input, { target: { value: 'JOB-002' } });
-        expect(screen.getByRole('button', {name: /validate/i})).toBeEnabled();
-
-        // Same job number → error, onValidate not called
-        fireEvent.change(input, { target: { value: 'JOB-001' } });
-        await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-        expect(screen.getByText(/enter a different job number/i)).toBeInTheDocument();
-        expect(props.onValidate).not.toHaveBeenCalled();
-
-        // Clear error on re-type
-        fireEvent.change(input, { target: { value: 'JOB-0011' } });
-        expect(screen.queryByText(/enter a different job number/i)).not.toBeInTheDocument();
-
-        // Trim whitespace
-        fireEvent.change(input, { target: { value: '  JOB-002  ' } });
-        await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-        await waitFor(() => {
-            expect(props.onValidate).toHaveBeenCalledWith('JOB-002');
-        });
-    });
-
-    // ── Phase 1: loading state during validation ────────────────────
-    it('should show loading state while validating', async () => {
-        let resolveValidation!: (value: boolean) => void;
+    it('searches with the default date, excludes the current job, and renders rich option rows', async () => {
         const props = createMockProps({
-            onValidate: jest.fn().mockImplementation(
-                () => new Promise<boolean>(resolve => { resolveValidation = resolve; })
-            ),
+            onSearch: jest.fn().mockResolvedValue([candidate({hasPod: true, statusName: 'Completed', statusId: 6})]),
         });
         renderWithTheme(<SwapPodsDialog {...props} />);
-        fireEvent.change(screen.getByLabelText(/Second job number/i), { target: { value: 'JOB-002' } });
-        await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-        expect(screen.getByText('Validating…')).toBeInTheDocument();
+        await userEvent.click(screen.getByLabelText(/Second job/i));
 
-        // Clean up: resolve the pending promise
-        await act(async () => { resolveValidation(true); });
+        expect(await screen.findByText('JOB-002')).toBeInTheDocument();
+        expect(props.onSearch).toHaveBeenCalledWith(
+            expect.objectContaining({excludeJobNumber: 'JOB-001', date: dayjs().format('YYYY-MM-DD')}),
+            expect.anything()
+        );
+        expect(screen.getAllByText('Completed')).toHaveLength(2);
+        expect(screen.getByText('Has POD')).toBeInTheDocument();
+        expect(screen.getByText(/Acme Ltd · Penrose → Albany/)).toBeInTheDocument();
+        expect(screen.getByText(/Sam Courier/)).toBeInTheDocument();
     });
 
-    // ── Phase 1: validation failure + error clear (single render) ───
-    it('shows error when validation returns false and clears on re-type', async () => {
+    it('re-searches with the customer filter; "Same customer" fills and clears it', async () => {
+        const props = createMockProps({customer: 'Acme Ltd'});
+        renderWithTheme(<SwapPodsDialog {...props} />);
+
+        await userEvent.click(screen.getByLabelText('Same customer'));
+        expect(screen.getByLabelText('Customer')).toHaveValue('Acme Ltd');
+        await waitFor(() => {
+            expect(props.onSearch).toHaveBeenCalledWith(
+                expect.objectContaining({customer: 'Acme Ltd'}),
+                expect.anything()
+            );
+        });
+
+        await userEvent.click(screen.getByLabelText('Same customer'));
+        expect(screen.getByLabelText('Customer')).toHaveValue('');
+    });
+
+    it('validates the selected candidate, shows a failure, and a text edit drops the pick', async () => {
         const props = createMockProps({onValidate: jest.fn().mockResolvedValue(false)});
         renderWithTheme(<SwapPodsDialog {...props} />);
-        const input = screen.getByLabelText(/Second job number/i);
-        fireEvent.change(input, { target: { value: 'JOB-999' } });
+        await pickCandidate();
+        expect(screen.getByLabelText(/Second job/i)).toHaveValue('JOB-002');
         await userEvent.click(screen.getByRole('button', {name: /validate/i}));
 
-        // Error shown, stays on phase 1
         expect(await screen.findByText(/eligible for a POD swap/i)).toBeInTheDocument();
+        expect(props.onValidate).toHaveBeenCalledWith('JOB-002');
         expect(screen.queryByRole('button', {name: /confirm swap/i})).not.toBeInTheDocument();
 
-        // Clear error on re-type
-        fireEvent.change(input, { target: { value: 'JOB-9991' } });
-        expect(screen.queryByText(/eligible for a POD swap/i)).not.toBeInTheDocument();
+        await userEvent.type(screen.getByLabelText(/Second job/i), 'x');
+        expect(screen.getByRole('button', {name: /validate/i})).toBeDisabled();
     });
 
-    // ── Phase 1: network error ──────────────────────────────────────
-    it('should show a network error message when onValidate throws', async () => {
-        const props = createMockProps({
-            onValidate: jest.fn().mockRejectedValue(new Error('Network error')),
-        });
+    it('shows a network error message when onValidate throws', async () => {
+        const props = createMockProps({onValidate: jest.fn().mockRejectedValue(new Error('Network error'))});
         renderWithTheme(<SwapPodsDialog {...props} />);
-        fireEvent.change(screen.getByLabelText(/Second job number/i), { target: { value: 'JOB-002' } });
+        await pickCandidate();
         await userEvent.click(screen.getByRole('button', {name: /validate/i}));
         expect(await screen.findByText(/couldn't check this job/i)).toBeInTheDocument();
     });
 
-    // ── Phase 1 → Phase 2 transition (single render) ────────────────
-    it('advances to phase 2 on successful validation with correct buttons', async () => {
-        const props = createMockProps({jobNo: 'JOB-001'});
-        renderWithTheme(<SwapPodsDialog {...props} />);
-        fireEvent.change(screen.getByLabelText(/Second job number/i), { target: { value: 'JOB-002' } });
-        await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-
-        await waitFor(() => {
-            expect(props.onValidate).toHaveBeenCalledWith('JOB-002');
+    it('shows loading state while validating', async () => {
+        let resolveValidation!: (value: boolean) => void;
+        const props = createMockProps({
+            onValidate: jest.fn().mockImplementation(() => new Promise<boolean>(resolve => { resolveValidation = resolve; })),
         });
-
-        // Phase 2 elements
-        expect(await screen.findByRole('button', {name: /confirm swap/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /back/i})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /validate/i})).not.toBeInTheDocument();
-
-        // Both job numbers displayed
-        expect(screen.getAllByText('JOB-001').length).toBeGreaterThan(0);
-        expect(screen.getByText('JOB-002')).toBeInTheDocument();
+        renderWithTheme(<SwapPodsDialog {...props} />);
+        await pickCandidate();
+        await userEvent.click(screen.getByRole('button', {name: /validate/i}));
+        expect(screen.getByText('Validating…')).toBeInTheDocument();
+        await act(async () => { resolveValidation(true); });
     });
 
-    // ── Phase 2: back button preserves input (single render) ────────
-    it('returns to phase 1 with preserved input when Back is clicked', async () => {
-        const props = createMockProps();
-        await advanceToPhase2(props, 'JOB-002');
+    it('advances to phase 2 with both jobs and the one-sided outcome; Back preserves the pick', async () => {
+        await advanceToPhase2(createMockProps());
+
+        expect(screen.queryByRole('button', {name: /validate/i})).not.toBeInTheDocument();
+        expect(screen.getByText('JOB-002')).toBeInTheDocument();
+        expect(screen.getByText('JOB-001 goes back to New/Accepted, JOB-002 becomes Completed.')).toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: /back/i}));
-
-        expect(screen.getByRole('button', {name: /validate/i})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /confirm swap/i})).not.toBeInTheDocument();
-        expect(screen.getByLabelText(/Second job number/i)).toHaveValue('JOB-002');
+        expect(screen.getByRole('button', {name: /validate/i})).toBeEnabled();
+        expect(screen.getByLabelText(/Second job/i)).toHaveValue('JOB-002');
     });
 
-    // ── Confirm swap: success flow (single render) ──────────────────
-    it('calls onSwap, shows success toast, and closes on successful swap', async () => {
-        const props = createMockProps({jobNo: 'JOB-001'});
-        await advanceToPhase2(props, 'JOB-002');
+    it('describes a two-sided exchange when the chosen job already has a POD', async () => {
+        await advanceToPhase2(createMockProps({onSearch: jest.fn().mockResolvedValue([candidate({hasPod: true})])}));
+        expect(screen.getByText('PODs are exchanged between JOB-001 and JOB-002.')).toBeInTheDocument();
+    });
+
+    it('calls onSwap, shows a success toast, and closes on successful swap', async () => {
+        const props = createMockProps({onSwap: jest.fn().mockResolvedValue({movedPhotos: 2, failedPhotos: 0})});
+        await advanceToPhase2(props);
         await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
 
         await waitFor(() => {
@@ -175,27 +173,31 @@ describe('SwapPodsDialog', () => {
         });
     });
 
-    // ── Confirm swap: loading state ─────────────────────────────────
-    it('should show loading state while the swap is in progress', async () => {
+    it('shows a warning toast instead of success when photos failed to move', async () => {
+        const props = createMockProps({onSwap: jest.fn().mockResolvedValue({movedPhotos: 1, failedPhotos: 2})});
+        await advanceToPhase2(props);
+        await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
+
+        await waitFor(() => {
+            expect(props.showToast).toHaveBeenCalledWith(expect.stringMatching(/2 photos couldn't be moved/), 'warning');
+        });
+        expect(props.showToast).not.toHaveBeenCalledWith('PODs swapped', 'success');
+        expect(props.onClose).toHaveBeenCalled();
+    });
+
+    it('shows loading state while the swap is in progress', async () => {
         let resolveSwap!: () => void;
         const props = createMockProps({
-            onSwap: jest.fn().mockImplementation(
-                () => new Promise<void>(resolve => { resolveSwap = resolve; })
-            ),
+            onSwap: jest.fn().mockImplementation(() => new Promise<void>(resolve => { resolveSwap = resolve; })),
         });
         await advanceToPhase2(props);
         await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
         expect(screen.getByText('Swapping…')).toBeInTheDocument();
-
-        // Clean up: resolve the pending promise
         await act(async () => { resolveSwap(); });
     });
 
-    // ── Confirm swap: error + re-enable (single render) ─────────────
     it('shows error toast, does not close, and re-enables button on swap failure', async () => {
-        const props = createMockProps({
-            onSwap: jest.fn().mockRejectedValue(new Error('API error')),
-        });
+        const props = createMockProps({onSwap: jest.fn().mockRejectedValue(new Error('API error'))});
         await advanceToPhase2(props);
         await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
 
@@ -206,58 +208,24 @@ describe('SwapPodsDialog', () => {
         expect(screen.getByRole('button', {name: /confirm swap/i})).toBeEnabled();
     });
 
-    // ── Cancel and Close (single render) ────────────────────────────
-    it('calls onClose when Cancel or close icon is clicked', async () => {
+    it('calls onClose when Cancel is clicked', async () => {
         const props = createMockProps();
         renderWithTheme(<SwapPodsDialog {...props} />);
-
         await userEvent.click(screen.getByRole('button', {name: /cancel/i}));
         expect(props.onClose).toHaveBeenCalledTimes(1);
-
-        (props.onClose as jest.Mock).mockClear();
-        const closeIconButton = screen.getAllByRole('button').find(btn =>
-            btn.querySelector('[data-testid="CloseIcon"]')
-        );
-        if (closeIconButton) {
-            await userEvent.click(closeIconButton);
-            expect(props.onClose).toHaveBeenCalledTimes(1);
-        }
     });
 
-    // ── State reset on reopen ───────────────────────────────────────
-    it('should reset to phase 1 with empty input when dialog reopens', async () => {
+    it('resets to phase 1 with an empty pick when the dialog reopens', async () => {
         const props = createMockProps();
         const {rerender} = renderWithTheme(<SwapPodsDialog {...props} />);
-
-        fireEvent.change(screen.getByLabelText(/Second job number/i), { target: { value: 'JOB-002' } });
+        await pickCandidate();
         await userEvent.click(screen.getByRole('button', {name: /validate/i}));
         await screen.findByRole('button', {name: /confirm swap/i});
 
-        await act(async () => {
-            rerender(<SwapPodsDialog {...props} open={false} />);
-        });
-        await act(async () => {
-            rerender(<SwapPodsDialog {...props} open={true} />);
-        });
+        await act(async () => { rerender(<SwapPodsDialog {...props} open={false} />); });
+        await act(async () => { rerender(<SwapPodsDialog {...props} open={true} />); });
 
-        expect(screen.getByRole('button', {name: /validate/i})).toBeInTheDocument();
-        expect(screen.getByLabelText(/Second job number/i)).toHaveValue('');
-    });
-
-    // ── Enter key shortcut (single render) ──────────────────────────
-    it('triggers validation on Enter with input, but not when empty', async () => {
-        const props = createMockProps();
-        renderWithTheme(<SwapPodsDialog {...props} />);
-
-        // Enter with empty input → no validation
-        await userEvent.keyboard('{Enter}');
-        expect(props.onValidate).not.toHaveBeenCalled();
-
-        // Enter with value → validates
-        fireEvent.change(screen.getByLabelText(/Second job number/i), { target: { value: 'JOB-002' } });
-        await userEvent.keyboard('{Enter}');
-        await waitFor(() => {
-            expect(props.onValidate).toHaveBeenCalledWith('JOB-002');
-        });
+        expect(screen.getByRole('button', {name: /validate/i})).toBeDisabled();
+        expect(screen.getByLabelText(/Second job/i)).toHaveValue('');
     });
 });

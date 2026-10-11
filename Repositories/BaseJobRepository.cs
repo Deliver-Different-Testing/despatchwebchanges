@@ -21,6 +21,8 @@ public partial class BaseJobRepository(
 {
     protected const string Space = " ";
 
+    private const int DefaultNonPaginatedJobCap = 2000;
+
     private static readonly Regex[] DangerousSqlPatterns =
     [
         DropRegex(), DeleteRegex(), TruncateRegex(), AlterRegex(), CreateRegex(),
@@ -31,34 +33,85 @@ public partial class BaseJobRepository(
         OpenqueryRegex(), BulkRegex(), DbccRegex(), MergeRegex()
     ];
 
-    [GeneratedRegex(@"\bDROP\b", RegexOptions.IgnoreCase)] private static partial Regex DropRegex();
-    [GeneratedRegex(@"\bDELETE\b", RegexOptions.IgnoreCase)] private static partial Regex DeleteRegex();
-    [GeneratedRegex(@"\bTRUNCATE\b", RegexOptions.IgnoreCase)] private static partial Regex TruncateRegex();
-    [GeneratedRegex(@"\bALTER\b", RegexOptions.IgnoreCase)] private static partial Regex AlterRegex();
-    [GeneratedRegex(@"\bCREATE\b", RegexOptions.IgnoreCase)] private static partial Regex CreateRegex();
-    [GeneratedRegex(@"\bINSERT\b", RegexOptions.IgnoreCase)] private static partial Regex InsertRegex();
-    [GeneratedRegex(@"\bUPDATE\b", RegexOptions.IgnoreCase)] private static partial Regex UpdateRegex();
-    [GeneratedRegex(@"\bEXEC\b", RegexOptions.IgnoreCase)] private static partial Regex ExecRegex();
-    [GeneratedRegex(@"\bEXECUTE\b", RegexOptions.IgnoreCase)] private static partial Regex ExecuteRegex();
-    [GeneratedRegex(@"\bXP_", RegexOptions.IgnoreCase)] private static partial Regex XpPrefixRegex();
-    [GeneratedRegex(@"\bSP_", RegexOptions.IgnoreCase)] private static partial Regex SpPrefixRegex();
-    [GeneratedRegex(@"\bINTO\b", RegexOptions.IgnoreCase)] private static partial Regex IntoRegex();
-    [GeneratedRegex(@"\bUNION\b", RegexOptions.IgnoreCase)] private static partial Regex UnionRegex();
-    [GeneratedRegex(@"\bGRANT\b", RegexOptions.IgnoreCase)] private static partial Regex GrantRegex();
-    [GeneratedRegex(@"\bREVOKE\b", RegexOptions.IgnoreCase)] private static partial Regex RevokeRegex();
-    [GeneratedRegex("--")] private static partial Regex DashDashRegex();
-    [GeneratedRegex(@"/\*")] private static partial Regex BlockCommentOpenRegex();
-    [GeneratedRegex(@"\*/")] private static partial Regex BlockCommentCloseRegex();
-    [GeneratedRegex(@"\bSHUTDOWN\b", RegexOptions.IgnoreCase)] private static partial Regex ShutdownRegex();
-    [GeneratedRegex(@"\bWAITFOR\b", RegexOptions.IgnoreCase)] private static partial Regex WaitforRegex();
-    [GeneratedRegex(@"\bDELAY\b", RegexOptions.IgnoreCase)] private static partial Regex DelayRegex();
-    [GeneratedRegex(@"\bOPENROWSET\b", RegexOptions.IgnoreCase)] private static partial Regex OpenrowsetRegex();
-    [GeneratedRegex(@"\bOPENQUERY\b", RegexOptions.IgnoreCase)] private static partial Regex OpenqueryRegex();
-    [GeneratedRegex(@"\bBULK\b", RegexOptions.IgnoreCase)] private static partial Regex BulkRegex();
-    [GeneratedRegex(@"\bDBCC\b", RegexOptions.IgnoreCase)] private static partial Regex DbccRegex();
-    [GeneratedRegex(@"\bMERGE\b", RegexOptions.IgnoreCase)] private static partial Regex MergeRegex();
-
     private (int? economySpeedId, DateTime? ecoDeliveryTime)? _economyCache;
+
+    [GeneratedRegex(@"\bDROP\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DropRegex();
+
+    [GeneratedRegex(@"\bDELETE\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DeleteRegex();
+
+    [GeneratedRegex(@"\bTRUNCATE\b", RegexOptions.IgnoreCase)]
+    private static partial Regex TruncateRegex();
+
+    [GeneratedRegex(@"\bALTER\b", RegexOptions.IgnoreCase)]
+    private static partial Regex AlterRegex();
+
+    [GeneratedRegex(@"\bCREATE\b", RegexOptions.IgnoreCase)]
+    private static partial Regex CreateRegex();
+
+    [GeneratedRegex(@"\bINSERT\b", RegexOptions.IgnoreCase)]
+    private static partial Regex InsertRegex();
+
+    [GeneratedRegex(@"\bUPDATE\b", RegexOptions.IgnoreCase)]
+    private static partial Regex UpdateRegex();
+
+    [GeneratedRegex(@"\bEXEC\b", RegexOptions.IgnoreCase)]
+    private static partial Regex ExecRegex();
+
+    [GeneratedRegex(@"\bEXECUTE\b", RegexOptions.IgnoreCase)]
+    private static partial Regex ExecuteRegex();
+
+    [GeneratedRegex(@"\bXP_", RegexOptions.IgnoreCase)]
+    private static partial Regex XpPrefixRegex();
+
+    [GeneratedRegex(@"\bSP_", RegexOptions.IgnoreCase)]
+    private static partial Regex SpPrefixRegex();
+
+    [GeneratedRegex(@"\bINTO\b", RegexOptions.IgnoreCase)]
+    private static partial Regex IntoRegex();
+
+    [GeneratedRegex(@"\bUNION\b", RegexOptions.IgnoreCase)]
+    private static partial Regex UnionRegex();
+
+    [GeneratedRegex(@"\bGRANT\b", RegexOptions.IgnoreCase)]
+    private static partial Regex GrantRegex();
+
+    [GeneratedRegex(@"\bREVOKE\b", RegexOptions.IgnoreCase)]
+    private static partial Regex RevokeRegex();
+
+    [GeneratedRegex("--")]
+    private static partial Regex DashDashRegex();
+
+    [GeneratedRegex(@"/\*")]
+    private static partial Regex BlockCommentOpenRegex();
+
+    [GeneratedRegex(@"\*/")]
+    private static partial Regex BlockCommentCloseRegex();
+
+    [GeneratedRegex(@"\bSHUTDOWN\b", RegexOptions.IgnoreCase)]
+    private static partial Regex ShutdownRegex();
+
+    [GeneratedRegex(@"\bWAITFOR\b", RegexOptions.IgnoreCase)]
+    private static partial Regex WaitforRegex();
+
+    [GeneratedRegex(@"\bDELAY\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DelayRegex();
+
+    [GeneratedRegex(@"\bOPENROWSET\b", RegexOptions.IgnoreCase)]
+    private static partial Regex OpenrowsetRegex();
+
+    [GeneratedRegex(@"\bOPENQUERY\b", RegexOptions.IgnoreCase)]
+    private static partial Regex OpenqueryRegex();
+
+    [GeneratedRegex(@"\bBULK\b", RegexOptions.IgnoreCase)]
+    private static partial Regex BulkRegex();
+
+    [GeneratedRegex(@"\bDBCC\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DbccRegex();
+
+    [GeneratedRegex(@"\bMERGE\b", RegexOptions.IgnoreCase)]
+    private static partial Regex MergeRegex();
 
     protected async Task<JobSearchResult> DespatchQry(
         AppPage page,
@@ -256,7 +309,8 @@ public partial class BaseJobRepository(
     /// <see cref="ResolveParentScopedJobs"/> ensures a match on any leg still surfaces the
     /// family under its parent.
     /// </summary>
-    protected async Task<IQueryable<TucJob>> BuildParentScopedQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    protected async Task<IQueryable<TucJob>> BuildParentScopedQueryAsync(IReadOnlyList<int> selectedViewIds,
+        bool isUsTenant)
     {
         if (!isUsTenant && (selectedViewIds == null || selectedViewIds.Count == 0))
         {
@@ -288,7 +342,8 @@ public partial class BaseJobRepository(
         return Context.TucJobs.Where(job => parentIds.Contains(job.UcjbId));
     }
 
-    protected async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    protected async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(IReadOnlyList<int> selectedViewIds,
+        bool isUsTenant)
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
@@ -337,8 +392,9 @@ public partial class BaseJobRepository(
     /// <summary>
     /// Validates that a WhereCondition from the database doesn't contain SQL injection patterns.
     /// </summary>
-    private static bool IsValidWhereCondition(string condition) => !string.IsNullOrWhiteSpace(condition) 
-                                                                   && DangerousSqlPatterns.All(pattern => !pattern.IsMatch(condition));
+    private static bool IsValidWhereCondition(string condition) => !string.IsNullOrWhiteSpace(condition)
+                                                                   && DangerousSqlPatterns.All(pattern =>
+                                                                       !pattern.IsMatch(condition));
 
     private async Task EnrichJobsWithCollections(List<DispatchJobViewModel> jobs)
     {
@@ -671,10 +727,6 @@ public partial class BaseJobRepository(
                 && j.UcjbDate < nextDay
                 && (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime));
     }
-
-    private const int DefaultNonPaginatedJobCap = 2000;
-
-    internal readonly record struct PagedJobIds(IReadOnlyList<int> JobIds, int TotalCount, bool HasMore);
 
     /// <summary>
     /// Resolves the distinct job IDs for the requested page. When <paramref name="requestedPage"/>
@@ -1056,7 +1108,8 @@ public partial class BaseJobRepository(
 
             var minutesToAdd = job.JobTypeMins.Value;
             var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
-            return Math.Round((standardDeliveryDateTime - currentTenantTime).TotalMinutes, MidpointRounding.AwayFromZero);
+            return Math.Round((standardDeliveryDateTime - currentTenantTime).TotalMinutes,
+                MidpointRounding.AwayFromZero);
         }
         catch (Exception e)
         {
@@ -1292,4 +1345,6 @@ public partial class BaseJobRepository(
 
         return liveJobs.ToDictionary(j => j.JobId);
     }
+
+    internal readonly record struct PagedJobIds(IReadOnlyList<int> JobIds, int TotalCount, bool HasMore);
 }
