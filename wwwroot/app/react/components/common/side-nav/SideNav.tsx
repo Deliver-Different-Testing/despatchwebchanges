@@ -25,7 +25,8 @@ import {Icon} from '../icon/Icon';
 import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 import {NavItem, SideNavProps} from "./SideNav.types";
 import {ColorModeSwitcher} from './ColorModeSwitcher';
-import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
+import {isDashboardVisible} from '../../../services/featureVisibility';
+import {navRoutes, statesForFeatureKey} from '../../../app/routeTable';
 import classes from './SideNav.module.css';
 
 const drawerWidth = 264;
@@ -37,6 +38,19 @@ const drawerWidth = 264;
  * icon column.
  */
 const NAV_ICON_SIZE = 24;
+
+type NavDisplay = {label: string; icon: React.ReactNode; nzOnly?: boolean};
+
+const NAV_ITEM_DISPLAY: Record<string, (isUsCustomer: boolean) => NavDisplay> = {
+    dashboard: () => ({label: 'Dashboard', icon: <Icon lucide={LayoutDashboard} size={NAV_ICON_SIZE} />}),
+    shipping: isUs => ({label: isUs ? 'Domestic' : 'Nationwide', icon: <Icon tabler={IconTruck} size={NAV_ICON_SIZE} />}),
+    overview: () => ({label: 'Overview', icon: <Icon lucide={ChartColumn} size={NAV_ICON_SIZE} />}),
+    tasks: () => ({label: 'Tasks', icon: <Icon lucide={CircleCheckBig} size={NAV_ICON_SIZE} />}),
+    jobSearch: () => ({label: 'Job Search', icon: <Icon lucide={Search} size={NAV_ICON_SIZE} />}),
+    recurringJobs: () => ({label: 'Recurring Jobs', icon: <Icon lucide={Clock} size={NAV_ICON_SIZE} />}),
+    courierMap: () => ({label: 'Courier Map', icon: <Icon tabler={IconMap} size={NAV_ICON_SIZE} />}),
+    driverManagement: () => ({label: 'Driver Management', icon: <Icon lucide={UserCog} size={NAV_ICON_SIZE} />, nzOnly: true}),
+};
 
 /** Below this the panel goes full-bleed, matching the toolbar's compact breakpoint. */
 const COMPACT_QUERY = `(max-width: ${em(768)})`;
@@ -90,72 +104,19 @@ export const SideNav: React.FC<SideNavProps> = ({
     }, [isUsCustomer]);
 
     const filteredNavItems = useMemo((): NavItem[] => {
-        const navItems: NavItem[] = [
-            {
-                id: 'dashboard',
-                label: 'Dashboard',
-                icon: <Icon lucide={LayoutDashboard} size={NAV_ICON_SIZE} />,
-                // Link straight at the React page so the nav skips the `home`
-                // state's redirect hop.
-                state: 'dispatch',
-                matchStates: ['home', 'dispatch', 'dispatchV2'],
-                featureKey: dashboardFeatureKeys.dispatch,
-            },
-            {
-                id: 'shipping',
-                label: isUsCustomer ? 'Domestic' : 'Nationwide',
-                icon: <Icon tabler={IconTruck} size={NAV_ICON_SIZE} />,
-                // As above: link straight at the React page so the nav skips
-                // the classic route's redirect hop.
-                state: 'nwV2',
-                matchStates: ['nwV2'],
-                featureKey: dashboardFeatureKeys.nationwide,
-            },
-            {
-                id: 'overview',
-                label: 'Overview',
-                icon: <Icon lucide={ChartColumn} size={NAV_ICON_SIZE} />,
-                state: 'overview',
-                featureKey: dashboardFeatureKeys.overview,
-            },
-            {
-                id: 'tasks',
-                label: 'Tasks',
-                icon: <Icon lucide={CircleCheckBig} size={NAV_ICON_SIZE} />,
-                state: 'taskDashboard',
-                featureKey: dashboardFeatureKeys.taskDashboard,
-            },
-            {
-                id: 'jobSearch',
-                label: 'Job Search',
-                icon: <Icon lucide={Search} size={NAV_ICON_SIZE} />,
-                state: 'jobSearch',
-                matchStates: ['jobSearch', 'jobSearchV2'],
-                featureKey: dashboardFeatureKeys.jobSearch,
-            },
-            {
-                id: 'recurringJobs',
-                label: 'Recurring Jobs',
-                icon: <Icon lucide={Clock} size={NAV_ICON_SIZE} />,
-                state: 'recurringJobs',
-                featureKey: dashboardFeatureKeys.recurringJobs,
-            },
-            {
-                id: 'courierMap',
-                label: 'Courier Map',
-                icon: <Icon tabler={IconMap} size={NAV_ICON_SIZE} />,
-                state: 'courierMap',
-                featureKey: dashboardFeatureKeys.courierMap,
-            },
-            {
-                id: 'driverManagement',
-                label: 'Driver Management',
-                icon: <Icon lucide={UserCog} size={NAV_ICON_SIZE} />,
-                state: 'driverManagement',
-                featureKey: dashboardFeatureKeys.driverManagement,
-                nzOnly: true,
-            },
-        ];
+        const navItems: NavItem[] = navRoutes().map(route => {
+            const {label, icon, nzOnly} = NAV_ITEM_DISPLAY[route.navId!](isUsCustomer);
+            return {
+                id: route.navId!,
+                label,
+                icon,
+                // Link straight at the page so the nav skips alias redirect hops.
+                state: route.state,
+                matchStates: statesForFeatureKey(route.featureKey!),
+                featureKey: route.featureKey,
+                nzOnly,
+            };
+        });
 
         return navItems.filter(item => {
             if (item.usOnly && !isUsCustomer) return false;

@@ -9,43 +9,23 @@
  * a data boundary.
  */
 
-import {dashboardFeatureKeys, isDashboardVisible, visibleDashboards} from './featureVisibility';
+import {isDashboardVisible, visibleDashboards} from './featureVisibility';
+import {ROUTES, landingOrder} from '../app/routeTable';
 
 /**
  * ui-router state -> catalogue key. Every alias of a dashboard maps to the
  * same key, so a legacy bookmark state is not a way past the grant.
  * States absent from this map are not gated dashboards.
  */
-export const dashboardStateFeatureKeys: Readonly<Record<string, string>> = {
-    home: dashboardFeatureKeys.dispatch,
-    dispatch: dashboardFeatureKeys.dispatch,
-    dispatchV2: dashboardFeatureKeys.dispatch,
-    nwV2: dashboardFeatureKeys.nationwide,
-    overview: dashboardFeatureKeys.overview,
-    taskDashboard: dashboardFeatureKeys.taskDashboard,
-    jobSearch: dashboardFeatureKeys.jobSearch,
-    jobSearchV2: dashboardFeatureKeys.jobSearch,
-    recurringJobs: dashboardFeatureKeys.recurringJobs,
-    courierMap: dashboardFeatureKeys.courierMap,
-    driverManagement: dashboardFeatureKeys.driverManagement,
-};
-
-/** Landing preference when the requested dashboard is blocked. */
-const LANDING_ORDER = [
-    'dispatch',
-    'jobSearch',
-    'nwV2',
-    'overview',
-    'taskDashboard',
-    'recurringJobs',
-    'courierMap',
-    'driverManagement',
-];
+export const dashboardStateFeatureKeys: Readonly<Record<string, string>> = Object.fromEntries(
+    ROUTES.filter(r => r.featureKey).map(r => [r.state, r.featureKey!]),
+);
 
 /** The first dashboard this session may open, or null when none may be. */
 export function firstAllowedDashboardState(): string | null {
-    if (visibleDashboards() === null) return LANDING_ORDER[0];
-    return LANDING_ORDER.find(state => isDashboardVisible(dashboardStateFeatureKeys[state])) ?? null;
+    const order = landingOrder();
+    if (visibleDashboards() === null) return order[0];
+    return order.find(state => isDashboardVisible(dashboardStateFeatureKeys[state])) ?? null;
 }
 
 /**

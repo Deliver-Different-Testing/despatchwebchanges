@@ -16,6 +16,7 @@ function islandFiles(manifest: Record<string, string>, entry: string): string[] 
 }
 import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
+import {routePath, routeUrlWithJobId, resolveAlias} from './react/app/routeTable';
 import {openJobInSearch} from './react/services/navigationService';
 import {BELOW_APP_BAR_HEIGHT} from './react/components/common/app-toolbar/appBarMetrics';
 import {createDefaultNationwideLayout, createNationwideBoxes} from './react/pages/nationwide/lib/boxDefinitions';
@@ -86,7 +87,7 @@ class RouterConfig {
         // working — the classic AngularJS dispatch page has been deleted and
         // React is the only implementation now.
         this.$stateProvider.state("home", {
-            url: "/?jobId",
+            url: routeUrlWithJobId('home'),
             params: {
                 jobId: {
                     value: null,
@@ -95,7 +96,7 @@ class RouterConfig {
             },
             redirectTo: (trans: any) => {
                 const jobId = trans.params()?.jobId;
-                return {state: 'dispatch', params: jobId ? {jobId} : {}};
+                return {state: resolveAlias('home'), params: jobId ? {jobId} : {}};
             }
         });
         return this;
@@ -106,7 +107,7 @@ class RouterConfig {
         // AngularJS `home` state now redirects here unconditionally — see
         // `configureHomeState`.
         this.$stateProvider.state("dispatch", {
-            url: "/dispatch?jobId",
+            url: routeUrlWithJobId('dispatch'),
             params: {
                 jobId: {value: null, squash: true}
             },
@@ -517,7 +518,7 @@ class RouterConfig {
         // now that the route has been renamed to `/dispatch` — see
         // `configureDispatchState`.
         this.$stateProvider.state("dispatchV2", {
-            url: "/dispatchV2?jobId",
+            url: routeUrlWithJobId('dispatchV2'),
             params: {
                 jobId: {
                     value: null,
@@ -526,7 +527,7 @@ class RouterConfig {
             },
             redirectTo: (trans: any) => {
                 const jobId = trans.params()?.jobId;
-                return {state: 'dispatch', params: jobId ? {jobId} : {}};
+                return {state: resolveAlias('dispatchV2'), params: jobId ? {jobId} : {}};
             }
         });
         return this;
@@ -534,7 +535,7 @@ class RouterConfig {
 
     private configureNationwideV2State(): this {
         this.$stateProvider.state("nwV2", {
-            url: "/Nationwide?jobId",
+            url: routeUrlWithJobId('nwV2'),
             params: {
                 jobId: {value: null, squash: true}
             },
@@ -816,8 +817,8 @@ class RouterConfig {
 
     private configureCSState(): this {
         this.$stateProvider.state("cs", {
-            url: "/CS",
-            redirectTo: "jobSearch"
+            url: routePath('cs'),
+            redirectTo: resolveAlias('cs')
         });
         return this;
     }
@@ -827,7 +828,7 @@ class RouterConfig {
         // `jobSearch` page has been deleted and React is the only
         // implementation now.
         this.$stateProvider.state("jobSearch", {
-            url: "/jobSearch?jobId",
+            url: routeUrlWithJobId('jobSearch'),
             params: {
                 jobId: {value: null, squash: true}
             },
@@ -1095,7 +1096,7 @@ class RouterConfig {
         // now that the route has been renamed to `/jobSearch` — see
         // `configureJobSearchState`.
         this.$stateProvider.state("jobSearchV2", {
-            url: "/jobSearchV2?jobId",
+            url: routeUrlWithJobId('jobSearchV2'),
             params: {
                 jobId: {
                     value: null,
@@ -1104,7 +1105,7 @@ class RouterConfig {
             },
             redirectTo: (trans: any) => {
                 const jobId = trans.params()?.jobId;
-                return {state: 'jobSearch', params: jobId ? {jobId} : {}};
+                return {state: resolveAlias('jobSearchV2'), params: jobId ? {jobId} : {}};
             }
         });
         return this;
@@ -1112,7 +1113,7 @@ class RouterConfig {
 
     private configurePrebooksState(): this {
         this.$stateProvider.state("recurringJobs", {
-            url: "/recurringJobs",
+            url: routePath('recurringJobs'),
             template: `
                 <div class="prebook-view" style="position: relative;">
                     <react-app-shell section="Dashboards" title="Recurring Jobs"></react-app-shell>
@@ -1195,7 +1196,7 @@ class RouterConfig {
 
     private configureOverviewState(): this {
         this.$stateProvider.state("overview", {
-            url: "/overview",
+            url: routePath('overview'),
             template: `
                 <div style="height: 100%; position: relative;">
                     <react-app-shell section="Dashboards" title="Overview"></react-app-shell>
@@ -1263,7 +1264,7 @@ class RouterConfig {
 
     private configureTaskDashboardState(): this {
         this.$stateProvider.state("taskDashboard", {
-            url: "/taskDashboard",
+            url: routePath('taskDashboard'),
             template: `
                 <div class="task-dashboard-view" style="position: relative;">
                     <react-app-shell
@@ -1343,7 +1344,7 @@ class RouterConfig {
 
     private configureDriverManagementState(): this {
         this.$stateProvider.state("driverManagement", {
-            url: "/driverManagement",
+            url: routePath('driverManagement'),
             template: `
                 <div style="height: 100%; position: relative;">
                     <react-app-shell section="Operations" title="Drivers"></react-app-shell>
@@ -1426,7 +1427,7 @@ class RouterConfig {
 
     private configureCourierMapState(): this {
         this.$stateProvider.state("courierMap", {
-            url: "/courierMap",
+            url: routePath('courierMap'),
             template: `
                 <react-app-shell section="Operations" title="Courier Map"></react-app-shell>
                 <div id="react-courier-map" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
@@ -1495,7 +1496,7 @@ class RouterConfig {
 
     private configureSettingsState(): this {
         this.$stateProvider.state("settings", {
-            url: "/settings",
+            url: routePath('settings'),
             template: `
                 <react-app-shell section="Account" title="Settings"></react-app-shell>
                 <div id="react-settings" style="height: ${BELOW_APP_BAR_HEIGHT};"></div>
@@ -1567,10 +1568,10 @@ class RouterConfig {
     }
 
     private configureErrorStates(): this {
-        this.$stateProvider.state("notFound", this.buildErrorState("notFound", "/not-found"));
-        this.$stateProvider.state("error", this.buildErrorState("error", "/error"));
-        this.$stateProvider.state("forbidden", this.buildErrorState("forbidden", "/forbidden"));
-        this.$stateProvider.state("serverError", this.buildErrorState("serverError", "/server-error"));
+        this.$stateProvider.state("notFound", this.buildErrorState("notFound", routePath('notFound')));
+        this.$stateProvider.state("error", this.buildErrorState("error", routePath('error')));
+        this.$stateProvider.state("forbidden", this.buildErrorState("forbidden", routePath('forbidden')));
+        this.$stateProvider.state("serverError", this.buildErrorState("serverError", routePath('serverError')));
         return this;
     }
 }

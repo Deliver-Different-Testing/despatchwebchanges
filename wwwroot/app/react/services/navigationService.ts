@@ -5,6 +5,10 @@
  * Pure functions with no AngularJS dependencies.
  */
 
+import {routePath} from '../app/routeTable';
+
+const JOB_DETAIL_STATES = ['home', 'nwV2'];
+
 /**
  * Opens the Hub application in a new tab by replacing "despatch" in the current URL.
  */
@@ -20,11 +24,7 @@ export function openJobDetail(jobId: number | string, stateName = 'home'): void 
     if (!jobId) return;
 
     // UI-Router hash-based routing: #!/<url>?jobId=<id>
-    const stateUrls: Record<string, string> = {
-        home: '/',
-        nwV2: '/Nationwide',
-    };
-    const base = stateUrls[stateName] ?? '/';
+    const base = JOB_DETAIL_STATES.includes(stateName) ? routePath(stateName) : routePath('home');
     const url = `#!/${base.replace(/^\//, '')}?jobId=${jobId}`;
     window.open(url, '_blank');
 }
@@ -34,6 +34,6 @@ export function openJobDetail(jobId: number | string, stateName = 'home'): void 
  */
 export function openJobInSearch(jobId: number): void {
     if (!jobId) return;
-    const url = `#!/jobSearch?jobId=${jobId}`;
+    const url = `#!${routePath('jobSearch')}?jobId=${jobId}`;
     window.open(url, '_blank');
 }
