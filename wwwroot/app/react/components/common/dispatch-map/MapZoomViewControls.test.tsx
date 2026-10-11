@@ -20,7 +20,7 @@ function createMockMap() {
 function createMockLayers(opts: {includeTraffic?: boolean} = {}) {
     const {includeTraffic = true} = opts;
     return {
-        ...(includeTraffic ? {vector: {normal: {traffic: {id: 'traffic-layer'}}}} : {}),
+        ...(includeTraffic ? {vector: {traffic: {map: {id: 'traffic-layer'}, litenight: {id: 'traffic-night-layer'}}}} : {}),
         raster: {
             normal: {base: {id: 'roadmap-layer'}, basenight: {id: 'roadmap-night-layer'}},
             satellite: {map: {id: 'satellite-layer'}},
@@ -29,12 +29,9 @@ function createMockLayers(opts: {includeTraffic?: boolean} = {}) {
     };
 }
 
-function createMockPlatform() {
-    const trafficLayer = {id: 'platform-traffic-layer'};
-    const createTileLayer = jest.fn(() => trafficLayer);
-    const getMapTileService = jest.fn(() => ({createTileLayer}));
-    return {platform: {getMapTileService}, trafficLayer, getMapTileService, createTileLayer};
-}
+const inMode = (mode: 'light' | 'dark', ui: React.ReactElement) => (
+    <ColorModeContext.Provider value={{mode, preference: mode, setPreference: jest.fn()}}>{ui}</ColorModeContext.Provider>
+);
 
 describe('MapZoomViewControls', () => {
     describe('map theme picker', () => {
@@ -82,10 +79,6 @@ describe('MapZoomViewControls', () => {
 
     describe('dark mode', () => {
         beforeEach(() => window.localStorage.clear());
-
-        const inMode = (mode: 'light' | 'dark', ui: React.ReactElement) => (
-            <ColorModeContext.Provider value={{mode, preference: mode, setPreference: jest.fn()}}>{ui}</ColorModeContext.Provider>
-        );
 
         it('uses the night roadmap layer when the app is dark, and leaves light maps untouched', () => {
             const light = createMockMap();
@@ -149,7 +142,6 @@ describe('MapZoomViewControls', () => {
         ['Zoom in', 'Zoom in'],
         ['Zoom out', 'Zoom out'],
         ['Toggle traffic conditions', 'Show traffic conditions'],
-        ['Toggle traffic incidents', 'Show traffic incidents'],
         ['Choose view', 'Choose view'],
     ])('shows the %s tooltip on hover', async (ariaLabel, tooltip) => {
         const user = setupUser();
@@ -183,25 +175,38 @@ describe('MapZoomViewControls', () => {
         expect(trafficBtn).toHaveAttribute('data-active', 'false');
 
         fireEvent.click(trafficBtn);
-        expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.normal.traffic);
+        expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.traffic.map);
         expect(trafficBtn).toHaveAttribute('data-active', 'true');
 
         fireEvent.click(trafficBtn);
-        expect(map.removeLayer).toHaveBeenCalledWith(layers.vector!.normal.traffic);
+        expect(map.removeLayer).toHaveBeenCalledWith(layers.vector!.traffic.map);
         expect(trafficBtn).toHaveAttribute('data-active', 'false');
     });
 
-    it('falls back to building a traffic tile layer via the platform when defaultLayers lacks one', () => {
+    it('uses the night traffic layer when the app is dark and swaps it live when the mode changes', () => {
         const map = createMockMap();
-        const layers = createMockLayers({includeTraffic: false});
-        const {platform, trafficLayer, getMapTileService, createTileLayer} = createMockPlatform();
-        renderWithTheme(<MapZoomViewControls map={map} platform={platform} defaultLayers={layers}/>);
+        const layers = createMockLayers();
+        const {rerender} = renderWithTheme(inMode('dark', <MapZoomViewControls map={map} platform={null} defaultLayers={layers}/>));
 
         fireEvent.click(screen.getByLabelText('Toggle traffic conditions'));
+        expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.traffic.litenight);
 
-        expect(getMapTileService).toHaveBeenCalledWith({type: 'traffic'});
-        expect(createTileLayer).toHaveBeenCalledWith('traffictile', 'normal.day', 256, 'png8', {style: 'flow'});
-        expect(map.addLayer).toHaveBeenCalledWith(trafficLayer);
+        rerender(inMode('light', <MapZoomViewControls map={map} platform={null} defaultLayers={layers}/>));
+        expect(map.removeLayer).toHaveBeenCalledWith(layers.vector!.traffic.litenight);
+        expect(map.addLayer).toHaveBeenLastCalledWith(layers.vector!.traffic.map);
+    });
+
+    it('does not offer a separate incidents toggle, and warns when the SDK has no traffic layer', () => {
+        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const map = createMockMap();
+        renderWithTheme(<MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers({includeTraffic: false})}/>);
+
+        expect(screen.queryByLabelText('Toggle traffic incidents')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByLabelText('Toggle traffic conditions'));
+
+        expect(map.addLayer).not.toHaveBeenCalled();
+        expect(warn).toHaveBeenCalled();
+        warn.mockRestore();
     });
 
     it('calls map.setZoom with current zoom + 1 when zoom in is clicked', () => {
@@ -252,7 +257,7 @@ describe('MapZoomViewControls', () => {
             );
 
             expect(map.setBaseLayer).toHaveBeenCalledWith(layers.raster.satellite.map);
-            expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.normal.traffic);
+            expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.traffic.map);
             expect(screen.getByLabelText('Toggle traffic conditions')).toHaveAttribute('data-active', 'true');
         });
 
@@ -287,11 +292,11 @@ describe('MapZoomViewControls', () => {
             renderWithTheme(<MapZoomViewControls ref={ref} map={map} platform={null} defaultLayers={layers}/>);
 
             act(() => ref.current?.setTrafficEnabled(true));
-            expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.normal.traffic);
+            expect(map.addLayer).toHaveBeenCalledWith(layers.vector!.traffic.map);
             expect(screen.getByLabelText('Toggle traffic conditions')).toHaveAttribute('data-active', 'true');
 
             act(() => ref.current?.setTrafficEnabled(false));
-            expect(map.removeLayer).toHaveBeenCalledWith(layers.vector!.normal.traffic);
+            expect(map.removeLayer).toHaveBeenCalledWith(layers.vector!.traffic.map);
             expect(screen.getByLabelText('Toggle traffic conditions')).toHaveAttribute('data-active', 'false');
         });
 

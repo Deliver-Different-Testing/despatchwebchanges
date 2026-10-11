@@ -527,7 +527,7 @@ export function drawRouteLine(
         }
     };
 
-    const router = platform.getRoutingService(null, 8);
+    const router = platform.getRoutingService();
     router.calculateRoute(routingParameters, onResult, handleRoutingError);
 }
 
@@ -612,7 +612,7 @@ export function addExtraRouteLine(
         }
     };
 
-    const router = platform.getRoutingService(null, 8);
+    const router = platform.getRoutingService();
     router.calculateRoute(routingParameters, onResult, handleRoutingError);
 }
 

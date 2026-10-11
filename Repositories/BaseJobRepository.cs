@@ -705,7 +705,6 @@ public partial class BaseJobRepository(
         var exclusiveEnd = endDate.Date.AddDays(1);
         return j => !j.UcjbVoid
                     && j.UcjbStatus != (int)JobStatus.Void
-                    && j.UcjbStatus != (int)JobStatus.Undeliverable
                     && j.UcjbDate < exclusiveEnd
                     && (!j.UcjbJobDone || j.UcjbDate >= startInclusive);
     }

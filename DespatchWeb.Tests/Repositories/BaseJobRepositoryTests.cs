@@ -624,14 +624,17 @@ public class BaseJobRepositoryTests : IAsyncDisposable
             CurrentWorkJobOn(5, new DateTime(2024, 6, 9), done: true), // done before startDate
             CurrentWorkJobOn(6, new DateTime(2024, 6, 15), isVoid: true), // void flag
             CurrentWorkJobOn(7, new DateTime(2024, 6, 15), status: (int)JobStatus.Void), // void status
-            CurrentWorkJobOn(8, new DateTime(2024, 6, 16)) // future prebooking
+            CurrentWorkJobOn(8, new DateTime(2024, 6, 16)), // future prebooking
+            CurrentWorkJobOn(10, new DateTime(2024, 6, 9), done: true, status: (int)JobStatus.Undeliverable), // old undeliverable
+            // kept: undeliverable within the window (shown under Done)
+            CurrentWorkJobOn(9, new DateTime(2024, 6, 15), done: true, status: (int)JobStatus.Undeliverable)
         }.AsQueryable();
 
         var result = jobs.Where(BaseJobRepository.CurrentWorkListJob(startDate, endDate))
             .Select(j => j.UcjbId)
             .ToList();
 
-        Assert.Equal([1, 2, 3, 4], result);
+        Assert.Equal([1, 2, 3, 4, 9], result);
     }
 
     private static TucJob CurrentWorkJobOn(int id, DateTime date, bool done = false, bool isVoid = false,
