@@ -1,6 +1,8 @@
 import type {IBox} from '../../interfaces/layout.interfaces';
 import type {CourierDisplayMode} from '../interfaces/courierDisplayMode';
-import {toastService} from '../services/toastService';
+import type {EditAddressDialogViewModel} from '../interfaces';
+import type {AddressType} from '../../enums/address-type.enum';
+import {toastService, type ToastService} from '../services/toastService';
 
 export interface DashboardSettingsInterval {
     id: number;
@@ -23,6 +25,18 @@ export interface DashboardSettingsDialogResult {
 }
 
 export interface DialogRegistry {
+    ReactEditAddressDialog: {
+        open: (
+            addressDetails: EditAddressDialogViewModel | null,
+            title?: string,
+            submitLabel?: string,
+            showContactInfo?: boolean,
+            isUsTenant?: boolean,
+            toastService?: ToastService,
+            addressType?: AddressType,
+            readOnly?: boolean,
+        ) => Promise<EditAddressDialogViewModel | null>;
+    };
     ReactMessagingDialog: {open: (opts?: unknown) => Promise<void>};
     ReactDashboardSettingsDialog: {
         open: (
@@ -47,6 +61,7 @@ export type DialogName = keyof DialogRegistry;
 export type DialogOpener = <N extends DialogName>(name: N) => DialogRegistry[N] | undefined;
 
 const DIALOG_LABELS: Record<DialogName, string> = {
+    ReactEditAddressDialog: 'Edit address',
     ReactMessagingDialog: 'Messaging',
     ReactDashboardSettingsDialog: 'Settings',
     ReactCustomizePanelsDialog: 'Customize panels',
