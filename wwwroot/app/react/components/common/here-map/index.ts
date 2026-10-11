@@ -1,11 +1,10 @@
 /**
  * HereMap Component
  *
- * Exports for the HereMap React component and AngularJS integration.
+ * Exports for the HereMap React component.
  */
 
 export {HereMap} from './HereMap';
-export {HereMapReactComponent} from './here-map-react.module';
 export {useHereMap} from './useHereMap';
 export type {
     HereMapProps,

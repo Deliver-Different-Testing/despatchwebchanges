@@ -1,3 +1,4 @@
+import {getSession} from '../../../session';
 /**
  * JobDetails - Root component for the React job details panel
  *
@@ -180,7 +181,7 @@ export function JobDetails({config}: JobDetailsProps) {
     const {data: routesData} = useRouteList({enabled: isRecurringJob});
     const routes = routesData ?? [];
 
-    const contactId = window.ContactID ?? 0;
+    const contactId = getSession().contactId;
     const {isEditMode, toggleEditMode, toggleField, resetToDefaults, isFieldVisible} = useFieldVisibility(contactId);
     const {viewDensity, toggleDensity, isDense} = useViewDensity(contactId);
     const viewDensityLabel = viewDensity === 'normal' ? 'Normal' : 'Dense';
@@ -686,7 +687,7 @@ export function JobDetails({config}: JobDetailsProps) {
                         Read by <strong>{job.readTrackerInfo.readBy}</strong>
                         {(job.readTrackerInfo._readDateStr || job.readTrackerInfo.readDate) && (
                             <Text component="span" c="dimmed" ml={4} style={{fontSize: 'inherit'}}>
-                                on {job.readTrackerInfo._readDateStr || String(job.readTrackerInfo.readDate)} {getTimezoneAbbreviation(window.TimeZone || '')}
+                                on {job.readTrackerInfo._readDateStr || String(job.readTrackerInfo.readDate)} {getTimezoneAbbreviation(getSession().timeZone)}
                             </Text>
                         )}
                     </Text>

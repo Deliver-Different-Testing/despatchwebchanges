@@ -1,35 +1,20 @@
 import {IAppConfig} from "./interfaces/app-config.interface";
-import {AppPage} from "./enums/app-pages.enum";
 import "./react/components/common/pod-photo-viewer/pod-photo-viewer-react.module";
 import "./react/components/dialogs/note-management-dialog/note-management-dialog-react.module";
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
 import ToastrService from "./services/toastr.service";
 import "./react/components/dialogs/event-group-dialog/event-group-dialog-react.module";
-import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
-import JobDetailComponent from "./components/common/job-details/job-details.component";
-import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
 import {resolveDashboardRedirect} from "./react/services/dashboardRouteGuard";
 import {confirmNavigationAllowed} from "./react/services/unsavedChangesGuard";
 import ThemeConfig from "./materialTheme";
-import {bytesFilter, momentFormatFilter, replaceFilter, timezoneShortFilter} from "./filters";
-import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobAddStopService from "./services/job-add-stop.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
-import DispatchExecutorService from "./services/dispatch-executor.service";
-import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
-import {DriverLocationsReactComponent} from "./react/components/common/driver-locations/driver-locations-react.module";
-import {NoDataReactComponent} from "./react/components/common/no-data/no-data-react.module";
-import {HereMapReactComponent} from "./react/components/common/here-map";
-import {DispatchMapReactComponent} from "./react/components/common/dispatch-map";
-import {
-    FlightAgentDataTableReactComponent
-} from "./react/components/common/flight-agent-data-table/flight-agent-data-table-react.module";
 import reactAppShellDirective from "./components/common/react-app-shell/react-app-shell.directive";
 import angular from 'angular';
 
@@ -48,8 +33,7 @@ app
             lat: -36.8485,
             lng: 174.7633
         }
-    } as IAppConfig)
-    .constant("AppPages", AppPage);
+    } as IAppConfig);
 
 // Routes
 app.config(["$urlRouterProvider", "$stateProvider",
@@ -200,36 +184,18 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
         }
     }]);
 
-// Filters
-app.filter("bytes", () => bytesFilter);
-app.filter('replace', () => replaceFilter);
-app.filter('timezoneShort', () => timezoneShortFilter);
-app.filter('momentFormat', () => momentFormatFilter);
 
-// Components
-app.component("jobDetailWidget", JobDetailComponent);
-app.component("taskItemReact", TaskItemReactComponent);
-app.component("driverLocationsReact", DriverLocationsReactComponent);
-app.component("noDataReact", NoDataReactComponent);
-app.component("flightAgentDataTableReact", FlightAgentDataTableReactComponent);
-app.component("hereMapReact", HereMapReactComponent);
-app.component("dispatchMapReact", DispatchMapReactComponent);
 
 // Directives
 app.directive("reactAppShell", reactAppShellDirective);
 
-// Dialogs
 
 // Services
 app.service("configService", ConfigService);
 app.service("DispatchData", DispatchCoreService);
 app.service("toastrService", ToastrService);
-app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
-app.service("jobFileUploadDialogService", JobFileUploadDialogService);
-app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
 app.service("messagingDialogService", MessagingDialogService);
-app.service('dispatchJobService', DispatchExecutorService);
 
 export default app;

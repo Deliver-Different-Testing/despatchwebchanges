@@ -1536,21 +1536,6 @@ export function useJobActions({
         }
     }, [showToast, refreshAndNotify]);
 
-    // ── Pallet CRUD ────────────────────────────────────────────────
-
-    const handleNewPallet = useCallback(async () => {
-        const j = jobRef.current;
-        if (!j) return;
-        (window as any).ReactPalletDialog?.open?.({jobId: j.id, isBulkJob: j.isBulkJob});
-        await refreshAndNotify();
-    }, [refreshAndNotify]);
-
-    const handleEditPallet = useCallback(async (pallet: any) => {
-        const j = jobRef.current;
-        if (!j) return;
-        (window as any).ReactPalletDialog?.open?.({jobId: j.id, isBulkJob: j.isBulkJob, existingPallet: pallet});
-        await refreshAndNotify();
-    }, [refreshAndNotify]);
 
     return {
         // Text dialog state
@@ -1659,10 +1644,6 @@ export function useJobActions({
 
         // Push to Live
         handlePushToLive,
-
-        // Pallet CRUD
-        handleNewPallet,
-        handleEditPallet,
 
         // Universal dispatch dialog — JobDetails renders the dialog and wires
         // these callbacks back to the hook so this hook still owns dispatch logic.

@@ -1,11 +1,10 @@
 /**
  * DispatchMap Component
  *
- * Exports for the DispatchMap React component and AngularJS integration.
+ * Exports for the DispatchMap React component.
  */
 
 export { DispatchMap } from './DispatchMap';
-export { DispatchMapReactComponent } from './dispatch-map-react.module';
 export { useHereMap } from './useHereMap';
 export { useMapPreferences } from './useMapPreferences';
 export { JobMarkerManager } from './JobMarkerManager';

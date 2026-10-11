@@ -1,11 +1,10 @@
 /**
  * Driver Locations Component
  *
- * Exports for the DriverLocations React component and AngularJS integration.
+ * Exports for the DriverLocations React component.
  */
 
 export { DriverLocations } from './DriverLocations';
-export { DriverLocationsReactComponent } from './driver-locations-react.module';
 export type {
     DriverLocationsProps,
     AreaSectionProps,

@@ -1,3 +1,4 @@
+import {getSession} from '../../../session';
 /**
  * HereMap Type Definitions
  *
@@ -99,14 +100,14 @@ export const NZ_MAP_CENTER = {lat: -41.2865, lng: 174.7762};
  * Only ever set for NP sessions, and only when their agent record is geocoded.
  */
 export function getNetworkPartnerMapCenter(): { lat: number; lng: number } | null {
-    return window.serverConfig?.npMapCenter ?? null;
+    return getSession().npMapCenter;
 }
 
 export function getDefaultMapCenter(): { lat: number; lng: number } {
     // A network partner works one address, not a country, so their own address is
     // a better opening view than the geographic centre of the tenant's country.
     return getNetworkPartnerMapCenter()
-        ?? (window.serverConfig?.isUSCustomer ? US_MAP_CENTER : NZ_MAP_CENTER);
+        ?? (getSession().isUsCustomer ? US_MAP_CENTER : NZ_MAP_CENTER);
 }
 
 export const DEFAULT_MAP_CONFIG: HereMapConfig = {

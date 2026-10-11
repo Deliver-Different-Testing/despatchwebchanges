@@ -1,3 +1,4 @@
+import {getSession} from '../../../../session';
 /**
  * MetricsGrid - Two rows of timing and pricing metric cards
  * Matches AngularJS .metrics-grid layout with 1px gap separators.
@@ -42,7 +43,7 @@ const gridProps = {
 
 function getTzStr(timezone?: { text?: string }): string {
     if (timezone?.text) return getTimezoneAbbreviation(timezone.text);
-    return getTimezoneAbbreviation(window.TimeZone || '');
+    return getTimezoneAbbreviation(getSession().timeZone);
 }
 
 export const MetricsGrid = React.memo(({
@@ -58,7 +59,7 @@ export const MetricsGrid = React.memo(({
                                        }: MetricsGridProps) => {
     const puTz = getTzStr(job.pickUpTimeZone);
     const delTz = getTzStr(job.deliveryTimeZone);
-    const defaultTz = getTimezoneAbbreviation(window.TimeZone || '');
+    const defaultTz = getTimezoneAbbreviation(getSession().timeZone);
 
     const isLocked = !!job.locked;
 
