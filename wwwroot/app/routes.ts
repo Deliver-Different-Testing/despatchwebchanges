@@ -26,7 +26,7 @@ import {
     saveBoxVisibility,
     mergeBoxVisibility,
 } from './react/components/common/box-shell/layoutPersistence';
-import {createLayoutToolbarActions} from './functions/layoutToolbarActions';
+import {createLayoutToolbarActions} from './react/utils/layoutToolbarActions';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './react/pages/job-search/lib/boxDefinitions';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './react/pages/dispatch/lib/boxDefinitions';
 import {

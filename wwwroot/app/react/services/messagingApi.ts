@@ -30,6 +30,14 @@ export class MessagingApiService {
     }
 
     /**
+     * Number of unread messages for the current staff member
+     */
+    async getUnreadMessageCount(): Promise<number> {
+        const count = await apiClient.get<number>('messages/GetUnreadMessageCount');
+        return count ?? 0;
+    }
+
+    /**
      * Get messages for a specific contact
      */
     async getMessages(

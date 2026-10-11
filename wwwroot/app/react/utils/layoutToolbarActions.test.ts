@@ -1,6 +1,6 @@
 import {createLayoutToolbarActions, LayoutToolbarHost} from './layoutToolbarActions';
-import type {ImportLayoutsResult, LayoutStorageKeys} from '../react/components/common/box-shell/layoutPersistence';
-import type {ILayout} from '../interfaces/layout.interfaces';
+import type {ImportLayoutsResult, LayoutStorageKeys} from '../components/common/box-shell/layoutPersistence';
+import type {ILayout} from '../../interfaces/layout.interfaces';
 
 const storageKeys: LayoutStorageKeys = {
     layoutsKey: 'layoutsTest-1',

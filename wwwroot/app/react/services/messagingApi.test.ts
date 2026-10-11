@@ -24,6 +24,17 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('MessagingApiService', () => {
+    describe('getUnreadMessageCount', () => {
+        it('returns the count from the endpoint, defaulting to 0 when empty', async () => {
+            mockApiClient.get.mockResolvedValueOnce(4);
+            expect(await new MessagingApiService().getUnreadMessageCount()).toBe(4);
+            expect(mockApiClient.get).toHaveBeenCalledWith('messages/GetUnreadMessageCount');
+
+            mockApiClient.get.mockResolvedValueOnce(undefined);
+            expect(await new MessagingApiService().getUnreadMessageCount()).toBe(0);
+        });
+    });
+
     describe('getRecentList', () => {
         it('should call apiClient.get with correct URL', async () => {
             const mockConversations = [

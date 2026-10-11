@@ -1,4 +1,4 @@
-import type {ILayout} from '../interfaces/layout.interfaces';
+import type {ILayout} from '../../interfaces/layout.interfaces';
 import {
     ImportLayoutsResult,
     LayoutStorageKeys,
@@ -7,7 +7,7 @@ import {
     renameLayoutInStorage,
     saveLastActiveLayoutName,
     saveLayouts,
-} from '../react/components/common/box-shell/layoutPersistence';
+} from '../components/common/box-shell/layoutPersistence';
 
 const DEFAULT_LAYOUT_NAME = 'Default';
 
