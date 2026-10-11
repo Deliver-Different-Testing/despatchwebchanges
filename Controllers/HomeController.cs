@@ -16,8 +16,7 @@ public partial class HomeController(
     IDfrntViewsRepository viewsRepository,
     ITenantInfoService infoService,
     IConnectionStringManager connectionStringManager,
-    IFeatureVisibilityService featureVisibilityService,
-    INetworkPartnerContextService networkPartnerContextService) : Controller
+    ISessionContextService sessionContextService) : Controller
 {
     [Authorize]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
@@ -26,15 +25,8 @@ public partial class HomeController(
         try
         {
             var staffId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "StaffID")?.Value;
-            var contactId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "ContactID")?.Value;
             var connectionString = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
             var tenantId = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
-            var countryCode = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "CountryCode")?.Value;
-            var tenantTimeZone = HttpContext.User.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
-
-            var usa = Country.Us.GetDescription();
-
-            var isUsTenantFlag = countryCode?.ToUpper().Equals(usa);
 
             if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(tenantId))
             {
@@ -58,35 +50,17 @@ public partial class HomeController(
             var maskedConnectionString = MaskSensitiveInfo(connectionString + credentials);
             Log.Debug("Connection String Set: {MaskedConnectionString}", maskedConnectionString);
 
-            if (int.TryParse(contactId, out var parsedContactId))
-            {
-                var clientDetail = await clientRepository.ValidateClientAsync(parsedContactId);
-                if (clientDetail == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Contact {parsedContactId} has no tucClientContact row in this tenant's database.");
-                }
-
-                ViewBag.FirstName = clientDetail.FirstName;
-                ViewBag.FullName = clientDetail.FullName;
-                ViewBag.Email = clientDetail.Email;
-                ViewBag.ClientInternal = clientDetail.Internal;
-                ViewBag.IsNetworkPartner = clientDetail.IsNetworkPartner;
-                ViewBag.ContactID = clientDetail.StaffID ?? parsedContactId;
-                ViewBag.IsUsTenant = isUsTenantFlag ?? false;
-                ViewBag.TimeZone = tenantTimeZone;
-
-                var visibleDashboards = await TryResolveAsync(
-                    featureVisibilityService.GetVisibleDashboardsAsync, "Dashboard visibility lookup");
-                ViewBag.VisibleFeatures = visibleDashboards?.ToArray();
-
-                ViewBag.NpMapCenter = await TryResolveAsync(
-                    networkPartnerContextService.GetMapCentreAsync, "Network partner map centre lookup");
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid contact ID: {contactId}", nameof(contactId));
-            }
+            var context = await sessionContextService.BuildAsync(HttpContext.User);
+            ViewBag.FirstName = context.FirstName;
+            ViewBag.FullName = context.FullName;
+            ViewBag.Email = context.Email;
+            ViewBag.ClientInternal = context.ClientInternal;
+            ViewBag.IsNetworkPartner = context.IsNetworkPartner;
+            ViewBag.ContactID = context.ContactId;
+            ViewBag.IsUsTenant = context.IsUsTenant;
+            ViewBag.TimeZone = context.TimeZone;
+            ViewBag.VisibleFeatures = context.VisibleFeatures;
+            ViewBag.NpMapCenter = context.NpMapCenter;
 
             return View();
         }
@@ -105,19 +79,6 @@ public partial class HomeController(
         var staffId = infoService.GetStaffId();
         var viewOptions = await viewsRepository.GetViewsByUserAndPageAsync(staffId, page);
         return Json(viewOptions);
-    }
-
-    private static async Task<T?> TryResolveAsync<T>(Func<Task<T?>> resolve, string description)
-    {
-        try
-        {
-            return await resolve();
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "{Description} failed; continuing without it", description);
-            return default;
-        }
     }
 
     private static string MaskSensitiveInfo(string connectionString)

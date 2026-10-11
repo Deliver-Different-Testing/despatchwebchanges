@@ -1,4 +1,4 @@
-import {getSession} from './session';
+import {clearSessionContext, getSession, setSessionContext, SessionContextDto} from './session';
 
 const GLOBALS = [
     'ContactID', 'FirstName', 'FullName', 'Dispatcher', 'TimeZone', 'IsNetworkPartner',
@@ -62,5 +62,48 @@ describe('getSession', () => {
         expect(getSession().timeZone).toBe('A');
         win.TimeZone = 'B';
         expect(getSession().timeZone).toBe('B');
+    });
+});
+
+describe('getSession with a fetched context', () => {
+    const dto: SessionContextDto = {
+        contactId: 5, staffId: 7, firstName: 'Jane', fullName: 'Jane Doe', email: 'j@t.com',
+        dispatcher: null, timeZone: 'Pacific/Auckland', countryCode: 'US', isUsTenant: true,
+        currencyCode: 'USD', clientInternal: true, isNetworkPartner: true,
+        visibleFeatures: ['dw-dispatch'], npMapCenter: {lat: 1, lng: 2}, hubUrl: 'https://hub/',
+    };
+
+    beforeEach(() => {
+        clearSessionContext();
+        GLOBALS.forEach(g => delete win[g]);
+    });
+    afterAll(() => {
+        clearSessionContext();
+        GLOBALS.forEach(g => delete win[g]);
+    });
+
+    it('maps the DTO to a Session, normalising nulls', () => {
+        setSessionContext(dto);
+        expect(getSession()).toEqual({
+            contactId: 5, firstName: 'Jane', fullName: 'Jane Doe', dispatcher: '',
+            timeZone: 'Pacific/Auckland', isNetworkPartner: true, clientInternal: true,
+            visibleFeatures: ['dw-dispatch'], isUsCustomer: true, currencyCode: 'USD',
+            npMapCenter: {lat: 1, lng: 2},
+        });
+        setSessionContext({...dto, visibleFeatures: null, npMapCenter: null});
+        expect(getSession()).toMatchObject({visibleFeatures: null, npMapCenter: null});
+    });
+
+    it('prefers the store over window globals', () => {
+        Object.assign(win, {ContactID: '99', FirstName: 'Razor', CurrencyCode: 'NZD'});
+        setSessionContext(dto);
+        expect(getSession()).toMatchObject({contactId: 5, firstName: 'Jane', currencyCode: 'USD'});
+    });
+
+    it('falls back to window globals once the store is cleared', () => {
+        win.FirstName = 'Razor';
+        setSessionContext(dto);
+        clearSessionContext();
+        expect(getSession().firstName).toBe('Razor');
     });
 });

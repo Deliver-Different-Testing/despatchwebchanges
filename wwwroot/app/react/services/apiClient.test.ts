@@ -286,6 +286,15 @@ describe('ApiClient', () => {
             }).rejects.toBeDefined();
         });
 
+        it('should surface the x-auth-redirect header as authRedirect', async () => {
+            const errorHandler = mockResponseInterceptorUse.mock.calls[0][1];
+
+            await expect(errorHandler({
+                message: 'x',
+                response: {status: 401, statusText: 'Unauthorized', data: {error: 'no'}, headers: {'x-auth-redirect': 'https://hub.test/'}},
+            })).rejects.toMatchObject({status: 401, authRedirect: 'https://hub.test/'});
+        });
+
         it('should handle network errors without response', async () => {
             const interceptorCall = mockResponseInterceptorUse.mock.calls[0];
             const errorHandler = interceptorCall[1];

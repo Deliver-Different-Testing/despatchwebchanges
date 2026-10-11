@@ -3,6 +3,7 @@ using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Services;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -35,8 +36,7 @@ public class HomeControllerTests : IDisposable
             _viewsRepoMock,
             _infoServiceMock,
             _connectionStringManagerMock,
-            _featureVisibilityMock,
-            _networkPartnerContextMock);
+            new SessionContextService(_clientRepoMock, _featureVisibilityMock, _networkPartnerContextMock));
 
         controller.ControllerContext = new ControllerContext
         {

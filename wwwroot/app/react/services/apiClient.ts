@@ -65,6 +65,8 @@ class ApiClient {
                     statusText: error.response?.statusText ?? 'Network Error',
                     message: extractErrorMessage(error),
                 };
+                const authRedirect = error.response?.headers?.['x-auth-redirect'];
+                if (typeof authRedirect === 'string') apiError.authRedirect = authRedirect;
                 return Promise.reject(apiError);
             }
         );
