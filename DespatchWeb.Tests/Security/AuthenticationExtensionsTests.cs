@@ -37,6 +37,8 @@ public class AuthenticationExtensionsTests : IDisposable
         Environment.SetEnvironmentVariable("ClaimsKey", _originalClaimsKey);
         Environment.SetEnvironmentVariable("Issuer", _originalIssuer);
         Environment.SetEnvironmentVariable("Audience", _originalAudience);
+
+        GC.SuppressFinalize(this);
     }
 
     [Fact]
@@ -95,7 +97,7 @@ public class AuthenticationExtensionsTests : IDisposable
     public void CreateApiToken_WithExactlyMinimumKeyLength_CreatesToken()
     {
         // Arrange - exactly 32 bytes (256 bits)
-        var validKey = "01234567890123456789012345678901";  // 32 characters = 32 bytes UTF8
+        const string validKey = "01234567890123456789012345678901";  // 32 characters = 32 bytes UTF8
         Environment.SetEnvironmentVariable("JWTSecretKey", validKey);
 
         // Act

@@ -12,7 +12,7 @@ namespace DespatchWeb.Tests.Services;
 /// <summary>
 /// Unit tests for TenantInfoService - tests timezone handling, culture formatting, and claim parsing.
 /// </summary>
-public class TenantInfoServiceTests : IAsyncDisposable
+public sealed class TenantInfoServiceTests: IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
@@ -23,7 +23,6 @@ public class TenantInfoServiceTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        GC.SuppressFinalize(this);
         _memoryCache.Dispose();
         await _db.DisposeAsync();
     }

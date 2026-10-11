@@ -32,7 +32,6 @@ public sealed class TenantTimeZoneResolutionSimulationTests(ITestOutputHelper ou
 
     public async ValueTask DisposeAsync()
     {
-        GC.SuppressFinalize(this);
         _memoryCache.Dispose();
         await _db.DisposeAsync();
     }
