@@ -49,16 +49,13 @@ describe('dashboardRouteGuard', () => {
         expect(dashboardStateFeatureKeys.home).toBe(dashboardStateFeatureKeys.dispatch);
         expect(dashboardStateFeatureKeys.dispatch).toBe(dashboardStateFeatureKeys.dispatchV2);
         expect(dashboardStateFeatureKeys.jobSearch).toBe(dashboardStateFeatureKeys.jobSearchV2);
-        expect(dashboardStateFeatureKeys.nw).toBe(dashboardStateFeatureKeys.nwV2);
     });
 
-    it('blocks and allows nwV2 exactly as it does nw', () => {
+    it('blocks and allows nwV2 by the nationwide grant', () => {
         window.VisibleFeatures = ['dw-dispatch'];
-        expect(resolveDashboardRedirect('nw')).not.toBeNull();
         expect(resolveDashboardRedirect('nwV2')).not.toBeNull();
 
         delete window.VisibleFeatures;
-        expect(resolveDashboardRedirect('nw')).toBeNull();
         expect(resolveDashboardRedirect('nwV2')).toBeNull();
     });
 });

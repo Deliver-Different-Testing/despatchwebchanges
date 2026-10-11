@@ -4,7 +4,7 @@
  * The page is mounted/unmounted by the AngularJS host bridge on every visit
  * (see courier-map-react.module.tsx), so plain component state loses the
  * selection on every nav-away/nav-back. Stored in localStorage keyed by
- * ContactID, mirroring pages/nationwide/lib/betaPreference.ts.
+ * ContactID.
  */
 
 import {ContactID} from '../../../contants';

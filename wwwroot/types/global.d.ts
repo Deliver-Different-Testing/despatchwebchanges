@@ -50,7 +50,7 @@ import type {CourierDisplayMode} from '../app/react/interfaces/courierDisplayMod
 import type {DateRange} from '../app/react/components/dialogs/date-range-dialog/DateRangeDialog';
 import type {PriceBreakdown} from '../app/react/components/dialogs/price-breakdown-dialog/PriceBreakdownDialog';
 import type {SplitPriceBreakdown, UpdateSplitPricingBreakdownRequest} from '../app/react/interfaces/splitJobs';
-import type {IFlightViewModel} from '../app/components/Nationwide/nationwide.interfaces';
+import type {IFlightViewModel} from '../app/interfaces/nationwideFlight.interfaces';
 
 // App shell types
 import type {ToolbarActionsConfig} from '../app/react/components/common/app-shell/app-shell-react.module';
@@ -297,7 +297,6 @@ declare global {
                 selectedRefreshInterval?: RefreshOption,
                 selectedDriverLocationRefreshInterval?: RefreshOption,
                 selectedTaskRefreshInterval?: RefreshOption,
-                nationwideBetaEnabled?: boolean,
                 selectedCourierDisplayMode?: CourierDisplayMode
             ) => Promise<DashboardSettingsResult | null>;
         };

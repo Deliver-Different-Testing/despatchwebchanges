@@ -22,7 +22,7 @@ export function openJobDetail(jobId: number | string, stateName = 'home'): void 
     // UI-Router hash-based routing: #!/<url>?jobId=<id>
     const stateUrls: Record<string, string> = {
         home: '/',
-        nw: '/Nationwide',
+        nwV2: '/Nationwide',
     };
     const base = stateUrls[stateName] ?? '/';
     const url = `#!/${base.replace(/^\//, '')}?jobId=${jobId}`;

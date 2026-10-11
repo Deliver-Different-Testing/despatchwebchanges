@@ -34,6 +34,14 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
     },
 }));
 
+const tasksBoxProps: {refetchIntervalMs?: number | false} = {};
+jest.mock('../../components/common/tasks-box/TasksBox', () => ({
+    TasksBox: (props: {refetchIntervalMs?: number | false}) => {
+        tasksBoxProps.refetchIntervalMs = props.refetchIntervalMs;
+        return <div data-testid="mock-tasks-box" />;
+    },
+}));
+
 const mapProps: {mapZoom?: number; jobs?: unknown[]; preferenceScope?: string} = {};
 jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
     DispatchMap: (props: {mapZoom?: number; jobs?: unknown[]; preferenceScope?: string}) => {
@@ -127,6 +135,7 @@ import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 import {openFlightConfirmationDialog} from '../../components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module';
 import {formatDateForApiWithTzs} from '../../utils/dateUtils';
 import {apiClient} from '../../services/apiClient';
+import {JobProperty} from '../../../enums/job-property.enum';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof NationwidePage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -464,6 +473,30 @@ describe('NationwidePage', () => {
             await waitFor(() => expect(getDispatchJobDetailMock).toHaveBeenCalledWith(9));
         });
 
+        it('writes the returned AWB to the job ConNote using the UpdateJob query-param contract', async () => {
+            renderPage();
+            await selectAFlightJob();
+
+            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+                shouldAssign: true,
+                awb: 'AWB123',
+                packageReadyTime,
+                packageDeliverByTime,
+            });
+            const postSpy = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({data: {}} as never);
+            getDispatchJobDetailMock.mockResolvedValueOnce(undefined);
+
+            const onAddFlight = widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>;
+            await act(async () => {
+                await onAddFlight(mockFlight);
+            });
+
+            expect(postSpy).toHaveBeenCalledWith('job/UpdateJob', null, {
+                params: expect.objectContaining({jobId: 9, field: JobProperty.ConNote, value: 'AWB123', isRecurring: false}),
+            });
+            postSpy.mockRestore();
+        });
+
         it('warns rather than reporting a failed assignment when the flight is assigned but the AWB write fails', async () => {
             const showToast = jest.fn();
             renderPage({showToast});
@@ -713,6 +746,30 @@ describe('NationwidePage', () => {
                     startDate, endDate, useTime: true,
                 }));
             }
+        });
+
+        it('re-queries every mounted list when the date filter changes, not just on first mount', () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+            const startDate = dayjs('2026-03-01');
+            const endDate = dayjs('2026-03-02');
+            act(() => { bridge.updateFilters({startDate, endDate, useTime: true}); });
+
+            for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
+                expect(listParamPushes[prefix]).toContainEqual({startDate, endDate, useTime: true, page: 0});
+            }
+        });
+
+        it('passes the auto-refresh interval to the tasks box as well as the lists', () => {
+            const onLayoutBridgeReady = jest.fn();
+            renderPage({onLayoutBridgeReady});
+            const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+            act(() => { bridge.updateRefreshIntervalMs(30_000); });
+
+            expect(tasksBoxProps.refetchIntervalMs).toBe(30_000);
         });
     });
 

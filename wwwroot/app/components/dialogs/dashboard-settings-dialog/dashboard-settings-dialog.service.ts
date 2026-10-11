@@ -4,7 +4,6 @@ import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
-import {getNationwideBetaEnabled} from "../../../react/pages/nationwide/lib/betaPreference";
 import angular from 'angular';
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
@@ -92,7 +91,6 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             title,
             showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
             showDriverLocationRefresh: appPage === AppPage.Dispatch,
-            showNationwideBetaToggle: appPage === AppPage.Domestic,
         };
 
         if (!selectedRefreshInterval) {
@@ -117,7 +115,6 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 selectedRefreshInterval,
                 selectedDriverLocationRefreshInterval,
                 undefined, // selectedTaskRefreshInterval — V1 dispatch has no separate Tasks cadence
-                appPage === AppPage.Domestic ? getNationwideBetaEnabled() : undefined,
             );
 
             console.debug('DashboardSettingsDialogService: Dialog closed!');

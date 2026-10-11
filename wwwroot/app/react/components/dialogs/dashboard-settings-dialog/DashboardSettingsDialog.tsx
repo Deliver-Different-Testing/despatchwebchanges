@@ -10,7 +10,7 @@
 
 import React, {useState} from 'react';
 import {Box, Divider, Group, Select, Paper, Stack, Text} from '@mantine/core';
-import {Clock, IdCard, Settings, Sparkles} from 'lucide-react';
+import {Clock, IdCard, Settings} from 'lucide-react';
 import {Icon} from '../../common/icon/Icon';
 import {
     DialogFooter,
@@ -19,10 +19,8 @@ import {
     dialogContentBg,
     dialogSize,
 } from '../shared/mantine';
-import {SectionHeading, SettingRadioGroup, SettingRow} from '../../common/settings-controls/SettingsControls';
+import {SectionHeading, SettingRadioGroup} from '../../common/settings-controls/SettingsControls';
 import type {CourierDisplayMode} from '../../../interfaces';
-import {useColorMode} from '../../../hooks/useColorMode';
-import {ConfirmDialog} from '../confirm-dialog/ConfirmDialog';
 
 const COURIER_DISPLAY_MODE_OPTIONS: {value: CourierDisplayMode; label: string}[] = [
     {value: 'off', label: 'Off'},
@@ -52,8 +50,6 @@ export interface DashboardSettingsConfig {
     showDriverLocationRefresh?: boolean;
     /** Show the "Tasks" auto-refresh dropdown (its own independent cadence). */
     showTaskRefresh?: boolean;
-    /** Show the "Use the new Nationwide" toggle (on by default). Nationwide settings only. */
-    showNationwideBetaToggle?: boolean;
     /** Show the "Current Work title" courier display setting. Dispatch page only. */
     showCourierDisplayMode?: boolean;
 }
@@ -62,8 +58,6 @@ export interface DashboardSettingsResult {
     selectedRefreshInterval?: RefreshOption;
     selectedDriverLocationRefreshInterval?: RefreshOption;
     selectedTaskRefreshInterval?: RefreshOption;
-    /** Set when `showNationwideBetaToggle` is true; the caller persists + redirects. */
-    nationwideBetaEnabled?: boolean;
     /** Set when `showCourierDisplayMode` is true; the caller persists + applies it. */
     courierDisplayMode?: CourierDisplayMode;
 }
@@ -75,7 +69,6 @@ export interface DashboardSettingsDialogProps {
     selectedDriverLocationRefreshInterval?: RefreshOption;
     selectedTaskRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
-    nationwideBetaEnabled?: boolean;
     selectedCourierDisplayMode?: CourierDisplayMode;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
@@ -124,7 +117,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     selectedDriverLocationRefreshInterval: initialDriverInterval,
     selectedTaskRefreshInterval: initialTaskInterval,
     refreshOptions,
-    nationwideBetaEnabled: initialNationwideBetaEnabled,
     selectedCourierDisplayMode: initialCourierDisplayMode,
     onClose,
     onSave,
@@ -138,34 +130,15 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [taskInterval, setTaskInterval] = useState<RefreshOption>(
         initialTaskInterval ?? {id: 0, text: 'Disabled'}
     );
-    const [nationwideBetaEnabled, setNationwideBetaEnabled] = useState<boolean>(
-        initialNationwideBetaEnabled ?? true,
-    );
     const [courierDisplayMode, setCourierDisplayMode] = useState<CourierDisplayMode>(
         initialCourierDisplayMode ?? 'off',
     );
 
-    const {mode, setPreference: setColorPreference} = useColorMode();
-    const [confirmingV1, setConfirmingV1] = useState(false);
-
-    const switchingToV1 = Boolean(config.showNationwideBetaToggle)
-        && (initialNationwideBetaEnabled ?? true)
-        && !nationwideBetaEnabled;
-
     const handleSave = () => {
-        if (switchingToV1 && mode === 'dark') {
-            setConfirmingV1(true);
-            return;
-        }
-        emitSave();
-    };
-
-    const emitSave = () => {
         onSave({
             selectedRefreshInterval: refreshInterval,
             selectedDriverLocationRefreshInterval: driverLocationInterval,
             selectedTaskRefreshInterval: taskInterval,
-            nationwideBetaEnabled: config.showNationwideBetaToggle ? nationwideBetaEnabled : undefined,
             ...(config.showCourierDisplayMode ? {courierDisplayMode} : {}),
         });
     };
@@ -211,23 +184,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             </Box>
         ),
 
-        /* Nationwide version toggle — opt-in because the React Nationwide page
-           is new and unproven. */
-        config.showNationwideBetaToggle && (
-            <Box p={24} key="nationwideVersion">
-                <SectionHeading icon={<Icon lucide={Sparkles}/>} title="Nationwide version"/>
-                <SettingRow
-                    title="Try the new Nationwide"
-                    description="The rebuilt Nationwide page (v2) — faster loads, modern dialogs, saved
-                        layouts that follow your account across browsers and computers, and dark mode.
-                        Turn it off to use the classic page (v1), which doesn't support dark mode.
-                        Applies to your account only."
-                    checked={nationwideBetaEnabled}
-                    onToggle={() => setNationwideBetaEnabled((prev) => !prev)}
-                />
-            </Box>
-        ),
-
         config.showCourierDisplayMode && (
             <Box p={24} key="courierDisplayMode">
                 <SectionHeading icon={<Icon lucide={IdCard}/>} title="Current Work title"/>
@@ -264,19 +220,6 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                 onCancel={onClose}
                 onConfirm={handleSave}
                 confirmLabel="Save changes"
-            />
-            <ConfirmDialog
-                opened={confirmingV1}
-                title="Switch to classic Nationwide?"
-                message="The classic Nationwide (v1) doesn't support dark mode. Switching to it will disable dark mode and set your theme to Light. Switch back to Nationwide v2 at any time to use dark mode again."
-                confirmLabel="Switch to classic"
-                variant="warning"
-                onClose={() => setConfirmingV1(false)}
-                onConfirm={() => {
-                    setConfirmingV1(false);
-                    setColorPreference('light');
-                    emitSave();
-                }}
             />
         </DialogShell>
     );

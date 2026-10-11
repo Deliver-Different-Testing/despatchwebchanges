@@ -1,10 +1,4 @@
 /** @jest-environment node */
-/**
- * Extracted from `NationwideControl` so the AngularJS page and the React page
- * share one implementation. The AngularJS controller delegates to these, and
- * its existing suites in `components/Nationwide/__tests__/` remain the parity
- * check on the extraction.
- */
 
 import dayjs from 'dayjs';
 import {

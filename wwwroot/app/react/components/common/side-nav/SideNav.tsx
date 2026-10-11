@@ -23,7 +23,6 @@ import {IconTruck, IconMap} from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import {Icon} from '../icon/Icon';
 import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
-import {getNationwideBetaEnabled} from '../../../pages/nationwide/lib/betaPreference';
 import {NavItem, SideNavProps} from "./SideNav.types";
 import {ColorModeSwitcher} from './ColorModeSwitcher';
 import {dashboardFeatureKeys, isDashboardVisible} from '../../../services/featureVisibility';
@@ -108,8 +107,8 @@ export const SideNav: React.FC<SideNavProps> = ({
                 icon: <Icon tabler={IconTruck} size={NAV_ICON_SIZE} />,
                 // As above: link straight at the React page so the nav skips
                 // the classic route's redirect hop.
-                state: getNationwideBetaEnabled() ? 'nwV2' : 'nw',
-                matchStates: ['nw', 'nwV2'],
+                state: 'nwV2',
+                matchStates: ['nwV2'],
                 featureKey: dashboardFeatureKeys.nationwide,
             },
             {

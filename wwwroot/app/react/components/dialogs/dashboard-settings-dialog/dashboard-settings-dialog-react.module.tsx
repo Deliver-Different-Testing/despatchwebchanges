@@ -24,7 +24,6 @@ interface DashboardSettingsPayload {
     selectedDriverLocationRefreshInterval: RefreshOption;
     selectedTaskRefreshInterval: RefreshOption;
     refreshOptions: RefreshOption[];
-    nationwideBetaEnabled?: boolean;
     selectedCourierDisplayMode?: CourierDisplayMode;
 }
 
@@ -76,7 +75,6 @@ const settingsHost = createDialogHost<DashboardSettingsPayload, DashboardSetting
             selectedDriverLocationRefreshInterval={payload.selectedDriverLocationRefreshInterval}
             selectedTaskRefreshInterval={payload.selectedTaskRefreshInterval}
             refreshOptions={payload.refreshOptions}
-            nationwideBetaEnabled={payload.nationwideBetaEnabled}
             selectedCourierDisplayMode={payload.selectedCourierDisplayMode}
             onClose={() => close(null)}
             onSave={(result: DashboardSettingsResult) => close(result)}
@@ -89,7 +87,6 @@ export function openDashboardSettingsDialog(
     selectedRefreshInterval?: RefreshOption,
     selectedDriverLocationRefreshInterval?: RefreshOption,
     selectedTaskRefreshInterval?: RefreshOption,
-    nationwideBetaEnabled?: boolean,
     selectedCourierDisplayMode?: CourierDisplayMode,
 ): Promise<DashboardSettingsResult | null> {
     return settingsHost.open({
@@ -98,7 +95,6 @@ export function openDashboardSettingsDialog(
         selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? DISABLED_REFRESH,
         selectedTaskRefreshInterval: selectedTaskRefreshInterval ?? DISABLED_REFRESH,
         refreshOptions: [DISABLED_REFRESH, ...getMinsSelectionOptions()],
-        nationwideBetaEnabled,
         selectedCourierDisplayMode,
     });
 }

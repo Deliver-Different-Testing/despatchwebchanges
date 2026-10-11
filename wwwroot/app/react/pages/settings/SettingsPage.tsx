@@ -20,7 +20,6 @@ import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../../components/common/ac
 import {useColorMode, type ColorModePreference} from '../../hooks/useColorMode';
 import {setLiquidGlassEnabled, useLiquidGlassEnabled} from '../../hooks/useLiquidGlassPreference';
 import {isLiquidGlassSupported} from '../../hooks/glassSupport';
-import {getNationwideBetaEnabled} from '../nationwide/lib/betaPreference';
 import {aiAccentColor} from '../../theme/designTokens';
 import {
     isAiEnabled,
@@ -54,10 +53,6 @@ const APPEARANCE_OPTIONS: {value: ColorModePreference; label: string}[] = [
 
 export const SettingsPage: React.FC = () => {
     const {preference: colorPreference, setPreference: setColorPreference} = useColorMode();
-    const darkModeBlocked = !getNationwideBetaEnabled();
-    const appearanceOptions = darkModeBlocked
-        ? APPEARANCE_OPTIONS.map(o => ({...o, disabled: o.value !== 'light'}))
-        : APPEARANCE_OPTIONS;
     const liquidGlassEnabled = useLiquidGlassEnabled();
     const liquidGlassSupported = isLiquidGlassSupported();
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
@@ -301,12 +296,9 @@ export const SettingsPage: React.FC = () => {
 
                         <SettingRadioGroup
                             title="Theme"
-                            description={darkModeBlocked
-                                ? `Dark mode isn't available while Nationwide v1 is on. Switch to Nationwide v2 in
-                                    the Nationwide dashboard settings to unlock it.`
-                                : 'Choose Light or Dark, or Match device.'}
+                            description="Choose Light or Dark, or Match device."
                             value={colorPreference}
-                            options={appearanceOptions}
+                            options={APPEARANCE_OPTIONS}
                             onChange={setColorPreference}
                         />
 

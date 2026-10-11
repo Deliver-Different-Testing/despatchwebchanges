@@ -1,11 +1,8 @@
 /**
  * Flight and flight-segment types for the Nationwide/air-freight domain.
  *
- * Lived in `components/Nationwide/nationwide.interfaces.ts` until that folder
- * became scheduled for removal with the AngularJS page. Both sides depend on
- * these — the AngularJS flight dialogs and `functions/dtoMappings`, and the
- * React flight-details dialog and `job-details` — so they belong in the shared
- * `interfaces/` folder that outlives the migration.
+ * Shared by the AngularJS flight dialogs and `functions/dtoMappings`, and the
+ * React flight-details dialog and `job-details`.
  *
  * Distinct from `react/interfaces/nationwideJobs.ts`, which carries the
  * React-side shapes with `Dayjs` fields; these are the DTO-facing ones.

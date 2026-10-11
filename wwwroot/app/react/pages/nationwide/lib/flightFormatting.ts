@@ -1,12 +1,7 @@
 /**
  * Flight display helpers for the Nationwide page.
  *
- * Framework-free on purpose: the AngularJS controller
- * (`components/Nationwide/nationwide.controller.ts`) delegates to these, and the
- * React page uses the same functions, so the two cannot drift apart while both
- * exist. Extracted from `formatAirportCodeForDropdown` (1817),
- * `getConnectionTime` (1825), `formatMinutesToTimeReact` (2034) and
- * `filterFlights` (2211).
+ * Framework-free on purpose, so any host can use them.
  */
 
 import dayjs from 'dayjs';
@@ -16,9 +11,9 @@ import type {ConfigType} from 'dayjs';
  * Only the fields these helpers read, declared structurally rather than
  * imported.
  *
- * The AngularJS flight types live in `components/Nationwide/nationwide.interfaces.ts`,
- * which Phase 3 deletes, and the React ones in `react/interfaces/nationwideJobs.ts`.
- * A shared module must not depend on either, and both satisfy these shapes.
+ * The DTO-facing flight types live in `interfaces/nationwideFlight.interfaces.ts`
+ * and the React ones in `react/interfaces/nationwideJobs.ts`. A shared module
+ * must not depend on either, and both satisfy these shapes.
  */
 export interface FlightSegmentTimes {
     departureTime: ConfigType;

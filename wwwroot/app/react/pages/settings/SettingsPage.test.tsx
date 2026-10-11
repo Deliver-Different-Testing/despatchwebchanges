@@ -120,29 +120,6 @@ describe('SettingsPage', () => {
         expect(mockSetColorPreference).toHaveBeenCalledWith('dark');
     });
 
-    it('locks Appearance to Light with an explanatory note while Nationwide v1 is on', async () => {
-        const user = setupUser();
-        localStorage.setItem('nationwideBetaEnabled-0', 'false');
-        mockUseColorMode.mockReturnValue({mode: 'light', preference: 'light', setPreference: mockSetColorPreference});
-        renderWithMantine(<SettingsPage />);
-
-        expect(screen.getByText(/Dark mode isn't available while Nationwide v1 is on/i)).toBeInTheDocument();
-        expect(screen.getByRole('radio', {name: 'Light'})).toBeChecked();
-        expect(screen.getByRole('radio', {name: 'Dark'})).toBeDisabled();
-        expect(screen.getByRole('radio', {name: 'Match device'})).toBeDisabled();
-
-        await user.click(screen.getByRole('radio', {name: 'Dark'}));
-        expect(mockSetColorPreference).not.toHaveBeenCalled();
-    });
-
-    it('shows no dark-mode note while Nationwide v2 is on (the default)', () => {
-        localStorage.clear();
-        renderWithMantine(<SettingsPage />);
-
-        expect(screen.queryByText(/doesn't support dark mode/i)).not.toBeInTheDocument();
-        expect(screen.getByRole('radio', {name: 'Dark'})).toBeEnabled();
-    });
-
     it('seeds both Auto-mate toggles from the stored preferences', () => {
         mockIsAiEnabled.mockReturnValue(true);
         mockIsAiAutoOpenEnabled.mockReturnValue(true);

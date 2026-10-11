@@ -47,6 +47,7 @@ import {openRecoveryAgentManagementDialog} from '../../components/dialogs/recove
 import {nationwideApi} from '../../services/nationwideApi';
 import {canAssignAgentToJob} from '../../services/dispatchExecutorApi';
 import {apiClient} from '../../services/apiClient';
+import {updateJobDetail} from '../../services/jobDetailApi';
 import {BoxShell} from '../../components/common/box-shell/BoxShell';
 import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
 import type {LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
@@ -180,7 +181,12 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     const [dateFilter, setDateFilter] = useState<StoredDateFilter>(
         () => loadNationwideDateFilter(ianaTimeZone),
     );
-    const applyDateFilter = useCallback((filter: StoredDateFilter) => setDateFilter(filter), []);
+    const applyDateFilter = useCallback((filter: StoredDateFilter) => {
+        setDateFilter(filter);
+        for (const push of Object.values(listParamsRefs.current)) {
+            push?.({startDate: filter.startDate, endDate: filter.endDate, useTime: filter.useTime, page: 0});
+        }
+    }, []);
 
     const [refetchIntervalMs, setRefetchIntervalMs] = useState<number | false>(() => loadSavedRefreshIntervalMs());
     const applyRefreshIntervalMs = useCallback((ms: number | false) => setRefetchIntervalMs(ms), []);
@@ -417,11 +423,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             try {
                 // V1 wrote a returned AWB back to the job's ConNote.
                 if (result.awb) {
-                    await apiClient.post('job/UpdateJob', {
-                        jobId: flightAgentJob.id,
-                        property: JobProperty.ConNote,
-                        value: result.awb,
-                    });
+                    await updateJobDetail(flightAgentJob.id, JobProperty.ConNote, result.awb, false);
                 }
 
                 // V1 refetched and re-selected the job so the widget and job-detail
@@ -758,6 +760,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                         jobId={currentJob?.id}
                         appPage={LegacyAppPage.Domestic}
                         showToast={showToast}
+                        refetchIntervalMs={refetchIntervalMs}
                         onSelectJob={(jobId) => void selectJobById(jobId)}
                         headerSlot={headerSlot}
                     />
@@ -767,7 +770,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                 return null;
         }
     }, [showToast, isUsCustomer, fetchConfigFor, selectJob, selectJobById, retargetWidget, refreshLists,
-        mapConfig, mapItems, currentJob,
+        mapConfig, mapItems, currentJob, refetchIntervalMs,
         widget, flightAgentJob, handleAddFlightToJob, handleAddAgentToJob, handleSendQuoteRequest,
         handleOpenAgentSearchDialog, handleOpenRecoveryAgentDialog]);
 

@@ -22,7 +22,6 @@ import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
-import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
 import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
 import {DriverLocationsReactComponent} from "./react/components/common/driver-locations/driver-locations-react.module";
 import {NoDataReactComponent} from "./react/components/common/no-data/no-data-react.module";
@@ -206,7 +205,6 @@ app.filter("bytes", () => bytesFilter);
 app.filter('replace', () => replaceFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
 app.filter('momentFormat', () => momentFormatFilter);
-app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components
 app.component("jobDetailWidget", JobDetailComponent);

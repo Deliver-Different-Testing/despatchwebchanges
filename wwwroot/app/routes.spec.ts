@@ -162,7 +162,6 @@ describe('RouterConfig', () => {
                 'home',
                 'dispatch',
                 'dispatchV2',
-                'nw',
                 'nwV2',
                 'cs',
                 'jobSearch',
@@ -184,37 +183,12 @@ describe('RouterConfig', () => {
             });
         });
 
-        it('keeps /Nationwide on the classic page only for operators who opted out', () => {
-            localStorage.setItem('nationwideBetaEnabled-0', 'false');
-            const nw = registeredStates.get('nw');
-
-            expect(nw.redirectTo({params: () => ({})})).toBeUndefined();
-        });
-
-        it('redirects /Nationwide to the React page by default', () => {
-            localStorage.clear();
-            const nw = registeredStates.get('nw');
-
-            expect(nw.redirectTo({params: () => ({})})).toEqual({state: 'nwV2', params: {}});
-        });
-
-        it('redirects /Nationwide to the React page, keeping ?jobId', () => {
-            localStorage.setItem('nationwideBetaEnabled-0', 'true');
-            const nw = registeredStates.get('nw');
-
-            expect(nw.redirectTo({params: () => ({jobId: '42'})}))
-                .toEqual({state: 'nwV2', params: {jobId: '42'}});
-
-            localStorage.clear();
-        });
-
         it('should register exactly the expected number of states', () => {
-            // 18 states total (excluding commented megaMap). `nwV2` is the
-            // parallel React rebuild of Nationwide, opt-in via a beta toggle.
+            // 17 states total (excluding commented megaMap).
             // `dispatchV2` and `jobSearchV2` are thin redirects kept only so
             // old bookmarks to those now-renamed URLs still resolve. `settings`
             // is the global Settings page reached from the sidebar.
-            expect(registeredStates.size).toBe(18);
+            expect(registeredStates.size).toBe(17);
         });
     });
 
@@ -229,8 +203,7 @@ describe('RouterConfig', () => {
         // The React-rendered states used to wrap their island in
         // <md-content class="md-dense">, which pulled Angular Material's
         // container styles (and its md-dense density scale) onto pages that
-        // render no Angular Material components at all. The classic AngularJS
-        // state (nw) keeps its own template.
+        // render no Angular Material components at all.
         const reactOnlyStates = [
             'dispatch',
             'jobSearch',
@@ -270,23 +243,8 @@ describe('RouterConfig', () => {
             );
         });
 
-        it('should register nw state with /Nationwide URL', () => {
-            const nwState = registeredStates.get('nw');
-            expect(nwState.url).toBe('/Nationwide?jobId');
-        });
-
-        it('should configure nw state with nationwide-component template', () => {
-            const nwState = registeredStates.get('nw');
-            expect(nwState.template).toBe('<nationwide-component></nationwide-component>');
-        });
-    });
-
-    describe('Nationwide V2 State Configuration', () => {
-        beforeEach(() => {
-            new RouterConfig(
-                mockUrlRouterProvider as any,
-                mockStateProvider as any
-            );
+        it('should register nwV2 state with /Nationwide URL', () => {
+            expect(registeredStates.get('nwV2').url).toBe('/Nationwide?jobId');
         });
 
         // Every other section of the app-shell toolbar (Views, Layouts,

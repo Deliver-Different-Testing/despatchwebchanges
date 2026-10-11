@@ -33,7 +33,6 @@ type EntryPointName =
     | 'vendor-plugins'
     | 'vendor-react'
     | 'app'
-    | 'nationwide'
     | 'taskDashboardReact'
     | 'driverManagementReact'
     | 'settingsReact'
@@ -68,7 +67,6 @@ type EntryPointName =
     | 'overviewReact'
     | 'jobListReact'
     | 'currentWorkJobListReact'
-    | 'nationwideJobListReact'
     | 'jobDetailsReact'
     | 'jobSearchReact'
     | 'nationwideReact'
@@ -86,7 +84,6 @@ const entryPoints: EntryPoints = {
     "vendor-plugins": path.join(rootDir, "wwwroot/app/vendor-plugins.ts"),
     "vendor-react": path.join(rootDir, "wwwroot/app/vendor-react.ts"),
     app: path.join(rootDir, "wwwroot/app/app.ts"),
-    nationwide: path.join(rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
     driverManagementReact: path.join(rootDir, "wwwroot/app/react/pages/driver-management/driver-management-react.module.tsx"),
     settingsReact: path.join(rootDir, "wwwroot/app/react/pages/settings/settings-react.module.tsx"),
@@ -122,7 +119,6 @@ const entryPoints: EntryPoints = {
     overviewReact: path.join(rootDir, "wwwroot/app/react/pages/overview/overview-react.module.tsx"),
     jobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-list-react.module.tsx"),
     currentWorkJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/current-work-job-list-react.module.tsx"),
-    nationwideJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/nationwide-job-list-react.module.tsx"),
     jobDetailsReact: path.join(rootDir, "wwwroot/app/react/components/common/job-details/job-details-react.module.tsx"),
     jobSearchReact: path.join(rootDir, "wwwroot/app/react/pages/job-search/job-search-react.module.tsx"),
     nationwideReact: path.join(rootDir, "wwwroot/app/react/pages/nationwide/nationwide-react.module.tsx"),

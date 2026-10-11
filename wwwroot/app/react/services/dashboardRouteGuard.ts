@@ -12,15 +12,14 @@
 import {dashboardFeatureKeys, isDashboardVisible, visibleDashboards} from './featureVisibility';
 
 /**
- * ui-router state -> catalogue key. Both variants of a dashboard that has a beta
- * state map to the same key, so opting out of the beta is not a way past the grant.
+ * ui-router state -> catalogue key. Every alias of a dashboard maps to the
+ * same key, so a legacy bookmark state is not a way past the grant.
  * States absent from this map are not gated dashboards.
  */
 export const dashboardStateFeatureKeys: Readonly<Record<string, string>> = {
     home: dashboardFeatureKeys.dispatch,
     dispatch: dashboardFeatureKeys.dispatch,
     dispatchV2: dashboardFeatureKeys.dispatch,
-    nw: dashboardFeatureKeys.nationwide,
     nwV2: dashboardFeatureKeys.nationwide,
     overview: dashboardFeatureKeys.overview,
     taskDashboard: dashboardFeatureKeys.taskDashboard,
@@ -35,7 +34,7 @@ export const dashboardStateFeatureKeys: Readonly<Record<string, string>> = {
 const LANDING_ORDER = [
     'dispatch',
     'jobSearch',
-    'nw',
+    'nwV2',
     'overview',
     'taskDashboard',
     'recurringJobs',

@@ -18,7 +18,6 @@ import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
 import {openJobInSearch} from './react/services/navigationService';
 import {BELOW_APP_BAR_HEIGHT} from './react/components/common/app-toolbar/appBarMetrics';
-import {getNationwideBetaEnabled, setNationwideBetaEnabled} from './react/pages/nationwide/lib/betaPreference';
 import {createDefaultNationwideLayout, createNationwideBoxes} from './react/pages/nationwide/lib/boxDefinitions';
 import {buildRefreshIntervalOptions, resolveSavedInterval} from './react/pages/nationwide/lib/refreshInterval';
 import {
@@ -68,7 +67,6 @@ class RouterConfig {
         this.configureHomeState()
             .configureDispatchState()
             .configureDispatchV2RedirectState()
-            .configureNationwideState()
             .configureNationwideV2State()
             .configureCSState()
             .configureJobSearchState()
@@ -320,7 +318,6 @@ class RouterConfig {
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
-                                        nationwideBetaEnabled?: boolean,
                                         selectedCourierDisplayMode?: CourierDisplayMode,
                                     ) => Promise<{
                                         selectedRefreshInterval?: {id: number; text: string};
@@ -366,7 +363,6 @@ class RouterConfig {
                                     {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
                                     {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
                                     {id: taskSeedSeconds, text: ''},
-                                    undefined,
                                     await seedCourierDisplayMode(),
                                 );
                                 if (!result) return;
@@ -536,76 +532,16 @@ class RouterConfig {
         return this;
     }
 
-    private configureNationwideState(): this {
-        this.$stateProvider.state("nw", {
-            url: "/Nationwide?jobId",
-            template: '<nationwide-component></nationwide-component>',
-            // The React page (v2) is the default; only operators who opted out
-            // in the dashboard settings stay on the classic AngularJS page.
-            redirectTo: (trans: any) => {
-                if (!getNationwideBetaEnabled()) return undefined;
-                const jobId = trans.params()?.jobId;
-                return {state: 'nwV2', params: jobId ? {jobId} : {}};
-            },
-            params: {
-                jobId: {
-                    value: null,
-                    squash: true
-                }
-            },
-            resolve: {
-                jobId: ['$stateParams', ($stateParams: IDfrntStateParams) => {
-                    return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
-                }],
-                manifest: ['$http', async ($http: angular.IHttpService) => {
-                    try {
-                        const response = await $http.get<Record<string, string>>('dist/manifest.json');
-                        return response.data;
-                    } catch {
-                        console.warn('[ROUTES] Failed to load manifest for nationwide state, using fallback names');
-                        return {
-                            'nationwide.js': 'nationwide.js',
-                            'nationwide.css': 'nationwide.css',
-                            'vendor-react.js': 'vendor-react.js',
-                            'nationwideJobListReact.js': 'nationwideJobListReact.js'
-                        };
-                    }
-                }],
-                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
-                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    await $ocLazyLoad.load([
-                        getAssetPath('nationwide.js'),
-                        getAssetPath('nationwide.css')
-                    ]);
-                    if (!window.React) {
-                        await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
-                    }
-                    await $ocLazyLoad.load({
-                        name: 'uDispatch.nationwideJobListReact',
-                        files: islandFiles(manifest, 'nationwideJobListReact')
-                    });
-                }]
-            }
-        });
-        return this;
-    }
-
-    /**
-     * Parallel React rebuild of `/Nationwide`, running alongside the AngularJS
-     * page so it can be QA'd against real data before the classic page is
-     * deleted. Per-user opt-out via the dashboard settings dialog
-     * (`react/pages/nationwide/lib/betaPreference.ts`).
-     */
     private configureNationwideV2State(): this {
         this.$stateProvider.state("nwV2", {
-            url: "/NationwideV2?jobId",
+            url: "/Nationwide?jobId",
             params: {
                 jobId: {value: null, squash: true}
             },
             template: `
                 <div style="height: 100%; position: relative;">
                     <react-app-shell
-                            section="Operations" title="Nationwide" beta="true"
+                            section="Operations" title="Nationwide"
                             messages-count="ctrl.unreadMessageCount"
                             on-messages-click="ctrl.openMessagingDialog($event)"
                             views="ctrl.views" views-loading="!ctrl.viewsInitialized"
@@ -784,15 +720,12 @@ class RouterConfig {
                                         config: {
                                             title: string;
                                             showRefreshInterval?: boolean;
-                                            showNationwideBetaToggle?: boolean;
                                         },
                                         selectedRefreshInterval?: {id: number; text: string},
                                         selectedDriverLocationRefreshInterval?: {id: number; text: string},
                                         selectedTaskRefreshInterval?: {id: number; text: string},
-                                        nationwideBetaEnabled?: boolean,
                                     ) => Promise<{
                                         selectedRefreshInterval?: {id: number; text: string};
-                                        nationwideBetaEnabled?: boolean;
                                     } | null>;
                                 };
                             };
@@ -812,12 +745,10 @@ class RouterConfig {
                                     {
                                         title: 'Nationwide Dashboard Settings',
                                         showRefreshInterval: true,
-                                        showNationwideBetaToggle: true,
                                     },
                                     currentInterval ?? {id: 0, text: ''},
                                     undefined,
                                     undefined,
-                                    getNationwideBetaEnabled(),
                                 );
                                 if (!result) return;
 
@@ -830,13 +761,6 @@ class RouterConfig {
                                     );
                                 }
                                 
-                                if (result.nationwideBetaEnabled === false && getNationwideBetaEnabled()) {
-                                    setNationwideBetaEnabled(false);
-                                    $state.go('nw').catch((err: unknown) => {
-                                        console.error('[nationwide] Failed to switch to the classic page', err);
-                                    });
-                                    return;
-                                }
 
                                 toastrService.showSuccessToast('Settings saved and applied successfully');
                             } catch (err) {

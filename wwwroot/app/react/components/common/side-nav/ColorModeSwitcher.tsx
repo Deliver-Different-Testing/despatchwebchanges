@@ -3,7 +3,6 @@ import {Tooltip, useMantineTheme} from '@mantine/core';
 import {Monitor, Moon, Sun} from 'lucide-react';
 import {Icon} from '../icon/Icon';
 import {useColorMode, type ColorModePreference} from '../../../hooks/useColorMode';
-import {getNationwideBetaEnabled} from '../../../pages/nationwide/lib/betaPreference';
 import classes from './ColorModeSwitcher.module.css';
 
 const OPTIONS: {value: ColorModePreference; label: string; icon: typeof Sun}[] = [
@@ -22,8 +21,6 @@ const GLYPH_SIZE = 14;
 export const ColorModeSwitcher: React.FC = () => {
     const {preference, setPreference} = useColorMode();
     const {scrim} = useMantineTheme().other;
-    // Nationwide v1 has no dark styling, so useColorMode pins it to light.
-    const lightOnly = !getNationwideBetaEnabled();
 
     return (
         <div
@@ -37,30 +34,22 @@ export const ColorModeSwitcher: React.FC = () => {
                 color: scrim.text,
             } as React.CSSProperties}
         >
-            {OPTIONS.map(({value, label, icon}) => {
-                const disabled = lightOnly && value !== 'light';
-                return (
-                    <Tooltip
-                        key={value}
-                        label={disabled ? `${label} isn't available while Nationwide v1 is on` : label}
-                        openDelay={300}
-                    >
-                        <label className={classes.option} data-disabled={disabled || undefined}>
-                            <input
-                                type="radio"
-                                className={classes.input}
-                                name="dd-color-mode"
-                                value={value}
-                                aria-label={label}
-                                checked={preference === value}
-                                disabled={disabled}
-                                onChange={() => setPreference(value)}
-                            />
-                            <Icon lucide={icon} size={GLYPH_SIZE} />
-                        </label>
-                    </Tooltip>
-                );
-            })}
+            {OPTIONS.map(({value, label, icon}) => (
+                <Tooltip key={value} label={label} openDelay={300}>
+                    <label className={classes.option}>
+                        <input
+                            type="radio"
+                            className={classes.input}
+                            name="dd-color-mode"
+                            value={value}
+                            aria-label={label}
+                            checked={preference === value}
+                            onChange={() => setPreference(value)}
+                        />
+                        <Icon lucide={icon} size={GLYPH_SIZE} />
+                    </label>
+                </Tooltip>
+            ))}
         </div>
     );
 };

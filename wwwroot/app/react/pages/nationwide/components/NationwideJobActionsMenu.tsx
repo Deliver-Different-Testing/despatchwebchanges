@@ -5,13 +5,11 @@ import {isNetworkPartnerSession} from '../../../components/dialogs/dispatch-dial
 
 /**
  * Job-detail action menu for the React Nationwide page, rendered as an overflow
- * (kebab) menu in the Job Detail panel header. Mirrors the V1 `md-fab-speed-dial`
- * in `wwwroot/app/components/Nationwide/nationwide.template.html`; availability
- * conditions match the AngularJS `ng-if`s.
+ * (kebab) menu in the Job Detail panel header.
  *
  * Unlike Dispatch's FAB, Nationwide has no generic "Dispatch to courier" action
  * (dispatch happens through the flight/agent widget) and no Split/Swap POD
- * actions in V1's speed-dial, so this menu is a subset of DispatchJobActionsMenu.
+ * actions, so this menu is a subset of DispatchJobActionsMenu.
  */
 
 export type NationwideJobActionId =
