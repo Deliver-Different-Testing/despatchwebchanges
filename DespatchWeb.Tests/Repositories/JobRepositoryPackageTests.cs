@@ -561,7 +561,7 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var parcels = Enumerable.Range(1, 10)
-            .Select(i => new ParcelDimensions { ItemName = "custom", Weight = 10 }).ToList();
+            .Select(_ => new ParcelDimensions { ItemName = "custom", Weight = 10 }).ToList();
         await CreateRepository().UpdatePackagesForJobAsync(200, parcels);
 
         await using var verify = CreateContext();

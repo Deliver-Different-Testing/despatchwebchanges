@@ -81,7 +81,7 @@ public class HomeControllerTests : IDisposable
             .FirstOrDefault();
 
         Assert.NotNull(attribute);
-        Assert.True(attribute!.NoStore);
+        Assert.True(attribute.NoStore);
         Assert.Equal(ResponseCacheLocation.None, attribute.Location);
     }
 

@@ -8,7 +8,7 @@ using NSubstitute;
 namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
-/// The despatch views list is what the dispatch page lands a user on, so it is
+/// The despatch views list is what the despatch page lands a user on, so it is
 /// also what scopes their Driver Locations panel and map. A Network Partner must
 /// get the NP-audience views and nothing else — landing them on a tenant zone
 /// view would populate Driver Locations tenant-wide, which

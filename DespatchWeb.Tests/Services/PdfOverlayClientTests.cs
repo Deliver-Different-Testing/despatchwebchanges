@@ -44,7 +44,7 @@ public class PdfOverlayClientTests
         var result = await CreateClient(Config()).ListJobDocumentsAsync(42, TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
-        Assert.Equal(2, result!.Count);
+        Assert.Equal(2, result.Count);
         Assert.Equal("Invoice", result[0].DocumentType);
         Assert.Equal("Customer Invoice", result[0].DisplayName);
         Assert.True(result[0].Available);

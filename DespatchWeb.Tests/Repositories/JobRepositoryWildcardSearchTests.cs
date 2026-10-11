@@ -111,17 +111,18 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
     /// Seeds one row per column with the search token in that column alone, so a row comes back
     /// from the search if and only if its column is covered by the wildcard predicate.
     /// </summary>
-    private static void SeedOneRowPerColumn<T>(
+    private static List<T> SeedOneRowPerColumn<T>(
         IReadOnlyList<PropertyInfo> columns,
-        Func<int, T> createRow,
-        Action<T> add)
+        Func<int, T> createRow)
     {
+        var rows = new List<T>(columns.Count);
         for (var i = 0; i < columns.Count; i++)
         {
             var row = createRow(i + 1);
             columns[i].SetValue(row, Token + i);
-            add(row);
+            rows.Add(row);
         }
+        return rows;
     }
 
     private static string[] MissingColumns(
@@ -129,7 +130,7 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
         IReadOnlyCollection<int> foundIds) =>
     [
         .. columns
-            .Select((p, i) => (Name: p.Name, Id: i + 1))
+            .Select((p, i) => (p.Name, Id: i + 1))
             .Where(c => !foundIds.Contains(c.Id))
             .Select(c => c.Name)
     ];
@@ -141,7 +142,7 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
 
         await using (var context = _db.CreateContext())
         {
-            SeedOneRowPerColumn(columns, CreateLiveJob, j => context.TucJobs.Add(j));
+            context.TucJobs.AddRange(SeedOneRowPerColumn(columns, CreateLiveJob));
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
@@ -159,7 +160,7 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
 
         await using (var context = _db.CreateContext())
         {
-            SeedOneRowPerColumn(columns, CreateArchivedJob, j => context.TucJobArchives.Add(j));
+            context.TucJobArchives.AddRange(SeedOneRowPerColumn(columns, CreateArchivedJob));
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
@@ -177,7 +178,7 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
 
         await using (var context = _db.CreateContext())
         {
-            SeedOneRowPerColumn(liveColumns, CreateLiveJob, j => context.TucJobs.Add(j));
+            context.TucJobs.AddRange(SeedOneRowPerColumn(liveColumns, CreateLiveJob));
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
@@ -204,7 +205,7 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
         var columns = SearchableColumns<TblBulkJob>();
 
         await using var context = _db.CreateContext();
-        SeedOneRowPerColumn(columns, CreateBulkJob, j => context.TblBulkJobs.Add(j));
+        context.TblBulkJobs.AddRange(SeedOneRowPerColumn(columns, CreateBulkJob));
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var matched = await context.TblBulkJobs
