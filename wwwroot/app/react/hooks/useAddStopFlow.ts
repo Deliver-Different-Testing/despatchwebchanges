@@ -1,5 +1,5 @@
 import {useCallback} from 'react';
-import {getDialog, requireDialog, type DialogOpener} from '../dialogs/dialogRegistry';
+import {loadDialog, requireDialog, type DialogLoader} from '../dialogs/dialogRegistry';
 import {AddressType} from '../../enums/address-type.enum';
 import {getSession} from '../session';
 import {toastService} from '../services/toastService';
@@ -13,7 +13,7 @@ import {
 } from '../services/jobAddStop';
 
 export interface UseAddStopFlowOptions {
-    openDialog?: DialogOpener;
+    openDialog?: DialogLoader;
 }
 
 export interface UseAddStopFlow {
@@ -22,10 +22,10 @@ export interface UseAddStopFlow {
     addNewStop: (job: AddStopJobWithNumber) => Promise<number | undefined>;
 }
 
-export function useAddStopFlow({openDialog = getDialog}: UseAddStopFlowOptions = {}): UseAddStopFlow {
+export function useAddStopFlow({openDialog = loadDialog}: UseAddStopFlowOptions = {}): UseAddStopFlow {
     const addStop = useCallback(async (job: AddStopJob, isPickup: boolean) => {
         if (!hasBothAddresses(job)) return undefined;
-        const dialog = requireDialog(openDialog, 'ReactEditAddressDialog');
+        const dialog = await requireDialog('EditAddress', openDialog);
         if (!dialog) return undefined;
 
         try {

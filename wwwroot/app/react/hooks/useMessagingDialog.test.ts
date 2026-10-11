@@ -19,7 +19,7 @@ describe('useMessagingDialog', () => {
         });
         const {result} = renderHook(() => useMessagingDialog({
             refreshUnreadCount: refresh,
-            openDialog: () => ({open}) as never,
+            openDialog: async () => ({open}) as never,
         }));
 
         await act(() => result.current.openMessaging());
@@ -28,22 +28,10 @@ describe('useMessagingDialog', () => {
 
     it('toasts and skips the refresh when the bundle is missing', async () => {
         const refresh = jest.fn();
-        const {result} = renderHook(() => useMessagingDialog({refreshUnreadCount: refresh, openDialog: () => undefined}));
+        const {result} = renderHook(() => useMessagingDialog({refreshUnreadCount: refresh, openDialog: () => Promise.reject(new Error('bundle missing'))}));
 
         await act(() => result.current.openMessaging());
         expect(toastService.showErrorToast).toHaveBeenCalledWith('Messaging dialog is not loaded.');
         expect(refresh).not.toHaveBeenCalled();
-    });
-
-    it('falls back to the window global via the default registry', async () => {
-        const open = jest.fn().mockResolvedValue(undefined);
-        (window as unknown as {ReactMessagingDialog?: unknown}).ReactMessagingDialog = {open};
-        const refresh = jest.fn();
-        const {result} = renderHook(() => useMessagingDialog({refreshUnreadCount: refresh}));
-
-        await act(() => result.current.openMessaging());
-        delete (window as unknown as {ReactMessagingDialog?: unknown}).ReactMessagingDialog;
-        expect(open).toHaveBeenCalled();
-        expect(refresh).toHaveBeenCalled();
     });
 });

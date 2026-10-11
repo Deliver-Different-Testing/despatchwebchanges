@@ -4,6 +4,8 @@ import {renderWithProviders} from '../__testUtils__';
 import {NavigationProvider} from '../app/NavigationContext';
 import {JobSearchScreen} from './JobSearchScreen';
 import type {ToolbarActionsConfig} from '../components/common/app-shell/ToolbarActionsView';
+import {testDialogs} from '../dialogs/testDialogRegistry';
+jest.mock('../dialogs/dialogRegistry', () => require('../dialogs/testDialogRegistry').createDialogRegistryMock());
 
 const mockBridge = {
     setCurrentLayoutName: jest.fn(),
@@ -116,7 +118,7 @@ describe('JobSearchScreen', () => {
 
     it('opens the create-job dialog with the tenant flag and hands the new id to the page', async () => {
         const open = jest.fn().mockResolvedValue(555);
-        (window as any).ReactCreateJobDialog = {open};
+        testDialogs.CreateJob = {open};
         renderScreen();
 
         captured.actionsMenu!.onCreateNewJob({} as React.MouseEvent);
@@ -124,6 +126,6 @@ describe('JobSearchScreen', () => {
 
         expect(open).toHaveBeenCalledWith(true);
         expect(mockBridge.jobCreated).toHaveBeenCalledWith(555);
-        delete (window as any).ReactCreateJobDialog;
+        delete testDialogs.CreateJob;
     });
 });

@@ -73,6 +73,7 @@ import type {TruckMode} from '../../components/common/driver-locations/DriverLoc
 import {getPreference} from '../../services/preferencesApi';
 import {StaffPreferenceKey} from '../../../enums/staff-preference-key.enum';
 import {defaultCourierDisplayMode, type CourierDisplayMode} from './lib/courierDisplayMode';
+import {loadDialog} from '../../dialogs/dialogRegistry';
 
 const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
 
@@ -545,7 +546,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
 
                 case 'accessorialCharges':
                     if (!job.accessorialChargeGroupId) return;
-                    await w.ReactAccessorialChargesDialog?.open({
+                    await (await loadDialog('AccessorialCharges')).open({
                         job: {
                             id: job.id,
                             accessorialChargeGroupId: job.accessorialChargeGroupId,
@@ -559,7 +560,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     return;
 
                 case 'attachments':
-                    await w.ReactJobFileUploadDialog?.open(job.id);
+                    await (await loadDialog('JobFileUpload')).open(job.id);
                     refreshDetail();
                     return;
 
@@ -594,7 +595,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 }
 
                 case 'swapPod':
-                    await w.ReactSwapPodsDialog?.open(job.jobNo, {showToast}, job.client);
+                    await (await loadDialog('SwapPods')).open(job.jobNo, {showToast}, job.client);
                     await refreshLists();
                     refreshDetail();
                     return;

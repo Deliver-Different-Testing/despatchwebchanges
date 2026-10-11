@@ -41,10 +41,12 @@ export function setToastService(service: ToastService): void {
 }
 
 // Expose to window for AngularJS and React access
-window.ReactJobFileUploadDialog = {
+export const reactJobFileUploadDialog = {
     open,
     setToastService,
 };
+
+window.ReactJobFileUploadDialog = reactJobFileUploadDialog;
 
 // Create AngularJS module for ocLazyLoad
 const jobFileUploadDialogReactModule = window.angular!.module(

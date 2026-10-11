@@ -35,9 +35,11 @@ export function openAccessorialChargesDialog(options: OpenAccessorialChargesDial
 }
 
 // Expose to window for AngularJS access
-window.ReactAccessorialChargesDialog = {
+export const reactAccessorialChargesDialog = {
     open: openAccessorialChargesDialog,
 };
+
+window.ReactAccessorialChargesDialog = reactAccessorialChargesDialog;
 
 // Create AngularJS module
 const accessorialChargesDialogReactModule = window.angular!.module(

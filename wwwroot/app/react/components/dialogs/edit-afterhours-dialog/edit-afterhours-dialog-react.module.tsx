@@ -47,9 +47,11 @@ export function openEditAfterhoursDialog(
 }
 
 // Expose globally for AngularJS access
-window.ReactEditAfterhoursDialog = {
+export const reactEditAfterhoursDialog = {
     open: openEditAfterhoursDialog,
 };
+
+window.ReactEditAfterhoursDialog = reactEditAfterhoursDialog;
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
 const editAfterhoursDialogReactModule = window.angular!.module(

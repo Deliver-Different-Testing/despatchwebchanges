@@ -60,9 +60,11 @@ export async function openRestoreConfirmDialog(
     return host.open({done: !!request.done, summary});
 }
 
-window.ReactRestoreConfirmDialog = {
+export const reactRestoreConfirmDialog = {
     open: openRestoreConfirmDialog,
 };
+
+window.ReactRestoreConfirmDialog = reactRestoreConfirmDialog;
 
 const restoreConfirmDialogReactModule = window.angular!.module(
     'uDispatch.restoreConfirmDialogReact',

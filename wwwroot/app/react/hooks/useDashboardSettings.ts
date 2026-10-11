@@ -2,7 +2,7 @@ import {useCallback} from 'react';
 import {getPreference, savePreference} from '../services/preferencesApi';
 import {StaffPreferenceKey} from '../../enums/staff-preference-key.enum';
 import {defaultCourierDisplayMode, type CourierDisplayMode} from '../pages/dispatch/lib/courierDisplayMode';
-import {getDialog, requireDialog, type DialogOpener} from '../dialogs/dialogRegistry';
+import {loadDialog, requireDialog, type DialogLoader} from '../dialogs/dialogRegistry';
 import {toastService} from '../services/toastService';
 
 export interface RefreshIntervals {
@@ -24,7 +24,7 @@ export interface UseDashboardSettingsOptions {
     successMessage?: string;
     onRefreshIntervals?: (intervals: RefreshIntervals) => void;
     onCourierDisplayMode?: (mode: CourierDisplayMode) => void;
-    openDialog?: DialogOpener;
+    openDialog?: DialogLoader;
 }
 
 const toMs = (secs?: number): number | false => (secs && secs > 0 ? secs * 1000 : false);
@@ -38,12 +38,12 @@ function readSeconds(key: string): number {
 export function useDashboardSettings(options: UseDashboardSettingsOptions): {openSettings: () => Promise<void>} {
     const {
         title, intervalKeys, showCourierDisplayMode, isUsCustomer = false, readJobsSeconds,
-        successMessage, onRefreshIntervals, onCourierDisplayMode, openDialog = getDialog,
+        successMessage, onRefreshIntervals, onCourierDisplayMode, openDialog = loadDialog,
     } = options;
     const {jobs, driverLocations, tasks} = intervalKeys;
 
     const openSettings = useCallback(async () => {
-        const dialog = requireDialog(openDialog, 'ReactDashboardSettingsDialog');
+        const dialog = await requireDialog('DashboardSettings', openDialog);
         if (!dialog) return;
 
         const jobsSeconds = jobs

@@ -48,9 +48,11 @@ export function openVoidJobConfirmationDialog(
     return host.open({job}, toastService);
 }
 
-window.ReactVoidJobConfirmationDialog = {
+export const reactVoidJobConfirmationDialog = {
     open: openVoidJobConfirmationDialog,
 };
+
+window.ReactVoidJobConfirmationDialog = reactVoidJobConfirmationDialog;
 
 const voidJobConfirmationDialogReactModule = window.angular!.module(
     'uDispatch.voidJobConfirmationDialogReact',

@@ -44,6 +44,7 @@ import {type HeaderVariant} from '../dialogs/shared/mantine/styles';
 import {openJobInSearch} from '../../services/navigationService';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
+import {requireDialog} from '../../dialogs/dialogRegistry';
 
 // Nationwide speed constant
 const INTERNAL_STATUS_REPRICE = JobInternalStatusEnum.Reprice;
@@ -378,8 +379,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleVoidJob = async () => {
         closeAll();
         try {
-            if (window.ReactVoidJobConfirmationDialog) {
-                const result = await window.ReactVoidJobConfirmationDialog.open(
+            const dialog = await requireDialog('VoidJobConfirmation');
+            if (dialog) {
+                const result = await dialog.open(
                     {id: activeJob.id, jobNo: activeJob.jobNo, isBulkJob: activeJob.isBulkJob, isArchived: activeJob.isArchived},
                     {showToast},
                 );
@@ -396,8 +398,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleSwapPods = async () => {
         closeAll();
         try {
-            if (window.ReactSwapPodsDialog) {
-                const result = await window.ReactSwapPodsDialog.open(activeJob.jobNo, {showToast}, activeJob.client);
+            const dialog = await requireDialog('SwapPods');
+            if (dialog) {
+                const result = await dialog.open(activeJob.jobNo, {showToast}, activeJob.client);
                 if (result) refresh();
             }
         } catch {

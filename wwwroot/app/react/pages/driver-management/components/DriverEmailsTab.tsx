@@ -17,6 +17,7 @@ import {
 } from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import {dataTablePagingProps} from './dataTablePaging';
+import {loadDialog} from '../../../dialogs/dialogRegistry';
 
 interface DriverEmailsTabProps {
     showToast: ShowToastFn;
@@ -70,7 +71,7 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
 
     const openComposeDialog = async (recipients: DriverEmail[]) => {
         try {
-            const result = await (window as unknown as Record<string, { open: (recipients: DriverEmail[]) => Promise<GroupEmailData | null> }>).ReactComposeEmailDialog?.open(recipients);
+            const result = await (await loadDialog('ComposeEmail')).open(recipients);
             if (!result) return;
 
             await sendEmail.mutateAsync(result);

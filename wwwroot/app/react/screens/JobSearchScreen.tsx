@@ -14,14 +14,11 @@ import {toastService} from '../services/toastService';
 import {getSession} from '../session';
 import type {LayoutToolbarBridge} from '../utils/layoutToolbarActions';
 import {showPageToast} from './pageToasts';
+import {requireDialog} from '../dialogs/dialogRegistry';
 
 export interface JobSearchScreenProps {
     /** Deep-link job to open; the route (`/jobSearch/:jobId`) supplies it. */
     jobId?: number;
-}
-
-interface CreateJobDialogGlobal {
-    open: (isUsTenant?: boolean) => Promise<number | null>;
 }
 
 export const JobSearchScreen: React.FC<JobSearchScreenProps> = ({jobId}) => {
@@ -71,17 +68,15 @@ export const JobSearchScreen: React.FC<JobSearchScreenProps> = ({jobId}) => {
         onVisibilityChanged: () => pageBridge.current?.reloadFromStorage(),
     });
 
-    const createNewJob = useCallback(() => {
-        const dialog = (window as unknown as {ReactCreateJobDialog?: CreateJobDialogGlobal}).ReactCreateJobDialog;
-        if (!dialog) {
-            toastService.showErrorToast('Create job dialog is not loaded.');
-            return;
+    const createNewJob = useCallback(async () => {
+        const dialog = await requireDialog('CreateJob');
+        if (!dialog) return;
+        try {
+            const newJobId = await dialog.open(isUsCustomer);
+            if (newJobId) pageBridge.current?.jobCreated(newJobId);
+        } catch (err) {
+            console.error('[jobSearch] create job dialog error', err);
         }
-        dialog.open(isUsCustomer)
-            .then(newJobId => {
-                if (newJobId) pageBridge.current?.jobCreated(newJobId);
-            })
-            .catch(err => console.error('[jobSearch] create job dialog error', err));
     }, [isUsCustomer]);
 
     const interCourierCharge = useCallback(() => {

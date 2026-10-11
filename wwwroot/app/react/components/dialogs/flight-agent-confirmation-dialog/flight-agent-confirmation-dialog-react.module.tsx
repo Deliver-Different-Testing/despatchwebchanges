@@ -119,10 +119,12 @@ export function openAgentConfirmationDialog(options: {
 }
 
 // Expose to window for AngularJS access
-window.ReactFlightAgentConfirmationDialog = {
+export const reactFlightAgentConfirmationDialog = {
     openFlightDialog: openFlightConfirmationDialog,
     openAgentDialog: openAgentConfirmationDialog,
 };
+
+window.ReactFlightAgentConfirmationDialog = reactFlightAgentConfirmationDialog;
 
 // Create AngularJS module for ocLazyLoad
 const flightAgentConfirmationDialogReactModule = window.angular!.module(

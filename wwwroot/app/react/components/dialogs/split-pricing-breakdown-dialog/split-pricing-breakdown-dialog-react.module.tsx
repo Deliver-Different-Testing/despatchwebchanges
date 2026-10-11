@@ -87,10 +87,12 @@ export function openSplitPricingBreakdownDialog(
 }
 
 // Expose globally for AngularJS access
-window.ReactSplitPricingBreakdownDialog = {
+export const reactSplitPricingBreakdownDialog = {
     open: openSplitPricingBreakdownDialog,
     setToastService,
 };
+
+window.ReactSplitPricingBreakdownDialog = reactSplitPricingBreakdownDialog;
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
 const splitPricingBreakdownDialogReactModule = window.angular!.module(

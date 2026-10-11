@@ -21,7 +21,7 @@ function setup(overrides: Partial<Parameters<typeof useDashboardSettings>[0]> = 
         isUsCustomer: false,
         onRefreshIntervals,
         onCourierDisplayMode,
-        openDialog: () => ({open}) as never,
+        openDialog: async () => ({open}) as never,
         ...overrides,
     }));
     return {open, onRefreshIntervals, onCourierDisplayMode, hook};
@@ -113,7 +113,7 @@ describe('useDashboardSettings', () => {
     });
 
     it('toasts when the dialog bundle is missing', async () => {
-        const {hook} = setup({openDialog: () => undefined});
+        const {hook} = setup({openDialog: () => Promise.reject(new Error('bundle missing'))});
         await act(() => hook.result.current.openSettings());
         expect(toastService.showErrorToast).toHaveBeenCalledWith('Settings dialog is not loaded.');
     });

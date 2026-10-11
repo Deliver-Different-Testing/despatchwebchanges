@@ -100,9 +100,11 @@ export function openDashboardSettingsDialog(
 }
 
 // Expose globally for AngularJS access
-window.ReactDashboardSettingsDialog = {
+export const reactDashboardSettingsDialog = {
     open: openDashboardSettingsDialog,
 };
+
+window.ReactDashboardSettingsDialog = reactDashboardSettingsDialog;
 
 const panelsHost = createDialogHost<
     {title?: string; boxes: Record<string, DashboardBox>; layoutEditable: boolean},
@@ -129,9 +131,11 @@ export function openCustomizePanelsDialog(
     return panelsHost.open({title, boxes: {...boxes}, layoutEditable});
 }
 
-window.ReactCustomizePanelsDialog = {
+export const reactCustomizePanelsDialog = {
     open: openCustomizePanelsDialog,
 };
+
+window.ReactCustomizePanelsDialog = reactCustomizePanelsDialog;
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
 const dashboardSettingsDialogReactModule = window.angular!.module(

@@ -70,6 +70,8 @@ import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {openJobInSearch} from '../../services/navigationService';
 import {createMockDispatchJob} from '../../__testUtils__/mockData';
+import {testDialogs} from '../../dialogs/testDialogRegistry';
+jest.mock('../../dialogs/dialogRegistry', () => require('../../dialogs/testDialogRegistry').createDialogRegistryMock());
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
@@ -122,15 +124,15 @@ beforeEach(() => {
     mockedOpenEventGroupDialog.mockResolvedValue(true);
 
     // Window globals
-    (window as any).ReactPriceBreakdownDialog = {open: jest.fn().mockResolvedValue(undefined)};
-    (window as any).ReactVoidJobConfirmationDialog = {open: jest.fn().mockResolvedValue({success: true})};
-    (window as any).ReactSwapPodsDialog = {open: jest.fn().mockResolvedValue(true)};
+    testDialogs.PriceBreakdown = {open: jest.fn().mockResolvedValue(undefined)};
+    testDialogs.VoidJobConfirmation = {open: jest.fn().mockResolvedValue({success: true})};
+    testDialogs.SwapPods = {open: jest.fn().mockResolvedValue(true)};
 });
 
 afterEach(() => {
-    delete (window as any).ReactPriceBreakdownDialog;
-    delete (window as any).ReactVoidJobConfirmationDialog;
-    delete (window as any).ReactSwapPodsDialog;
+    delete testDialogs.PriceBreakdown;
+    delete testDialogs.VoidJobConfirmation;
+    delete testDialogs.SwapPods;
 });
 
 // Reset the module-level eventGroupsCache between tests by re-requiring
@@ -551,7 +553,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(await screen.findByRole('button', {name: 'Swap POD'}));
 
             await waitFor(() => {
-                expect((window as any).ReactSwapPodsDialog.open).toHaveBeenCalledWith('J001', expect.anything(), 'Test Client');
+                expect(testDialogs.SwapPods.open).toHaveBeenCalledWith('J001', expect.anything(), 'Test Client');
             });
             expect(mockedApi.restoreJobs).not.toHaveBeenCalled();
         });
@@ -942,7 +944,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Void job'));
 
             await waitFor(() => {
-                expect((window as any).ReactVoidJobConfirmationDialog.open).toHaveBeenCalledWith(
+                expect(testDialogs.VoidJobConfirmation.open).toHaveBeenCalledWith(
                     {id: 1, jobNo: 'J001', isBulkJob: false, isArchived: false},
                     {showToast: props.showToast},
                 );
@@ -965,7 +967,7 @@ describe('JobListContextMenu', () => {
         });
 
         it('Void job does not refresh or invalidate when dialog is cancelled', async () => {
-            (window as any).ReactVoidJobConfirmationDialog = {open: jest.fn().mockResolvedValue(null)};
+            testDialogs.VoidJobConfirmation = {open: jest.fn().mockResolvedValue(null)};
             const {queryClient: qc} = await import('../../query/queryClient');
             const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps();
@@ -974,7 +976,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Void job'));
 
             await waitFor(() => {
-                expect((window as any).ReactVoidJobConfirmationDialog.open).toHaveBeenCalled();
+                expect(testDialogs.VoidJobConfirmation.open).toHaveBeenCalled();
             });
             expect(props.onRefresh).not.toHaveBeenCalled();
             expect(invalidateSpy).not.toHaveBeenCalledWith({queryKey: ['jobs']});
@@ -990,7 +992,7 @@ describe('JobListContextMenu', () => {
             fireEvent.click(screen.getByText('Swap PODs'));
 
             await waitFor(() => {
-                expect((window as any).ReactSwapPodsDialog.open).toHaveBeenCalledWith(
+                expect(testDialogs.SwapPods.open).toHaveBeenCalledWith(
                     'J001',
                     {showToast: props.showToast},
                     'Test Client',

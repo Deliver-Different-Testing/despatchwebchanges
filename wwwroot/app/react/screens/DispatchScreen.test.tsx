@@ -5,6 +5,8 @@ import {setupUser} from '../__testUtils__/setupUser';
 import {NavigationProvider} from '../app/NavigationContext';
 import {DispatchScreen} from './DispatchScreen';
 import {createDefaultDispatchLayout} from '../pages/dispatch/lib/boxDefinitions';
+import {testDialogs} from '../dialogs/testDialogRegistry';
+jest.mock('../dialogs/dialogRegistry', () => require('../dialogs/testDialogRegistry').createDialogRegistryMock());
 
 const pageProps = jest.fn();
 const bridge = {
@@ -70,9 +72,9 @@ beforeEach(() => {
         viewsListener = l;
         return jest.fn();
     });
-    delete (window as any).ReactCreateJobDialog;
-    delete (window as any).ReactDashboardSettingsDialog;
-    delete (window as any).ReactCustomizePanelsDialog;
+    delete testDialogs.CreateJob;
+    delete testDialogs.DashboardSettings;
+    delete testDialogs.CustomizePanels;
 });
 
 describe('DispatchScreen', () => {
@@ -113,7 +115,7 @@ describe('DispatchScreen', () => {
 
     it('opens the create-job dialog with the tenant flag and reports the new job to the bridge', async () => {
         const open = jest.fn().mockResolvedValue(321);
-        (window as any).ReactCreateJobDialog = {open};
+        testDialogs.CreateJob = {open};
         const user = setupUser();
         renderScreen();
 
@@ -129,7 +131,7 @@ describe('DispatchScreen', () => {
     });
 
     it('does not notify the bridge when job creation is cancelled', async () => {
-        (window as any).ReactCreateJobDialog = {open: jest.fn().mockResolvedValue(null)};
+        testDialogs.CreateJob = {open: jest.fn().mockResolvedValue(null)};
         const user = setupUser();
         renderScreen();
 
@@ -183,7 +185,7 @@ describe('DispatchScreen', () => {
     it('persists customised panel visibility under the V2 key and reloads the page layout', async () => {
         seedCustomLayout();
         const open = jest.fn().mockImplementation(async (boxes: Record<string, {visible?: boolean}>) => boxes);
-        (window as any).ReactCustomizePanelsDialog = {open};
+        testDialogs.CustomizePanels = {open};
         const user = setupUser();
         renderScreen();
 
@@ -201,7 +203,7 @@ describe('DispatchScreen', () => {
             selectedDriverLocationRefreshInterval: {id: 0, text: ''},
             selectedTaskRefreshInterval: {id: 60, text: ''},
         });
-        (window as any).ReactDashboardSettingsDialog = {open};
+        testDialogs.DashboardSettings = {open};
         const user = setupUser();
         renderScreen();
 

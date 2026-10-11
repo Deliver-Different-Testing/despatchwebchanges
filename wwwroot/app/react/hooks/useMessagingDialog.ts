@@ -1,16 +1,16 @@
 import {useCallback} from 'react';
-import {getDialog, requireDialog, type DialogOpener} from '../dialogs/dialogRegistry';
+import {loadDialog, requireDialog, type DialogLoader} from '../dialogs/dialogRegistry';
 
 export interface UseMessagingDialogOptions {
     refreshUnreadCount: () => void | Promise<void>;
-    openDialog?: DialogOpener;
+    openDialog?: DialogLoader;
 }
 
 export function useMessagingDialog(
-    {refreshUnreadCount, openDialog = getDialog}: UseMessagingDialogOptions,
+    {refreshUnreadCount, openDialog = loadDialog}: UseMessagingDialogOptions,
 ): {openMessaging: () => Promise<void>} {
     const openMessaging = useCallback(async () => {
-        const dialog = requireDialog(openDialog, 'ReactMessagingDialog');
+        const dialog = await requireDialog('Messaging', openDialog);
         if (!dialog) return;
         try {
             await dialog.open();

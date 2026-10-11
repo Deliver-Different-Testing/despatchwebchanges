@@ -98,10 +98,12 @@ export function openPriceBreakdownDialog(
 }
 
 // Expose globally for AngularJS access
-window.ReactPriceBreakdownDialog = {
+export const reactPriceBreakdownDialog = {
     open: openPriceBreakdownDialog,
     setToastService,
 };
+
+window.ReactPriceBreakdownDialog = reactPriceBreakdownDialog;
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
 const priceBreakdownDialogReactModule = window.angular!.module(

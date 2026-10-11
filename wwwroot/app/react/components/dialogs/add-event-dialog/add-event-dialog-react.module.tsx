@@ -94,9 +94,11 @@ export function openAddEventDialog(options: OpenAddEventDialogOptions): Promise<
 }
 
 // Expose to window for AngularJS access
-window.ReactAddEventDialog = {
+export const reactAddEventDialog = {
     open: openAddEventDialog,
 };
+
+window.ReactAddEventDialog = reactAddEventDialog;
 
 // Create AngularJS module
 const addEventDialogReactModule = window.angular!.module(

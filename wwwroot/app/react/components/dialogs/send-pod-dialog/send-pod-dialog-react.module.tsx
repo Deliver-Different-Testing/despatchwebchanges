@@ -60,9 +60,11 @@ export function openSendPodDialog(jobData: SendPodJobData): Promise<boolean> {
     return host.open({jobData, sending: false, sent: false});
 }
 
-window.ReactSendPodDialog = {
+export const reactSendPodDialog = {
     open: openSendPodDialog,
 };
+
+window.ReactSendPodDialog = reactSendPodDialog;
 
 const sendPodDialogReactModule = window.angular!.module(
     'uDispatch.sendPodDialogReact',

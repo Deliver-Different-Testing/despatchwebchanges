@@ -17,7 +17,7 @@ const job = {id: 10, pickupAddress: blankAddress(), deliveryAddress: blankAddres
 
 function setup(dialogResult: unknown) {
     const open = jest.fn().mockResolvedValue(dialogResult);
-    const {result} = renderHook(() => useAddStopFlow({openDialog: () => ({open}) as never}));
+    const {result} = renderHook(() => useAddStopFlow({openDialog: async () => ({open}) as never}));
     return {open, ...result.current};
 }
 
@@ -61,7 +61,7 @@ describe('useAddStopFlow', () => {
     });
 
     it('toasts when the dialog bundle is missing', async () => {
-        const {result} = renderHook(() => useAddStopFlow({openDialog: () => undefined}));
+        const {result} = renderHook(() => useAddStopFlow({openDialog: () => Promise.reject(new Error('bundle missing'))}));
         await expect(result.current.addRecurringJobStop(job, true)).resolves.toBeUndefined();
         expect(toastService.showErrorToast).toHaveBeenCalledWith('Edit address dialog is not loaded.');
     });

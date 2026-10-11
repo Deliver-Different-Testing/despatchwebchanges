@@ -23,6 +23,7 @@ import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatC
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 import {dataTablePagingProps} from './dataTablePaging';
+import {loadDialog} from '../../../dialogs/dialogRegistry';
 
 interface WindowWithAfterhoursDialog {
     ReactEditAfterhoursDialog?: {
@@ -111,7 +112,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 duration: '4 hours',
             };
 
-            const result = await (window as unknown as WindowWithAfterhoursDialog).ReactEditAfterhoursDialog?.open(
+            const result = await (await loadDialog('EditAfterhours')).open(
                 newSchedule,
                 isUsCustomer ?? false,
                 {showToast}
@@ -143,7 +144,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 duration: schedule.duration,
             };
 
-            const result = await (window as unknown as WindowWithAfterhoursDialog).ReactEditAfterhoursDialog?.open(
+            const result = await (await loadDialog('EditAfterhours')).open(
                 scheduleForDialog,
                 isUsCustomer ?? false,
                 {showToast}

@@ -39,10 +39,12 @@ export function setToastService(service: ToastService): void {
 }
 
 // Expose to window for AngularJS access
-window.ReactSelectDialog = {
+export const reactSelectDialog = {
     showSelectDialog,
     setToastService,
 };
+
+window.ReactSelectDialog = reactSelectDialog;
 
 // Create AngularJS module for ocLazyLoad
 const selectDialogReactModule = window.angular!.module(

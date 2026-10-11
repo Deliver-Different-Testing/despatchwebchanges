@@ -7,7 +7,7 @@ import {
     saveBoxVisibility,
     type LayoutStorageKeys,
 } from '../components/common/box-shell/layoutPersistence';
-import {getDialog, requireDialog, type DialogOpener} from '../dialogs/dialogRegistry';
+import {loadDialog, requireDialog, type DialogLoader} from '../dialogs/dialogRegistry';
 
 export interface UseCustomizePanelsDialogOptions {
     storageKeys: LayoutStorageKeys;
@@ -15,14 +15,14 @@ export interface UseCustomizePanelsDialogOptions {
     currentLayoutName: string | undefined;
     /** Called after visibility is persisted, e.g. the page bridge's reloadLayoutsFromStorage. */
     onVisibilityChanged: () => void;
-    openDialog?: DialogOpener;
+    openDialog?: DialogLoader;
 }
 
 export function useCustomizePanelsDialog(
-    {storageKeys, createBoxes, currentLayoutName, onVisibilityChanged, openDialog = getDialog}: UseCustomizePanelsDialogOptions,
+    {storageKeys, createBoxes, currentLayoutName, onVisibilityChanged, openDialog = loadDialog}: UseCustomizePanelsDialogOptions,
 ): {openCustomizePanels: () => Promise<void>} {
     const openCustomizePanels = useCallback(async () => {
-        const dialog = requireDialog(openDialog, 'ReactCustomizePanelsDialog');
+        const dialog = await requireDialog('CustomizePanels', openDialog);
         if (!dialog) return;
         try {
             const layoutName = currentLayoutName ?? 'Default';

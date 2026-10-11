@@ -40,9 +40,11 @@ export function openCreateJobDialog(
 }
 
 // Expose globally for AngularJS access
-window.ReactCreateJobDialog = {
+export const reactCreateJobDialog = {
     open: openCreateJobDialog,
 };
+
+window.ReactCreateJobDialog = reactCreateJobDialog;
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
 const createJobDialogReactModule = window.angular!.module(

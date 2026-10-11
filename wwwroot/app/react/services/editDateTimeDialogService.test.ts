@@ -10,16 +10,18 @@ import {
     setToastService,
     editDateTimeDialogService,
 } from './editDateTimeDialogService';
+import {testDialogs} from '../dialogs/testDialogRegistry';
+jest.mock('../dialogs/dialogRegistry', () => require('../dialogs/testDialogRegistry').createDialogRegistryMock());
 
-// Mock the window.ReactEditDateTimeDialog
+// Mock the EditDateTime dialog via the registry
 const mockShowEditTimeDialog = jest.fn();
 const mockShowEditDateDialog = jest.fn();
 const mockShowEditDateAndTimeDialog = jest.fn();
 const mockSetToastService = jest.fn();
 
 beforeEach(() => {
-    // Setup mock on window
-    (window as any).ReactEditDateTimeDialog = {
+    // Register the mock dialog
+    testDialogs.EditDateTime = {
         showEditTimeDialog: mockShowEditTimeDialog,
         showEditDateDialog: mockShowEditDateDialog,
         showEditDateAndTimeDialog: mockShowEditDateAndTimeDialog,
@@ -28,7 +30,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-    delete (window as any).ReactEditDateTimeDialog;
+    delete testDialogs.EditDateTime;
 });
 
 describe('editDateTimeDialogService', () => {
@@ -169,10 +171,10 @@ describe('editDateTimeDialogService', () => {
     });
 
     describe('setToastService', () => {
-        it('should set the toast service on the dialog manager', () => {
+        it('should set the toast service on the dialog manager', async () => {
             const mockShowToast = jest.fn();
 
-            setToastService(mockShowToast);
+            await setToastService(mockShowToast);
 
             expect(mockSetToastService).toHaveBeenCalledWith({
                 showToast: mockShowToast,
@@ -181,13 +183,13 @@ describe('editDateTimeDialogService', () => {
     });
 
     describe('error handling', () => {
-        it('should throw error when dialog manager is not loaded', async () => {
-            delete (window as any).ReactEditDateTimeDialog;
+        it('should reject when the dialog cannot be loaded', async () => {
+            delete testDialogs.EditDateTime;
 
             await expect(showEditTimeDialog({
                 title: 'Test',
                 fieldName: 'test',
-            })).rejects.toThrow('EditDateTimeDialog React module not loaded');
+            })).rejects.toThrow('EditDateTime dialog not registered');
         });
     });
 

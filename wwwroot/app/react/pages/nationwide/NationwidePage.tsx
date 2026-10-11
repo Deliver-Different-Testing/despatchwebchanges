@@ -76,6 +76,7 @@ import {
 import {useDashboardViews} from '../../hooks/useDashboardViews';
 import type {DfrntPageViewModel} from '../../../interfaces/dfrnt-page-view-model.interface';
 import type {NationwidePageProps} from './NationwidePageProps';
+import {loadDialog} from '../../dialogs/dialogRegistry';
 
 /**
  * V1's Nationwide controller used a bespoke "NW" abbreviation for this key
@@ -576,7 +577,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
 
                 case 'accessorialCharges':
                     if (!job.accessorialChargeGroupId) return;
-                    await w.ReactAccessorialChargesDialog?.open({
+                    await (await loadDialog('AccessorialCharges')).open({
                         job: {
                             id: job.id,
                             accessorialChargeGroupId: job.accessorialChargeGroupId,
@@ -590,7 +591,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                     return;
 
                 case 'attachments':
-                    await w.ReactJobFileUploadDialog?.open(job.id);
+                    await (await loadDialog('JobFileUpload')).open(job.id);
                     refreshDetail();
                     return;
 

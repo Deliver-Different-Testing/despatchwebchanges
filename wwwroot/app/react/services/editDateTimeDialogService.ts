@@ -7,6 +7,7 @@
 
 import { Dayjs } from 'dayjs';
 import type { ShowToastFn } from './toastService';
+import { loadDialog } from '../dialogs/dialogRegistry';
 
 /**
  * Result returned when the dialog is submitted
@@ -42,27 +43,6 @@ interface InternalDialogOptions extends EditDateTimeDialogOptions {
 }
 
 /**
- * Window interface for the React dialog
- */
-interface ReactEditDateTimeDialogWindow {
-    showEditTimeDialog: (options: InternalDialogOptions) => Promise<EditDateTimeDialogResult | null>;
-    showEditDateDialog: (options: InternalDialogOptions) => Promise<EditDateTimeDialogResult | null>;
-    showEditDateAndTimeDialog: (options: InternalDialogOptions) => Promise<EditDateTimeDialogResult | null>;
-    setToastService: (service: { showToast: ShowToastFn }) => void;
-}
-
-/**
- * Get the React dialog manager from window
- */
-function getDialogManager(): ReactEditDateTimeDialogWindow {
-    const manager = window.ReactEditDateTimeDialog as ReactEditDateTimeDialogWindow | undefined;
-    if (!manager) {
-        throw new Error('EditDateTimeDialog React module not loaded. Ensure the module is loaded before calling dialog functions.');
-    }
-    return manager;
-}
-
-/**
  * Show a time-only edit dialog
  *
  * @param options - Dialog options
@@ -83,7 +63,7 @@ function getDialogManager(): ReactEditDateTimeDialogWindow {
 export async function showEditTimeDialog(
     options: EditDateTimeDialogOptions
 ): Promise<EditDateTimeDialogResult | null> {
-    const manager = getDialogManager();
+    const manager = await loadDialog('EditDateTime');
     return manager.showEditTimeDialog({
         ...options,
         showDate: false,
@@ -112,7 +92,7 @@ export async function showEditTimeDialog(
 export async function showEditDateDialog(
     options: EditDateTimeDialogOptions
 ): Promise<EditDateTimeDialogResult | null> {
-    const manager = getDialogManager();
+    const manager = await loadDialog('EditDateTime');
     return manager.showEditDateDialog({
         ...options,
         showDate: true,
@@ -144,7 +124,7 @@ export async function showEditDateDialog(
 export async function showEditDateAndTimeDialog(
     options: EditDateTimeDialogOptions
 ): Promise<EditDateTimeDialogResult | null> {
-    const manager = getDialogManager();
+    const manager = await loadDialog('EditDateTime');
     return manager.showEditDateAndTimeDialog({
         ...options,
         showDate: true,
@@ -164,10 +144,10 @@ export async function showEditDateAndTimeDialog(
  * });
  * ```
  */
-export function setToastService(
+export async function setToastService(
     showToast: ShowToastFn
-): void {
-    const manager = getDialogManager();
+): Promise<void> {
+    const manager = await loadDialog('EditDateTime');
     manager.setToastService({ showToast });
 }
 

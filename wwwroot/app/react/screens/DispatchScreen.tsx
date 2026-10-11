@@ -23,12 +23,9 @@ import {useResetLayout} from '../hooks/useResetLayout';
 import {getSession} from '../session';
 import {toastService} from '../services/toastService';
 import {showPageToast} from './pageToasts';
+import {requireDialog} from '../dialogs/dialogRegistry';
 
 const DEFAULT_TIME_ZONE = 'New Zealand Standard Time';
-
-interface CreateJobDialogGlobal {
-    open: (isUsTenant?: boolean) => Promise<number | null>;
-}
 
 export interface DispatchScreenProps {
     /** The route parses the `jobId` query param and supplies it (react-router is not wired yet). */
@@ -114,11 +111,8 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
     };
 
     const createNewJob = async () => {
-        const dialog = (window as unknown as {ReactCreateJobDialog?: CreateJobDialogGlobal}).ReactCreateJobDialog;
-        if (!dialog) {
-            toastService.showErrorToast('Create job dialog is not loaded.');
-            return;
-        }
+        const dialog = await requireDialog('CreateJob');
+        if (!dialog) return;
         try {
             const newJobId = await dialog.open(isUsCustomer);
             if (newJobId) bridgeRef.current?.jobCreated(newJobId);

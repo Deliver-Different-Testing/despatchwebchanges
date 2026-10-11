@@ -59,6 +59,7 @@ import {
 import {executeDispatchConfirmation} from '../../components/dialogs/dispatch-dialog/executeDispatch';
 import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {JobSearchPageProps} from "./JobSearchPageProps";
+import {loadDialog} from '../../dialogs/dialogRegistry';
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 showToast,
@@ -380,14 +381,13 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     }, [resolveDates, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
     const handleUpload = useCallback(() => {
-        const w = window as any;
-        if (w.ReactBulkPriceUploadDialog?.open) {
-            w.ReactBulkPriceUploadDialog.open({showToast})
-                .then(() => queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all}))
-                .catch((err: unknown) => console.error('Bulk upload dialog error:', err));
-        } else {
-            showToast("Bulk price upload didn't load. Refresh the page and try again.", 'warning');
-        }
+        loadDialog('BulkPriceUpload')
+            .then(d => d.open({toastService: {showToast}}))
+            .then(() => queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all}))
+            .catch((err: unknown) => {
+                console.error('Bulk upload dialog error:', err);
+                showToast("Bulk price upload didn't load. Refresh the page and try again.", 'warning');
+            });
     }, [showToast]);
 
     const invalidateJob = useCallback((job: DispatchJob) => Promise.all([
@@ -405,7 +405,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     }, [showToast, invalidateJob]);
 
     const openSwapPod = useCallback(async (job: DispatchJob) => {
-        await (window as any).ReactSwapPodsDialog?.open(job.jobNo, {showToast}, job.client);
+        await (await loadDialog('SwapPods')).open(job.jobNo, {showToast}, job.client);
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
 
@@ -429,7 +429,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             switch (actionId) {
                 case 'accessorialCharges':
                     if (!job.accessorialChargeGroupId) return;
-                    await w.ReactAccessorialChargesDialog?.open({
+                    await (await loadDialog('AccessorialCharges')).open({
                         job: {
                             id: job.id,
                             accessorialChargeGroupId: job.accessorialChargeGroupId,
@@ -443,7 +443,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     return;
 
                 case 'attachments':
-                    await w.ReactJobFileUploadDialog?.open(job.id);
+                    await (await loadDialog('JobFileUpload')).open(job.id);
                     await invalidateDetail();
                     return;
 
@@ -488,7 +488,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     return;
 
                 case 'sendPod':
-                    await w.ReactSendPodDialog?.open({
+                    await (await loadDialog('SendPod')).open({
                         jobId: job.id,
                         jobNo: job.jobNo,
                         clientName: job.clientName ?? job.client ?? '',

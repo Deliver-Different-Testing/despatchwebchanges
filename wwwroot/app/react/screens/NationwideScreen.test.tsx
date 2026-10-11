@@ -2,6 +2,8 @@ import React from 'react';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {NationwideScreen} from './NationwideScreen';
 import type {ToolbarActionsConfig} from '../components/common/app-shell/ToolbarActionsView';
+import {testDialogs} from '../dialogs/testDialogRegistry';
+jest.mock('../dialogs/dialogRegistry', () => require('../dialogs/testDialogRegistry').createDialogRegistryMock());
 
 const bridge = {
     setCurrentLayoutName: jest.fn(),
@@ -47,13 +49,11 @@ const renderReady = async (props = {}) => {
     await waitFor(() => expect(toolbar.views?.loading).toBe(false));
 };
 
-const dialogs = window as unknown as Record<string, unknown>;
-
 beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
-    delete dialogs.ReactCustomizePanelsDialog;
-    delete dialogs.ReactDashboardSettingsDialog;
+    delete testDialogs.CustomizePanels;
+    delete testDialogs.DashboardSettings;
 });
 
 describe('NationwideScreen', () => {
@@ -122,7 +122,7 @@ describe('NationwideScreen', () => {
         await act(() => toolbar.layouts!.onSaveLayout() as unknown as Promise<void>);
         await waitFor(() => expect(toolbar.layouts!.currentLayoutName).toBe('Mine'));
         const open = jest.fn(async (boxes: Record<string, unknown>) => boxes);
-        dialogs.ReactCustomizePanelsDialog = {open};
+        testDialogs.CustomizePanels = {open};
 
         await act(() => toolbar.layouts!.onCustomizePanels!() as unknown as Promise<void>);
 
@@ -134,7 +134,7 @@ describe('NationwideScreen', () => {
     it('saves the jobs refresh interval under refreshInterval-2-<contactId> and pushes ms to the bridge', async () => {
         await renderReady();
         const open = jest.fn().mockResolvedValue({selectedRefreshInterval: {id: 60, text: '1 min'}});
-        dialogs.ReactDashboardSettingsDialog = {open};
+        testDialogs.DashboardSettings = {open};
 
         await act(() => toolbar.settings!.onClick({} as React.MouseEvent) as unknown as Promise<void>);
 
@@ -147,7 +147,7 @@ describe('NationwideScreen', () => {
         await renderReady();
         localStorage.setItem('refreshInterval-2-42', '45');
         const open = jest.fn().mockResolvedValue(null);
-        dialogs.ReactDashboardSettingsDialog = {open};
+        testDialogs.DashboardSettings = {open};
 
         await act(() => toolbar.settings!.onClick({} as React.MouseEvent) as unknown as Promise<void>);
 

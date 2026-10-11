@@ -13,7 +13,7 @@ import {JobProperty} from '../../../../../enums/job-property.enum';
 import JobRelationshipType from '../../../../../enums/job-relationship-type.enum';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {AddressType} from '../../../../../enums/address-type.enum';
-import {useDialogLoader} from './useDialogLoader';
+import {loadDialog} from '../../../../dialogs/dialogRegistry';
 import {formatDateForApi, formatLongDate} from '../../../../utils/dateUtils';
 import type {DateCascadeFamilyMember} from '../../../../services/jobDetailApi';
 import type {CascadeChoice} from '../../../dialogs/cascade-date-confirm-dialog';
@@ -200,19 +200,6 @@ export function useJobActions({
     onChangeArchivedCourier,
     onNavigateToJob,
 }: UseJobActionsOptions) {
-    const {
-        ensureSelectDialog,
-        ensureDateTimeDialog,
-        ensureAutoCompleteDialog,
-        ensureAddressDialog,
-        ensureVoidDialog,
-        ensurePriceBreakdownDialog,
-        ensureSplitPricingBreakdownDialog,
-        ensureSimplePriceEditDialog,
-        ensureParcelDimensionsDialog,
-        ensureSendPodDialog,
-        ensureJobFileUploadDialog,
-    } = useDialogLoader();
 
     // Universal dispatch dialog state. JobDetails renders the dialog inline and
     // wires its callbacks back through `dispatchDialogConfirmCourier` /
@@ -381,8 +368,7 @@ export function useJobActions({
     const editDateAndTime = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown, allowClear?: boolean) => {
         const j = jobRef.current;
         if (!j) return;
-        await ensureDateTimeDialog();
-        const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
+        const result = await (await loadDialog('EditDateTime')).showEditDateAndTimeDialog({
             title,
             fieldName: field,
             dateTime: dateTime as any,
@@ -476,14 +462,13 @@ export function useJobActions({
         if (DATE_CASCADE_FIELDS.has(result.fieldName)) {
             await checkForRateChanges(updatedJobIds);
         }
-    }, [ensureDateTimeDialog, showToast, refreshAndNotify, onRequestPartnerChange, isUsCustomer,
+    }, [showToast, refreshAndNotify, onRequestPartnerChange, isUsCustomer,
         checkForRateChanges]);
 
     const editDate = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
         const j = jobRef.current;
         if (!j) return;
-        await ensureDateTimeDialog();
-        const result = await window.ReactEditDateTimeDialog?.showEditDateDialog({
+        const result = await (await loadDialog('EditDateTime')).showEditDateDialog({
             title,
             fieldName: field,
             dateTime: dateTime as any,
@@ -500,7 +485,7 @@ export function useJobActions({
         }
         await updateField({job: j, field: result.fieldName, value: result.value, isRecurring: j.preBook, timezone: result.timezone});
         await refreshAndNotify();
-    }, [ensureDateTimeDialog, updateField, refreshAndNotify, onRequestPartnerChange]);
+    }, [updateField, refreshAndNotify, onRequestPartnerChange]);
 
     const showSelectDialog = useCallback(async (
         items: Array<{id: number; text: string}>,
@@ -512,8 +497,7 @@ export function useJobActions({
     ) => {
         const j = jobRef.current;
         if (!j) return;
-        await ensureSelectDialog();
-        const result = await window.ReactSelectDialog?.showSelectDialog({
+        const result = await (await loadDialog('Select')).showSelectDialog({
             title,
             fieldName,
             items,
@@ -544,7 +528,7 @@ export function useJobActions({
             await updateField({job: j, field: fieldName, value: payload, isRecurring: j.preBook});
         }
         await refreshAndNotify();
-    }, [ensureSelectDialog, updateField, refreshAndNotify, tryRoutePartnerEdit]);
+    }, [updateField, refreshAndNotify, tryRoutePartnerEdit]);
 
     const showAutocompleteDialog = useCallback(async (
         url: string,
@@ -556,8 +540,7 @@ export function useJobActions({
     ) => {
         const j = jobRef.current;
         if (!j) return;
-        await ensureAutoCompleteDialog();
-        const result = await window.ReactAutoCompleteDialog?.open(
+        const result = await (await loadDialog('AutoComplete')).open(
             title,
             placeholder,
             (searchTerm: string) => autocompleteSearch(searchTerm, url),
@@ -567,16 +550,15 @@ export function useJobActions({
         if (!result) return;
         await updateField({job: j, field: fieldName, value: result.item.id, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [ensureAutoCompleteDialog, updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify]);
 
     // ── Address Handlers ───────────────────────────────────────────
 
     const handleEditAddress = useCallback(async (isDelivery: boolean) => {
         const j = jobRef.current;
         if (!j) return;
-        await ensureAddressDialog();
         const existing = isDelivery ? j.deliveryAddress : j.pickupAddress;
-        const result = await window.ReactEditAddressDialog?.open(
+        const result = await (await loadDialog('EditAddress')).open(
             existing as any,
             undefined,
             undefined,
@@ -598,7 +580,7 @@ export function useJobActions({
         }
         await updateAddress({job: j, address: result as any, isDelivery});
         await refreshAndNotify();
-    }, [isUsCustomer, ensureAddressDialog, updateAddress, refreshAndNotify, onRequestPartnerChange]);
+    }, [isUsCustomer, updateAddress, refreshAndNotify, onRequestPartnerChange]);
 
     const handleEditPickupAddress = useCallback(() => handleEditAddress(false), [handleEditAddress]);
     const handleEditDeliveryAddress = useCallback(() => handleEditAddress(true), [handleEditAddress]);
@@ -650,8 +632,7 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (!j.void) {
-            await ensureVoidDialog();
-            const result = await window.ReactVoidJobConfirmationDialog?.open({
+            const result = await (await loadDialog('VoidJobConfirmation')).open({
                 id: j.id,
                 jobNo: j.jobNo,
                 isBulkJob: j.isBulkJob,
@@ -665,7 +646,7 @@ export function useJobActions({
             await updateField({job: j, field: JobProperty.Void, value: false, isRecurring: j.preBook});
             await refreshAndNotify();
         }
-    }, [ensureVoidDialog, updateField, refreshAndNotify, invalidateJobLists]);
+    }, [updateField, refreshAndNotify, invalidateJobLists]);
 
     const handleActiveClick = useCallback(async () => {
         const j = jobRef.current;
@@ -703,8 +684,7 @@ export function useJobActions({
 
         const collectPodTime = async (): Promise<string | null> => {
             const current = jobRef.current ?? j;
-            await ensureDateTimeDialog();
-            const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
+            const result = await (await loadDialog('EditDateTime')).showEditDateAndTimeDialog({
                 title: 'POD time',
                 fieldName: JobProperty.CompletedTime,
                 dateTime: current.completedTime,
@@ -763,13 +743,12 @@ export function useJobActions({
 
         // POD file upload (optional — user can skip by closing the dialog)
         try {
-            await ensureJobFileUploadDialog();
-            await window.ReactJobFileUploadDialog?.open?.(j.id, 'POD');
+            await (await loadDialog('JobFileUpload')).open(j.id, 'POD');
         } catch {
             // Upload dialog not available or user cancelled — the job is already completed
         }
         await invalidatePhotos();
-    }, [isRecurringJob, ensureDateTimeDialog, ensureJobFileUploadDialog, openTextDialogAsync, updatePod, refreshAndNotify, invalidatePhotos, showToast]);
+    }, [isRecurringJob, openTextDialogAsync, updatePod, refreshAndNotify, invalidatePhotos, showToast]);
 
     const handleDoneClick = useCallback(async () => {
         const j = jobRef.current;
@@ -990,9 +969,8 @@ export function useJobActions({
         // NP path — split or not, invoiced or not — is the flat dialog in partner view.
         if (isNetworkPartner) {
             const payLines = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
-            await ensurePriceBreakdownDialog();
-            window.ReactPriceBreakdownDialog?.setToastService({showToast});
-            await window.ReactPriceBreakdownDialog?.open(
+            (await loadDialog('PriceBreakdown')).setToastService({showToast});
+            await (await loadDialog('PriceBreakdown')).open(
                 payLines, j.id, j.preBook, j.isArchived, isUsCustomer, true, undefined, undefined, {partnerView: true},
             );
             return;
@@ -1048,9 +1026,8 @@ export function useJobActions({
                 ? await getSplitPricingBreakdown(splitParentId, splitParentIsArchived)
                 : undefined;
             if (splitBreakdown) {
-                await ensureSplitPricingBreakdownDialog();
-                window.ReactSplitPricingBreakdownDialog?.setToastService({showToast});
-                await window.ReactSplitPricingBreakdownDialog?.open(splitBreakdown, {
+                (await loadDialog('SplitPricingBreakdown')).setToastService({showToast});
+                await (await loadDialog('SplitPricingBreakdown')).open(splitBreakdown, {
                     readOnly: !!j.locked || !!parentJob?.locked,
                     highlightLegId: isSplitChild ? j.id : undefined,
                 });
@@ -1062,9 +1039,8 @@ export function useJobActions({
         const breakdowns = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
         const isUsingOldAmountMethod = !isUsCustomer && breakdowns.length === 0;
         if (isUsingOldAmountMethod) {
-            await ensureSimplePriceEditDialog();
-            window.ReactSimplePriceEditDialog?.setToastService({showToast});
-            await window.ReactSimplePriceEditDialog?.open({
+            (await loadDialog('SimplePriceEdit')).setToastService({showToast});
+            await (await loadDialog('SimplePriceEdit')).open({
                 jobId: j.id,
                 jobNumber: j.jobNo,
                 currentCharge: j.charge,
@@ -1082,24 +1058,21 @@ export function useJobActions({
             const managedElsewhere = parentJob
                 ? {parentJobNumber: parentJob.jobNo, onNavigateToParent: () => onNavigateToJob?.(parentJob.id)}
                 : undefined;
-
-            await ensurePriceBreakdownDialog();
-            window.ReactPriceBreakdownDialog?.setToastService({showToast});
-            await window.ReactPriceBreakdownDialog?.open(
+            (await loadDialog('PriceBreakdown')).setToastService({showToast});
+            await (await loadDialog('PriceBreakdown')).open(
                 breakdowns, j.id, j.preBook, j.isArchived, isUsCustomer,
                 isSplitChild ? true : !!j.locked,
                 managedElsewhere,
             );
         }
         await refreshAndNotify();
-    }, [isUsCustomer, isNetworkPartner, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, ensureSplitPricingBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync, relatedJobs, onNavigateToJob]);
+    }, [isUsCustomer, isNetworkPartner, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync, relatedJobs, onNavigateToJob]);
 
     const handleStatusClick = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
         const statusList = await getStatusList();
-        await ensureSelectDialog();
-        const result = await window.ReactSelectDialog?.showSelectDialog({
+        const result = await (await loadDialog('Select')).showSelectDialog({
             title: 'Status',
             fieldName: JobProperty.Status,
             items: statusList,
@@ -1109,7 +1082,7 @@ export function useJobActions({
         await updateField({job: j, field: JobProperty.Status, value: result.value, isRecurring: j.preBook});
         await refreshAndNotify();
         onStatusChange?.(result.value as number);
-    }, [ensureSelectDialog, updateField, refreshAndNotify, onStatusChange]);
+    }, [updateField, refreshAndNotify, onStatusChange]);
 
     const handleSpeedClick = useCallback(async () => {
         const speeds = await getSpeedList();
@@ -1161,15 +1134,14 @@ export function useJobActions({
     const handleEditDimensions = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
-        await ensureParcelDimensionsDialog();
-        window.ReactEditParcelDimensionsDialog?.setToastService({showToast});
+        (await loadDialog('EditParcelDimensions')).setToastService({showToast});
         // Partner jobs route through the change-request dialog: the dimensions
         // dialog captures the parcels (no API call, no success toast) and we
         // forward them to the locked confirmation dialog so the user adds a
         // reason and the partner can approve. Bulk jobs never have a partner
         // pairing, so they keep the direct save path.
         const partnerMode = Boolean(j.isPartnerJob && !j.isBulkJob && onRequestPartnerChange);
-        const result = await window.ReactEditParcelDimensionsDialog?.showEditParcelDimensionsDialog({
+        const result = await (await loadDialog('EditParcelDimensions')).showEditParcelDimensionsDialog({
             jobId: j.isBulkJob ? undefined : j.id,
             bulkJobId: j.isBulkJob ? j.id : undefined,
             jobNumber: j.jobNo,
@@ -1199,7 +1171,7 @@ export function useJobActions({
                 await checkForRateChange(jobForRate);
             }
         }
-    }, [ensureParcelDimensionsDialog, isUsCustomer, showToast, refreshAndNotify, checkForRateChange, invalidateAllJobDetails, relatedJobs, onRequestPartnerChange]);
+    }, [isUsCustomer, showToast, refreshAndNotify, checkForRateChange, invalidateAllJobDetails, relatedJobs, onRequestPartnerChange]);
 
     const handleEditRefA = useCallback(() => {
         const j = jobRef.current;
@@ -1254,7 +1226,7 @@ export function useJobActions({
     const handlePodUpload = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        (window as any).ReactJobFileUploadDialog?.open?.(podMediaJobId(j), 'POD');
+        void loadDialog('JobFileUpload').then(d => d.open(podMediaJobId(j), 'POD'));
     }, []);
 
     const handlePodReport = useCallback(() => {
@@ -1298,8 +1270,7 @@ export function useJobActions({
     const handleSendPodEmail = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
-        await ensureSendPodDialog();
-        const result = await window.ReactSendPodDialog?.open({
+        const result = await (await loadDialog('SendPod')).open({
             jobId: podMediaJobId(j),
             jobNo: j.jobNo,
             clientName: j.clientName,
@@ -1312,7 +1283,7 @@ export function useJobActions({
         if (result) {
             showToast('POD report queued for sending', 'success');
         }
-    }, [ensureSendPodDialog, showToast]);
+    }, [showToast]);
 
     // ── Recurring Job Handlers ─────────────────────────────────────
 

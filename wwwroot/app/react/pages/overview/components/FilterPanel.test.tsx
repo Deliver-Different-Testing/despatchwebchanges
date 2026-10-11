@@ -9,6 +9,7 @@ import {MantineTestProvider} from '../../../__testUtils__';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {FilterPanel} from './FilterPanel';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
+import {testDialogs} from '../../../dialogs/testDialogRegistry';
 
 jest.mock('../../../services/overviewApi', () => ({
     overviewApi: {
@@ -16,16 +17,7 @@ jest.mock('../../../services/overviewApi', () => ({
     },
 }));
 
-// The date-range dialog ships as a separate lazy-loaded bundle. FilterPanel must
-// ensure that bundle is loaded (which registers window.ReactDateRangeDialog)
-// before opening it — otherwise clicking "Select Dates" does nothing.
-const mockEnsureDateRangeDialog = jest.fn();
-jest.mock('../../../components/common/job-details/hooks/useDialogLoader', () => ({
-    useDialogLoader: () => ({
-        ensureDateRangeDialog: mockEnsureDateRangeDialog,
-    }),
-}));
-
+jest.mock('../../../dialogs/dialogRegistry', () => require('../../../dialogs/testDialogRegistry').createDialogRegistryMock());
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -181,16 +173,11 @@ describe('FilterPanel', () => {
             const mockOpen = jest.fn();
 
             beforeEach(() => {
-                mockEnsureDateRangeDialog.mockReset();
                 mockOpen.mockReset();
-                delete (window as {ReactDateRangeDialog?: unknown}).ReactDateRangeDialog;
-                // Loading the bundle registers the global — mirror that side effect.
-                mockEnsureDateRangeDialog.mockImplementation(async () => {
-                    (window as {ReactDateRangeDialog?: unknown}).ReactDateRangeDialog = {open: mockOpen};
-                });
+                testDialogs.DateRange = {open: mockOpen};
             });
 
-            it('loads the dialog bundle then opens it and applies the result', async () => {
+            it('loads the dialog then opens it and applies the result', async () => {
                 mockOpen.mockResolvedValue({
                     start: new Date('2024-02-01'),
                     end: new Date('2024-02-05'),
@@ -202,7 +189,6 @@ describe('FilterPanel', () => {
 
                 fireEvent.click(screen.getByText('Select dates'));
 
-                await waitFor(() => expect(mockEnsureDateRangeDialog).toHaveBeenCalled());
                 await waitFor(() => expect(mockOpen).toHaveBeenCalled());
                 await waitFor(() =>
                     expect(onDateRangeChange).toHaveBeenCalledWith({

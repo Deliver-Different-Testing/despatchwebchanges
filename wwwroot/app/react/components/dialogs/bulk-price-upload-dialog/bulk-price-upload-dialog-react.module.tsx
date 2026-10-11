@@ -30,9 +30,11 @@ export function openBulkPriceUploadDialog(options: OpenBulkPriceUploadDialogOpti
 }
 
 // Expose to window for AngularJS access
-window.ReactBulkPriceUploadDialog = {
+export const reactBulkPriceUploadDialog = {
     open: openBulkPriceUploadDialog,
 };
+
+window.ReactBulkPriceUploadDialog = reactBulkPriceUploadDialog;
 
 // Create AngularJS module
 const bulkPriceUploadDialogReactModule = window.angular!.module(

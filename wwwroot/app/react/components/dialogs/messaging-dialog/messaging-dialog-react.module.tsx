@@ -36,9 +36,11 @@ export function openMessagingDialog(options?: OpenMessagingDialogOptions): Promi
 }
 
 // Expose to window for AngularJS access
-window.ReactMessagingDialog = {
+export const reactMessagingDialog = {
     open: openMessagingDialog,
 };
+
+window.ReactMessagingDialog = reactMessagingDialog;
 
 // Create AngularJS module
 const messagingDialogReactModule = window.angular!.module(

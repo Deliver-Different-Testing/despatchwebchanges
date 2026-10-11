@@ -57,9 +57,11 @@ export async function openEventGroupDialog(options: OpenEventGroupDialogOptions)
 }
 
 // Expose to window for AngularJS access
-window.ReactEventGroupDialog = {
+export const reactEventGroupDialog = {
     open: openEventGroupDialog,
 };
+
+window.ReactEventGroupDialog = reactEventGroupDialog;
 
 // Create AngularJS module
 const eventGroupDialogReactModule = window.angular!.module(

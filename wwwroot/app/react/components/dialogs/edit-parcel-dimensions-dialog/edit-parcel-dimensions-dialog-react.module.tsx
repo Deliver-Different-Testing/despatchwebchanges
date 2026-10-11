@@ -48,10 +48,12 @@ export function setToastService(service: ToastService): void {
 }
 
 // Expose to window for AngularJS access
-window.ReactEditParcelDimensionsDialog = {
+export const reactEditParcelDimensionsDialog = {
     showEditParcelDimensionsDialog,
     setToastService,
 };
+
+window.ReactEditParcelDimensionsDialog = reactEditParcelDimensionsDialog;
 
 // Create AngularJS module for ocLazyLoad
 const editParcelDimensionsDialogReactModule = window.angular!.module(

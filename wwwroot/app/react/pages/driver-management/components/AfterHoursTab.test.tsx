@@ -11,6 +11,8 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {AfterHoursTab} from './AfterHoursTab';
 import {AfterHoursPaginated} from '../../../interfaces';
 import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks/useDriverManagementApi';
+import {testDialogs} from '../../../dialogs/testDialogRegistry';
+jest.mock('../../../dialogs/dialogRegistry', () => require('../../../dialogs/testDialogRegistry').createDialogRegistryMock());
 
 jest.mock('../../../hooks/useDriverManagementApi', () => ({
     useAfterHoursSchedule: jest.fn(),
@@ -76,11 +78,11 @@ const setupMocks = (data?: AfterHoursPaginated, isLoading = false) => {
 
 describe('AfterHoursTab', () => {
     beforeEach(() => {
-        (window as any).ReactEditAfterhoursDialog = {open: jest.fn()};
+        testDialogs.EditAfterhours = {open: jest.fn()};
     });
 
     afterEach(() => {
-        delete (window as any).ReactEditAfterhoursDialog;
+        delete testDialogs.EditAfterhours;
     });
 
     it('should render all column headers and stats display', () => {

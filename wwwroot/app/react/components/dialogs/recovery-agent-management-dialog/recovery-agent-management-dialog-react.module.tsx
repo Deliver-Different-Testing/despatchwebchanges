@@ -49,9 +49,11 @@ export async function openRecoveryAgentManagementDialog(
 }
 
 // Expose to window for AngularJS access
-window.ReactRecoveryAgentManagementDialog = {
+export const reactRecoveryAgentManagementDialog = {
     open: openRecoveryAgentManagementDialog,
 };
+
+window.ReactRecoveryAgentManagementDialog = reactRecoveryAgentManagementDialog;
 
 // Create AngularJS module
 const recoveryAgentManagementDialogReactModule = window.angular!.module(

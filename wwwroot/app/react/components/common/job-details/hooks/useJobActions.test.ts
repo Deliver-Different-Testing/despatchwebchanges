@@ -7,25 +7,10 @@ import {useJobActions} from './useJobActions';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 import JobRelationshipType from '../../../../../enums/job-relationship-type.enum';
 import dayjs from 'dayjs';
+import {testDialogs} from '../../../../dialogs/testDialogRegistry';
+jest.mock('../../../../dialogs/dialogRegistry', () => require('../../../../dialogs/testDialogRegistry').createDialogRegistryMock());
 
 // ── Mocks ────────────────────────────────────────────────────────────
-
-// Mock the dialog loader so ensureDateTimeDialog etc. are no-ops
-jest.mock('./useDialogLoader', () => ({
-    useDialogLoader: () => ({
-        ensureSelectDialog: jest.fn().mockResolvedValue(undefined),
-        ensureDateTimeDialog: jest.fn().mockResolvedValue(undefined),
-        ensureAutoCompleteDialog: jest.fn().mockResolvedValue(undefined),
-        ensureAddressDialog: jest.fn().mockResolvedValue(undefined),
-        ensureVoidDialog: jest.fn().mockResolvedValue(undefined),
-        ensurePriceBreakdownDialog: jest.fn().mockResolvedValue(undefined),
-        ensureSplitPricingBreakdownDialog: jest.fn().mockResolvedValue(undefined),
-        ensureSimplePriceEditDialog: jest.fn().mockResolvedValue(undefined),
-        ensureParcelDimensionsDialog: jest.fn().mockResolvedValue(undefined),
-        ensureSendPodDialog: jest.fn().mockResolvedValue(undefined),
-        ensureJobFileUploadDialog: jest.fn().mockResolvedValue(undefined),
-    }),
-}));
 
 // Mock dateUtils — formatDateForApi returns a predictable string
 jest.mock('../../../../utils/dateUtils', () => ({
@@ -145,14 +130,14 @@ function setup(opts: SetupOptions = {}) {
 // ── Date/Time Dialog Mock ────────────────────────────────────────────
 
 function mockDateTimeDialog(returnValue: {value: unknown; fieldName: string; timezone: string} | null) {
-    (window as any).ReactEditDateTimeDialog = {
+    testDialogs.EditDateTime = {
         showEditDateAndTimeDialog: jest.fn().mockResolvedValue(returnValue),
     };
 }
 
 function clearWindowDialogs() {
-    delete (window as any).ReactEditDateTimeDialog;
-    delete (window as any).ReactJobFileUploadDialog;
+    delete testDialogs.EditDateTime;
+    delete testDialogs.JobFileUpload;
 }
 
 /** The POD time dialog now always opens, so most guided-flow tests need it stubbed. */
@@ -163,7 +148,7 @@ function mockPodTimeDialog(value = dayjs('2026-03-23T11:45:00')) {
 
 /** Stub the POD photo dialog and return its open spy. */
 function mockPhotoDialog(open: jest.Mock = jest.fn().mockResolvedValue(undefined)) {
-    (window as any).ReactJobFileUploadDialog = {open};
+    testDialogs.JobFileUpload = {open};
     return open;
 }
 
@@ -240,7 +225,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             });
             await flushDialogChain();
 
-            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+            expect(testDialogs.EditDateTime.showEditDateAndTimeDialog)
                 .toHaveBeenCalled();
             expect(mockShowToast).not.toHaveBeenCalledWith(
                 expect.stringContaining('archived'),
@@ -255,7 +240,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
             await act(() => result.current.handleEditCompletedTime());
 
-            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+            expect(testDialogs.EditDateTime.showEditDateAndTimeDialog)
                 .toHaveBeenCalledWith(expect.objectContaining({allowClear: false}));
         });
 
@@ -266,7 +251,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
             await act(() => result.current.handleEditCompletedTime());
 
-            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+            expect(testDialogs.EditDateTime.showEditDateAndTimeDialog)
                 .toHaveBeenCalledWith(expect.objectContaining({allowClear: true}));
         });
     });
@@ -412,7 +397,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             );
             expect(mockUpdatePod).not.toHaveBeenCalled();
             expect(mockUpdateField).not.toHaveBeenCalled();
-            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+            expect(testDialogs.EditDateTime.showEditDateAndTimeDialog)
                 .not.toHaveBeenCalled();
         });
 
@@ -520,7 +505,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             });
             await flushDialogChain();
 
-            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+            expect(testDialogs.EditDateTime.showEditDateAndTimeDialog)
                 .toHaveBeenCalledWith(expect.objectContaining({title: 'POD time'}));
 
             // Text dialog should now be open for POD name
@@ -617,7 +602,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                 completedTime: dayjs('2026-03-23T11:45:00'),
                 podName: 'Bob',
             });
-            (window as any).ReactEditDateTimeDialog = {
+            testDialogs.EditDateTime = {
                 showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
                     value: dayjs('2026-03-23T11:45:00'),
                     fieldName: JobProperty.CompletedTime,
@@ -631,7 +616,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             await act(() => result.current.handleEditCompletedTime());
 
             // The dialog is opened with the Clear affordance enabled
-            expect((window as any).ReactEditDateTimeDialog.showEditDateAndTimeDialog)
+            expect(testDialogs.EditDateTime.showEditDateAndTimeDialog)
                 .toHaveBeenCalledWith(expect.objectContaining({allowClear: true}));
             // Clear persists an empty value so the backend nulls the POD time
             expect(updateJobDetail).toHaveBeenCalledWith(1001, JobProperty.CompletedTime, '', false, 'Pacific/Auckland');
@@ -817,12 +802,12 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
 describe('useJobActions — handleVoidClick', () => {
     afterEach(() => {
-        delete (window as any).ReactVoidJobConfirmationDialog;
+        delete testDialogs.VoidJobConfirmation;
         jest.restoreAllMocks();
     });
 
     it('calls refreshAndNotify and invalidateJobLists after successful void', async () => {
-        (window as any).ReactVoidJobConfirmationDialog = {
+        testDialogs.VoidJobConfirmation = {
             open: jest.fn().mockResolvedValue({success: true, voidedCount: 1}),
         };
 
@@ -834,7 +819,7 @@ describe('useJobActions — handleVoidClick', () => {
             await result.current.handleVoidClick();
         });
 
-        expect((window as any).ReactVoidJobConfirmationDialog.open).toHaveBeenCalledWith({
+        expect(testDialogs.VoidJobConfirmation.open).toHaveBeenCalledWith({
             id: 1001,
             jobNo: 'J-1001',
             isBulkJob: false,
@@ -845,7 +830,7 @@ describe('useJobActions — handleVoidClick', () => {
     });
 
     it('does not refresh or invalidate when void dialog is cancelled', async () => {
-        (window as any).ReactVoidJobConfirmationDialog = {
+        testDialogs.VoidJobConfirmation = {
             open: jest.fn().mockResolvedValue(null),
         };
 
@@ -877,7 +862,7 @@ describe('useJobActions — handleVoidClick', () => {
     });
 
     it('does nothing when job is undefined', async () => {
-        (window as any).ReactVoidJobConfirmationDialog = {
+        testDialogs.VoidJobConfirmation = {
             open: jest.fn(),
         };
 
@@ -896,7 +881,7 @@ describe('useJobActions — handleVoidClick', () => {
             await result.current.handleVoidClick();
         });
 
-        expect((window as any).ReactVoidJobConfirmationDialog.open).not.toHaveBeenCalled();
+        expect(testDialogs.VoidJobConfirmation.open).not.toHaveBeenCalled();
         expect(mockRefreshAndNotify).not.toHaveBeenCalled();
         expect(mockInvalidateJobLists).not.toHaveBeenCalled();
     });
@@ -991,16 +976,16 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
 
 describe('useJobActions — handlePricingClick as a network partner', () => {
     afterEach(() => {
-        delete (window as any).ReactSplitPricingBreakdownDialog;
-        delete (window as any).ReactPriceBreakdownDialog;
+        delete testDialogs.SplitPricingBreakdown;
+        delete testDialogs.PriceBreakdown;
         jest.restoreAllMocks();
     });
 
     function armDialogs() {
         const openMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactPriceBreakdownDialog = {open: openMock, setToastService: jest.fn()};
+        testDialogs.PriceBreakdown = {open: openMock, setToastService: jest.fn()};
         const splitOpenMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
         return {openMock, splitOpenMock};
     }
 
@@ -1067,8 +1052,8 @@ describe('useJobActions — handlePricingClick as a network partner', () => {
 
 describe('useJobActions — handlePricingClick on a split child', () => {
     afterEach(() => {
-        delete (window as any).ReactSplitPricingBreakdownDialog;
-        delete (window as any).ReactPriceBreakdownDialog;
+        delete testDialogs.SplitPricingBreakdown;
+        delete testDialogs.PriceBreakdown;
         jest.restoreAllMocks();
     });
 
@@ -1078,7 +1063,7 @@ describe('useJobActions — handlePricingClick on a split child', () => {
         (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
 
         const splitOpenMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
 
         const parentJob = createMockJob({id: 500, jobNo: 'KT4071V'});
         const job = createMockJob({
@@ -1108,7 +1093,7 @@ describe('useJobActions — handlePricingClick on a split child', () => {
         (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
 
         const splitOpenMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
 
         const parentJob = createMockJob({id: 500, jobNo: 'KT4071V', locked: true});
         const job = createMockJob({
@@ -1132,7 +1117,7 @@ describe('useJobActions — handlePricingClick on a split child', () => {
 
     it('falls back to the flat dialog, forced read-only, when the parent has no derivable split breakdown', async () => {
         const openMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactPriceBreakdownDialog = {
+        testDialogs.PriceBreakdown = {
             open: openMock,
             setToastService: jest.fn(),
         };
@@ -1176,8 +1161,8 @@ describe('useJobActions — handlePricingClick on a split child', () => {
 
 describe('useJobActions — handlePricingClick on a split parent', () => {
     afterEach(() => {
-        delete (window as any).ReactSplitPricingBreakdownDialog;
-        delete (window as any).ReactPriceBreakdownDialog;
+        delete testDialogs.SplitPricingBreakdown;
+        delete testDialogs.PriceBreakdown;
         jest.restoreAllMocks();
     });
 
@@ -1188,8 +1173,8 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
 
         const flatOpenMock = jest.fn();
         const splitOpenMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactPriceBreakdownDialog = {open: flatOpenMock, setToastService: jest.fn()};
-        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+        testDialogs.PriceBreakdown = {open: flatOpenMock, setToastService: jest.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
 
         const job = createMockJob({
             id: 503,
@@ -1214,7 +1199,7 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
         (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
 
         const splitOpenMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
 
         const job = createMockJob({
             id: 505,
@@ -1239,7 +1224,7 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
         (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
 
         const splitOpenMock = jest.fn().mockResolvedValue(null);
-        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
 
         const job = createMockJob({
             id: 506,
@@ -1266,8 +1251,8 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
 
         const flatOpenMock = jest.fn().mockResolvedValue(null);
         const splitOpenMock = jest.fn();
-        (window as any).ReactPriceBreakdownDialog = {open: flatOpenMock, setToastService: jest.fn()};
-        (window as any).ReactSplitPricingBreakdownDialog = {open: splitOpenMock, setToastService: jest.fn()};
+        testDialogs.PriceBreakdown = {open: flatOpenMock, setToastService: jest.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
 
         const job = createMockJob({
             id: 504,
@@ -1313,9 +1298,9 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     }
 
     afterEach(() => {
-        delete (window as any).ReactEditDateTimeDialog;
-        delete (window as any).ReactEditAddressDialog;
-        delete (window as any).ReactSelectDialog;
+        delete testDialogs.EditDateTime;
+        delete testDialogs.EditAddress;
+        delete testDialogs.Select;
         jest.restoreAllMocks();
     });
 
@@ -1325,7 +1310,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             {id: 1, text: 'Standard'},
             {id: 2, text: 'Express'},
         ]);
-        (window as any).ReactSelectDialog = {
+        testDialogs.Select = {
             showSelectDialog: jest.fn().mockResolvedValue({value: 2, text: 'Express', fieldName: JobProperty.SpeedID}),
         };
 
@@ -1347,7 +1332,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             {id: 1, text: 'Standard'},
             {id: 2, text: 'Express'},
         ]);
-        (window as any).ReactSelectDialog = {
+        testDialogs.Select = {
             showSelectDialog: jest.fn().mockResolvedValue({value: 2, text: 'Express', fieldName: JobProperty.SpeedID}),
         };
 
@@ -1370,7 +1355,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             {id: 12, text: 'Jane Admin'},
             {id: 34, text: 'Sam Booker'},
         ]);
-        (window as any).ReactSelectDialog = {
+        testDialogs.Select = {
             showSelectDialog: jest.fn().mockResolvedValue({
                 value: 34,
                 text: 'Sam Booker',
@@ -1397,7 +1382,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             {id: 12, text: 'Jane Admin'},
             {id: 34, text: 'Sam Booker'},
         ]);
-        (window as any).ReactSelectDialog = {
+        testDialogs.Select = {
             showSelectDialog: jest.fn().mockResolvedValue({
                 value: 34,
                 text: 'Sam Booker',
@@ -1422,7 +1407,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             {id: 12, text: 'Jane Admin'},
             {id: 34, text: 'Sam Booker'},
         ]);
-        (window as any).ReactSelectDialog = {
+        testDialogs.Select = {
             showSelectDialog: jest.fn().mockResolvedValue({
                 value: 34,
                 text: 'Sam Booker',
@@ -1499,7 +1484,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             addressLine8: '',
             fullAddress: '99 Lambton Quay, Te Aro, Wellington 6011',
         };
-        (window as any).ReactEditAddressDialog = {
+        testDialogs.EditAddress = {
             open: jest.fn().mockResolvedValue(pickedAddress),
         };
 
@@ -1523,7 +1508,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     it('handleEditDeliveryAddress on a partner job uses the DeliveryAddress field name', async () => {
-        (window as any).ReactEditAddressDialog = {
+        testDialogs.EditAddress = {
             open: jest.fn().mockResolvedValue({
                 addressLine1: '1 Quay St',
                 addressLine2: '', addressLine3: '', addressLine4: 'Auckland',
@@ -1548,7 +1533,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
     it('editDateAndTime on a partner job serialises the picked datetime and routes to change-request locked', async () => {
         const dialogValue = dayjs('2026-04-15T09:00:00');
-        (window as any).ReactEditDateTimeDialog = {
+        testDialogs.EditDateTime = {
             showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
                 value: dialogValue,
                 fieldName: JobProperty.PuTime,
@@ -1576,7 +1561,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
     it('editDateAndTime on a partner job for non-gated fields (e.g. CompletedTime) still saves locally', async () => {
         const dialogValue = dayjs('2026-04-15T09:00:00');
-        (window as any).ReactEditDateTimeDialog = {
+        testDialogs.EditDateTime = {
             showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
                 value: dialogValue,
                 fieldName: JobProperty.CompletedTime,
@@ -1631,7 +1616,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             parcels: capturedParcels,
             totalWeight: 5,
         });
-        (window as any).ReactEditParcelDimensionsDialog = {
+        testDialogs.EditParcelDimensions = {
             setToastService: jest.fn(),
             showEditParcelDimensionsDialog: showDialogMock,
         };
@@ -1665,7 +1650,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         // No local refresh — the change request lives or dies on the partner's approval.
         expect(mockRefreshAndNotify).not.toHaveBeenCalled();
 
-        delete (window as any).ReactEditParcelDimensionsDialog;
+        delete testDialogs.EditParcelDimensions;
     });
 
     it('handleEditDimensions on a non-partner job opens the dialog normally and refreshes after save', async () => {
@@ -1673,7 +1658,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             parcels: [{itemName: 'Box', weight: 5, dimensions: '10 × 5 × 3 cm'}],
             totalWeight: 5,
         });
-        (window as any).ReactEditParcelDimensionsDialog = {
+        testDialogs.EditParcelDimensions = {
             setToastService: jest.fn(),
             showEditParcelDimensionsDialog: showDialogMock,
         };
@@ -1692,7 +1677,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
         expect(mockRefreshAndNotify).toHaveBeenCalled();
 
-        delete (window as any).ReactEditParcelDimensionsDialog;
+        delete testDialogs.EditParcelDimensions;
     });
 
     it('handleEditDimensions on a partner bulk job stays on the direct path (bulk jobs have no partner pairing)', async () => {
@@ -1700,7 +1685,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             parcels: [{itemName: 'Box', weight: 5, dimensions: '10 × 5 × 3 cm'}],
             totalWeight: 5,
         });
-        (window as any).ReactEditParcelDimensionsDialog = {
+        testDialogs.EditParcelDimensions = {
             setToastService: jest.fn(),
             showEditParcelDimensionsDialog: showDialogMock,
         };
@@ -1718,7 +1703,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         }));
         expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
 
-        delete (window as any).ReactEditParcelDimensionsDialog;
+        delete testDialogs.EditParcelDimensions;
     });
 
     describe('dispatchDialogConfirmCourier — network partner', () => {
@@ -2071,7 +2056,7 @@ describe('useJobActions — POD & document actions on bulk (scheduled) jobs', ()
 
     afterEach(() => {
         clearWindowDialogs();
-        delete (window as any).ReactSendPodDialog;
+        delete testDialogs.SendPod;
         jest.restoreAllMocks();
         jest.clearAllMocks();
     });
@@ -2079,7 +2064,7 @@ describe('useJobActions — POD & document actions on bulk (scheduled) jobs', ()
     it('sends the linked live job id to every POD and document action', async () => {
         const uploadOpen = mockPhotoDialog();
         const sendPodOpen = jest.fn().mockResolvedValue(undefined);
-        (window as any).ReactSendPodDialog = {open: sendPodOpen};
+        testDialogs.SendPod = {open: sendPodOpen};
         const {result} = setup({job: bulkJob()});
 
         act(() => result.current.handlePodReport());

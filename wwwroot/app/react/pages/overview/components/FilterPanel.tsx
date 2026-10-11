@@ -11,7 +11,7 @@ import {
     CRITERION_LABEL_GAP,
     GroupLabel,
 } from '../../../components/common/filter-fields';
-import {useDialogLoader} from '../../../components/common/job-details/hooks/useDialogLoader';
+import {loadDialog} from '../../../dialogs/dialogRegistry';
 
 /**
  * The "select all" affordance beside a criterion's label. A checkbox rather than
@@ -108,7 +108,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             }
         }
     }, [selectedCouriers, onAddCourier, onRemoveCourier]);
-    const {ensureDateRangeDialog} = useDialogLoader();
 
     const hasDateFilter = dateRange.start != null || dateRange.end != null;
 
@@ -134,17 +133,14 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     }, [dateRange, hasDateFilter]);
 
     const handleOpenDateDialog = useCallback(async () => {
-        // The date-range dialog ships as a separate lazy-loaded bundle; ensure it
-        // is loaded (registering window.ReactDateRangeDialog) before opening it.
-        await ensureDateRangeDialog();
-        const result = await window.ReactDateRangeDialog?.open({
+        const result = await (await loadDialog('DateRange')).open({
             start: dateRange.start,
             end: dateRange.end,
         });
         if (result) {
             onDateRangeChange({start: result.start, end: result.end});
         }
-    }, [dateRange, onDateRangeChange, ensureDateRangeDialog]);
+    }, [dateRange, onDateRangeChange]);
 
     const handleClearDateRange = useCallback(
         (e: React.MouseEvent) => {

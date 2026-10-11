@@ -22,9 +22,11 @@ export function openComposeEmailDialog(
     return host.open({selectedCouriers});
 }
 
-window.ReactComposeEmailDialog = {
+export const reactComposeEmailDialog = {
     open: openComposeEmailDialog,
 };
+
+window.ReactComposeEmailDialog = reactComposeEmailDialog;
 
 const composeEmailDialogReactModule = window.angular!.module(
     'uDispatch.composeEmailDialogReact',

@@ -15,7 +15,7 @@ function setup(layoutName: string | undefined, result: Record<string, IBox> | nu
     const onVisibilityChanged = jest.fn();
     const hook = renderHook(() => useCustomizePanelsDialog({
         storageKeys, createBoxes, currentLayoutName: layoutName, onVisibilityChanged,
-        openDialog: () => ({open}) as never,
+        openDialog: async () => ({open}) as never,
     }));
     return {open, onVisibilityChanged, hook};
 }

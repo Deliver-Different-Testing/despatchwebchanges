@@ -35,9 +35,11 @@ export function openDateRangeDialog(initialRange?: InitialRange): Promise<DateRa
 }
 
 // Expose globally for AngularJS access
-window.ReactDateRangeDialog = {
+export const reactDateRangeDialog = {
     open: openDateRangeDialog,
 };
+
+window.ReactDateRangeDialog = reactDateRangeDialog;
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
 const dateRangeDialogReactModule = window.angular!.module(

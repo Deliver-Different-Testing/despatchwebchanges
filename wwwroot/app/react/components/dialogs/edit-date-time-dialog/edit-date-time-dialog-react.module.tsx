@@ -84,12 +84,14 @@ export function setToastService(service: ToastService): void {
 }
 
 // Expose to window for AngularJS access
-window.ReactEditDateTimeDialog = {
+export const reactEditDateTimeDialog = {
     showEditTimeDialog,
     showEditDateDialog,
     showEditDateAndTimeDialog,
     setToastService,
 };
+
+window.ReactEditDateTimeDialog = reactEditDateTimeDialog;
 
 // Create AngularJS module for ocLazyLoad
 const editDateTimeDialogReactModule = window.angular!.module(

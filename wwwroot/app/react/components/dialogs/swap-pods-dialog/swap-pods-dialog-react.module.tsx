@@ -40,9 +40,11 @@ export function openSwapPodsDialog(
     return host.open({jobNo, customer}, toastService);
 }
 
-window.ReactSwapPodsDialog = {
+export const reactSwapPodsDialog = {
     open: openSwapPodsDialog,
 };
+
+window.ReactSwapPodsDialog = reactSwapPodsDialog;
 
 const swapPodsDialogReactModule = window.angular!.module(
     'uDispatch.swapPodsDialogReact',
