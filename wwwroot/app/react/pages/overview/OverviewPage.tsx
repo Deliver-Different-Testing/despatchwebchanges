@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
+import React, {useState, useCallback, useMemo, useEffect} from 'react';
 import {getContactId} from '../../session';
 import {Box, Card, Collapse, Flex, Group, TextInput} from '@mantine/core';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../components/common/panel-controls';
@@ -12,6 +12,8 @@ import {
     useOverviewOpenJobs,
 } from '../../hooks/useOverviewApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
+import {AiSummaryCard} from '../../components/common/ai-summary-card/AiSummaryCard';
+import {summarizeOperations} from '../../services/aiAssistantApi';
 import {PanelHeader} from '../../components/common/panel-header';
 import {SymbolIcon} from '../../components/common/symbol-icon';
 import {FilterPanel} from './components/FilterPanel';
@@ -28,8 +30,6 @@ import type {
     DateRange,
     TableSort,
 } from './OverviewPage.interfaces';
-
-// Window.ReactAiAssistant type is declared in wwwroot/types/global.d.ts
 
 const OVERVIEW_LIMIT_KEY = () => `overviewJobLimitDisplay-${getContactId()}`;
 
@@ -58,7 +58,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                                                               setRefreshCallback,
                                                           }) => {
     const queryClient = useQueryClient();
-    const aiContainerRef = useRef<HTMLDivElement>(null);
 
     // ── State ──
     const [activeTab, setActiveTab] = useState(0);
@@ -162,19 +161,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     useEffect(() => {
         setRefreshCallback(handleRefresh);
     }, [setRefreshCallback, handleRefresh]);
-
-    // ── AI Insights panel ──
-    useEffect(() => {
-        const container = aiContainerRef.current;
-        if (isAiEnabled() && container && window.ReactAiAssistant) {
-            window.ReactAiAssistant.renderOperationsInsightsPanel(container);
-            return () => {
-                if (container && window.ReactAiAssistant) {
-                    window.ReactAiAssistant.unmountSummaryPanel(container);
-                }
-            };
-        }
-    }, []);
 
     // ── Filter handlers ──
     const allRegionsSelected = regions.length > 0 && selectedRegionIds.size === regions.length;
@@ -398,7 +384,14 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                         />
                         <Box px={16} pb={16}>
                             {/* AI Operations Insights */}
-                            {isAiEnabled() && <Box ref={aiContainerRef} mb={16}/>}
+                            {isAiEnabled() && (
+                                <Box mb={16}>
+                                    <AiSummaryCard
+                                        title="Auto-mate operations insights"
+                                        fetchSummary={(signal) => summarizeOperations({signal})}
+                                    />
+                                </Box>
+                            )}
 
                             {/* Deliveries Table */}
                             <DeliveriesTable

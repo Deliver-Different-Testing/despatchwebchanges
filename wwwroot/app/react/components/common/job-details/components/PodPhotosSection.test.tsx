@@ -136,6 +136,22 @@ describe('PodPhotosSection', () => {
         expect(screen.getByText('1 / 3')).toBeInTheDocument();
     });
 
+    it('opens the in-tree photo viewer on the clicked image and closes it again', () => {
+        const deliveryPhotos = [
+            createMockPhoto({url: 'https://example.com/1.jpg'}),
+            createMockPhoto({url: 'https://example.com/2.jpg'}),
+        ];
+        renderWithTheme(
+            <PodPhotosSection {...createDefaultProps({deliveryPhotos, imageOnlyDeliveryPhotos: deliveryPhotos})} />
+        );
+        expect(screen.queryByLabelText('Close photo viewer')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByAltText('Delivery photo'));
+        fireEvent.click(screen.getByLabelText('Close photo viewer'));
+
+        expect(screen.queryByLabelText('Close photo viewer')).not.toBeInTheDocument();
+    });
+
     it('renders "no photos" message when delivery photos are empty but section shows', () => {
         const pickupPhotos = [createMockPhoto()];
         renderWithTheme(

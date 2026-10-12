@@ -1,5 +1,5 @@
 /**
- * Adapter for the imperative job-details mount API.
+ * Renders the job-details panel in the host's React tree.
  *
  * Gives every page's detail box one shared mount path.
  *
@@ -9,7 +9,10 @@
  * down on every prop change. This is the union of the two.
  */
 
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useMemo, useRef} from 'react';
+import {JobDetails} from './JobDetails';
+import {ErrorBoundary} from '../error-boundary';
+import {useJobDetailsRefreshNonce} from './jobDetailsRefresh';
 import type {ShowToastFn} from '../../../services/toastService';
 
 export interface JobDetailsMountProps {
@@ -35,41 +38,35 @@ export const JobDetailsMount: React.FC<JobDetailsMountProps> = ({
     onRelatedJobChange,
     onJobUpdate,
 }) => {
-    /*
-     * Hold the latest callbacks in refs so a host re-render handing down new
-     * inline functions does not churn the mount. The panel is its own React
-     * root and has to stay continuously mounted across re-renders (auto-refresh,
-     * related-job clicks) for its internal tab state to survive — a remount
-     * silently snaps the selected tab back to the first one.
-     */
+    // Latest callbacks live in refs so a host re-render with new inline functions
+    // keeps the config (and the panel's internal tab state) stable.
     const onRelatedJobChangeRef = useRef(onRelatedJobChange);
     const onJobUpdateRef = useRef(onJobUpdate);
     onRelatedJobChangeRef.current = onRelatedJobChange;
     onJobUpdateRef.current = onJobUpdate;
 
-    useEffect(() => {
-        const w = window as any;
-        if (!w.ReactJobDetails?.mount) return;
+    const stableRelatedJobChange = useCallback((id: number) => onRelatedJobChangeRef.current?.(id), []);
+    const stableJobUpdate = useCallback(() => onJobUpdateRef.current?.(), []);
+    const refreshNonce = useJobDetailsRefreshNonce();
 
-        // mount() reuses the existing root for the same container, so this
-        // re-renders the panel with new props rather than remounting it.
-        w.ReactJobDetails.mount(containerId, {
-            jobId,
-            isBulkJob,
-            isUsCustomer,
-            showToast,
-            onRelatedJobChange: (id: number) => onRelatedJobChangeRef.current?.(id),
-            onJobUpdate: () => onJobUpdateRef.current?.(),
-        });
-    }, [jobId, containerId, isBulkJob, isUsCustomer, showToast]);
+    const config = useMemo(() => ({
+        jobId,
+        isBulkJob,
+        isRecurringJob: false,
+        isUsCustomer,
+        showToast,
+        onRelatedJobChange: stableRelatedJobChange,
+        onJobUpdate: stableJobUpdate,
+        _refreshNonce: refreshNonce,
+    }), [jobId, isBulkJob, isUsCustomer, showToast, stableRelatedJobChange, stableJobUpdate, refreshNonce]);
 
-    // Unmount only when this adapter leaves the tree (box hidden / page torn down),
-    // never on a prop change.
-    useEffect(() => () => {
-        (window as any).ReactJobDetails?.unmount?.();
-    }, []);
-
-    return <div id={containerId} style={{height: '100%', overflow: 'auto', backgroundColor: 'var(--mantine-color-gray-1)'}}/>;
+    return (
+        <div id={containerId} style={{height: '100%', overflow: 'auto', backgroundColor: 'var(--mantine-color-gray-1)'}}>
+            <ErrorBoundary>
+                <JobDetails config={config}/>
+            </ErrorBoundary>
+        </div>
+    );
 };
 
 export default JobDetailsMount;

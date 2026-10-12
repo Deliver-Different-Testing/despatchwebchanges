@@ -1,3 +1,4 @@
+import {refreshJobDetails} from '../../components/common/job-details/jobDetailsRefresh';
 import {getSession} from '../../session';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
@@ -456,7 +457,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         // job list, current work and driver locations all live under the
         // 'dispatch' query key, so invalidating it refreshes them together.
         if (boxName === DispatchBoxes.JobDetail) {
-            (window as any).ReactJobDetails?.refresh?.();
+            void refreshJobDetails();
             return;
         }
         if (boxName === DispatchBoxes.Supports) {
@@ -525,7 +526,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.jobs.detail(job.id, job.isBulkJob ? 'bulk' : 'standard'),
             });
-            w.ReactJobDetails?.refresh?.();
+            void refreshJobDetails();
         };
         const refreshLists = () => queryClient.invalidateQueries({queryKey: queryKeys.dispatch.all});
 

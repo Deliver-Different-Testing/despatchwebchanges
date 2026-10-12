@@ -57,10 +57,15 @@ jest.mock('../../hooks/useOverviewApi', () => ({
     useCourierSearch: jest.fn(),
 }));
 
+jest.mock('../../components/common/ai-summary-card/AiSummaryCard', () => ({
+    AiSummaryCard: ({title}: {title: string}) => <div data-testid="ai-summary">{title}</div>,
+}));
+
 jest.mock('../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn(() => false),
 }));
 
+import {isAiEnabled} from '../../../functions/aiSettings';
 import {
     useOverviewJobs,
     useOverviewRegions,
@@ -139,6 +144,17 @@ describe('OverviewPage', () => {
         it('renders the Overview header', () => {
             renderOverviewPage();
             expect(screen.getByText('Overview')).toBeInTheDocument();
+        });
+
+        it('renders the AI operations insights panel in-tree only when AI is enabled', () => {
+            const {unmount} = renderOverviewPage();
+            expect(screen.queryByTestId('ai-summary')).not.toBeInTheDocument();
+            unmount();
+
+            (isAiEnabled as jest.Mock).mockReturnValue(true);
+            renderOverviewPage();
+            expect(screen.getByTestId('ai-summary')).toHaveTextContent('Auto-mate operations insights');
+            (isAiEnabled as jest.Mock).mockReturnValue(false);
         });
 
         it('renders FilterPanel', () => {

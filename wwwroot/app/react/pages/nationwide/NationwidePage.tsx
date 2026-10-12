@@ -1,3 +1,4 @@
+import {refreshJobDetails} from '../../components/common/job-details/jobDetailsRefresh';
 import {getSession} from '../../session';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
@@ -560,7 +561,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         const w = window as any;
         const refreshDetail = () => {
             void queryClient.invalidateQueries({queryKey: queryKeys.jobs.detail(job.id, 'standard')});
-            w.ReactJobDetails?.refresh?.();
+            void refreshJobDetails();
         };
 
         try {

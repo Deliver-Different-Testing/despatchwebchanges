@@ -13,6 +13,7 @@ import type {PodPhoto} from '../JobDetails.types';
 import {downloadFile, deleteJobDeliveryPhotoOrSignature} from '../../../../services/jobDetailApi';
 import {cardContainerProps} from '../JobDetails.styles';
 import {SectionHeader} from './SectionHeader';
+import {PodPhotoViewer} from '../../pod-photo-viewer/PodPhotoViewer';
 import {DialogShell, DialogHeader, DialogFooter, dialogContentBg} from '../../../dialogs/shared/mantine';
 import classes from './PodPhotosSection.module.css';
 
@@ -88,6 +89,7 @@ function PhotoGrid({
     // Index of the photo awaiting delete confirmation (null when the dialog is closed).
     const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
     const pendingPhoto = pendingDeleteIndex != null ? photos[pendingDeleteIndex] : null;
     const showDelete = canDelete && !!jobId;
@@ -145,12 +147,7 @@ function PhotoGrid({
 
         if (isImageFile(photo)) {
             const imageIndex = imageOnlyPhotos.findIndex(p => p.url === photo.url);
-            window.ReactPodPhotoViewer?.open(
-                imageOnlyPhotos,
-                imageIndex >= 0 ? imageIndex : 0,
-                undefined,
-                () => {}
-            );
+            setViewerIndex(imageIndex >= 0 ? imageIndex : 0);
         } else if (photo.s3Key) {
             downloadFile(photo.s3Key, photo.fileName || 'file')
                 .then(() => showToast('File downloaded', 'success'))
@@ -302,6 +299,12 @@ function PhotoGrid({
                     />
                 </DialogShell>
             )}
+            <PodPhotoViewer
+                isOpen={viewerIndex !== null}
+                photos={imageOnlyPhotos}
+                initialPhotoIndex={viewerIndex ?? 0}
+                onClose={() => setViewerIndex(null)}
+            />
         </>
     );
 }

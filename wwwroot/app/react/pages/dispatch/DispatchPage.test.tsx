@@ -26,6 +26,26 @@ const jobListFetchConfig: {
 } = {};
 // What the page pushed into the mounted list instead of remounting it.
 const jobListParamPushes: Record<string, unknown>[] = [];
+let jobDetailsMounts = 0;
+let jobDetailsMountEvents = 0;
+const jobDetailsProps: Array<{jobId?: number}> = [];
+jest.mock('../../components/common/job-details/JobDetails', () => {
+    const R = require('react');
+    return {
+        JobDetails: ({config}: {config: {jobId?: number}}) => {
+            R.useEffect(() => {
+                jobDetailsMounts++;
+                jobDetailsMountEvents++;
+                return () => {
+                    jobDetailsMounts--;
+                };
+            }, []);
+            jobDetailsProps.push(config);
+            return null;
+        },
+    };
+});
+
 jest.mock('../../components/job-list/JobListPanel', () => ({
     JobListPanel: ({storagePrefix, onJobSelect, onJobsLoaded, topSlot, fetchConfig, forcedCategory, setUpdateSearchParamsCallback}: {
         storagePrefix: string;
@@ -349,23 +369,10 @@ describe('DispatchPage', () => {
     });
 
     describe('job detail panel mount', () => {
-        let mountMock: jest.Mock;
-        let unmountMock: jest.Mock;
-        let originalReactJobDetails: unknown;
-
         beforeEach(() => {
-            mountMock = jest.fn();
-            unmountMock = jest.fn();
-            originalReactJobDetails = (window as {ReactJobDetails?: unknown}).ReactJobDetails;
-            (window as {ReactJobDetails?: unknown}).ReactJobDetails = {
-                mount: mountMock,
-                unmount: unmountMock,
-                refresh: jest.fn(),
-            };
-        });
-
-        afterEach(() => {
-            (window as {ReactJobDetails?: unknown}).ReactJobDetails = originalReactJobDetails;
+            jobDetailsMounts = 0;
+            jobDetailsMountEvents = 0;
+            jobDetailsProps.length = 0;
         });
 
         const selectSampleJob = async (user: ReturnType<typeof setupUser>) => {
@@ -379,17 +386,15 @@ describe('DispatchPage', () => {
             renderPage();
 
             await selectSampleJob(user);
-            expect(mountMock).toHaveBeenCalledTimes(1);
-            expect(mountMock).toHaveBeenLastCalledWith(
-                'react-dispatch-job-detail',
-                expect.objectContaining({jobId: 55}),
-            );
+            expect(jobDetailsMountEvents).toBe(1);
+            expect(document.getElementById('react-dispatch-job-detail')).toBeInTheDocument();
+            expect(jobDetailsProps[jobDetailsProps.length - 1].jobId).toBe(55);
 
             // A re-render that does not change the selected job (e.g. list reload /
             // auto-refresh) must not tear the panel down — that would reset the tab.
             await user.click(screen.getByRole('button', {name: 'load-jobs'}));
-            expect(unmountMock).not.toHaveBeenCalled();
-            expect(mountMock).toHaveBeenCalledTimes(1);
+            expect(jobDetailsMountEvents).toBe(1);
+            expect(jobDetailsMounts).toBe(1);
         });
 
         it('unmounts the detail panel only when the page is torn down', async () => {
@@ -397,10 +402,10 @@ describe('DispatchPage', () => {
             const {unmount} = renderPage();
 
             await selectSampleJob(user);
-            expect(unmountMock).not.toHaveBeenCalled();
+            expect(jobDetailsMounts).toBe(1);
 
             unmount();
-            expect(unmountMock).toHaveBeenCalledTimes(1);
+            expect(jobDetailsMounts).toBe(0);
         });
     });
 
