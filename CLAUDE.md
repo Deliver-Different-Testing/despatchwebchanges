@@ -69,3 +69,7 @@ z-index/isolation gotcha.
 
 See the `dfrnt-dialog-design` skill before touching any dialog in
 `dialogs/` — DialogShell/Header/Footer composition, styling precedence, icons, and testing gotchas all live there.
+
+## Frontend layout (`DespatchWeb.Client/src`)
+
+Mirrors IntegrationManager's AdminPortal: `main.tsx` / `App.tsx` (root + `mountSpa`), `api/` (HTTP wrappers, `client.ts`, `session.ts`, query client), `components/` (shared UI, `dialogs/` + dialog registry, `layout/PageFrame`), `pages/` (one folder per page, with its `*Screen` wrapper beside it), `routes/` (route table, navigation context, guards, app loader), `hooks/`, `services/` (non-HTTP flows, toasts), `theme/`, `constants/`, `types/` (interfaces, `enums/`), `utils/`, `test/` (setup, mocks, `utils/` test helpers). Imports are relative; tests sit beside the code.

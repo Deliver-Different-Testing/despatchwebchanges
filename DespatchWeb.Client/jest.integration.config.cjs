@@ -38,12 +38,12 @@ const config = {
 
     moduleNameMapper: {
         '^@dfrnt/glass$': '<rootDir>/node_modules/@dfrnt/glass/dist/index.js',
-        '\\.(less|css|scss|sass)$': '<rootDir>/src/tests/mocks/styleMock.ts',
+        '\\.(less|css|scss|sass)$': '<rootDir>/src/test/mocks/styleMock.ts',
     },
 
     setupFilesAfterEnv: [
-        '<rootDir>/src/tests/setup.ts',
-        '<rootDir>/src/react/__testUtils__/msw/setupIntegration.ts',
+        '<rootDir>/src/test/setup.ts',
+        '<rootDir>/src/test/utils/msw/setupIntegration.ts',
     ],
 
     // Performance optimizations

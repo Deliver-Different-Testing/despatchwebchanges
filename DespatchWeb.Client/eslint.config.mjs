@@ -70,7 +70,7 @@ export default tseslint.config(
 
     // React hooks rules (React files only)
     {
-        files: ['**/*.tsx', '**/react/**/*.ts'],
+        files: ['**/*.tsx', 'src/**/*.ts'],
         plugins: {
             'react-hooks': reactHooks,
         },
@@ -82,7 +82,7 @@ export default tseslint.config(
 
     // Relaxed rules for test files
     {
-        files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx', '**/__testUtils__/**'],
+        files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx', '**/test/**'],
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-unused-vars': 'off',
