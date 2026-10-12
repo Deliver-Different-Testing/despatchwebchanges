@@ -3,7 +3,7 @@
 
   <PropertyGroup Label="Globals">
       <SpaRoot>DespatchWeb.Client</SpaRoot>
-      <SpaProxyServerUrl>http://despatchweb.local.deliverdifferent.com:5173</SpaProxyServerUrl>
+      <SpaProxyServerUrl>http://despatchweb.local.deliverdifferent.com:5174</SpaProxyServerUrl>
       <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
       <Nullable>disable</Nullable>
       <!--
