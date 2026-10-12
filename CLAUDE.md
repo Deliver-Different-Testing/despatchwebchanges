@@ -17,15 +17,17 @@ C:/Users/jacobt/RiderProjects/despatchweb/DespatchWeb.Tests/bin/Debug/net10.0/De
 C:/Users/jacobt/RiderProjects/despatchweb/DespatchWeb.Tests/bin/Debug/net10.0/DespatchWeb.Tests.exe 2>&1 | grep -E "FAIL|SUMMARY|Total:"
 ```
 
-### Frontend (Jest)
+### Frontend (Vite + Jest)
 
 ```bash
 # Run specific test files matching a pattern
-cd wwwroot && npx jest --testPathPatterns="<pattern>" --no-coverage
+cd DespatchWeb.Client && npx jest --testPathPatterns="<pattern>" --no-coverage
 
 # Run all frontend tests
-cd wwwroot && npx jest --no-coverage
+cd DespatchWeb.Client && npx jest --no-coverage
 ```
+
+The SPA is `DespatchWeb.Client/` (Vite 8, `src/`, `index.html`). `npm run build` (`tsc -b && vite build`) writes `wwwroot/dist`; `npm run dev` runs the dev server, proxying `/api` and the MVC routes to the .NET host.
 
 ## Workflow
 

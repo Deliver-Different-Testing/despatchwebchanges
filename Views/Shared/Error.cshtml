@@ -1,7 +1,19 @@
 ﻿@model DespatchWeb.Models.ErrorViewModel
 @{
-    ViewData["Title"] = "Error";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Error</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 2rem; }
+        .text-error { color: #dc3246; }
+    </style>
+</head>
+<body>
 
 <h1 class="text-error">Error.</h1>
 <h2 class="text-error">An error occurred while processing your request.</h2>
@@ -20,3 +32,5 @@
 <p>
     <strong>Development environment should not be enabled in deployed applications</strong>, as it can result in sensitive information from exceptions being displayed to end users. For local debugging, development environment can be enabled by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>, and restarting the application.
 </p>
+</body>
+</html>

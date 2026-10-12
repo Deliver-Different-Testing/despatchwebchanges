@@ -8,14 +8,14 @@ echo "Running tests before push..."
 
 # Run ESLint
 echo "Running ESLint..."
-if ! npm run lint; then
+if ! npm --prefix DespatchWeb.Client run lint; then
     echo "ESLint failed. Push aborted."
     exit 1
 fi
 
 # Run TypeScript type-check
 echo "Running TypeScript type-check..."
-if ! npm run type-check; then
+if ! npm --prefix DespatchWeb.Client run type-check; then
     echo "TypeScript type-check failed. Push aborted."
     exit 1
 fi
@@ -30,14 +30,14 @@ if ! dotnet run --project DespatchWeb.Tests; then
 fi
 
 # Run Jest unit tests
-if ! npx jest --silent; then
+if ! (cd DespatchWeb.Client && npx jest --silent); then
     echo "Jest unit tests failed. Push aborted."
     exit 1
 fi
 
 # Run Jest integration tests using dedicated integration config
 echo "Running integration tests..."
-if ! npx jest --silent --config jest.integration.config.js; then
+if ! (cd DespatchWeb.Client && npx jest --silent --config jest.integration.config.cjs); then
     echo "⚠ Some integration tests failed (non-blocking). Review output above."
 fi
 

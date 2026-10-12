@@ -224,6 +224,7 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapSpaFallback(distDir);
 
 if (string.IsNullOrEmpty(builder.Configuration["S3BucketMars"]))
 {
