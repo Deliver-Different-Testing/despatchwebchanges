@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import {precompress} from './scripts/vite/precompress.ts';
 
 // Dev-only: the .NET host that serves the API and MVC endpoints (see Properties/launchSettings.json).
-const hostTarget = process.env.DESPATCH_HOST_URL ?? 'http://despatchweb.local.deliverdifferent.com:63277';
+const hostTarget = process.env.DESPATCH_HOST_URL ?? 'http://despatch.local.deliverdifferent.com:63277';
 
 // Every controller route prefix the SPA calls. Anchored and case-sensitive with a trailing slash so
 // lower-case client routes (/overview, /settings) are never swallowed by the proxy.
@@ -49,7 +49,7 @@ export default defineConfig(({command}) => ({
         host: true,
         port: 5174,
         strictPort: true,
-        allowedHosts: ['despatchweb.local.deliverdifferent.com', 'despatch.local.deliverdifferent.com'],
+        allowedHosts: ['despatch.local.deliverdifferent.com', 'despatchweb.local.deliverdifferent.com'],
         proxy: {
             '/api': proxied,
             [`^/(${controllerPrefixes.join('|')})/`]: proxied,
