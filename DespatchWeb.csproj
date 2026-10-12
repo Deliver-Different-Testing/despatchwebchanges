@@ -2,6 +2,9 @@
   <!-- The SPA lives in DespatchWeb.Client (Vite); its .esproj builds wwwroot/dist as part of the solution. -->
 
   <PropertyGroup Label="Globals">
+      <SpaRoot>DespatchWeb.Client</SpaRoot>
+      <SpaProxyServerUrl>http://despatchweb.local.deliverdifferent.com:5173</SpaProxyServerUrl>
+      <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
       <Nullable>disable</Nullable>
       <!--
         The SDK's static-web-asset compression only pays off with MapStaticAssets, which
@@ -71,6 +74,7 @@
     <PackageReference Include="PdfSharp" />
     <PackageReference Include="ExcelDataReader.DataSet" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaProxy" />
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
