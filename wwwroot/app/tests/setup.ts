@@ -90,3 +90,9 @@ console.error = (...args: unknown[]) => {
     }
     originalError.call(console, ...args);
 };
+
+// jsdom omits TextEncoder/TextDecoder, which react-router needs at import time.
+if (typeof globalThis.TextEncoder === 'undefined') {
+    const {TextEncoder, TextDecoder} = require('util');
+    Object.assign(globalThis, {TextEncoder, TextDecoder});
+}
