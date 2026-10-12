@@ -43,37 +43,7 @@ export function closeNoteManagementDialog(): void {
     host.close(false);
 }
 
-// Expose globally for AngularJS access
 export const reactNoteManagementDialog = {
     open: openNoteManagementDialog,
     close: closeNoteManagementDialog,
 };
-
-window.ReactNoteManagementDialog = reactNoteManagementDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const noteManagementDialogReactModule = window.angular!.module(
-    'uDispatch.noteManagementDialogReact',
-    []
-);
-
-// Register a service that wraps the React dialog
-noteManagementDialogReactModule.service('noteManagementDialogReactService', [
-    () => ({
-        /**
-         * Opens the React note management dialog
-         * @param note - The note to edit, or null for a new note
-         * @returns Promise resolving to true if saved, false if canceled
-         */
-        openNoteDialog: (note: JobNote | null) => openNoteManagementDialog(note),
-
-        /**
-         * Closes the React note management dialog
-         */
-        closeNoteDialog: () => closeNoteManagementDialog(),
-    })
-]);
-
-console.log('[NoteManagementDialogReact] Module registered');
-
-export default noteManagementDialogReactModule;

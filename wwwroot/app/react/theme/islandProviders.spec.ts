@@ -1,8 +1,8 @@
 /**
  * Architecture check: every island root mounts through the shared provider stack.
  *
- * There is no single React root in this app — ~53 `*-react.module.tsx` entries each
- * call `createRoot` and bridge into AngularJS. `@mantine/core`'s `useStyles` *throws*
+ * There is no single React root in this app — ~32 `*-react.module.tsx` dialog entries each
+ * call `createRoot` to open a dialog. `@mantine/core`'s `useStyles` *throws*
  * without a `MantineProvider` (unlike MUI, which silently falls back to its stock
  * theme), so an island that renders a Mantine component without one dies at mount.
  *
@@ -61,7 +61,7 @@ describe('island providers', () => {
     it('finds the island entry modules', () => {
         // Guards the glob itself: a rename that stopped matching would make every
         // assertion below vacuously pass.
-        expect(entries.length).toBeGreaterThan(40);
+        expect(entries.length).toBeGreaterThan(25);
     });
 
     it.each(entries.map(e => [e.file, e.source]))(

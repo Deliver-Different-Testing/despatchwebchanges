@@ -99,6 +99,5 @@ export const reactDispatchDialog = {
     open: (options: OpenDispatchDialogOptions) => host.open(options),
 };
 
-window.ReactDispatchDialog = reactDispatchDialog;
 
 export default host;

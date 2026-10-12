@@ -22,32 +22,16 @@ jest.mock('../../../query', () => ({
     ReactQueryProvider: ({children}: any) => children,
 }));
 
-// Use require() instead of import so that window.angular is set before module evaluation
+// Use require() instead of import to load the module after the mocks are installed
 let openCreateJobDialog: typeof import('./create-job-dialog-react.module').openCreateJobDialog;
 
 beforeAll(() => {
-    (window as any).angular = {module: jest.fn(() => ({}))};
     openCreateJobDialog = require('./create-job-dialog-react.module').openCreateJobDialog;
 });
 
 describe('CreateJobDialogReactModule', () => {
     beforeEach(() => {
         mockRender.mockClear();
-    });
-
-    afterAll(() => {
-        delete (window as any).angular;
-        delete (window as any).ReactCreateJobDialog;
-    });
-
-    describe('Window Global Registration', () => {
-        it('should expose ReactCreateJobDialog on window', () => {
-            expect((window as any).ReactCreateJobDialog).toBeDefined();
-        });
-
-        it('should expose an open function on ReactCreateJobDialog', () => {
-            expect(typeof (window as any).ReactCreateJobDialog.open).toBe('function');
-        });
     });
 
     describe('openCreateJobDialog', () => {

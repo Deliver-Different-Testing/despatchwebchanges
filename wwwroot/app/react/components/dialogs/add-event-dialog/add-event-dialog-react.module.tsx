@@ -2,8 +2,6 @@
  * Add Event Dialog React Module
  *
  * Entry point for the React-based Add Event Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- * Uses native React API services instead of AngularJS dependencies.
  */
 
 import React from 'react';
@@ -93,19 +91,6 @@ export function openAddEventDialog(options: OpenAddEventDialogOptions): Promise<
     return host.open({job: options.job, toastService: options.toastService}, options.toastService);
 }
 
-// Expose to window for AngularJS access
 export const reactAddEventDialog = {
     open: openAddEventDialog,
 };
-
-window.ReactAddEventDialog = reactAddEventDialog;
-
-// Create AngularJS module
-const addEventDialogReactModule = window.angular!.module(
-    'uDispatch.addEventDialogReact',
-    []
-);
-
-console.log('[AddEventDialogReact] Module registered');
-
-export default addEventDialogReactModule;

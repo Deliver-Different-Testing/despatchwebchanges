@@ -74,19 +74,6 @@ export function openFlightDetailsDialog(flightData: IFlightViewModel): Promise<v
     return host.open({flight: convertFlightViewModelToFlightData(flightData)});
 }
 
-// Expose to window for AngularJS access
 export const reactFlightDetailsDialog = {
     openFlightDetailsDialog: openFlightDetailsDialog,
 };
-
-window.ReactFlightDetailsDialog = reactFlightDetailsDialog;
-
-// Create AngularJS module for ocLazyLoad
-const flightDetailsDialogReactModule = window.angular!.module(
-    'uDispatch.flightDetailsDialogReact',
-    []
-);
-
-console.log('[FlightDetailsDialogReact] Module registered');
-
-export default flightDetailsDialogReactModule;

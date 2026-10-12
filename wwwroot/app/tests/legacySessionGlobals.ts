@@ -56,3 +56,10 @@ export function installLegacySessionGlobals(): void {
         });
     }
 }
+
+declare global {
+    interface Window {
+        VisibleFeatures?: string[] | null;
+        CurrencyCode?: string;
+    }
+}

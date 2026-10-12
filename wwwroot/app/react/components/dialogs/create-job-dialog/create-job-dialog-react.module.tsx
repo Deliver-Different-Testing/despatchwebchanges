@@ -2,7 +2,6 @@
  * Create Job Dialog React Module
  *
  * Entry point for the React-based Create Job Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  * Uses React Query for data fetching with automatic caching.
  */
 
@@ -39,19 +38,6 @@ export function openCreateJobDialog(
     return host.open({isUsTenant}, toastService);
 }
 
-// Expose globally for AngularJS access
 export const reactCreateJobDialog = {
     open: openCreateJobDialog,
 };
-
-window.ReactCreateJobDialog = reactCreateJobDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const createJobDialogReactModule = window.angular!.module(
-    'uDispatch.createJobDialogReact',
-    []
-);
-
-console.log('[CreateJobDialogReact] Module registered');
-
-export default createJobDialogReactModule;

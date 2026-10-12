@@ -1,11 +1,10 @@
 /**
  * CourierMapPage Component
  *
- * Exports for the CourierMapPage React component and AngularJS integration.
+ * Exports for the CourierMapPage React component.
  */
 
 export { CourierMapPage } from './CourierMapPage';
-export { mountCourierMapPage, unmountCourierMapPage } from './courier-map-react.module';
 export { useCourierMap } from './useCourierMap';
 export { CourierMarkerManager } from './CourierMarkerManager';
 export { DriversPanel } from './components/DriversPanel';

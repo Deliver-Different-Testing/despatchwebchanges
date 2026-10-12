@@ -36,19 +36,6 @@ export function openMessagingDialog(options?: OpenMessagingDialogOptions): Promi
     return host.open(undefined, options?.toastService);
 }
 
-// Expose to window for AngularJS access
 export const reactMessagingDialog = {
     open: openMessagingDialog,
 };
-
-window.ReactMessagingDialog = reactMessagingDialog;
-
-// Create AngularJS module
-const messagingDialogReactModule = window.angular!.module(
-    'uDispatch.messagingDialogReact',
-    []
-);
-
-console.log('[MessagingDialogReact] Module registered');
-
-export default messagingDialogReactModule;

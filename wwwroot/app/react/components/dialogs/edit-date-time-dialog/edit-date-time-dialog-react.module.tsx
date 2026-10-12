@@ -83,22 +83,9 @@ export function setToastService(service: ToastService): void {
     host.setToastService(service);
 }
 
-// Expose to window for AngularJS access
 export const reactEditDateTimeDialog = {
     showEditTimeDialog,
     showEditDateDialog,
     showEditDateAndTimeDialog,
     setToastService,
 };
-
-window.ReactEditDateTimeDialog = reactEditDateTimeDialog;
-
-// Create AngularJS module for ocLazyLoad
-const editDateTimeDialogReactModule = window.angular!.module(
-    'uDispatch.editDateTimeDialogReact',
-    []
-);
-
-console.log('[EditDateTimeDialogReact] Module registered');
-
-export default editDateTimeDialogReactModule;

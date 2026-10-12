@@ -168,8 +168,7 @@ jest.mock('../../services/jobListApi', () => ({
     getPartnerRateForJob: jest.fn().mockResolvedValue({}),
 }));
 
-// These dialog modules register an AngularJS module at import time
-// (window.angular is undefined under jsdom) — stub them.
+// Stub the dialog modules; they open real Mantine dialogs.
 jest.mock('../../components/dialogs/add-event-dialog', () => ({
     openAddEventDialog: jest.fn().mockResolvedValue(true),
 }));

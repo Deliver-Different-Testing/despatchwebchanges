@@ -2,8 +2,6 @@
  * Event Group Dialog React Module
  *
  * Entry point for the React-based Event Group Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- * Uses native React API services instead of AngularJS dependencies.
  */
 
 import React from 'react';
@@ -56,19 +54,6 @@ export async function openEventGroupDialog(options: OpenEventGroupDialogOptions)
     return host.open({events, users, jobId: options.jobId}, options.toastService);
 }
 
-// Expose to window for AngularJS access
 export const reactEventGroupDialog = {
     open: openEventGroupDialog,
 };
-
-window.ReactEventGroupDialog = reactEventGroupDialog;
-
-// Create AngularJS module
-const eventGroupDialogReactModule = window.angular!.module(
-    'uDispatch.eventGroupDialogReact',
-    []
-);
-
-console.log('[EventGroupDialogReact] Module registered');
-
-export default eventGroupDialogReactModule;

@@ -51,9 +51,7 @@ jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
 }));
 
 /*
- * FlightAgentDataTable transitively imports island modules that call
- * `window.angular.module(...)` at import time, which does not exist under Jest.
- * Mocking it also lets this suite assert the props the page threads through.
+ * Mocking FlightAgentDataTable lets this suite assert the props the page threads through.
  */
 const widgetProps: Record<string, unknown> = {};
 jest.mock('../../components/common/flight-agent-data-table', () => ({

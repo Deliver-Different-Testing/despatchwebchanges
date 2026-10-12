@@ -2,7 +2,6 @@
  * Edit Afterhours Dialog React Module
  *
  * Entry point for the React-based Edit Afterhours Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  * Uses React Query for data fetching with automatic caching.
  */
 
@@ -46,19 +45,6 @@ export function openEditAfterhoursDialog(
     return host.open({schedule, isUsTenant}, toastService);
 }
 
-// Expose globally for AngularJS access
 export const reactEditAfterhoursDialog = {
     open: openEditAfterhoursDialog,
 };
-
-window.ReactEditAfterhoursDialog = reactEditAfterhoursDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const editAfterhoursDialogReactModule = window.angular!.module(
-    'uDispatch.editAfterhoursDialogReact',
-    []
-);
-
-console.log('[EditAfterhoursDialogReact] Module registered');
-
-export default editAfterhoursDialogReactModule;

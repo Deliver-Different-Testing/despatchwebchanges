@@ -24,7 +24,7 @@ jest.mock('@tanstack/react-virtual', () => ({
     }),
 }));
 
-// Mock modules that depend on AngularJS (window.angular)
+// Mock the split-job flow
 jest.mock('../../services/splitJobFlow', () => ({
     executeSplitJobFlow: jest.fn().mockResolvedValue(undefined),
 }));

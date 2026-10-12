@@ -1,7 +1,7 @@
 /**
  * AI Summary Panel React Module
  *
- * Exposes window.ReactAiAssistant for AngularJS / hybrid pages to mount
+ * Exposes window.ReactAiAssistant so pages can mount
  * AI summary panels. Only the summary panels remain — the chat dialog,
  * courier-suggestion dialog, and late-alert analysis have been removed.
  */
@@ -56,12 +56,3 @@ window.ReactAiAssistant = {
     renderOperationsInsightsPanel,
     unmountSummaryPanel,
 };
-
-const aiAssistantDialogReactModule = window.angular!.module(
-    'uDispatch.aiAssistantDialogReact',
-    []
-);
-
-console.log('[AiAssistantDialogReact] Module registered');
-
-export default aiAssistantDialogReactModule;

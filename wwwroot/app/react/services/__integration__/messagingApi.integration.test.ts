@@ -6,7 +6,7 @@
  * Verifies correct endpoint URLs, request parameters, and response handling.
  */
 
-// Mock the messaging dialog module to avoid window.angular dependency
+// Mock the messaging dialog module (opens a real dialog)
 jest.mock('../../components/dialogs/messaging-dialog/messaging-dialog-react.module', () => ({
     openMessagingDialog: jest.fn(),
 }));

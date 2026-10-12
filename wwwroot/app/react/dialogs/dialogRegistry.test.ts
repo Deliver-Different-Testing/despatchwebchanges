@@ -5,15 +5,6 @@ jest.mock('../services/toastService', () => ({
     toastService: {showErrorToast: jest.fn()},
 }));
 
-// The dialog modules register AngularJS modules while the Angular shell still exists.
-beforeAll(() => {
-    const angularModule: any = {service: () => angularModule, factory: () => angularModule, run: () => angularModule};
-    (window as any).angular = {module: () => angularModule};
-});
-afterAll(() => {
-    delete (window as any).angular;
-});
-
 const EXPECTED_FUNCTIONS: Record<DialogName, string[]> = {
     EditDateTime: ['showEditTimeDialog', 'showEditDateDialog', 'showEditDateAndTimeDialog', 'setToastService'],
     VoidJobConfirmation: ['open'],

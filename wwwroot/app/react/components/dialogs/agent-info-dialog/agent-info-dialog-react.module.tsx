@@ -2,8 +2,6 @@
  * Agent Info Dialog React Module
  *
  * Entry point for the React-based Agent Info Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- * Uses native React API services instead of AngularJS dependencies.
  */
 
 import React from 'react';
@@ -43,19 +41,6 @@ export async function openAgentInfoDialog(options: OpenAgentInfoDialogOptions): 
     }
 }
 
-// Expose to window for AngularJS access
 export const reactAgentInfoDialog = {
     open: openAgentInfoDialog,
 };
-
-window.ReactAgentInfoDialog = reactAgentInfoDialog;
-
-// Create AngularJS module
-const agentInfoDialogReactModule = window.angular!.module(
-    'uDispatch.agentInfoDialogReact',
-    []
-);
-
-console.log('[AgentInfoDialogReact] Module registered');
-
-export default agentInfoDialogReactModule;

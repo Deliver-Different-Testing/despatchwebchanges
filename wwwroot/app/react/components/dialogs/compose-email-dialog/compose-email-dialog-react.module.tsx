@@ -25,14 +25,3 @@ export function openComposeEmailDialog(
 export const reactComposeEmailDialog = {
     open: openComposeEmailDialog,
 };
-
-window.ReactComposeEmailDialog = reactComposeEmailDialog;
-
-const composeEmailDialogReactModule = window.angular!.module(
-    'uDispatch.composeEmailDialogReact',
-    []
-);
-
-console.log('[ComposeEmailDialogReact] Module registered');
-
-export default composeEmailDialogReactModule;

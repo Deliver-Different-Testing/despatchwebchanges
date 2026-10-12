@@ -47,20 +47,7 @@ export function setToastService(service: ToastService): void {
     host.setToastService(service);
 }
 
-// Expose to window for AngularJS access
 export const reactEditParcelDimensionsDialog = {
     showEditParcelDimensionsDialog,
     setToastService,
 };
-
-window.ReactEditParcelDimensionsDialog = reactEditParcelDimensionsDialog;
-
-// Create AngularJS module for ocLazyLoad
-const editParcelDimensionsDialogReactModule = window.angular!.module(
-    'uDispatch.editParcelDimensionsDialogReact',
-    []
-);
-
-console.log('[EditParcelDimensionsDialogReact] Module registered');
-
-export default editParcelDimensionsDialogReactModule;

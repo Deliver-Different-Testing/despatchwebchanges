@@ -97,37 +97,7 @@ export function openPriceBreakdownDialog(
     });
 }
 
-// Expose globally for AngularJS access
 export const reactPriceBreakdownDialog = {
     open: openPriceBreakdownDialog,
     setToastService,
 };
-
-window.ReactPriceBreakdownDialog = reactPriceBreakdownDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const priceBreakdownDialogReactModule = window.angular!.module(
-    'uDispatch.priceBreakdownDialogReact',
-    []
-);
-
-// Register a service that wraps the React dialog (no longer depends on DispatchData)
-priceBreakdownDialogReactModule.service('priceBreakdownDialogReactService', [
-    () => ({
-        /**
-         * Opens the React price breakdown dialog
-         */
-        openPriceBreakdownDialog: (
-            priceBreakdowns: PriceBreakdown[],
-            jobId: number,
-            isPrebook: boolean,
-            isArchived: boolean = false,
-            isUsCustomer: boolean = false,
-            readOnly: boolean = false
-        ) => openPriceBreakdownDialog(priceBreakdowns, jobId, isPrebook, isArchived, isUsCustomer, readOnly)
-    })
-]);
-
-console.log('[PriceBreakdownDialogReact] Module registered');
-
-export default priceBreakdownDialogReactModule;

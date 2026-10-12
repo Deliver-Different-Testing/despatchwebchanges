@@ -2,7 +2,6 @@
  * Dashboard Settings Dialog React Module
  *
  * Entry point for the React-based Dashboard Settings Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  */
 
 import React from 'react';
@@ -99,12 +98,9 @@ export function openDashboardSettingsDialog(
     });
 }
 
-// Expose globally for AngularJS access
 export const reactDashboardSettingsDialog = {
     open: openDashboardSettingsDialog,
 };
-
-window.ReactDashboardSettingsDialog = reactDashboardSettingsDialog;
 
 const panelsHost = createDialogHost<
     {title?: string; boxes: Record<string, DashboardBox>; layoutEditable: boolean},
@@ -134,15 +130,3 @@ export function openCustomizePanelsDialog(
 export const reactCustomizePanelsDialog = {
     open: openCustomizePanelsDialog,
 };
-
-window.ReactCustomizePanelsDialog = reactCustomizePanelsDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const dashboardSettingsDialogReactModule = window.angular!.module(
-    'uDispatch.dashboardSettingsDialogReact',
-    []
-);
-
-console.log('[DashboardSettingsDialogReact] Module registered');
-
-export default dashboardSettingsDialogReactModule;

@@ -2,7 +2,6 @@
  * POD Photo Viewer React Module
  *
  * Entry point for the React-based POD Photo Viewer.
- * Exposes a global function to open the viewer from AngularJS.
  */
 
 import React from 'react';
@@ -93,42 +92,7 @@ export function closePodPhotoViewer(): void {
     }
 }
 
-// Expose globally for AngularJS access
 window.ReactPodPhotoViewer = {
     open: openPodPhotoViewer,
     close: closePodPhotoViewer,
 };
-
-// Register as AngularJS module (for ocLazyLoad compatibility)w
-const podPhotoViewerReactModule = window.angular!.module(
-    'uDispatch.podPhotoViewerReact',
-    []
-);
-
-// Register a service that wraps the React viewer
-podPhotoViewerReactModule.service('podPhotoViewerReactService', [
-    () => ({
-        /**
-         * Opens the React POD photo viewer
-         * @param photos - Array of photos to display
-         * @param initialPhotoIndex - Index of the photo to show first
-         * @param timeZone - Timezone string for timestamp display
-         * @param onClose - Optional callback when the viewer is closed
-         */
-        openPodPhotoViewer: (
-            photos: PodPhoto[],
-            initialPhotoIndex: number = 0,
-            timeZone?: string,
-            onClose?: () => void
-        ) => openPodPhotoViewer(photos, initialPhotoIndex, timeZone, onClose),
-
-        /**
-         * Closes the React POD photo viewer
-         */
-        closePodPhotoViewer: () => closePodPhotoViewer(),
-    })
-]);
-
-console.log('[PodPhotoViewerReact] Module registered');
-
-export default podPhotoViewerReactModule;

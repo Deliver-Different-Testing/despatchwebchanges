@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import zlib from "zlib";
 import {promisify} from "util";
-import {lessLoader} from "esbuild-plugin-less";
 
 const reactNamedExports: string[] = Object.keys(require("react")).filter(
     (k) => k !== "default" && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k)
@@ -42,14 +41,6 @@ const entryPoints: EntryPoints = {
     spa: path.join(rootDir, "wwwroot/app/react/app/main.tsx"),
 };
 
-let htmlMinifier: typeof import('html-minifier-terser') | null = null;
-async function getHtmlMinifier() {
-    if (!htmlMinifier) {
-        htmlMinifier = await import('html-minifier-terser');
-    }
-    return htmlMinifier;
-}
-
 function toRelativePath(filePath: string): string {
     return path.relative(rootDir, filePath);
 }
@@ -57,44 +48,6 @@ function toRelativePath(filePath: string): string {
 function cleanDistFolder(): void {
     fs.rmSync(distPath, { recursive: true, force: true });
     fs.mkdirSync(distPath, { recursive: true });
-}
-
-const htmlMinifyOptions = {
-    collapseWhitespace: true,
-    removeComments: true,
-    minifyCSS: true,
-    minifyJS: true,
-    removeRedundantAttributes: true,
-    removeScriptTypeAttributes: true,
-    removeStyleLinkTypeAttributes: true,
-    conservativeCollapse: true,
-    preserveLineBreaks: false,
-    preventAttributesEscaping: true,
-    ignoreCustomFragments: [/\{\{[\s\S]*?}}/]
-};
-
-function createHtmlMinifierPlugin(): esbuild.Plugin {
-    return {
-        name: "html-minifier",
-        setup(build: esbuild.PluginBuild) {
-            build.onLoad({ filter: /\.html$/ }, async (args) => {
-                const html = await fs.promises.readFile(args.path, 'utf8');
-
-                if (isDev) {
-                    return { contents: html, loader: 'text' };
-                }
-
-                try {
-                    const { minify } = await getHtmlMinifier();
-                    const minified = await minify(html, htmlMinifyOptions);
-                    return { contents: minified, loader: 'text' };
-                } catch (error) {
-                    console.error(`[HTML] Failed to minify ${toRelativePath(args.path)}:`, error);
-                    return { contents: html, loader: 'text' };
-                }
-            });
-        },
-    };
 }
 
 function createErrorReportingPlugin(): esbuild.Plugin {
@@ -248,9 +201,7 @@ const baseBuildOptions: esbuild.BuildOptions = {
         ".ts": "ts",
         ".tsx": "tsx",
         ".jsx": "jsx",
-        ".html": "text",
         ".css": "css",
-        ".less": "css",
     },
     alias: {
         "@swc/helpers": path.dirname(require.resolve("@swc/helpers/package.json")),
@@ -265,8 +216,6 @@ function getBuildConfig(
     bundleType: BundleType
 ): esbuild.BuildOptions {
     const plugins: esbuild.Plugin[] = [
-        lessLoader({ math: "always" }),
-        createHtmlMinifierPlugin(),
         createErrorReportingPlugin(),
     ];
 

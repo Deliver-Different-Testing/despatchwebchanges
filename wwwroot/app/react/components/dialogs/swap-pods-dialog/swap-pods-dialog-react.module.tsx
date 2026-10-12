@@ -2,7 +2,6 @@
  * Swap PODs Dialog React Module
  *
  * Entry point for the React-based Swap PODs Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  */
 
 import React from 'react';
@@ -43,14 +42,3 @@ export function openSwapPodsDialog(
 export const reactSwapPodsDialog = {
     open: openSwapPodsDialog,
 };
-
-window.ReactSwapPodsDialog = reactSwapPodsDialog;
-
-const swapPodsDialogReactModule = window.angular!.module(
-    'uDispatch.swapPodsDialogReact',
-    []
-);
-
-console.log('[SwapPodsDialogReact] Module registered');
-
-export default swapPodsDialogReactModule;

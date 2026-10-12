@@ -2,7 +2,6 @@
  * Auto Complete Dialog React Module
  *
  * Entry point for the React-based Auto Complete Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  *
  * Also exposes `openWithTypes` for the 3-way Assign Route picker
  * (Steve 2026-05-26, HANDOVER-KEVIN-2026-05-26.md) — same modal,
@@ -132,20 +131,7 @@ export function openAutoCompleteDialogWithTypes(
     });
 }
 
-// Expose globally for AngularJS access
 export const reactAutoCompleteDialog = {
     open: openAutoCompleteDialog,
     openWithTypes: openAutoCompleteDialogWithTypes,
 };
-
-window.ReactAutoCompleteDialog = reactAutoCompleteDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const autoCompleteDialogReactModule = window.angular!.module(
-    'uDispatch.autoCompleteDialogReact',
-    []
-);
-
-console.log('[AutoCompleteDialogReact] Module registered');
-
-export default autoCompleteDialogReactModule;

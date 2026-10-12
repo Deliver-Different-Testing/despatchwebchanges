@@ -7,7 +7,7 @@ import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
 import {MessageDeliveryType, OtherMessagePartyType,} from '../components/dialogs/messaging-dialog/types';
 
-// Mock the messaging dialog module to avoid window.angular dependency
+// Mock the messaging dialog module (opens a real dialog)
 jest.mock('../components/dialogs/messaging-dialog/messaging-dialog-react.module', () => ({
     openMessagingDialog: jest.fn(),
 }));

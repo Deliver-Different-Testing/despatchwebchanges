@@ -9,7 +9,7 @@
 // `vendor-react.css` bundle (linked once in _Layout), rather than duplicated
 // into every React island. The `.layer.css` variants scope Mantine's rules to
 // an `@layer mantine`, keeping its internal cascade clean alongside the
-// (unlayered) Angular Material + app CSS in the shared document.
+// (unlayered) app CSS in the shared document.
 //
 // There is no companion reset: `mantineReset.css` existed only to undo
 // Bootstrap's reboot (`p{margin-bottom}`, `button{border-radius:0}`), which

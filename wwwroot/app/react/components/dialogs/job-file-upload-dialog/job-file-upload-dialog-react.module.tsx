@@ -45,15 +45,3 @@ export const reactJobFileUploadDialog = {
     open,
     setToastService,
 };
-
-window.ReactJobFileUploadDialog = reactJobFileUploadDialog;
-
-// Create AngularJS module for ocLazyLoad
-const jobFileUploadDialogReactModule = window.angular!.module(
-    'uDispatch.jobFileUploadDialogReact',
-    []
-);
-
-console.log('[JobFileUploadDialogReact] Module registered');
-
-export default jobFileUploadDialogReactModule;

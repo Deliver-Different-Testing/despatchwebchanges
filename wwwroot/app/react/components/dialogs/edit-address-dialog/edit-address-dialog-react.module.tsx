@@ -63,19 +63,6 @@ export function openEditAddressDialog(
     );
 }
 
-// Expose globally for AngularJS access
 export const reactEditAddressDialog = {
     open: openEditAddressDialog,
 };
-
-window.ReactEditAddressDialog = reactEditAddressDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const editAddressDialogReactModule = window.angular!.module(
-    'uDispatch.editAddressDialogReact',
-    []
-);
-
-console.log('[EditAddressDialogReact] Module registered');
-
-export default editAddressDialogReactModule;

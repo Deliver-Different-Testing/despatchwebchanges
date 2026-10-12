@@ -2,8 +2,6 @@
  * Bulk Price Upload Dialog React Module
  *
  * Entry point for the React-based Bulk Price Upload Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- * Uses native React API services instead of AngularJS dependencies.
  */
 
 import React from 'react';
@@ -29,19 +27,6 @@ export function openBulkPriceUploadDialog(options: OpenBulkPriceUploadDialogOpti
     return host.open(undefined, options.toastService);
 }
 
-// Expose to window for AngularJS access
 export const reactBulkPriceUploadDialog = {
     open: openBulkPriceUploadDialog,
 };
-
-window.ReactBulkPriceUploadDialog = reactBulkPriceUploadDialog;
-
-// Create AngularJS module
-const bulkPriceUploadDialogReactModule = window.angular!.module(
-    'uDispatch.bulkPriceUploadDialogReact',
-    []
-);
-
-console.log('[BulkPriceUploadDialogReact] Module registered');
-
-export default bulkPriceUploadDialogReactModule;

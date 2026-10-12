@@ -2,7 +2,6 @@
  * Void Job Confirmation Dialog React Module
  *
  * Entry point for the React-based Void Job Confirmation Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  */
 
 import React from 'react';
@@ -51,14 +50,3 @@ export function openVoidJobConfirmationDialog(
 export const reactVoidJobConfirmationDialog = {
     open: openVoidJobConfirmationDialog,
 };
-
-window.ReactVoidJobConfirmationDialog = reactVoidJobConfirmationDialog;
-
-const voidJobConfirmationDialogReactModule = window.angular!.module(
-    'uDispatch.voidJobConfirmationDialogReact',
-    []
-);
-
-console.log('[VoidJobConfirmationDialogReact] Module registered');
-
-export default voidJobConfirmationDialogReactModule;

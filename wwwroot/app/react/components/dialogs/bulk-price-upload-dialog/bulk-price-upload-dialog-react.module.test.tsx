@@ -25,31 +25,13 @@ describe('BulkPriceUploadDialogManager', () => {
     let openBulkPriceUploadDialog: typeof import('./bulk-price-upload-dialog-react.module').openBulkPriceUploadDialog;
 
     beforeAll(() => {
-        // Set up angular mock before importing the module
-        (window as any).angular = {
-            module: jest.fn(() => ({})),
-        };
 
-        // Now import the module
         const module = require('./bulk-price-upload-dialog-react.module');
         openBulkPriceUploadDialog = module.openBulkPriceUploadDialog;
     });
 
-    afterAll(() => {
-        delete (window as any).angular;
-        delete (window as any).ReactBulkPriceUploadDialog;
-    });
-
     const createMockToastService = () => ({
         showToast: jest.fn(),
-    });
-
-    describe('Window Global Registration', () => {
-        it('should expose ReactBulkPriceUploadDialog on window', () => {
-            expect((window as any).ReactBulkPriceUploadDialog).toBeDefined();
-            expect((window as any).ReactBulkPriceUploadDialog.open).toBeDefined();
-            expect(typeof (window as any).ReactBulkPriceUploadDialog.open).toBe('function');
-        });
     });
 
     describe('Open Dialog', () => {
@@ -81,11 +63,4 @@ describe('BulkPriceUploadDialogManager', () => {
         });
     });
 
-    describe('AngularJS Module Registration', () => {
-        it('should have registered AngularJS module on load', () => {
-            // The module was registered when we required it in beforeAll
-            // We can verify the window global exists
-            expect((window as any).ReactBulkPriceUploadDialog).toBeDefined();
-        });
-    });
 });

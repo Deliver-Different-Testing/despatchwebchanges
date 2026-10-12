@@ -17,13 +17,7 @@
     ],
     "types": [
       "jest",
-      "node",
-      "angular",
-      "angular-material",
-      "angular-ui-router",
-      "angular-ui-sortable",
-      "oclazyload",
-      "modernizr"
+      "node"
     ]
   },
   "include": [

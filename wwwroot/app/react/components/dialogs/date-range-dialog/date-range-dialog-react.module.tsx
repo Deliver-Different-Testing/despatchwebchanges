@@ -2,7 +2,6 @@
  * Date Range Dialog React Module
  *
  * Entry point for the React-based Date Range Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  */
 
 import React from 'react';
@@ -34,19 +33,6 @@ export function openDateRangeDialog(initialRange?: InitialRange): Promise<DateRa
     return host.open({initialRange});
 }
 
-// Expose globally for AngularJS access
 export const reactDateRangeDialog = {
     open: openDateRangeDialog,
 };
-
-window.ReactDateRangeDialog = reactDateRangeDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const dateRangeDialogReactModule = window.angular!.module(
-    'uDispatch.dateRangeDialogReact',
-    []
-);
-
-console.log('[DateRangeDialogReact] Module registered');
-
-export default dateRangeDialogReactModule;

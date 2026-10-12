@@ -38,20 +38,7 @@ export function setToastService(service: ToastService): void {
     host.setToastService(service);
 }
 
-// Expose to window for AngularJS access
 export const reactSelectDialog = {
     showSelectDialog,
     setToastService,
 };
-
-window.ReactSelectDialog = reactSelectDialog;
-
-// Create AngularJS module for ocLazyLoad
-const selectDialogReactModule = window.angular!.module(
-    'uDispatch.selectDialogReact',
-    []
-);
-
-console.log('[SelectDialogReact] Module registered');
-
-export default selectDialogReactModule;

@@ -1,8 +1,7 @@
 /**
  * Adapter for the imperative job-details mount API.
  *
- * Keeps the existing module boundary (`window.ReactJobDetails`) so every page's
- * detail box reuses the one job-details bundle the app already loads.
+ * Gives every page's detail box one shared mount path.
  *
  * This was copy-pasted into `DispatchPage` and `JobSearchPage` and the two had
  * drifted: Dispatch grew the related-job/update callbacks and the

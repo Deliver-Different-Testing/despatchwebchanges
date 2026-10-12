@@ -133,20 +133,7 @@ export function setToastService(service: ToastService): void {
     host.setToastService(service);
 }
 
-// Expose to window for AngularJS access
 export const reactSimplePriceEditDialog = {
     open: openSimplePriceEditDialog,
     setToastService,
 };
-
-window.ReactSimplePriceEditDialog = reactSimplePriceEditDialog;
-
-// Create AngularJS module for ocLazyLoad
-const simplePriceEditDialogReactModule = window.angular!.module(
-    'uDispatch.simplePriceEditDialogReact',
-    []
-);
-
-console.log('[SimplePriceEditDialogReact] Module registered');
-
-export default simplePriceEditDialogReactModule;

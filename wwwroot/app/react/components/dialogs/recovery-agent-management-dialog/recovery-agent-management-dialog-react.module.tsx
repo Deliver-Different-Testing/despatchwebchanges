@@ -2,8 +2,6 @@
  * Recovery Agent Management Dialog React Module
  *
  * Entry point for the React-based Recovery Agent Management Dialog.
- * Exposes a global function to open the dialog from AngularJS.
- * Uses native React API services instead of AngularJS dependencies.
  */
 
 import React from 'react';
@@ -48,19 +46,6 @@ export async function openRecoveryAgentManagementDialog(
     }
 }
 
-// Expose to window for AngularJS access
 export const reactRecoveryAgentManagementDialog = {
     open: openRecoveryAgentManagementDialog,
 };
-
-window.ReactRecoveryAgentManagementDialog = reactRecoveryAgentManagementDialog;
-
-// Create AngularJS module
-const recoveryAgentManagementDialogReactModule = window.angular!.module(
-    'uDispatch.recoveryAgentManagementDialogReact',
-    []
-);
-
-console.log('[RecoveryAgentManagementDialogReact] Module registered');
-
-export default recoveryAgentManagementDialogReactModule;

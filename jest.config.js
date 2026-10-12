@@ -22,9 +22,7 @@ const config = {
 
     moduleNameMapper: {
         '^@deliver-different/glass$': '<rootDir>/node_modules/@deliver-different/glass/dist/index.js',
-        '^angular$': '<rootDir>/node_modules/angular/angular.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/wwwroot/app/tests/mocks/styleMock.ts',
-        '\\.html$': '<rootDir>/wwwroot/app/tests/mocks/templateMock.ts',
         // ESM-only packages - mock for Jest compatibility
         '^react-markdown$': '<rootDir>/wwwroot/app/tests/mocks/reactMarkdownMock.tsx',
         '^remark-gfm$': '<rootDir>/wwwroot/app/tests/mocks/remarkGfmMock.ts',

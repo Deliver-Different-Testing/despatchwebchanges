@@ -23,7 +23,7 @@ import {
     IDeliveryJourney,
     IDeliveryJourneyDto
 } from "../react/components/common/task-history/TaskHistory.interfaces";
-import {timezoneShortFilter} from "../filters";
+import {timezoneShort} from "./timezoneShort";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
     const departureTime = formatDateFromApi(dto.departureTime);
@@ -33,9 +33,9 @@ export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
         departureTime,
         arrivalTime,
         _departureTimeStr: formatLongDateTime(departureTime),
-        _departureTimeZoneStr: timezoneShortFilter(dto.departureTimeZone),
+        _departureTimeZoneStr: timezoneShort(dto.departureTimeZone),
         _arrivalTimeStr: formatLongDateTime(arrivalTime),
-        _arrivalTimeZoneStr: timezoneShortFilter(dto.arrivalTimeZone),
+        _arrivalTimeZoneStr: timezoneShort(dto.arrivalTimeZone),
         flightSegments: dto.flightSegments?.map(segment => {
             const segDepartureTime = formatDateFromApi(segment.departureTime);
             const segArrivalTime = formatDateFromApi(segment.arrivalTime);
@@ -45,8 +45,8 @@ export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
                 arrivalTime: segArrivalTime,
                 _departureTimeStr: formatLongDateTime(segDepartureTime),
                 _arrivalTimeStr: formatLongDateTime(segArrivalTime),
-                _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
-                _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
+                _arrivalTimeZoneStr: timezoneShort(segment.arrivalAirportTimeZone),
+                _departureTimeZoneStr: timezoneShort(segment.departureAirportTimeZone),
             };
         }) ?? []
     };
@@ -122,8 +122,8 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
                     arrivalTime: segArrivalTime,
                     _departureTimeStr: formatLongDateTime(segDepartureTime, isUsCustomer),
                     _arrivalTimeStr: formatLongDateTime(segArrivalTime, isUsCustomer),
-                    _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
-                    _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
+                    _arrivalTimeZoneStr: timezoneShort(segment.arrivalAirportTimeZone),
+                    _departureTimeZoneStr: timezoneShort(segment.departureAirportTimeZone),
                 };
             }) ?? []
         } : undefined,
@@ -165,8 +165,8 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
         _completedTimeStr: completedTime ? formatShortDateTime(completedTime, isUsCustomer) : undefined,
         _completedTimeLongStr: completedTime ? formatLongDateTime(completedTime, isUsCustomer) : undefined,
         _followupTimeStr: followupTime ? formatShortDateTime(followupTime, isUsCustomer) : undefined,
-        _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
-        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,
+        _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShort(dto.pickUpTimeZone.text) : undefined,
+        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShort(dto.deliveryTimeZone.text) : undefined,
         _stopDateStr: stopDate ? formatLongDate(stopDate, isUsCustomer) : undefined,
         _restartDateStr: restartDate ? formatLongDate(restartDate, isUsCustomer) : undefined,
     };
@@ -186,8 +186,8 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
         followupTime: dto.followupTime ? formatDateFromApi(dto.followupTime) : undefined,
         _deliveryTimeString: booked ? formatMins(booked) : undefined,
         _deliveryDateString: booked ? formatShortDate(booked) : undefined,
-        _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
-        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,
+        _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShort(dto.pickUpTimeZone.text) : undefined,
+        _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShort(dto.deliveryTimeZone.text) : undefined,
         // Transform assignedFlight with helper fields for display
         assignedFlight: dto.assignedFlight ? {
             ...dto.assignedFlight,
@@ -202,8 +202,8 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
                     arrivalTime: segArrivalTime,
                     _departureTimeStr: formatLongDateTime(segDepartureTime),
                     _arrivalTimeStr: formatLongDateTime(segArrivalTime),
-                    _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
-                    _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
+                    _arrivalTimeZoneStr: timezoneShort(segment.arrivalAirportTimeZone),
+                    _departureTimeZoneStr: timezoneShort(segment.departureAirportTimeZone),
                 };
             }) ?? []
         } : undefined,

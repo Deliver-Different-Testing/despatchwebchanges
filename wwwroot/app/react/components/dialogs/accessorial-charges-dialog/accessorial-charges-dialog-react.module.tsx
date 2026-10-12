@@ -2,7 +2,6 @@
  * Accessorial Charges Dialog React Module
  *
  * Entry point for the React-based Accessorial Charges Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  */
 
 import React from 'react';
@@ -34,19 +33,6 @@ export function openAccessorialChargesDialog(options: OpenAccessorialChargesDial
     return host.open({job}, toastService);
 }
 
-// Expose to window for AngularJS access
 export const reactAccessorialChargesDialog = {
     open: openAccessorialChargesDialog,
 };
-
-window.ReactAccessorialChargesDialog = reactAccessorialChargesDialog;
-
-// Create AngularJS module
-const accessorialChargesDialogReactModule = window.angular!.module(
-    'uDispatch.accessorialChargesDialogReact',
-    []
-);
-
-console.log('[AccessorialChargesDialogReact] Module registered');
-
-export default accessorialChargesDialogReactModule;

@@ -2,7 +2,6 @@
  * Split Pricing Breakdown Dialog React Module
  *
  * Entry point for the React-based Split Pricing Breakdown Dialog.
- * Exposes a global function to open the dialog from AngularJS.
  */
 
 import React from 'react';
@@ -86,27 +85,7 @@ export function openSplitPricingBreakdownDialog(
     });
 }
 
-// Expose globally for AngularJS access
 export const reactSplitPricingBreakdownDialog = {
     open: openSplitPricingBreakdownDialog,
     setToastService,
 };
-
-window.ReactSplitPricingBreakdownDialog = reactSplitPricingBreakdownDialog;
-
-// Register as AngularJS module (for ocLazyLoad compatibility)
-const splitPricingBreakdownDialogReactModule = window.angular!.module(
-    'uDispatch.splitPricingBreakdownDialogReact',
-    [],
-);
-
-splitPricingBreakdownDialogReactModule.service('splitPricingBreakdownDialogReactService', [
-    () => ({
-        openSplitPricingBreakdownDialog: (breakdown: SplitPriceBreakdown) =>
-            openSplitPricingBreakdownDialog(breakdown),
-    }),
-]);
-
-console.log('[SplitPricingBreakdownDialogReact] Module registered');
-
-export default splitPricingBreakdownDialogReactModule;

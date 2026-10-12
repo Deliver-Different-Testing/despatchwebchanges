@@ -20,20 +20,14 @@ jest.mock('../../../query', () => ({
     ReactQueryProvider: ({ children }: any) => children,
 }));
 
-// Use require() instead of import so that window.angular is set before module evaluation
+// Use require() instead of import to load the module after the mocks are installed
 let openAccessorialChargesDialog: typeof import('./accessorial-charges-dialog-react.module').openAccessorialChargesDialog;
 
 beforeAll(() => {
-    (window as any).angular = {module: jest.fn(() => ({}))};
     openAccessorialChargesDialog = require('./accessorial-charges-dialog-react.module').openAccessorialChargesDialog;
 });
 
 describe('AccessorialChargesDialogManager', () => {
-    afterAll(() => {
-        delete (window as any).angular;
-        delete (window as any).ReactAccessorialChargesDialog;
-    });
-
     const createMockJob = (overrides = {}) => ({
         id: 123,
         accessorialChargeGroupId: 5,
@@ -77,13 +71,4 @@ describe('AccessorialChargesDialogManager', () => {
         });
     });
 
-    describe('Window Global Registration', () => {
-        it('should expose ReactAccessorialChargesDialog on window', () => {
-            expect((window as any).ReactAccessorialChargesDialog).toBeDefined();
-        });
-
-        it('should expose an open function on ReactAccessorialChargesDialog', () => {
-            expect(typeof (window as any).ReactAccessorialChargesDialog.open).toBe('function');
-        });
-    });
 });
