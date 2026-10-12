@@ -1,17 +1,26 @@
-import React, { useMemo } from 'react';
+import React, {useMemo} from 'react';
 import {
-    alpha, Box, CloseButton, Group, Loader, MultiSelect, Stack, Text, TextInput,
-    UnstyledButton, useMantineTheme,
+    alpha,
+    Box,
+    CloseButton,
+    Group,
+    Loader,
+    MultiSelect,
+    Stack,
+    Text,
+    TextInput,
+    UnstyledButton,
+    useMantineTheme,
 } from '@mantine/core';
 import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import classes from './DriversPanel.module.css';
 import {glassClassNames} from '@deliver-different/glass';
 import {useLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
-import { NoData } from '../../../components/common/no-data';
-import { matchesCourierSearch } from '../CourierMapPage.types';
-import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
-import { DriverListItem } from './DriverListItem';
+import {NoData} from '../../../components/common/no-data';
+import type {DriversPanelProps, FleetSelectorOption} from '../CourierMapPage.types';
+import {matchesCourierSearch} from '../CourierMapPage.types';
+import {DriverListItem} from './DriverListItem';
 
 const PANEL_WIDTH = 340;
 const ANIMATION_DURATION = '300ms';
@@ -73,13 +82,13 @@ export function DriversPanel({
     onSelectedFleetIdsChange,
     selectedDriverId,
 }: DriversPanelProps) {
-    const selectedFleets = useMemo(() => {
+    useMemo(() => {
         const lookup = new Map(fleetOptions.map((f) => [f.id, f]));
         return selectedFleetIds
             .map((id) => lookup.get(id))
             .filter((f): f is FleetSelectorOption => f != null);
     }, [fleetOptions, selectedFleetIds]);
-    // Compute summary stats from the driver data
+// Compute summary stats from the driver data
     const stats = useMemo(() => {
         const totalJobs = drivers.reduce((sum, d) => sum + d.totalJobs, 0);
         const overdueCount = drivers.filter((d) => d.overDueJobs > 0).length;

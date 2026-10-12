@@ -14,7 +14,7 @@ public interface ISendToPartnerService
     /// Returns null when IM reports 404 (the job isn't partner-inbound) — DW treats that as
     /// "gate not applicable, allocate as normal".
     /// </summary>
-    Task<PartnerInboundJobAcceptanceStateResponse?> GetInboundJobAcceptanceStateAsync(int jobId);
+    Task<PartnerInboundJobAcceptanceStateResponse?> GetInboundJobAcceptanceStateAsync(int jobId, CancellationToken ct);
 
     /// <summary>Accepts the partner's typed rate on behalf of the current operator.</summary>
     Task<PartnerInboundJobActionResponse> AcceptInboundJobAsync(int jobId);

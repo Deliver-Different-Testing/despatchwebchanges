@@ -53,6 +53,8 @@ public partial class JobRepository(
     private static readonly Expression<Func<TucJobArchive, bool>> IsArchivedJobInvoiced =
         j => (j.UcjbInvoiceNo > 0 && j.Invoice != null) || (j.InvoiceProcess != null && j.InvoiceProcess.UcipDone);
 
+    private static readonly int[] PodParentRelationshipTypes = [2, 8, 12];
+
     private readonly ITenantClock _clock = clock;
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private readonly ITenantInfoService _infoService = infoService;
@@ -462,38 +464,6 @@ public partial class JobRepository(
         }
     }
 
-    private static readonly int[] PodParentRelationshipTypes = [2, 8, 12];
-
-    private sealed record PodState(
-        bool Done,
-        string PodName,
-        DateTime? ComplTime,
-        int? LeaveId,
-        int? PrivateBusiness,
-        byte[] Signature,
-        byte[] Photo,
-        int? Status);
-
-    private static PodState CapturePod(TucJob j) => new(j.UcjbJobDone, j.UcjbPodname, j.UcjbComplTime,
-        j.DeliverToLeaveId, j.DeliverToPrivateBusiness, j.DeliverySignature, j.DeliveryPhoto, j.UcjbStatus);
-
-    private static void ApplyPod(TucJob j, PodState s)
-    {
-        var becameDone = s.Done && !j.UcjbJobDone;
-        j.UcjbJobDone = s.Done;
-        j.UcjbPodname = s.PodName;
-        j.UcjbComplTime = s.ComplTime;
-        j.DeliverToLeaveId = s.LeaveId;
-        j.DeliverToPrivateBusiness = s.PrivateBusiness;
-        j.DeliverySignature = s.Signature;
-        j.DeliveryPhoto = s.Photo;
-        j.UcjbStatus = s.Status;
-        if (becameDone)
-        {
-            j.InternalStatus = (int)InternalJobStatus.Reprice;
-        }
-    }
-
     /// <summary>
     /// Moves job 1's POD onto job 2 (job 1 reverts to Accepted if dispatched, else New). When job 2
     /// is also done the two PODs are exchanged and statuses travel with them.
@@ -546,7 +516,7 @@ public partial class JobRepository(
             var parents = await Context.TucJobs
                 .AsTracking()
                 .Where(p => parentIds.Contains(p.UcjbId) && p.JobRelationshipTypeId != null &&
-                            PodParentRelationshipTypes.Contains(p.JobRelationshipTypeId.Value))
+                            ((IEnumerable<int>)PodParentRelationshipTypes).Contains(p.JobRelationshipTypeId.Value))
                 .ToListAsync();
             foreach (var leg in legsWithParent)
             {
@@ -577,74 +547,6 @@ public partial class JobRepository(
         }
 
         await Context.SaveChangesAsync();
-    }
-
-    public async Task<SwapPodJob> GetSwapPodJobAsync(string jobNumber) =>
-        await Context.TucJobs
-            .Where(j => j.UcjbNumber == jobNumber && !j.UcjbVoid)
-            .OrderByDescending(j => j.UcjbId)
-            .Select(j => new SwapPodJob(j.UcjbId, j.UcjbNumber, j.UcjbJobDone, j.UcjbComplTime))
-            .FirstOrDefaultAsync();
-
-    public async Task<IReadOnlyList<SwapPodCandidate>> SearchSwapPodCandidatesAsync(
-        string term, int? statusId, string customer, DateTime? date, string excludeJobNumber)
-    {
-        var query = Context.TucJobs.Where(j => !j.UcjbVoid);
-
-        if (!string.IsNullOrWhiteSpace(excludeJobNumber))
-        {
-            query = query.Where(j => j.UcjbNumber != excludeJobNumber);
-        }
-
-        if (!string.IsNullOrWhiteSpace(term))
-        {
-            var t = term.Trim();
-            query = query.Where(j => j.UcjbNumber.Contains(t));
-        }
-
-        if (statusId.HasValue)
-        {
-            query = query.Where(j => j.UcjbStatus == statusId);
-        }
-
-        if (!string.IsNullOrWhiteSpace(customer))
-        {
-            var c = customer.Trim();
-            query = query.Where(j => j.UcjbClient.UcclName.Contains(c));
-        }
-
-        if (date.HasValue)
-        {
-            var from = date.Value.Date;
-            var to = from.AddDays(1);
-            query = query.Where(j => j.UcjbDate >= from && j.UcjbDate < to);
-        }
-
-        var rows = await query
-            .OrderByDescending(j => j.UcjbDate)
-            .ThenByDescending(j => j.UcjbId)
-            .Take(20)
-            .Select(j => new
-            {
-                j.UcjbId,
-                j.UcjbNumber,
-                j.UcjbStatus,
-                StatusName = j.UcjbStatusNavigation.UcjsName,
-                Customer = j.UcjbClient.UcclName,
-                From = j.UcjbFromNavigation.UcsuName,
-                To = j.UcjbToNavigation.UcsuName,
-                CourierName = j.UcjbCourier.UccrName,
-                CourierSurname = j.UcjbCourier.UccrSurname,
-                j.UcjbDate,
-                j.UcjbJobDone
-            })
-            .ToListAsync();
-
-        return rows.Select(r => new SwapPodCandidate(
-                r.UcjbId, r.UcjbNumber, r.UcjbStatus, r.StatusName, r.Customer, r.From, r.To,
-                string.Join(' ', new[] { r.CourierName, r.CourierSurname }.Where(n => !string.IsNullOrWhiteSpace(n))),
-                r.UcjbDate, r.UcjbJobDone))
-            .ToList();
     }
 
     /// <summary>
@@ -1618,30 +1520,6 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// A linehaul family's parent carries the client-facing addresses, but the driver works the legs:
-    /// the delivery address belongs to the final-mile leg, the pickup address to the linehaul pickup
-    /// leg. Without this a parent edit leaves the leg pointing at the old address. Only open legs are
-    /// rewritten, so completed or voided work keeps its record; middle LH legs are depot-to-depot and
-    /// never take the client's address.
-    /// </summary>
-    private async Task CascadeAddressToFamilyLegAsync(
-        UpdateAddressRequest request,
-        JobLegRole targetRole,
-        Func<UpdateAddressRequest, Task> updateLeg)
-    {
-        var candidates = await Context.TucJobs
-            .Where(j => j.ParentId == request.JobId && j.UcjbId != request.JobId
-                                                    && !j.UcjbVoid && !j.UcjbJobDone)
-            .Select(j => new { j.UcjbId, j.UcjbNumber })
-            .ToListAsync();
-
-        foreach (var leg in candidates.Where(l => JobLegRoles.FromJobNumber(l.UcjbNumber) == targetRole))
-        {
-            await updateLeg(new UpdateAddressRequest { JobId = leg.UcjbId, Address = request.Address });
-        }
-    }
-
-    /// <summary>
     /// Updates the pickup address for a job (active or archived).
     /// </summary>
     /// <param name="request">Request containing job ID and new address details.</param>
@@ -2245,24 +2123,6 @@ public partial class JobRepository(
                     nameof(UpdatePackagesForBulkJobAsync)));
             throw;
         }
-    }
-
-
-    private sealed class ItemLine
-    {
-        public int Items { get; init; }
-        public double Weight { get; init; }
-    }
-
-    /// <summary>
-    /// Totals item lines for the job-row columns: units = SUM(Items), weight = SUM(Items * Weight)
-    /// (line Weight is per unit).
-    /// </summary>
-    private static async Task<(short Qty, double Weight)> SumItemLinesAsync(IQueryable<ItemLine> lines)
-    {
-        var qty = await lines.SumAsync(l => (int?)l.Items) ?? 0;
-        var weight = await lines.SumAsync(l => (double?)(l.Items * l.Weight)) ?? 0;
-        return ((short)qty, weight);
     }
 
     public async Task AddPackagesToJobAsync(int effectiveJobId,
@@ -2915,6 +2775,74 @@ public partial class JobRepository(
         await SetSplitParentAmountFromItemsAsync(request.JobId, isArchived);
     }
 
+    public async Task<SwapPodJob> GetSwapPodJobAsync(string jobNumber) =>
+        await Context.TucJobs
+            .Where(j => j.UcjbNumber == jobNumber && !j.UcjbVoid)
+            .OrderByDescending(j => j.UcjbId)
+            .Select(j => new SwapPodJob(j.UcjbId, j.UcjbNumber, j.UcjbJobDone, j.UcjbComplTime))
+            .FirstOrDefaultAsync();
+
+    public async Task<IReadOnlyList<SwapPodCandidate>> SearchSwapPodCandidatesAsync(
+        string term, int? statusId, string customer, DateTime? date, string excludeJobNumber)
+    {
+        var query = Context.TucJobs.Where(j => !j.UcjbVoid);
+
+        if (!string.IsNullOrWhiteSpace(excludeJobNumber))
+        {
+            query = query.Where(j => j.UcjbNumber != excludeJobNumber);
+        }
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            var t = term.Trim();
+            query = query.Where(j => j.UcjbNumber.Contains(t));
+        }
+
+        if (statusId.HasValue)
+        {
+            query = query.Where(j => j.UcjbStatus == statusId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(customer))
+        {
+            var c = customer.Trim();
+            query = query.Where(j => j.UcjbClient.UcclName.Contains(c));
+        }
+
+        if (date.HasValue)
+        {
+            var from = date.Value.Date;
+            var to = from.AddDays(1);
+            query = query.Where(j => j.UcjbDate >= from && j.UcjbDate < to);
+        }
+
+        var rows = await query
+            .OrderByDescending(j => j.UcjbDate)
+            .ThenByDescending(j => j.UcjbId)
+            .Take(20)
+            .Select(j => new
+            {
+                j.UcjbId,
+                j.UcjbNumber,
+                j.UcjbStatus,
+                StatusName = j.UcjbStatusNavigation.UcjsName,
+                Customer = j.UcjbClient.UcclName,
+                From = j.UcjbFromNavigation.UcsuName,
+                To = j.UcjbToNavigation.UcsuName,
+                CourierName = j.UcjbCourier.UccrName,
+                CourierSurname = j.UcjbCourier.UccrSurname,
+                j.UcjbDate,
+                j.UcjbJobDone
+            })
+            .ToListAsync();
+
+        return rows.Select(r => new SwapPodCandidate(
+                r.UcjbId, r.UcjbNumber, r.UcjbStatus, r.StatusName, r.Customer, r.From, r.To,
+                string.Join(' ', new[] { r.CourierName, r.CourierSurname }.Where(n => !string.IsNullOrWhiteSpace(n))),
+                r.UcjbDate, r.UcjbJobDone))
+            .ToList();
+    }
+
     public async Task<decimal> GetJobAmountAsync(int jobId, bool isBooking)
     {
         if (isBooking)
@@ -3387,8 +3315,8 @@ public partial class JobRepository(
                 ParentId = j.ParentId,
                 JobNumber = j.JobNumber,
                 BookDate = j.BookDate,
-                Amount = isNetworkPartner ? (j.CourierPayment ?? 0) : j.Amount,
-                Fuel = isNetworkPartner ? (j.CourierFuel ?? 0) : j.Fuel,
+                Amount = isNetworkPartner ? j.CourierPayment ?? 0 : j.Amount,
+                Fuel = isNetworkPartner ? j.CourierFuel ?? 0 : j.Fuel,
                 Ppd = isNetworkPartner ? null : j.Ppd,
                 CourierPayment = isNetworkPartner ? null : j.CourierPayment,
                 CourierFuel = isNetworkPartner ? null : j.CourierFuel,
@@ -3991,7 +3919,7 @@ public partial class JobRepository(
             var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
             var job = await Context.TucJobs
                 .Where(j => j.UcjbId == effectiveJobId)
-                .Select(j => new { j.UcjbClientId, j.UcjbDate, j.UcjbSize })
+                .Select(j => new { j.UcjbClientId, UcjbDate = (DateTime?)j.UcjbDate, j.UcjbSize })
                 .FirstOrDefaultAsync();
             clientId = job?.UcjbClientId;
             bookedDate = job?.UcjbDate;
@@ -5108,6 +5036,61 @@ public partial class JobRepository(
                 CompletedTime = j.UcjbComplTime
             })
             .ToListAsync();
+    }
+
+    private static PodState CapturePod(TucJob j) => new(j.UcjbJobDone, j.UcjbPodname, j.UcjbComplTime,
+        j.DeliverToLeaveId, j.DeliverToPrivateBusiness, j.DeliverySignature, j.DeliveryPhoto, j.UcjbStatus);
+
+    private static void ApplyPod(TucJob j, PodState s)
+    {
+        var becameDone = s.Done && !j.UcjbJobDone;
+        j.UcjbJobDone = s.Done;
+        j.UcjbPodname = s.PodName;
+        j.UcjbComplTime = s.ComplTime;
+        j.DeliverToLeaveId = s.LeaveId;
+        j.DeliverToPrivateBusiness = s.PrivateBusiness;
+        j.DeliverySignature = s.Signature;
+        j.DeliveryPhoto = s.Photo;
+        j.UcjbStatus = s.Status;
+        if (becameDone)
+        {
+            j.InternalStatus = (int)InternalJobStatus.Reprice;
+        }
+    }
+
+    /// <summary>
+    /// A linehaul family's parent carries the client-facing addresses, but the driver works the legs:
+    /// the delivery address belongs to the final-mile leg, the pickup address to the linehaul pickup
+    /// leg. Without this a parent edit leaves the leg pointing at the old address. Only open legs are
+    /// rewritten, so completed or voided work keeps its record; middle LH legs are depot-to-depot and
+    /// never take the client's address.
+    /// </summary>
+    private async Task CascadeAddressToFamilyLegAsync(
+        UpdateAddressRequest request,
+        JobLegRole targetRole,
+        Func<UpdateAddressRequest, Task> updateLeg)
+    {
+        var candidates = await Context.TucJobs
+            .Where(j => j.ParentId == request.JobId && j.UcjbId != request.JobId
+                                                    && !j.UcjbVoid && !j.UcjbJobDone)
+            .Select(j => new { j.UcjbId, j.UcjbNumber })
+            .ToListAsync();
+
+        foreach (var leg in candidates.Where(l => JobLegRoles.FromJobNumber(l.UcjbNumber) == targetRole))
+        {
+            await updateLeg(new UpdateAddressRequest { JobId = leg.UcjbId, Address = request.Address });
+        }
+    }
+
+    /// <summary>
+    /// Totals item lines for the job-row columns: units = SUM(Items), weight = SUM(Items * Weight)
+    /// (line Weight is per unit).
+    /// </summary>
+    private static async Task<(short Qty, double Weight)> SumItemLinesAsync(IQueryable<ItemLine> lines)
+    {
+        var qty = await lines.SumAsync(l => (int?)l.Items) ?? 0;
+        var weight = await lines.SumAsync(l => (double?)(l.Items * l.Weight)) ?? 0;
+        return ((short)qty, weight);
     }
 
     /// <summary>
@@ -6859,6 +6842,23 @@ public partial class JobRepository(
                 .SetProperty(j => j.UcjbStatus, (int)JobStatus.Dispatched)
                 .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
             );
+    }
+
+    private sealed record PodState(
+        bool Done,
+        string PodName,
+        DateTime? ComplTime,
+        int? LeaveId,
+        int? PrivateBusiness,
+        byte[] Signature,
+        byte[] Photo,
+        int? Status);
+
+
+    private sealed class ItemLine
+    {
+        public int Items { get; init; }
+        public double Weight { get; init; }
     }
 
     /// <summary>

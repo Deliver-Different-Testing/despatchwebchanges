@@ -36,7 +36,7 @@ public class SessionContextServiceTests : IDisposable
             FirstName = "Jane", FullName = "Jane Doe", Email = "j@t.com", Internal = true,
             IsNetworkPartner = true, StaffID = 5
         });
-        _features.GetVisibleDashboardsAsync().Returns(new HashSet<string> {"dw-dispatch"});
+        _features.GetVisibleDashboardsAsync().Returns(new HashSet<string> { "dw-dispatch" });
         _np.GetMapCentreAsync().Returns(new MapCentre(-36.8m, 174.7m));
 
         var dto = await CreateSut().BuildAsync(User());
@@ -51,7 +51,11 @@ public class SessionContextServiceTests : IDisposable
         Assert.Equal("NZ", dto.CountryCode);
         Assert.True(dto.ClientInternal);
         Assert.True(dto.IsNetworkPartner);
-        if (dto.VisibleFeatures != null) Assert.Equal(["dw-dispatch"], dto.VisibleFeatures);
+        if (dto.VisibleFeatures != null)
+        {
+            Assert.Equal(["dw-dispatch"], dto.VisibleFeatures);
+        }
+
         Assert.Equal(new MapCentre(-36.8m, 174.7m), dto.NpMapCenter);
         Assert.Equal("https://hub.test/", dto.HubUrl);
     }
@@ -84,7 +88,7 @@ public class SessionContextServiceTests : IDisposable
     public async Task BuildAsync_UngatedSession_LeavesVisibleFeaturesNull()
     {
         _clients.ValidateClientAsync(100).Returns(new ClientViewModel());
-        _features.GetVisibleDashboardsAsync().Returns((IReadOnlySet<string>?) null);
+        _features.GetVisibleDashboardsAsync().Returns((IReadOnlySet<string>?)null);
 
         var dto = await CreateSut().BuildAsync(User());
 
@@ -113,7 +117,7 @@ public class SessionContextServiceTests : IDisposable
     [Fact]
     public async Task BuildAsync_UnknownContact_Throws()
     {
-        _clients.ValidateClientAsync(100).Returns((ClientViewModel) null!);
+        _clients.ValidateClientAsync(100).Returns((ClientViewModel)null!);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => CreateSut().BuildAsync(User()));
     }

@@ -50,6 +50,12 @@ public class JobController(
     ISwapPodService swapPodService
 ) : Controller
 {
+    public const int MaxRestorePodImageProbeJobs = 50;
+
+    private const int RestorePodImageProbeConcurrency = 8;
+
+    private static readonly JsonSerializerOptions CompoundPayloadJsonOptions = new(JsonSerializerDefaults.Web);
+
     public async Task<IActionResult> Index(
         [FromQuery] JobQueryParams queryParams,
         bool isInternal,
@@ -218,11 +224,13 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> GetSuggestedFuelCharge(int jobId, decimal chargeAmount, bool isPrebook, bool isArchived = false)
+    public async Task<IActionResult> GetSuggestedFuelCharge(int jobId, decimal chargeAmount, bool isPrebook,
+        bool isArchived = false)
     {
         try
         {
-            var suggestion = await jobQueryRepository.GetSuggestedFuelChargeAsync(jobId, chargeAmount, isPrebook, isArchived);
+            var suggestion =
+                await jobQueryRepository.GetSuggestedFuelChargeAsync(jobId, chargeAmount, isPrebook, isArchived);
             return Json(suggestion);
         }
         catch (Exception ex)
@@ -496,7 +504,8 @@ public class JobController(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(PreviewCreateAheadBackfill)));
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(PreviewCreateAheadBackfill)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -523,7 +532,8 @@ public class JobController(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(CreateCreateAheadBackfill)));
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController),
+                    nameof(CreateCreateAheadBackfill)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -822,7 +832,8 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(PriceDetailReportDownload)));
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController),
+                    nameof(PriceDetailReportDownload)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -1568,6 +1579,7 @@ public class JobController(
             {
                 throw new ArgumentException("JobIds cannot be empty", nameof(data));
             }
+
             Log.Information(
                 "RestoreJobs request received for {JobCount} job(s) {JobIds} (RemoveCapturedImages={RemoveCapturedImages})",
                 data.JobIds.Count,
@@ -1598,10 +1610,6 @@ public class JobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
-
-    public const int MaxRestorePodImageProbeJobs = 50;
-
-    private const int RestorePodImageProbeConcurrency = 8;
 
     [HttpPost]
     public async Task<IActionResult> GetRestorePodImpact([FromBody] RestorePodImpactRequest data)
@@ -2600,7 +2608,8 @@ public class JobController(
                 return earlyResponse;
             }
 
-            await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels, request.CalculateDimsOncePerJob);
+            await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels,
+                request.CalculateDimsOncePerJob);
             if (request.Weight is > 0)
             {
                 await jobCommandRepository.UpdateJobWeightAsync(request.JobId, request.Weight.Value);
@@ -2621,7 +2630,8 @@ public class JobController(
     {
         try
         {
-            await jobCommandRepository.UpdatePackagesForBulkJobAsync(request.BulkJobId, request.Parcels, request.CalculateDimsOncePerJob);
+            await jobCommandRepository.UpdatePackagesForBulkJobAsync(request.BulkJobId, request.Parcels,
+                request.CalculateDimsOncePerJob);
             return Ok();
         }
         catch (Exception ex)
@@ -3143,15 +3153,17 @@ public class JobController(
         // The rating engine only calculates freight - manually-added accessorial charges
         // (JobAccessorialCharge, separate from the engine's own PricingBreakdown rows) are
         // layered on top of the job's real amount already, so the preview must add them back in
-        // too or it misleadingly looks like a reprice would drop them. Accessorial charges are a
+        // too, or it misleadingly looks like a reprice would drop them. Accessorial charges are a
         // live-job concept only (added via the job list), so skip for prebook jobs.
-        if (!isBooking)
+        if (isBooking)
         {
-            var accessorialTotal = await accessorialChargeRepository.GetTotalAppliedChargesAsync(jobId);
-            if (accessorialTotal != 0)
-            {
-                result = result with { Rate = result.Rate + accessorialTotal };
-            }
+            return result;
+        }
+
+        var accessorialTotal = await accessorialChargeRepository.GetTotalAppliedChargesAsync(jobId);
+        if (accessorialTotal != 0)
+        {
+            result = result with { Rate = result.Rate + accessorialTotal };
         }
 
         return result;
@@ -3229,7 +3241,7 @@ public class JobController(
     [HttpGet("{jobId:int}")]
     public async Task<IActionResult> GetPartnerInboundRateAcceptance(int jobId)
     {
-        var state = await sendToPartnerService.GetInboundJobAcceptanceStateAsync(jobId);
+        var state = await sendToPartnerService.GetInboundJobAcceptanceStateAsync(jobId, CancellationToken.None);
         return state is null
             ? Json(new PartnerInboundJobAcceptanceStateResponse { Status = "Allowed" })
             : Json(state);
@@ -3308,8 +3320,6 @@ public class JobController(
 
         return null;
     }
-
-    private static readonly JsonSerializerOptions CompoundPayloadJsonOptions = new(JsonSerializerDefaults.Web);
 
     private static bool TryHandleGateResult(PartnerJobGateResult result, out IActionResult earlyResponse)
     {
