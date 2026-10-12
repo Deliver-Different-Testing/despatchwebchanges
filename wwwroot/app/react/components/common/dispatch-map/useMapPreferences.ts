@@ -8,7 +8,7 @@
 import {useCallback, useState} from 'react';
 import type {MapControlState} from './DispatchMap.types';
 import {PREFERENCE_KEYS} from './DispatchMap.types';
-import {ContactID} from "../../../../contants";
+import {getContactId} from "../../../session";
 
 type Scope = string | number | undefined;
 
@@ -23,7 +23,7 @@ function prefKey(key: string, scope: Scope, contactId: string | number): string 
  * previously-saved choice isn't lost when a page adopts scoping.
  */
 function getPreference(key: string, defaultValue: boolean, scope?: Scope): boolean {
-    const contactId = typeof ContactID !== 'undefined' ? ContactID : undefined;
+    const contactId = getContactId() || undefined;
     if (!contactId || typeof window === 'undefined' || !window.localStorage) {
         return defaultValue;
     }
@@ -46,7 +46,7 @@ function getPreference(key: string, defaultValue: boolean, scope?: Scope): boole
  * Save a preference to localStorage (under the scoped key when a scope is given).
  */
 function savePreference(key: string, value: boolean, scope?: Scope): void {
-    const contactId = typeof ContactID !== 'undefined' ? ContactID : undefined;
+    const contactId = getContactId() || undefined;
     if (!contactId || typeof window === 'undefined' || !window.localStorage) {
         return;
     }

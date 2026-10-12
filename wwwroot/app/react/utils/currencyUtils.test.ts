@@ -18,7 +18,7 @@ describe('formatCurrency', () => {
     });
 
     it('defaults to NZD when CurrencyCode is not set', () => {
-        delete (window as any).CurrencyCode;
+        (window as any).CurrencyCode = undefined;
         const result = formatCurrency(50);
         expect(result).toContain('50.00');
     });

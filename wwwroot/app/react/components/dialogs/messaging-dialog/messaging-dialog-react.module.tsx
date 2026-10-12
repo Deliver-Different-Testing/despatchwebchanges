@@ -3,6 +3,7 @@ import { MessagingDialog } from './MessagingDialog';
 import { OpenMessagingDialogOptions } from './types';
 import {islandTree} from '../../../theme/DfrntMantineProvider';
 import {createDialogHost} from '../../../utils/reactDialogHost';
+import {getSession} from '../../../session';
 
 // Get current staff info from global variables
 declare const ContactID: number;
@@ -19,8 +20,8 @@ const host = createDialogHost<void, void>({
             onClose={() => close()}
             showToast={showToast}
             currentStaffId={currentStaffId()}
-            currentStaffName={typeof FullName !== 'undefined' ? FullName : 'Unknown'}
-            timeZone={typeof TimeZone !== 'undefined' ? TimeZone : 'UTC'}
+            currentStaffName={getSession().fullName || 'Unknown'}
+            timeZone={getSession().timeZone || 'UTC'}
         />
     ),
 });

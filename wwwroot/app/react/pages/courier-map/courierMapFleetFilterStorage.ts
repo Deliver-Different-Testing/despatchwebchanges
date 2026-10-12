@@ -7,14 +7,14 @@
  * ContactID.
  */
 
-import {ContactID} from '../../../contants';
+import {getContactId} from '../../session';
 
-const STORAGE_KEY = `courierMapFleetFilter-${ContactID}`;
+const STORAGE_KEY = () => `courierMapFleetFilter-${getContactId()}`;
 
 /** [] means "all fleets" — the same default the page already uses when nothing is selected. */
 export function loadSelectedFleetIds(): number[] {
     try {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = localStorage.getItem(STORAGE_KEY());
         if (!saved) return [];
 
         const parsed = JSON.parse(saved);
@@ -26,7 +26,7 @@ export function loadSelectedFleetIds(): number[] {
 
 export function saveSelectedFleetIds(ids: number[]): void {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+        localStorage.setItem(STORAGE_KEY(), JSON.stringify(ids));
     } catch {
         // localStorage may be unavailable (private browsing); silently ignore.
     }

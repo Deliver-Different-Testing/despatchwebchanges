@@ -10,7 +10,7 @@ import {PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-control
 import {SegmentedToggle} from '../../../components/common/segmented-toggle';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 import {useOverviewJobs} from '../../../hooks/useOverviewApi';
-import {ContactID} from '../../../../contants';
+import {getContactId} from '../../../session';
 import {MAX_OVERVIEW_PANEL_DAYS, clampOverviewPanelRange} from '../lib/overviewPanelRange';
 
 /*
@@ -19,10 +19,10 @@ import {MAX_OVERVIEW_PANEL_DAYS, clampOverviewPanelRange} from '../lib/overviewP
  * notice losing is persisted. Dispatch-specific keys throughout: the Overview
  * page's own preferences were set at a completely different width.
  */
-const STATUS_KEY = `dispatchOverviewStatus-${ContactID}`;
-const SORT_KEY = `dispatchOverviewSort-${ContactID}`;
-const LIMIT_KEY = `dispatchOverviewLimit-${ContactID}`;
-const SEARCH_KEY = `dispatchOverviewSearch-${ContactID}`;
+const STATUS_KEY = () => `dispatchOverviewStatus-${getContactId()}`;
+const SORT_KEY = () => `dispatchOverviewSort-${getContactId()}`;
+const LIMIT_KEY = () => `dispatchOverviewLimit-${getContactId()}`;
+const SEARCH_KEY = () => `dispatchOverviewSearch-${getContactId()}`;
 
 /** The three status groups the `/overview` endpoint buckets jobs into. */
 type StatusGroup = 'active' | 'inactive' | 'completed';
@@ -63,22 +63,22 @@ export const OverviewDeliveriesBox: React.FC<OverviewDeliveriesBoxProps> = ({
     headerSlot,
 }) => {
     const [statusGroup, setStatusGroup] = useLocalStorage<StatusGroup>({
-        key: STATUS_KEY,
+        key: STATUS_KEY(),
         defaultValue: 'active',
         getInitialValueInEffect: false,
     });
     const [sort, setSort] = useLocalStorage<SortState>({
-        key: SORT_KEY,
+        key: SORT_KEY(),
         defaultValue: {column: 'jobName', direction: 'asc'},
         getInitialValueInEffect: false,
     });
     const [limit, setLimit] = useLocalStorage<number>({
-        key: LIMIT_KEY,
+        key: LIMIT_KEY(),
         defaultValue: 20,
         getInitialValueInEffect: false,
     });
     const [search, setSearch] = useSessionStorage<string>({
-        key: SEARCH_KEY,
+        key: SEARCH_KEY(),
         defaultValue: '',
         getInitialValueInEffect: false,
     });

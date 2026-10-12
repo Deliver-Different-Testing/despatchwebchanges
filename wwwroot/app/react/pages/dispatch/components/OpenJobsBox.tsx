@@ -10,7 +10,7 @@ import {PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-control
 import {SegmentedToggle} from '../../../components/common/segmented-toggle';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 import {useOverviewOpenJobs} from '../../../hooks/useOverviewApi';
-import {ContactID} from '../../../../contants';
+import {getContactId} from '../../../session';
 import {MAX_OVERVIEW_PANEL_DAYS, clampOverviewPanelRange} from '../lib/overviewPanelRange';
 
 /*
@@ -18,9 +18,9 @@ import {MAX_OVERVIEW_PANEL_DAYS, clampOverviewPanelRange} from '../lib/overviewP
  * the Overview page's own view/sort/paging choices were made at a different width
  * for a different surface.
  */
-const VIEW_MODE_KEY = `dispatchOpenJobsViewMode-${ContactID}`;
-const SORT_KEY = `dispatchOpenJobsSort-${ContactID}`;
-const LIMIT_KEY = `dispatchOpenJobsLimit-${ContactID}`;
+const VIEW_MODE_KEY = () => `dispatchOpenJobsViewMode-${getContactId()}`;
+const SORT_KEY = () => `dispatchOpenJobsSort-${getContactId()}`;
+const LIMIT_KEY = () => `dispatchOpenJobsLimit-${getContactId()}`;
 
 export interface OpenJobsBoxProps {
     /** Selected dispatch view ids; jobs are scoped to these, matching the main Jobs List. */
@@ -51,17 +51,17 @@ export const OpenJobsBox: React.FC<OpenJobsBoxProps> = ({
     headerSlot,
 }) => {
     const [viewMode, setViewMode] = useLocalStorage<OpenJobsViewMode>({
-        key: VIEW_MODE_KEY,
+        key: VIEW_MODE_KEY(),
         defaultValue: 'table',
         getInitialValueInEffect: false,
     });
     const [sort, setSort] = useLocalStorage<SortState>({
-        key: SORT_KEY,
+        key: SORT_KEY(),
         defaultValue: {column: 'reference', direction: 'asc'},
         getInitialValueInEffect: false,
     });
     const [limit, setLimit] = useLocalStorage<number>({
-        key: LIMIT_KEY,
+        key: LIMIT_KEY(),
         defaultValue: 10,
         getInitialValueInEffect: false,
     });

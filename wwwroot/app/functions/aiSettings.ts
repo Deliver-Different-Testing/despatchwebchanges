@@ -1,8 +1,8 @@
-import {ContactID} from '../contants';
+import {getContactId} from '../react/session';
 import {getPreference, savePreference} from '../react/services/preferencesApi';
 
-const STORAGE_KEY = `aiEnabled_${ContactID}`;
-const AUTO_OPEN_STORAGE_KEY = `aiAutoOpen_${ContactID}`;
+const storageKey = () => `aiEnabled_${getContactId()}`;
+const autoOpenStorageKey = () => `aiAutoOpen_${getContactId()}`;
 
 /** StaffPreference key: source of truth is the server, localStorage is a synchronous read-through cache. */
 const AUTO_MATE_PREFERENCE_KEY = 'AutoMate';
@@ -17,7 +17,7 @@ interface AutoMatePreference {
  * the Settings page. Defaults to false: users have to turn it on themselves.
  */
 export function isAiEnabled(): boolean {
-    return localStorage.getItem(STORAGE_KEY) === 'true';
+    return localStorage.getItem(storageKey()) === 'true';
 }
 
 /**
@@ -26,7 +26,7 @@ export function isAiEnabled(): boolean {
  * false, preserving the click-to-open behaviour.
  */
 export function isAiAutoOpenEnabled(): boolean {
-    return localStorage.getItem(AUTO_OPEN_STORAGE_KEY) === 'true';
+    return localStorage.getItem(autoOpenStorageKey()) === 'true';
 }
 
 /**
@@ -43,12 +43,12 @@ function persistAutoMateToServer(): void {
 }
 
 export function setAiEnabled(enabled: boolean): void {
-    localStorage.setItem(STORAGE_KEY, String(enabled));
+    localStorage.setItem(storageKey(), String(enabled));
     persistAutoMateToServer();
 }
 
 export function setAiAutoOpenEnabled(enabled: boolean): void {
-    localStorage.setItem(AUTO_OPEN_STORAGE_KEY, String(enabled));
+    localStorage.setItem(autoOpenStorageKey(), String(enabled));
     persistAutoMateToServer();
 }
 
@@ -68,8 +68,8 @@ export async function loadAutoMateFromServer(): Promise<void> {
 
     try {
         const payload = JSON.parse(json) as AutoMatePreference;
-        localStorage.setItem(STORAGE_KEY, String(payload.aiEnabled));
-        localStorage.setItem(AUTO_OPEN_STORAGE_KEY, String(payload.aiAutoOpen));
+        localStorage.setItem(storageKey(), String(payload.aiEnabled));
+        localStorage.setItem(autoOpenStorageKey(), String(payload.aiAutoOpen));
     } catch (error) {
         console.error('Failed to parse Auto-mate settings from server:', error);
     }

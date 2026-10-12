@@ -4,12 +4,12 @@
  * Mirrors `pages/dispatch/lib/dispatchFilters.ts`'s `DATE_FILTER_KEY`/`loadDateFilter`.
  */
 
-import {ContactID} from '../../../../contants';
+import {getContactId} from '../../../session';
 import {AppPage as LegacyAppPage} from '../../../../enums/app-pages.enum';
 import {loadDateFilterFrom, type StoredDateFilter} from '../../../utils/dateFilterStorage';
 
-export const DATE_FILTER_KEY = `dateFilter-${LegacyAppPage.Domestic}-${ContactID}`;
+export const DATE_FILTER_KEY = () => `dateFilter-${LegacyAppPage.Domestic}-${getContactId()}`;
 
 export function loadNationwideDateFilter(timeZone?: string): StoredDateFilter {
-    return loadDateFilterFrom(DATE_FILTER_KEY, {timeZone});
+    return loadDateFilterFrom(DATE_FILTER_KEY(), {timeZone});
 }

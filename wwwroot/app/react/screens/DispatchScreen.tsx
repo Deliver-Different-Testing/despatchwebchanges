@@ -50,7 +50,7 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
     }), [contactId]);
     const defaultLayout = useMemo(() => createDefaultDispatchLayout(), []);
 
-    const [dateFilter, setDateFilter] = useDateFilter(DATE_FILTER_KEY, loadDateFilter);
+    const [dateFilter, setDateFilter] = useDateFilter(DATE_FILTER_KEY(), loadDateFilter);
     const dateFilterRef = useRef(dateFilter);
     dateFilterRef.current = dateFilter;
 
@@ -70,7 +70,7 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
 
     const {openSettings} = useDashboardSettings({
         title: 'Dispatch Dashboard Settings',
-        intervalKeys: {jobs: REFRESH_INTERVAL_KEY, driverLocations: DRIVER_LOCATION_REFRESH_KEY, tasks: TASK_REFRESH_KEY},
+        intervalKeys: {jobs: REFRESH_INTERVAL_KEY(), driverLocations: DRIVER_LOCATION_REFRESH_KEY(), tasks: TASK_REFRESH_KEY()},
         showCourierDisplayMode: true,
         isUsCustomer,
         onRefreshIntervals: (intervals) => bridgeRef.current?.updateRefreshIntervals(intervals),

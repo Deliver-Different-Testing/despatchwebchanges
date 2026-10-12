@@ -53,3 +53,10 @@ it('shows an error state with retry on other failures, without redirecting', asy
     expect(redirect).not.toHaveBeenCalled();
     expect(screen.queryByText('app')).not.toBeInTheDocument();
 });
+
+it('renders children straight away from a bootstrap-fetched context without a second request', () => {
+    renderWithProviders(<SessionGate initialContext={dto}><div>app</div></SessionGate>);
+
+    expect(screen.getByText('app')).toBeInTheDocument();
+    expect(get).not.toHaveBeenCalled();
+});

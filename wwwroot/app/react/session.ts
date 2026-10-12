@@ -57,31 +57,26 @@ const fromContext = (c: SessionContextDto): Session => ({
     npMapCenter: c.npMapCenter ?? null,
 });
 
+const UNSET: Session = {
+    contactId: 0,
+    firstName: '',
+    fullName: '',
+    dispatcher: '',
+    timeZone: '',
+    isNetworkPartner: false,
+    clientInternal: false,
+    visibleFeatures: null,
+    isUsCustomer: undefined,
+    currencyCode: '',
+    npMapCenter: null,
+};
+
 /**
- * The single reader of session data: the fetched /api/context store first, then the Razor-injected
- * globals. Reads at call time (never cached) so values can be set after import.
+ * The single reader of session data: the fetched /api/context store. Reads at call time (never
+ * cached) so values can be set after import; before it is set, returns inert defaults.
  */
 export function getSession(): Session {
-    // Until the Angular shell is cut over, islands it hosts still rely on the Razor globals.
-    if (fetchedContext) return fromContext(fetchedContext);
-    // Theme modules are also imported by node-environment tests with no window.
-    const w: Window | undefined = typeof window === 'undefined' ? undefined : window;
-    const granted = w?.VisibleFeatures;
-    return {
-        contactId: w?.ContactID || 0,
-        firstName: w?.FirstName || '',
-        fullName: w?.FullName || '',
-        dispatcher: w?.Dispatcher || '',
-        timeZone: w?.TimeZone || '',
-        isNetworkPartner: w?.IsNetworkPartner === true,
-        clientInternal: w?.ClientInternal ?? false,
-        // A non-array value can only mean the global was mis-emitted; failing open
-        // keeps a serialization bug from taking the nav away from everyone.
-        visibleFeatures: Array.isArray(granted) ? granted : null,
-        isUsCustomer: w?.serverConfig?.isUSCustomer,
-        currencyCode: w?.CurrencyCode || '',
-        npMapCenter: w?.serverConfig?.npMapCenter ?? null,
-    };
+    return fetchedContext ? fromContext(fetchedContext) : UNSET;
 }
 
 export const getContactId = (): number => getSession().contactId;

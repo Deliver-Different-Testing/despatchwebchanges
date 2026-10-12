@@ -37,8 +37,8 @@ import {
 
 describe('dateUtils', () => {
     beforeEach(() => {
-        delete (window as any).TimeZone;
-        delete (window as any).serverConfig;
+        (window as any).TimeZone = undefined;
+        (window as any).serverConfig = undefined;
     });
 
     afterEach(() => {

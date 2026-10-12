@@ -67,7 +67,7 @@ describe('MetricsGrid', () => {
             expect(screen.getByText('Your pay')).toBeInTheDocument();
             expect(screen.queryByText('Pricing')).not.toBeInTheDocument();
         } finally {
-            delete (window as any).IsNetworkPartner;
+            (window as any).IsNetworkPartner = undefined;
         }
     });
 

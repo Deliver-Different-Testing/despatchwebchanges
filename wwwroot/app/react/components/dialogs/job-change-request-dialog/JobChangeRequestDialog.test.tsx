@@ -162,7 +162,7 @@ describe('JobChangeRequestDialog', () => {
 
     describe('address fields', () => {
         afterEach(() => {
-            delete (window as any).serverConfig;
+            (window as any).serverConfig = undefined;
         });
 
         describe('NZ tenant', () => {

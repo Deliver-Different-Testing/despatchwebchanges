@@ -32,7 +32,7 @@ describe('dispatchFilters', () => {
         });
 
         it('returns ids of stored selected views', () => {
-            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([
+            localStorage.setItem(SELECTED_VIEWS_KEY(), JSON.stringify([
                 {id: 11, selected: true},
                 {id: 22, selected: true},
             ]));
@@ -40,7 +40,7 @@ describe('dispatchFilters', () => {
         });
 
         it('drops views explicitly marked unselected', () => {
-            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([
+            localStorage.setItem(SELECTED_VIEWS_KEY(), JSON.stringify([
                 {id: 11, selected: true},
                 {id: 22, selected: false},
             ]));
@@ -48,7 +48,7 @@ describe('dispatchFilters', () => {
         });
 
         it('returns [] on malformed storage', () => {
-            localStorage.setItem(SELECTED_VIEWS_KEY, 'not json');
+            localStorage.setItem(SELECTED_VIEWS_KEY(), 'not json');
             expect(loadSelectedViewIds()).toEqual([]);
         });
     });
@@ -59,7 +59,7 @@ describe('dispatchFilters', () => {
         });
 
         it('returns full selected view objects including centre coordinates', () => {
-            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([
+            localStorage.setItem(SELECTED_VIEWS_KEY(), JSON.stringify([
                 {id: 11, name: 'North', centerLatitude: -36.8, centerLongitude: 174.7, selected: true},
                 {id: 22, name: 'South', centerLatitude: -43.5, centerLongitude: 172.6, selected: false},
             ]));
@@ -69,7 +69,7 @@ describe('dispatchFilters', () => {
         });
 
         it('returns [] on malformed storage', () => {
-            localStorage.setItem(SELECTED_VIEWS_KEY, 'not json');
+            localStorage.setItem(SELECTED_VIEWS_KEY(), 'not json');
             expect(loadSelectedViews()).toEqual([]);
         });
     });
@@ -82,7 +82,7 @@ describe('dispatchFilters', () => {
         });
 
         it('recomputes the end to now+24h when start is epoch (all time)', () => {
-            localStorage.setItem(DATE_FILTER_KEY, JSON.stringify({
+            localStorage.setItem(DATE_FILTER_KEY(), JSON.stringify({
                 startDate: dayjs(0).toISOString(),
                 endDate: dayjs('2020-01-01').toISOString(),
                 useTime: false,
@@ -93,7 +93,7 @@ describe('dispatchFilters', () => {
         });
 
         it('round-trips a concrete stored range', () => {
-            localStorage.setItem(DATE_FILTER_KEY, JSON.stringify({
+            localStorage.setItem(DATE_FILTER_KEY(), JSON.stringify({
                 startDate: '2025-02-01T00:00:00.000Z',
                 endDate: '2025-02-28T00:00:00.000Z',
                 useTime: true,
@@ -113,40 +113,40 @@ describe('dispatchFilters', () => {
         });
 
         it('converts stored seconds to ms', () => {
-            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
-            localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY, '60');
-            localStorage.setItem(TASK_REFRESH_KEY, '90');
+            localStorage.setItem(REFRESH_INTERVAL_KEY(), '30');
+            localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY(), '60');
+            localStorage.setItem(TASK_REFRESH_KEY(), '90');
             expect(loadRefreshIntervals()).toEqual({jobsMs: 30000, driverLocationsMs: 60000, tasksMs: 90000});
         });
 
         it('reads a stored Tasks interval independently of the job list', () => {
-            localStorage.setItem(REFRESH_INTERVAL_KEY, '0');
-            localStorage.setItem(TASK_REFRESH_KEY, '120');
+            localStorage.setItem(REFRESH_INTERVAL_KEY(), '0');
+            localStorage.setItem(TASK_REFRESH_KEY(), '120');
             expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: 120000});
         });
 
         it('falls back to the 60s default when the Tasks key is unset and the job list is off', () => {
-            localStorage.setItem(REFRESH_INTERVAL_KEY, '0');
-            // No TASK_REFRESH_KEY written yet.
+            localStorage.setItem(REFRESH_INTERVAL_KEY(), '0');
+            // No TASK_REFRESH_KEY() written yet.
             expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: 60000});
         });
 
         it('seeds the Tasks interval from the job list on first run (Tasks key unset)', () => {
-            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
-            // No TASK_REFRESH_KEY written yet.
+            localStorage.setItem(REFRESH_INTERVAL_KEY(), '30');
+            // No TASK_REFRESH_KEY() written yet.
             expect(loadRefreshIntervals()).toEqual({jobsMs: 30000, driverLocationsMs: false, tasksMs: 30000});
         });
 
         it('keeps an explicit Tasks "Off" (stored 0) even when the job list is on', () => {
-            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
-            localStorage.setItem(TASK_REFRESH_KEY, '0');
+            localStorage.setItem(REFRESH_INTERVAL_KEY(), '30');
+            localStorage.setItem(TASK_REFRESH_KEY(), '0');
             expect(loadRefreshIntervals()).toEqual({jobsMs: 30000, driverLocationsMs: false, tasksMs: false});
         });
 
         it('treats 0 / Disabled as false', () => {
-            localStorage.setItem(REFRESH_INTERVAL_KEY, '0');
-            localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY, 'not a number');
-            localStorage.setItem(TASK_REFRESH_KEY, '0');
+            localStorage.setItem(REFRESH_INTERVAL_KEY(), '0');
+            localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY(), 'not a number');
+            localStorage.setItem(TASK_REFRESH_KEY(), '0');
             expect(loadRefreshIntervals()).toEqual({jobsMs: false, driverLocationsMs: false, tasksMs: false});
         });
 
@@ -166,7 +166,7 @@ describe('dispatchFilters', () => {
 
         it('marks an explicitly cleared selection so it survives a reload', () => {
             persistSelectedViews([]);
-            expect(localStorage.getItem(SELECTED_VIEWS_KEY)).toBe('[]');
+            expect(localStorage.getItem(SELECTED_VIEWS_KEY())).toBe('[]');
             expect(loadSelectedViewIds()).toEqual([]);
         });
     });
@@ -209,7 +209,7 @@ describe('dispatchFilters', () => {
 
     describe('loadDispatchFilters', () => {
         it('combines view ids and date range', () => {
-            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([{id: 5, selected: true}]));
+            localStorage.setItem(SELECTED_VIEWS_KEY(), JSON.stringify([{id: 5, selected: true}]));
             const filters = loadDispatchFilters();
             expect(filters.despatchViewIds).toEqual([5]);
             expect(filters.startDate).toBeDefined();

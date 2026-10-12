@@ -1,4 +1,5 @@
 import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
+import {getContactId} from '../../session';
 import {Box, Card, Collapse, Flex, Group, TextInput} from '@mantine/core';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../components/common/panel-controls';
 import {useQueryClient} from '@tanstack/react-query';
@@ -30,7 +31,7 @@ import type {
 
 // Window.ReactAiAssistant type is declared in wwwroot/types/global.d.ts
 
-const OVERVIEW_LIMIT_KEY = `overviewJobLimitDisplay-${ContactID}`;
+const OVERVIEW_LIMIT_KEY = () => `overviewJobLimitDisplay-${getContactId()}`;
 
 function loadCollapseState(cardName: string): boolean {
     try {
@@ -70,7 +71,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     const [sort, setSort] = useState<TableSort>({column: 'jobName', direction: 'asc'});
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(() => {
-        const saved = localStorage.getItem(OVERVIEW_LIMIT_KEY);
+        const saved = localStorage.getItem(OVERVIEW_LIMIT_KEY());
         return saved ? parseInt(saved, 10) : 20;
     });
     const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(() =>
@@ -271,7 +272,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
     const handleLimitChange = useCallback((newLimit: number) => {
         setLimit(newLimit);
-        localStorage.setItem(OVERVIEW_LIMIT_KEY, `${newLimit}`);
+        localStorage.setItem(OVERVIEW_LIMIT_KEY(), `${newLimit}`);
         setPage(1);
     }, []);
 

@@ -1,5 +1,5 @@
 import dayjs, {Dayjs} from 'dayjs';
-import {ContactID} from '../../../../contants';
+import {getContactId} from '../../../session';
 import {AppPage as LegacyAppPage} from '../../../../enums/app-pages.enum';
 import setDateFilterDefaults from '../../../../functions/setDateFilterDefaults';
 import type {DfrntPageViewModel} from '../../../../interfaces/dfrnt-page-view-model.interface';
@@ -22,11 +22,11 @@ export interface DispatchFilters {
     useTime?: boolean;
 }
 
-export const SELECTED_VIEWS_KEY = `selectedViews-${LegacyAppPage.Dispatch}-${ContactID}`;
-export const DATE_FILTER_KEY = `dateFilter-${LegacyAppPage.Dispatch}-${ContactID}`;
-export const REFRESH_INTERVAL_KEY = `refreshInterval-${LegacyAppPage.Dispatch}-${ContactID}`;
-export const DRIVER_LOCATION_REFRESH_KEY = `driverLocationRefreshInterval-${LegacyAppPage.Dispatch}-${ContactID}`;
-export const TASK_REFRESH_KEY = `taskRefreshInterval-${LegacyAppPage.Dispatch}-${ContactID}`;
+export const SELECTED_VIEWS_KEY = () => `selectedViews-${LegacyAppPage.Dispatch}-${getContactId()}`;
+export const DATE_FILTER_KEY = () => `dateFilter-${LegacyAppPage.Dispatch}-${getContactId()}`;
+export const REFRESH_INTERVAL_KEY = () => `refreshInterval-${LegacyAppPage.Dispatch}-${getContactId()}`;
+export const DRIVER_LOCATION_REFRESH_KEY = () => `driverLocationRefreshInterval-${LegacyAppPage.Dispatch}-${getContactId()}`;
+export const TASK_REFRESH_KEY = () => `taskRefreshInterval-${LegacyAppPage.Dispatch}-${getContactId()}`;
 
 export interface DispatchRefreshIntervals {
     jobsMs: number | false;
@@ -65,10 +65,10 @@ function hasStoredKey(key: string): boolean {
  * (a stored 0) — that choice sticks.
  */
 export function loadRefreshIntervals(): DispatchRefreshIntervals {
-    const jobs = readIntervalSeconds(REFRESH_INTERVAL_KEY);
-    const driver = readIntervalSeconds(DRIVER_LOCATION_REFRESH_KEY);
-    const tasks = hasStoredKey(TASK_REFRESH_KEY)
-        ? readIntervalSeconds(TASK_REFRESH_KEY)
+    const jobs = readIntervalSeconds(REFRESH_INTERVAL_KEY());
+    const driver = readIntervalSeconds(DRIVER_LOCATION_REFRESH_KEY());
+    const tasks = hasStoredKey(TASK_REFRESH_KEY())
+        ? readIntervalSeconds(TASK_REFRESH_KEY())
         : (jobs > 0 ? jobs : DEFAULT_TASK_REFRESH_SECONDS);
     return {
         jobsMs: jobs > 0 ? jobs * 1000 : false,
@@ -83,7 +83,7 @@ export function loadRefreshIntervals(): DispatchRefreshIntervals {
  * nothing for driver locations and an empty view scope for the job list).
  */
 export function loadSelectedViewIds(): number[] {
-    return loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY);
+    return loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY());
 }
 
 /**
@@ -92,12 +92,12 @@ export function loadSelectedViewIds(): number[] {
  * recentre/zoom on the selected region (V1 `updateMapForSelectedViews`).
  */
 export function loadSelectedViews(): DfrntPageViewModel[] {
-    return loadSelectedViewsFrom(SELECTED_VIEWS_KEY);
+    return loadSelectedViewsFrom(SELECTED_VIEWS_KEY());
 }
 
 /** True once the dispatcher has made (or explicitly cleared) a view selection. */
 export function hasStoredViewSelection(): boolean {
-    return hasStoredViewSelectionAt(SELECTED_VIEWS_KEY);
+    return hasStoredViewSelectionAt(SELECTED_VIEWS_KEY());
 }
 
 /**
@@ -107,7 +107,7 @@ export function hasStoredViewSelection(): boolean {
  * empty selection is what makes "cleared" stick across reloads.
  */
 export function persistSelectedViews(views: DfrntPageViewModel[]): void {
-    persistSelectedViewsTo(SELECTED_VIEWS_KEY, views);
+    persistSelectedViewsTo(SELECTED_VIEWS_KEY(), views);
 }
 
 /**
@@ -117,7 +117,7 @@ export function persistSelectedViews(views: DfrntPageViewModel[]): void {
  * `setDateFilterDefaults()` when nothing is stored or parsing fails.
  */
 export function loadDateFilter(): {startDate: Dayjs; endDate: Dayjs; useTime: boolean} {
-    return loadDateFilterFrom(DATE_FILTER_KEY);
+    return loadDateFilterFrom(DATE_FILTER_KEY());
 }
 
 /** Build the initial filters from persisted view selection + date range. */

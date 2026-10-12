@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import {getContactId} from '../../session';
 import {Box, Card, Stack, Tabs} from '@mantine/core';
 import {useFleetOptions} from '../../hooks/useDriverManagementApi';
 import {DriverManagementPageProps} from '../../interfaces';
@@ -20,7 +21,7 @@ enum DriverManagementTabs {
     DriverEarnings = 5,
 }
 
-const TAB_KEY = `lastActiveTab-DriverManagement-${typeof ContactID !== 'undefined' ? ContactID : 0}`;
+const TAB_KEY = () => `lastActiveTab-DriverManagement-${getContactId()}`;
 
 /** Ordered to match DriverManagementTabs — the index is the stored value. */
 const TAB_LABELS = [
@@ -34,7 +35,7 @@ const TAB_LABELS = [
 
 function getInitialTab(): number {
     try {
-        const stored = localStorage.getItem(TAB_KEY);
+        const stored = localStorage.getItem(TAB_KEY());
         if (stored) return parseInt(stored, 10);
     } catch { /* ignore */ }
     return 0;
@@ -54,7 +55,7 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
         if (value == null) return;
         const newValue = Number(value);
         setSelectedTab(newValue);
-        try { localStorage.setItem(TAB_KEY, newValue.toString()); } catch { /* ignore */ }
+        try { localStorage.setItem(TAB_KEY(), newValue.toString()); } catch { /* ignore */ }
     };
 
     // Register refresh callback for AngularJS bridge

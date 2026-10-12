@@ -118,7 +118,7 @@ describe('SearchCriteriaPanel', () => {
             expect(screen.queryByRole('button', {name: 'Client report'})).not.toBeInTheDocument();
             expect(screen.queryByRole('button', {name: 'Price detail report'})).not.toBeInTheDocument();
         } finally {
-            delete (window as any).IsNetworkPartner;
+            (window as any).IsNetworkPartner = undefined;
         }
     });
 

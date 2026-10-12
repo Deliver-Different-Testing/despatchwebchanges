@@ -41,6 +41,7 @@ jest.mock('../services/toastService', () => ({
     toastService: {showToast: jest.fn(), showErrorToast: jest.fn(), showSuccessToast: jest.fn()},
 }));
 jest.mock('../session', () => ({
+    getContactId: () => 42, getTimeZone: () => 'Pacific Standard Time',
     getSession: () => ({contactId: 42, isUsCustomer: true, timeZone: 'Pacific Standard Time'}),
 }));
 

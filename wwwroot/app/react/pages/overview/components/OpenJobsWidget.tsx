@@ -6,10 +6,10 @@ import {OpenJobsList} from '../../../components/common/open-jobs-list';
 import {PanelHeader} from '../../../components/common/panel-header';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {IOpenJobResponse, TableSort} from '../OverviewPage.interfaces';
-import {ContactID} from "../../../../contants";
+import {getContactId} from '../../../session';
 
-const OPEN_JOBS_VIEW_MODE_KEY = `openJobsViewMode_${ContactID}`;
-const OPEN_JOBS_LIMIT_KEY = `openJobsTableViewLimit${ContactID}`;
+const OPEN_JOBS_VIEW_MODE_KEY = () => `openJobsViewMode_${getContactId()}`;
+const OPEN_JOBS_LIMIT_KEY = () => `openJobsTableViewLimit${getContactId()}`;
 
 interface OpenJobsWidgetProps {
     openJobs: IOpenJobResponse[];
@@ -45,12 +45,12 @@ function saveCollapseState(cardName: string, isCollapsed: boolean): void {
 export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoading}) => {
     const [isCollapsed, setIsCollapsed] = useState(() => loadCollapseState('openJobs'));
     const [isTableView, setIsTableView] = useState(
-        () => localStorage.getItem(OPEN_JOBS_VIEW_MODE_KEY) === 'table',
+        () => localStorage.getItem(OPEN_JOBS_VIEW_MODE_KEY()) === 'table',
     );
     const [tableSort, setTableSort] = useState<TableSort>({column: 'reference', direction: 'asc'});
     const [tablePage, setTablePage] = useState(1);
     const [tableLimit, setTableLimit] = useState(() => {
-        const saved = localStorage.getItem(OPEN_JOBS_LIMIT_KEY);
+        const saved = localStorage.getItem(OPEN_JOBS_LIMIT_KEY());
         return saved ? parseInt(saved, 10) : 5;
     });
 
@@ -64,13 +64,13 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
     // Sets rather than flips: the control is a radio group, so re-picking the
     // active view must be a no-op, not a switch to the other one.
     const selectViewMode = useCallback((table: boolean) => {
-        localStorage.setItem(OPEN_JOBS_VIEW_MODE_KEY, table ? 'table' : 'card');
+        localStorage.setItem(OPEN_JOBS_VIEW_MODE_KEY(), table ? 'table' : 'card');
         setIsTableView(table);
     }, []);
 
     const handleLimitChange = useCallback((newLimit: number) => {
         setTableLimit(newLimit);
-        localStorage.setItem(OPEN_JOBS_LIMIT_KEY, `${newLimit}`);
+        localStorage.setItem(OPEN_JOBS_LIMIT_KEY(), `${newLimit}`);
         setTablePage(1);
     }, []);
 

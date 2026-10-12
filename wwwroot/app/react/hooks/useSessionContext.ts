@@ -4,15 +4,19 @@ import {setSessionContext, SessionContextDto} from '../session';
 
 export const sessionContextKey = ['session', 'context'] as const;
 
-/** Publishes into the session store in the queryFn so getSession() is populated before children render. */
-export function useSessionContext() {
+/** Fetches the session and publishes it into the session store so getSession() is populated. */
+export async function fetchSessionContext(): Promise<SessionContextDto> {
+    const context = await apiClient.get<SessionContextDto>('/api/context');
+    setSessionContext(context);
+    return context;
+}
+
+/** `initialData` is a context the bootstrap already fetched (and published), so no second request is made. */
+export function useSessionContext(initialData?: SessionContextDto) {
     return useQuery<SessionContextDto, ApiError>({
         queryKey: sessionContextKey,
-        queryFn: async () => {
-            const context = await apiClient.get<SessionContextDto>('/api/context');
-            setSessionContext(context);
-            return context;
-        },
+        queryFn: fetchSessionContext,
+        initialData,
         retry: false,
         staleTime: Infinity,
     });

@@ -276,7 +276,7 @@ class RouterConfig {
                         refreshDataTimeSpan: (dateFilterData: IDateFilterData) => {
                             ctrl.dateFilterData = dateFilterData;
                             try {
-                                localStorage.setItem(DISPATCH_DATE_FILTER_KEY, JSON.stringify(dateFilterData));
+                                localStorage.setItem(DISPATCH_DATE_FILTER_KEY(), JSON.stringify(dateFilterData));
                             } catch { /* ignore */ }
                             pushFilters();
                         },
@@ -331,9 +331,9 @@ class RouterConfig {
                             // On first run the Tasks dropdown inherits the job-list
                             // cadence (matches loadRefreshIntervals) so the dialog
                             // reflects what the panel is actually doing.
-                            const taskSeedSeconds = localStorage.getItem(DISPATCH_TASK_REFRESH_KEY) != null
-                                ? readIntervalSeconds(DISPATCH_TASK_REFRESH_KEY)
-                                : readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY);
+                            const taskSeedSeconds = localStorage.getItem(DISPATCH_TASK_REFRESH_KEY()) != null
+                                ? readIntervalSeconds(DISPATCH_TASK_REFRESH_KEY())
+                                : readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY());
                             const seedCourierDisplayMode = async (): Promise<CourierDisplayMode> => {
                                 try {
                                     const raw = await getPreference(StaffPreferenceKey.DispatchCourierDisplayMode);
@@ -352,8 +352,8 @@ class RouterConfig {
                                         showTaskRefresh: true,
                                         showCourierDisplayMode: true,
                                     },
-                                    {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY), text: ''},
-                                    {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY), text: ''},
+                                    {id: readIntervalSeconds(DISPATCH_REFRESH_INTERVAL_KEY()), text: ''},
+                                    {id: readIntervalSeconds(DISPATCH_DRIVER_LOC_REFRESH_KEY()), text: ''},
                                     {id: taskSeedSeconds, text: ''},
                                     await seedCourierDisplayMode(),
                                 );
@@ -363,13 +363,13 @@ class RouterConfig {
                                 // storage; React Query uses ms, 0 = off).
                                 const toMs = (secs?: number) => (secs && secs > 0 ? secs * 1000 : false);
                                 if (result.selectedRefreshInterval) {
-                                    localStorage.setItem(DISPATCH_REFRESH_INTERVAL_KEY, String(result.selectedRefreshInterval.id));
+                                    localStorage.setItem(DISPATCH_REFRESH_INTERVAL_KEY(), String(result.selectedRefreshInterval.id));
                                 }
                                 if (result.selectedDriverLocationRefreshInterval) {
-                                    localStorage.setItem(DISPATCH_DRIVER_LOC_REFRESH_KEY, String(result.selectedDriverLocationRefreshInterval.id));
+                                    localStorage.setItem(DISPATCH_DRIVER_LOC_REFRESH_KEY(), String(result.selectedDriverLocationRefreshInterval.id));
                                 }
                                 if (result.selectedTaskRefreshInterval) {
-                                    localStorage.setItem(DISPATCH_TASK_REFRESH_KEY, String(result.selectedTaskRefreshInterval.id));
+                                    localStorage.setItem(DISPATCH_TASK_REFRESH_KEY(), String(result.selectedTaskRefreshInterval.id));
                                 }
                                 window.ReactDispatch?.updateRefreshIntervals({
                                     jobsMs: toMs(result.selectedRefreshInterval?.id),
@@ -635,7 +635,7 @@ class RouterConfig {
                         refreshDataTimeSpan: (dateFilterData: IDateFilterData) => {
                             ctrl.dateFilterData = dateFilterData;
                             try {
-                                localStorage.setItem(NATIONWIDE_DATE_FILTER_KEY, JSON.stringify(dateFilterData));
+                                localStorage.setItem(NATIONWIDE_DATE_FILTER_KEY(), JSON.stringify(dateFilterData));
                             } catch { /* ignore */ }
                             pushFilters();
                         },

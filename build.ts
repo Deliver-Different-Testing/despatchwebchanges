@@ -28,50 +28,7 @@ const mantineBarrels: Record<string, {global: string; exports: string[]}> = Obje
     ])
 );
 
-type EntryPointName =
-    'vendor-core'
-    | 'vendor-plugins'
-    | 'vendor-react'
-    | 'app'
-    | 'taskDashboardReact'
-    | 'driverManagementReact'
-    | 'settingsReact'
-    | 'composeEmailDialogReact'
-    | 'courierMapReact'
-    | 'dateRangeDialogReact'
-    | 'priceBreakdownDialogReact'
-    | 'splitPricingBreakdownDialogReact'
-    | 'dashboardSettingsDialogReact'
-    | 'autoCompleteDialogReact'
-    | 'voidJobConfirmationDialogReact'
-    | 'editAfterhoursDialogReact'
-    | 'editAddressDialogReact'
-    | 'editDateTimeDialogReact'
-    | 'flightAgentConfirmationDialogReact'
-    | 'flightDetailsDialogReact'
-    | 'appShellReact'
-    | 'errorPageReact'
-    | 'recurringJobsReact'
-    | 'accessorialChargesDialogReact'
-    | 'bulkPriceUploadDialogReact'
-    | 'messagingDialogReact'
-    | 'sendPodDialogReact'
-    | 'aiAssistantDialogReact'
-    | 'createJobDialogReact'
-    | 'swapPodsDialogReact'
-    | 'restoreConfirmDialogReact'
-    | 'selectDialogReact'
-    | 'editParcelDimensionsDialogReact'
-    | 'simplePriceEditDialogReact'
-    | 'jobFileUploadDialogReact'
-    | 'overviewReact'
-    | 'jobListReact'
-    | 'currentWorkJobListReact'
-    | 'jobDetailsReact'
-    | 'jobSearchReact'
-    | 'nationwideReact'
-    | 'dispatchReact'
-    | 'dispatchDialogReact';
+type EntryPointName = 'vendor-core' | 'vendor-react' | 'spa';
 type EntryPoints = Record<EntryPointName, string>;
 
 const isDev = process.argv.includes("--dev");
@@ -81,48 +38,8 @@ const distPath = path.join(rootDir, "wwwroot/dist");
 
 const entryPoints: EntryPoints = {
     "vendor-core": path.join(rootDir, "wwwroot/app/index.ts"),
-    "vendor-plugins": path.join(rootDir, "wwwroot/app/vendor-plugins.ts"),
     "vendor-react": path.join(rootDir, "wwwroot/app/vendor-react.ts"),
-    app: path.join(rootDir, "wwwroot/app/app.ts"),
-    taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
-    driverManagementReact: path.join(rootDir, "wwwroot/app/react/pages/driver-management/driver-management-react.module.tsx"),
-    settingsReact: path.join(rootDir, "wwwroot/app/react/pages/settings/settings-react.module.tsx"),
-    composeEmailDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/compose-email-dialog/compose-email-dialog-react.module.tsx"),
-    courierMapReact: path.join(rootDir, "wwwroot/app/react/pages/courier-map/courier-map-react.module.tsx"),
-    dateRangeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/date-range-dialog/date-range-dialog-react.module.tsx"),
-    priceBreakdownDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/price-breakdown-dialog/price-breakdown-dialog-react.module.tsx"),
-    splitPricingBreakdownDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/split-pricing-breakdown-dialog/split-pricing-breakdown-dialog-react.module.tsx"),
-    dashboardSettingsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/dashboard-settings-dialog/dashboard-settings-dialog-react.module.tsx"),
-    autoCompleteDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/auto-complete-dialog/auto-complete-dialog-react.module.tsx"),
-    voidJobConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog-react.module.tsx"),
-    editAfterhoursDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-afterhours-dialog/edit-afterhours-dialog-react.module.tsx"),
-    editAddressDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-address-dialog/edit-address-dialog-react.module.tsx"),
-    editDateTimeDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-date-time-dialog/edit-date-time-dialog-react.module.tsx"),
-    flightAgentConfirmationDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module.tsx"),
-    dispatchDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/dispatch-dialog/dispatch-dialog-react.module.tsx"),
-    flightDetailsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/flight-details-dialog/flight-details-dialog-react.module.tsx"),
-    appShellReact: path.join(rootDir, "wwwroot/app/react/components/common/app-shell/app-shell-react.module.tsx"),
-    errorPageReact: path.join(rootDir, "wwwroot/app/react/pages/error-page/error-page-react.module.tsx"),
-    recurringJobsReact: path.join(rootDir, "wwwroot/app/react/pages/recurring-jobs/recurring-jobs-react.module.tsx"),
-    accessorialChargesDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/accessorial-charges-dialog/accessorial-charges-dialog-react.module.tsx"),
-    bulkPriceUploadDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog-react.module.tsx"),
-    messagingDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/messaging-dialog/messaging-dialog-react.module.tsx"),
-    sendPodDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/send-pod-dialog/send-pod-dialog-react.module.tsx"),
-    aiAssistantDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/ai-assistant-dialog/ai-assistant-dialog-react.module.tsx"),
-    createJobDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/create-job-dialog/create-job-dialog-react.module.tsx"),
-    swapPodsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module.tsx"),
-    restoreConfirmDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/restore-confirmation-dialog/restore-confirmation-dialog-react.module.tsx"),
-    selectDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/select-dialog/select-dialog-react.module.tsx"),
-    editParcelDimensionsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog-react.module.tsx"),
-    simplePriceEditDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog-react.module.tsx"),
-    jobFileUploadDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/job-file-upload-dialog/job-file-upload-dialog-react.module.tsx"),
-    overviewReact: path.join(rootDir, "wwwroot/app/react/pages/overview/overview-react.module.tsx"),
-    jobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-list-react.module.tsx"),
-    currentWorkJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/current-work-job-list-react.module.tsx"),
-    jobDetailsReact: path.join(rootDir, "wwwroot/app/react/components/common/job-details/job-details-react.module.tsx"),
-    jobSearchReact: path.join(rootDir, "wwwroot/app/react/pages/job-search/job-search-react.module.tsx"),
-    nationwideReact: path.join(rootDir, "wwwroot/app/react/pages/nationwide/nationwide-react.module.tsx"),
-    dispatchReact: path.join(rootDir, "wwwroot/app/react/pages/dispatch/dispatch-react.module.tsx"),
+    spa: path.join(rootDir, "wwwroot/app/react/app/main.tsx"),
 };
 
 let htmlMinifier: typeof import('html-minifier-terser') | null = null;
@@ -201,7 +118,7 @@ function createErrorReportingPlugin(): esbuild.Plugin {
     };
 }
 
-function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
+function createGlobalShimPlugin(): esbuild.Plugin {
     return {
         name: "global-shim",
         setup(build) {
@@ -233,38 +150,6 @@ function createGlobalShimPlugin(includeAngular: boolean): esbuild.Plugin {
                     .map(k => pureExport(k, `window.windowsIana.${k}`)).join("\n"),
                 loader: "js",
             }));
-
-            if (includeAngular) {
-                build.onResolve({ filter: /^angular$/ }, () => ({
-                    path: "angular",
-                    namespace: "angular-shim",
-                }));
-
-                build.onLoad({ filter: /.*/, namespace: "angular-shim" }, () => ({
-                    contents: `module.exports = window.angular;`,
-                    loader: "js",
-                }));
-
-                const angularModules = [
-                    "angular-animate",
-                    "angular-aria",
-                    "angular-messages",
-                    "angular-sanitize",
-                    "angular-material",
-                ];
-
-                for (const mod of angularModules) {
-                    build.onResolve({ filter: new RegExp(`^${mod}$`) }, () => ({
-                        path: mod,
-                        namespace: "angular-module-shim",
-                    }));
-                }
-
-                build.onLoad({ filter: /.*/, namespace: "angular-module-shim" }, () => ({
-                    contents: `// Already loaded by vendor-core`,
-                    loader: "js",
-                }));
-            }
         },
     };
 }
@@ -372,7 +257,7 @@ const baseBuildOptions: esbuild.BuildOptions = {
     },
 };
 
-type BundleType = "vendor-core" | "vendor-plugins" | "vendor-react" | "app-modules";
+type BundleType = "vendor-core" | "vendor-react" | "app-modules";
 
 function getBuildConfig(
     forProduction: boolean,
@@ -385,28 +270,22 @@ function getBuildConfig(
         createErrorReportingPlugin(),
     ];
 
-    if (bundleType === "vendor-plugins") {
-        plugins.unshift(createGlobalShimPlugin(true));
-    } else if (bundleType === "app-modules") {
-        plugins.unshift(createGlobalShimPlugin(false));
+    if (bundleType === "app-modules") {
+        plugins.unshift(createGlobalShimPlugin());
         plugins.unshift(createReactGlobalShimPlugin());
     } else if (bundleType === "vendor-react") {
-        plugins.unshift(createGlobalShimPlugin(false));
+        plugins.unshift(createGlobalShimPlugin());
     }
 
     const define: Record<string, string> = {
         "process.env.NODE_ENV": forProduction ? '"production"' : '"development"',
         global: "window",
-        jQuery: "window.jQuery",
-        $: "window.$",
-        angular: "window.angular",
     };
 
     const baseConfig: esbuild.BuildOptions = {
         ...baseBuildOptions,
         entryPoints: entries,
         outdir: distPath,
-        external: ["jquery", "jquery-ui"],
         define,
         plugins,
     };
@@ -551,7 +430,6 @@ function analyzeBundle(metafile: esbuild.Metafile): void {
 
 const vendorEntries = {
     "vendor-core": entryPoints["vendor-core"],
-    "vendor-plugins": entryPoints["vendor-plugins"],
     "vendor-react": entryPoints["vendor-react"],
 };
 
@@ -564,7 +442,6 @@ async function buildDev(): Promise<void> {
 
     const contexts = await Promise.all([
         esbuild.context(getBuildConfig(false, { "vendor-core": vendorEntries["vendor-core"] }, "vendor-core")),
-        esbuild.context(getBuildConfig(false, { "vendor-plugins": vendorEntries["vendor-plugins"] }, "vendor-plugins")),
         esbuild.context(getBuildConfig(false, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
         esbuild.context(getBuildConfig(false, appModuleEntries, "app-modules")),
     ]);
@@ -597,7 +474,6 @@ async function buildProd(): Promise<void> {
 
     const results = await Promise.all([
         esbuild.build(getBuildConfig(true, {"vendor-core": vendorEntries["vendor-core"]}, "vendor-core")),
-        esbuild.build(getBuildConfig(true, {"vendor-plugins": vendorEntries["vendor-plugins"]}, "vendor-plugins")),
         esbuild.build(getBuildConfig(true, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
         esbuild.build(getBuildConfig(true, appModuleEntries, "app-modules")),
     ]);

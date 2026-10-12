@@ -11,6 +11,7 @@ jest.mock('../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({ope
 jest.mock('../services/navigationService', () => ({openJobInSearch: jest.fn(), openHubUrl: jest.fn()}));
 jest.mock('../services/toastService', () => ({toastService: {showToast: jest.fn()}}));
 jest.mock('../session', () => ({
+    getContactId: () => 42, getTimeZone: () => '',
     getSession: () => ({contactId: 42, firstName: 'Jo', fullName: 'Jo Doe', isNetworkPartner: false, isUsCustomer: false, timeZone: '', visibleFeatures: null}),
 }));
 

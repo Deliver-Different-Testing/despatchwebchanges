@@ -7,6 +7,7 @@
 
 import '@testing-library/jest-dom';
 import {configure} from '@testing-library/react';
+import {installLegacySessionGlobals} from './legacySessionGlobals';
 
 // waitFor/findBy default to a 1000ms timeout, which is too tight for react-query
 // state transitions on a loaded/GC-starved CI worker (a mocked-promise resolution
@@ -65,11 +66,8 @@ if (typeof window !== 'undefined') {
     }
 }
 
-// Global variables declared in cshtml templates at runtime
-// Must be defined before modules that use them at top-level scope
-(global as unknown as Window).ContactID = 0;
-(global as unknown as Window).FirstName = 'Test';
-(global as unknown as Window).TimeZone = 'Europe/London';
+// Session defaults and the window.ContactID-style seeding bridge (see legacySessionGlobals.ts).
+installLegacySessionGlobals();
 
 // Suppress unavoidable framework warnings only.
 // Application-level errors should be suppressed per-test using

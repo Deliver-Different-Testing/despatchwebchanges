@@ -7,7 +7,7 @@ import {useDisclosure} from '@mantine/hooks';
 import {Briefcase} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
 import {NoData} from '../../components/common/no-data/NoData';
-import {ContactID} from '../../../contants';
+import {getContactId} from '../../session';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 import {AppPage} from '../../interfaces/dispatchJob';
 import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
@@ -135,16 +135,16 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     void timeZone;
 
     const storageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layoutV2-${ContactID}`,
-        lastActiveLayoutKey: `lastActiveLayoutV2-${ContactID}`,
-        boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.Dispatch}-${ContactID}`,
+        layoutsKey: `layoutV2-${getContactId()}`,
+        lastActiveLayoutKey: `lastActiveLayoutV2-${getContactId()}`,
+        boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.Dispatch}-${getContactId()}`,
     }), []);
 
     // Legacy (V1) storage keys — the source for "Import V1 layouts".
     const legacyStorageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layout-${ContactID}`,
-        lastActiveLayoutKey: `lastActiveLayout-${ContactID}`,
-        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.Dispatch}-${ContactID}`,
+        layoutsKey: `layout-${getContactId()}`,
+        lastActiveLayoutKey: `lastActiveLayout-${getContactId()}`,
+        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.Dispatch}-${getContactId()}`,
     }), []);
 
     const boxLayout = useBoxLayout({

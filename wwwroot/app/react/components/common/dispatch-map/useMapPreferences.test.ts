@@ -7,8 +7,8 @@
 import {renderHook, act} from '@testing-library/react';
 import {PREFERENCE_KEYS} from './DispatchMap.types';
 
-jest.mock('../../../../contants', () => ({
-    ContactID: 12345,
+jest.mock('../../../session', () => ({
+    getContactId: () => 12345,
 }));
 
 import {useMapPreferences} from './useMapPreferences';

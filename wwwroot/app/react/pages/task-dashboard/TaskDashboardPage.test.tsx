@@ -81,7 +81,7 @@ const localStorageMock = {
 Object.defineProperty(window, 'localStorage', {value: localStorageMock});
 
 // Mock window.ContactID
-Object.defineProperty(window, 'ContactID', {value: 1, writable: true});
+(window as any).ContactID = 1;
 
 const mockTasksApi = tasksApi as jest.Mocked<typeof tasksApi>;
 

@@ -210,7 +210,7 @@ describe('SideNav', () => {
 
             expect(screen.getByRole('button', {name: 'Settings'})).toBeInTheDocument();
 
-            delete window.VisibleFeatures;
+            window.VisibleFeatures = undefined;
         });
 
         it('navigates to the settings state and closes on click', () => {
@@ -229,7 +229,7 @@ describe('SideNav', () => {
         // The Razor global is written once at page load, before React mounts, so
         // setting it before render matches production ordering.
         afterEach(() => {
-            delete window.VisibleFeatures;
+            window.VisibleFeatures = undefined;
         });
 
         it('shows only the dashboards DF Admin granted this session', () => {

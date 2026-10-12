@@ -47,6 +47,7 @@ jest.mock('../services/toastService', () => ({
     toastService: {showToast: jest.fn(), showErrorToast: jest.fn(), showSuccessToast: jest.fn()},
 }));
 jest.mock('../session', () => ({
+    getContactId: () => 7, getTimeZone: () => '',
     getSession: () => ({
         contactId: 7, firstName: 'Jo', fullName: 'Jo Doe', isNetworkPartner: false,
         isUsCustomer: true, visibleFeatures: null, timeZone: '',

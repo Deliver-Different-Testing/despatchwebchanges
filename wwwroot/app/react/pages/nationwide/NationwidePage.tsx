@@ -1,7 +1,7 @@
 import {getSession} from '../../session';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {ContactID} from '../../../contants';
+import {getContactId} from '../../session';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 import {AppPage} from '../../interfaces/dispatchJob';
 import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
@@ -84,14 +84,14 @@ import {loadDialog} from '../../dialogs/dialogRegistry';
  * refresh-interval keys (`nationwide.controller.ts`'s `SelectedViewsKey`).
  * V1 and V2 must share this exact key while both pages coexist.
  */
-const SELECTED_VIEWS_KEY = `selectedViews-NW-${ContactID}`;
+const SELECTED_VIEWS_KEY = () => `selectedViews-NW-${getContactId()}`;
 
 /**
  * Same key V1 stores the operator's chosen auto-refresh cadence under
  * (`nationwide.controller.ts`'s `refreshDurationIntervalKey`) — unlike the
  * views key, this one already uses the numeric AppPage enum on both sides.
  */
-const REFRESH_INTERVAL_KEY = `refreshInterval-${LegacyAppPage.Domestic}-${ContactID}`;
+const REFRESH_INTERVAL_KEY = () => `refreshInterval-${LegacyAppPage.Domestic}-${getContactId()}`;
 
 /**
  * Read a previously-saved V1 cadence, in ms for React Query's
@@ -102,7 +102,7 @@ const REFRESH_INTERVAL_KEY = `refreshInterval-${LegacyAppPage.Domestic}-${Contac
 function loadSavedRefreshIntervalMs(): number | false {
     let stored: string | null = null;
     try {
-        stored = localStorage.getItem(REFRESH_INTERVAL_KEY);
+        stored = localStorage.getItem(REFRESH_INTERVAL_KEY());
     } catch {
         return false;
     }
@@ -157,15 +157,15 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
      * page's layouts for operators who still opt out of this one.
      */
     const storageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layoutsNWV2-${ContactID}`,
-        lastActiveLayoutKey: `lastActiveLayoutNWV2-${ContactID}`,
-        boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.Domestic}-${ContactID}`,
+        layoutsKey: `layoutsNWV2-${getContactId()}`,
+        lastActiveLayoutKey: `lastActiveLayoutNWV2-${getContactId()}`,
+        boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.Domestic}-${getContactId()}`,
     }), []);
 
     const legacyStorageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layoutsNW-${ContactID}`,
-        lastActiveLayoutKey: `lastActiveLayoutNW-${ContactID}`,
-        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.Domestic}-${ContactID}`,
+        layoutsKey: `layoutsNW-${getContactId()}`,
+        lastActiveLayoutKey: `lastActiveLayoutNW-${getContactId()}`,
+        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.Domestic}-${getContactId()}`,
     }), []);
 
     const boxLayout = useBoxLayout({
@@ -199,7 +199,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     const viewsRef = useRef<DfrntPageViewModel[]>([]);
     viewsRef.current = pageViews ?? [];
     const [selectedViewIds, setSelectedViewIds] = useState<number[]>(
-        () => loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY),
+        () => loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY()),
     );
     const selectedViewIdsRef = useRef(selectedViewIds);
     selectedViewIdsRef.current = selectedViewIds;
@@ -208,7 +208,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         // Normalise to server order so the persisted selection is stable
         // regardless of the order the operator clicked the pills in.
         const selected = viewsRef.current.filter(v => ids.includes(v.id));
-        persistSelectedViewsTo(SELECTED_VIEWS_KEY, selected.map(v => ({...v, selected: true})));
+        persistSelectedViewsTo(SELECTED_VIEWS_KEY(), selected.map(v => ({...v, selected: true})));
         setSelectedViewIds(prev => (
             prev.join(',') === selected.map(v => v.id).join(',') ? prev : selected.map(v => v.id)
         ));
@@ -276,7 +276,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         if (viewsSeededRef.current || !pageViews || pageViews.length === 0) return;
         viewsSeededRef.current = true;
         applyViewSelection(
-            resolveInitialViewSelection(pageViews, loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY), hasStoredViewSelectionAt(SELECTED_VIEWS_KEY)),
+            resolveInitialViewSelection(pageViews, loadSelectedViewIdsFrom(SELECTED_VIEWS_KEY()), hasStoredViewSelectionAt(SELECTED_VIEWS_KEY())),
         );
     }, [pageViews, applyViewSelection]);
 

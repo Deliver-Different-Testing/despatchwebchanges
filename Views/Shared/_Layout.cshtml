@@ -12,26 +12,21 @@
         manifest = new Dictionary<string, string>
         {
             ["vendor-core.js"] = "vendor-core.js",
-            ["vendor-plugins.js"] = "vendor-plugins.js",
             ["vendor-react.js"] = "vendor-react.js",
-            ["app.js"] = "app.js",
-            ["vendor-core.css"] = "vendor-core.css",
-            ["vendor-plugins.css"] = "vendor-plugins.css",
+            ["spa.js"] = "spa.js",
             ["vendor-react.css"] = "vendor-react.css",
-            ["app.css"] = "app.css"
+            ["spa.css"] = "spa.css"
         };
 
         await Console.Error.WriteLineAsync($"Error reading manifest: {ex.Message}");
     }
 
     var vendorCoreJs = manifest.GetValueOrDefault("vendor-core.js", "");
-    var vendorPluginsJs = manifest.GetValueOrDefault("vendor-plugins.js", "");
     var vendorReactJs = manifest.GetValueOrDefault("vendor-react.js", "");
-    var appBundleFile = manifest.GetValueOrDefault("app.js", "");
+    var spaJs = manifest.GetValueOrDefault("spa.js", "");
     var vendorCoreCss = manifest.GetValueOrDefault("vendor-core.css", "");
-    var vendorPluginsCss = manifest.GetValueOrDefault("vendor-plugins.css", "");
     var vendorReactCss = manifest.GetValueOrDefault("vendor-react.css", "");
-    var appStylesFile = manifest.GetValueOrDefault("app.css", "");
+    var spaCss = manifest.GetValueOrDefault("spa.css", "");
 }
 
 <!doctype html>
@@ -47,8 +42,8 @@
 
     <script>
         // Resolve the saved colour mode before first paint so the loader doesn't flash
-        // light. A separate attribute from Mantine's: Angular-only pages never mount a
-        // React island, so they must stay light once the loader clears. Mirrors hooks/useColorMode.tsx (key, 'system' default).
+        // light. A separate attribute from Mantine's, dropped with the loader unless Mantine
+        // owns the scheme by then. Mirrors hooks/useColorMode.tsx (key, 'system' default).
         (function () {
             try {
                 var pref = localStorage.getItem('dd-color-mode');
@@ -59,7 +54,7 @@
     </script>
     <style>
         /* DFRNT brand hex is inlined rather than tokenised here: this block paints
-           before any bundle stylesheet and before app.ts defines the theme vars. */
+           before any bundle stylesheet and before the SPA defines the theme vars. */
         :root {
             --theme-primary: #3bc7f4;
             --theme-primary-light: rgba(59, 199, 244, 0.15);
@@ -69,13 +64,26 @@
 
         html, body {
             background-color: #f4f2f1;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Mantine's body colour lives in a cascade layer, so this unlayered light background
+           would win in dark mode unless the Mantine scheme is matched here. */
+        html[data-mantine-color-scheme='dark'],
+        html[data-mantine-color-scheme='dark'] body {
+            background-color: var(--dd-surface);
+            color: var(--mantine-color-text);
+        }
+
+        .text-error {
+            color: #dc3246;
         }
 
         /* Dark start: the canvas must be dark too, or the page paints light before the
            loader exists. !important because udispatch.less pins html/body to the light
            background with !important once app.css loads, which is the white flash.
-           The attribute is dropped with the loader unless a React island took over
-           (see hideLoader), so Angular-only pages still end up light.
+           The attribute is dropped with the loader unless Mantine took over the scheme.
            Values are the DFRNT dark surface ladder. */
         html[data-dd-boot-scheme='dark'],
         html[data-dd-boot-scheme='dark'] body {
@@ -189,7 +197,6 @@
         }
     </script>
 
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.2.5/angular-material.min.css">
     <link rel="stylesheet" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css"/>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -202,22 +209,18 @@
     {
         <link rel="stylesheet" href="/dist/@vendorCoreCss"/>
     }
-    @if (!string.IsNullOrEmpty(vendorPluginsCss))
-    {
-        <link rel="stylesheet" href="/dist/@vendorPluginsCss"/>
-    }
-    @* Mantine (DFRNT) styles — scoped to @@layer mantine, loaded once for all React islands. *@
+    @* Mantine (DFRNT) styles, scoped to @@layer mantine. *@
     @if (!string.IsNullOrEmpty(vendorReactCss))
     {
         <link rel="stylesheet" href="/dist/@vendorReactCss"/>
     }
-    @if (!string.IsNullOrEmpty(appStylesFile))
+    @if (!string.IsNullOrEmpty(spaCss))
     {
-        <link rel="stylesheet" href="/dist/@appStylesFile"/>
+        <link rel="stylesheet" href="/dist/@spaCss"/>
     }
 </head>
 
-<body ng-app="uDispatch">
+<body>
 <!-- Full Screen Loader -->
 <div class="app-loader" id="appLoader" role="status" aria-live="polite">
     <div class="loader-content">
@@ -232,13 +235,6 @@
 
 @RenderBody()
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
-        integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
-        integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
 <script src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
 <script src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
 <script src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
@@ -248,64 +244,29 @@
 {
     <script src="/dist/@vendorCoreJs"></script>
 }
-@if (!string.IsNullOrEmpty(vendorPluginsJs))
-{
-    <script src="/dist/@vendorPluginsJs"></script>
-}
-@* vendor-react must evaluate before app.js: the module bundles resolve React
+@* vendor-react must evaluate before spa.js: the SPA bundle resolves React
    and Mantine off the window globals it publishes. *@
 @if (!string.IsNullOrEmpty(vendorReactJs))
 {
     <script src="/dist/@vendorReactJs"></script>
 }
-@if (!string.IsNullOrEmpty(appBundleFile))
+@if (!string.IsNullOrEmpty(spaJs))
 {
-    <script src="/dist/@appBundleFile"></script>
+    <script src="/dist/@spaJs"></script>
 }
 
-
 <script>
-    (function () {
-        var resourcesLoaded = false;
-        var angularReady = false;
-
+    // Safety net: never leave the loader up if the SPA fails to boot (main.tsx hides it on success).
+    setTimeout(function () {
+        var loader = document.getElementById('appLoader');
+        if (!loader || loader.classList.contains('hidden')) return;
+        loader.classList.add('hidden');
         setTimeout(function () {
-            hideLoader();
-        }, 15000);
-
-        function hideLoader() {
-            var loaderElement = document.getElementById('appLoader');
-            if (loaderElement && !loaderElement.classList.contains('hidden')) {
-                loaderElement.classList.add('hidden');
-
-                setTimeout(function () {
-                    if (loaderElement.parentNode) {
-                        loaderElement.parentNode.removeChild(loaderElement);
-                    }
-                    var root = document.documentElement;
-                    if (!root.hasAttribute('data-mantine-color-scheme')) {
-                        root.removeAttribute('data-dd-boot-scheme');
-                    }
-                }, 400);
-            }
-        }
-
-        window.addEventListener('load', function () {
-            resourcesLoaded = true;
-            if (angularReady) {
-                hideLoader();
-            }
-        });
-
-        window.angular.module('uDispatch').run(['$timeout', function ($timeout) {
-            $timeout(function () {
-                angularReady = true;
-                if (resourcesLoaded) {
-                    hideLoader();
-                }
-            });
-        }]);
-    })();
+            if (loader.parentNode) loader.parentNode.removeChild(loader);
+            var root = document.documentElement;
+            if (!root.hasAttribute('data-mantine-color-scheme')) root.removeAttribute('data-dd-boot-scheme');
+        }, 400);
+    }, 15000);
 </script>
 </body>
 </html>

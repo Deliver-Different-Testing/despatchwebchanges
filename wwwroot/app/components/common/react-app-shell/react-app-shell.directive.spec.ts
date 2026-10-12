@@ -99,7 +99,7 @@ describe('reactAppShellDirective — network partner flag', () => {
     });
 
     afterEach(() => {
-        delete (window as any).IsNetworkPartner;
+        (window as any).IsNetworkPartner = undefined;
     });
 
     it('passes the network-partner global through to the shell, defaulting to false', async () => {
@@ -109,7 +109,7 @@ describe('reactAppShellDirective — network partner flag', () => {
 
         // Absent global must land as a real `false`, not `undefined` — the drawer and
         // the dispatch dialog both branch on it.
-        delete (window as any).IsNetworkPartner;
+        (window as any).IsNetworkPartner = undefined;
         const staff = await linkDirective(makeScope(), {$interval, messagingDialogService});
         expect(staff.mount.mock.calls.at(-1)?.[1]).toMatchObject({isNetworkPartner: false});
     });

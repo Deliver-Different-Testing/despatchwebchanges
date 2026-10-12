@@ -3,7 +3,7 @@ import {Box} from '@mantine/core';
 import dayjs from 'dayjs';
 import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
-import {ContactID} from '../../../contants';
+import {getContactId} from '../../session';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
 import {fetchBulkJobs, fetchDispatchBulkJobDetail, fetchPodJobs} from '../../services/jobSearchApi';
 import {getDispatchJobDetail, searchSpeedOptions} from '../../services/dispatchExecutorApi';
@@ -71,16 +71,16 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 onLayoutBridgeReady,
                                                             }) => {
     const storageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layoutsCSV2-${ContactID}`,
-        lastActiveLayoutKey: `lastActiveLayoutCSV2-${ContactID}`,
-        boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.JobSearch}-${ContactID}`,
+        layoutsKey: `layoutsCSV2-${getContactId()}`,
+        lastActiveLayoutKey: `lastActiveLayoutCSV2-${getContactId()}`,
+        boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.JobSearch}-${getContactId()}`,
     }), []);
 
     // Legacy (V1) storage keys — the source for "Import V1 layouts".
     const legacyStorageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layoutsCS-${ContactID}`,
-        lastActiveLayoutKey: `lastActiveLayoutCS-${ContactID}`,
-        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.JobSearch}-${ContactID}`,
+        layoutsKey: `layoutsCS-${getContactId()}`,
+        lastActiveLayoutKey: `lastActiveLayoutCS-${getContactId()}`,
+        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.JobSearch}-${getContactId()}`,
     }), []);
 
     const searchCriteria = useSearchCriteria({timeZone});

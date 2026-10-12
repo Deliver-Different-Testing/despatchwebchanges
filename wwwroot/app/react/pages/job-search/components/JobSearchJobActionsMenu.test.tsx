@@ -119,7 +119,7 @@ describe('JobSearchJobActionsMenu', () => {
             await user.click(npMenuButton);
             expect(screen.queryByRole('menuitem', {name: 'Accessorial charges'})).not.toBeInTheDocument();
         } finally {
-            delete (window as any).IsNetworkPartner;
+            (window as any).IsNetworkPartner = undefined;
         }
     });
 });

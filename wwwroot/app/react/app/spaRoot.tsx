@@ -14,6 +14,8 @@ import {
 import {Center, Loader} from '@mantine/core';
 import {DfrntMantineProvider} from '../theme/DfrntMantineProvider';
 import {SessionGate} from '../components/common/session-gate/SessionGate';
+import {ThemeBootstrap} from '../theme/ThemeBootstrap';
+import type {SessionContextDto} from '../session';
 import {useAddStopFlow} from '../hooks/useAddStopFlow';
 import {resolveDashboardRedirect} from '../services/dashboardRouteGuard';
 import {confirmNavigationAllowed} from '../services/unsavedChangesGuard';
@@ -143,19 +145,21 @@ export const spaRoutes: RouteObject[] = [{
     ],
 }];
 
-export const SpaRoot: React.FC = () => {
+export const SpaRoot: React.FC<{initialContext?: SessionContextDto}> = ({initialContext}) => {
     const router = useMemo(() => createHashRouter(spaRoutes), []);
     return (
         <DfrntMantineProvider>
-            <SessionGate>
-                <RouterProvider router={router}/>
+            <SessionGate initialContext={initialContext}>
+                <ThemeBootstrap>
+                    <RouterProvider router={router}/>
+                </ThemeBootstrap>
             </SessionGate>
         </DfrntMantineProvider>
     );
 };
 
-export function mountSpa(container: HTMLElement): Root {
+export function mountSpa(container: HTMLElement, initialContext?: SessionContextDto): Root {
     const root = createRoot(container);
-    root.render(<SpaRoot/>);
+    root.render(<SpaRoot initialContext={initialContext}/>);
     return root;
 }

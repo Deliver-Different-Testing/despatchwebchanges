@@ -6,7 +6,7 @@ import {
 
 describe('dashboardRouteGuard', () => {
     afterEach(() => {
-        delete window.VisibleFeatures;
+        window.VisibleFeatures = undefined;
     });
 
     it('lets every state through when the session is not gated', () => {
@@ -55,7 +55,7 @@ describe('dashboardRouteGuard', () => {
         window.VisibleFeatures = ['dw-dispatch'];
         expect(resolveDashboardRedirect('nwV2')).not.toBeNull();
 
-        delete window.VisibleFeatures;
+        window.VisibleFeatures = undefined;
         expect(resolveDashboardRedirect('nwV2')).toBeNull();
     });
 });

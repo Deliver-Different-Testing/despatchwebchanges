@@ -2,11 +2,12 @@ import React, {useEffect} from 'react';
 import {Button, Center, Loader, Stack, Text, Title} from '@mantine/core';
 import {redirectTo} from '../../../utils/navigation';
 import {useSessionContext} from '../../../hooks/useSessionContext';
+import type {SessionContextDto} from '../../../session';
 
 const isUnauthorized = (error: unknown): boolean => (error as {status?: number} | null)?.status === 401;
 
-export const SessionGate: React.FC<{children: React.ReactNode}> = ({children}) => {
-    const {isSuccess, isError, error, refetch} = useSessionContext();
+export const SessionGate: React.FC<{children: React.ReactNode; initialContext?: SessionContextDto}> = ({children, initialContext}) => {
+    const {isSuccess, isError, error, refetch} = useSessionContext(initialContext);
     const unauthorized = isError && isUnauthorized(error);
 
     useEffect(() => {

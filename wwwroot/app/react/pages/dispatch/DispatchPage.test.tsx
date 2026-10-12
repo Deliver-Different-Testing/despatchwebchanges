@@ -313,9 +313,9 @@ describe('DispatchPage', () => {
         // separately and pushed in via updateRefreshIntervals. Nothing asserted that
         // they actually reach the queries, so a broken prop would have been silent.
         it('threads each persisted cadence to the box that owns it', () => {
-            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
-            localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY, '15');
-            localStorage.setItem(TASK_REFRESH_KEY, '60');
+            localStorage.setItem(REFRESH_INTERVAL_KEY(), '30');
+            localStorage.setItem(DRIVER_LOCATION_REFRESH_KEY(), '15');
+            localStorage.setItem(TASK_REFRESH_KEY(), '60');
 
             renderPage();
 
@@ -431,7 +431,7 @@ describe('DispatchPage', () => {
         });
 
         it('recentres the map on a single selected despatch view at zoom 7', () => {
-            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([
+            localStorage.setItem(SELECTED_VIEWS_KEY(), JSON.stringify([
                 {id: 7, name: 'Auckland', centerLatitude: -36.85, centerLongitude: 174.76, selected: true},
             ]));
             renderPage();
@@ -460,14 +460,14 @@ describe('DispatchPage', () => {
             expect(await screen.findByRole('button', {name: 'Auckland', pressed: true})).toBeInTheDocument();
             expect(railPill('Airport')).toHaveAttribute('aria-pressed', 'false');
             expect(fetchPageViewsMock).toHaveBeenCalledWith(LegacyAppPage.Dispatch);
-            expect(JSON.parse(localStorage.getItem(SELECTED_VIEWS_KEY)!)).toEqual([
+            expect(JSON.parse(localStorage.getItem(SELECTED_VIEWS_KEY())!)).toEqual([
                 expect.objectContaining({id: 11, selected: true}),
             ]);
             expect(jobListFetchConfig.initialParams?.despatchViewIds).toEqual([11]);
         });
 
         it('restores a stored selection instead of defaulting', async () => {
-            localStorage.setItem(SELECTED_VIEWS_KEY, JSON.stringify([{...serverViews[1], selected: true}]));
+            localStorage.setItem(SELECTED_VIEWS_KEY(), JSON.stringify([{...serverViews[1], selected: true}]));
             renderPage();
 
             expect(await screen.findByRole('button', {name: 'Airport', pressed: true})).toBeInTheDocument();
@@ -483,7 +483,7 @@ describe('DispatchPage', () => {
 
             expect(railPill('Airport')).toHaveAttribute('aria-pressed', 'true');
             expect(jobListFetchConfig.initialParams?.despatchViewIds).toEqual([11, 22]);
-            expect(JSON.parse(localStorage.getItem(SELECTED_VIEWS_KEY)!).map((v: {id: number}) => v.id))
+            expect(JSON.parse(localStorage.getItem(SELECTED_VIEWS_KEY())!).map((v: {id: number}) => v.id))
                 .toEqual([11, 22]);
         });
 
@@ -541,7 +541,7 @@ describe('DispatchPage', () => {
             await user.click(screen.getByRole('button', {name: 'Clear selected views'}));
 
             expect(railPill('Auckland')).toHaveAttribute('aria-pressed', 'false');
-            expect(localStorage.getItem(SELECTED_VIEWS_KEY)).toBe('[]');
+            expect(localStorage.getItem(SELECTED_VIEWS_KEY())).toBe('[]');
             expect(jobListFetchConfig.initialParams?.despatchViewIds).toEqual([]);
         });
 
@@ -666,7 +666,7 @@ describe('DispatchPage', () => {
         });
 
         it('gives both panels the toolbar refresh cadence', () => {
-            localStorage.setItem(REFRESH_INTERVAL_KEY, '30');
+            localStorage.setItem(REFRESH_INTERVAL_KEY(), '30');
             enableOverviewPanels();
             renderPage();
 

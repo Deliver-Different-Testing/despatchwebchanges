@@ -2,7 +2,7 @@ import {isDashboardVisible, visibleDashboards} from './featureVisibility';
 
 describe('featureVisibility', () => {
     afterEach(() => {
-        delete window.VisibleFeatures;
+        window.VisibleFeatures = undefined;
     });
 
     it('treats an absent or null global as "not gated" so every dashboard stays reachable', () => {

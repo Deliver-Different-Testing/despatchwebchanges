@@ -1,8 +1,8 @@
-import {ContactID} from '../contants';
+import {getContactId} from '../react/session';
 import {getPreference, savePreference} from '../react/services/preferencesApi';
 import {StaffPreferenceKey} from '../enums/staff-preference-key.enum';
 
-const STORAGE_KEY = `showPanelHideButton_${ContactID}`;
+const storageKey = () => `showPanelHideButton_${getContactId()}`;
 
 /**
  * Whether the per-panel "Hide panel" button shows on custom dashboard
@@ -10,7 +10,7 @@ const STORAGE_KEY = `showPanelHideButton_${ContactID}`;
  * behaviour until they opt out via Settings.
  */
 export function isPanelHideButtonEnabled(): boolean {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(storageKey());
     return stored === null ? true : stored === 'true';
 }
 
@@ -22,7 +22,7 @@ function persistToServer(): void {
 }
 
 export function setPanelHideButtonEnabled(enabled: boolean): void {
-    localStorage.setItem(STORAGE_KEY, String(enabled));
+    localStorage.setItem(storageKey(), String(enabled));
     persistToServer();
 }
 
@@ -39,5 +39,5 @@ export async function loadPanelHideButtonSettingFromServer(): Promise<void> {
         persistToServer();
         return;
     }
-    localStorage.setItem(STORAGE_KEY, value === 'true' ? 'true' : 'false');
+    localStorage.setItem(storageKey(), value === 'true' ? 'true' : 'false');
 }
