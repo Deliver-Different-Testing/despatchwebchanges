@@ -17,8 +17,11 @@ import 'dayjs/locale/en-nz';
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
 import reactAppShellDirective from "./components/common/react-app-shell/react-app-shell.directive";
 import angular from 'angular';
+import {applyLegacyHashRedirect} from "./react/utils/legacyHash";
 
 // uDispatchApp is set by vendor-plugins.ts which loads before this module
+applyLegacyHashRedirect();
+
 const app = window.uDispatchApp!;
 
 // Constants
@@ -36,6 +39,10 @@ app
     } as IAppConfig);
 
 // Routes
+app.config(["$locationProvider", ($locationProvider: angular.ILocationProvider) => {
+    $locationProvider.hashPrefix("");
+}]);
+
 app.config(["$urlRouterProvider", "$stateProvider",
     ($urlRouterProvider: angular.ui.IUrlRouterProvider,
      $stateProvider: angular.ui.IStateProvider) => {
