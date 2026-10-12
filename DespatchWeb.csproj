@@ -1,9 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-  <!-- The SPA lives in DespatchWeb.Client (Vite) and its build writes wwwroot/dist. CI builds it in a separate job. -->
-  <Target Name="NpmBuild" BeforeTargets="Build" Condition="'$(CI)' != 'true'">
-    <Exec Command="npm install" WorkingDirectory="$(ProjectDir)DespatchWeb.Client" Condition="!Exists('$(ProjectDir)DespatchWeb.Client/node_modules')" />
-    <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)DespatchWeb.Client" />
-  </Target>
+  <!-- The SPA lives in DespatchWeb.Client (Vite); its .esproj builds wwwroot/dist as part of the solution. -->
 
   <PropertyGroup Label="Globals">
       <Nullable>disable</Nullable>

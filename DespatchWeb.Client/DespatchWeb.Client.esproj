@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets/3.7.0">
-  <!-- Solution node only. DespatchWeb.csproj's NpmBuild target runs npm install/build, so building the solution does not build the client twice. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
@@ -7,4 +6,13 @@
   <ItemGroup>
     <None Include="**/*" Exclude="node_modules/**;dist/**;bin/**;obj/**;.tsbuildinfo/**" />
   </ItemGroup>
+
+  <!-- CI builds the client in its own job, and the Dockerfile runs npm in a node stage with CI=true. -->
+  <Target Name="NpmInstall" BeforeTargets="Build" Condition="'$(CI)' != 'true'">
+    <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)" Condition="!Exists('$(MSBuildProjectDirectory)/node_modules')" />
+  </Target>
+
+  <Target Name="NpmBuild" AfterTargets="Build" Condition="'$(CI)' != 'true'">
+    <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
 </Project>

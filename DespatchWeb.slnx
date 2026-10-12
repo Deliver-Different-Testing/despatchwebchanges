@@ -4,6 +4,16 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".dockerignore" />
+    <File Path=".gitignore" />
+    <File Path=".gitlab-ci.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Dockerfile" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+  </Folder>
   <Project Path="DespatchWeb.Client/DespatchWeb.Client.esproj" Type="C#" />
   <Project Path="DespatchWeb.csproj" />
   <Project Path="DespatchWeb.Tests/DespatchWeb.Tests.csproj" />
