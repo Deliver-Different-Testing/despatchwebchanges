@@ -4,6 +4,7 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Project Path="DespatchWeb.Client/DespatchWeb.Client.esproj" Type="C#" />
   <Project Path="DespatchWeb.csproj" />
   <Project Path="DespatchWeb.Tests/DespatchWeb.Tests.csproj" />
   <Properties Name="ExtensibilityGlobals" Scope="PostLoad">
