@@ -49,7 +49,7 @@ export default defineConfig(({command}) => ({
         host: true,
         port: 5174,
         strictPort: true,
-        allowedHosts: ['despatch.local.deliverdifferent.com', 'despatchweb.local.deliverdifferent.com'],
+        allowedHosts: ['despatch.local.deliverdifferent.com'],
         proxy: {
             '/api': proxied,
             [`^/(${controllerPrefixes.join('|')})/`]: proxied,
