@@ -26,11 +26,15 @@ public sealed class PodMediaService(
             leg => leg.PickUpTime ?? leg.CompletedTime ?? leg.DispatchedTime,
             jobPhotoService.GetPickupPhotosAsync);
 
+    /// <param name="jobId">The job whose legs are gathered.</param>
+    /// <param name="fallbackYear">Year used for a leg with no reference timestamp.</param>
+    /// <param name="fallbackMonth">Month used for a leg with no reference timestamp.</param>
     /// <param name="preferredRole">
     /// The leg whose media leads the result. Consumers take the first signature they find, so the
     /// final-mile signature has to beat a linehaul handover scrawl on a POD.
     /// </param>
     /// <param name="referenceTime">The timestamp that keys a leg's S3 month folder.</param>
+    /// <param name="fetch">Retrieves media for a leg's job id, year and month.</param>
     private async Task<IReadOnlyList<S3PhotoInfo>> GatherAsync(
         int jobId,
         int fallbackYear,

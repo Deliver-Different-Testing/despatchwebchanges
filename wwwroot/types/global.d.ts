@@ -391,7 +391,7 @@ declare global {
             setToastService: (service: ToastService) => void;
         };
         ReactSwapPodsDialog?: {
-            open: (jobNo: string, toastService?: ToastService) => Promise<boolean | null>;
+            open: (jobNo: string, toastService?: ToastService, customer?: string) => Promise<boolean | null>;
         };
         ReactRestoreConfirmDialog?: {
             open: (request: {jobId: number; done?: boolean}) => Promise<

@@ -42,6 +42,17 @@ public interface IJobPhotoService
     /// <param name="month">The completion month used to locate the S3 folders.</param>
     Task<int> CountJobCapturedMediaAsync(int jobId, int year, int month);
 
+    /// <summary>The distinct S3 keys of a job's delivery photos and signatures (pickup media excluded).</summary>
+    Task<IReadOnlyList<string>> ListDeliveryMediaKeysAsync(int jobId, int year, int month);
+
+    /// <summary>
+    /// Copies delivery media to the <c>{toJobId}-</c> key in the same folder; originals are untouched so
+    /// the caller can delete them after its DB commit (or delete the copies on failure). A copy key
+    /// already in <paramref name="occupiedKeys"/> gets a numeric suffix instead of overwriting.
+    /// </summary>
+    Task<DeliveryMediaCopyResult> CopyDeliveryMediaAsync(int fromJobId, int toJobId,
+        IReadOnlyList<string> sourceKeys, ISet<string> occupiedKeys);
+
     // Job Attachment methods
     Task<IReadOnlyList<S3FileInfo>> GetAttachedFilesAsync(int jobId);
     Task<AwsUploadResult> UploadJobAttachmentAsync(int jobId, IFormFile file);

@@ -86,7 +86,8 @@ public class JobRepositoryBulkSearchTests : IDisposable
         _partnerJobGateMock,
         _flightAssignmentServiceMock,
         Substitute.For<IArrivalWaitRerateService>(),
-        Substitute.For<IAccessorialChargeRepository>());
+        Substitute.For<IAccessorialChargeRepository>(),
+        Substitute.For<ISwapPodService>());
 
     [Fact]
     public async Task BulkSearch_WithBulkJobId_IgnoresOtherFilters()

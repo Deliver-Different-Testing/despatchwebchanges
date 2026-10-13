@@ -800,6 +800,73 @@ public class JobPhotoServiceTests
             });
     }
 
+    [Fact]
+    public async Task CopyDeliveryMediaAsync_ReKeysToTargetJobInSameFolderAndLeavesOriginals()
+    {
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        var result = await service.CopyDeliveryMediaAsync(1, 2,
+            ["DeliveryPhotos/2026/10/1-20261009143000.jpg", "DeliverySignatures/2026/10/1-20261009143001.png"],
+            new HashSet<string>());
+
+        Assert.Equal(0, result.Failed);
+        Assert.Equal(
+            ["DeliveryPhotos/2026/10/2-20261009143000.jpg", "DeliverySignatures/2026/10/2-20261009143001.png"],
+            result.Copied.Select(c => c.CopyKey));
+        await _s3ClientMock.Received(1).CopyObjectAsync(
+            Arg.Is<CopyObjectRequest>(r => r!.SourceKey == "DeliveryPhotos/2026/10/1-20261009143000.jpg" &&
+                                           r.DestinationKey == "DeliveryPhotos/2026/10/2-20261009143000.jpg"),
+            Arg.Any<CancellationToken>());
+        await _s3ClientMock.DidNotReceive()
+            .DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CopyDeliveryMediaAsync_CopyKeyAlreadyOccupied_GetsNumericSuffixInsteadOfOverwriting()
+    {
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        const string occupied = "DeliveryPhotos/2026/10/2-20261009143000.jpg";
+
+        var result = await service.CopyDeliveryMediaAsync(1, 2, ["DeliveryPhotos/2026/10/1-20261009143000.jpg"],
+            new HashSet<string> { occupied });
+
+        Assert.Equal("DeliveryPhotos/2026/10/2-20261009143000-1.jpg", Assert.Single(result.Copied).CopyKey);
+    }
+
+    [Fact]
+    public async Task CopyDeliveryMediaAsync_OneCopyFails_CountsFailureAndKeepsTheRest()
+    {
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        _s3ClientMock.CopyObjectAsync(
+                Arg.Is<CopyObjectRequest>(r => r!.SourceKey.Contains("bad")), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AmazonS3Exception("denied"));
+
+        var result = await service.CopyDeliveryMediaAsync(1, 2,
+            ["DeliveryPhotos/2026/10/1-bad.jpg", "DeliveryPhotos/2026/10/1-good.jpg"], new HashSet<string>());
+
+        Assert.Equal(1, result.Failed);
+        Assert.Equal("DeliveryPhotos/2026/10/2-good.jpg", Assert.Single(result.Copied).CopyKey);
+    }
+
+    [Fact]
+    public async Task ListDeliveryMediaKeysAsync_SearchesDeliveryFoldersOnly()
+    {
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(new ListObjectsV2Response { S3Objects = [new S3Object { Key = "k" }] });
+
+        await service.ListDeliveryMediaKeysAsync(1, 2026, 10);
+
+        await _s3ClientMock.DidNotReceive().ListObjectsV2Async(
+            Arg.Is<ListObjectsV2Request>(r => r!.Prefix.StartsWith("Pickup")), Arg.Any<CancellationToken>());
+        await _s3ClientMock.Received().ListObjectsV2Async(
+            Arg.Is<ListObjectsV2Request>(r => r!.Prefix == "DeliveryPhotos/2026/10/1-"), Arg.Any<CancellationToken>());
+    }
+
     private static IFormFile CreateMockFile(string fileName, string contentType, long size)
     {
         var content = new byte[size];

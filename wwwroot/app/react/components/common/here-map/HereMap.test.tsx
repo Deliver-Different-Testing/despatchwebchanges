@@ -130,7 +130,7 @@ describe('HereMap Component', () => {
             expect(document.querySelector('button[aria-label="Zoom in"]')).toBeInTheDocument();
             expect(document.querySelector('button[aria-label="Zoom out"]')).toBeInTheDocument();
             expect(document.querySelector('button[aria-label="Toggle traffic conditions"]')).toBeInTheDocument();
-            expect(document.querySelector('button[aria-label="Toggle traffic incidents"]')).toBeInTheDocument();
+            expect(document.querySelector('button[aria-label="Toggle traffic incidents"]')).not.toBeInTheDocument();
             expect(document.querySelector('button[aria-label="Choose view"]')).toBeInTheDocument();
         });
     });

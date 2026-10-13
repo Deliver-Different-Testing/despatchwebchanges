@@ -589,6 +589,28 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_MessageWithCreatedAtUtc_ConvertsFromUtc()
+    {
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedMessagesAsync(new TucManualMessage
+        {
+            UcmmId = 1,
+            JobId = 1,
+            Subject = "Tracking",
+            UcmmMessage = "Track your delivery",
+            UcmmDate = new DateTime(2024, 1, 15, 3, 0, 0),
+            UcmmCreatedAtUtc = new DateTime(2024, 1, 15, 15, 0, 0),
+            SendToEmailAddress = "customer@example.com"
+        });
+        _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(new DateTime(2024, 1, 15, 15, 0, 0))
+            .Returns(new DateTimeOffset(2024, 1, 16, 4, 0, 0, TimeSpan.FromHours(13)));
+
+        var result = await CreateService().GetDeliveryJourneyForJobAsync(1);
+
+        Assert.Equal(new DateTimeOffset(2024, 1, 16, 4, 0, 0, TimeSpan.FromHours(13)), result.Single().Date);
+    }
+
+    [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithSmsMessage_ReturnsSmsEntry()
     {
         // Arrange
@@ -636,6 +658,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             Subject = "Mid-day message",
             UcmmMessage = "Update",
             UcmmDate = new DateTime(2024, 1, 15, 12, 0, 0),
+            UcmmCreatedAtUtc = new DateTime(2024, 1, 15, 12, 0, 0),
             SendToMobile = "+1234567890"
         });
         await SeedNotesAsync(new TucNote

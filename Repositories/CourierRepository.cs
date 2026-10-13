@@ -1452,9 +1452,12 @@ public class CourierRepository(
             .Select(c => c.UccrEmail)
             .ToListAsync();
 
+        var currentDate = clock.TenantNow;
         var manualMessages = emailsToSendTo.Select(email =>
                 new TucManualMessage
                 {
+                    UcmmDate = currentDate,
+                    UcmmCreatedAtUtc = clock.UtcNow,
                     SendToEmailAddress = email,
                     ReplyToEmailAddress = Environment.GetEnvironmentVariable("ReplyToEmailAddress") ??
                                           "support@deliverdifferent.com",

@@ -4,6 +4,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -1208,6 +1209,50 @@ public partial class JobRepository
 
         Log.Debug("ExecuteUpdateAsync: Updated {Property} for bulk job {BulkJobId}", property, bulkJobId);
         return true;
+    }
+
+    /// <summary>
+    /// Updates the pickup or delivery address on a bulk ("scheduled") row. The id is a BulkJobId, which
+    /// overlaps tucJob ids, so this must never fall through to the live-job address update.
+    /// </summary>
+    public async Task UpdateBulkJobAddressAsync(UpdateAddressRequest request, AddressType addressType)
+    {
+        var address = request.Address;
+        var fullAddress = CombineAddressLines(address);
+        var latitude = address.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var longitude = address.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var bulkJobs = Context.TblBulkJobs.Where(j => j.BulkJobId == request.JobId);
+
+        var rowsAffected = addressType == AddressType.Delivery
+            ? await bulkJobs.ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.DeliveryLatitude, latitude)
+                .SetProperty(j => j.DeliveryLongitude, longitude)
+                .SetProperty(j => j.DeliveryAddressLine1, address.AddressLine1)
+                .SetProperty(j => j.DeliveryAddressLine2, address.AddressLine2)
+                .SetProperty(j => j.DeliveryAddressLine3, address.AddressLine3)
+                .SetProperty(j => j.DeliveryAddressLine4, address.AddressLine4)
+                .SetProperty(j => j.DeliveryAddressLine5, address.AddressLine5)
+                .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
+                .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7)
+                .SetProperty(j => j.DeliveryAddressLine8, address.AddressLine8)
+                .SetProperty(j => j.ToAddress, fullAddress))
+            : await bulkJobs.ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.PickUpLatitude, latitude)
+                .SetProperty(j => j.PickUpLongitude, longitude)
+                .SetProperty(j => j.PickupAddressLine1, address.AddressLine1)
+                .SetProperty(j => j.PickupAddressLine2, address.AddressLine2)
+                .SetProperty(j => j.PickupAddressLine3, address.AddressLine3)
+                .SetProperty(j => j.PickupAddressLine4, address.AddressLine4)
+                .SetProperty(j => j.PickupAddressLine5, address.AddressLine5)
+                .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
+                .SetProperty(j => j.PickupAddressLine7, address.AddressLine7)
+                .SetProperty(j => j.PickupAddressLine8, address.AddressLine8)
+                .SetProperty(j => j.FromAddress, fullAddress));
+
+        if (rowsAffected == 0)
+        {
+            throw new ArgumentException($"Bulk job with ID {request.JobId} not found", nameof(request));
+        }
     }
 
     private async Task UpdateBulkJobWithEntityAsync(int bulkJobId, JobProperty property, string value)

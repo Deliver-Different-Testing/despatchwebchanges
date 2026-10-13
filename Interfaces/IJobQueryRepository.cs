@@ -133,6 +133,11 @@ public interface IJobQueryRepository
 
     Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate, int jobId, bool isBulkJob);
     Task<bool> ValidatePodSwapAsync(string jobNumber);
+    Task<SwapPodJob?> GetSwapPodJobAsync(string jobNumber);
+
+    Task<IReadOnlyList<SwapPodCandidate>> SearchSwapPodCandidatesAsync(
+        string? term, int? statusId, string? customer, DateTime? date, string? excludeJobNumber);
+
     Task<int?> GetJobIdByNumberAsync(string jobNumber);
     Task<string?> GetStaffNameAsync(int staffId);
     Task<decimal> GetTotalAmountFromBaseAsync(int jobId, decimal baseAmount);

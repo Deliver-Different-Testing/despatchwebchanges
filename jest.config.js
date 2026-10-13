@@ -4,12 +4,12 @@ const config = {
     // Default to jsdom — most React tests need it. Pure-Node tests opt out
     // with `/** @jest-environment node */` at the top of the file.
     testEnvironment: 'jest-environment-jsdom',
-    roots: ['<rootDir>/wwwroot', '<rootDir>/scripts'],
+    roots: ['<rootDir>/wwwroot'],
     testMatch: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
     transform: {
-        // `js` is for @dfrnt/glass, which ships ESM-only (its exports map has just "import").
+        // `js` is for @deliver-different/glass, which ships ESM-only (its exports map has just "import").
         '^.+\\.(ts|tsx|js)$': ['@swc/jest', {
             jsc: {
                 parser: { syntax: 'typescript', tsx: true, decorators: true },
@@ -18,10 +18,10 @@ const config = {
         }],
     },
 
-    transformIgnorePatterns: ['/node_modules/(?!@dfrnt/glass/)'],
+    transformIgnorePatterns: ['/node_modules/(?!@deliver-different/glass/)'],
 
     moduleNameMapper: {
-        '^@dfrnt/glass$': '<rootDir>/node_modules/@dfrnt/glass/dist/index.js',
+        '^@deliver-different/glass$': '<rootDir>/node_modules/@deliver-different/glass/dist/index.js',
         '^angular$': '<rootDir>/node_modules/angular/angular.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/wwwroot/app/tests/mocks/styleMock.ts',
         '\\.html$': '<rootDir>/wwwroot/app/tests/mocks/templateMock.ts',

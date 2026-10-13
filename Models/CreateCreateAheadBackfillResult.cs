@@ -22,9 +22,3 @@ public sealed class CreateCreateAheadBackfillResult
     // checklist without a second round-trip.
     public IReadOnlyList<DateOnly> CreatedDates { get; init; } = new List<DateOnly>();
 }
-
-public sealed class CreateCreateAheadBackfillDateError
-{
-    public DateOnly ServiceDate { get; init; }
-    public string Message { get; init; } = string.Empty;
-}

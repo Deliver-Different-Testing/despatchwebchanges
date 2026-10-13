@@ -927,7 +927,6 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 platform={platformInstance}
                                 defaultLayers={defaultLayers}
                                 showTraffic={false}
-                                showIncidents={false}
                             />
                         ) : null}
                     </Box>

@@ -12,10 +12,3 @@ public sealed record MegaMapResponse
     public bool IsFlightJob { get; init; }
     public AssignedFlight FlightInfo { get; init; }
 }
-
-public sealed record CourierLocation
-{
-    public int CourierId { get; init; }
-    public string CourierName { get; init; }
-    public Coordinates? Coordinates { get; init; }
-}

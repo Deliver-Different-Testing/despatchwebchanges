@@ -5,7 +5,7 @@ import {contrastRatio, getMd3Scheme} from './md3';
 const react = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(react, '../../..');
 const cssFiles = [
-    'node_modules/@dfrnt/glass/dist/glass.css',
+    'node_modules/@deliver-different/glass/dist/glass.css',
     'components/dialogs/shared/mantine/DialogGlass.module.css',
     'components/common/box-shell/BoxShell.module.css',
 ];

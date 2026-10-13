@@ -24,7 +24,7 @@
  * (light) / charcoal #2c2a30 (dark). Elevation by tone, plus a soft shadow.
  */
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
-import {GlassDropdownRoot, glassClassNames} from '@dfrnt/glass';
+import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
 import {getMd3Scheme} from './md3';
 import {isUsTenant} from './tenant';
 

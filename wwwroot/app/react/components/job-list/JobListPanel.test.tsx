@@ -320,6 +320,31 @@ describe('JobListPanel', () => {
         });
     });
 
+    describe('undeliverableIsDone', () => {
+        const jobs = () => [
+            createMockDispatchJob({id: 1, jobNo: 'UNDELIVERABLE-1', statusId: 10}),
+            createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
+        ];
+
+        it('files Undeliverable under Done, not Active, when set', () => {
+            renderAndPushJobs(jobs(), {undeliverableIsDone: true});
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
+            expect(screen.getByText('UNDELIVERABLE-1')).toBeInTheDocument();
+            expect(screen.getByText('DONE-1')).toBeInTheDocument();
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Active'}));
+            expect(screen.queryByText('UNDELIVERABLE-1')).not.toBeInTheDocument();
+        });
+
+        it('leaves Undeliverable in Active by default', () => {
+            renderAndPushJobs(jobs());
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
+            expect(screen.queryByText('UNDELIVERABLE-1')).not.toBeInTheDocument();
+        });
+    });
+
     describe('Search Filtering', () => {
         // Fake timers fast-forward the 200ms debounce in JobListPanel without real
         // wall-clock waits. fireEvent (instead of user-event) keeps the input update

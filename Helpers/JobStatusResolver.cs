@@ -4,12 +4,6 @@ using DespatchWeb.Enums;
 namespace DespatchWeb.Helpers;
 
 /// <summary>
-/// The single operational status of a job, resolved from the several fields that can each claim to
-/// own it.
-/// </summary>
-public readonly record struct ResolvedJobStatus(int StatusId, bool IsVoid, bool IsComplete);
-
-/// <summary>
 /// Resolves one status from a job's competing status fields so no two surfaces can answer
 /// differently for the same row.
 /// <para>

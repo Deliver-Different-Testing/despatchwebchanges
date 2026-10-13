@@ -4,29 +4,6 @@ using DespatchWeb.Enums;
 namespace DespatchWeb.Helpers;
 
 /// <summary>
-/// The status fields the job list's stats header counts by, narrowed to the columns the buckets
-/// actually read so the aggregate can project straight out of SQL.
-/// </summary>
-public readonly record struct JobStatusSnapshot(
-    int? StatusId,
-    bool Done,
-    bool Void,
-    DateTime? CompletedTime,
-    bool HasCourier);
-
-/// <summary>
-/// Which column of the job list's stats header a job falls under. A voided job belongs to none of
-/// them — it is counted in the total and nowhere else.
-/// </summary>
-public enum JobListBucket
-{
-    None = 0,
-    Active = 1,
-    Transit = 2,
-    Done = 3
-}
-
-/// <summary>
 /// The one rule that sorts a job into the stats header's Active / Transit / Done columns.
 /// <para>
 /// Held as an expression tree so the same rule serves both the counting done in SQL — EF translates

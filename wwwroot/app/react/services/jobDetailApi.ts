@@ -169,6 +169,15 @@ export function updateDeliveryAddress(
     return apiClient.post<JobUpdateResponse>(getAddressEndpoint(prebook, 'delivery'), {jobId, address});
 }
 
+export function updateBulkJobAddress(
+    bulkJobId: number,
+    isDelivery: boolean,
+    address: IAddressViewModel
+): Promise<void> {
+    const endpoint = isDelivery ? 'job/UpdateBulkJobDeliveryAddress' : 'job/UpdateBulkJobPickupAddress';
+    return apiClient.post(endpoint, {jobId: bulkJobId, address});
+}
+
 // ── Pricing ─────────────────────────────────────────────────────────
 
 export interface JobRatePreview {

@@ -31,19 +31,3 @@ public interface IPdfOverlayClient
     /// </summary>
     Task<IReadOnlyList<OverlayDocument>?> ListJobDocumentsAsync(int jobId, CancellationToken ct = default);
 }
-
-/// <summary>
-/// Thrown by <see cref="IPdfOverlayClient.RenderJobAsync"/> when the render endpoint returns a real
-/// failure (any non-success status other than 404). Carries the endpoint's status and message so the
-/// caller can surface the actual cause rather than mislabelling it "no template available".
-/// </summary>
-public sealed class PdfOverlayRenderException(int statusCode, string message) : Exception(message)
-{
-    public int StatusCode { get; } = statusCode;
-}
-
-/// <summary>One overlay document offered in the job export menu.</summary>
-/// <param name="DocumentType">The document type key passed back to the render endpoint.</param>
-/// <param name="DisplayName">Human-readable label for the menu item.</param>
-/// <param name="Available">True when a template resolves for this job's client; false renders the item disabled.</param>
-public sealed record OverlayDocument(string DocumentType, string DisplayName, bool Available);

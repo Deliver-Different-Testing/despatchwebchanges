@@ -348,6 +348,8 @@ export interface JobListPanelProps {
     fetchConfig?: FetchConfig;
     /** Hide the "Logged-in only" toggle in the toolbar */
     hideLoggedInSwitch?: boolean;
+    /** File Undeliverable jobs under Done instead of Active (Current Work). */
+    undeliverableIsDone?: boolean;
     /**
      * Card header DOM node (from BoxShell). When provided, the view options
      * (density / reset columns / logged-in toggle) are portaled into the header

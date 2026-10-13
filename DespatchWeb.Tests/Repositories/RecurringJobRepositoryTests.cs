@@ -2189,6 +2189,55 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         Assert.Equal($"JOB{jobId}", restored.UcbkJobNumber);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task MaterialiseParent_StampsManualModeForProc_AndRestoresActiveMode(bool procThrows, bool scheduled)
+    {
+        const int jobId = 838;
+        _context.TucJobBookings.Add(CreateMaterialiseParentFixture(jobId, scheduleId: scheduled ? 7 : null));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var procedures = StubProcedures();
+
+        byte? modeDuringProc = null;
+        void CaptureMode()
+        {
+            using var ctx = _db.CreateContext();
+            modeDuringProc = ctx.TucJobBookings.Single(b => b.UcbkId == jobId).RecurringMode;
+            if (procThrows)
+            {
+                throw new InvalidOperationException("proc failed");
+            }
+        }
+
+        procedures.UTL_stpJobBooking_InsertJobAndChildrenAsync(
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                CaptureMode();
+                return new List<UTL_stpJobBooking_InsertJobAndChildrenResult>();
+            });
+        procedures.UTL_stpJobBooking_InsertScheduleAsync(
+                Arg.Any<int?>(), Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                CaptureMode();
+                return new List<UTL_stpJobBooking_InsertScheduleResult>();
+            });
+
+        var result = await CreateRepository().CreateCreateAheadBackfillAsync(BackfillRequest(jobId));
+
+        Assert.Equal(procThrows ? 1 : 0, result.Errors.Count);
+        Assert.Equal((byte)RecurringMode.Manual, modeDuringProc);
+
+        await using var verify = _db.CreateContext();
+        var restored = await verify.TucJobBookings.SingleAsync(
+            b => b.UcbkId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal((byte)RecurringMode.Active, restored.RecurringMode);
+    }
+
     [Fact]
     public async Task MaterialiseParent_StampsLegChildWithSuffix_LeavesOtherChildrenAlone()
     {

@@ -9,6 +9,7 @@ import {
     updateBulkJobDetail,
     updatePickupAddress,
     updateDeliveryAddress,
+    updateBulkJobAddress,
     updatePodDetails,
     updateJobReadStatus,
     restoreJobs,
@@ -262,6 +263,10 @@ export function useJobUpdate(
 
     const updateAddressMutation = useMutation({
         mutationFn: async ({job, address, isDelivery}: UpdateAddressParams) => {
+            if (job.isBulkJob) {
+                await updateBulkJobAddress(job.id, isDelivery, address);
+                return {job, response: {} as JobUpdateResponse};
+            }
             const response = isDelivery
                 ? await updateDeliveryAddress(job.id, job.preBook, address)
                 : await updatePickupAddress(job.id, job.preBook, address);
@@ -283,7 +288,7 @@ export function useJobUpdate(
             }
             await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
-            if (!response?.pending && !job.ratedManually) {
+            if (!response?.pending && !job.ratedManually && !job.isBulkJob) {
                 await checkForRateChange(job);
             }
         },

@@ -6,12 +6,3 @@ public enum VehicleType
     Truck = 2,
     Sprinter = 28
 }
-
-public enum UrgentVehicleType
-{
-    Bike = 1,
-    Car = 2,
-    Van = 3,
-    Truck = 4,
-    CargoBike = 5
-}

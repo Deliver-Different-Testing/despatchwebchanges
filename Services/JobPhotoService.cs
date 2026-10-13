@@ -281,6 +281,64 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             .ToList();
     }
 
+    public async Task<IReadOnlyList<string>> ListDeliveryMediaKeysAsync(int jobId, int year, int month)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var objects = await SearchFilesByPatternAsync(bucketName, $"{jobId}-", year, month, JobPhotoType.Delivery);
+        return objects.Select(o => o.Key).Distinct(StringComparer.Ordinal).ToList();
+    }
+
+    public async Task<DeliveryMediaCopyResult> CopyDeliveryMediaAsync(int fromJobId, int toJobId,
+        IReadOnlyList<string> sourceKeys, ISet<string> occupiedKeys)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var fromPrefix = $"{fromJobId}-";
+        var copied = new List<DeliveryMediaCopy>();
+        var failed = 0;
+
+        foreach (var sourceKey in sourceKeys)
+        {
+            var slash = sourceKey.LastIndexOf('/');
+            var fileName = sourceKey[(slash + 1)..];
+            if (!fileName.StartsWith(fromPrefix, StringComparison.Ordinal))
+            {
+                failed++;
+                continue;
+            }
+
+            var folder = sourceKey[..(slash + 1)];
+            var rest = fileName[fromPrefix.Length..];
+            var copyKey = $"{folder}{toJobId}-{rest}";
+            for (var n = 1; occupiedKeys.Contains(copyKey); n++)
+            {
+                var ext = Path.GetExtension(rest);
+                copyKey = $"{folder}{toJobId}-{rest[..^ext.Length]}-{n}{ext}";
+            }
+
+            try
+            {
+                await s3Client.CopyObjectAsync(new CopyObjectRequest
+                {
+                    SourceBucket = bucketName,
+                    SourceKey = sourceKey,
+                    DestinationBucket = bucketName,
+                    DestinationKey = copyKey
+                });
+                occupiedKeys.Add(copyKey);
+                copied.Add(new DeliveryMediaCopy(sourceKey, copyKey));
+            }
+            catch (Exception e)
+            {
+                failed++;
+                Log.Error(e, "{Message}",
+                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobPhotoService),
+                        nameof(CopyDeliveryMediaAsync)));
+            }
+        }
+
+        return new DeliveryMediaCopyResult(copied, failed);
+    }
+
     /// <summary>
     /// Retrieves all file attachments for a job from S3.
     /// </summary>
