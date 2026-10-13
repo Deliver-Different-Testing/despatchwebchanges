@@ -2665,7 +2665,7 @@ public class JobControllerTests : IDisposable
             ToDate = DateTimeOffset.Now
         };
 
-        _priceReportServiceMock.GeneratePriceDetailReportAsync(request, TestContext.Current.CancellationToken).Returns((new byte[] { 1, 2, 3 }, "price_detail.xlsx"));
+        _priceReportServiceMock.GeneratePriceDetailReportAsync(request, Arg.Any<CancellationToken>()).Returns((new byte[] { 1, 2, 3 }, "price_detail.xlsx"));
 
         var controller = CreateController();
 
@@ -2690,7 +2690,7 @@ public class JobControllerTests : IDisposable
 
         // Assert
         Assert.IsType<ForbidResult>(result);
-        await _priceReportServiceMock.DidNotReceive().GeneratePriceDetailReportAsync(Arg.Any<PriceDetailReportRequest>(), TestContext.Current.CancellationToken);
+        await _priceReportServiceMock.DidNotReceive().GeneratePriceDetailReportAsync(Arg.Any<PriceDetailReportRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
