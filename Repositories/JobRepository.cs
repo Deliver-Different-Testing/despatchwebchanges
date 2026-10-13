@@ -1214,7 +1214,7 @@ public partial class JobRepository(
                 await Context.PricingBreakdownArchives.AddAsync(archiveItem);
                 await Context.SaveChangesAsync();
 
-                await SetArchiveJobAsManuallyPriceAsync(effectiveJobId);
+                await SetArchiveJobAsManuallyPriceAsync(effectiveJobId, note);
 
                 if (isEditableArchivedSplit)
                 {
@@ -1342,7 +1342,7 @@ public partial class JobRepository(
         }
         else if (viewModel.JobId != null)
         {
-            await SetArchiveJobAsManuallyPriceAsync(viewModel.JobId.Value);
+            await SetArchiveJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
         }
 
         if (await IsLiveSplitParentAsync(viewModel.JobId, isArchived))
@@ -1387,7 +1387,8 @@ public partial class JobRepository(
 
             if (archiveJobId != null)
             {
-                await SetArchiveJobAsManuallyPriceAsync(archiveJobId.Value);
+                await SetArchiveJobAsManuallyPriceAsync(archiveJobId.Value,
+                    $"Deleted {chargeId} - {archiveBreakdown.ChargeName} - {archiveBreakdown.ChargeAmount}");
             }
 
             if (isEditableArchivedSplit)
@@ -6456,12 +6457,27 @@ public partial class JobRepository(
         await CreateNewRecurringJobNote(prebookJobId, note, false, NoteType.PricingUpdate);
     }
 
-    private async Task SetArchiveJobAsManuallyPriceAsync(int jobId)
+    private async Task SetArchiveJobAsManuallyPriceAsync(int jobId, string note)
     {
         await Context.TucJobArchives
             .Where(j => j.UcjbId == jobId)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(j => j.RatedManually, true));
+
+        await SaveNoteToMultipleArchivedJobsAsync([jobId], note, noteType: NoteType.PricingUpdate);
+
+        var staffId = _infoService.GetStaffIdOrNull();
+        Context.JobDeliveryJourneyArchives.Add(new JobDeliveryJourneyArchive
+        {
+            JobId = jobId,
+            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+            FieldName = "PriceBreakdown",
+            Comments = note,
+            StaffId = staffId,
+            UpdatedAt = DateTime.UtcNow,
+            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId)
+        });
+        await Context.SaveChangesAsync();
     }
 
     private async Task<JobInfo> GetJobInfo(int jobId) =>
