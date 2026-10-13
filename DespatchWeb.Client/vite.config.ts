@@ -5,13 +5,15 @@ import {precompress} from './scripts/vite/precompress.ts';
 // Dev-only: the .NET host that serves the API and MVC endpoints (see Properties/launchSettings.json).
 const hostTarget = process.env.DESPATCH_HOST_URL ?? 'http://despatch.local.deliverdifferent.com:63277';
 
-// Every controller route prefix the SPA calls. Anchored and case-sensitive with a trailing slash so
-// lower-case client routes (/overview, /settings) are never swallowed by the proxy.
+// Every controller route prefix the SPA calls. Anchored with a trailing slash so bare client routes
+// (/overview, /settings) are never swallowed by the proxy. ASP.NET routing is case-insensitive and the
+// client calls lower-case routes (config/, courier/, job/), so the match must be too.
 const controllerPrefixes = [
     'AccessorialCharge', 'AddressAutocomplete', 'Ai', 'Config', 'Context', 'Courier', 'DispatchLayout',
     'JobChangeRequest', 'Job', 'Messages', 'NationwideJob', 'Note', 'Overview', 'StaffPreference',
-    'Task', 'TenantSettings', 'Account',
+    'Task', 'TenantSettings', 'Account', 'Home',
 ];
+const anyCase = (word: string) => word.replace(/[a-z]/gi, c => `[${c.toLowerCase()}${c.toUpperCase()}]`);
 const proxied = {target: hostTarget, changeOrigin: false};
 
 const nodeModule = (id: string, names: string) =>
@@ -52,7 +54,7 @@ export default defineConfig(({command}) => ({
         allowedHosts: ['despatch.local.deliverdifferent.com'],
         proxy: {
             '/api': proxied,
-            [`^/(${controllerPrefixes.join('|')})/`]: proxied,
+            [`^/(${controllerPrefixes.map(anyCase).join('|')})/`]: proxied,
             '^/(images/|favicon\\.(svg|ico)|dispmain\\.ico|health)': proxied,
         },
     },
