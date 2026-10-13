@@ -21,6 +21,12 @@ public sealed class PricingPermissionService(
     /// </summary>
     private bool CallerIsNetworkPartner => scopeProvider.Scope?.IsNetworkPartner ?? false;
 
+    /// <summary>
+    /// Tenant (4) and DF Admin (5) are staff for every write in this service.
+    /// StaffID is an AdminManager account-manager link, not a staff signal.
+    /// </summary>
+    private bool CallerIsStaff => scopeProvider.Scope is { } s && (s.IsTenant || s.IsDfAdmin);
+
     // Valid pricing modes
     private static readonly HashSet<string> ValidPricingModes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -56,8 +62,7 @@ public sealed class PricingPermissionService(
     public async Task ValidateJobAccessAsync(int jobId)
     {
         // Staff members have access to all jobs
-        var staffId = tenantInfoService.GetStaffId();
-        if (staffId > 0)
+        if (CallerIsStaff)
         {
             return;
         }
@@ -103,8 +108,7 @@ public sealed class PricingPermissionService(
         }
 
         // Staff members have access to all jobs
-        var staffId = tenantInfoService.GetStaffId();
-        if (staffId > 0)
+        if (CallerIsStaff)
         {
             return [];
         }

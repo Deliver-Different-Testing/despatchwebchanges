@@ -31,6 +31,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
         _tenantInfoServiceMock.GetStaffId().Returns(1);
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns(1);
     }
 
     public async ValueTask DisposeAsync()
@@ -403,6 +404,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         const int staffId = 42;
         var currentTime = new DateTime(2024, 8, 20, 15, 30, 0);
         _tenantInfoServiceMock.GetStaffId().Returns(staffId);
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns(staffId);
         _clock = new FakeTenantClock(currentTime);
 
         _context.TucNoteTypes.Add(new TucNoteType
@@ -428,6 +430,25 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         Assert.All(notes, n => Assert.Equal(staffId, n.CreatedBy));
         Assert.All(notes, n => Assert.Equal(currentTime, n.CreatedDate));
         Assert.All(notes, n => Assert.Equal("Test bulk note", n.NoteText));
+    }
+
+
+    [Fact]
+    public async Task SaveMultipleBulkNotesAsync_WithNoStaffId_PersistsNullCreatedBy()
+    {
+        _tenantInfoServiceMock.GetStaffId().Returns(0);
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns((int?)null);
+        _context.TucNoteTypes.Add(new TucNoteType
+        {
+            NoteTypeId = 1, NoteTypeName = "Internal Note", IsActive = true, IsPublic = false, IsSystemDefined = true
+        });
+        _context.TblBulkJobs.Add(CreateBulkJob(100, "BULK001"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().SaveMultipleBulkNotesAsync([100], "No staff note");
+
+        var note = await _context.TblBulkJobNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Null(note.CreatedBy);
     }
 
     [Fact]
@@ -471,6 +492,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         const int staffId = 7;
         var tenantTime = new DateTime(2024, 8, 20, 15, 30, 0);
         _tenantInfoServiceMock.GetStaffId().Returns(staffId);
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns(staffId);
         _clock = new FakeTenantClock(tenantTime);
 
         _context.TucNoteTypes.Add(new TucNoteType
