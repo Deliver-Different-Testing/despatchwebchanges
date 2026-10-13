@@ -1408,7 +1408,7 @@ public partial class JobRepository
 
     private async Task JobUpdateAddNoteAsync(int jobId, bool isLiveJob, string updateNote)
     {
-        var staffId = _infoService.GetStaffId();
+        var staffId = _infoService.GetStaffIdOrNull();
         var currentDate = _clock.TenantNow;
         var currentDateUtc = _clock.UtcNow;
 

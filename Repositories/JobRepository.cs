@@ -1972,7 +1972,7 @@ public partial class JobRepository(
         }
 
         var currentTenantTime = _clock.TenantNow;
-        var staffId = _infoService.GetStaffId();
+        var staffId = _infoService.GetStaffIdOrNull();
         var shouldMarkAsRead = data.ShouldMarkAsRead;
 
         await Context.TucJobReadTrackers
@@ -2351,7 +2351,7 @@ public partial class JobRepository(
     {
         try
         {
-            var staffId = _infoService.GetStaffId();
+            var staffId = _infoService.GetStaffIdOrNull();
             var currentTenantTime = _clock.TenantNow;
 
             await Context.Database.ExecuteSqlInterpolatedAsync($"""
@@ -6631,7 +6631,7 @@ public partial class JobRepository(
     {
         try
         {
-            var staffId = _infoService.GetStaffId();
+            var staffId = _infoService.GetStaffIdOrNull();
             var currentTenantTime = _clock.TenantNow;
 
             await using var markReadContext = await _contextFactory.CreateDbContextAsync();

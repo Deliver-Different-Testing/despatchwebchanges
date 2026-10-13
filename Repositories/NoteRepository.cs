@@ -109,7 +109,7 @@ public class NoteRepository(
             throw new ArgumentNullException(nameof(viewModel));
         }
 
-        var staffId = infoService.GetStaffId();
+        var staffId = infoService.GetStaffIdOrNull();
         var currentTime = clock.TenantNow;
 
         if (viewModel.NoteId == 0)
@@ -140,7 +140,7 @@ public class NoteRepository(
             viewModel.NoteTypeId = (int)NoteType.InternalNote;
         }
 
-        var staffId = infoService.GetStaffId();
+        var staffId = infoService.GetStaffIdOrNull();
         var currentTime = clock.TenantNow;
 
         if (viewModel.NoteId > 0)
@@ -346,7 +346,7 @@ public class NoteRepository(
     }
 
     // Note Create/Update Operations
-    private async Task CreateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
+    private async Task CreateNoteAsync(TucNoteViewModel viewModel, int? staffId, DateTime currentTime,
         CancellationToken cancellationToken = default)
     {
         var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value) &&
@@ -424,7 +424,7 @@ public class NoteRepository(
         }
     }
 
-    private async Task UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
+    private async Task UpdateNoteAsync(TucNoteViewModel viewModel, int? staffId, DateTime currentTime,
         CancellationToken cancellationToken = default)
     {
         var isArchived = viewModel.JobId.HasValue && await IsJobArchived(viewModel.JobId.Value);
@@ -498,19 +498,24 @@ public class NoteRepository(
         await Context.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task RecordNoteHistoryAsync(int noteId, NoteHistorySource source, int staffId,
+    private async Task RecordNoteHistoryAsync(int noteId, NoteHistorySource source, int? staffId,
         string oldNoteText, string newNoteText,
         int oldNoteTypeId, int newNoteTypeId,
         bool oldIsImportant, bool newIsImportant,
         CancellationToken cancellationToken = default)
     {
+        if (staffId is null)
+        {
+            return;
+        }
+
         var now = clock.UtcNow;
         var history = new TucNoteHistory
         {
             NoteId = source == NoteHistorySource.Note ? noteId : null,
             BulkNoteId = source == NoteHistorySource.BulkNote ? noteId : null,
             ArchiveNoteId = source == NoteHistorySource.Archive ? noteId : null,
-            EditedBy = staffId,
+            EditedBy = staffId.Value,
             EditedAtUtc = now,
             OldNoteText = oldNoteText ?? string.Empty,
             NewNoteText = newNoteText ?? string.Empty,

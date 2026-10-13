@@ -47,7 +47,8 @@ public class JobController(
     IFlightAssignmentService flightAssignmentService,
     IArrivalWaitRerateService arrivalWaitRerateService,
     IAccessorialChargeRepository accessorialChargeRepository,
-    ISwapPodService swapPodService
+    ISwapPodService swapPodService,
+    IScopeProvider scopeProvider
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -62,9 +63,9 @@ public class JobController(
         try
         {
             var isUsTenant = infoService.IsUsTenant();
-            if (!isInternal)
+            if (scopeProvider.Scope?.IsCustomerScoped == true)
             {
-                await clientAccessValidator.ValidateClientAccessAsync(cid, clientIds);
+                await clientAccessValidator.ValidateClientAccessAsync(infoService.GetContactId(), clientIds);
             }
 
             var result = await jobQueryRepository.JobListAsync(
@@ -125,9 +126,9 @@ public class JobController(
                 despatchViewIds
             );
 
-            if (!isInternal)
+            if (scopeProvider.Scope?.IsCustomerScoped == true)
             {
-                await clientAccessValidator.ValidateClientAccessAsync(0, clientIds);
+                await clientAccessValidator.ValidateClientAccessAsync(infoService.GetContactId(), clientIds);
             }
 
             var result = await jobQueryRepository.GetJobCoordinatesAsync(despatchViewIds);
@@ -164,9 +165,9 @@ public class JobController(
         {
             var isUsTenant = infoService.IsUsTenant();
 
-            if (!isInternal)
+            if (scopeProvider.Scope?.IsCustomerScoped == true)
             {
-                await clientAccessValidator.ValidateClientAccessAsync(staffId, clientIds);
+                await clientAccessValidator.ValidateClientAccessAsync(infoService.GetContactId(), clientIds);
             }
 
             var jobs = await jobQueryRepository.JobListAsync(
