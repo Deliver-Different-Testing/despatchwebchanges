@@ -104,8 +104,8 @@ export function SettingRadioGroup<T extends string>({title, description, value, 
     return (
         <Paper withBorder radius="md" p={16} style={{'--setting-accent': accent} as React.CSSProperties}>
             <Radio.Group
-                label={<Text fz="sm" fw={600}>{title}</Text>}
-                description={<Text fz="sm" c="dimmed">{description}</Text>}
+                label={<Text component="span" fz="sm" fw={600}>{title}</Text>}
+                description={<Text component="span" fz="sm" c="dimmed">{description}</Text>}
                 value={value}
                 onChange={(next) => onChange(next as T)}
             >
