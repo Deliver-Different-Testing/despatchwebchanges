@@ -27,18 +27,11 @@ describe('hand-fixed surfaces follow the colour scheme', () => {
         expect(read('components/common/app-toolbar/ToolbarActions.tsx')).not.toMatch(/color="gray\.0"/);
     });
 
-    it('paints the page loader from the scheme, not a fixed light grey', () => {
-        const layout = fs.readFileSync(path.resolve(react, '../index.html'), 'utf-8');
-
-        expect(layout).toMatch(/data-dd-boot-scheme=['"]dark['"]\]\s*\.app-loader/);
-        expect(layout).toMatch(/dd-color-mode/);
-    });
-
-    it('paints the page canvas dark before the loader, so a dark start never flashes light', () => {
+    it('paints the page canvas dark before the SPA mounts, so a dark start never flashes light', () => {
         const layout = fs.readFileSync(path.resolve(react, '../index.html'), 'utf-8');
 
         expect(layout).toMatch(/html\[data-dd-boot-scheme=['"]dark['"]\][^{]*body[^{]*\{[^}]*background-color:\s*#2c2a30 !important/);
-        expect(layout).toMatch(/removeAttribute\('data-dd-boot-scheme'\)/);
+        expect(layout).toMatch(/dd-color-mode/);
     });
 
 });

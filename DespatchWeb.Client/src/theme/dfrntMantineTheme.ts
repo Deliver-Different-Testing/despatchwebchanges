@@ -7,8 +7,8 @@
  *
  * Deviations from the skill's copy, all deliberate:
  *   - `carrierBrandColors` dropped — despatchweb has no carrier logo surfaces.
- *   - Font stack drops the `"Plus Jakarta Sans Variable"` (fontsource) name: this
- *     app already loads Plus Jakarta Sans from Google Fonts in `index.html`.
+ *   - Plus Jakarta Sans is bundled from `@fontsource-variable/plus-jakarta-sans`
+ *     (imported in `main.tsx`), not loaded from Google Fonts.
  *   - `dfrntBrand` semantic-hex export added for the non-Mantine consumers that
  *     need a plain hex (the dialog header map).
  *   - Radius scale squared off and the lozenge-button defaults dropped (see
@@ -230,10 +230,10 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
         colors: {brand: brandRamp(isUsCustomer), cyan, gold, ink, reflex, grape, green, orange, red, gray, dark},
         white: '#ffffff',
         black: ink[9],
-        fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: '"Plus Jakarta Sans Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         fontFamilyMonospace: 'ui-monospace, SFMono-Regular, Menlo, monospace',
         headings: {
-            fontFamily: '"Plus Jakarta Sans", sans-serif',
+            fontFamily: '"Plus Jakarta Sans Variable", sans-serif',
             fontWeight: '600',
         },
         defaultRadius: 'sm',

@@ -7,11 +7,11 @@ import '@mantine/dates/styles.layer.css';
 import '@mantine/notifications/styles.layer.css';
 // Shared Liquid Glass classes (.dfrnt-glass*): global, unlayered, used by the dropdown/map/dialog glass.
 import '@deliver-different/glass/glass.css';
+import '@fontsource-variable/plus-jakarta-sans';
 import './utils/dayjsSetup';
 import {applyLegacyHashRedirect} from './utils/legacyHash';
 import {fetchSessionContext} from './hooks/useSessionContext';
 import type {SessionContextDto} from './api/session';
-import {hideAppLoader} from './routes/appLoader';
 
 applyLegacyHashRedirect();
 
@@ -30,7 +30,6 @@ async function boot(): Promise<void> {
     }
     const {mountSpa} = await import('./App');
     mountSpa(document.getElementById('root')!, context);
-    hideAppLoader();
 }
 
 void boot();
