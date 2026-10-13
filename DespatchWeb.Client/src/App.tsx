@@ -11,7 +11,9 @@ import {
     useSearchParams,
     type RouteObject,
 } from 'react-router';
-import {Center, Loader} from '@mantine/core';
+import {PageTransition} from './components/layout/PageTransition';
+import {PageProgress} from './components/layout/PageProgress';
+import {trackPageLoad} from './routes/pageLoadTracker';
 import {DfrntMantineProvider} from './theme/DfrntMantineProvider';
 import {SessionGate} from './components/common/session-gate/SessionGate';
 import {ThemeBootstrap} from './theme/ThemeBootstrap';
@@ -25,7 +27,7 @@ import {NavigationProvider, type Navigation, type NavigationParams} from './rout
 import {ROUTES, resolveAlias, routePath, type RouteEntry} from './routes/routeTable';
 
 const lazyScreen = <K extends string>(load: () => Promise<Record<K, React.ComponentType<any>>>, name: K) =>
-    React.lazy(async () => ({default: (await load())[name]}));
+    React.lazy(() => trackPageLoad(async () => ({default: (await load())[name]})));
 
 const DispatchScreen = lazyScreen(() => import('./pages/dispatch/DispatchScreen'), 'DispatchScreen');
 const NationwideScreen = lazyScreen(() => import('./pages/nationwide/NationwideScreen'), 'NationwideScreen');
@@ -125,12 +127,12 @@ const UnsavedChangesBlocker: React.FC = () => {
     return null;
 };
 
-const PageLoader: React.FC = () => <Center h="100%" mih="50vh"><Loader/></Center>;
-
+/** The fallback only covers first load; later switches keep the old page up (router transition) and PageProgress signals the wait. */
 export const SpaLayout: React.FC = () => (
     <RouterNavigationProvider>
         <UnsavedChangesBlocker/>
-        <Suspense fallback={<PageLoader/>}>
+        <PageProgress/>
+        <Suspense fallback={<PageTransition/>}>
             <Outlet/>
         </Suspense>
     </RouterNavigationProvider>

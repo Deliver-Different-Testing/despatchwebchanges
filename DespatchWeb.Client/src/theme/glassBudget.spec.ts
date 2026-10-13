@@ -15,6 +15,7 @@ const GLASS_SOURCES = [
     'components/common/box-shell/BoxShell.module.css', // drag ghost only, while held
     'components/common/segmented-toggle/SegmentedToggle.module.css', // sliding indicator only
     'components/dialogs/shared/mantine/DialogGlass.module.css', // bars, only with content beneath
+    'components/layout/PageTransition.module.css', // one centred pill, only while a page chunk loads
 ];
 
 const walk = (dir: string): string[] =>
