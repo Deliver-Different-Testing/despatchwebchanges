@@ -31,6 +31,7 @@ public class JobControllerTests : IDisposable
     private readonly IArrivalWaitRerateService _arrivalWaitRerateServiceMock = Substitute.For<IArrivalWaitRerateService>();
     private readonly IAccessorialChargeRepository _accessorialChargeRepositoryMock = Substitute.For<IAccessorialChargeRepository>();
     private readonly ISwapPodService _swapPodServiceMock = Substitute.For<ISwapPodService>();
+    private readonly IScopeProvider _scopeProviderMock = Substitute.For<IScopeProvider>();
     private readonly HttpClient _httpClient = new();
     private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
@@ -84,6 +85,12 @@ public class JobControllerTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private void SetupCustomerScope(int contactId)
+    {
+        _scopeProviderMock.Scope.Returns(new ScopeContext((int)ClientType.Customer, null, null));
+        _tenantInfoServiceMock.GetContactId().Returns(contactId);
+    }
+
     private JobController CreateController()
     {
         return new JobController(
@@ -113,7 +120,8 @@ public class JobControllerTests : IDisposable
             _flightAssignmentServiceMock,
             _arrivalWaitRerateServiceMock,
             _accessorialChargeRepositoryMock,
-            _swapPodServiceMock);
+            _swapPodServiceMock,
+            _scopeProviderMock);
     }
 
     /// <summary>
@@ -281,6 +289,7 @@ public class JobControllerTests : IDisposable
         const string clientIds = "456,789";
 
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        SetupCustomerScope(contactId);
         _clientAccessValidatorMock.ValidateClientAccessAsync(contactId, clientIds)
             .Returns(Task.CompletedTask);
         _jobQueryRepositoryMock
@@ -297,6 +306,39 @@ public class JobControllerTests : IDisposable
         await _clientAccessValidatorMock.Received().ValidateClientAccessAsync(contactId, clientIds);
     }
 
+    [Theory]
+    [InlineData((int)ClientType.Tenant)]
+    [InlineData((int)ClientType.DfrntAdmin)]
+    public async Task Index_TenantOrDfAdminScope_DoesNotValidateClientAccessEvenWhenNotInternal(int clientTypeId)
+    {
+        _scopeProviderMock.Scope.Returns(new ScopeContext(clientTypeId, null, null));
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock
+            .JobListAsync(Arg.Any<JobQueryParams>(), false, false, "456", Arg.Any<IReadOnlyList<int>>(), null,
+                Arg.Any<CancellationToken>()).Returns(new JobSearchResult { Jobs = [], TotalCount = 0 });
+
+        await CreateController().Index(new JobQueryParams(), isInternal: false, cid: 5, clientIds: "456",
+            despatchViewIds: []);
+
+        await _clientAccessValidatorMock.DidNotReceiveWithAnyArgs().ValidateClientAccessAsync(default, default);
+    }
+
+    [Fact]
+    public async Task GetJobsByClearListEnvelope_CustomerScope_ValidatesWithContactIdNotStaffId()
+    {
+        SetupCustomerScope(321);
+        _tenantInfoServiceMock.GetStaffId().Returns(15);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock
+            .JobListAsync(Arg.Any<JobQueryParams>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<int>>(), Arg.Any<int?>(),
+                Arg.Any<CancellationToken>()).Returns(new JobSearchResult { Jobs = [], TotalCount = 0 });
+
+        await CreateController().GetJobsByClearListEnvelope(new JobQueryParams(), isInternal: false, clientIds: "456",
+            despatchViewIds: [], selectedClearListId: 9);
+
+        await _clientAccessValidatorMock.Received(1).ValidateClientAccessAsync(321, "456");
+    }
+
     [Fact]
     public async Task Index_UnauthorizedAccess_Returns401()
     {
@@ -306,6 +348,7 @@ public class JobControllerTests : IDisposable
         const string clientIds = "456";
 
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        SetupCustomerScope(contactId);
         _clientAccessValidatorMock.ValidateClientAccessAsync(contactId, clientIds)
             .ThrowsAsync(new UnauthorizedAccessException("Unauthorized"));
 
@@ -375,7 +418,8 @@ public class JobControllerTests : IDisposable
     public async Task GetAllJobCoordinates_UnauthorizedAccess_Returns401()
     {
         // Arrange
-        _clientAccessValidatorMock.ValidateClientAccessAsync(0, "123").ThrowsAsync(new UnauthorizedAccessException());
+        SetupCustomerScope(77);
+        _clientAccessValidatorMock.ValidateClientAccessAsync(77, "123").ThrowsAsync(new UnauthorizedAccessException());
 
         var controller = CreateController();
 

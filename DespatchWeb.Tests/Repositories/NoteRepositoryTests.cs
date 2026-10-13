@@ -29,6 +29,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
         _tenantInfoServiceMock.GetStaffId().Returns(1);
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns(1);
         _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
             .Returns(ci => new DateTimeOffset(ci.Arg<DateTime>(), TimeSpan.FromHours(12)));
     }
@@ -1064,6 +1065,25 @@ public class NoteRepositoryTests : IAsyncDisposable
         Assert.Equal(1, savedNote.NoteTypeId);
         Assert.False(savedNote.IsImportant);
         Assert.Equal(1, savedNote.CreatedBy);
+    }
+
+
+    [Fact]
+    public async Task SaveBulkNoteAsync_WithNoStaffId_PersistsNullCreatedByAndSkipsHistory()
+    {
+        _tenantInfoServiceMock.GetStaffId().Returns(0);
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns((int?)null);
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TblBulkJobs.Add(CreateBulkJob(100, "BULK001"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().SaveBulkNoteAsync(
+            new TucNoteViewModel { NoteId = 0, BulkJobId = 100, NoteText = "No staff note", NoteTypeId = 1 },
+            TestContext.Current.CancellationToken);
+
+        var note = await _context.TblBulkJobNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Null(note.CreatedBy);
+        Assert.Empty(await _context.TucNoteHistories.ToListAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
