@@ -436,6 +436,39 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task ArchivedPriceBreakdownEdits_RecordArchiveNoteAndJourneyRow()
+    {
+        const int jobId = 100;
+        _tenantInfoServiceMock.GetStaffIdOrNull().Returns(1);
+        _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
+        _context.PricingBreakdownArchives.AddRange(
+            CreatePricingBreakdownArchive(1, jobId, "Original", 100.00m),
+            CreatePricingBreakdownArchive(2, jobId, "ToDelete", 10.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        await repository.UpdateJobPriceBreakdownAsync(
+            new ChargeViewModel { ChargeId = 1, JobId = jobId, Name = "Updated", Amount = 175.00m }, isArchived: true);
+        await repository.AddJobPriceBreakdownAsync(
+            new ChargeViewModel { ChildJobId = jobId, Name = "Added", Amount = 5.00m }, isArchived: true);
+        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: true);
+
+        _context.ChangeTracker.Clear();
+        var notes = await _context.TucNoteArchives.Where(n => n.JobId == jobId)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        var journeys = await _context.JobDeliveryJourneyArchives.Where(j => j.JobId == jobId)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(3, notes.Count);
+        Assert.Contains(notes, n => n.NoteText.Contains("Updated") && n.NoteText.Contains("charge amount changed"));
+        Assert.Contains(notes, n => n.NoteText.Contains("Added"));
+        Assert.Contains(notes, n => n.NoteText.Contains("Deleted") && n.NoteText.Contains("ToDelete"));
+        Assert.Equal(3, journeys.Count);
+        Assert.All(journeys, j => Assert.Equal(nameof(DeliveryJourneyChangeType.JobUpdate), j.ChangeType));
+        Assert.All(journeys, j => Assert.Equal(1, j.StaffId));
+    }
+
+    [Fact]
     public async Task UpdateJobPriceBreakdownAsync_WithNoJobOrPrebook_DoesNothing()
     {
         var viewModel = new ChargeViewModel
