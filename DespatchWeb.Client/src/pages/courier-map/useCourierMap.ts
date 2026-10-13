@@ -11,6 +11,7 @@ import type { IAvailableCourierPosition } from '../../types/interfaces/courier.i
 import type { UseCourierMapReturn } from './CourierMapPage.types';
 import { DEFAULT_ZOOM, OVERVIEW_ZOOM, getMarkerColors } from './CourierMapPage.types';
 import { initPlatform, createMap } from '../../components/common/here-map/hereMapUtils';
+import { loadHereSdk } from '../../utils/loadHereSdk';
 import { CourierMarkerManager } from './CourierMarkerManager';
 import type { CourierMapDisplaySettings } from './CourierMapDisplaySettings';
 
@@ -62,6 +63,7 @@ export function useCourierMap({
         const containerId = `courier-map-${Date.now()}`;
         mapContainerRef.current.id = containerId;
 
+        const initMap = () => {
         try {
             // Initialize platform
             platformRef.current = initPlatform({ apiKey });
@@ -105,9 +107,16 @@ export function useCourierMap({
         } catch (error) {
             console.error('Error initializing courier map:', error);
         }
+        };
+
+        let cancelled = false;
+        loadHereSdk().then(() => {
+            if (!cancelled) initMap();
+        }).catch((error) => console.error('Error loading HERE Maps SDK:', error));
 
         // Cleanup
         return () => {
+            cancelled = true;
             if (markerManagerRef.current) {
                 markerManagerRef.current.dispose();
                 markerManagerRef.current = null;

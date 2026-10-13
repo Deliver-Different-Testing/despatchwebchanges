@@ -137,8 +137,6 @@ export class JobMarkerManager {
             this.markerGroup.addObjects(markersToAdd);
         }
 
-        console.log("Markers Added: ", markersAdded);
-
         return markersAdded;
     }
 
@@ -436,7 +434,7 @@ export class JobMarkerManager {
     dispose(): void {
         this.hideTooltip();
         this.clearMarkers();
-        safeRemoveObject(this.map, this.markerGroup);
+        if (this.markerGroup?.getParentGroup?.() !== null) safeRemoveObject(this.map, this.markerGroup);
         // Remove tooltip element from DOM
         if (this.tooltipElement && this.tooltipElement.parentNode) {
             this.tooltipElement.parentNode.removeChild(this.tooltipElement);

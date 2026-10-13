@@ -353,7 +353,7 @@ export class DispatchCourierMarkerManager {
             this.markerGroup.removeEventListener('pointerenter', this.handlePointerEnter, true);
             this.markerGroup.removeEventListener('pointerleave', this.handlePointerLeave, true);
         }
-        safeRemoveObject(this.map, this.markerGroup);
+        if (this.markerGroup?.getParentGroup?.() !== null) safeRemoveObject(this.map, this.markerGroup);
         // Remove tooltip element from DOM
         if (this.tooltipElement && this.tooltipElement.parentNode) {
             this.tooltipElement.parentNode.removeChild(this.tooltipElement);

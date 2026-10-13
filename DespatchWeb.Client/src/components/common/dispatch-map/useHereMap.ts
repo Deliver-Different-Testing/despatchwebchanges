@@ -10,6 +10,7 @@ import { queryKeys } from '../../../api';
 import { getHereMapsKey } from '../../../api/configApi';
 import { DEFAULT_MAP_ZOOM } from './DispatchMap.types';
 import { getDefaultMapCenter } from '../here-map/HereMap.types';
+import { loadHereSdk } from '../../../utils/loadHereSdk';
 
 declare const H: any;
 
@@ -65,6 +66,9 @@ export function useHereMap({
 
         const initMap = async () => {
             try {
+                await loadHereSdk();
+                if (!isMounted || !mapContainerRef.current) return;
+
                 // Initialize platform
                 const platform = new H.service.Platform({
                     apikey: apiKey,

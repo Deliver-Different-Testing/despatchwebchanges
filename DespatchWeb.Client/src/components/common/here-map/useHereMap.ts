@@ -16,6 +16,7 @@ import type {
 } from './HereMap.types';
 import {MAP_CONSTANTS} from './HereMap.types';
 import * as utils from './hereMapUtils';
+import {loadHereSdk} from '../../../utils/loadHereSdk';
 
 export function useHereMap({
                                mapId,
@@ -50,6 +51,7 @@ export function useHereMap({
     const prevConfigRef = useRef<HereMapConfig | undefined>(undefined);
     const prevCredentialsRef = useRef<HereMapCredentials | undefined>(undefined);
     const prevMapIdRef = useRef<string | undefined>(undefined);
+    const initRequestRef = useRef(0);
     const prevSelectedJobIndexRef = useRef<number | undefined>(undefined);
     const prevCourierLocationRef = useRef<CourierLocation | undefined>(undefined);
 
@@ -653,7 +655,12 @@ export function useHereMap({
                 }
             }
 
-            initializeMap();
+            const initId = ++initRequestRef.current;
+            void loadHereSdk().then(() => {
+                if (initId === initRequestRef.current) initializeMap();
+            }).catch((error) => {
+                console.error('Error loading HERE Maps SDK:', error);
+            });
         }
     }, [credentials, mapId, isInitialized, mapInstance, initializeMap]);
 

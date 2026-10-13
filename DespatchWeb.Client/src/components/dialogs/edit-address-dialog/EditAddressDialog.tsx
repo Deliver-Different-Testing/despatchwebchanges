@@ -13,6 +13,7 @@ import {
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../api/addressApi';
 import {US_STATES, normalizeToStateAbbreviation} from '../../../utils/usStates';
+import {loadHereSdk} from '../../../utils/loadHereSdk';
 import type {ShowToastFn} from '../../../services/toastService';
 import {MapZoomViewControls} from '../../common/dispatch-map';
 import {safeRemoveObject} from '../../common/here-map/hereMapUtils';
@@ -174,13 +175,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         if (!dialogFullyOpen || !hereMapsApiKey || !mapContainerRef.current) return;
         if (mapInstanceRef.current) return; // Already initialized
 
-        // Check if HERE Maps SDK is loaded
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- HERE Maps SDK loaded via script tag with no TypeScript definitions
+        const initMap = (): (() => void) | undefined => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- HERE Maps SDK loaded on demand with no TypeScript definitions
         const H = (window as Record<string, any>).H;
-        if (!H) {
-            console.error('[EditAddressDialog] HERE Maps SDK not loaded');
-            return;
-        }
 
         try {
             // Initialize platform
@@ -247,6 +244,21 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             console.error('[EditAddressDialog] Error initializing HERE Maps:', error);
             showToast("Couldn't load the map. Refresh and try again.", 'error');
         }
+        };
+
+        let cancelled = false;
+        let cleanup: (() => void) | undefined;
+        loadHereSdk().then(() => {
+            if (!cancelled && !mapInstanceRef.current) cleanup = initMap();
+        }).catch((error) => {
+            console.error('[EditAddressDialog] HERE Maps SDK not loaded', error);
+            if (!cancelled) showToast("Couldn't load the map. Refresh and try again.", 'error');
+        });
+
+        return () => {
+            cancelled = true;
+            cleanup?.();
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- map init only after dialog transition/apiKey; lat/lng/addMarker change during drag
     }, [dialogFullyOpen, hereMapsApiKey]);
 
