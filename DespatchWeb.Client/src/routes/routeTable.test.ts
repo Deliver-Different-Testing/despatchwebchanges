@@ -13,7 +13,7 @@ const EXPECTED_PATHS: Record<string, string> = {
     home: '/',
     dispatch: '/dispatch',
     dispatchV2: '/dispatchV2',
-    nwV2: '/Nationwide',
+    nationwide: '/nationwide',
     cs: '/CS',
     jobSearch: '/jobSearch',
     jobSearchV2: '/jobSearchV2',
@@ -63,7 +63,7 @@ describe('routeTable', () => {
 
     it('lists nav items in the side-nav order', () => {
         expect(navRoutes().map(r => r.state)).toEqual([
-            'dispatch', 'nwV2', 'overview', 'taskDashboard',
+            'dispatch', 'nationwide', 'overview', 'taskDashboard',
             'jobSearch', 'recurringJobs', 'courierMap', 'driverManagement',
         ]);
         expect(navRoutes().map(r => r.navId)).toEqual([
@@ -74,13 +74,13 @@ describe('routeTable', () => {
 
     it('lists the landing order', () => {
         expect(landingOrder()).toEqual([
-            'dispatch', 'jobSearch', 'nwV2', 'overview',
+            'dispatch', 'jobSearch', 'nationwide', 'overview',
             'taskDashboard', 'recurringJobs', 'courierMap', 'driverManagement',
         ]);
     });
 
     it('builds paths and jobId urls', () => {
-        expect(routePath('nwV2')).toBe('/Nationwide');
+        expect(routePath('nationwide')).toBe('/nationwide');
         expect(routeUrlWithJobId('home')).toBe('/?jobId');
         expect(routeUrlWithJobId('jobSearchV2')).toBe('/jobSearchV2?jobId');
         expect(() => routePath('nope')).toThrow();
@@ -88,7 +88,7 @@ describe('routeTable', () => {
 
     it('records titles and sections for pages', () => {
         expect(getRoute('settings')).toMatchObject({title: 'Settings', section: 'Account'});
-        expect(getRoute('nwV2')).toMatchObject({title: 'Nationwide', section: 'Operations'});
+        expect(getRoute('nationwide')).toMatchObject({title: 'Nationwide', section: 'Operations'});
         expect(getRoute('taskDashboard')).toMatchObject({title: 'Task Dashboard', section: 'Dashboards'});
     });
 });

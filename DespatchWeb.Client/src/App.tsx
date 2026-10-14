@@ -61,7 +61,7 @@ const RecurringJobsRoute: React.FC = () => {
 
 const PAGE_COMPONENTS: Record<string, React.ComponentType> = {
     dispatch: DispatchRoute,
-    nwV2: NationwideRoute,
+    nationwide: NationwideRoute,
     jobSearch: JobSearchRoute,
     recurringJobs: RecurringJobsRoute,
     overview: OverviewScreen,

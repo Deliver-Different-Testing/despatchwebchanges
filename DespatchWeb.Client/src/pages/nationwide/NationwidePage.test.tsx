@@ -730,7 +730,7 @@ describe('NationwidePage', () => {
 
         it('applies a date filter pushed from the host toolbar to every list', () => {
             // V1 wired date-filter-data/on-date-filter-refresh into the toolbar
-            // (nationwide.template.html); nwV2 must do the same via the bridge.
+            // (nationwide.template.html); the React page must do the same via the bridge.
             const onLayoutBridgeReady = jest.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];

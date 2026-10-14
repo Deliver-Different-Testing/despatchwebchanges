@@ -75,7 +75,7 @@ describe('SPA routes', () => {
         expect(propsOf('jobSearch')).toEqual({jobId: 42});
     });
 
-    it.each([['/Nationwide', 'nationwide', 'deepLinkJobId'], ['/dispatch', 'dispatch', 'deepLinkJobId']])(
+    it.each([['/nationwide', 'nationwide', 'deepLinkJobId'], ['/dispatch', 'dispatch', 'deepLinkJobId']])(
         '%s gets no jobId when absent or NaN', async (path, id, prop) => {
             const {unmount} = renderWithProviders(<RouterProvider router={createMemoryRouter(spaRoutes, {initialEntries: [`${path}?jobId=abc`]})}/>);
             await screen.findByTestId(id);
