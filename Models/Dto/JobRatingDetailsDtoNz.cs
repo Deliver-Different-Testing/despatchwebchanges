@@ -24,6 +24,9 @@ public sealed record JobRatingDetailsDtoNz : JobRatingDetailsDto
     public string ToPostCode { get; init; }
     public string ToCountryCode { get; init; }
 
+    // Dangerous goods class (9 = dry ice for flights)
+    public int? DgClass { get; init; }
+
     // Package Details
     public IReadOnlyList<PackageDetailsDto> Packages { get; init; } = [];
 
