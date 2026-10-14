@@ -116,6 +116,12 @@ export interface UseJobUpdateOptions {
     onPartnerJobBlocked?: (args: {field: string; value: unknown; message: string}) => void;
 }
 
+/**
+ * Stored amounts are rounded to cents but a fresh rate carries sub-cent precision (274.8285 vs a
+ * stored 274.83), so compare in whole cents. A raw difference check flags those as price changes.
+ */
+const ratesDiffer = (a: number, b: number) => Math.round(a * 100) !== Math.round(b * 100);
+
 export function useJobUpdate(
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void,
     options?: UseJobUpdateOptions,
@@ -146,7 +152,7 @@ export function useJobUpdate(
     const checkForRateChange = useCallback(async (job: IJob) => {
         try {
             const preview = await previewJobRate(job.id);
-            if (Math.abs(preview.rate - job.charge) > 0.001) {
+            if (ratesDiffer(preview.rate, job.charge)) {
                 openRateChanges([{
                     jobId: job.id,
                     jobNo: job.jobNo,
@@ -176,7 +182,7 @@ export function useJobUpdate(
                     // Manually-priced jobs are left out entirely rather than shown disabled —
                     // a hand-set price is a decision already made, not one to re-confirm.
                     .filter(p => !p.failed && !p.ratedManually
-                        && Math.abs(p.rate - p.currentAmount) > 0.001)
+                        && ratesDiffer(p.rate, p.currentAmount))
                     .map(p => ({
                         jobId: p.jobId,
                         jobNo: p.jobNo ?? `Job ${p.jobId}`,

@@ -9,9 +9,9 @@ namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
 /// Tests for UpdatePackagesForJobAsync and UpdatePackagesForBulkJobAsync.
-/// Both methods use a "delete all, re-insert" strategy: all existing items
-/// for the scope are removed, then the incoming parcels are inserted with
-/// fresh sequential ItemIds. This eliminates itemId round-trip bugs.
+/// The live-job and bulk methods replace the scope's items with the submitted parcels; the live-job
+/// method reconciles in place (reuse leading rows, add or drop the difference) so the totals trigger
+/// never surfaces partial totals.
 /// </summary>
 public class JobRepositoryPackageTests : IAsyncDisposable
 {
@@ -215,11 +215,11 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         Assert.Equal(3, allItems.Count);
         Assert.Equal(1, allItems[0].ItemId);  // parent item untouched
-        Assert.Equal(4, allItems[1].ItemId);  // stop B untouched
-        // Stop A re-inserted with new ItemId (5, since max across job was 4)
-        Assert.Equal(5, allItems[2].ItemId);
-        Assert.Equal("Stop A - keep", allItems[2].Notes);
-        Assert.Equal(11, allItems[2].ChildJobId);
+        Assert.Equal(4, allItems[2].ItemId);  // stop B untouched
+        // Stop A's first line is reused in place, keeping its ItemId
+        Assert.Equal(2, allItems[1].ItemId);
+        Assert.Equal("Stop A - keep", allItems[1].Notes);
+        Assert.Equal(11, allItems[1].ChildJobId);
     }
 
     [Fact]
@@ -259,6 +259,106 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 5,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal((short)2, job.UcjbQty);
+    }
+
+    // SQLite stand-in for the server-side trg_UpdateLiveJobTotals plus the job-row update trigger that
+    // feeds the courier app: every write of the job's qty/weight columns is recorded in TotalsAudit.
+    private static async Task InstallJobTotalsAuditAsync(DespatchContext ctx)
+    {
+        const string totals = "SELECT IFNULL(SUM(Items), 0) FROM tucJobItems WHERE JobID = {0}";
+        const string weight = "SELECT IFNULL(SUM(Weight * Items), 0) FROM tucJobItems WHERE JobID = {0}";
+        string Recalc(string id) =>
+            $"UPDATE tucJob SET ucjbQty = ({string.Format(totals, id)}), ucjbWeight = ({string.Format(weight, id)}) WHERE ucjbID = {id};";
+
+        foreach (var sql in new[]
+                 {
+                     "CREATE TABLE TotalsAudit (JobId INTEGER, Qty INTEGER, Weight REAL)",
+                     $"CREATE TRIGGER trg_items_ai AFTER INSERT ON tucJobItems BEGIN {Recalc("NEW.JobID")} END",
+                     $"CREATE TRIGGER trg_items_au AFTER UPDATE ON tucJobItems BEGIN {Recalc("NEW.JobID")} END",
+                     $"CREATE TRIGGER trg_items_ad AFTER DELETE ON tucJobItems BEGIN {Recalc("OLD.JobID")} END",
+                     "CREATE TRIGGER trg_job_au AFTER UPDATE OF ucjbQty, ucjbWeight ON tucJob " +
+                     "BEGIN INSERT INTO TotalsAudit VALUES (NEW.ucjbID, NEW.ucjbQty, NEW.ucjbWeight); END"
+                 })
+        {
+            await ctx.Database.ExecuteSqlRawAsync(sql, TestContext.Current.CancellationToken);
+        }
+    }
+
+    private static Task<List<int>> ReadAuditedQtysAsync(DespatchContext ctx, int jobId) =>
+        ctx.Database.SqlQueryRaw<int>($"SELECT Qty AS Value FROM TotalsAudit WHERE JobId = {jobId} ORDER BY rowid")
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_AppendingParcel_NeverPassesJobTotalsThroughIntermediateValues()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(7, "JOB007"));
+        ctx.TucJobItems.AddRange(Enumerable.Range(1, 6).Select(n => new TucJobItem
+        {
+            JobId = 7, ItemId = n, Notes = $"P{n}", Length = n, Height = n, Depth = n, Weight = 8, Items = 1
+        }));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await InstallJobTotalsAuditAsync(ctx);
+
+        var parcels = Enumerable.Range(1, 7).Select(n => new ParcelDimensions
+        {
+            ItemName = $"P{n}", Length = n, Height = n, Depth = n, Weight = 8
+        }).ToList();
+        await CreateRepository().UpdatePackagesForJobAsync(7, parcels);
+
+        await using var verify = CreateContext();
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 7,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal((short)7, job.UcjbQty);
+        Assert.Equal(56, job.UcjbWeight);
+        Assert.Equal([7], await ReadAuditedQtysAsync(verify, 7));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ShrinkingParcels_KeepsLeadingRowsAndUpdatesChangedOnes()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(8, "JOB008"));
+        ctx.TucJobItems.AddRange(
+            new TucJobItem { JobId = 8, ItemId = 1, Notes = "A", Weight = 1, Items = 1 },
+            new TucJobItem { JobId = 8, ItemId = 2, Notes = "B", Weight = 1, Items = 1 },
+            new TucJobItem { JobId = 8, ItemId = 3, Notes = "C", Weight = 1, Items = 1 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await InstallJobTotalsAuditAsync(ctx);
+
+        var parcels = new List<ParcelDimensions>
+        {
+            new() { ItemName = "A", Weight = 1 },
+            new() { ItemName = "B edited", Weight = 5 }
+        };
+        await CreateRepository().UpdatePackagesForJobAsync(8, parcels);
+
+        await using var verify = CreateContext();
+        var items = await verify.TucJobItems.Where(i => i.JobId == 8).OrderBy(i => i.ItemId)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal([1, 2], items.Select(i => i.ItemId));
+        Assert.Equal(["A", "B edited"], items.Select(i => i.Notes));
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 8,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal((short)2, job.UcjbQty);
+        Assert.Equal(6, job.UcjbWeight);
+        Assert.DoesNotContain(0, await ReadAuditedQtysAsync(verify, 8));
+    }
+
+    [Fact]
+    public async Task UpdateJobWeightAsync_WeightAlreadyCurrent_DoesNotRewriteJobRow()
+    {
+        await using var ctx = CreateContext();
+        var job = CreateJob(9, "JOB009");
+        job.UcjbWeight = 56;
+        ctx.TucJobs.Add(job);
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await InstallJobTotalsAuditAsync(ctx);
+
+        await CreateRepository().UpdateJobWeightAsync(9, 56m);
+
+        await using var verify = CreateContext();
+        Assert.Empty(await ReadAuditedQtysAsync(verify, 9));
     }
 
     [Fact]

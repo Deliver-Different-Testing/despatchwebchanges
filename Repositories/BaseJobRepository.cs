@@ -828,7 +828,7 @@ public partial class BaseJobRepository(
             noteType = NoteType.InternalNote;
         }
 
-        var staffId = infoService.GetStaffId();
+        var staffId = infoService.GetStaffIdOrNull();
         var currentTime = clock.TenantNow;
 
         var newNotes = bulkJobIds.Select(bulkJobId => new TblBulkJobNote
@@ -868,7 +868,7 @@ public partial class BaseJobRepository(
 
         var now = clock.TenantNow;
         var nowUtc = clock.UtcNow;
-        var staffId = infoService.GetStaffId();
+        var staffId = infoService.GetStaffIdOrNull();
 
         var newNotes = jobIds.Select(jobId => new TucNote
             {
@@ -905,7 +905,7 @@ public partial class BaseJobRepository(
 
         var now = clock.TenantNow;
         var nowUtc = clock.UtcNow;
-        var staffId = infoService.GetStaffId();
+        var staffId = infoService.GetStaffIdOrNull();
 
         var newNotes = jobIds.Select(jobId => new TucNoteArchive
             {
@@ -937,7 +937,7 @@ public partial class BaseJobRepository(
 
             var now = clock.TenantNow;
             var nowUtc = clock.UtcNow;
-            var staffId = infoService.GetStaffId();
+            var staffId = infoService.GetStaffIdOrNull();
 
             var newNote = new TucNote
             {
@@ -1135,7 +1135,7 @@ public partial class BaseJobRepository(
                 NoteText = noteText,
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
-                CreatedBy = infoService.GetStaffId(),
+                CreatedBy = infoService.GetStaffIdOrNull(),
                 CreatedDate = clock.TenantNow,
                 CreatedDateUtc = clock.UtcNow
             };
@@ -1158,7 +1158,7 @@ public partial class BaseJobRepository(
     {
         try
         {
-            var staffId = infoService.GetStaffId();
+            var staffId = infoService.GetStaffIdOrNull();
             var currentTime = clock.TenantNow;
             var currentTimeUtc = clock.UtcNow;
 
@@ -1189,12 +1189,12 @@ public partial class BaseJobRepository(
                     throw new Exception($"Existing note under {noteId} not found");
                 }
 
-                if (currentNote != null)
+                if (currentNote != null && staffId.HasValue)
                 {
                     var history = new TucNoteHistory
                     {
                         NoteId = noteId,
-                        EditedBy = staffId,
+                        EditedBy = staffId.Value,
                         EditedAtUtc = DateTime.UtcNow,
                         OldNoteText = currentNote.NoteText,
                         NewNoteText = noteText,

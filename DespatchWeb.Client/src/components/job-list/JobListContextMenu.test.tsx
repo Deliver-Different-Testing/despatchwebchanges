@@ -390,6 +390,30 @@ describe('JobListContextMenu', () => {
             expect(props.showToast).toHaveBeenCalledWith('Job marked as read', 'success');
         });
 
+        it('Mark as Read sends the linked job id for a bulk row', async () => {
+            const props = createDefaultProps({
+                job: createMockDispatchJob({id: 900, linkedJobId: 55, isBulkJob: true, hasBeenRead: false})
+            });
+            renderWithMantine(<JobListContextMenu {...props} />);
+
+            fireEvent.click(screen.getByText('Mark as Read'));
+
+            await waitFor(() => {
+                expect(mockedApi.updateJobReadStatus).toHaveBeenCalledWith(55, true);
+            });
+        });
+
+        it('Mark as Read is disabled for archived jobs (they have no tucJob row to track)', () => {
+            const props = createDefaultProps({job: createMockDispatchJob({isArchived: true, hasBeenRead: false})});
+            renderWithMantine(<JobListContextMenu {...props} />);
+
+            const readItem = screen.getByText('Mark as Read').closest('[role="menuitem"]');
+            expect(readItem).toHaveAttribute('data-disabled');
+
+            fireEvent.click(screen.getByText('Mark as Read'));
+            expect(mockedApi.updateJobReadStatus).not.toHaveBeenCalled();
+        });
+
         it('Mark read/Unread error shows error toast', async () => {
             mockedApi.updateJobReadStatus.mockRejectedValueOnce(new Error('Network error'));
             const props = createDefaultProps();

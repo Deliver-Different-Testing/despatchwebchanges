@@ -255,15 +255,17 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private void SetupAsStaff(int staffId = 1)
+    private void SetupAsStaff(int clientTypeId = (int)ClientType.Tenant, int staffId = 0)
     {
+        SetupScope(clientTypeId);
         _tenantInfoServiceMock.GetStaffId().Returns(staffId);
         _tenantInfoServiceMock.GetContactId().Returns(0);
     }
 
-    private void SetupAsContact(int contactId, List<int> accessibleClientIds)
+    private void SetupAsContact(int contactId, List<int> accessibleClientIds, int staffId = 0)
     {
-        _tenantInfoServiceMock.GetStaffId().Returns(0);
+        SetupScope((int)ClientType.Customer);
+        _tenantInfoServiceMock.GetStaffId().Returns(staffId);
         _tenantInfoServiceMock.GetContactId().Returns(contactId);
         _clientRepositoryMock.ClientContactsAsync(contactId)
             .Returns(accessibleClientIds.Select(id => new Suggestion { Id = id, Text = $"Client {id}" }).ToList());
@@ -439,6 +441,56 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         Assert.Contains("Pricing mode is required", ex.Message);
         return;
         void Act() => service.ValidatePricingMode("");
+    }
+
+    [Theory]
+    [InlineData((int)ClientType.Tenant)]
+    [InlineData((int)ClientType.DfrntAdmin)]
+    public async Task ValidateJobAccessAsync_TenantOrDfAdminWithNoStaffId_AllowedWithoutContactLookup(int clientTypeId)
+    {
+        SetupAsStaff(clientTypeId, staffId: 0);
+        var service = CreateService();
+
+        await service.ValidateJobAccessAsync(999);
+
+        await _clientRepositoryMock.DidNotReceiveWithAnyArgs().ClientContactsAsync(default);
+    }
+
+    [Fact]
+    public async Task ValidateJobAccessAsync_CustomerWithStaffId_ScopedToOwnClients()
+    {
+        SetupAsContact(contactId: 10, accessibleClientIds: [1], staffId: 15);
+        await SeedJobAsync(100, clientId: 2);
+        var service = CreateService();
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.ValidateJobAccessAsync(100));
+        await _clientRepositoryMock.Received(1).ClientContactsAsync(10);
+    }
+
+    [Theory]
+    [InlineData((int)ClientType.Tenant)]
+    [InlineData((int)ClientType.DfrntAdmin)]
+    public async Task ValidateJobsAccessAsync_TenantOrDfAdminWithNoStaffId_ReturnsEmptyWithoutContactLookup(int clientTypeId)
+    {
+        SetupAsStaff(clientTypeId, staffId: 0);
+        var service = CreateService();
+
+        var result = await service.ValidateJobsAccessAsync([1, 2]);
+
+        Assert.Empty(result);
+        await _clientRepositoryMock.DidNotReceiveWithAnyArgs().ClientContactsAsync(default);
+    }
+
+    [Fact]
+    public async Task ValidateJobsAccessAsync_CustomerWithStaffId_ScopedToOwnClients()
+    {
+        SetupAsContact(contactId: 10, accessibleClientIds: [1], staffId: 15);
+        await SeedJobAsync(100, clientId: 2);
+        var service = CreateService();
+
+        var result = await service.ValidateJobsAccessAsync([100]);
+
+        Assert.Equal([100], result);
     }
 
     [Fact]

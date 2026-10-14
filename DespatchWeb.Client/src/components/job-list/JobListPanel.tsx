@@ -549,8 +549,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 // Plain click → set detail panel selection
                 setSelectedJobId(job.id);
                 if (onJobSelect) onJobSelect(job);
-                if (!job.hasBeenRead) {
-                    updateJobReadStatus(job.id, true).then(() => {
+                if (!job.hasBeenRead && !job.isArchived) {
+                    updateJobReadStatus(job.linkedJobId ?? job.id, true).then(() => {
                         if (fetchConfig) hookDataRef.current.refresh();
                         else if (onRefresh) onRefresh();
                     });

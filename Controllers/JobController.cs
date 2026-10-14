@@ -47,7 +47,8 @@ public class JobController(
     IFlightAssignmentService flightAssignmentService,
     IArrivalWaitRerateService arrivalWaitRerateService,
     IAccessorialChargeRepository accessorialChargeRepository,
-    ISwapPodService swapPodService
+    ISwapPodService swapPodService,
+    IScopeProvider scopeProvider
 ) : Controller
 {
     public const int MaxRestorePodImageProbeJobs = 50;
@@ -68,9 +69,9 @@ public class JobController(
         try
         {
             var isUsTenant = infoService.IsUsTenant();
-            if (!isInternal)
+            if (scopeProvider.Scope?.IsCustomerScoped == true)
             {
-                await clientAccessValidator.ValidateClientAccessAsync(cid, clientIds);
+                await clientAccessValidator.ValidateClientAccessAsync(infoService.GetContactId(), clientIds);
             }
 
             var result = await jobQueryRepository.JobListAsync(
@@ -131,9 +132,9 @@ public class JobController(
                 despatchViewIds
             );
 
-            if (!isInternal)
+            if (scopeProvider.Scope?.IsCustomerScoped == true)
             {
-                await clientAccessValidator.ValidateClientAccessAsync(0, clientIds);
+                await clientAccessValidator.ValidateClientAccessAsync(infoService.GetContactId(), clientIds);
             }
 
             var result = await jobQueryRepository.GetJobCoordinatesAsync(despatchViewIds);
@@ -170,9 +171,9 @@ public class JobController(
         {
             var isUsTenant = infoService.IsUsTenant();
 
-            if (!isInternal)
+            if (scopeProvider.Scope?.IsCustomerScoped == true)
             {
-                await clientAccessValidator.ValidateClientAccessAsync(staffId, clientIds);
+                await clientAccessValidator.ValidateClientAccessAsync(infoService.GetContactId(), clientIds);
             }
 
             var jobs = await jobQueryRepository.JobListAsync(
@@ -1082,8 +1083,10 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> SwapPod(string job1, string job2)
+    [HttpPost]
+    public async Task<IActionResult> SwapPod([FromBody] SwapPodRequest request)
     {
+        var (job1, job2) = request;
         SwapPodResult result;
         try
         {
