@@ -31,7 +31,7 @@ export const ROUTES: readonly RouteEntry[] = [
     },
     {state: 'dispatchV2', path: '/dispatchV2', kind: 'alias', redirectTo: 'dispatch', featureKey: dashboardFeatureKeys.dispatch},
     {
-        state: 'nwV2', path: '/Nationwide', kind: 'page', title: 'Nationwide', section: 'Operations',
+        state: 'nationwide', path: '/nationwide', kind: 'page', title: 'Nationwide', section: 'Operations',
         featureKey: dashboardFeatureKeys.nationwide, navId: 'shipping', navOrder: 2, landingOrder: 3,
     },
     {state: 'cs', path: '/CS', kind: 'alias', redirectTo: 'jobSearch'},

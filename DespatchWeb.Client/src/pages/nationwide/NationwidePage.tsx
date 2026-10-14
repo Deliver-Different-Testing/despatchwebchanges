@@ -555,7 +555,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     /**
      * Job-detail action (kebab) menu. Mirrors V1's `md-fab-speed-dial` handlers
      * in `nationwide.controller.ts`, reusing the same dialogs/APIs Dispatch's
-     * equivalent menu uses (window globals preloaded by the nwV2 route).
+     * equivalent menu uses (window globals preloaded by the nationwide route).
      */
     const fabAction = useCallback(async (actionId: NationwideJobActionId, job: DispatchJob) => {
         const w = window as any;

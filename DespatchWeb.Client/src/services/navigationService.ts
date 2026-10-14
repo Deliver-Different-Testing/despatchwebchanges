@@ -7,7 +7,7 @@
 
 import {routePath} from '../routes/routeTable';
 
-const JOB_DETAIL_STATES = ['home', 'nwV2'];
+const JOB_DETAIL_STATES = ['home', 'nationwide'];
 
 /**
  * Opens the Hub application in a new tab by replacing "despatch" in the current URL.

@@ -51,11 +51,11 @@ describe('dashboardRouteGuard', () => {
         expect(dashboardStateFeatureKeys.jobSearch).toBe(dashboardStateFeatureKeys.jobSearchV2);
     });
 
-    it('blocks and allows nwV2 by the nationwide grant', () => {
+    it('blocks and allows nationwide by the nationwide grant', () => {
         window.VisibleFeatures = ['dw-dispatch'];
-        expect(resolveDashboardRedirect('nwV2')).not.toBeNull();
+        expect(resolveDashboardRedirect('nationwide')).not.toBeNull();
 
         window.VisibleFeatures = undefined;
-        expect(resolveDashboardRedirect('nwV2')).toBeNull();
+        expect(resolveDashboardRedirect('nationwide')).toBeNull();
     });
 });

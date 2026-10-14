@@ -18,8 +18,8 @@ describe('navigationService', () => {
         });
 
         it('opens nationwide state with jobId', () => {
-            openJobDetail(456, 'nwV2');
-            expect(windowOpenSpy).toHaveBeenCalledWith('#/Nationwide?jobId=456', '_blank');
+            openJobDetail(456, 'nationwide');
+            expect(windowOpenSpy).toHaveBeenCalledWith('#/nationwide?jobId=456', '_blank');
         });
 
         it('does not open when jobId is falsy', () => {

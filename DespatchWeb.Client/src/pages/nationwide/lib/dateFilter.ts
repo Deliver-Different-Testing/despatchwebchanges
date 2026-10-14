@@ -1,6 +1,6 @@
 /**
  * Persisted date-range filter for Nationwide, shared between the React page
- * and the AngularJS `nwV2` route state so both read/write the same key.
+ * and the AngularJS `nationwide` route state so both read/write the same key.
  * Mirrors `pages/dispatch/lib/dispatchFilters.ts`'s `DATE_FILTER_KEY`/`loadDateFilter`.
  */
 

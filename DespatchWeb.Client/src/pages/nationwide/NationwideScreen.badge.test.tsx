@@ -18,7 +18,7 @@ jest.mock('../../api/session', () => ({
 describe('NationwideScreen frame', () => {
     it('shows the Nationwide heading, the page and the unread messages badge', () => {
         renderWithProviders(
-            <NavigationProvider value={{navigate: jest.fn(), currentState: 'nwV2'}}>
+            <NavigationProvider value={{navigate: jest.fn(), currentState: 'nationwide'}}>
                 <NationwideScreen/>
             </NavigationProvider>,
         );
