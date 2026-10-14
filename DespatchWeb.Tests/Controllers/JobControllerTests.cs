@@ -1,4 +1,5 @@
-﻿using System.Collections;
+using System.Collections;
+using System.Reflection;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
@@ -3740,7 +3741,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.SwapPod(job1, job2);
+        var result = await controller.SwapPod(new SwapPodRequest(job1, job2));
 
         // Assert
         var json = Assert.IsType<JsonResult>(result);
@@ -3753,7 +3754,7 @@ public class JobControllerTests : IDisposable
         _swapPodServiceMock.SwapAsync("JOB001", "JOB002")
             .ThrowsAsync(new SwapPodException("Job JOB001 has no POD to swap."));
 
-        var result = await CreateController().SwapPod("JOB001", "JOB002");
+        var result = await CreateController().SwapPod(new SwapPodRequest("JOB001", "JOB002"));
 
         var bad = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Job JOB001 has no POD to swap.", bad.Value);
@@ -3766,9 +3767,20 @@ public class JobControllerTests : IDisposable
     {
         _swapPodServiceMock.SwapAsync("JOB001", "JOB002").ThrowsAsync(new InvalidOperationException("boom"));
 
-        var result = await CreateController().SwapPod("JOB001", "JOB002");
+        var result = await CreateController().SwapPod(new SwapPodRequest("JOB001", "JOB002"));
 
         Assert.Equal(500, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public void SwapPod_IsPostAndBindsRequestFromBody()
+    {
+        var method = typeof(JobController).GetMethod(nameof(JobController.SwapPod))!;
+
+        Assert.NotNull(method.GetCustomAttribute<HttpPostAttribute>());
+        var parameter = Assert.Single(method.GetParameters());
+        Assert.Equal(typeof(SwapPodRequest), parameter.ParameterType);
+        Assert.NotNull(parameter.GetCustomAttribute<FromBodyAttribute>());
     }
 
     [Fact]
@@ -3801,7 +3813,7 @@ public class JobControllerTests : IDisposable
 
         var controller = CreateController();
 
-        var result = await controller.SwapPod(job1, job2);
+        var result = await controller.SwapPod(new SwapPodRequest(job1, job2));
 
         Assert.IsType<JsonResult>(result);
         await _jobCommandRepositoryMock.Received(1)
@@ -3826,7 +3838,7 @@ public class JobControllerTests : IDisposable
 
         var controller = CreateController();
 
-        var result = await controller.SwapPod(job1, job2);
+        var result = await controller.SwapPod(new SwapPodRequest(job1, job2));
 
         Assert.IsType<JsonResult>(result);
         await _jobCommandRepositoryMock.DidNotReceive()

@@ -150,7 +150,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleMarkReadUnread = async () => {
         closeAll();
         try {
-            await api.updateJobReadStatus(activeJob.id, !activeJob.hasBeenRead);
+            await api.updateJobReadStatus(activeJob.linkedJobId ?? activeJob.id, !activeJob.hasBeenRead);
             showToast(activeJob.hasBeenRead ? 'Job marked as unread' : 'Job marked as read', 'success');
             refresh();
         } catch {
@@ -580,6 +580,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         icon: <Icon lucide={activeJob.hasBeenRead ? Mail : MailOpen} size={16}/>,
                         label: activeJob.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
                         onClick: handleMarkReadUnread,
+                        disabled: activeJob.isArchived,
+                        tooltip: activeJob.isArchived ? 'Archived jobs cannot be marked as read or unread' : undefined,
                     })}
 
                     <Menu.Divider/>
