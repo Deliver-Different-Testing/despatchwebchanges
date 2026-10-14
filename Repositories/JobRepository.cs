@@ -2363,7 +2363,8 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Updates the read status for a single job using MERGE for race condition safety.
+    /// Updates the read status for a single live job. Ids with no <c>tucJob</c> row (archived or bulk
+    /// rows) are ignored: the tracker's foreign key would reject them.
     /// </summary>
     /// <param name="jobId">The job ID.</param>
     /// <param name="hasBeenRead">Whether to mark as read or unread.</param>
@@ -2375,18 +2376,35 @@ public partial class JobRepository(
             var staffId = _infoService.GetStaffIdOrNull();
             var currentTenantTime = _clock.TenantNow;
 
-            await Context.Database.ExecuteSqlInterpolatedAsync($"""
-                                                                                MERGE INTO tucJobReadTracker WITH (HOLDLOCK) AS target
-                                                                                USING (SELECT {jobId} AS JobId) AS source
-                                                                                ON target.JobId = source.JobId
-                                                                                WHEN MATCHED THEN
-                                                                                    UPDATE SET HasBeenRead = {hasBeenRead},
-                                                                                               ReadByStaffId = {staffId},
-                                                                                               ReadTimestamp = {currentTenantTime}
-                                                                                WHEN NOT MATCHED THEN
-                                                                                    INSERT (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
-                                                                                    VALUES ({jobId}, {hasBeenRead}, {staffId}, {currentTenantTime});
-                                                                """);
+            if (await UpdateExistingReadTrackerAsync(jobId, hasBeenRead, staffId, currentTenantTime))
+            {
+                return;
+            }
+
+            if (!await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId))
+            {
+                return;
+            }
+
+            var tracker = new TucJobReadTracker
+            {
+                JobId = jobId,
+                HasBeenRead = hasBeenRead,
+                ReadByStaffId = staffId,
+                ReadTimestamp = currentTenantTime
+            };
+            Context.TucJobReadTrackers.Add(tracker);
+
+            try
+            {
+                await Context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // A concurrent request inserted the tracker first; update it instead.
+                Context.Entry(tracker).State = EntityState.Detached;
+                await UpdateExistingReadTrackerAsync(jobId, hasBeenRead, staffId, currentTenantTime);
+            }
         }
         catch (Exception e)
         {
@@ -2396,6 +2414,15 @@ public partial class JobRepository(
             throw;
         }
     }
+
+    private async Task<bool> UpdateExistingReadTrackerAsync(int jobId, bool hasBeenRead, int? staffId,
+        DateTime readTimestamp) =>
+        await Context.TucJobReadTrackers
+            .Where(t => t.JobId == jobId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(t => t.HasBeenRead, hasBeenRead)
+                .SetProperty(t => t.ReadTimestamp, readTimestamp)
+                .SetProperty(t => t.ReadByStaffId, staffId)) > 0;
 
     /// <summary>
     /// Manually reprices a job with a new total price.

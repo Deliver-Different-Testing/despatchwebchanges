@@ -1374,6 +1374,28 @@ describe('JobListPanel', () => {
             expect(mockedUpdateJobReadStatus).toHaveBeenCalledWith(10, true);
         });
 
+        it('sends the linked job id for a bulk row, whose own id is a BulkJobId', () => {
+            const jobs = [
+                createMockDispatchJob({id: 900, linkedJobId: 55, isBulkJob: true, jobNo: 'BULK1', hasBeenRead: false}),
+            ];
+            renderAndPushJobs(jobs);
+
+            fireEvent.click(screen.getByText('BULK1'));
+
+            expect(mockedUpdateJobReadStatus).toHaveBeenCalledWith(55, true);
+        });
+
+        it('does not call updateJobReadStatus for an archived job (no tucJob row to track)', () => {
+            const jobs = [
+                createMockDispatchJob({id: 40, jobNo: 'ARCH1', hasBeenRead: false, isArchived: true}),
+            ];
+            renderAndPushJobs(jobs);
+
+            fireEvent.click(screen.getByText('ARCH1'));
+
+            expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
+        });
+
         it('does not call updateJobReadStatus when clicking an already-read job', () => {
             const jobs = [
                 createMockDispatchJob({id: 20, jobNo: 'READ1', hasBeenRead: true}),

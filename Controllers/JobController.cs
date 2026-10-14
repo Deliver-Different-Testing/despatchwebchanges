@@ -1072,8 +1072,10 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> SwapPod(string job1, string job2)
+    [HttpPost]
+    public async Task<IActionResult> SwapPod([FromBody] SwapPodRequest request)
     {
+        var (job1, job2) = request;
         SwapPodResult result;
         try
         {
