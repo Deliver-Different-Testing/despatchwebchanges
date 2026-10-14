@@ -2041,37 +2041,55 @@ public partial class JobRepository(
             {
                 await using var transaction = await Context.Database.BeginTransactionAsync();
 
-                await Context.TucJobItems
+                // Reconcile in place: tucJobItems carries a totals trigger that rewrites the job row (and
+                // notifies the courier app) per statement, so delete-all-then-reinsert surfaces partial totals.
+                var scoped = await Context.TucJobItems.AsTracking()
                     .Where(i => i.JobId == effectiveJobId &&
                                 (childJobId == null || i.ChildJobId == childJobId))
-                    .ExecuteDeleteAsync();
+                    .OrderBy(i => i.ItemId)
+                    .ToListAsync();
+                var existing = scoped.Where(i => i.ChildJobId == childJobId).ToList();
 
-                if (parcels.Count > 0)
+                var nextItemId = (await Context.TucJobItems
+                    .Where(i => i.JobId == effectiveJobId)
+                    .MaxAsync(i => (int?)i.ItemId) ?? 0) + 1;
+
+                for (var index = 0; index < parcels.Count; index++)
                 {
-                    var maxItemId = await Context.TucJobItems
-                        .Where(i => i.JobId == effectiveJobId)
-                        .MaxAsync(i => (int?)i.ItemId) ?? 0;
-
-                    var nextItemId = maxItemId + 1;
-
-                    var newItems = parcels.Select(p => new TucJobItem
+                    var p = parcels[index];
+                    if (index >= existing.Count)
                     {
-                        JobId = effectiveJobId,
-                        ChildJobId = childJobId,
-                        Height = p.Height ?? 0,
-                        Length = p.Length ?? 0,
-                        Depth = p.Depth ?? 0,
-                        Weight = p.Weight ?? 0,
-                        Cubic = p.Cubic,
-                        Notes = p.ItemName,
-                        Barcode = p.Barcode,
-                        Items = 1,
-                        ItemId = nextItemId++
-                    }).ToList();
+                        Context.TucJobItems.Add(new TucJobItem
+                        {
+                            JobId = effectiveJobId,
+                            ChildJobId = childJobId,
+                            Height = p.Height ?? 0,
+                            Length = p.Length ?? 0,
+                            Depth = p.Depth ?? 0,
+                            Weight = p.Weight ?? 0,
+                            Cubic = p.Cubic,
+                            Notes = p.ItemName,
+                            Barcode = p.Barcode,
+                            Items = 1,
+                            ItemId = nextItemId++
+                        });
+                        continue;
+                    }
 
-                    await Context.TucJobItems.AddRangeAsync(newItems);
-                    await Context.SaveChangesAsync();
+                    var item = existing[index];
+                    item.Height = p.Height ?? 0;
+                    item.Length = p.Length ?? 0;
+                    item.Depth = p.Depth ?? 0;
+                    item.Weight = p.Weight ?? 0;
+                    item.Cubic = p.Cubic;
+                    item.Notes = p.ItemName;
+                    item.Barcode = p.Barcode;
+                    item.Items = 1;
                 }
+
+                // A parent save also drops the stop jobs' own lines (scoped but not reusable above).
+                Context.TucJobItems.RemoveRange(scoped.Except(existing.Take(parcels.Count)));
+                await Context.SaveChangesAsync();
 
                 // Parent lines drive the family total; a stop job with its own lines is totalled on its
                 // own, and falls back to the parent's total when it has none (mirrors the read mapping).
@@ -2084,7 +2102,8 @@ public partial class JobRepository(
                     var (qty, weight) = await SumItemLinesAsync(parentLines);
                     await Context.TucJobs
                         .Where(j => (j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId) &&
-                                    !Context.TucJobItems.Any(i => i.ChildJobId == j.UcjbId))
+                                    !Context.TucJobItems.Any(i => i.ChildJobId == j.UcjbId) &&
+                                    (j.UcjbQty != qty || j.UcjbWeight != weight))
                         .ExecuteUpdateAsync(setters => setters
                             .SetProperty(j => j.UcjbQty, qty)
                             .SetProperty(j => j.UcjbWeight, weight));
@@ -2097,7 +2116,7 @@ public partial class JobRepository(
                     var (qty, weight) = await SumItemLinesAsync(
                         await ownLines.AnyAsync() ? ownLines : parentLines);
                     await Context.TucJobs
-                        .Where(j => j.UcjbId == jobId)
+                        .Where(j => j.UcjbId == jobId && (j.UcjbQty != qty || j.UcjbWeight != weight))
                         .ExecuteUpdateAsync(setters => setters
                             .SetProperty(j => j.UcjbQty, qty)
                             .SetProperty(j => j.UcjbWeight, weight));
@@ -2127,6 +2146,8 @@ public partial class JobRepository(
 
     public async Task UpdateJobWeightAsync(int jobId, decimal weight)
     {
+        var newWeight = (double)weight;
+
         if (await IsJobArchived(jobId))
         {
             await UpdateArchivedJobWeightAsync(jobId, weight);
@@ -2136,15 +2157,15 @@ public partial class JobRepository(
         if (await IsStopJob(jobId))
         {
             await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
+                .Where(j => j.UcjbId == jobId && j.UcjbWeight != newWeight)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, newWeight));
             return;
         }
 
         var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
         await Context.TucJobs
-            .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
+            .Where(j => (j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId) && j.UcjbWeight != newWeight)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, newWeight));
     }
 
     /// <summary>
