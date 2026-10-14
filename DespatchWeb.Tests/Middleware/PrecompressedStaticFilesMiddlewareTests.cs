@@ -11,7 +11,7 @@ namespace DespatchWeb.Tests.Middleware;
 
 /// <summary>
 /// Tests <see cref="PrecompressedStaticFilesMiddleware"/>, which serves the .br/.gz
-/// siblings that build.ts emits next to each bundle. The contract that matters is the
+/// siblings that the Vite precompress plugin (scripts/vite/precompress.ts) emits next to each bundle. The contract that matters is the
 /// whole pipeline — negotiation plus the static-file handler behind it — so these tests
 /// drive a real TestServer rather than the middleware in isolation.
 /// </summary>

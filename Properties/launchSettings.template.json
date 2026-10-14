@@ -45,7 +45,7 @@
     "DespatchWeb": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "http://despatchweb.local.deliverdifferent.com:63277",
+      "applicationUrl": "http://despatch.local.deliverdifferent.com:63277",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "SQLHealthCheckConnection": "",

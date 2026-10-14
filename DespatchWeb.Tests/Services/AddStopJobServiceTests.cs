@@ -313,9 +313,9 @@ public class AddStopJobServiceTests
             parentJob.UcjbId,
             Arg.Is<List<TucJobItem>>(items =>
                 items!.Count == 3
-                && items[0].Weight == 33.3333
-                && items[1].Weight == 33.3333
-                && items[2].Weight == 33.3334));
+                && Math.Abs(items[0].Weight - 33.3333) < 1e-9
+                && Math.Abs(items[1].Weight - 33.3333) < 1e-9
+                && Math.Abs(items[2].Weight - 33.3334) < 1e-9));
     }
 
     [Fact]

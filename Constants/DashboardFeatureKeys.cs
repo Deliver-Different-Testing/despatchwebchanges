@@ -5,8 +5,8 @@ namespace DespatchWeb.Constants;
 /// (<c>dbo.Feature</c>), seeded by dbmigrationsv2 under the
 /// <see cref="DespatchWebTile"/> hub tile. These are the surfaces DF Admin can
 /// show or hide per client type; each one pairs with a nav item in
-/// <c>side-nav/SideNav.tsx</c> and an AngularJS ui-router state in
-/// <c>wwwroot/app/routes.ts</c>.
+/// <c>components/common/side-nav/SideNav.tsx</c> and a route in
+/// <c>routes/routeTable.ts</c>.
 ///
 /// Keys must match the catalogue exactly — a key with no
 /// <c>ClientTypeFeature</c> row is invisible, not broken, so a typo here reads

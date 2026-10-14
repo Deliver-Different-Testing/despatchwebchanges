@@ -1722,7 +1722,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         Assert.Equal("Grey Lynn", driver.LastDeliveryCity);
     }
 
-    private static TucJob CompletedJob(int id, DateTime completedAt, string city, string suburb = null,
+    private static TucJob CompletedJob(int id, DateTime completedAt, string? city, string? suburb = null,
         bool isVoid = false, int status = (int)JobStatus.Completed) => new()
     {
         UcjbId = id,
@@ -1739,7 +1739,7 @@ public class CourierRepositoryTests : IAsyncDisposable
 
     /// <summary>
     /// Seeds one active and one inactive courier, both with a valid (future) driver's
-    /// license, for the compliance-list tests. Clock is fixed at 2024-01-15.
+    /// licence, for the compliance-list tests. Clock is fixed at 2024-01-15.
     /// </summary>
     private async Task SeedActiveAndInactiveCompliantCouriers()
     {

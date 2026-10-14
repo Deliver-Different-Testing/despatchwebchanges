@@ -40,7 +40,7 @@ public class AiRateLimiterTests
     {
         // Arrange - user has already made 20 requests this minute
         _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("user:")), Arg.Any<CancellationToken>())
-            .Returns("20"u8.ToArray());
+            .Returns([.. "20"u8]);
         _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("tenant:")), Arg.Any<CancellationToken>())
             .Returns((byte[]?)null);
 
@@ -58,9 +58,9 @@ public class AiRateLimiterTests
     {
         // Arrange - user is under limit, but tenant is at 100
         _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("user:")), Arg.Any<CancellationToken>())
-            .Returns("1"u8.ToArray());
+            .Returns([.. "1"u8]);
         _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("tenant:")), Arg.Any<CancellationToken>())
-            .Returns("100"u8.ToArray());
+            .Returns([.. "100"u8]);
 
         var service = CreateService();
 
@@ -76,9 +76,9 @@ public class AiRateLimiterTests
     {
         // Arrange
         _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("user:")), Arg.Any<CancellationToken>())
-            .Returns("5"u8.ToArray());
+            .Returns([.. "5"u8]);
         _cacheMock.GetAsync(Arg.Is<string>(k => k!.Contains("tenant:")), Arg.Any<CancellationToken>())
-            .Returns("50"u8.ToArray());
+            .Returns([.. "50"u8]);
 
         var service = CreateService();
 

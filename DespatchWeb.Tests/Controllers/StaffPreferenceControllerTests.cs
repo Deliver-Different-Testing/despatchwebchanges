@@ -98,7 +98,7 @@ public class StaffPreferenceControllerTests
         var result = await controller.SavePreference(new SavePreferenceRequest
         {
             PreferenceKey = "LiquidGlass",
-            PreferenceJson = "on",
+            PreferenceJson = "on"
         });
 
         Assert.IsType<OkResult>(result);
@@ -113,7 +113,7 @@ public class StaffPreferenceControllerTests
         var result = await controller.SavePreference(new SavePreferenceRequest
         {
             PreferenceKey = "JobListColumnsDispatchJobList",
-            PreferenceJson = "{\"columnOrder\":[]}",
+            PreferenceJson = "{\"columnOrder\":[]}"
         });
 
         Assert.IsType<OkResult>(result);

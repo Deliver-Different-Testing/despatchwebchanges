@@ -37,7 +37,7 @@ public class StaffPreferenceRepository(
                 PreferenceKey = key,
                 PreferenceJson = preferenceJson,
                 CreatedUtc = now,
-                LastModifiedUtc = now,
+                LastModifiedUtc = now
             });
         }
         else

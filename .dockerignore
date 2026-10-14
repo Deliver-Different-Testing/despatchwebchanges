@@ -1,0 +1,7 @@
+**/node_modules
+**/.jest-cache
+**/.tsbuildinfo
+**/bin
+**/obj
+wwwroot/dist
+.git

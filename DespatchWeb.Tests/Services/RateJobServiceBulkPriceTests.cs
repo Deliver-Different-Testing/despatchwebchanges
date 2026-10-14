@@ -969,10 +969,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         fileMock.Length.Returns(stream.Length);
         fileMock.OpenReadStream().Returns(stream);
         fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
-            .Returns(callInfo =>
-            {
-                return stream.CopyToAsync(callInfo.Arg<Stream>()!);
-            });
+            .Returns(callInfo => stream.CopyToAsync(callInfo.Arg<Stream>()!));
 
         return fileMock;
     }

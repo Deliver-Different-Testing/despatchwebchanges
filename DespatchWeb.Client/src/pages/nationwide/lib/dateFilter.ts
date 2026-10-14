@@ -1,0 +1,15 @@
+/**
+ * Persisted date-range filter for Nationwide, shared between the React page
+ * and the AngularJS `nwV2` route state so both read/write the same key.
+ * Mirrors `pages/dispatch/lib/dispatchFilters.ts`'s `DATE_FILTER_KEY`/`loadDateFilter`.
+ */
+
+import {getContactId} from '../../../api/session';
+import {AppPage as LegacyAppPage} from '../../../types/enums/app-pages.enum';
+import {loadDateFilterFrom, type StoredDateFilter} from '../../../utils/dateFilterStorage';
+
+export const DATE_FILTER_KEY = () => `dateFilter-${LegacyAppPage.Domestic}-${getContactId()}`;
+
+export function loadNationwideDateFilter(timeZone?: string): StoredDateFilter {
+    return loadDateFilterFrom(DATE_FILTER_KEY(), {timeZone});
+}

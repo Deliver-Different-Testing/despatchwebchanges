@@ -8,6 +8,7 @@ namespace DespatchWeb.Tests.Infrastructure;
 public class DockerfileBuildTests
 {
     private static readonly string SolutionRoot = FindSolutionRoot();
+    private const string ClientDir = "DespatchWeb.Client";
     private static readonly string[] DockerfileLines = File.ReadAllLines(Path.Combine(SolutionRoot, "Dockerfile"));
 
     [Theory]
@@ -41,10 +42,10 @@ public class DockerfileBuildTests
 
         var copyLineIndex = Array.FindIndex(DockerfileLines, 0, installLineIndex,
             l => l.StartsWith("COPY", StringComparison.OrdinalIgnoreCase)
-                 && l.Contains(fileName, StringComparison.OrdinalIgnoreCase));
+                 && l.Contains($"{ClientDir}/{fileName}", StringComparison.OrdinalIgnoreCase));
 
         Assert.True(copyLineIndex > -1,
-            $"{fileName} must be copied into the Docker build context before npm installs. " +
+            $"{ClientDir}/{fileName} must be copied into the Docker build context before npm installs. " +
             "Copying the whole source tree first invalidates the npm layer on every code change.");
     }
 
@@ -56,12 +57,30 @@ public class DockerfileBuildTests
         // image build.
         var installLineIndex = NpmInstallLineIndex();
 
-        var fullCopyIndex = Array.FindIndex(DockerfileLines,
-            l => l.Trim().StartsWith("COPY . ", StringComparison.OrdinalIgnoreCase));
+        var clientCopyIndex = Array.FindIndex(DockerfileLines,
+            l => l.Trim().StartsWith($"COPY {ClientDir}/ ", StringComparison.OrdinalIgnoreCase));
 
-        Assert.True(fullCopyIndex > -1, "Dockerfile should copy the full source tree");
-        Assert.True(fullCopyIndex > installLineIndex,
-            "`COPY . ./` must come after the npm install step so the dependency layer stays cached.");
+        Assert.True(clientCopyIndex > -1, "Dockerfile should copy the client source tree");
+        Assert.True(clientCopyIndex > installLineIndex,
+            $"`COPY {ClientDir}/ ./` must come after the npm install step so the dependency layer stays cached.");
+    }
+
+    [Fact]
+    public void Dockerfile_BuildsClientBeforePublish_AndCopiesDistIntoHost()
+    {
+        var clientBuildIndex = Array.FindIndex(DockerfileLines,
+            l => l.TrimStart().StartsWith("RUN npm run build", StringComparison.OrdinalIgnoreCase));
+        var distCopyIndex = Array.FindIndex(DockerfileLines,
+            l => l.StartsWith("COPY --from=", StringComparison.OrdinalIgnoreCase)
+                 && l.Contains("wwwroot/dist", StringComparison.OrdinalIgnoreCase));
+        var publishIndex = Array.FindIndex(DockerfileLines,
+            l => l.Contains("dotnet publish", StringComparison.OrdinalIgnoreCase));
+
+        Assert.True(clientBuildIndex > -1, "Dockerfile should build the client with `npm run build`");
+        Assert.True(distCopyIndex > clientBuildIndex,
+            "The built wwwroot/dist must be copied from the client stage into the host build");
+        Assert.True(publishIndex > distCopyIndex,
+            "dotnet publish must run after wwwroot/dist is in place, or the image ships without the SPA");
     }
 
     [Fact]
