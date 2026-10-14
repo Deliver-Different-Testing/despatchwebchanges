@@ -750,6 +750,22 @@ describe('useJobUpdate', () => {
             expect([...result.current.selectedRateJobIds]).toEqual([1, 3]);
         });
 
+        it('ignores sub-cent differences between the stored amount and a fresh rate', async () => {
+            // Stored amounts are rounded to cents; a fresh NZ flight rate is 274.8285 against a stored 274.83.
+            mockPreviewJobRates.mockResolvedValueOnce([
+                ratePreview(1, 274.83, 274.8285),
+                ratePreview(2, 399.64, 399.6405),
+                ratePreview(3, 274.83, 274.84),   // a real one-cent move still counts
+            ]);
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.checkForRateChanges([1, 2, 3]);
+            });
+
+            expect(result.current.pendingRateChanges.map(r => r.jobId)).toEqual([3]);
+        });
+
         it('never offers to re-price a manually-priced job', async () => {
             // A hand-set price must survive a date change. Offering it — even unticked — is a
             // click away from clobbering it, so it is left out of the dialog entirely.

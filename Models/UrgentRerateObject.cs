@@ -10,6 +10,8 @@ public sealed class UrgentRerateObject
     public int Weight { get; init; }
     public int Quantity { get; init; }
     public bool? IsDangerousGoods { get; init; }
+    public int? DGClass { get; init; }
+    public decimal? DryIceWeight { get; init; }
     public bool? IsPrebook { get; init; }
     public DateTime? DateTime { get; init; }
     public bool? Van { get; init; }

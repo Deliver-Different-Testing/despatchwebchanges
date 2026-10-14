@@ -95,6 +95,7 @@ public static partial class JobMappings
             DeliveryLong = job.DeliveryLongitude ?? 0,
 
             DangerousGoods = job.Dgdocument ?? false,
+            DgClass = job.Dgclass,
             TotalPallets = job.TucJobItemJobs.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
@@ -194,6 +195,7 @@ public static partial class JobMappings
             DeliveryLong = job.DeliveryLongitude ?? 0,
 
             DangerousGoods = job.Dgdocument ?? false,
+            DgClass = job.Dgclass,
             TotalPallets = 0,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
@@ -349,6 +351,7 @@ public static partial class JobMappings
             FromZip = job.PickupAddressLine7,
             ToZip = job.DeliveryAddressLine7,
             DangerousGoods = job.Dgdocument ?? false,
+            DgClass = job.Dgclass,
             TotalPallets = job.TucJobBookingItemBookings.Count,
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
