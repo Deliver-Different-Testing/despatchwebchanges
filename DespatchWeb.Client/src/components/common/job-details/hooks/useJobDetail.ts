@@ -80,8 +80,11 @@ export function useJobDetail({
         // undefined on the parent itself - same pattern used in
         // useJobActions.ts:884 for partner-rate lookup.
         const selected = jobQuery.data.job;
-        const familyParent = selected.rootParentId
-            ? (allJobs.find(j => j.id === selected.rootParentId) ?? selected)
+        // parentId is the key the server builds the family on, so it covers
+        // split children whose rootParentId is unset.
+        const anchorId = selected.rootParentId || selected.parentId;
+        const familyParent = anchorId
+            ? (allJobs.find(j => j.id === anchorId) ?? selected)
             : selected;
         const parentId = familyParent.id;
 

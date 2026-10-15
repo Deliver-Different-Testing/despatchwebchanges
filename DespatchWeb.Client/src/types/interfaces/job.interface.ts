@@ -21,6 +21,7 @@ export interface IJob {
     angularId: string;
     id: number;
     rootParentId?: number;
+    parentId?: number;
     hasBeenRead: boolean;
     time?: Dayjs;
     bookedDate?: Dayjs;

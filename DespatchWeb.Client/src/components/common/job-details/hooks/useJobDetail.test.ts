@@ -167,6 +167,29 @@ describe('useJobDetail', () => {
         expect(jobNos).toEqual(['J10', 'J1', 'J2', 'J20']);
     });
 
+    it('anchors sort on the family parent via parentId when a split child has no rootParentId', async () => {
+        const mockGroup = {
+            job: {id: 202, jobNo: 'S500-2', parentId: 200, rootParentId: undefined, isBulkJob: false} as any,
+            relatedJobs: [
+                {id: 200, jobNo: 'S500',   parentId: undefined, rootParentId: undefined, isBulkJob: false} as any,
+                {id: 201, jobNo: 'S500-1', parentId: 200,       rootParentId: undefined, isBulkJob: false} as any,
+                {id: 203, jobNo: 'S500-3', parentId: 200,       rootParentId: undefined, isBulkJob: false} as any,
+            ],
+        };
+        mockGetJobDetail.mockResolvedValueOnce(mockDto as any);
+        mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
+
+        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+        const {result} = renderHook(
+            () => useJobDetail({jobId: 202, isRecurringJob: false, isBulkJob: false}),
+            {wrapper},
+        );
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(result.current.sortedRelatedJobs[0].jobNo).toBe('S500');
+    });
+
     it('anchors sort on family parent (via rootParentId) when a child leg is selected', async () => {
         // P1012 family: parent P1012 (id=100), children LHP / LH1..LH4 / DEL.
         // User clicks LH1 - the API returns LH1 as jobGroup.job and the
