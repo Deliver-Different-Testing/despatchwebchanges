@@ -6,6 +6,9 @@ namespace DespatchWeb.Extensions;
 
 public static class AuthServiceCollectionExtensions
 {
+    public const string AuthRedirectHeader = "x-auth-redirect";
+    private const string ContextPath = "/api/context";
+
     public static void AddAppAuthentication(this IServiceCollection services, string domain)
     {
         services.AddAuthentication("Identity.Application")
@@ -20,6 +23,14 @@ public static class AuthServiceCollectionExtensions
                     OnRedirectToLogin = context =>
                     {
                         var appSettings = context.HttpContext.RequestServices.GetRequiredService<IOptions<AppSettings>>().Value;
+                        if (context.Request.Path.StartsWithSegments(ContextPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // XHR: a redirect would be followed by the browser and hide the 401 from the client.
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            context.Response.Headers[AuthRedirectHeader] = appSettings.PublicPath;
+                            return Task.CompletedTask;
+                        }
+
                         context.HttpContext.Response.Redirect(appSettings.PublicPath);
                         return Task.CompletedTask;
                     }

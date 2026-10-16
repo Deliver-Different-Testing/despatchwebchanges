@@ -97,6 +97,6 @@ public class TenantSettingsServiceTests : IAsyncDisposable
         Created = TestDates.Now,
         CreatedBy = "Test",
         LastModified = TestDates.Now,
-        LastModifiedBy = "Test",
+        LastModifiedBy = "Test"
     };
 }

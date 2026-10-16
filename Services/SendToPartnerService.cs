@@ -119,7 +119,86 @@ public sealed class SendToPartnerService(
             };
         }
     }
-    
+
+    public async Task<PartnerRateForJobResponse> GetRateForJobAsync(int pairingId, int jobId)
+    {
+        var (baseUrl, bearerToken) = ResolveUrlAndToken();
+        if (baseUrl is null || bearerToken is null)
+        {
+            return new PartnerRateForJobResponse { Source = "none" };
+        }
+
+        var url = $"{baseUrl}/api/v1/admin/partner/pairings/{pairingId}/rate-for-job";
+
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(new { jobId })
+        };
+        AttachBearer(httpRequest, bearerToken);
+
+        try
+        {
+            var response = await httpClient.SendAsync(httpRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<PartnerRateForJobResponse>()
+                       ?? new PartnerRateForJobResponse { Source = "none" };
+            }
+
+            Log.Warning("Rate lookup failed for pairing {PairingId}, job {JobId}: {StatusCode}",
+                pairingId, jobId, response.StatusCode);
+            return new PartnerRateForJobResponse { Source = "none" };
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error fetching rate for pairing {PairingId}, job {JobId}", pairingId, jobId);
+            return new PartnerRateForJobResponse { Source = "none" };
+        }
+    }
+
+    public async Task<PartnerInboundJobAcceptanceStateResponse?> GetInboundJobAcceptanceStateAsync(int jobId,
+        CancellationToken ct)
+    {
+        var (baseUrl, bearerToken) = ResolveUrlAndToken();
+        if (baseUrl is null || bearerToken is null)
+        {
+            return null;
+        }
+
+        var url = $"{baseUrl}/api/v1/admin/partner/inbound-jobs/by-job/{jobId}";
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+        AttachBearer(httpRequest, bearerToken);
+
+        try
+        {
+            var response = await httpClient.SendAsync(httpRequest, ct);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<PartnerInboundJobAcceptanceStateResponse>(ct);
+            }
+
+            Log.Warning("Acceptance-state lookup failed for job {JobId}: {StatusCode}",
+                jobId, response.StatusCode);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error fetching acceptance state for job {JobId}", jobId);
+            return null;
+        }
+    }
+
+    public Task<PartnerInboundJobActionResponse> AcceptInboundJobAsync(int jobId) =>
+        PostInboundJobActionAsync(jobId, "accept", payload: null);
+
+    public Task<PartnerInboundJobActionResponse> RejectInboundJobAsync(int jobId, string reason) =>
+        PostInboundJobActionAsync(jobId, "reject", payload: new { reason });
+
     private async Task RecordOutboundPartnerDispatchAsync(int jobId, int pairingId)
     {
         try
@@ -164,7 +243,7 @@ public sealed class SendToPartnerService(
                     ? "Job sent to partner"
                     : $"Job sent to partner; tracking {trackingNumber}"
             };
-            
+
             await ctx.JobDeliveryJourneys.AddAsync(dispatchedToPartnerRecord);
             await ctx.SaveChangesAsync();
         }
@@ -208,85 +287,6 @@ public sealed class SendToPartnerService(
         return $"{prefix}: {snippet.Trim()}";
     }
 
-    public async Task<PartnerRateForJobResponse> GetRateForJobAsync(int pairingId, int jobId)
-    {
-        var (baseUrl, bearerToken) = ResolveUrlAndToken();
-        if (baseUrl is null || bearerToken is null)
-        {
-            return new PartnerRateForJobResponse { Source = "none" };
-        }
-
-        var url = $"{baseUrl}/api/v1/admin/partner/pairings/{pairingId}/rate-for-job";
-
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = JsonContent.Create(new { jobId })
-        };
-        AttachBearer(httpRequest, bearerToken);
-
-        try
-        {
-            var response = await httpClient.SendAsync(httpRequest);
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<PartnerRateForJobResponse>()
-                       ?? new PartnerRateForJobResponse { Source = "none" };
-            }
-
-            Log.Warning("Rate lookup failed for pairing {PairingId}, job {JobId}: {StatusCode}",
-                pairingId, jobId, response.StatusCode);
-            return new PartnerRateForJobResponse { Source = "none" };
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error fetching rate for pairing {PairingId}, job {JobId}", pairingId, jobId);
-            return new PartnerRateForJobResponse { Source = "none" };
-        }
-    }
-
-    public async Task<PartnerInboundJobAcceptanceStateResponse?> GetInboundJobAcceptanceStateAsync(int jobId)
-    {
-        var (baseUrl, bearerToken) = ResolveUrlAndToken();
-        if (baseUrl is null || bearerToken is null)
-        {
-            return null;
-        }
-
-        var url = $"{baseUrl}/api/v1/admin/partner/inbound-jobs/by-job/{jobId}";
-        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
-        AttachBearer(httpRequest, bearerToken);
-
-        try
-        {
-            var response = await httpClient.SendAsync(httpRequest);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return null;
-            }
-
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<PartnerInboundJobAcceptanceStateResponse>();
-            }
-
-            Log.Warning("Acceptance-state lookup failed for job {JobId}: {StatusCode}",
-                jobId, response.StatusCode);
-            return null;
-
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error fetching acceptance state for job {JobId}", jobId);
-            return null;
-        }
-    }
-
-    public Task<PartnerInboundJobActionResponse> AcceptInboundJobAsync(int jobId) =>
-        PostInboundJobActionAsync(jobId, "accept", payload: null);
-
-    public Task<PartnerInboundJobActionResponse> RejectInboundJobAsync(int jobId, string reason) =>
-        PostInboundJobActionAsync(jobId, "reject", payload: new { reason });
-
     private async Task<PartnerInboundJobActionResponse> PostInboundJobActionAsync(int jobId, string action,
         object? payload)
     {
@@ -329,7 +329,6 @@ public sealed class SendToPartnerService(
                 Success = false,
                 ErrorMessage = BuildFallbackErrorMessage(response.StatusCode, body)
             };
-
         }
         catch (Exception ex)
         {

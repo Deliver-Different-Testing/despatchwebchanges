@@ -292,7 +292,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // The compound field deserialised and called the repository with the parcels +
         // weight from the payload. The change-request row's UjcrJobId carries the target.
         await _jobCommandRepository.Received(1).UpdatePackagesForJobAsync(
-            1, Arg.Is<IReadOnlyList<ParcelDimensions>>(p => p!.Count == 1 && p[0].Length == 10));
+            1, Arg.Is<IReadOnlyList<ParcelDimensions>>(p => p!.Count == 1 && Math.Abs(p[0].Length.GetValueOrDefault() - 10) < 1e-9));
         await _jobCommandRepository.Received(1).UpdateJobWeightAsync(1, 12.5m);
     }
 
@@ -1225,7 +1225,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.True(result.Success);
         Assert.Equal(2, result.Requests.Count);
         await using var ctx = CreateContext();
-        var rows = await ctx.TucJobChangeRequests.OrderBy(r => r.UjcrId).ToListAsync();
+        var rows = await ctx.TucJobChangeRequests.OrderBy(r => r.UjcrId).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(2, rows.Count);
         Assert.All(rows, r =>
         {
@@ -1250,9 +1250,9 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             CancellationToken.None);
 
         await using var ctx = CreateContext();
-        var row = await ctx.TucJobChangeRequests.SingleAsync();
+        var row = await ctx.TucJobChangeRequests.SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(JobChangeRequestStatus.Pending, row.UjcrStatus);
-        Assert.Null(await ctx.TucJobs.Where(j => j.UcjbId == 1).Select(j => j.UcjbClientRefa).SingleAsync());
+        Assert.Null(await ctx.TucJobs.Where(j => j.UcjbId == 1).Select(j => j.UcjbClientRefa).SingleAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -1269,7 +1269,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.True(second.Success);
         Assert.Equal(first.Requests.Single().Id, second.Requests.Single().Id);
         await using var ctx = CreateContext();
-        Assert.Equal(1, await ctx.TucJobChangeRequests.CountAsync());
+        Assert.Equal(1, await ctx.TucJobChangeRequests.CountAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -1296,7 +1296,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         Assert.False(result.Success);
         await using var ctx = CreateContext();
-        Assert.Equal(0, await ctx.TucJobChangeRequests.CountAsync());
+        Assert.Equal(0, await ctx.TucJobChangeRequests.CountAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Theory]
@@ -1312,7 +1312,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         Assert.False(result.Success);
         await using var ctx = CreateContext();
-        Assert.Equal(0, await ctx.TucJobChangeRequests.CountAsync());
+        Assert.Equal(0, await ctx.TucJobChangeRequests.CountAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -1329,7 +1329,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.False(result.Success);
         Assert.Contains("pending", result.Message, StringComparison.OrdinalIgnoreCase);
         await using var ctx = CreateContext();
-        Assert.Equal(1, await ctx.TucJobChangeRequests.CountAsync());
+        Assert.Equal(1, await ctx.TucJobChangeRequests.CountAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -1337,7 +1337,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync(unsetPartnerJobGuid: true);
 
-        var result = await CreateService().RecordAgentCreateAsync(AgentPayload("call-1", 1), CancellationToken.None);
+        var result = await CreateService().RecordAgentCreateAsync(AgentPayload(), CancellationToken.None);
 
         Assert.False(result.Success);
     }
@@ -1368,7 +1368,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         Assert.True(result.Success);
         await using var ctx = CreateContext();
-        Assert.Equal("PO-1", await ctx.TucJobs.Where(j => j.UcjbId == 1).Select(j => j.UcjbClientRefa).SingleAsync());
+        Assert.Equal("PO-1", await ctx.TucJobs.Where(j => j.UcjbId == 1).Select(j => j.UcjbClientRefa).SingleAsync(cancellationToken: TestContext.Current.CancellationToken));
         await _partnerClient.DidNotReceiveWithAnyArgs().ForwardDecisionAsync(0, Guid.Empty, null!, null, CancellationToken.None);
     }
 

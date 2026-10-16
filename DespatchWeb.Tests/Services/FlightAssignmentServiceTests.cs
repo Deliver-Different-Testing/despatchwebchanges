@@ -66,7 +66,7 @@ public class FlightAssignmentServiceTests
         _flightService.CreateFlightRuleByDepartureAsync(Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<string>())
             .Returns("wh-1", "wh-2");
 
-        await CreateService().AssignFlightAsync(request);
+        await CreateService().AssignFlightAsync(request, TestContext.Current.CancellationToken);
 
         await _flightService.Received(1).CreateFlightRuleByDepartureAsync("NZ123", Arg.Any<DateTimeOffset>(), "AKL");
         await _flightService.Received(1).CreateFlightRuleByDepartureAsync("NZ456", Arg.Any<DateTimeOffset>(), "AKL");
@@ -87,7 +87,7 @@ public class FlightAssignmentServiceTests
             FlightSegments = [Segment("NZ", "123")]
         };
         using var cts = new CancellationTokenSource();
-        cts.Cancel();
+        await cts.CancelAsync();
 
         await Assert.ThrowsAsync<OperationCanceledException>(
             () => CreateService().AssignFlightAsync(request, cts.Token));
@@ -113,10 +113,10 @@ public class FlightAssignmentServiceTests
         };
         using var cts = new CancellationTokenSource();
         _flightService.CreateFlightRuleByDepartureAsync(Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<string>())
-            .Returns(_ =>
+            .Returns(async _ =>
             {
-                cts.Cancel();
-                return Task.FromResult("wh-1");
+                await cts.CancelAsync();
+                return "wh-1";
             });
 
         await CreateService().AssignFlightAsync(request, cts.Token);

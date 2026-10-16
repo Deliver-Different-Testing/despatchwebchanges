@@ -18,11 +18,10 @@ public partial class JobRepository
 {
     /// <summary>Synthetic charge ids for the two partner-pay lines. Negative so they can never collide
     /// with a real PricingBreakdownId, and stable so the React table has a key.</summary>
-    internal const int NetworkPartnerBaseChargeId = -1;
-    internal const int NetworkPartnerFuelChargeId = -2;
-
-    internal const string NetworkPartnerBaseChargeName = "Base";
-    internal const string NetworkPartnerFuelChargeName = "Fuel";
+    private const int NetworkPartnerBaseChargeId = -1;
+    private const int NetworkPartnerFuelChargeId = -2;
+    private const string NetworkPartnerBaseChargeName = "Base";
+    private const string NetworkPartnerFuelChargeName = "Fuel";
 
     /// <summary>
     /// The partner's pay on a job: <c>CourierPayment</c> and <c>CourierFuel</c>, live row first, then
@@ -35,6 +34,7 @@ public partial class JobRepository
             .Where(j => j.UcjbId == jobId)
             .Select(j => new NetworkPartnerPay(j.CourierPayment ?? 0, j.CourierFuel ?? 0))
             .FirstOrDefaultAsync();
+       
         if (live != null)
         {
             return live;
@@ -52,7 +52,7 @@ public partial class JobRepository
     /// <c>CostAmount</c> stays null so nothing about the tenant's margin leaks into the payload.
     /// Empty when the job is not visible to the caller.
     /// </summary>
-    public async Task<IReadOnlyList<ChargeViewModel>> GetNetworkPartnerPriceBreakdownAsync(int jobId, bool isArchived)
+    private async Task<IReadOnlyList<ChargeViewModel>> GetNetworkPartnerPriceBreakdownAsync(int jobId, bool isArchived)
     {
         var pay = await GetNetworkPartnerPayAsync(jobId);
         return pay == null ? [] : BuildNetworkPartnerBreakdown(jobId, isArchived, pay);
@@ -61,7 +61,7 @@ public partial class JobRepository
     internal static IReadOnlyList<ChargeViewModel> BuildNetworkPartnerBreakdown(
         int jobId, bool isArchived, NetworkPartnerPay pay) =>
     [
-        new ChargeViewModel
+        new()
         {
             ChargeId = NetworkPartnerBaseChargeId,
             Name = NetworkPartnerBaseChargeName,
@@ -69,7 +69,7 @@ public partial class JobRepository
             JobId = jobId,
             IsArchived = isArchived
         },
-        new ChargeViewModel
+        new()
         {
             ChargeId = NetworkPartnerFuelChargeId,
             Name = NetworkPartnerFuelChargeName,
@@ -85,7 +85,7 @@ public partial class JobRepository
     /// rather than what the tenant is charging. Jobs the partner cannot see (not theirs, hence not
     /// returned by the filtered query) get a null charge rather than the tenant's figure.
     /// </summary>
-    private async Task SubstituteNetworkPartnerChargesAsync(JobGroupViewModel group)
+    private async Task SubstituteNetworkPartnerChargesAsync(JobGroupViewModel? group)
     {
         if (group?.Job == null)
         {
@@ -105,7 +105,7 @@ public partial class JobRepository
     /// <summary>Pure: the charge on each job becomes the partner's total pay for that job, or null when
     /// the partner has no visibility of it. Kept static so the rule is unit-testable without a database.</summary>
     internal static void ApplyNetworkPartnerCharges(
-        JobGroupViewModel group, IReadOnlyDictionary<int, NetworkPartnerPay> payByJob)
+        JobGroupViewModel? group, IReadOnlyDictionary<int, NetworkPartnerPay> payByJob)
     {
         if (group?.Job == null)
         {

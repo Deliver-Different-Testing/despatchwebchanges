@@ -39,11 +39,15 @@ public sealed class PrecompressedStaticFileOptions
         OnPrepareResponse = ctx =>
         {
             ctx.Context.Response.Headers.CacheControl =
-                ImmutableCaching && IsHashedBundle(ctx.File.Name)
+                ImmutableCaching && (IsHashedBundle(ctx.File.Name) || IsViteAsset(ctx.Context.Request.Path))
                     ? "public, max-age=31536000, immutable"
                     : "no-cache";
         }
     };
+
+    // Vite content-hashes everything it emits under assets/ (fonts, images, svg), not just js/css.
+    private static bool IsViteAsset(PathString path) =>
+        path.StartsWithSegments("/dist/assets", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsHashedBundle(string fileName)
     {

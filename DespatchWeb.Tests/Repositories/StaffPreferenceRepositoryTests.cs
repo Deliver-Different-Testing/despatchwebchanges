@@ -152,7 +152,7 @@ public class StaffPreferenceRepositoryTests : IAsyncDisposable
                 PreferenceKey = "AutoMate",
                 PreferenceJson = "{\"theirs\":true}",
                 CreatedUtc = DateTime.UtcNow,
-                LastModifiedUtc = DateTime.UtcNow,
+                LastModifiedUtc = DateTime.UtcNow
             });
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }

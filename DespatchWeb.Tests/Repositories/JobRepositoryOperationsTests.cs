@@ -385,7 +385,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         Assert.NotNull(job);
-        Assert.Equal(0m, job!.UcjbAmount);
+        Assert.Equal(0m, job.UcjbAmount);
     }
 
     [Fact]
@@ -451,7 +451,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobArchives.FindAsync([200], TestContext.Current.CancellationToken);
         Assert.NotNull(job);
-        Assert.Equal(0m, job!.UcjbAmount);
+        Assert.Equal(0m, job.UcjbAmount);
     }
 
     [Fact]
@@ -525,7 +525,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         Assert.NotNull(job);
-        Assert.Equal(75m, job!.UcjbAmount);
+        Assert.Equal(75m, job.UcjbAmount);
         Assert.True(job.RatedManually);
     }
 
@@ -575,7 +575,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         await using var verifyContext = CreateContext();
         var parent = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         Assert.NotNull(parent);
-        Assert.Equal(110m, parent!.UcjbAmount);
+        Assert.Equal(110m, parent.UcjbAmount);
         Assert.True(parent.RatedManually);
     }
 

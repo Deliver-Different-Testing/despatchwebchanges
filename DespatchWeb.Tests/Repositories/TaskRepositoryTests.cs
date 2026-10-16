@@ -18,6 +18,9 @@ public class TaskRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private static readonly int[] Expected = [4, 7, 9];
+    private static readonly int[] Expected2 = [1, 2, 3];
+    private static readonly int[] Expected3 = [2, 1, 3];
+    private static readonly int[] Expected4 = [40, 20, 10, 30];
 
     public async ValueTask DisposeAsync()
     {
@@ -90,7 +93,7 @@ public class TaskRepositoryTests : IAsyncDisposable
             .OrderBy(id => id)
             .ToList();
 
-        Assert.Equal(new[] { 1, 2, 3 }, results);
+        Assert.Equal(Expected2, results);
     }
 
     [Fact]
@@ -151,8 +154,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = ApplyFiltersInMemory(events, filters);
 
-        Assert.Single(results);
-        Assert.Equal(2, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(2, item.UcevId);
     }
 
     [Fact]
@@ -171,8 +174,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = ApplyFiltersInMemory(events, filters);
 
-        Assert.Single(results);
-        Assert.Equal(2, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(2, item.UcevId);
     }
 
     [Fact]
@@ -191,8 +194,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = ApplyFiltersInMemory(events, filters);
 
-        Assert.Single(results);
-        Assert.Equal(1, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(1, item.UcevId);
     }
 
     [Fact]
@@ -211,8 +214,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = ApplyFiltersInMemory(events, filters);
 
-        Assert.Single(results);
-        Assert.Equal(1, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(1, item.UcevId);
     }
 
     [Fact]
@@ -226,8 +229,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = await ApplyFiltersViaSqliteAsync(filters);
 
-        Assert.Single(results);
-        Assert.Equal(1, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(1, item.UcevId);
     }
 
     [Fact]
@@ -241,8 +244,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = await ApplyFiltersViaSqliteAsync(filters);
 
-        Assert.Single(results);
-        Assert.Equal(1, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(1, item.UcevId);
     }
 
     [Fact]
@@ -256,8 +259,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = await ApplyFiltersViaSqliteAsync(filters);
 
-        Assert.Single(results);
-        Assert.Equal(1, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(1, item.UcevId);
     }
 
     [Fact]
@@ -288,8 +291,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = await ApplyFiltersViaSqliteAsync(filters);
 
-        Assert.Single(results);
-        Assert.Equal(2, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(2, item.UcevId);
     }
 
     [Fact]
@@ -377,8 +380,8 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = ApplyFiltersInMemory(events, filters);
 
-        Assert.Single(results);
-        Assert.Equal(1, results[0].UcevId);
+        var item = Assert.Single(results);
+        Assert.Equal(1, item.UcevId);
     }
 
     private static List<int> ApplyOrderingInMemory(
@@ -407,7 +410,7 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = ApplyOrderingInMemory(events, new TaskTableFiltersRequest(), today);
 
-        Assert.Equal(new[] { 2, 1, 3 }, results);
+        Assert.Equal(Expected3, results);
     }
 
     [Fact]
@@ -424,7 +427,7 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var results = ApplyOrderingInMemory(events, new TaskTableFiltersRequest(), today);
 
-        Assert.Equal(new[] { 40, 20, 10, 30 }, results);
+        Assert.Equal(Expected4, results);
     }
 
     [Fact]

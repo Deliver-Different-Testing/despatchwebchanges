@@ -14,7 +14,7 @@ public interface INationwideJobRepository
         bool isUsTenant, string? clientIds, NationwideWidget windowPane, IReadOnlyList<int> selectedViewIds,
         CancellationToken cancellationToken = default);
 
-    Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, IReadOnlyList<string> webhookIds,
+    Task AddJobNationwideAsync(AssignFlightToJobRequest? requestData, IReadOnlyList<string>? webhookIds,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<SavedFlightCandidate>> GetSavedFlightCandidatesAsync(IReadOnlyList<int>? jobIds);

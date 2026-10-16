@@ -27,6 +27,7 @@ public class AiInsightsServiceTests
         Judgment = new AiModelProfile { Model = "claude-sonnet-5", Effort = "low", MaxTokens = 1024 }
     });
     private static readonly string[] StringArray = ["3% below rate card"];
+    private static readonly JsonSerializerOptions CamelCaseOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     private AiInsightsService CreateService() => new(
         _aiClient, _noteRepository, _jobRepository, _accessorialService,
@@ -39,7 +40,7 @@ public class AiInsightsServiceTests
         {
             ToolUseId = "tool_1",
             ToolName = toolName,
-            ArgumentsJson = JsonSerializer.Serialize(payload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+            ArgumentsJson = JsonSerializer.Serialize(payload, CamelCaseOptions)
         });
 
         _aiClient.SendMessageAsync(
