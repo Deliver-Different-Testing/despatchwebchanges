@@ -17,7 +17,7 @@ public class SuburbResolverTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task ResolveAsync_BlankSuburbName_ReturnsNullWithoutQuerying(string suburbName)
+    public async Task ResolveAsync_BlankSuburbName_ReturnsNullWithoutQuerying(string? suburbName)
     {
         var factory = Substitute.For<IDbContextFactory<DespatchContext>>();
 

@@ -543,11 +543,11 @@ public class NationwideJobControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.AssignFlightToJob(request);
+        var result = await controller.AssignFlightToJob(request, TestContext.Current.CancellationToken);
 
         // Assert — controller delegates the webhook + persistence to the service.
         Assert.IsType<OkResult>(result);
-        await _flightAssignmentServiceMock.Received(1).AssignFlightAsync(request);
+        await _flightAssignmentServiceMock.Received(1).AssignFlightAsync(request, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -571,13 +571,12 @@ public class NationwideJobControllerTests
         // Arrange
         var request = CreateTestAssignRequest(jobId: 100);
 
-        _flightAssignmentServiceMock.AssignFlightAsync(request)
-            .ThrowsAsync(new InvalidOperationException("Job 100 already has a flight assigned"));
+        _flightAssignmentServiceMock.AssignFlightAsync(request, TestContext.Current.CancellationToken).ThrowsAsync(new InvalidOperationException("Job 100 already has a flight assigned"));
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.AssignFlightToJob(request);
+        var result = await controller.AssignFlightToJob(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<ConflictObjectResult>(result);
@@ -591,13 +590,12 @@ public class NationwideJobControllerTests
         // Arrange
         var request = CreateTestAssignRequest(jobId: 100);
 
-        _flightAssignmentServiceMock.AssignFlightAsync(request)
-            .ThrowsAsync(new Exception("Database error"));
+        _flightAssignmentServiceMock.AssignFlightAsync(request, TestContext.Current.CancellationToken).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.AssignFlightToJob(request);
+        var result = await controller.AssignFlightToJob(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<ObjectResult>(result);

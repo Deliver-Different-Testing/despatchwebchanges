@@ -2,9 +2,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
-using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
@@ -152,7 +150,7 @@ public class JobRepositoryNetworkPartnerPricingTests : IAsyncDisposable
         var rows = await repo.GetJobPriceBreakdownAsync(100, isPrebook: false);
 
         Assert.Equal(2, rows.Count);
-        Assert.Contains(rows, r => r.Name == "Base Charge" && r.Amount == 100.00m && r.CostAmount == 57.00m);
+        Assert.Contains(rows, r => r.Name == "Base Charge" && r is { Amount: 100.00m, CostAmount: 57.00m });
     }
 
     // ── Split grid (split job detail modal) ───────────────────────────────

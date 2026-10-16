@@ -12,6 +12,7 @@ public static class TenantServiceCollectionExtensions
         services.AddScoped<IScopeProvider, ScopeProvider>();
         services.AddScoped<IFeatureVisibilityService, FeatureVisibilityService>();
         services.AddScoped<INetworkPartnerContextService, NetworkPartnerContextService>();
+        services.AddScoped<ISessionContextService, SessionContextService>();
 
         return services;
     }

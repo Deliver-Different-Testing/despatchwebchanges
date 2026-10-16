@@ -10,12 +10,17 @@ public sealed class PartnerJobGate(
     IJobChangeRequestService changeRequestService,
     ISendToPartnerService sendToPartnerService) : IPartnerJobGate
 {
+    // Sentinel used by MapJobProperty to distinguish "LocalOnly" (null) from
+    // "known-but-not-yet-supported". JobChangeField is non-nullable, so we encode the
+    // unsupported case as a distinct enum value that callers branch on.
+    private const JobChangeField UnsupportedField = (JobChangeField)int.MinValue;
+
     public async Task<PartnerJobGateResult> EvaluateAllocateAsync(int jobId, CancellationToken ct)
     {
         // Acceptance state is keyed by local job id; IM returns null (the client surfaces it
         // as NotFound) for jobs that aren't partner-inbound, which we treat as "no gate".
         // We don't pre-check IsPartnerJobAsync — the IM call is cheap and short-circuits.
-        var state = await sendToPartnerService.GetInboundJobAcceptanceStateAsync(jobId);
+        var state = await sendToPartnerService.GetInboundJobAcceptanceStateAsync(jobId, ct);
         if (state is null)
         {
             return new PartnerJobGateResult.NotPartner();
@@ -158,9 +163,4 @@ public sealed class PartnerJobGate(
         // apply implementations land.
         _ => UnsupportedField
     };
-
-    // Sentinel used by MapJobProperty to distinguish "LocalOnly" (null) from
-    // "known-but-not-yet-supported". JobChangeField is non-nullable, so we encode the
-    // unsupported case as a distinct enum value that callers branch on.
-    private const JobChangeField UnsupportedField = (JobChangeField)int.MinValue;
 }

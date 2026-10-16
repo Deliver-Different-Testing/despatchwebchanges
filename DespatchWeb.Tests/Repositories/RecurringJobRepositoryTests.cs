@@ -2134,7 +2134,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         Assert.Empty(result.Errors);
         await procedures.Received(1).UTL_stpJobBooking_InsertJobAndChildrenAsync(
             jobId, Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
-        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertScheduleAsync(null);
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertScheduleAsync(null, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -2150,7 +2150,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         Assert.Empty(result.Errors);
         await procedures.Received(1).UTL_stpJobBooking_InsertScheduleAsync(
             jobId, Arg.Any<OutputParameter<int>>(), Arg.Any<CancellationToken>());
-        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertJobAndChildrenAsync(null);
+        await procedures.DidNotReceiveWithAnyArgs().UTL_stpJobBooking_InsertJobAndChildrenAsync(null, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -2394,7 +2394,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     [InlineData(20, "AB", "")]
     [InlineData(20, null, "")]
     [InlineData(20, "", "")]
-    public void BuildChildJobNumberSuffix_MirrorsSqlCase(int relationshipTypeId, string jobNumber, string expected)
+    public void BuildChildJobNumberSuffix_MirrorsSqlCase(int relationshipTypeId, string? jobNumber, string expected)
     {
         Assert.Equal(expected, RecurringJobRepository.BuildChildJobNumberSuffix(relationshipTypeId, jobNumber));
     }

@@ -333,7 +333,7 @@ public class CourierRepositoryLoggedInFilterTests
                 Name = "Alice",
                 Surname = "Brown",
                 DangerousGoods = 1,
-                DgLicenseExpiry = today.AddDays(-10), // Expired DG license
+                DgLicenseExpiry = today.AddDays(-10), // Expired DG licence
                 LogInOutRecord = new CourierLogInOutRecord
                 {
                     LogInTime = today.AddHours(8),

@@ -1626,18 +1626,18 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Equal(44.50m, pickup.UcjbAmount);
         Assert.True(pickup.RatedManually);
         Assert.Equal(32.00m, allocations.Single(a => a.LegJobId == pickupId
-            && parentLineNamed(a.ParentPricingBreakdownId) == "Base").ChargeAmount);
+            && ParentLineNamed(a.ParentPricingBreakdownId) == "Base").ChargeAmount);
         Assert.Equal(8.00m, allocations.Single(a => a.LegJobId == pickupId
-            && parentLineNamed(a.ParentPricingBreakdownId) == "Base Fuel").ChargeAmount);
+            && ParentLineNamed(a.ParentPricingBreakdownId) == "Base Fuel").ChargeAmount);
         Assert.Equal(4.50m, allocations.Single(a => a.LegJobId == pickupId
-            && parentLineNamed(a.ParentPricingBreakdownId) == "Congestion").ChargeAmount);
+            && ParentLineNamed(a.ParentPricingBreakdownId) == "Congestion").ChargeAmount);
 
         // Only the remaining 55.50 goes to the auto leg.
         Assert.Equal(55.50m, delivery.UcjbAmount);
         Assert.Equal(100.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
         return;
 
-        string parentLineNamed(int id) => _seedContext.PricingBreakdowns
+        string ParentLineNamed(int id) => _seedContext.PricingBreakdowns
             .AsNoTracking().Single(p => p.PricingBreakdownId == id).ChargeName ?? string.Empty;
     }
 

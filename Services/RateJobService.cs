@@ -850,6 +850,8 @@ public sealed class RateJobService(
             Weight = dto.Weight.HasValue ? (int)(dto.Weight ?? 0) : 0,
             Quantity = dto.Quantity,
             IsDangerousGoods = dto.DangerousGoods,
+            DGClass = dto.DgClass,
+            DryIceWeight = dto.DryIceWeight,
             IsPrebook = dto.IsPrebook,
             DateTime = dto.BulkScheduleId.HasValue ? tenantNow : dto.BookedDate,
             Van = dto.IsVan,
