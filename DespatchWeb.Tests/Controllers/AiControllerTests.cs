@@ -635,4 +635,36 @@ public class AiControllerTests
         Assert.Equal(404, status.StatusCode);
         Assert.Equal("Job 9 was not found.", status.Value);
     }
+
+    [Fact]
+    public void RecordPricingOutcome_DropsAcceptedIdsThatWereNeverSuggested()
+    {
+        CreateController().RecordPricingOutcome(new AiPricingOutcomeRequest
+        {
+            JobId = 1,
+            SuggestedChargeIds = [5],
+            AcceptedChargeIds = [5, 99]
+        });
+
+        _audit.Received(1).Decided(
+            "AnalyzePricing", 1, 1, "Pacific/Auckland",
+            Arg.Any<IReadOnlyList<int>>(),
+            Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5 })));
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(-3, 1)]
+    [InlineData(1, 51)]
+    public void RecordPricingOutcome_RejectsAnInvalidJobIdOrOversizedList_WithoutAuditing(int jobId, int idCount)
+    {
+        var result = CreateController().RecordPricingOutcome(new AiPricingOutcomeRequest
+        {
+            JobId = jobId,
+            SuggestedChargeIds = Enumerable.Range(1, idCount).ToList()
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        _audit.DidNotReceiveWithAnyArgs().Decided(default!, default, default, default!, default!, default!);
+    }
 }

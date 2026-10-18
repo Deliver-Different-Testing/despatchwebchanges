@@ -17,7 +17,7 @@ public sealed class AiAuditLog : IAiAuditLog
         string feature, int jobId, int staffId, string tenantId,
         IReadOnlyList<int> suggestedIds, IReadOnlyList<int> acceptedIds) =>
         Audit.Information(
-            "AI audit - decision - Feature: {Feature}, Job: {JobId}, Staff: {StaffId}, Tenant: {TenantId}, " +
+            "AI audit - decision (client-reported) - Feature: {Feature}, Job: {JobId}, Staff: {StaffId}, Tenant: {TenantId}, " +
             "Suggested: {SuggestedIds}, Accepted: {AcceptedIds}",
             feature, jobId, staffId, tenantId, suggestedIds, acceptedIds);
 }

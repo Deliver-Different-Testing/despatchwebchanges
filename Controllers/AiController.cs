@@ -560,13 +560,27 @@ public class AiController(
         }
     }
 
-    /// <summary>Audit-only: records which AI-suggested charges the dispatcher added.</summary>
+    /// <summary>
+    /// Audit-only and client-reported: records which AI-suggested charges the dispatcher added.
+    /// It never changes data, so the input is bounded and kept internally consistent rather than
+    /// trusted — accepted ids that were never suggested are dropped.
+    /// </summary>
     [HttpPost]
     public IActionResult RecordPricingOutcome([FromBody] AiPricingOutcomeRequest request)
     {
+        const int maxIds = 50;
+        if (request.JobId <= 0
+            || request.SuggestedChargeIds.Count > maxIds
+            || request.AcceptedChargeIds.Count > maxIds)
+        {
+            return BadRequest("Invalid pricing outcome.");
+        }
+
+        var accepted = request.AcceptedChargeIds.Where(request.SuggestedChargeIds.Contains).Distinct().ToList();
+
         auditLog.Decided(
             nameof(AnalyzePricing), request.JobId, tenantInfo.GetStaffId(), tenantInfo.GetTenantTimeZone(),
-            request.SuggestedChargeIds, request.AcceptedChargeIds);
+            request.SuggestedChargeIds, accepted);
 
         return Json(new { recorded = true });
     }
