@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Ai;
@@ -193,14 +194,14 @@ public class AiDraftingServiceTests
     }
 
     [Fact]
-    public async Task DraftPodEmailAsync_JobNotFound_ReturnsFallback()
+    public async Task DraftPodEmailAsync_JobNotFound_Throws_InsteadOfDraftingAnErrorStringAsTheEmailBody()
     {
         _jobRepositoryMock.GetSingleJobById(Arg.Any<int>()).Returns((JobViewModel?)null);
         var service = CreateService();
 
-        var result = await service.DraftPodEmailAsync(999, TestContext.Current.CancellationToken);
+        await Assert.ThrowsAsync<JobNotFoundException>(
+            () => service.DraftPodEmailAsync(999, TestContext.Current.CancellationToken));
 
-        Assert.Equal("Job not found.", result.Body);
         await _aiClientMock.DidNotReceiveWithAnyArgs().SendMessageAsync(
             Arg.Any<AiTaskClass>(),
             null!, null!, 0, null, null, false, false, CancellationToken.None);

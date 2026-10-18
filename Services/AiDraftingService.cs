@@ -1,3 +1,4 @@
+using DespatchWeb.Exceptions;
 using System.Text;
 using System.Text.Json;
 using DespatchWeb.Enums;
@@ -144,12 +145,7 @@ public sealed class AiDraftingService(
         var job = await jobRepository.GetSingleJobById(jobId);
         if (job == null)
         {
-            return new AiEmailDraftResponse
-            {
-                Subject = "Proof of Delivery",
-                Body = "Job not found.",
-                Usage = new AiUsageInfo()
-            };
+            throw new JobNotFoundException($"Job {jobId} was not found.");
         }
 
         var systemPrompt =

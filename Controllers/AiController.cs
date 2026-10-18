@@ -366,6 +366,10 @@ public class AiController(
 
             return Json(response);
         }
+        catch (JobNotFoundException e)
+        {
+            return StatusCode(404, e.Message);
+        }
         catch (OperationCanceledException)
         {
             return StatusCode(499, "Request cancelled");
