@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
   <!-- The SPA lives in DespatchWeb.Client (Vite); its .esproj builds wwwroot/dist as part of the solution. -->
 
   <PropertyGroup Label="Globals">
@@ -6,14 +6,8 @@
       <SpaProxyServerUrl>http://despatch.local.deliverdifferent.com:5174</SpaProxyServerUrl>
       <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
       <Nullable>disable</Nullable>
-      <!--
-        The SDK's static-web-asset compression only pays off with MapStaticAssets, which
-        this app doesn't use — it serves wwwroot through UseStaticFiles. Left on, publish
-        spends time producing .br/.gz for everything under wwwroot (including the 14 MB of
-        sourcemaps) that nothing ever reads. The Vite build pre-compresses the
-        bundles that matter, and PrecompressedStaticFilesMiddleware serves those.
-      -->
-      <CompressionEnabled>false</CompressionEnabled>
+      <!-- Sourcemaps are never fetched by users; skip compressing them at publish. -->
+      <CompressionExcludePatterns>$(CompressionExcludePatterns);**/*.map</CompressionExcludePatterns>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="DespatchWeb.Tests" />

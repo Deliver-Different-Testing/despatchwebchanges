@@ -40,7 +40,7 @@ import {DialogShell, DialogHeader, dialogContentBg, dialogSize, headerOnColor, h
 import {Icon} from '../../common/icon/Icon';
 import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
 import {useAiDraft} from '../../../hooks/useAiDraft';
-import {analyzePricing} from '../../../api/aiAssistantApi';
+import {analyzePricing, recordPricingOutcome} from '../../../api/aiAssistantApi';
 import type {PricingAnalysisResponse} from '../../../types/ai';
 
 interface AppliedRowState {
@@ -202,6 +202,8 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     availableNotesMapRef.current = availableNotesMap;
     const selectedIdsRef = useRef(selectedIds);
     selectedIdsRef.current = selectedIds;
+    const pricingResultRef = useRef(pricingResult);
+    pricingResultRef.current = pricingResult;
     const activePortionJobIdRef = useRef(activePortionJobId);
     activePortionJobIdRef.current = activePortionJobId;
 
@@ -765,6 +767,15 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
         setIsAddingCharges(true);
         try {
             await accessorialChargesApi.addCharges(activeJobId, toAdd);
+            const suggestedIds = pricingResultRef.current?.suggestions.map(s => s.accessorialChargeId) ?? [];
+            if (suggestedIds.length > 0) {
+                // Audit trail only; never let it block or fail the add.
+                void recordPricingOutcome({
+                    jobId: activeJobId,
+                    suggestedChargeIds: suggestedIds,
+                    acceptedChargeIds: toAdd.map(c => c.accessorialChargeId).filter(id => suggestedIds.includes(id)),
+                }).catch(() => undefined);
+            }
             setSelectedIds(new Set());
             setAvailableInputMap({});
             setAvailableNotesMap({});
@@ -868,7 +879,10 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                     {pricingResult.suggestions.map(s => s.name).join(', ')}
                                 </Alert>
                             )}
-                            {pricingResult && pricingResult.suggestions.length === 0 && !pricingResult.anomaly?.isOutlier && (
+                            {pricingResult?.incomplete && (
+                                <Alert color="orange">Couldn't analyse this job. Try again.</Alert>
+                            )}
+                            {pricingResult && !pricingResult.incomplete && pricingResult.suggestions.length === 0 && !pricingResult.anomaly?.isOutlier && (
                                 <Alert color="green">No additional charges or pricing issues detected.</Alert>
                             )}
                         </Box>

@@ -1,4 +1,4 @@
-﻿using System.Security.AccessControl;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using DeliverDifferentReporting.Extensions;
 using DespatchWeb;
@@ -176,42 +176,12 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
     }
 });
 // Configure the HTTP request pipeline.
-var provider = new FileExtensionContentTypeProvider
-{
-    Mappings =
-    {
-        [".map"] = "application/json"
-    }
-};
-
 var distDir = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist");
 Directory.CreateDirectory(distDir);
 
-// build.ts pre-compresses every bundle to .br/.gz and content-hashes the filenames, so
-// the bundles can be served already-compressed and cached indefinitely. Dev builds do
-// neither, hence the environment switch.
-var distStaticFiles = new PrecompressedStaticFileOptions
-{
-    RequestPath = "/dist",
-    PhysicalPath = distDir,
-    ServeSourceMaps = app.Environment.IsDevelopment(),
-    ImmutableCaching = !app.Environment.IsDevelopment()
-};
-
-// Order matters: wwwroot/dist sits inside the web root, so the general static-file
-// handler below can serve /dist itself. It has to come last, or it answers bundle
-// requests with the uncompressed file before negotiation ever runs.
-app.UsePrecompressedStaticFiles(distStaticFiles);
-app.UseStaticFiles(distStaticFiles.CreateStaticFileOptions());
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    ContentTypeProvider = provider,
-    // Unlike /dist's hashed bundles, these paths (AngularJS ng-include partials, etc.)
-    // aren't content-hashed, so without an explicit header browsers fall back to RFC 7234
-    // heuristic freshness and can keep serving a stale copy well past a deploy.
-    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
-});
+// Vite's content-hashed output is cached forever; sw.js is never cached (see UseSpaAssetHeaders).
+// Everything else in wwwroot is served by MapStaticAssets below with content ETags.
+app.UseSpaAssetHeaders(immutableAssets: !app.Environment.IsDevelopment());
 
 app.UseCsrfProtection();
 app.UseSecurityHeaders();
@@ -224,6 +194,7 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapStaticAssets().AllowAnonymous();
 app.MapSpaFallback(distDir);
 
 if (string.IsNullOrEmpty(builder.Configuration["S3BucketMars"]))

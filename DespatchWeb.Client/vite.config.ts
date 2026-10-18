@@ -1,6 +1,6 @@
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
-import {precompress} from './scripts/vite/precompress.ts';
+import {VitePWA} from 'vite-plugin-pwa';
 
 // Dev-only: the .NET host that serves the API and MVC endpoints (see Properties/launchSettings.json).
 const hostTarget = process.env.DESPATCH_HOST_URL ?? 'http://despatch.local.deliverdifferent.com:63277';
@@ -23,7 +23,25 @@ const nodeModule = (id: string, names: string) =>
 export default defineConfig(({command}) => ({
     // The host serves the built SPA from /dist; the dev server runs at the root so client routes match.
     base: command === 'build' ? '/dist/' : '/',
-    plugins: [react(), precompress()],
+    plugins: [
+        react(),
+        // App-shell precache only. The SW lives under /dist but the host sends Service-Worker-Allowed: /, so it
+        // controls the whole origin; the denylist keeps API, health and controller routes on the network.
+        VitePWA({
+            registerType: 'prompt',
+            manifest: false,
+            scope: '/',
+            workbox: {
+                navigateFallback: 'index.html',
+                navigateFallbackDenylist: [
+                    /^\/api\//i, /^\/dist\//i, /^\/health/i,
+                    new RegExp(`^/(${controllerPrefixes.map(anyCase).join('|')})(/|$)`),
+                ],
+                cleanupOutdatedCaches: true,
+                maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+            },
+        }),
+    ],
     build: {
         outDir: '../wwwroot/dist',
         emptyOutDir: true,

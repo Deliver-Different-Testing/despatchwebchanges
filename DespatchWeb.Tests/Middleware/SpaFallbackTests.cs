@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
 namespace DespatchWeb.Tests.Middleware;
@@ -24,8 +25,10 @@ public class SpaFallbackTests : IDisposable
         Directory.CreateDirectory(Path.Combine(_distDir, "assets"));
         File.WriteAllText(Path.Combine(_distDir, "index.html"), IndexHtml);
         File.WriteAllText(Path.Combine(_distDir, "assets", "index-ABC123.js"), "raw");
-        File.WriteAllText(Path.Combine(_distDir, "assets", "index-ABC123.js.br"), "br");
         File.WriteAllText(Path.Combine(_distDir, "assets", "logo-XYZ789.svg"), "<svg/>");
+        File.WriteAllText(Path.Combine(_distDir, "sw.js"), "self.skipWaiting();");
+        File.WriteAllText(Path.Combine(_distDir, "registerSW.js"), "navigator.serviceWorker.register('/dist/sw.js');");
+        File.WriteAllText(Path.Combine(_distDir, "workbox-1a2b3c4d.js"), "define([]);");
     }
 
     public void Dispose()
@@ -34,7 +37,7 @@ public class SpaFallbackTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private IHost CreateHost(string? distDir = null) =>
+    private IHost CreateHost(string? distDir = null, bool immutableAssets = true) =>
         new HostBuilder()
             .ConfigureWebHost(webBuilder =>
             {
@@ -42,14 +45,12 @@ public class SpaFallbackTests : IDisposable
                 webBuilder.ConfigureServices(s => s.AddRouting());
                 webBuilder.Configure(app =>
                 {
-                    var options = new PrecompressedStaticFileOptions
+                    app.UseSpaAssetHeaders(immutableAssets);
+                    app.UseStaticFiles(new StaticFileOptions
                     {
-                        RequestPath = "/dist",
-                        PhysicalPath = _distDir,
-                        ImmutableCaching = true
-                    };
-                    app.UsePrecompressedStaticFiles(options);
-                    app.UseStaticFiles(options.CreateStaticFileOptions());
+                        FileProvider = new PhysicalFileProvider(_distDir),
+                        RequestPath = "/dist"
+                    });
                     app.UseRouting();
                     app.UseEndpoints(endpoints =>
                     {
@@ -132,14 +133,59 @@ public class SpaFallbackTests : IDisposable
     }
 
     [Fact]
-    public async Task PrecompressedAsset_IsStillNegotiated()
+    public async Task HashedAssets_AreNotImmutableOutsideProduction()
+    {
+        using var host = CreateHost(immutableAssets: false);
+        var response = await host.GetTestClient()
+            .GetAsync("/dist/assets/index-ABC123.js", TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("immutable", response.Headers.CacheControl?.ToString() ?? string.Empty);
+    }
+
+    [Fact]
+    public async Task HashedWorkboxRuntime_IsCachedImmutably()
     {
         using var host = CreateHost();
-        var request = new HttpRequestMessage(HttpMethod.Get, "/dist/assets/index-ABC123.js");
-        request.Headers.TryAddWithoutValidation("Accept-Encoding", "br");
-        var response = await host.GetTestClient().SendAsync(request, TestContext.Current.CancellationToken);
+        var response = await host.GetTestClient()
+            .GetAsync("/dist/workbox-1a2b3c4d.js", TestContext.Current.CancellationToken);
 
-        Assert.Equal("br", Assert.Single(response.Content.Headers.ContentEncoding));
-        Assert.Equal("br", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Contains("immutable", response.Headers.CacheControl?.ToString());
+    }
+
+    [Theory]
+    [InlineData("/dist/sw.js")]
+    [InlineData("/dist/registerSW.js")]
+    public async Task ServiceWorkerEntryPoints_AreNeverCached(string path)
+    {
+        // The browser's update check only finds a new build if it can re-fetch sw.js; the file keeps
+        // a constant name, so any caching pins clients to the first worker they installed.
+        using var host = CreateHost();
+        var response = await host.GetTestClient().GetAsync(path, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        Assert.DoesNotContain("immutable", response.Headers.CacheControl?.ToString());
+    }
+
+    [Fact]
+    public async Task ServiceWorker_MayControlTheWholeOrigin()
+    {
+        // sw.js lives under /dist, so without this header its scope is capped at /dist/.
+        using var host = CreateHost();
+        var response = await host.GetTestClient()
+            .GetAsync("/dist/sw.js", TestContext.Current.CancellationToken);
+
+        Assert.Equal("/", Assert.Single(response.Headers.GetValues("Service-Worker-Allowed")));
+    }
+
+    [Fact]
+    public async Task NonDistResponses_AreLeftAlone()
+    {
+        using var host = CreateHost();
+        var response = await host.GetTestClient()
+            .GetAsync("/api/context", TestContext.Current.CancellationToken);
+
+        Assert.False(response.Headers.Contains("Service-Worker-Allowed"));
+        Assert.DoesNotContain("immutable", response.Headers.CacheControl?.ToString() ?? string.Empty);
     }
 }

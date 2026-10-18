@@ -395,7 +395,7 @@ public sealed class AiSummarizationService(
         foreach (var task in ordered.Take(40))
         {
             var status = task.DueDate < now ? "OVERDUE" : "OPEN";
-            var sanitized = AiDataSanitizer.Sanitize(task.Description ?? task.Title);
+            var sanitized = AiDataSanitizer.SanitizeUntrusted(task.Description ?? task.Title);
             var assignee = task.Assignee?.Text ?? "Unassigned";
             sb.AppendLine($"[{task.DueDate:yyyy-MM-dd HH:mm}] Job #{task.JobNumber} - {task.EventType} - {sanitized} [{status}] Assigned: {assignee}");
         }
@@ -647,7 +647,7 @@ public sealed class AiSummarizationService(
         var ordered = notes.OrderByDescending(n => n.CreatedDate).Take(MaxNotesInPrompt).ToList();
         foreach (var note in ordered.OrderBy(n => n.CreatedDate))
         {
-            var sanitized = AiDataSanitizer.Sanitize(note.NoteText ?? string.Empty);
+            var sanitized = AiDataSanitizer.SanitizeUntrusted(note.NoteText ?? string.Empty);
             var important = note.IsImportant ? " IMPORTANT" : string.Empty;
             sb.AppendLine($"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}{important}) by {note.CreatedByName}: {sanitized}");
         }
@@ -670,7 +670,7 @@ public sealed class AiSummarizationService(
         foreach (var evt in ordered.OrderBy(e => e.DueDate))
         {
             var status = evt.Closed ? "CLOSED" : "OPEN";
-            var sanitized = AiDataSanitizer.Sanitize(evt.Description ?? evt.Title ?? string.Empty);
+            var sanitized = AiDataSanitizer.SanitizeUntrusted(evt.Description ?? evt.Title ?? string.Empty);
             sb.AppendLine($"[{evt.DueDate:yyyy-MM-dd HH:mm}] {evt.EventType} - {sanitized} [{status}]");
         }
         if (events.Count > MaxEventsInPrompt)

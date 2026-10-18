@@ -170,4 +170,34 @@ public class AnthropicSettingsBindingTests
 
         Assert.Throws<OptionsValidationException>(() => options.Value);
     }
+
+    [Fact]
+    public void CommittedAppSettings_PassStartupValidation_OnTheCurrentSonnetWithoutForcedToolChoice()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "appsettings.json")))
+        {
+            dir = dir.Parent;
+        }
+
+        Assert.NotNull(dir);
+        var config = new ConfigurationBuilder()
+            .AddJsonFile(Path.Combine(dir.FullName, "appsettings.json"))
+            .Build();
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(config);
+        services.AddAiServices();
+
+        var settings = services.BuildServiceProvider().GetRequiredService<IOptions<AnthropicSettings>>().Value;
+
+        Assert.Equal("claude-sonnet-5-5", settings.Judgment.Model);
+        Assert.False(settings.Judgment.ForcedToolChoice);
+        Assert.True(settings.Drafting.ForcedToolChoice);
+        Assert.True(AiServiceCollectionExtensions.ValidateProfiles(settings));
+
+        // Opening one job auto-fires the briefing and blockers cards (2 calls) and a dispatcher
+        // works through several jobs a minute; a response-cache hit still counts against the limit.
+        Assert.True(settings.RateLimitPerUserPerMinute >= 20);
+        Assert.True(settings.RateLimitPerTenantPerMinute >= 120);
+    }
 }

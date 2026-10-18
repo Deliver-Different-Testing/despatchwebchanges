@@ -23,6 +23,7 @@ const config = {
     moduleNameMapper: {
         '^@deliver-different/glass$': '<rootDir>/node_modules/@deliver-different/glass/dist/index.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/src/test/mocks/styleMock.ts',
+        '^virtual:pwa-register/react$': '<rootDir>/src/test/mocks/pwaRegisterMock.ts',
         // ESM-only packages - mock for Jest compatibility
         '^react-markdown$': '<rootDir>/src/test/mocks/reactMarkdownMock.tsx',
         '^remark-gfm$': '<rootDir>/src/test/mocks/remarkGfmMock.ts',

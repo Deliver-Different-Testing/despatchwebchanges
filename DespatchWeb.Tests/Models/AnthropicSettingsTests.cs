@@ -70,4 +70,23 @@ public class AnthropicSettingsTests
 
         Assert.False(AiServiceCollectionExtensions.ValidateProfiles(settings));
     }
+
+    [Theory]
+    [InlineData("claude-sonnet-5-5", true, false)]
+    [InlineData("claude-sonnet-5-5", false, true)]
+    [InlineData("claude-opus-5-5", true, false)]
+    [InlineData("claude-fable-5-1", true, false)]
+    [InlineData("claude-sonnet-5", true, true)]
+    [InlineData("claude-haiku-4-5", true, true)]
+    public void ValidateProfiles_RejectsForcedToolChoiceOnModelsThatReturn400ForIt(
+        string model, bool forced, bool expectedValid)
+    {
+        var settings = new AnthropicSettings
+        {
+            Drafting = new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 1024 },
+            Judgment = new AiModelProfile { Model = model, MaxTokens = 4096, ForcedToolChoice = forced }
+        };
+
+        Assert.Equal(expectedValid, AiServiceCollectionExtensions.ValidateProfiles(settings));
+    }
 }
