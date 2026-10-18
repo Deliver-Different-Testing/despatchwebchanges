@@ -1,4 +1,5 @@
-﻿using DespatchWeb.Models;
+﻿using System.Diagnostics.Metrics;
+using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Caching.Distributed;
@@ -98,5 +99,45 @@ public class AiRateLimiterTests
         // Act & Assert - should complete without error (logging only)
         await service.RecordTokenUsageAsync(1, "nz", "SummarizeJob", AiTaskClass.Judgment,
             new AiUsageInfo { InputTokens = 100, OutputTokens = 50 });
+    }
+
+    [Fact]
+    public async Task RecordTokenUsageAsync_EmitsTokenAndCostMetricsTaggedByFeatureAndModel()
+    {
+        var tokens = new List<(long Value, string Feature, string Model, string Kind)>();
+        double cost = 0;
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, l) =>
+        {
+            if (instrument.Meter.Name == AiRateLimiter.MeterName)
+            {
+                l.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((_, value, tags, _) =>
+        {
+            var tagMap = new Dictionary<string, string>();
+            foreach (var tag in tags)
+            {
+                tagMap[tag.Key] = tag.Value?.ToString() ?? "";
+            }
+
+            tokens.Add((value, tagMap["feature"], tagMap["model"], tagMap["kind"]));
+        });
+        listener.SetMeasurementEventCallback<double>((_, value, _, _) => cost += value);
+        listener.Start();
+
+        var settings = Options.Create(new AnthropicSettings
+        {
+            Drafting = new AiModelProfile { Model = "claude-haiku-4-5", InputPricePerMillion = 1m, OutputPricePerMillion = 5m }
+        });
+        await new AiRateLimiter(_cacheMock, settings).RecordTokenUsageAsync(
+            1, "nz", "DraftNote", AiTaskClass.Drafting,
+            new AiUsageInfo { InputTokens = 1_000_000, OutputTokens = 200_000, CacheReadInputTokens = 5 });
+
+        Assert.Contains((1_000_000L, "DraftNote", "claude-haiku-4-5", "input"), tokens);
+        Assert.Contains((200_000L, "DraftNote", "claude-haiku-4-5", "output"), tokens);
+        Assert.Contains((5L, "DraftNote", "claude-haiku-4-5", "cache_read"), tokens);
+        Assert.Equal(2.0, cost, 6);
     }
 }
