@@ -139,6 +139,21 @@ class ToastServiceImpl implements ToastService {
         this.showToast(message, 'info', action);
     }
 
+    /** Stays until its action is used or the returned function is called. */
+    showPersistentToast(message: string, action: ToastAction): () => void {
+        this.ensureMounted();
+        const id = `toast-${++this.idCounter}`;
+        notifications.show({
+            id,
+            message: this.renderMessage(id, message, action),
+            color: toastColor('info'),
+            autoClose: false,
+            closeButtonProps: CLOSE_BUTTON_PROPS,
+        });
+        this.logToConsole('info', message);
+        return () => notifications.hide(id);
+    }
+
     showLoadingToast(message: string): ToastHandle {
         this.ensureMounted();
         const id = `toast-${++this.idCounter}`;
