@@ -194,5 +194,10 @@ public class AnthropicSettingsBindingTests
         Assert.False(settings.Judgment.ForcedToolChoice);
         Assert.True(settings.Drafting.ForcedToolChoice);
         Assert.True(AiServiceCollectionExtensions.ValidateProfiles(settings));
+
+        // Opening one job auto-fires the briefing and blockers cards (2 calls) and a dispatcher
+        // works through several jobs a minute; a response-cache hit still counts against the limit.
+        Assert.True(settings.RateLimitPerUserPerMinute >= 20);
+        Assert.True(settings.RateLimitPerTenantPerMinute >= 120);
     }
 }
