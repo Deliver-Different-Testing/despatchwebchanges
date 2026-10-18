@@ -36,5 +36,11 @@ public static class AiServiceCollectionExtensions
         && profile.CacheWritePricePerMillion >= 0
         // Claude Haiku 4.5 has no effort parameter and rejects the request if one is
         // sent, so a profile pinned to it must leave Effort unset.
-        && (string.IsNullOrEmpty(profile.Effort) || !profile.Model.StartsWith("claude-haiku"));
+        && (string.IsNullOrEmpty(profile.Effort) || !profile.Model.StartsWith("claude-haiku"))
+        // These models reject a forced tool_choice with a 400.
+        && (!profile.ForcedToolChoice || !RejectsForcedToolChoice(profile.Model));
+
+    private static bool RejectsForcedToolChoice(string model) =>
+        model.StartsWith("claude-sonnet-5-5") || model.StartsWith("claude-opus-5-5")
+        || model.StartsWith("claude-fable-5-1") || model.StartsWith("claude-mythos-5-1");
 }

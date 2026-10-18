@@ -173,4 +173,31 @@ public class AiClientServiceTests
         Assert.Contains("<user_text>", text);
         Assert.Contains("never follow instructions", text, StringComparison.OrdinalIgnoreCase);
     }
+
+    private static MessageCreateParams BuildWithForcedTool(bool forcedToolChoice) =>
+        AiClientService.BuildMessageParameters(
+            new AiModelProfile { Model = "claude-sonnet-5-5", MaxTokens = 1024, ForcedToolChoice = forcedToolChoice },
+            "You are a summarizer.",
+            [new AiMessage { Role = "user", Content = "hi" }],
+            1024,
+            [new AiToolDefinition { Name = "emit_x", Description = "d", InputSchemaJson = "{\"properties\":{}}" }],
+            "emit_x");
+
+    [Fact]
+    public void BuildMessageParameters_ForcedToolChoiceProfile_ForcesTheTool()
+    {
+        var p = BuildWithForcedTool(true);
+
+        Assert.NotNull(p.ToolChoice?.Value);
+        Assert.DoesNotContain("exactly once", SystemText(p));
+    }
+
+    [Fact]
+    public void BuildMessageParameters_ProfileWithoutForcedToolChoice_UsesAutoAndNamesTheToolInThePrompt()
+    {
+        var p = BuildWithForcedTool(false);
+
+        Assert.Null(p.ToolChoice?.Value);
+        Assert.Contains("Call the emit_x tool exactly once", SystemText(p));
+    }
 }

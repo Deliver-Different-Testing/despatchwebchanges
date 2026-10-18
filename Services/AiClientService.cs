@@ -117,7 +117,13 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
         // reuse across calls, rather than the volatile trailing user message.
         // Below the ~1024-token minimum cacheable prefix this is a silent no-op,
         // so callers only set enableCaching where the prefix is large enough to pay.
+        var forceTool = !string.IsNullOrEmpty(forceToolName) && profile.ForcedToolChoice;
         var fullSystemPrompt = $"{systemPrompt}\n\n{UntrustedDataRule}";
+        if (!string.IsNullOrEmpty(forceToolName) && !forceTool)
+        {
+            fullSystemPrompt += $"\n\nCall the {forceToolName} tool exactly once and write nothing else.";
+        }
+
         MessageCreateParamsSystem system = fullSystemPrompt;
         if (enableCaching)
         {
@@ -148,9 +154,9 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
                     }
                 }).ToList()
                 : null,
-            ToolChoice = string.IsNullOrEmpty(forceToolName)
-                ? null
-                : new ToolChoiceTool { Name = forceToolName }
+            ToolChoice = forceTool
+                ? new ToolChoiceTool { Name = forceToolName }
+                : null
         };
     }
 

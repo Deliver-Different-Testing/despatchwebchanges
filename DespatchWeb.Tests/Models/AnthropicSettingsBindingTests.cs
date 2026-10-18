@@ -170,4 +170,29 @@ public class AnthropicSettingsBindingTests
 
         Assert.Throws<OptionsValidationException>(() => options.Value);
     }
+
+    [Fact]
+    public void CommittedAppSettings_PassStartupValidation_OnTheCurrentSonnetWithoutForcedToolChoice()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "appsettings.json")))
+        {
+            dir = dir.Parent;
+        }
+
+        Assert.NotNull(dir);
+        var config = new ConfigurationBuilder()
+            .AddJsonFile(Path.Combine(dir.FullName, "appsettings.json"))
+            .Build();
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(config);
+        services.AddAiServices();
+
+        var settings = services.BuildServiceProvider().GetRequiredService<IOptions<AnthropicSettings>>().Value;
+
+        Assert.Equal("claude-sonnet-5-5", settings.Judgment.Model);
+        Assert.False(settings.Judgment.ForcedToolChoice);
+        Assert.True(settings.Drafting.ForcedToolChoice);
+        Assert.True(AiServiceCollectionExtensions.ValidateProfiles(settings));
+    }
 }
