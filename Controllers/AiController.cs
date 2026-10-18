@@ -1,4 +1,5 @@
 using Anthropic.Exceptions;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -45,7 +46,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -86,7 +87,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -127,7 +128,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -168,7 +169,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -209,7 +210,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -250,7 +251,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -291,7 +292,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -332,7 +333,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -373,7 +374,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -414,7 +415,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -455,7 +456,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -496,7 +497,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
@@ -537,7 +538,7 @@ public class AiController(
             Log.Warning(e, "Anthropic rate limit hit");
             return StatusCode(429, "The AI service is busy. Please try again in a moment.");
         }
-        catch (Anthropic5xxException e)
+        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
         {
             Log.Warning(e, "Anthropic service error");
             return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");

@@ -2,6 +2,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Ai;
 using Anthropic.Models.Messages;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -39,7 +40,7 @@ public class AiClientServiceTests
             .Returns("cache-key");
         _responseCache.GetAsync("cache-key", Arg.Any<CancellationToken>()).Returns(cached);
 
-        var service = new AiClientService(_settings, _responseCache);
+        var service = new AiClientService(_settings, _responseCache, new AiCircuitBreaker());
 
         var result = await service.SendMessageAsync(
             AiTaskClass.Drafting,
@@ -199,5 +200,18 @@ public class AiClientServiceTests
 
         Assert.Null(p.ToolChoice?.Value);
         Assert.Contains("Call the emit_x tool exactly once", SystemText(p));
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenTheBreakerIsOpen_FailsFastWithoutCallingTheApi()
+    {
+        var time = new ManualTimeProvider();
+        var breaker = new AiCircuitBreaker(time, failureThreshold: 1, openFor: TimeSpan.FromSeconds(30));
+        breaker.RecordFailure();
+        var service = new AiClientService(_settings, _responseCache, breaker);
+
+        await Assert.ThrowsAsync<AiUnavailableException>(() => service.SendMessageAsync(
+            AiTaskClass.Drafting, "sys", [new AiMessage { Role = "user", Content = "hi" }], 256,
+            ct: TestContext.Current.CancellationToken));
     }
 }

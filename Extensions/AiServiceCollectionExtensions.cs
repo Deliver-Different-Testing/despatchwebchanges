@@ -17,6 +17,7 @@ public static class AiServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddSingleton<IAiResponseCache, AiResponseCache>();
+        services.AddSingleton<AiCircuitBreaker>();
         services.AddSingleton<IAiClientService, AiClientService>();
         services.AddSingleton<IAiRateLimiter, AiRateLimiter>();
         services.AddScoped<IAiSummarizationService, AiSummarizationService>();
@@ -28,7 +29,7 @@ public static class AiServiceCollectionExtensions
         IsValid(settings.Drafting) && IsValid(settings.Judgment);
 
     private static bool IsValid(AiModelProfile profile) =>
-        profile is { MaxTokens: >= 256 and <= 64000 }
+        profile is { MaxTokens: >= 256 and <= 64000, TimeoutSeconds: >= 1 and <= 600 }
         && !string.IsNullOrWhiteSpace(profile.Model)
         && profile.InputPricePerMillion >= 0
         && profile.OutputPricePerMillion >= 0

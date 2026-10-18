@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Anthropic;
 using Anthropic.Core;
+using Anthropic.Exceptions;
 using Anthropic.Models.Messages;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -10,10 +12,12 @@ using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Services;
 
-public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiResponseCache responseCache)
+public sealed class AiClientService(
+    IOptions<AnthropicSettings> settings, IAiResponseCache responseCache, AiCircuitBreaker breaker)
     : IAiClientService
 {
-    private readonly AnthropicClient _client = new();
+    // One retry, not the SDK default of two: the per-call timeout below bounds the total wait.
+    private readonly AnthropicClient _client = new() { MaxRetries = 1 };
     private readonly AnthropicSettings _settings = settings.Value;
 
     internal const string UntrustedDataRule =
@@ -55,7 +59,12 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
         var messageParams = BuildMessageParameters(
             profile, systemPrompt, messages, maxTokens, tools, forceToolName, enableCaching);
 
-        var response = await _client.Messages.Create(messageParams, ct);
+        if (breaker.IsOpen)
+        {
+            throw new AiUnavailableException("AI service is temporarily unavailable.");
+        }
+
+        var response = await CreateMessageAsync(messageParams, profile, ct);
 
         var stopReason = ToWireValue(response.StopReason);
 
@@ -94,6 +103,30 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings, IAiRes
         }
 
         return result;
+    }
+
+    private async Task<Message> CreateMessageAsync(
+        MessageCreateParams messageParams, AiModelProfile profile, CancellationToken ct)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(profile.TimeoutSeconds));
+
+        try
+        {
+            var response = await _client.Messages.Create(messageParams, timeout.Token);
+            breaker.RecordSuccess();
+            return response;
+        }
+        catch (Exception) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            breaker.RecordFailure();
+            throw new AiUnavailableException($"AI call timed out after {profile.TimeoutSeconds}s.");
+        }
+        catch (Exception e) when (e is Anthropic5xxException or AnthropicIOException)
+        {
+            breaker.RecordFailure();
+            throw;
+        }
     }
 
     internal static MessageCreateParams BuildMessageParameters(

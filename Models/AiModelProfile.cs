@@ -25,6 +25,13 @@ public sealed class AiModelProfile
     /// </summary>
     public bool ForcedToolChoice { get; init; } = true;
 
+    /// <summary>
+    /// Wall-clock limit for one AI call including retries. A stalled upstream otherwise holds
+    /// the request and the dispatcher's spinner for the SDK's 10-minute default.
+    /// </summary>
+    [Range(1, 600)]
+    public int TimeoutSeconds { get; init; } = 30;
+
     /// <summary>Ceiling for a single response, including any thinking tokens.</summary>
     [Range(256, 64000)]
     public int MaxTokens { get; init; } = 1024;

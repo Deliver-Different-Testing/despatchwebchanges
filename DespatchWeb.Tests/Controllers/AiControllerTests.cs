@@ -1,4 +1,5 @@
 using DespatchWeb.Controllers;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -570,5 +571,16 @@ public class AiControllerTests
 
         var statusResult = result as ObjectResult;
         Assert.Equal(499, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task SummarizeJobNotes_AiUnavailable_Returns503()
+    {
+        _summarizationService.SummarizeJobNotesAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AiUnavailableException("timed out"));
+
+        var result = await CreateController().SummarizeJobNotes(1, TestContext.Current.CancellationToken);
+
+        Assert.Equal(503, Assert.IsType<ObjectResult>(result).StatusCode);
     }
 }
