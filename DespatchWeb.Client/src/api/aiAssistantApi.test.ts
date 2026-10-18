@@ -20,6 +20,7 @@ import {
     extractBlockers,
     analyzePricing,
     triageChangeRequest,
+    recordPricingOutcome,
 } from './aiAssistantApi';
 import {apiClient} from './client';
 
@@ -227,6 +228,15 @@ describe('aiAssistantApi', () => {
                 null,
                 {params: {requestId: 42, jobId: 7}}
             );
+        });
+
+        it('recordPricingOutcome posts the suggested and accepted charge ids', async () => {
+            mockApiClient.post.mockResolvedValueOnce({recorded: true});
+            const request = {jobId: 7, suggestedChargeIds: [5, 6], acceptedChargeIds: [5]};
+
+            await recordPricingOutcome(request);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/RecordPricingOutcome', request);
         });
     });
 });

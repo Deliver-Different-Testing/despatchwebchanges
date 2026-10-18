@@ -23,6 +23,7 @@ import {resolveDashboardRedirect} from './routes/dashboardRouteGuard';
 import {confirmNavigationAllowed} from './routes/unsavedChangesGuard';
 import type {ErrorType} from './pages/error-page/ErrorPage';
 import type {PrebookListModel} from './types';
+import {PwaUpdatePrompt} from './components/PwaUpdatePrompt';
 import {NavigationProvider, type Navigation, type NavigationParams} from './routes/NavigationContext';
 import {ROUTES, resolveAlias, routePath, type RouteEntry} from './routes/routeTable';
 
@@ -153,6 +154,7 @@ export const SpaRoot: React.FC<{initialContext?: SessionContextDto}> = ({initial
         <DfrntMantineProvider>
             <SessionGate initialContext={initialContext}>
                 <ThemeBootstrap>
+                    <PwaUpdatePrompt/>
                     <RouterProvider router={router}/>
                 </ThemeBootstrap>
             </SessionGate>

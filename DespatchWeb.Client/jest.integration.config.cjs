@@ -39,6 +39,7 @@ const config = {
     moduleNameMapper: {
         '^@dfrnt/glass$': '<rootDir>/node_modules/@dfrnt/glass/dist/index.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/src/test/mocks/styleMock.ts',
+        '^virtual:pwa-register/react$': '<rootDir>/src/test/mocks/pwaRegisterMock.ts',
     },
 
     setupFilesAfterEnv: [

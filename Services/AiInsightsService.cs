@@ -174,18 +174,18 @@ public sealed class AiInsightsService(
         if (json == null)
         {
             return new ExtractBlockersResponse
-                { Blockers = [], Summary = "Unable to analyse notes.", Severity = SummarySeverity.Ok, Usage = usage };
+                { Blockers = [], Summary = "Unable to analyse notes.", Severity = SummarySeverity.Ok, Incomplete = true, Usage = usage };
         }
 
         try
         {
             var parsed = JsonSerializer.Deserialize<ExtractBlockersResponse>(json, ToolJsonOptions);
-            return (parsed ?? new ExtractBlockersResponse()) with { Usage = usage };
+            return (parsed ?? new ExtractBlockersResponse { Incomplete = true }) with { Usage = usage };
         }
         catch (JsonException)
         {
             return new ExtractBlockersResponse
-                { Blockers = [], Summary = "Unable to parse blockers.", Severity = SummarySeverity.Ok, Usage = usage };
+                { Blockers = [], Summary = "Unable to parse blockers.", Severity = SummarySeverity.Ok, Incomplete = true, Usage = usage };
         }
     }
 
@@ -241,9 +241,11 @@ public sealed class AiInsightsService(
         var suggestions = new List<AccessorialSuggestion>();
         if (json == null)
         {
-            return new PricingAnalysisResponse { Anomaly = anomaly, Suggestions = suggestions, Usage = usage };
+            return new PricingAnalysisResponse
+                { Anomaly = anomaly, Suggestions = suggestions, Incomplete = true, Usage = usage };
         }
 
+        var incomplete = false;
         try
         {
             var wrapper = JsonSerializer.Deserialize<SuggestionWrapper>(json, ToolJsonOptions);
@@ -258,9 +260,11 @@ public sealed class AiInsightsService(
         catch (JsonException e)
         {
             Log.Warning(e, "Failed to parse accessorial suggestions for job {JobId}", jobId);
+            incomplete = true;
         }
 
-        return new PricingAnalysisResponse { Anomaly = anomaly, Suggestions = suggestions, Usage = usage };
+        return new PricingAnalysisResponse
+            { Anomaly = anomaly, Suggestions = suggestions, Incomplete = incomplete, Usage = usage };
     }
 
     public async Task<ChangeRequestTriageResponse> TriageChangeRequestAsync(int requestId, int jobId,
@@ -297,9 +301,9 @@ public sealed class AiInsightsService(
         var sb = new StringBuilder();
         sb.AppendLine("--- Change request ---");
         sb.AppendLine($"Field: {request.FieldName}");
-        sb.AppendLine($"Current value: {AiDataSanitizer.Sanitize(request.CurrentValue ?? "(none)")}");
-        sb.AppendLine($"Requested value: {AiDataSanitizer.Sanitize(request.RequestedValue ?? "(none)")}");
-        sb.AppendLine($"Reason: {AiDataSanitizer.Sanitize(request.Reason ?? "(none given)")}");
+        sb.AppendLine($"Current value: {AiDataSanitizer.SanitizeUntrusted(request.CurrentValue ?? "(none)")}");
+        sb.AppendLine($"Requested value: {AiDataSanitizer.SanitizeUntrusted(request.RequestedValue ?? "(none)")}");
+        sb.AppendLine($"Reason: {AiDataSanitizer.SanitizeUntrusted(request.Reason ?? "(none given)")}");
         sb.AppendLine($"Requested by: {request.RequestingPartyType}");
         sb.AppendLine($"Approval mode: {request.ApprovalMode}");
         sb.AppendLine($"Requires commercial refresh: {request.RequiresCommercialRefresh}");
@@ -448,7 +452,7 @@ public sealed class AiInsightsService(
         {
             var important = note.IsImportant ? " IMPORTANT" : string.Empty;
             sb.AppendLine(
-                $"({note.NoteTypeName}{important}) {AiDataSanitizer.Sanitize(note.NoteText ?? string.Empty)}");
+                $"({note.NoteTypeName}{important}) {AiDataSanitizer.SanitizeUntrusted(note.NoteText ?? string.Empty)}");
         }
 
         sb.AppendLine();

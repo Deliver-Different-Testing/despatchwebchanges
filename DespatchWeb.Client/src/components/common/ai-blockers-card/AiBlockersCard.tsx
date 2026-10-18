@@ -159,7 +159,10 @@ export const AiBlockersCard: React.FC<AiBlockersCardProps> = ({title, fetchBlock
                         </>
                     )}
                     {error && <Text size="sm" c="red">{error}</Text>}
-                    {data && !hasBlockers && (
+                    {data?.incomplete && (
+                        <Text size="sm" c="orange">Couldn't analyse the notes. Try again.</Text>
+                    )}
+                    {data && !data.incomplete && !hasBlockers && (
                         <Text size="sm" c="dimmed">No blockers detected in the notes.</Text>
                     )}
                     {hasBlockers && (
