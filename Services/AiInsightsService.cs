@@ -297,9 +297,9 @@ public sealed class AiInsightsService(
         var sb = new StringBuilder();
         sb.AppendLine("--- Change request ---");
         sb.AppendLine($"Field: {request.FieldName}");
-        sb.AppendLine($"Current value: {AiDataSanitizer.Sanitize(request.CurrentValue ?? "(none)")}");
-        sb.AppendLine($"Requested value: {AiDataSanitizer.Sanitize(request.RequestedValue ?? "(none)")}");
-        sb.AppendLine($"Reason: {AiDataSanitizer.Sanitize(request.Reason ?? "(none given)")}");
+        sb.AppendLine($"Current value: {AiDataSanitizer.SanitizeUntrusted(request.CurrentValue ?? "(none)")}");
+        sb.AppendLine($"Requested value: {AiDataSanitizer.SanitizeUntrusted(request.RequestedValue ?? "(none)")}");
+        sb.AppendLine($"Reason: {AiDataSanitizer.SanitizeUntrusted(request.Reason ?? "(none given)")}");
         sb.AppendLine($"Requested by: {request.RequestingPartyType}");
         sb.AppendLine($"Approval mode: {request.ApprovalMode}");
         sb.AppendLine($"Requires commercial refresh: {request.RequiresCommercialRefresh}");
@@ -448,7 +448,7 @@ public sealed class AiInsightsService(
         {
             var important = note.IsImportant ? " IMPORTANT" : string.Empty;
             sb.AppendLine(
-                $"({note.NoteTypeName}{important}) {AiDataSanitizer.Sanitize(note.NoteText ?? string.Empty)}");
+                $"({note.NoteTypeName}{important}) {AiDataSanitizer.SanitizeUntrusted(note.NoteText ?? string.Empty)}");
         }
 
         sb.AppendLine();

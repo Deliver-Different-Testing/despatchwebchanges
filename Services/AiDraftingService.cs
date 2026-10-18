@@ -79,7 +79,7 @@ public sealed class AiDraftingService(
         if (!string.IsNullOrWhiteSpace(request.Seed))
         {
             sb.AppendLine("Dispatcher's rough note to polish:");
-            sb.AppendLine(AiDataSanitizer.Sanitize(request.Seed));
+            sb.AppendLine(AiDataSanitizer.SanitizeUntrusted(request.Seed));
         }
         else
         {
@@ -127,10 +127,10 @@ public sealed class AiDraftingService(
         }
 
         sb.AppendLine("Rough subject (may be empty):");
-        sb.AppendLine(AiDataSanitizer.Sanitize(request.SeedSubject));
+        sb.AppendLine(AiDataSanitizer.SanitizeUntrusted(request.SeedSubject));
         sb.AppendLine();
         sb.AppendLine("Rough body to polish (may be empty):");
-        sb.AppendLine(AiDataSanitizer.Sanitize(request.SeedBody));
+        sb.AppendLine(AiDataSanitizer.SanitizeUntrusted(request.SeedBody));
 
         return await SendEmailDraftRequestAsync(systemPrompt, sb.ToString(), ct);
     }
@@ -203,7 +203,7 @@ public sealed class AiDraftingService(
             n.NoteTypeId is (int)NoteType.DeliveryNotes or (int)NoteType.ClientNote);
         if (deliveryNote != null && !string.IsNullOrWhiteSpace(deliveryNote.NoteText))
         {
-            sb.AppendLine($"Delivery note: {AiDataSanitizer.Sanitize(deliveryNote.NoteText)}");
+            sb.AppendLine($"Delivery note: {AiDataSanitizer.SanitizeUntrusted(deliveryNote.NoteText)}");
         }
 
         return await SendEmailDraftRequestAsync(systemPrompt, sb.ToString(), ct);
@@ -232,7 +232,7 @@ public sealed class AiDraftingService(
         if (!string.IsNullOrWhiteSpace(request.Seed))
         {
             sb.AppendLine("Rough note to polish:");
-            sb.AppendLine(AiDataSanitizer.Sanitize(request.Seed));
+            sb.AppendLine(AiDataSanitizer.SanitizeUntrusted(request.Seed));
         }
         else
         {
@@ -354,7 +354,7 @@ public sealed class AiDraftingService(
         sb.AppendLine("--- Recent conversation (oldest first) ---");
         foreach (var line in recentMessages.TakeLast(8))
         {
-            sb.AppendLine(AiDataSanitizer.Sanitize(line));
+            sb.AppendLine(AiDataSanitizer.SanitizeUntrusted(line));
         }
     }
 

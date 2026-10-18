@@ -24,4 +24,22 @@ public static partial class AiDataSanitizer
         result = EmailPattern().Replace(result, "[EMAIL]");
         return result;
     }
+
+    public const string UntrustedTag = "user_text";
+
+    /// <summary>
+    /// Redacts, then fences operator/customer/driver-authored text in a data tag so the model
+    /// can tell it from instructions. Angle brackets inside are escaped so the text cannot
+    /// close the tag and smuggle in instructions of its own.
+    /// </summary>
+    public static string SanitizeUntrusted(string input)
+    {
+        if (input is null)
+        {
+            return string.Empty;
+        }
+
+        var escaped = Sanitize(input).Replace("<", "&lt;").Replace(">", "&gt;");
+        return $"<{UntrustedTag}>{escaped}</{UntrustedTag}>";
+    }
 }

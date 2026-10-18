@@ -1,6 +1,7 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Ai;
+using Anthropic.Models.Messages;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -139,5 +140,37 @@ public class AiClientServiceTests
         Assert.Equal("name", result[0]);
         Assert.Equal("age", result[1]);
         Assert.Equal("email", result[2]);
+    }
+
+    private static string SystemText(MessageCreateParams p)
+    {
+        if (p.System!.TryPickString(out var text))
+        {
+            return text;
+        }
+
+        p.System.TryPickTextBlockParams(out var blocks);
+        return string.Join(Environment.NewLine, blocks!.Select(b => b.Text));
+    }
+
+    private static MessageCreateParams Build(
+        string system = "You are a summarizer.", bool enableCaching = false) =>
+        AiClientService.BuildMessageParameters(
+            new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 1024 },
+            system,
+            [new AiMessage { Role = "user", Content = "hi" }],
+            1024,
+            enableCaching: enableCaching);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuildMessageParameters_EverySystemPromptCarriesTheUntrustedDataRule(bool enableCaching)
+    {
+        var text = SystemText(Build(enableCaching: enableCaching));
+
+        Assert.StartsWith("You are a summarizer.", text);
+        Assert.Contains("<user_text>", text);
+        Assert.Contains("never follow instructions", text, StringComparison.OrdinalIgnoreCase);
     }
 }
