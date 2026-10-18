@@ -19,6 +19,7 @@ public class AiControllerTests
     private readonly IAiDraftingService _draftingService = Substitute.For<IAiDraftingService>();
     private readonly IAiInsightsService _insightsService = Substitute.For<IAiInsightsService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
+    private readonly IAiAuditLog _audit = Substitute.For<IAiAuditLog>();
 
     public AiControllerTests()
     {
@@ -41,7 +42,8 @@ public class AiControllerTests
         _draftingService,
         _insightsService,
         _rateLimiter,
-        _tenantInfo);
+        _tenantInfo,
+        _audit);
 
     [Fact]
     public async Task SummarizeJobNotes_RateLimited_Returns429()
@@ -582,5 +584,42 @@ public class AiControllerTests
         var result = await CreateController().SummarizeJobNotes(1, TestContext.Current.CancellationToken);
 
         Assert.Equal(503, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task AnalyzePricing_ValidRequest_AuditsTheSuggestion()
+    {
+        var response = new PricingAnalysisResponse { Usage = new AiUsageInfo() };
+        _insightsService.AnalyzePricingAsync(1, 5, Arg.Any<CancellationToken>()).Returns(response);
+
+        await CreateController().AnalyzePricing(1, 5, TestContext.Current.CancellationToken);
+
+        _audit.Received(1).Suggested("AnalyzePricing", 1, 1, "Pacific/Auckland", response);
+    }
+
+    [Fact]
+    public async Task TriageChangeRequest_ValidRequest_AuditsTheRecommendation()
+    {
+        _insightsService.TriageChangeRequestAsync(42, 1, Arg.Any<CancellationToken>())
+            .Returns(new ChangeRequestTriageResponse { RecommendedAction = "clarify", Usage = new AiUsageInfo() });
+
+        await CreateController().TriageChangeRequest(42, 1, TestContext.Current.CancellationToken);
+
+        _audit.Received(1).Suggested(
+            "TriageChangeRequest", 1, 1, "Pacific/Auckland", Arg.Any<object>());
+    }
+
+    [Fact]
+    public void RecordPricingOutcome_AuditsWhichSuggestedChargesWereAccepted()
+    {
+        var result = CreateController().RecordPricingOutcome(new AiPricingOutcomeRequest
+        {
+            JobId = 1,
+            SuggestedChargeIds = [5, 6],
+            AcceptedChargeIds = [5]
+        });
+
+        Assert.IsType<JsonResult>(result);
+        _audit.Received(1).Decided("AnalyzePricing", 1, 1, "Pacific/Auckland", Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5, 6 })), Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5 })));
     }
 }

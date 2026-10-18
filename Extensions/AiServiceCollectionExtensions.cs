@@ -20,6 +20,7 @@ public static class AiServiceCollectionExtensions
         services.AddSingleton<AiCircuitBreaker>();
         services.AddSingleton<IAiClientService, AiClientService>();
         services.AddSingleton<IAiRateLimiter, AiRateLimiter>();
+        services.AddSingleton<IAiAuditLog, AiAuditLog>();
         services.AddScoped<IAiSummarizationService, AiSummarizationService>();
         services.AddScoped<IAiDraftingService, AiDraftingService>();
         services.AddScoped<IAiInsightsService, AiInsightsService>();

@@ -4,7 +4,7 @@ import {renderWithMantine} from '../../../test/utils';
 import { setupUser } from '../../../test/utils/setupUser';
 import {AccessorialChargesDialog} from './AccessorialChargesDialog';
 import {accessorialChargesApi} from '../../../api/accessorialChargesApi';
-import {analyzePricing} from '../../../api/aiAssistantApi';
+import {analyzePricing, recordPricingOutcome} from '../../../api/aiAssistantApi';
 import {isAiEnabled} from '../../../utils/aiSettings';
 
 // Shared fast userEvent instance (see setupUser).
@@ -20,11 +20,12 @@ jest.mock('../../../api/accessorialChargesApi', () => ({
         deleteCharge: jest.fn(),
     },
 }));
-jest.mock('../../../api/aiAssistantApi', () => ({analyzePricing: jest.fn()}));
+jest.mock('../../../api/aiAssistantApi', () => ({analyzePricing: jest.fn(), recordPricingOutcome: jest.fn()}));
 jest.mock('../../../utils/aiSettings', () => ({isAiEnabled: jest.fn()}));
 
 const api = accessorialChargesApi as jest.Mocked<typeof accessorialChargesApi>;
 const mockAnalyze = analyzePricing as jest.Mock;
+const mockRecordOutcome = recordPricingOutcome as jest.Mock;
 const mockIsAiEnabled = isAiEnabled as jest.Mock;
 
 const job = {id: 123, accessorialChargeGroupId: 5, amount: 100, weight: 10, quantity: 1};
@@ -73,5 +74,22 @@ describe('AccessorialChargesDialog — Auto-Mate suggest', () => {
         // The suggested charge row checkbox should now be checked.
         const checkbox = screen.getByRole('checkbox', {checked: true});
         expect(checkbox).toBeInTheDocument();
+    });
+
+    it('records which suggested charges the dispatcher actually added', async () => {
+        mockIsAiEnabled.mockReturnValue(true);
+        mockAnalyze.mockResolvedValueOnce({
+            anomaly: null,
+            suggestions: [{accessorialChargeId: 5, name: 'Tail-lift', reason: 'tail-lift flag', suggestedInputValue: null}],
+            usage: {inputTokens: 1, outputTokens: 1},
+        });
+        (api.addCharges as jest.Mock).mockResolvedValue([]);
+        mockRecordOutcome.mockResolvedValue({recorded: true});
+
+        renderDialog();
+        await userEvent.click(await screen.findByRole('button', {name: /suggest charges/i}));
+        await userEvent.click(await screen.findByRole('button', {name: /add selected charges/i}));
+
+        expect(mockRecordOutcome).toHaveBeenCalledWith({jobId: 123, suggestedChargeIds: [5], acceptedChargeIds: [5]});
     });
 });

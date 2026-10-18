@@ -112,3 +112,14 @@ export function triageChangeRequest(
         {params: {requestId, jobId}, ...options},
     );
 }
+
+export interface PricingOutcomeRequest {
+    jobId: number;
+    suggestedChargeIds: number[];
+    acceptedChargeIds: number[];
+}
+
+/** Audit-only: tell the server which AI-suggested charges the dispatcher actually added. */
+export function recordPricingOutcome(request: PricingOutcomeRequest): Promise<{recorded: boolean}> {
+    return apiClient.post<{recorded: boolean}>('/Ai/RecordPricingOutcome', request);
+}

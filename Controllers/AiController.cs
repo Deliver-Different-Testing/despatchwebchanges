@@ -15,7 +15,8 @@ public class AiController(
     IAiDraftingService draftingService,
     IAiInsightsService insightsService,
     IAiRateLimiter rateLimiter,
-    ITenantInfoService tenantInfo) : Controller
+    ITenantInfoService tenantInfo,
+    IAiAuditLog auditLog) : Controller
 {
     [HttpPost]
     public async Task<IActionResult> SummarizeJobNotes(int jobId, CancellationToken ct)
@@ -486,6 +487,8 @@ public class AiController(
             await rateLimiter.RecordTokenUsageAsync(
                 staffId, tenantId, nameof(AnalyzePricing), AiTaskClass.Judgment, response.Usage);
 
+            auditLog.Suggested(nameof(AnalyzePricing), jobId, staffId, tenantId, response);
+
             return Json(response);
         }
         catch (OperationCanceledException)
@@ -527,6 +530,9 @@ public class AiController(
             await rateLimiter.RecordTokenUsageAsync(
                 staffId, tenantId, nameof(TriageChangeRequest), AiTaskClass.Judgment, response.Usage);
 
+            auditLog.Suggested(nameof(TriageChangeRequest), jobId, staffId, tenantId,
+                new { RequestId = requestId, Suggestion = response });
+
             return Json(response);
         }
         catch (OperationCanceledException)
@@ -548,5 +554,16 @@ public class AiController(
             Log.Error(e, "Error triaging change request {RequestId}: {Error}", requestId, e.Message);
             return StatusCode(500, "An error occurred triaging the change request");
         }
+    }
+
+    /// <summary>Audit-only: records which AI-suggested charges the dispatcher added.</summary>
+    [HttpPost]
+    public IActionResult RecordPricingOutcome([FromBody] AiPricingOutcomeRequest request)
+    {
+        auditLog.Decided(
+            nameof(AnalyzePricing), request.JobId, tenantInfo.GetStaffId(), tenantInfo.GetTenantTimeZone(),
+            request.SuggestedChargeIds, request.AcceptedChargeIds);
+
+        return Json(new { recorded = true });
     }
 }
