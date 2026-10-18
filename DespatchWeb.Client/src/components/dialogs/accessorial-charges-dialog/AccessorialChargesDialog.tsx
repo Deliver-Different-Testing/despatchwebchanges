@@ -879,7 +879,10 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                     {pricingResult.suggestions.map(s => s.name).join(', ')}
                                 </Alert>
                             )}
-                            {pricingResult && pricingResult.suggestions.length === 0 && !pricingResult.anomaly?.isOutlier && (
+                            {pricingResult?.incomplete && (
+                                <Alert color="orange">Couldn't analyse this job. Try again.</Alert>
+                            )}
+                            {pricingResult && !pricingResult.incomplete && pricingResult.suggestions.length === 0 && !pricingResult.anomaly?.isOutlier && (
                                 <Alert color="green">No additional charges or pricing issues detected.</Alert>
                             )}
                         </Box>

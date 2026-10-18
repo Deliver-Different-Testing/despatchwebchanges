@@ -92,4 +92,19 @@ describe('AccessorialChargesDialog — Auto-Mate suggest', () => {
 
         expect(mockRecordOutcome).toHaveBeenCalledWith({jobId: 123, suggestedChargeIds: [5], acceptedChargeIds: [5]});
     });
+
+    it('says the suggestion pass failed instead of reporting nothing to suggest', async () => {
+        mockIsAiEnabled.mockReturnValue(true);
+        mockAnalyze.mockResolvedValueOnce({
+            anomaly: null,
+            suggestions: [],
+            incomplete: true,
+            usage: {inputTokens: 1, outputTokens: 1},
+        });
+
+        renderDialog();
+        await userEvent.click(await screen.findByRole('button', {name: /suggest charges/i}));
+
+        expect(await screen.findByText(/couldn't analyse this job/i)).toBeInTheDocument();
+    });
 });

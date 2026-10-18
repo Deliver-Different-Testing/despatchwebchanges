@@ -191,4 +191,76 @@ public class AiInsightsServiceTests
         await _aiClient.DidNotReceiveWithAnyArgs().SendMessageAsync(
             default, null!, null!, 0, null, null, false, false, CancellationToken.None);
     }
+
+    private void StubRawResponse(AiClientResponse response) =>
+        _aiClient.SendMessageAsync(
+                Arg.Any<AiTaskClass>(),
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(response);
+
+    [Theory]
+    [InlineData("refusal")]
+    [InlineData("max_tokens")]
+    [InlineData("end_turn")]
+    public async Task ExtractBlockersAsync_NoUsableToolResult_IsFlaggedIncompleteNotNoBlockers(string stopReason)
+    {
+        _noteRepository.GetNotesByJobIdAsync(1).Returns(new List<TucNoteViewModel>
+        {
+            new() { NoteText = "Beware of the dog", NoteTypeName = "Delivery Notes" }
+        });
+        StubRawResponse(new AiClientResponse { StopReason = stopReason });
+
+        var result = await CreateService().ExtractBlockersAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.Incomplete);
+        Assert.Empty(result.Blockers);
+    }
+
+    [Fact]
+    public async Task ExtractBlockersAsync_UnparseableToolResult_IsFlaggedIncomplete()
+    {
+        _noteRepository.GetNotesByJobIdAsync(1).Returns(new List<TucNoteViewModel>
+        {
+            new() { NoteText = "Beware of the dog", NoteTypeName = "Delivery Notes" }
+        });
+        var response = new AiClientResponse();
+        response.ToolCalls.Add(new AiToolCall { ToolName = "emit_blockers", ArgumentsJson = "{not json" });
+        StubRawResponse(response);
+
+        var result = await CreateService().ExtractBlockersAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.True(result.Incomplete);
+    }
+
+    [Fact]
+    public async Task ExtractBlockersAsync_SuccessfulResult_IsNotIncomplete()
+    {
+        _noteRepository.GetNotesByJobIdAsync(1).Returns(new List<TucNoteViewModel>
+        {
+            new() { NoteText = "Ring buzzer", NoteTypeName = "Delivery Notes" }
+        });
+        StubToolResponse("emit_blockers", new { blockers = Array.Empty<object>(), summary = "None", severity = "Ok" });
+
+        var result = await CreateService().ExtractBlockersAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.False(result.Incomplete);
+    }
+
+    [Fact]
+    public async Task AnalyzePricingAsync_RefusedByTheModel_IsFlaggedIncompleteNotNothingToSuggest()
+    {
+        _jobRepository.GetSingleJobById(1).Returns(new JobViewModel { JobNo = "J1", Charge = null });
+        _noteRepository.GetNotesByJobIdAsync(1).Returns(new List<TucNoteViewModel>());
+        _accessorialService.GetAvailableChargesAsync(5, 1).Returns(new List<AccessorialChargeDto>
+        {
+            new() { AccessorialChargeId = 5, Name = "Tail-lift", ChargeType = "flat" }
+        });
+        StubRawResponse(new AiClientResponse { StopReason = "refusal" });
+
+        var result = await CreateService().AnalyzePricingAsync(1, 5, TestContext.Current.CancellationToken);
+
+        Assert.True(result.Incomplete);
+        Assert.Empty(result.Suggestions);
+    }
 }

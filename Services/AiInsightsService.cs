@@ -174,18 +174,18 @@ public sealed class AiInsightsService(
         if (json == null)
         {
             return new ExtractBlockersResponse
-                { Blockers = [], Summary = "Unable to analyse notes.", Severity = SummarySeverity.Ok, Usage = usage };
+                { Blockers = [], Summary = "Unable to analyse notes.", Severity = SummarySeverity.Ok, Incomplete = true, Usage = usage };
         }
 
         try
         {
             var parsed = JsonSerializer.Deserialize<ExtractBlockersResponse>(json, ToolJsonOptions);
-            return (parsed ?? new ExtractBlockersResponse()) with { Usage = usage };
+            return (parsed ?? new ExtractBlockersResponse { Incomplete = true }) with { Usage = usage };
         }
         catch (JsonException)
         {
             return new ExtractBlockersResponse
-                { Blockers = [], Summary = "Unable to parse blockers.", Severity = SummarySeverity.Ok, Usage = usage };
+                { Blockers = [], Summary = "Unable to parse blockers.", Severity = SummarySeverity.Ok, Incomplete = true, Usage = usage };
         }
     }
 
@@ -241,9 +241,11 @@ public sealed class AiInsightsService(
         var suggestions = new List<AccessorialSuggestion>();
         if (json == null)
         {
-            return new PricingAnalysisResponse { Anomaly = anomaly, Suggestions = suggestions, Usage = usage };
+            return new PricingAnalysisResponse
+                { Anomaly = anomaly, Suggestions = suggestions, Incomplete = true, Usage = usage };
         }
 
+        var incomplete = false;
         try
         {
             var wrapper = JsonSerializer.Deserialize<SuggestionWrapper>(json, ToolJsonOptions);
@@ -258,9 +260,11 @@ public sealed class AiInsightsService(
         catch (JsonException e)
         {
             Log.Warning(e, "Failed to parse accessorial suggestions for job {JobId}", jobId);
+            incomplete = true;
         }
 
-        return new PricingAnalysisResponse { Anomaly = anomaly, Suggestions = suggestions, Usage = usage };
+        return new PricingAnalysisResponse
+            { Anomaly = anomaly, Suggestions = suggestions, Incomplete = incomplete, Usage = usage };
     }
 
     public async Task<ChangeRequestTriageResponse> TriageChangeRequestAsync(int requestId, int jobId,

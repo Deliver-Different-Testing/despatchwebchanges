@@ -90,6 +90,8 @@ export interface ExtractBlockersResponse {
     blockers: BlockerItem[];
     summary: string;
     severity: SummarySeverity;
+    /** True when the analysis failed — distinct from "nothing found". */
+    incomplete?: boolean;
     usage: AiUsageInfo;
 }
 
@@ -110,6 +112,8 @@ export interface PricingAnomaly {
 export interface PricingAnalysisResponse {
     anomaly: PricingAnomaly | null;
     suggestions: AccessorialSuggestion[];
+    /** True when the suggestion pass failed — distinct from "nothing to suggest". */
+    incomplete?: boolean;
     usage: AiUsageInfo;
 }
 
