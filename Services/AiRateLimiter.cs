@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
@@ -10,6 +11,12 @@ namespace DespatchWeb.Services;
 public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSettings> settings)
     : IAiRateLimiter
 {
+    internal const string MeterName = "DespatchWeb.Ai";
+
+    private static readonly Meter AiMeter = new(MeterName);
+    private static readonly Counter<long> TokenCounter = AiMeter.CreateCounter<long>("ai.tokens", "token");
+    private static readonly Counter<double> CostCounter = AiMeter.CreateCounter<double>("ai.cost.usd", "USD");
+
     private readonly AnthropicSettings _settings = settings.Value;
 
     public async Task<bool> TryAcquireAsync(int staffId, string tenantId)
@@ -61,7 +68,25 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
             staffId, tenantId,
             usage.InputTokens, usage.OutputTokens,
             usage.CacheReadInputTokens, usage.CacheCreationInputTokens, costUsd);
+
+        EmitMetrics(feature, profile.Model, usage, costUsd);
         return Task.CompletedTask;
+    }
+
+    private static void EmitMetrics(string feature, string model, AiUsageInfo usage, decimal costUsd)
+    {
+        void Add(string kind, int count) => TokenCounter.Add(count,
+            new KeyValuePair<string, object>("feature", feature),
+            new KeyValuePair<string, object>("model", model),
+            new KeyValuePair<string, object>("kind", kind));
+
+        Add("input", usage.InputTokens);
+        Add("output", usage.OutputTokens);
+        Add("cache_read", usage.CacheReadInputTokens);
+        Add("cache_write", usage.CacheCreationInputTokens);
+        CostCounter.Add((double)costUsd,
+            new KeyValuePair<string, object>("feature", feature),
+            new KeyValuePair<string, object>("model", model));
     }
 
     private static decimal CostUsd(AiModelProfile profile, AiUsageInfo usage) =>

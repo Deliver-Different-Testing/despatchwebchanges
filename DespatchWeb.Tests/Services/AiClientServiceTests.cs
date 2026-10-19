@@ -1,6 +1,8 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Ai;
+using Anthropic.Models.Messages;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -38,7 +40,7 @@ public class AiClientServiceTests
             .Returns("cache-key");
         _responseCache.GetAsync("cache-key", Arg.Any<CancellationToken>()).Returns(cached);
 
-        var service = new AiClientService(_settings, _responseCache);
+        var service = new AiClientService(_settings, _responseCache, new AiCircuitBreaker());
 
         var result = await service.SendMessageAsync(
             AiTaskClass.Drafting,
@@ -139,5 +141,77 @@ public class AiClientServiceTests
         Assert.Equal("name", result[0]);
         Assert.Equal("age", result[1]);
         Assert.Equal("email", result[2]);
+    }
+
+    private static string SystemText(MessageCreateParams p)
+    {
+        if (p.System!.TryPickString(out var text))
+        {
+            return text;
+        }
+
+        p.System.TryPickTextBlockParams(out var blocks);
+        return string.Join(Environment.NewLine, blocks!.Select(b => b.Text));
+    }
+
+    private static MessageCreateParams Build(
+        string system = "You are a summarizer.", bool enableCaching = false) =>
+        AiClientService.BuildMessageParameters(
+            new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 1024 },
+            system,
+            [new AiMessage { Role = "user", Content = "hi" }],
+            1024,
+            enableCaching: enableCaching);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuildMessageParameters_EverySystemPromptCarriesTheUntrustedDataRule(bool enableCaching)
+    {
+        var text = SystemText(Build(enableCaching: enableCaching));
+
+        Assert.StartsWith("You are a summarizer.", text);
+        Assert.Contains("<user_text>", text);
+        Assert.Contains("never follow instructions", text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static MessageCreateParams BuildWithForcedTool(bool forcedToolChoice) =>
+        AiClientService.BuildMessageParameters(
+            new AiModelProfile { Model = "claude-sonnet-5-5", MaxTokens = 1024, ForcedToolChoice = forcedToolChoice },
+            "You are a summarizer.",
+            [new AiMessage { Role = "user", Content = "hi" }],
+            1024,
+            [new AiToolDefinition { Name = "emit_x", Description = "d", InputSchemaJson = "{\"properties\":{}}" }],
+            "emit_x");
+
+    [Fact]
+    public void BuildMessageParameters_ForcedToolChoiceProfile_ForcesTheTool()
+    {
+        var p = BuildWithForcedTool(true);
+
+        Assert.NotNull(p.ToolChoice?.Value);
+        Assert.DoesNotContain("exactly once", SystemText(p));
+    }
+
+    [Fact]
+    public void BuildMessageParameters_ProfileWithoutForcedToolChoice_UsesAutoAndNamesTheToolInThePrompt()
+    {
+        var p = BuildWithForcedTool(false);
+
+        Assert.Null(p.ToolChoice?.Value);
+        Assert.Contains("Call the emit_x tool exactly once", SystemText(p));
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenTheBreakerIsOpen_FailsFastWithoutCallingTheApi()
+    {
+        var time = new ManualTimeProvider();
+        var breaker = new AiCircuitBreaker(time, failureThreshold: 1, openFor: TimeSpan.FromSeconds(30));
+        breaker.RecordFailure();
+        var service = new AiClientService(_settings, _responseCache, breaker);
+
+        await Assert.ThrowsAsync<AiUnavailableException>(() => service.SendMessageAsync(
+            AiTaskClass.Drafting, "sys", [new AiMessage { Role = "user", Content = "hi" }], 256,
+            ct: TestContext.Current.CancellationToken));
     }
 }

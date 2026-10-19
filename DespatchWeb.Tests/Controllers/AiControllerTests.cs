@@ -1,4 +1,5 @@
 using DespatchWeb.Controllers;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -18,6 +19,7 @@ public class AiControllerTests
     private readonly IAiDraftingService _draftingService = Substitute.For<IAiDraftingService>();
     private readonly IAiInsightsService _insightsService = Substitute.For<IAiInsightsService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
+    private readonly IAiAuditLog _audit = Substitute.For<IAiAuditLog>();
 
     public AiControllerTests()
     {
@@ -40,7 +42,8 @@ public class AiControllerTests
         _draftingService,
         _insightsService,
         _rateLimiter,
-        _tenantInfo);
+        _tenantInfo,
+        _audit);
 
     [Fact]
     public async Task SummarizeJobNotes_RateLimited_Returns429()
@@ -570,5 +573,98 @@ public class AiControllerTests
 
         var statusResult = result as ObjectResult;
         Assert.Equal(499, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task SummarizeJobNotes_AiUnavailable_Returns503()
+    {
+        _summarizationService.SummarizeJobNotesAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AiUnavailableException("timed out"));
+
+        var result = await CreateController().SummarizeJobNotes(1, TestContext.Current.CancellationToken);
+
+        Assert.Equal(503, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task AnalyzePricing_ValidRequest_AuditsTheSuggestion()
+    {
+        var response = new PricingAnalysisResponse { Usage = new AiUsageInfo() };
+        _insightsService.AnalyzePricingAsync(1, 5, Arg.Any<CancellationToken>()).Returns(response);
+
+        await CreateController().AnalyzePricing(1, 5, TestContext.Current.CancellationToken);
+
+        _audit.Received(1).Suggested("AnalyzePricing", 1, 1, "Pacific/Auckland", response);
+    }
+
+    [Fact]
+    public async Task TriageChangeRequest_ValidRequest_AuditsTheRecommendation()
+    {
+        _insightsService.TriageChangeRequestAsync(42, 1, Arg.Any<CancellationToken>())
+            .Returns(new ChangeRequestTriageResponse { RecommendedAction = "clarify", Usage = new AiUsageInfo() });
+
+        await CreateController().TriageChangeRequest(42, 1, TestContext.Current.CancellationToken);
+
+        _audit.Received(1).Suggested(
+            "TriageChangeRequest", 1, 1, "Pacific/Auckland", Arg.Any<object>());
+    }
+
+    [Fact]
+    public void RecordPricingOutcome_AuditsWhichSuggestedChargesWereAccepted()
+    {
+        var result = CreateController().RecordPricingOutcome(new AiPricingOutcomeRequest
+        {
+            JobId = 1,
+            SuggestedChargeIds = [5, 6],
+            AcceptedChargeIds = [5]
+        });
+
+        Assert.IsType<JsonResult>(result);
+        _audit.Received(1).Decided("AnalyzePricing", 1, 1, "Pacific/Auckland", Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5, 6 })), Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5 })));
+    }
+
+    [Fact]
+    public async Task DraftPodEmail_JobNotFound_Returns404WithoutADraft()
+    {
+        _draftingService.DraftPodEmailAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new JobNotFoundException("Job 9 was not found."));
+
+        var result = await CreateController().DraftPodEmail(9, TestContext.Current.CancellationToken);
+
+        var status = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(404, status.StatusCode);
+        Assert.Equal("Job 9 was not found.", status.Value);
+    }
+
+    [Fact]
+    public void RecordPricingOutcome_DropsAcceptedIdsThatWereNeverSuggested()
+    {
+        CreateController().RecordPricingOutcome(new AiPricingOutcomeRequest
+        {
+            JobId = 1,
+            SuggestedChargeIds = [5],
+            AcceptedChargeIds = [5, 99]
+        });
+
+        _audit.Received(1).Decided(
+            "AnalyzePricing", 1, 1, "Pacific/Auckland",
+            Arg.Any<IReadOnlyList<int>>(),
+            Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5 })));
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(-3, 1)]
+    [InlineData(1, 51)]
+    public void RecordPricingOutcome_RejectsAnInvalidJobIdOrOversizedList_WithoutAuditing(int jobId, int idCount)
+    {
+        var result = CreateController().RecordPricingOutcome(new AiPricingOutcomeRequest
+        {
+            JobId = jobId,
+            SuggestedChargeIds = Enumerable.Range(1, idCount).ToList()
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        _audit.DidNotReceiveWithAnyArgs().Decided(default!, default, default, default!, default!, default!);
     }
 }

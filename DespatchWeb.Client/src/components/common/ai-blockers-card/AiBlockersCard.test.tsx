@@ -40,4 +40,12 @@ describe('AiBlockersCard', () => {
 
         expect(await screen.findByText('boom')).toBeInTheDocument();
     });
+
+    it('says the analysis failed, not that there are no blockers, when the result is incomplete', async () => {
+        const incomplete: ExtractBlockersResponse = {...noBlockers, summary: 'Unable to analyse notes.', incomplete: true};
+        render(<AiBlockersCard title="Blockers" fetchBlockers={() => Promise.resolve(incomplete)} />);
+
+        expect(await screen.findByText(/couldn't analyse the notes/i)).toBeInTheDocument();
+        expect(screen.queryByText('No blockers detected in the notes.')).not.toBeInTheDocument();
+    });
 });
