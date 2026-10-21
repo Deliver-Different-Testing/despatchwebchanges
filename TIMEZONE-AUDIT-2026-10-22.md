@@ -1,6 +1,6 @@
 # DespatchWeb timezone audit — 2026-10-22
 
-Audited at GitHub mirror `main` `5baf3565` (19 Oct 2026) = gitlab.com `deliver-different/despatchweb` master `a01419d0` (18 Oct) plus mirror merges; develop = master. The old CustomD remote (`git.customd.com`) stopped at `db2ea48d` on 6 Oct and is stale. Frontend is the Vite SPA under `DespatchWeb.Client/src`.
+Source of truth: **gitlab.com `deliver-different/despatchweb` master `a01419d0` (18 Oct 2026)**; develop is at the same commit. The GitHub mirror main `5baf3565` used for the file reads is code-identical to it (`git diff gl/master origin/main` touches only three `secure/*.age` token files and markdown docs). The old CustomD remote (`git.customd.com`) stopped at `db2ea48d` on 6 Oct and must not be used. Frontend is the Vite SPA under `DespatchWeb.Client/src`.
 
 Trigger: continual OTG reports of times showing in the wrong zone. Example screenshot = job P3779V (Carlstadt NJ, Eastern) whose header reads `Oct/21 07:00 (EDT)` while the "Pickup arrival time" dialog reads `04:50` with "Job timezone: Pacific Daylight Time".
 
