@@ -68,9 +68,22 @@ public DateTime GetCurrentTimeFromTimeZone(TimeZone? timeZone)
 - Prod evidence: CloudWatch `despatchweb-594-urgent-prod`, stack `TenantInfoService.cs:155 ← JobRepository.ParsePodTime ← UpdatePodDetailsAsync` (42×) and `← UpdateTucJobWithEntityAsync :520` (24×), 8–21 Oct. Urgent has 6,350 live jobs with null `PickupTimeZoneId`/`DeliverByTimeZoneId`.
 - Tests (`DespatchWeb.Tests/Services/TenantInfoServiceTests.cs`, NSubstitute): null → tenant time; `Name = "America/New_York"` and `Name = "Eastern Standard Time"` both resolve; `Name = "Nope/Zone"` → UTC (not a throw).
 
+## Reproduced (22 Oct 2026, OTG staging)
+
+Fixture: **E2984D2D** (id 170577) on `despatch.otgcargo.staging.deliverdifferent.com`, pickup zone `America/New_York` (Moonachie NJ), delivery zone `America/Los_Angeles` (Hollywood Bowl). Steve booked it for this purpose; it stays on staging for the acceptance test.
+
+| Step | Dialog | Shows | Seeded time |
+|---|---|---|---|
+| 1. Fresh page, open **Deliver by** | delivery side | Pacific Daylight Time | 16:00 (= now in LA) — correct |
+| 2. Cancel, open **Pickup arrival time** on the same job | pickup side | **Pacific Daylight Time** | **16:01** — wrong, should be Eastern / 19:01 (READY column reads `Oct/21 19:00 (EDT)`) |
+| 3. Hash-only navigation (`#/dispatch?jobId=…` → `#/dispatch`), open Pickup arrival time | pickup side | still Pacific | still 16:0x — SPA tree survives, state persists |
+| 4. `location.reload()`, open **Pickup arrival time first** | pickup side | Eastern Daylight Time | 19:03 — correct |
+
+Screenshots: `C:\Users\SteveB\Downloads\despatchweb-tz-repro-2026-10-22\` (four files, numbered in this order).
+
 ## Acceptance
 
-1. OTG, job P3779V-style (pickup zone `America/New_York`, delivery zone `America/Los_Angeles`): open "Deliver by" (shows Pacific), close, open "Pickup arrival time" → shows Eastern; with the field empty the seeded time is now in Eastern.
+1. OTG staging, job **E2984D2D** (pickup zone `America/New_York`, delivery zone `America/Los_Angeles`): hard-reload, open "Deliver by" (shows Pacific), cancel, open "Pickup arrival time" → shows Eastern Daylight/Standard Time and, with the field empty, the seeded time is now in Eastern (three hours later than the Pacific value). This is step 2 of the reproduction above, which fails today.
 2. Same job: list row and detail header show the same abbreviation; a NZ job on an Urgent session shows none.
 3. Any job dated 15 Jan viewed in October shows `(EST)` in list and detail.
 4. Urgent: POD save and Delivered on a job with null zone ids succeeds, stamps tenant-zone time, and `despatchweb-594-urgent-prod` shows no new `GetCurrentTimeFromTimeZone` null references after deploy.
