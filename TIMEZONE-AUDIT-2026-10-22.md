@@ -96,7 +96,7 @@ Not a finding but worth knowing: the git history has **15+ "timezone fix" merges
 
 ## 7. Open items for Steve
 
-- RDS zone (NZ), tenant zone format (Windows), `dbo.TimeZone` duplicates and the null-zone counts are all confirmed (22 Oct, Steve ran the §3 SQL). The §3 queries stay in the doc for re-running after M3.
+- RDS zone (NZ), tenant zone format (Windows), `dbo.TimeZone` duplicates and the null-zone counts are all confirmed (22 Oct, Garry ran the §3 SQL on Master Controller, Urgent prod and OTG). The §3 queries stay in the doc for re-running after M3.
 - Urgent: find which flows create the 6,350 zone-less live jobs (Booking? driver app? recurring release?) and whether any dispatcher status change on them has hit the F5 null dereference in prod logs.
 - Confirm with OTG whether their dispatchers' PCs are on Pacific or Eastern (affects the browser-now row in §3 and whether task overdue flags are part of their reports).
 - Product call for M4: do notes/tasks show tenant time with a label, or the open job's zone?
