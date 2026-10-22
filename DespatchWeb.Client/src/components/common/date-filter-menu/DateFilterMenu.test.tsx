@@ -125,6 +125,7 @@ describe('DateFilterMenu', () => {
             };
 
             it('picking a day closes only the calendar', async () => {
+                (window as any).serverConfig = {isUSCustomer: true};
                 renderWithProviders(<DateFilterMenu {...defaultProps} />, {env: 'default'});
                 const start = await openStartCalendar();
 

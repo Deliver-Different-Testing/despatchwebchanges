@@ -476,5 +476,25 @@ describe('EditDateTimeDialog', () => {
                 expect(result.timezone).toBe(targetTz);
             });
         });
+
+        it('takes the zone from the latest props when reopened for a different job', async () => {
+            const user = setupUser();
+            const onSubmit = jest.fn();
+            const props = (tz: string) => createDefaultProps({
+                dateTime: undefined, defaultTimeZone: tz, isUSCustomer: true, onSubmit,
+            });
+            const {rerender} = renderWithProviders(props('America/Los_Angeles'));
+
+            rerender(<EditDateTimeDialog {...props('America/New_York')} />);
+
+            expect(screen.getByText(/Eastern (Daylight|Standard) Time/)).toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: /Save/i}));
+            await waitFor(() => {
+                expect(onSubmit).toHaveBeenCalled();
+                const result = onSubmit.mock.calls[0][0];
+                expect(result.timezone).toBe('America/New_York');
+                expect(result.value.hour()).toBe(dayjs().tz('America/New_York').hour());
+            });
+        });
     });
 });

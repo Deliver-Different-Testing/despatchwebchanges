@@ -365,14 +365,14 @@ export function useJobActions({
 
     // ── Dialog Primitives ──────────────────────────────────────────
 
-    const editDateAndTime = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown, allowClear?: boolean) => {
+    const editDateAndTime = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: string | {text?: string}, allowClear?: boolean) => {
         const j = jobRef.current;
         if (!j) return;
         const result = await (await loadDialog('EditDateTime')).showEditDateAndTimeDialog({
             title,
             fieldName: field,
             dateTime: dateTime as any,
-            defaultTimeZone: timezone as any,
+            defaultTimeZone: timezone,
             readOnly: !!j.locked,
             allowClear,
         });
@@ -465,14 +465,14 @@ export function useJobActions({
     }, [showToast, refreshAndNotify, onRequestPartnerChange, isUsCustomer,
         checkForRateChanges]);
 
-    const editDate = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
+    const editDate = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: string | {text?: string}) => {
         const j = jobRef.current;
         if (!j) return;
         const result = await (await loadDialog('EditDateTime')).showEditDateDialog({
             title,
             fieldName: field,
             dateTime: dateTime as any,
-            defaultTimeZone: timezone as any,
+            defaultTimeZone: timezone,
             readOnly: !!j.locked,
         });
         if (!result) return;
