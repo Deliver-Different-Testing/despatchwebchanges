@@ -194,11 +194,13 @@ export function RecurringJobFields({
      *  with the pickup timezone abbreviation — no timezone for NZ tenants per
      *  `getTimezoneAbbreviation`'s NZ rule. */
     const pickupTz = job.pickUpTimeZone?.text ?? '';
-    const tzAbbr = getTimezoneAbbreviation(pickupTz);
-    const tzSuffix = tzAbbr ? ` ${tzAbbr}` : '';
+    const tzSuffixFor = (date?: dayjs.Dayjs): string => {
+        const abbr = getTimezoneAbbreviation(pickupTz, date && date.isValid() ? date : undefined);
+        return abbr ? ` ${abbr}` : '';
+    };
     const dateTooltip = (label: string, date: dayjs.Dayjs | undefined, displayValue: string | undefined): string => {
-        if (date && date.isValid()) return `${label}: ${formatLongDate(date)}${tzSuffix}`;
-        if (displayValue) return `${label}: ${displayValue}${tzSuffix}`;
+        if (date && date.isValid()) return `${label}: ${formatLongDate(date)}${tzSuffixFor(date)}`;
+        if (displayValue) return `${label}: ${displayValue}${tzSuffixFor(date)}`;
         return `${label}: not set`;
     };
     const firstDueDisplay = job.firstDue && dayjs.isDayjs(job.firstDue) && job.firstDue.isValid()

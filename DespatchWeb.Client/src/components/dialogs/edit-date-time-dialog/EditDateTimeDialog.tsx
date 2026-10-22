@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { DateInput, TimePicker } from '@mantine/dates';
 import { CalendarDays, Globe, Lock } from 'lucide-react';
@@ -52,11 +52,8 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
     // State
     const [dateTime, setDateTime] = useState<Dayjs>(dayjs());
     const [isLoading, setIsLoading] = useState(false);
-    // Handle timezone objects that may arrive via `as any` from callers
-    const resolvedTz = typeof defaultTimeZone === 'string'
-        ? defaultTimeZone
-        : (defaultTimeZone as unknown as { text?: string })?.text ?? undefined;
-    const [selectedTimeZone] = useState(resolvedTz || getIanaTimezone());
+    const resolvedTz = typeof defaultTimeZone === 'string' ? defaultTimeZone : defaultTimeZone?.text;
+    const selectedTimeZone = useMemo(() => resolvedTz || getIanaTimezone(), [resolvedTz]);
 
     // Initialize dateTime when dialog opens or initialDateTime changes
     useEffect(() => {
@@ -71,7 +68,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                 setDateTime(dayjs().tz(selectedTimeZone));
             }
         }
-    }, [open, initialDateTime]);
+    }, [open, initialDateTime, selectedTimeZone]);
 
     /**
      * Date change. The picker hands over a `YYYY-MM-DD` string (or null while the

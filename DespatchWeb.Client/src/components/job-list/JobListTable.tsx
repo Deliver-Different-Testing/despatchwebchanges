@@ -128,10 +128,10 @@ function formatJobDate(booked: dayjs.Dayjs | undefined): string {
 }
 
 // Time column: HH:mm + timezone — matches AngularJS _deliveryTimeString + timeZoneShort
-function formatJobTime(booked: dayjs.Dayjs | undefined): string {
+function formatJobTime(booked: dayjs.Dayjs | undefined, jobTz?: string): string {
     if (!booked) return '';
     const time = formatMins(booked);
-    const tz = getTimeZoneShort();
+    const tz = jobTz ?? getTimeZoneShort();
     return tz ? `${time} ${tz}` : time;
 }
 
@@ -808,7 +808,7 @@ const CellContent: React.FC<{
         case 'date':
             return <>{formatJobDate(job.booked)}</>;
         case 'time':
-            return <>{formatJobTime(job.booked)}</>;
+            return <>{formatJobTime(job.booked, job._pickUpTimeZoneStr)}</>;
         case 'speed':
             return <>{(job.speed || '')}</>;
         case 'isArchived':

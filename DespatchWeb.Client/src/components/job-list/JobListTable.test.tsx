@@ -73,6 +73,27 @@ describe('JobListTable', () => {
         expect(screen.getByText('No jobs match the current view.')).toBeInTheDocument();
     });
 
+    // ── Time column zone label ──────────────────────────────────────
+    describe('time column zone label', () => {
+        const timeCell = (zone: string | undefined) => {
+            const job = createMockDispatchJob({booked: dayjs('2026-10-21T07:00:00'), _pickUpTimeZoneStr: zone});
+            return renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+        };
+
+        it('labels the row with the job zone, falling back to the tenant label only when absent', () => {
+            const edt = timeCell('(EDT)');
+            expect(screen.getByText('07:00 (EDT)')).toBeInTheDocument();
+            edt.unmount();
+
+            const absent = timeCell(undefined);
+            expect(screen.getByText('07:00 NZST')).toBeInTheDocument();
+            absent.unmount();
+
+            timeCell('');
+            expect(screen.getByText('07:00')).toBeInTheDocument();
+        });
+    });
+
     // ── Stale delivery address ──────────────────────────────────────
     describe('stale delivery address', () => {
         // UC30028239 - the address was changed upstream on the free-text copy only, so the

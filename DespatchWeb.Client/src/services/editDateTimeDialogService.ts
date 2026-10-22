@@ -29,7 +29,7 @@ export interface EditDateTimeDialogOptions {
     /** Initial date/time value */
     dateTime?: Dayjs;
     /** Default timezone for the job */
-    defaultTimeZone?: string;
+    defaultTimeZone?: string | {text?: string};
     /** Whether this is a US customer (shows timezone info) */
     isUSCustomer?: boolean;
 }

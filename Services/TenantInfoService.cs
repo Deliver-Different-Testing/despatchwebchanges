@@ -150,14 +150,19 @@ public sealed class TenantInfoService(
     /// </summary>
     /// <param name="timeZone">The timezone to convert to, or null to use tenant timezone.</param>
     /// <returns>The current time in the specified timezone.</returns>
-    public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
+    public DateTime GetCurrentTimeFromTimeZone(TimeZone? timeZone)
     {
+        if (timeZone is null || string.IsNullOrWhiteSpace(timeZone.Name))
+        {
+            return GetCurrentTenantTime();
+        }
+
         var cacheKey = $"timezone_info_{timeZone.Name}";
         var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1);
-            return TimeZoneInfo.FindSystemTimeZoneById(timeZone.Name);
-        });
+            return ResolveTimeZoneInfo(timeZone.Name);
+        })!;
 
         return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZoneInfo);
     }

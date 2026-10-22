@@ -34,7 +34,7 @@ export interface EditDateTimeDialogProps {
     title: string;
     fieldName: JobPropertyField;
     dateTime?: Dayjs;
-    defaultTimeZone?: string;
+    defaultTimeZone?: string | {text?: string};
     showDate?: boolean;
     showTime?: boolean;
     isUSCustomer?: boolean;
@@ -54,7 +54,7 @@ export interface EditDateTimeDialogOptions {
     title: string;
     fieldName: JobPropertyField;
     dateTime?: Dayjs;
-    defaultTimeZone?: string;
+    defaultTimeZone?: string | {text?: string};
     showDate?: boolean;
     showTime?: boolean;
     isUSCustomer?: boolean;

@@ -26,7 +26,7 @@ export function getTenantTimezone(): string {
  * Check if the current tenant is a US customer
  */
 export function isUsCustomer(): boolean {
-    return getSession().isUsCustomer ?? true;
+    return getSession().isUsCustomer ?? false;
 }
 
 /**
@@ -263,9 +263,10 @@ export function formatRelativeTime(date: Date): string {
  * Get timezone abbreviation (e.g., "(PST)", "(EST)")
  * Returns empty string for New Zealand timezones per business requirement
  * @param timezone - Windows or IANA timezone string
+ * @param at - Wall-clock moment the label is for (a job's time); defaults to now so DST is right
  * @returns Timezone abbreviation in parentheses, or empty string
  */
-export function getTimezoneAbbreviation(timezone: string): string {
+export function getTimezoneAbbreviation(timezone: string, at?: Date | Dayjs): string {
     if (!timezone) return '';
 
     try {
@@ -280,15 +281,16 @@ export function getTimezoneAbbreviation(timezone: string): string {
             return '';
         }
 
-        const now = dayjs();
-        const timeInZone = now.tz(ianaTimezone);
+        const instant = at && dayjs.isDayjs(at)
+            ? dayjs.tz(at.format('YYYY-MM-DDTHH:mm:ss'), ianaTimezone).toDate()
+            : (at as Date | undefined) ?? new Date();
 
         const formatter = new Intl.DateTimeFormat('en', {
             timeZone: ianaTimezone,
             timeZoneName: 'short',
         });
 
-        const formatted = formatter.format(timeInZone.toDate());
+        const formatted = formatter.format(instant);
         const abbreviation = formatted.split(' ').pop();
 
         return abbreviation ? `(${abbreviation})` : `(${timezone})`;
