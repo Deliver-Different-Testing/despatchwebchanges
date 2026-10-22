@@ -21,7 +21,7 @@ interface MetricsGridProps {
     job: IJob;
     dense?: boolean;
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
-    onEditDateAndTime: (field: string, title: string, dateTime?: unknown, timezone?: unknown) => void;
+    onEditDateAndTime: (field: string, title: string, dateTime?: unknown, timezone?: string | {text?: string}) => void;
     onEditPodName: () => void;
     onEditCompletedTime: () => void;
     onClientClick: () => void;

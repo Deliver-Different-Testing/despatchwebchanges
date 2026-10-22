@@ -7,7 +7,7 @@ namespace DespatchWeb.Interfaces;
 public interface ITenantInfoService : IDisposable
 {
     DateTime GetCurrentTenantTime();
-    DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone);
+    DateTime GetCurrentTimeFromTimeZone(TimeZone? timeZone);
     string FormatDateForTenant(DateTime? dateTime);
     int GetStaffId();
 

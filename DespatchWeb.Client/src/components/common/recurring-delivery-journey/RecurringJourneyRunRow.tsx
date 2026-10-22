@@ -62,7 +62,7 @@ export const RecurringJourneyRunRow: React.FC<RecurringJourneyRunRowProps> = ({
     onChildClick,
 }) => {
     const timezone = getTenantTimezone();
-    const tzAbbr = getTimezoneAbbreviation(timezone);
+    const tzAbbr = getTimezoneAbbreviation(timezone, run.pod?.time);
     const tone = statusColor(run.status);
 
     return (

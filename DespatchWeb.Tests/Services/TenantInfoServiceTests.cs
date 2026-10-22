@@ -104,6 +104,53 @@ public sealed class TenantInfoServiceTests: IAsyncDisposable
     }
 
     [Fact]
+    public void GetCurrentTimeFromTimeZone_WithNullTimeZone_ReturnsTenantTime()
+    {
+        SetupHttpContextWithClaims(("TimeZone", "UTC"));
+        var service = CreateService();
+
+        var result = service.GetCurrentTimeFromTimeZone(null);
+
+        Assert.True(Math.Abs((result - service.GetCurrentTenantTime()).TotalSeconds) < 1);
+    }
+
+    [Fact]
+    public void GetCurrentTimeFromTimeZone_WithBlankName_ReturnsTenantTime()
+    {
+        SetupHttpContextWithClaims(("TimeZone", "UTC"));
+        var service = CreateService();
+
+        var result = service.GetCurrentTimeFromTimeZone(new TimeZone { Name = " " });
+
+        Assert.True(Math.Abs((result - service.GetCurrentTenantTime()).TotalSeconds) < 1);
+    }
+
+    [Theory]
+    [InlineData("America/New_York")]
+    [InlineData("Eastern Standard Time")]
+    public void GetCurrentTimeFromTimeZone_WithIanaOrWindowsName_Resolves(string name)
+    {
+        SetupHttpContextWithClaims(("TimeZone", "UTC"));
+        var service = CreateService();
+
+        var result = service.GetCurrentTimeFromTimeZone(new TimeZone { Name = name });
+
+        var expected = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("America/New_York"));
+        Assert.True(Math.Abs((result - expected).TotalSeconds) < 1);
+    }
+
+    [Fact]
+    public void GetCurrentTimeFromTimeZone_WithUnknownName_FallsBackToUtc()
+    {
+        SetupHttpContextWithClaims(("TimeZone", "Pacific/Auckland"));
+        var service = CreateService();
+
+        var result = service.GetCurrentTimeFromTimeZone(new TimeZone { Name = "Nope/Zone" });
+
+        Assert.True(Math.Abs((result - DateTime.UtcNow).TotalSeconds) < 1);
+    }
+
+    [Fact]
     public void FormatDateForTenant_WithNullDate_ReturnsEmptyString()
     {
         // Arrange

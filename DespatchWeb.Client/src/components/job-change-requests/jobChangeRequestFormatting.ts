@@ -403,7 +403,7 @@ export function formatRequestedAtTooltip(isoDate: string): string {
     const tz = getTenantTimezone();
     const inZone = parsed.tz(getIanaTimezone(tz));
     const formatted = formatLongDateTime(inZone);
-    const abbrev = getTimezoneAbbreviation(tz);
+    const abbrev = getTimezoneAbbreviation(tz, inZone);
     return abbrev ? `${formatted} ${abbrev}` : formatted;
 }
 
@@ -479,7 +479,7 @@ function formatDateTimeValue(value: string, timezoneText?: string): string {
     const tz = timezoneText && timezoneText.trim() ? timezoneText : getTenantTimezone();
     const inZone = parsed.tz(getIanaTimezone(tz));
     const formatted = formatLongDateTime(inZone);
-    const abbrev = getTimezoneAbbreviation(tz);
+    const abbrev = getTimezoneAbbreviation(tz, inZone);
     return abbrev ? `${formatted} ${abbrev}` : formatted;
 }
 

@@ -61,8 +61,8 @@ describe('dateUtils', () => {
         it.each([
             [{isUSCustomer: true}, true],
             [{isUSCustomer: false}, false],
-            [undefined, true],
-            [{}, true],
+            [undefined, false],
+            [{}, false],
         ])('returns correct value for serverConfig=%j', (config, expected) => {
             if (config !== undefined) (window as any).serverConfig = config;
             expect(isUsCustomer()).toBe(expected);
@@ -182,7 +182,7 @@ describe('dateUtils', () => {
         it.each([
             [{isUSCustomer: true}, 'MM/DD/YYYY'],
             [{isUSCustomer: false}, 'DD/MM/YYYY'],
-            [undefined, 'MM/DD/YYYY'],
+            [undefined, 'DD/MM/YYYY'],
         ])('falls back to tenant setting for serverConfig=%j', (config, expected) => {
             if (config !== undefined) (window as any).serverConfig = config;
             expect(getInputDateFormat()).toBe(expected);
@@ -355,6 +355,17 @@ describe('dateUtils', () => {
             ['Eastern Standard Time', /\(E[SD]T\)/],
         ])('returns abbreviation for %s', (input, pattern) => {
             expect(getTimezoneAbbreviation(input)).toMatch(pattern);
+        });
+
+        it('computes the abbreviation for the supplied date, not today', () => {
+            expect(getTimezoneAbbreviation('America/New_York', dayjs('2026-01-15'))).toBe('(EST)');
+            expect(getTimezoneAbbreviation('America/New_York', dayjs('2026-07-15'))).toBe('(EDT)');
+            expect(getTimezoneAbbreviation('Pacific/Auckland', dayjs('2026-07-15'))).toBe('');
+        });
+
+        it('returns no label for missing input and a bracketed one for other zones', () => {
+            expect(getTimezoneAbbreviation(undefined as unknown as string)).toBe('');
+            expect(getTimezoneAbbreviation('America/Los_Angeles')).toMatch(/^\(P[SD]T\)$/);
         });
     });
 
