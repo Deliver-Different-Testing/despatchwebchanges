@@ -356,6 +356,17 @@ describe('dateUtils', () => {
         ])('returns abbreviation for %s', (input, pattern) => {
             expect(getTimezoneAbbreviation(input)).toMatch(pattern);
         });
+
+        it('computes the abbreviation for the supplied date, not today', () => {
+            expect(getTimezoneAbbreviation('America/New_York', dayjs('2026-01-15'))).toBe('(EST)');
+            expect(getTimezoneAbbreviation('America/New_York', dayjs('2026-07-15'))).toBe('(EDT)');
+            expect(getTimezoneAbbreviation('Pacific/Auckland', dayjs('2026-07-15'))).toBe('');
+        });
+
+        it('returns no label for missing input and a bracketed one for other zones', () => {
+            expect(getTimezoneAbbreviation(undefined as unknown as string)).toBe('');
+            expect(getTimezoneAbbreviation('America/Los_Angeles')).toMatch(/^\(P[SD]T\)$/);
+        });
     });
 
     describe('getTimezoneName', () => {
