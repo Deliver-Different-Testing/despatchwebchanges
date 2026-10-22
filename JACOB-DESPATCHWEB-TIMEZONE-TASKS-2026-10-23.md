@@ -1,6 +1,6 @@
 # DespatchWeb tasks — create and stamp in the signed-in user's zone (Jacob + Garry)
 
-**Date:** 23 Oct 2026 · **Owners:** Jacob (T1–T3, DespatchWeb) · Garry (T4–T5, dbmigrationsv2 / live DB) · **Baseline:** latest `master` on gitlab.com `deliver-different/despatchweb` at build time (read at `d96e4323`, 22 Oct).
+**Date:** 23 Oct 2026 · **Owners:** Jacob (T1–T3, DespatchWeb) · Garry (T4–T5, SQL: dbmigrationsv2, live DB procs, driver-app writers) · **Baseline:** latest `master` on gitlab.com `deliver-different/despatchweb` at build time (read at `d96e4323`, 22 Oct).
 **Context:** follows `TIMEZONE-AUDIT-2026-10-22.md` (branch `docs/timezone-audit-2026-10-22`) and the M0 spec `JACOB-DESPATCHWEB-TIMEZONE-M0-2026-10-22.md` (branch `docs/timezone-m0-2026-10-22`, coded by Jacob 22 Oct). Scope here is **tasks only** (`tucEvent` rows shown in the Tasks panel and Task Dashboard).
 
 ## The rule tasks must follow
