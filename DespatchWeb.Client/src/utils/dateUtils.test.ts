@@ -61,8 +61,8 @@ describe('dateUtils', () => {
         it.each([
             [{isUSCustomer: true}, true],
             [{isUSCustomer: false}, false],
-            [undefined, true],
-            [{}, true],
+            [undefined, false],
+            [{}, false],
         ])('returns correct value for serverConfig=%j', (config, expected) => {
             if (config !== undefined) (window as any).serverConfig = config;
             expect(isUsCustomer()).toBe(expected);
@@ -182,7 +182,7 @@ describe('dateUtils', () => {
         it.each([
             [{isUSCustomer: true}, 'MM/DD/YYYY'],
             [{isUSCustomer: false}, 'DD/MM/YYYY'],
-            [undefined, 'MM/DD/YYYY'],
+            [undefined, 'DD/MM/YYYY'],
         ])('falls back to tenant setting for serverConfig=%j', (config, expected) => {
             if (config !== undefined) (window as any).serverConfig = config;
             expect(getInputDateFormat()).toBe(expected);

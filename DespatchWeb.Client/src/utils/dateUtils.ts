@@ -26,7 +26,7 @@ export function getTenantTimezone(): string {
  * Check if the current tenant is a US customer
  */
 export function isUsCustomer(): boolean {
-    return getSession().isUsCustomer ?? true;
+    return getSession().isUsCustomer ?? false;
 }
 
 /**
