@@ -3,7 +3,9 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using JetBrains.Annotations;
+using DespatchWeb.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -159,7 +161,7 @@ public class TaskControllerTests
     [Fact]
     public async Task AddTasks_Success_ReturnsOk()
     {
-        var request = new AddTasksRequest { JobId = 1, EventGroupViewModels = [new EventGroupViewModel()] };
+        var request = new AddTasksRequest { JobId = 1, EventGroupViewModels = [new NewTaskEvent()] };
         _taskRepoMock.CreateEventsForJobAsync(1, request.EventGroupViewModels)
             .Returns(Task.CompletedTask);
 
@@ -181,7 +183,7 @@ public class TaskControllerTests
     [Fact]
     public async Task AddTasks_RepositoryThrows_Returns500()
     {
-        _taskRepoMock.CreateEventsForJobAsync(Arg.Any<int>(), Arg.Any<List<EventGroupViewModel>>()).ThrowsAsync(new Exception("error"));
+        _taskRepoMock.CreateEventsForJobAsync(Arg.Any<int>(), Arg.Any<List<NewTaskEvent>>()).ThrowsAsync(new Exception("error"));
 
         var result = await CreateController().AddTasks(new AddTasksRequest { JobId = 1, EventGroupViewModels = [] });
 
@@ -222,6 +224,20 @@ public class TaskControllerTests
 
         Assert.IsType<OkResult>(result);
         await _taskRepoMock.Received().ReassignEventToUserAsync(1, 5);
+    }
+
+    [Fact]
+    public void AddTasksRequest_OffsetDueTime_BindsWallClockWithOffsetIntact()
+    {
+        var settings = new JsonSerializerSettings();
+        NewtonsoftSettings.Apply(settings);
+
+        var request = JsonConvert.DeserializeObject<AddTasksRequest>(
+            """{"jobId":1,"eventGroupViewModels":[{"dueTime":"2026-10-23T14:00:00+13:00"}]}""", settings)!;
+
+        var due = request.EventGroupViewModels[0].DueTime!.Value;
+        Assert.Equal(new DateTime(2026, 10, 23, 14, 0, 0), due.DateTime);
+        Assert.Equal(TimeSpan.FromHours(13), due.Offset);
     }
 
     [Fact]

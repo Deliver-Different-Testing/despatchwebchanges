@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -75,7 +76,7 @@ public class TaskRepositoryAddTests : IAsyncDisposable
             Staff(7, "Christopher", "Anderson"),
             Job(555, contact: new string('c', 50)));
 
-        var eventGroup = new EventGroupViewModel
+        var eventGroup = new NewTaskEvent
         {
             EventType = new Suggestion { Id = 3, Text = "Delivery" },
             Notes = new string('x', 1200)
@@ -100,7 +101,7 @@ public class TaskRepositoryAddTests : IAsyncDisposable
             Staff(7, "Jo", "Bloggs"),
             Job(556, contact: "Front desk"));
 
-        var eventGroup = new EventGroupViewModel
+        var eventGroup = new NewTaskEvent
         {
             EventType = new Suggestion { Id = 3, Text = "Delivery" },
             Notes = "Call on arrival"
@@ -121,10 +122,42 @@ public class TaskRepositoryAddTests : IAsyncDisposable
         await SeedAsync(Staff(7, "Jo", "Bloggs"), Job(558, contact: "Front desk"));
 
         await CreateRepository().CreateEventsForJobAsync(558,
-            [new EventGroupViewModel { EventType = new Suggestion { Id = 3, Text = "Delivery" } }]);
+            [new NewTaskEvent { EventType = new Suggestion { Id = 3, Text = "Delivery" } }]);
 
         var created = await SingleEventAsync();
         Assert.Equal(_clock.UtcNow, created.UcevCreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task CreateEventsForJobAsync_DueTimeWithTenantOffset_StoresWallClockDigits()
+    {
+        _infoServiceMock.GetStaffId().Returns(7);
+        await SeedAsync(Staff(7, "Jo", "Bloggs"), Job(560, contact: "Front desk"));
+
+        await CreateRepository().CreateEventsForJobAsync(560,
+        [
+            new NewTaskEvent
+            {
+                EventType = new Suggestion { Id = 3, Text = "Delivery" },
+                DueTime = new DateTimeOffset(2026, 10, 23, 14, 0, 0, TimeSpan.FromHours(-4))
+            }
+        ]);
+
+        var created = await SingleEventAsync();
+        Assert.Equal(new DateTime(2026, 10, 23, 14, 0, 0), created.UcevDueTime);
+    }
+
+    [Fact]
+    public async Task CreateEventsForJobAsync_NoDueTime_StoresTenantNow()
+    {
+        _infoServiceMock.GetStaffId().Returns(7);
+        await SeedAsync(Staff(7, "Jo", "Bloggs"), Job(561, contact: "Front desk"));
+
+        await CreateRepository().CreateEventsForJobAsync(561,
+            [new NewTaskEvent { EventType = new Suggestion { Id = 3, Text = "Delivery" } }]);
+
+        var created = await SingleEventAsync();
+        Assert.Equal(_clock.TenantNow, created.UcevDueTime);
     }
 
     [Fact]
