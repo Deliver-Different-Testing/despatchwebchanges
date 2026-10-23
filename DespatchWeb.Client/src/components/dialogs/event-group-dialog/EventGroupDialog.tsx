@@ -9,7 +9,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { DialogShell, DialogHeader, DialogFooter, dialogContentBg } from '../shared/mantine';
 import { EventGroupViewModel, StaffSuggestion } from '../../../types';
-import { getInputDateFormat, getTimezoneAbbreviation } from '../../../utils/dateUtils';
+import { formatDateForApi, getInputDateFormat, getTimezoneAbbreviation } from '../../../utils/dateUtils';
 import { Icon } from '../../common/icon/Icon';
 import { NoData } from '../../common/no-data/NoData';
 import type { ShowToastFn } from '../../../services/toastService';
@@ -94,13 +94,13 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
         try {
             const formattedEvents = activeEvents.map(event => ({
                 ...event,
-                dueTime: event.dueTime ? dayjs(event.dueTime).format() : undefined,
+                dueTime: event.dueTime ? formatDateForApi(event.dueTime, tz) : undefined,
             }));
             await onSave(formattedEvents);
         } catch {
             setIsSubmitting(false);
         }
-    }, [localEvents, onSave, showToast]);
+    }, [localEvents, onSave, showToast, tz]);
 
     // `Select` is string-valued, so the staff ids round-trip through
     // `String()`/`Number()` and the picked option is mapped back to its record.

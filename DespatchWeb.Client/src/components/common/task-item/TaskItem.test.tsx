@@ -140,6 +140,16 @@ describe('TaskItem', () => {
             expect(dueControl()).toHaveAccessibleName(/\(EST\)/);
         });
 
+        it('reads the tenant zone at render, not at import', () => {
+            const {getTenantTimezone, getTimezoneAbbreviation} = jest.requireMock('../../../utils/dateUtils');
+            getTenantTimezone.mockReturnValueOnce('America/Chicago');
+            getTimezoneAbbreviation.mockImplementationOnce(() => '(CST)');
+
+            renderWithProviders(<TaskItem {...createDefaultProps()} />);
+
+            expect(dueControl()).toHaveAccessibleName(/\(CST\)/);
+        });
+
         it('renders the courier code alone when the name is missing', () => {
             const props = createDefaultProps({task: createMockTask({courierName: undefined})});
             renderWithProviders(<TaskItem {...props} />);
