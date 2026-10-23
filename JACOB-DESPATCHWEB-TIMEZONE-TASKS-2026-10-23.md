@@ -91,18 +91,19 @@ Add `TaskRepository.ToTenantWallClock(DateTimeOffset? value, DateTime fallback) 
 2. **Default constraint migration:** drop `DF_tucEvent_ucevDueTime`, re-add as `DEFAULT (dbo.UTL_GetTenantLocalDateTime())`. Schema-only; existing rows untouched. Regenerate the EF default string at `DespatchContext.cs:5162` (`HasDefaultValueSql("(dbo.UTL_GetTenantLocalDateTime())", ...)`) in the despatchweb repo in the same release so the model matches — or leave EF's string alone if the team does not run model diffs against this table (confirm with Jacob).
 3. **Legacy writers (live DB, not in repo):** for each proc the `sys.sql_modules` query returns on `otgcargo` prod, replace `GETDATE()` in the `tucEvent` insert with `dbo.UTL_GetTenantLocalDateTime()` for `ucevDate`, `ucevTime`, `ucevDueTime` (and `ucevResponseTime` where set); leave `ucevCreatedAtUtc` to its default. Bring each proc into `dbmigrationsv2` as a `CREATE OR ALTER` migration while doing so, so the body is finally under source control. Start with whatever writes "Automated job status notification" (37 of 43 bad rows) and the Job Not Ready writer.
 4. **Linehaul procs** (`MARSWS_stpLinehaul*`, 13 procs, Urgent-only): same substitution, lower priority — correct on Urgent today because tenant = NZ.
-5. **Backfill (optional, OTG only, Garry to run):** rows where the writer stamped "now" can be corrected from the UTC column:
+5. **Backfill (OTG only, Garry to run; Steve 23 Oct: open tasks only, leave closed rows as they are):** rows where the writer stamped "now" are corrected from the UTC column:
    ```sql
    UPDATE e
    SET ucevDueTime = CONVERT(DATETIME, ucevCreatedAtUtc AT TIME ZONE 'UTC' AT TIME ZONE 'Eastern Standard Time'),
        ucevDate    = CONVERT(DATETIME, ucevCreatedAtUtc AT TIME ZONE 'UTC' AT TIME ZONE 'Eastern Standard Time'),
        ucevTime    = CONVERT(DATETIME, ucevCreatedAtUtc AT TIME ZONE 'UTC' AT TIME ZONE 'Eastern Standard Time')
    FROM dbo.tucEvent e
-   WHERE e.ucevCreatedAtUtc IS NOT NULL
+   WHERE e.ucevClosed = 0                                                                     -- open tasks only (Steve, 23 Oct)
+     AND e.ucevCreatedAtUtc IS NOT NULL
      AND ABS(DATEDIFF(minute, DATEADD(hour, 17, e.ucevCreatedAtUtc), e.ucevDueTime)) <= 2  -- +13 NZDT vs -4 EDT: "due = created" written in NZ time
      AND e.ucevType IN (116, 87, 88, 89, 90, 91, 73);                                      -- Job Completed, Waiting to collect job *, Web Updated
    ```
-   Re-check the `17` constant on the day it runs: NZ and US DST both move in early November, after which +13/−5 = 18 h. Steve decides whether the open-task noise is worth the write; closed rows can stay.
+   Re-check the `17` constant on the day it runs: NZ and US DST both move in early November, after which +13/−5 = 18 h. Closed rows stay as written; only open tasks move to their real due time.
 
 ### T5 — `sp_AutomationEngine` fallback (Garry, later)
 
@@ -123,7 +124,7 @@ Replace `@TenantTimeZoneOffSetHours INT = -5` as the last `COALESCE` with the of
 | T1 | Add-tasks dialog sends tenant zone; `DueTime` is `DateTimeOffset?`; three tests | Acceptance 1 on OTG staging from a NZ browser and an Eastern browser |
 | T2 | `ToTenantWallClock` helper used at both insert sites | Tests from T1 still green; no `.DateTime` on request offsets outside the helper |
 | T3 | `TaskItem` zone label computed at render | `TaskItem.test.tsx` passes with the session set after import |
-| T4 | TenantSettings `TimeZone` row verified per tenant; `DF_tucEvent_ucevDueTime` → `UTL_GetTenantLocalDateTime()`; OTG legacy writers converted and committed to dbmigrationsv2; optional backfill | Acceptance 3 on OTG staging; `GetAllTasks` on OTG prod shows no new +17 h rows for a week after deploy |
+| T4 | TenantSettings `TimeZone` row verified per tenant; `DF_tucEvent_ucevDueTime` → `UTL_GetTenantLocalDateTime()`; OTG legacy writers converted and committed to dbmigrationsv2; backfill of open tasks | Acceptance 3 on OTG staging; `GetAllTasks` on OTG prod shows no new +17 h rows for a week after deploy |
 | T5 | `sp_AutomationEngine` fallback from `TenantSettings.TimeZone` | Jobs with null zone ids on a non-NZ tenant get a local-time task |
 
 ## Not in this spec
