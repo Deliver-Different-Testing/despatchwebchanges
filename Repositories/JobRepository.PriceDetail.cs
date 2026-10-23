@@ -207,7 +207,7 @@ public partial class JobRepository
         // 100% populated on DFRNT; format one item as "N HU, LxWxH, X lb" and join multiple with "; ".
 
         var liveItems = await InIdChunksAsync(liveIds, chunk => itemsCtx.TucJobItems
-            .Where(i => chunk.Contains(i.JobId))
+            .Where(i => chunk.Contains(i.JobId) && (i.ItemStatus ?? 0) == 0)
             .Select(i => new { i.JobId, i.Items, i.Weight, i.Length, i.Depth, i.Height })
             .TagWith("PriceDetail - Live Items").ToListAsync(ct));
         var archiveItems = await InIdChunksAsync(archiveIds, chunk => itemsCtx.TucJobItemsArchives

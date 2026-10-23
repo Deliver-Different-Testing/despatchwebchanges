@@ -1,4 +1,5 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
@@ -1002,12 +1003,155 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         Assert.Equal(2, stopRow.DimensionsType);
     }
 
+    // ── #860/#861: removed lines are flagged once the job is with a driver ──
+
+    private static TucJobItem Line(int jobId, int itemId, string barcode, double weight = 1,
+        JobItemStatus? status = null) => new()
+    {
+        JobId = jobId, ItemId = itemId, Barcode = barcode, Notes = barcode, Weight = weight, Items = 1,
+        ItemStatus = (byte?)status
+    };
+
+    private static ParcelDimensions Parcel(string barcode, double weight = 1) =>
+        new() { ItemName = barcode, Barcode = barcode, Weight = weight };
+
+    private async Task<List<TucJobItem>> ReadLinesAsync(int jobId)
+    {
+        await using var verify = CreateContext();
+        return await verify.TucJobItems.Where(i => i.JobId == jobId).OrderBy(i => i.ItemId)
+            .ToListAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task<TucJob> ReadJobAsync(int jobId)
+    {
+        await using var verify = CreateContext();
+        return await verify.TucJobs.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_SentJob_RemovedLineIsFlaggedNotForDeliveryAndDropsFromTotals()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateSentJob(900, "J900"));
+        ctx.TucJobItems.AddRange(Line(900, 1, "J900-1", 2), Line(900, 2, "J900-2", 3), Line(900, 3, "J900-3", 4));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(900, [Parcel("J900-1", 2), Parcel("J900-3", 4)]);
+
+        var lines = await ReadLinesAsync(900);
+        Assert.Equal([1, 2, 3], lines.Select(i => i.ItemId));
+        Assert.Equal(["J900-1", "J900-2", "J900-3"], lines.Select(i => i.Barcode));
+        Assert.Equal((byte)JobItemStatus.NotForDelivery, lines[1].ItemStatus);
+        Assert.All([lines[0], lines[2]], l => Assert.Equal((byte)JobItemStatus.Active, l.ItemStatus ?? 0));
+
+        var job = await ReadJobAsync(900);
+        Assert.Equal((short)2, job.UcjbQty);
+        Assert.Equal(6, job.UcjbWeight);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_NotYetSent_RemovedLineIsDeletedMatchedByBarcode()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(901, "J901"));
+        ctx.TucJobItems.AddRange(Line(901, 1, "J901-1"), Line(901, 2, "J901-2"), Line(901, 3, "J901-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(901, [Parcel("J901-1"), Parcel("J901-3")]);
+
+        // The removed middle line goes, not the last one (the old positional match deleted J901-3).
+        var lines = await ReadLinesAsync(901);
+        Assert.Equal([1, 3], lines.Select(i => i.ItemId));
+        Assert.Equal(["J901-1", "J901-3"], lines.Select(i => i.Barcode));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_SentJob_NewBarcodeAlongsideRemoval_AddsLineAndFlagsRemoved()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateSentJob(902, "J902"));
+        ctx.TucJobItems.AddRange(Line(902, 1, "J902-1"), Line(902, 2, "J902-2"), Line(902, 3, "J902-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(902,
+            [Parcel("J902-1"), Parcel("J902-3"), Parcel("J902-4")]);
+
+        var lines = await ReadLinesAsync(902);
+        Assert.Equal([1, 2, 3, 4], lines.Select(i => i.ItemId));
+        Assert.Equal(["J902-1", "J902-2", "J902-3", "J902-4"], lines.Select(i => i.Barcode));
+        Assert.Equal((byte)JobItemStatus.NotForDelivery, lines[1].ItemStatus);
+        Assert.Equal((short)3, (await ReadJobAsync(902)).UcjbQty);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_FlaggedLinesNotSubmitted_AreKeptAndNotCounted()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateSentJob(903, "J903"));
+        ctx.TucJobItems.AddRange(
+            Line(903, 1, "J903-1"),
+            Line(903, 2, "J903-2", status: JobItemStatus.NotPickedUp),
+            Line(903, 3, "J903-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // The dialog only shows active lines, so it submits those.
+        await CreateRepository().UpdatePackagesForJobAsync(903, [Parcel("J903-1", 5), Parcel("J903-3")]);
+
+        var lines = await ReadLinesAsync(903);
+        Assert.Equal([1, 2, 3], lines.Select(i => i.ItemId));
+        Assert.Equal((byte)JobItemStatus.NotPickedUp, lines[1].ItemStatus);
+        Assert.Equal(5, lines[0].Weight);
+        var job = await ReadJobAsync(903);
+        Assert.Equal((short)2, job.UcjbQty);
+        Assert.Equal(6, job.UcjbWeight);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_FlaggedLineSubmittedAgain_IsReactivated()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateSentJob(904, "J904"));
+        ctx.TucJobItems.AddRange(
+            Line(904, 1, "J904-1"),
+            Line(904, 2, "J904-2", status: JobItemStatus.NotForDelivery));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(904, [Parcel("J904-1"), Parcel("J904-2")]);
+
+        var lines = await ReadLinesAsync(904);
+        Assert.Equal([1, 2], lines.Select(i => i.ItemId));
+        Assert.All(lines, l => Assert.Equal((byte)JobItemStatus.Active, l.ItemStatus ?? 0));
+        Assert.Equal((short)2, (await ReadJobAsync(904)).UcjbQty);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_SentJob_EmptyList_FlagsEveryLine()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateSentJob(905, "J905"));
+        ctx.TucJobItems.AddRange(Line(905, 1, "J905-1"), Line(905, 2, "J905-2"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(905, []);
+
+        var lines = await ReadLinesAsync(905);
+        Assert.Equal(2, lines.Count);
+        Assert.All(lines, l => Assert.Equal((byte)JobItemStatus.NotForDelivery, l.ItemStatus));
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
         UcjbId = id,
         UcjbNumber = jobNumber
+    };
+
+    private static TucJob CreateSentJob(int id, string jobNumber) => new()
+    {
+        UcjbId = id,
+        UcjbNumber = jobNumber,
+        UcjbMobileSend = true
     };
 
     private static TucJob CreateJobWithParent(int id, string jobNumber, int parentId) => new()

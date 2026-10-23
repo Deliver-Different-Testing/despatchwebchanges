@@ -40,7 +40,7 @@ public static partial class JobMappings
             FromZip = job.PickupAddressLine7,
             ToZip = job.DeliveryAddressLine7,
             DangerousGoods = job.Dgdocument ?? false,
-            TotalPallets = job.TucJobItemJobs.Count,
+            TotalPallets = job.TucJobItemJobs.Count(i => (i.ItemStatus ?? 0) == 0),
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
             PickupWaitTime = job.WaitedPickUp ?? 0,
@@ -52,7 +52,7 @@ public static partial class JobMappings
             ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
 
             ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
-            Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
+            Cubic = job.TucJobItemJobs.Where(i => (i.ItemStatus ?? 0) == 0).Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
             CalculateDimsOncePerJob = job.DimensionsType == 2
         };
@@ -96,7 +96,7 @@ public static partial class JobMappings
 
             DangerousGoods = job.Dgdocument ?? false,
             DgClass = job.Dgclass,
-            TotalPallets = job.TucJobItemJobs.Count,
+            TotalPallets = job.TucJobItemJobs.Count(i => (i.ItemStatus ?? 0) == 0),
             ExtraStopOffs = 0,
             DryIceWeight = job.DryIceWeight ?? 0,
             PickupWaitTime = job.WaitedPickUp ?? 0,
@@ -108,7 +108,7 @@ public static partial class JobMappings
             ToAgentId = job.ToAirport != null ? job.ToAirport.AgentId : null,
 
             ClientDiscount = job.UcjbClient != null ? job.UcjbClient.Discount : 0,
-            Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
+            Cubic = job.TucJobItemJobs.Where(i => (i.ItemStatus ?? 0) == 0).Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
             CalculateDimsOncePerJob = job.DimensionsType == 2,
             IsPrebook = job.IsRecurringJob,
@@ -133,7 +133,7 @@ public static partial class JobMappings
             ToPostCode = job.DeliveryAddressLine7,
             ToCountryCode = job.DeliveryAddressLine8,
 
-            Packages = job.TucJobItemJobs.Select(item => new PackageDetailsDto
+            Packages = job.TucJobItemJobs.Where(i => (i.ItemStatus ?? 0) == 0).Select(item => new PackageDetailsDto
             {
                 Name = item.Notes,
                 Length = item.Length,
