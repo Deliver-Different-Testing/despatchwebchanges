@@ -7,6 +7,7 @@ import {screen} from '@testing-library/react';
 import {EventGroupDialog, EventGroupDialogProps} from './EventGroupDialog';
 import {EventGroupViewModel} from '../../../types';
 import {renderWithMantine} from '../../../test/utils';
+import {setupUser} from '../../../test/utils/setupUser';
 
 const mockEvents: EventGroupViewModel[] = [
     {
@@ -49,5 +50,18 @@ describe('EventGroupDialog timezone display', () => {
 
         expect(screen.queryByText(/Pacific\/Auckland/)).not.toBeInTheDocument();
         expect(screen.queryByText(/\(NZ[SD]T\)/)).not.toBeInTheDocument();
+    });
+});
+
+describe('EventGroupDialog save', () => {
+    it('labels the picked due time with the tenant zone, not the browser zone', async () => {
+        const onSave = jest.fn().mockResolvedValue(undefined);
+        const pickedAtTwo = new Date(2026, 6, 15, 14, 0, 0);
+        const user = setupUser();
+        renderDialog({onSave, events: [{...mockEvents[0], dueTime: pickedAtTwo}]});
+
+        await user.click(screen.getByRole('button', {name: 'Save changes'}));
+
+        expect(onSave.mock.calls[0][0][0].dueTime).toBe('2026-07-15T14:00:00-04:00');
     });
 });

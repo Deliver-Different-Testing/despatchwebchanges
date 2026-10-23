@@ -109,10 +109,6 @@ const factTone: Record<string, {bg: string; fg: string}> = {
  */
 const hasValidDate = (s?: string): boolean => Boolean(s) && s !== 'Invalid date';
 
-// Compute timezone abbreviation once at module level (it doesn't change per-render)
-const ianaTimeZone = getIanaTimezone(getTenantTimezone());
-const timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
-
 interface FactProps {
     /** The datum's type, e.g. "Courier". Omitted where the value is self-naming. */
     label?: string;
@@ -167,6 +163,8 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     } = props;
 
     const config = useMemo(() => ({...defaultConfig, ...configOverrides}), [configOverrides]);
+    const tenantTimeZone = getTenantTimezone();
+    const timeZoneShort = useMemo(() => getTimezoneAbbreviation(getIanaTimezone(tenantTimeZone)), [tenantTimeZone]);
     const compact = config.compactView === true;
     const stateEmphasis = config.showStatusIndicators !== false;
 
@@ -221,7 +219,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const dueSummary = useMemo(() => {
         const parts = [task._dueDateString, task._dueTimeString].filter(hasValidDate);
         return parts.length ? `${parts.join(' ')} ${timeZoneShort}`.trim() : 'not set';
-    }, [task._dueDateString, task._dueTimeString]);
+    }, [task._dueDateString, task._dueTimeString, timeZoneShort]);
 
     // Handlers
     const closePopover = useCallback(() => {

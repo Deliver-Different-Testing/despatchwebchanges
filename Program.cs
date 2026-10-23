@@ -3,6 +3,7 @@ using System.Security.Principal;
 using DeliverDifferentReporting.Extensions;
 using DespatchWeb;
 using DespatchWeb.Extensions;
+using DespatchWeb.Helpers;
 using DespatchWeb.Middleware;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.DataProtection;
@@ -20,11 +21,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHealthChecks()
     .AddCheck<SqlServerHealthCheck>("sql_server_health_check");
 builder.Services.AddControllersWithViews()
-    .AddNewtonsoftJson(options =>
-    {
-        options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.RoundtripKind;
-        options.SerializerSettings.DateParseHandling = DateParseHandling.DateTimeOffset;
-    });
+    .AddNewtonsoftJson(options => NewtonsoftSettings.Apply(options.SerializerSettings));
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).WriteTo.Console().CreateLogger();
