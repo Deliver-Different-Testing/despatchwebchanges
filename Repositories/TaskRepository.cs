@@ -352,6 +352,7 @@ public class TaskRepository(
             {
                 EventTypeGroupTypeGroupId = x.Id,
                 Active = x.IsActive,
+                // Zone-less digits on purpose: the dialog shows them as picked and relabels them with the tenant zone on save.
                 DueTime = x.DueTime != null ? now.AddMinutes((double)x.DueTime) : null,
                 EventType = new Suggestion
                 {
@@ -367,7 +368,7 @@ public class TaskRepository(
         return eventGroups;
     }
 
-    public async Task CreateEventsForJobAsync(int jobId, List<EventGroupViewModel> eventGroupViewModels)
+    public async Task CreateEventsForJobAsync(int jobId, List<NewTaskEvent> eventGroupViewModels)
     {
         var currentDate = clock.TenantNow;
         var staffId = infoService.GetStaffId();
@@ -429,12 +430,16 @@ public class TaskRepository(
             UcevJobId = job.UcjbId,
             UcevDespatcher = dispatcherName.Truncate(DespatcherMaxLength),
             UcevJobType = job.UcjbSpeed,
-            UcevDueTime = eventGroup.DueTime ?? currentDate
+            UcevDueTime = ToTenantWallClock(eventGroup.DueTime, currentDate)
         }).ToList();
 
         await Context.TucEvents.AddRangeAsync(events);
         await Context.SaveChangesAsync();
     }
+
+    /// <summary>Due times are tenant wall-clock: keep the digits the client labelled with the tenant zone; never convert via UTC or server-local.</summary>
+    internal static DateTime ToTenantWallClock(DateTimeOffset? value, DateTime fallback) =>
+        value?.DateTime ?? fallback;
 
     public async Task<IReadOnlyList<Suggestion>> GetActiveStaffAsync()
     {
@@ -748,7 +753,7 @@ public class TaskRepository(
             UcevJobId = jobId,
             UcevDespatcher = despatcher.Truncate(DespatcherMaxLength),
             UcevJobType = jobType,
-            UcevDueTime = dueTime?.DateTime ?? currentDate
+            UcevDueTime = ToTenantWallClock(dueTime, currentDate)
         };
 
         await Context.AddAsync(newEvent);
