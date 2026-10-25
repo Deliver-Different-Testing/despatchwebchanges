@@ -200,6 +200,48 @@ describe('DashboardSettingsDialog', () => {
                 }),
             );
         });
+
+        describe('when Tasks follows the job list', () => {
+            const followProps = (onSave: jest.Mock) => createMockProps({
+                config: {...mockConfig, showTaskRefresh: true, taskRefreshFollowsJobList: true},
+                selectedRefreshInterval: mockRefreshOptions[0],
+                selectedTaskRefreshInterval: mockRefreshOptions[2],
+                onSave,
+            });
+
+            it('shows the followed cadence and leaves Tasks out when only the job list changes', async () => {
+                const user = setupUser();
+                const onSave = jest.fn();
+                renderWithTheme(<DashboardSettingsDialog {...followProps(onSave)} />);
+
+                expect(screen.getByRole('combobox', {name: 'Tasks'})).toHaveValue('1 minute');
+                await settleModalFocus();
+                await user.click(screen.getByRole('combobox', {name: 'Job list'}));
+                await user.click(await screen.findByRole('option', {name: '5 minutes'}));
+                expect(screen.getByRole('combobox', {name: 'Tasks'})).toHaveValue('5 minutes');
+
+                await user.click(screen.getByRole('button', {name: /save/i}));
+
+                const result = onSave.mock.calls[0][0];
+                expect(result.selectedRefreshInterval).toEqual(expect.objectContaining({id: 300}));
+                expect(result).not.toHaveProperty('selectedTaskRefreshInterval');
+            });
+
+            it('emits a deliberately chosen Disabled', async () => {
+                const user = setupUser();
+                const onSave = jest.fn();
+                renderWithTheme(<DashboardSettingsDialog {...followProps(onSave)} />);
+
+                await settleModalFocus();
+                await user.click(screen.getByRole('combobox', {name: 'Tasks'}));
+                await user.click(await screen.findByRole('option', {name: 'Disabled'}));
+                await user.click(screen.getByRole('button', {name: /save/i}));
+
+                expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+                    selectedTaskRefreshInterval: expect.objectContaining({id: 0}),
+                }));
+            });
+        });
     });
 
     // ── Close / Save ────────────────────────────────────────────────

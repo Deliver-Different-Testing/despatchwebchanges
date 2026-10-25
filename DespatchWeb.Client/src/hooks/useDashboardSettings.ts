@@ -4,6 +4,7 @@ import {StaffPreferenceKey} from '../types/enums/staff-preference-key.enum';
 import {defaultCourierDisplayMode, type CourierDisplayMode} from '../pages/dispatch/lib/courierDisplayMode';
 import {loadDialog, requireDialog, type DialogLoader} from '../components/dialogs/dialogRegistry';
 import {toastService} from '../services/toastService';
+import {DEFAULT_TASK_REFRESH_SECONDS} from '../pages/task-dashboard/refreshIntervalOptions';
 
 export interface RefreshIntervals {
     jobsMs: number | false;
@@ -49,10 +50,10 @@ export function useDashboardSettings(options: UseDashboardSettingsOptions): {ope
         const jobsSeconds = jobs
             ? (readJobsSeconds ? readJobsSeconds(localStorage.getItem(jobs)) : readSeconds(jobs))
             : 0;
-        // First run: Tasks inherits the job-list cadence so the dialog shows what the panel is doing.
-        const tasksSeconds = !tasks
-            ? 0
-            : localStorage.getItem(tasks) != null ? readSeconds(tasks) : (jobs ? readSeconds(jobs) : 0);
+        // Until Tasks is stored the panel follows the job list (loadRefreshIntervals).
+        const followedTaskSeconds = (jobsSecs: number) => (jobsSecs > 0 ? jobsSecs : DEFAULT_TASK_REFRESH_SECONDS);
+        const tasksFollowJobList = !!tasks && localStorage.getItem(tasks) == null;
+        const tasksSeconds = !tasks ? 0 : tasksFollowJobList ? followedTaskSeconds(jobsSeconds) : readSeconds(tasks);
 
         const seedCourierDisplayMode = async (): Promise<CourierDisplayMode> => {
             try {
@@ -71,6 +72,7 @@ export function useDashboardSettings(options: UseDashboardSettingsOptions): {ope
                     showRefreshInterval: !!jobs,
                     showDriverLocationRefresh: !!driverLocations,
                     showTaskRefresh: !!tasks,
+                    ...(tasks ? {taskRefreshFollowsJobList: tasksFollowJobList} : {}),
                     showCourierDisplayMode: !!showCourierDisplayMode,
                 },
                 jobs ? {id: jobsSeconds, text: ''} : undefined,
@@ -92,7 +94,8 @@ export function useDashboardSettings(options: UseDashboardSettingsOptions): {ope
                 onRefreshIntervals?.({
                     jobsMs: toMs(result.selectedRefreshInterval?.id),
                     driverLocationsMs: toMs(result.selectedDriverLocationRefreshInterval?.id),
-                    tasksMs: toMs(result.selectedTaskRefreshInterval?.id),
+                    tasksMs: toMs(result.selectedTaskRefreshInterval?.id
+                        ?? (tasksFollowJobList ? followedTaskSeconds(result.selectedRefreshInterval?.id ?? jobsSeconds) : 0)),
                 });
             }
 

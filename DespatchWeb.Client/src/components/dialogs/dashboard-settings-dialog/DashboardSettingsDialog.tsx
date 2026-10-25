@@ -21,6 +21,7 @@ import {
 } from '../shared/mantine';
 import {SectionHeading, SettingRadioGroup} from '../../common/settings-controls/SettingsControls';
 import type {CourierDisplayMode} from '../../../types';
+import {DEFAULT_TASK_REFRESH_SECONDS} from '../../../pages/task-dashboard/refreshIntervalOptions';
 
 const COURIER_DISPLAY_MODE_OPTIONS: {value: CourierDisplayMode; label: string}[] = [
     {value: 'off', label: 'Off'},
@@ -50,6 +51,12 @@ export interface DashboardSettingsConfig {
     showDriverLocationRefresh?: boolean;
     /** Show the "Tasks" auto-refresh dropdown (its own independent cadence). */
     showTaskRefresh?: boolean;
+    /**
+     * Tasks has no stored cadence yet, so the panel follows the job list (or the
+     * default when that is Disabled). Until the user changes Tasks it shows that
+     * cadence and Save leaves it out, so saving other settings never pins it.
+     */
+    taskRefreshFollowsJobList?: boolean;
     /** Show the "Current Work title" courier display setting. Dispatch page only. */
     showCourierDisplayMode?: boolean;
 }
@@ -130,15 +137,22 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [taskInterval, setTaskInterval] = useState<RefreshOption>(
         initialTaskInterval ?? {id: 0, text: 'Disabled'}
     );
+    const [taskTouched, setTaskTouched] = useState(false);
     const [courierDisplayMode, setCourierDisplayMode] = useState<CourierDisplayMode>(
         initialCourierDisplayMode ?? 'off',
     );
+
+    const taskFollowsJobList = !!config.taskRefreshFollowsJobList && !taskTouched;
+    const followedTaskSeconds = refreshInterval.id > 0 ? refreshInterval.id : DEFAULT_TASK_REFRESH_SECONDS;
+    const shownTaskInterval = taskFollowsJobList
+        ? refreshOptions.find((o) => o.id === followedTaskSeconds) ?? {id: followedTaskSeconds, text: ''}
+        : taskInterval;
 
     const handleSave = () => {
         onSave({
             selectedRefreshInterval: refreshInterval,
             selectedDriverLocationRefreshInterval: driverLocationInterval,
-            selectedTaskRefreshInterval: taskInterval,
+            ...(taskFollowsJobList ? {} : {selectedTaskRefreshInterval: taskInterval}),
             ...(config.showCourierDisplayMode ? {courierDisplayMode} : {}),
         });
     };
@@ -165,9 +179,12 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         <RefreshIntervalSetting
                             title="Tasks"
                             description="How often the Tasks panel checks for new and updated tasks"
-                            value={taskInterval}
+                            value={shownTaskInterval}
                             options={refreshOptions}
-                            onChange={setTaskInterval}
+                            onChange={(option) => {
+                                setTaskInterval(option);
+                                setTaskTouched(true);
+                            }}
                         />
                     )}
 

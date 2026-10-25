@@ -218,6 +218,7 @@ describe('DispatchScreen', () => {
             showRefreshInterval: true,
             showDriverLocationRefresh: true,
             showTaskRefresh: true,
+            taskRefreshFollowsJobList: true,
             showCourierDisplayMode: true,
         });
     });

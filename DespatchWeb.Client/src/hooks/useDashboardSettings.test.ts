@@ -47,6 +47,7 @@ describe('useDashboardSettings', () => {
                 showRefreshInterval: true,
                 showDriverLocationRefresh: true,
                 showTaskRefresh: true,
+                taskRefreshFollowsJobList: true,
                 showCourierDisplayMode: true,
             },
             {id: 30, text: ''},
@@ -110,6 +111,83 @@ describe('useDashboardSettings', () => {
         expect(getPreference).not.toHaveBeenCalled();
         expect(onRefreshIntervals).toHaveBeenCalledWith({jobsMs: 120000, driverLocationsMs: false, tasksMs: false});
         expect(toastService.showSuccessToast).toHaveBeenCalledWith('Settings saved and applied successfully');
+    });
+
+    describe('Tasks interval on save', () => {
+        type Option = {id: number; text: string};
+
+        /** Mirrors the real dialog: it starts from the seeds and leaves out a Tasks that follows the job list. */
+        function saveWith(changes: {jobs?: number; tasks?: number} = {}) {
+            const onRefreshIntervals = jest.fn();
+            const open = jest.fn(async (
+                config: {taskRefreshFollowsJobList?: boolean}, jobs: Option, driver: Option, tasks: Option,
+            ) => ({
+                selectedRefreshInterval: changes.jobs == null ? jobs : {id: changes.jobs, text: ''},
+                selectedDriverLocationRefreshInterval: driver,
+                ...(changes.tasks != null
+                    ? {selectedTaskRefreshInterval: {id: changes.tasks, text: ''}}
+                    : config.taskRefreshFollowsJobList ? {} : {selectedTaskRefreshInterval: tasks}),
+                courierDisplayMode: 'off',
+            }));
+            const hook = renderHook(() => useDashboardSettings({
+                title: 'Dispatch Dashboard Settings',
+                intervalKeys: KEYS,
+                showCourierDisplayMode: true,
+                onRefreshIntervals,
+                openDialog: async () => ({open}) as never,
+            }));
+            return {open, onRefreshIntervals, save: () => act(() => hook.result.current.openSettings())};
+        }
+
+        it('seeds Tasks with the default cadence the panel runs when the job list is Disabled', async () => {
+            localStorage.setItem(KEYS.jobs, '0');
+            const {open, save} = saveWith();
+            await save();
+            expect(open.mock.calls[0][3]).toEqual({id: 60, text: ''});
+        });
+
+        it('does not store Tasks when only the job list changed (Disabled → 60s)', async () => {
+            localStorage.setItem(KEYS.jobs, '0');
+            const {onRefreshIntervals, save} = saveWith({jobs: 60});
+            await save();
+            expect(localStorage.getItem(KEYS.jobs)).toBe('60');
+            expect(localStorage.getItem(KEYS.tasks)).toBeNull();
+            expect(onRefreshIntervals).toHaveBeenCalledWith(expect.objectContaining({tasksMs: 60000}));
+        });
+
+        it('does not store Tasks on an untouched save', async () => {
+            localStorage.setItem(KEYS.jobs, '120');
+            const {onRefreshIntervals, save} = saveWith();
+            await save();
+            expect(localStorage.getItem(KEYS.tasks)).toBeNull();
+            expect(onRefreshIntervals).toHaveBeenCalledWith(expect.objectContaining({tasksMs: 120000}));
+        });
+
+        it('keeps inheriting the new job-list cadence after an untouched save', async () => {
+            localStorage.setItem(KEYS.jobs, '120');
+            await saveWith().save();
+            const {onRefreshIntervals, save} = saveWith({jobs: 30});
+            await save();
+            expect(localStorage.getItem(KEYS.tasks)).toBeNull();
+            expect(onRefreshIntervals).toHaveBeenCalledWith(expect.objectContaining({tasksMs: 30000}));
+        });
+
+        it('stores a deliberately chosen Disabled', async () => {
+            localStorage.setItem(KEYS.jobs, '120');
+            const {onRefreshIntervals, save} = saveWith({tasks: 0});
+            await save();
+            expect(localStorage.getItem(KEYS.tasks)).toBe('0');
+            expect(onRefreshIntervals).toHaveBeenCalledWith(expect.objectContaining({tasksMs: false}));
+        });
+
+        it('keeps a stored Disabled through an untouched save', async () => {
+            localStorage.setItem(KEYS.jobs, '60');
+            localStorage.setItem(KEYS.tasks, '0');
+            const {onRefreshIntervals, save} = saveWith();
+            await save();
+            expect(localStorage.getItem(KEYS.tasks)).toBe('0');
+            expect(onRefreshIntervals).toHaveBeenCalledWith(expect.objectContaining({tasksMs: false}));
+        });
     });
 
     it('toasts when the dialog bundle is missing', async () => {
