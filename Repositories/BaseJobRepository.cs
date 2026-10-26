@@ -987,7 +987,7 @@ public partial class BaseJobRepository(
                 .Select(i => new { i.Items, i.Cubic })
                 .ToListAsync()
             : await Context.TucJobItems
-                .Where(i => i.JobId == jobId && i.Cubic != null)
+                .Where(i => i.JobId == jobId && i.Cubic != null && (i.ItemStatus ?? 0) == 0)
                 .Select(i => new { i.Items, i.Cubic })
                 .ToListAsync();
 

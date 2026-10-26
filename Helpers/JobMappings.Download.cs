@@ -34,7 +34,7 @@ public static partial class JobMappings
             Quantity = j.UcjbQty,
             Weight = j.UcjbWeight,
             Size = j.UcjbSize,
-            Cubic = j.TucJobItemJobs.Sum(i => i.Cubic),
+            Cubic = j.TucJobItemJobs.Where(i => (i.ItemStatus ?? 0) == 0).Sum(i => i.Cubic),
             StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
             Void = j.UcjbVoid,
             PickupAddressLine1 = j.PickupAddressLine1,

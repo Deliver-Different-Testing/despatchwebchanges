@@ -1932,10 +1932,18 @@ public partial class JobRepository(
                     .Where(i => i.JobId == effectiveJobId)
                     .MaxAsync(i => (int?)i.ItemId) ?? 0) + 1;
 
+                // #860/#861: once the job has gone to a driver a removed line is flagged "not for
+                // delivery" (it stays on the job and the app shows it) instead of deleted.
+                var flagRemovals = await Context.TucJobs
+                    .AnyAsync(j => (j.UcjbId == jobId || j.UcjbId == effectiveJobId) && j.UcjbMobileSend);
+
+                var matched = MatchParcelsToLines(parcels, existing);
+
                 for (var index = 0; index < parcels.Count; index++)
                 {
                     var p = parcels[index];
-                    if (index >= existing.Count)
+                    var item = matched[index];
+                    if (item == null)
                     {
                         Context.TucJobItems.Add(new TucJobItem
                         {
@@ -1954,7 +1962,6 @@ public partial class JobRepository(
                         continue;
                     }
 
-                    var item = existing[index];
                     item.Height = p.Height ?? 0;
                     item.Length = p.Length ?? 0;
                     item.Depth = p.Depth ?? 0;
@@ -1963,16 +1970,22 @@ public partial class JobRepository(
                     item.Notes = p.ItemName;
                     item.Barcode = p.Barcode;
                     item.Items = 1;
+                    item.ItemStatus = (byte)JobItemStatus.Active;
                 }
 
                 // A parent save also drops the stop jobs' own lines (scoped but not reusable above).
-                Context.TucJobItems.RemoveRange(scoped.Except(existing.Take(parcels.Count)));
+                // Lines already flagged are history and are kept either way.
+                var removed = scoped.Except(matched.Where(i => i != null)).Where(IsActiveLine).ToList();
+                if (flagRemovals)
+                    removed.ForEach(i => i.ItemStatus = (byte)JobItemStatus.NotForDelivery);
+                else
+                    Context.TucJobItems.RemoveRange(removed);
                 await Context.SaveChangesAsync();
 
                 // Parent lines drive the family total; a stop job with its own lines is totalled on its
                 // own, and falls back to the parent's total when it has none (mirrors the read mapping).
                 var parentLines = Context.TucJobItems
-                    .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
+                    .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null && (i.ItemStatus ?? 0) == 0)
                     .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
 
                 if (childJobId == null)
@@ -1989,10 +2002,11 @@ public partial class JobRepository(
                 else
                 {
                     var ownLines = Context.TucJobItems
-                        .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                        .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId && (i.ItemStatus ?? 0) == 0)
                         .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
-                    var (qty, weight) = await SumItemLinesAsync(
-                        await ownLines.AnyAsync() ? ownLines : parentLines);
+                    var hasOwnLines = await Context.TucJobItems
+                        .AnyAsync(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId);
+                    var (qty, weight) = await SumItemLinesAsync(hasOwnLines ? ownLines : parentLines);
                     await Context.TucJobs
                         .Where(j => j.UcjbId == jobId && (j.UcjbQty != qty || j.UcjbWeight != weight))
                         .ExecuteUpdateAsync(setters => setters
@@ -2162,7 +2176,7 @@ public partial class JobRepository(
         foreach (var childJobId in items.Select(i => i.ChildJobId).Distinct())
         {
             var lines = Context.TucJobItems
-                .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId && (i.ItemStatus ?? 0) == 0)
                 .Select(i => new ItemLine { Items = i.Items, Weight = i.Weight });
             var (qty, weight) = await SumItemLinesAsync(lines);
 
@@ -5129,6 +5143,45 @@ public partial class JobRepository(
         {
             await updateLeg(new UpdateAddressRequest { JobId = leg.UcjbId, Address = request.Address });
         }
+    }
+
+    private static bool IsActiveLine(TucJobItem item) => (item.ItemStatus ?? 0) == (byte)JobItemStatus.Active;
+
+    /// <summary>
+    /// Pairs each submitted parcel with the line it edits. The dialog doesn't send ItemIds, so a parcel
+    /// with a barcode takes the line with that barcode (re-activating it if it was flagged); the rest
+    /// take the remaining active lines in ItemId order, as before, but a barcoded parcel never takes a
+    /// line that has a different barcode - that line was removed, and a new line is added instead.
+    /// A null entry means "insert".
+    /// </summary>
+    private static TucJobItem[] MatchParcelsToLines(IReadOnlyList<ParcelDimensions> parcels, List<TucJobItem> lines)
+    {
+        var matched = new TucJobItem[parcels.Count];
+        var unmatched = lines.ToList();
+
+        for (var index = 0; index < parcels.Count; index++)
+        {
+            var barcode = parcels[index].Barcode;
+            if (string.IsNullOrEmpty(barcode)) continue;
+            var line = unmatched.FirstOrDefault(i => i.Barcode == barcode);
+            if (line == null) continue;
+            matched[index] = line;
+            unmatched.Remove(line);
+        }
+
+        var submittedBarcodes = parcels.Select(p => p.Barcode).Where(b => !string.IsNullOrEmpty(b)).ToHashSet();
+        for (var index = 0; index < parcels.Count; index++)
+        {
+            if (matched[index] != null) continue;
+            var parcelHasBarcode = !string.IsNullOrEmpty(parcels[index].Barcode);
+            var line = unmatched.FirstOrDefault(i => IsActiveLine(i) &&
+                (string.IsNullOrEmpty(i.Barcode) || (!parcelHasBarcode && !submittedBarcodes.Contains(i.Barcode))));
+            if (line == null) continue;
+            matched[index] = line;
+            unmatched.Remove(line);
+        }
+
+        return matched;
     }
 
     /// <summary>

@@ -37,6 +37,8 @@ public partial class TucJobItem
 
     public string Barcode { get; set; }
 
+    public byte? ItemStatus { get; set; }
+
     public virtual TucJob ChildJob { get; set; }
 
     public virtual TucJob Job { get; set; }
