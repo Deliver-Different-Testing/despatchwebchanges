@@ -142,7 +142,7 @@ export const JobFieldsSection = React.memo(({
                             <EditableField
                                 icon="straighten" label="Quantity"
                                 value={(() => {
-                                    const pallets = job.palletInfo ?? [];
+                                    const pallets = (job.palletInfo ?? []).filter(p => !p.itemStatus);
                                     const palletQty = pallets.reduce((sum, p) => sum + (p.quantity || 0), 0);
                                     const count = palletQty || job.parcelDimensions?.length || 0;
                                     const weight = job.weight;

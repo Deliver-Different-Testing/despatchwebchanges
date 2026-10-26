@@ -188,12 +188,13 @@ public static partial class JobMappings
         AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : null,
         Lp = j.UcjbLatePick,
         Ld = j.UcjbLateDel,
+        // #860/#861: flagged lines (not picked up / not for delivery) stay on the job but don't count.
         Items = j.TucJobItemChildJobs.Any()
-            ? j.TucJobItemChildJobs.Count
+            ? j.TucJobItemChildJobs.Count(i => (i.ItemStatus ?? 0) == 0)
             : j.TucJobItemJobs.Count > 0
-                ? j.TucJobItemJobs.Count
+                ? j.TucJobItemJobs.Count(i => (i.ItemStatus ?? 0) == 0)
                 : j.Parent != null
-                    ? j.Parent.TucJobItemJobs.Count(i => i.ChildJobId == null)
+                    ? j.Parent.TucJobItemJobs.Count(i => i.ChildJobId == null && (i.ItemStatus ?? 0) == 0)
                     : 0,
 
         PickupFrom = j.UcjbPickUpFrom,
@@ -320,9 +321,10 @@ public static partial class JobMappings
             || j.TucJobItemJobs.Any(i => i.PrivateRes == true)
             || (j.Parent != null && j.Parent.TucJobItemJobs.Any(i => i.ChildJobId == null && i.PrivateRes == true)),
 
-        // Parcel dimensions - 3-tier: stop child items → own items → parent items
+        // Parcel dimensions - 3-tier: stop child items → own items → parent items. Active lines only:
+        // this feeds the edit dialog, and flagged lines (#860/#861) are kept by UpdatePackagesForJobAsync.
         ParcelDimensions = j.TucJobItemChildJobs.Any()
-            ? j.TucJobItemChildJobs.Select(i => new ParcelDimensions
+            ? j.TucJobItemChildJobs.Where(i => (i.ItemStatus ?? 0) == 0).Select(i => new ParcelDimensions
             {
                 ItemId = i.ItemId,
                 ItemName = i.Notes,
@@ -334,7 +336,7 @@ public static partial class JobMappings
                 Barcode = i.Barcode
             }).ToList()
             : j.TucJobItemJobs.Any(i => i.ChildJobId == null)
-                ? j.TucJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new ParcelDimensions
+                ? j.TucJobItemJobs.Where(i => i.ChildJobId == null && (i.ItemStatus ?? 0) == 0).Select(i => new ParcelDimensions
                 {
                     ItemId = i.ItemId,
                     ItemName = i.Notes,
@@ -346,7 +348,7 @@ public static partial class JobMappings
                     Barcode = i.Barcode
                 }).ToList()
                 : j.Parent != null
-                    ? j.Parent.TucJobItemJobs.Where(i => i.ChildJobId == null)
+                    ? j.Parent.TucJobItemJobs.Where(i => i.ChildJobId == null && (i.ItemStatus ?? 0) == 0)
                         .Select(i => new ParcelDimensions
                         {
                             ItemId = i.ItemId,
@@ -375,7 +377,8 @@ public static partial class JobMappings
                 Pu = i.Pu,
                 Do = i.Do,
                 DgClass = i.Dgclass,
-                Notes = i.Notes
+                Notes = i.Notes,
+                ItemStatus = i.ItemStatus ?? 0
             }).ToList()
             : j.TucJobItemJobs.Any(i => i.ChildJobId == null)
                 ? j.TucJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new PalletInfo
@@ -391,7 +394,8 @@ public static partial class JobMappings
                     Pu = i.Pu,
                     Do = i.Do,
                     DgClass = i.Dgclass,
-                    Notes = i.Notes
+                    Notes = i.Notes,
+                    ItemStatus = i.ItemStatus ?? 0
                 }).ToList()
                 : j.Parent != null
                     ? j.Parent.TucJobItemJobs.Where(i => i.ChildJobId == null)
@@ -408,7 +412,8 @@ public static partial class JobMappings
                             Pu = i.Pu,
                             Do = i.Do,
                             DgClass = i.Dgclass,
-                            Notes = i.Notes
+                            Notes = i.Notes,
+                            ItemStatus = i.ItemStatus ?? 0
                         }).ToList()
                     : null,
 

@@ -96,6 +96,24 @@ describe('PalletSection', () => {
         expect(screen.queryByText('Pallet A3')).not.toBeInTheDocument();
     });
 
+    it('greys flagged lines, badges them and leaves them out of the totals', () => {
+        const pallets = [
+            createMockPallet({itemId: 1, quantity: 2, weight: 10, notes: 'Active'}),
+            createMockPallet({itemId: 2, quantity: 1, weight: 7, notes: 'Short', itemStatus: 1}),
+            createMockPallet({itemId: 3, quantity: 1, weight: 9, notes: 'Pulled', itemStatus: 2}),
+        ];
+        renderWithTheme(<PalletSection pallets={pallets} isUsCustomer={false} />);
+
+        expect(screen.getByText('Not picked up')).toBeInTheDocument();
+        expect(screen.getByText('Not for delivery')).toBeInTheDocument();
+        expect(screen.getByText('Short').closest('tr')).toHaveStyle({opacity: '0.5'});
+        // Totals: only the active line (2 x 10 kg).
+        const summary = screen.getByText('Total').closest('tr')!;
+        expect(summary).toHaveTextContent('2');
+        expect(summary).toHaveTextContent('20.0');
+        expect(screen.getByText('1 pallet · 2 flagged')).toBeInTheDocument();
+    });
+
     it('renders unique keys for pallets with same id but different itemId', () => {
         // Simulates multi-stop pallets where id (JobId) is the same for all
         const pallets = [

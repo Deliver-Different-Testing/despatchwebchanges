@@ -503,6 +503,8 @@ export interface IPalletInfo {
     dgClass?: number;
     notes: string;
     itemId: number;
+    /** #860/#861: 0 active, 1 not picked up (driver), 2 not for delivery (removed in Dispatch). */
+    itemStatus?: number;
 }
 
 export interface IAddressViewModel {

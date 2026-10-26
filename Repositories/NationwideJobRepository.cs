@@ -861,7 +861,7 @@ public class NationwideJobRepository(
                 CarrierCode = carrierCode,
                 TotalWeight = j.UcjbWeight.HasValue ? (decimal)j.UcjbWeight.Value : 0,
                 Quantity = j.UcjbQty ?? 0,
-                TotalPallets = j.TucJobItemJobs != null ? j.TucJobItemJobs.Count : 0,
+                TotalPallets = j.TucJobItemJobs != null ? j.TucJobItemJobs.Count(i => (i.ItemStatus ?? 0) == 0) : 0,
                 ExtraStopOffs = extraStopOffs ? 1 : 0,
                 BookTime = bookTime,
                 VehicleSizeId = j.UcjbSize ?? 0,

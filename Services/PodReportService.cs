@@ -324,7 +324,7 @@ public sealed class PodReportService(
     // the job's own item count.
     private static int? ResolveItemCount(JobViewModel job)
     {
-        var palletQuantity = job.PalletInfo?.Sum(p => p.Quantity) ?? 0;
+        var palletQuantity = job.PalletInfo?.Where(p => p.ItemStatus == 0).Sum(p => p.Quantity) ?? 0;
         if (palletQuantity > 0)
         {
             return palletQuantity;
