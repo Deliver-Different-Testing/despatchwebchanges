@@ -7141,6 +7141,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Do).HasColumnName("DO");
+            entity.Property(e => e.ItemStatus).HasDefaultValue((byte)0);
             entity.Property(e => e.Notes).HasMaxLength(4000);
             entity.Property(e => e.Pu).HasColumnName("PU");
 

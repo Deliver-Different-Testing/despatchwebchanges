@@ -14,4 +14,5 @@ public sealed class PalletInfo
     public int? DgClass { get; set; }
     public string Notes { get; set; }
     public int ItemId { get; set; }
+    public byte ItemStatus { get; set; }
 }

@@ -115,6 +115,7 @@ public class CourierRepository(
                             !j.UcjbJobDone &&
                             !j.UcjbVoid)
                 .SelectMany(j => j.TucJobItemJobs)
+                .Where(i => (i.ItemStatus ?? 0) == 0)
                 .GroupBy(i => 1)
                 .Select(g => new
                 {

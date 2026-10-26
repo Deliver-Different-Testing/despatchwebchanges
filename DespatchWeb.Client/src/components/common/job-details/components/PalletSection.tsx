@@ -24,6 +24,11 @@ const headerCellStyle: React.CSSProperties = {
     color: 'var(--mantine-color-dimmed)',
 };
 const summaryRowStyle: React.CSSProperties = {backgroundColor: 'var(--mantine-color-gray-1)'};
+const flaggedRowStyle: React.CSSProperties = {opacity: 0.5};
+
+// #860/#861: flagged lines stay on the job but don't count toward its totals.
+const FLAG_LABELS: Record<number, string> = {1: 'Not picked up', 2: 'Not for delivery'};
+const isActive = (p: IPalletInfo) => !p.itemStatus;
 
 export const PalletSection = React.memo(function PalletSection({pallets, isUsCustomer}: PalletSectionProps) {
     if (!pallets?.length) return null;
@@ -36,16 +41,19 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
     // set without dimensions (e.g. a Per Job weight/volume entry with no L/W/H).
     const volUnit = isUsCustomer ? 'ft³' : 'm³';
 
-    const totalItems = pallets.reduce((sum, p) => sum + (p.quantity || 0), 0);
-    const totalWeight = pallets.reduce((sum, p) => sum + (p.weight || 0) * (p.quantity || 1), 0);
-    const totalVolume = pallets.reduce((sum, p) => sum + (p.cubic || 0) * (p.quantity || 1), 0);
+    const active = pallets.filter(isActive);
+    const flaggedCount = pallets.length - active.length;
+    const totalItems = active.reduce((sum, p) => sum + (p.quantity || 0), 0);
+    const totalWeight = active.reduce((sum, p) => sum + (p.weight || 0) * (p.quantity || 1), 0);
+    const totalVolume = active.reduce((sum, p) => sum + (p.cubic || 0) * (p.quantity || 1), 0);
+    const palletLabel = `${active.length} ${active.length === 1 ? 'pallet' : 'pallets'}`;
 
     return (
         <Paper {...cardContainerProps}>
             <SectionHeader
                 lucide={List}
                 title="Pallet information"
-                subtitle={`${pallets.length} ${pallets.length === 1 ? 'pallet' : 'pallets'}`}
+                subtitle={flaggedCount ? `${palletLabel} · ${flaggedCount} flagged` : palletLabel}
             />
             <Table highlightOnHover>
                 <Table.Thead>
@@ -62,7 +70,7 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                 </Table.Thead>
                 <Table.Tbody>
                     {pallets.map((pallet, index) => (
-                        <Table.Tr key={`${pallet.itemId}-${index}`}>
+                        <Table.Tr key={`${pallet.itemId}-${index}`} style={isActive(pallet) ? undefined : flaggedRowStyle}>
                             <Table.Td style={cellStyle}>{pallet.itemId || '—'}</Table.Td>
                             <Table.Td style={cellStyle} ta="right">{pallet.quantity}</Table.Td>
                             <Table.Td style={cellStyle} ta="right">{pallet.weight}</Table.Td>
@@ -76,6 +84,11 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                                 <Group gap={4}>
                                     {pallet.pu && <Badge size="sm" color="brand">PU</Badge>}
                                     {pallet.do && <Badge size="sm" color="green">DO</Badge>}
+                                    {!isActive(pallet) && (
+                                        <Badge size="sm" color="gray" variant="outline">
+                                            {FLAG_LABELS[pallet.itemStatus!] ?? 'Flagged'}
+                                        </Badge>
+                                    )}
                                 </Group>
                             </Table.Td>
                             <Table.Td style={cellStyle}>{pallet.dgClass || '—'}</Table.Td>
