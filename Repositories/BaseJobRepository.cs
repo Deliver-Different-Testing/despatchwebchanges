@@ -127,8 +127,7 @@ public partial class BaseJobRepository(
     {
         try
         {
-            var query = await BuildBaseQueryAsync(selectedViewIds, isUsTenant);
-            if (query == null)
+            if (page is not (AppPage.Dispatch or AppPage.Domestic))
             {
                 return new JobSearchResult
                 {
@@ -153,57 +152,29 @@ public partial class BaseJobRepository(
                 isNeedsDispatchFilter = queryParams.StatusFilter?.ToLower() == "needs-dispatch";
             }
 
-            query = ApplyGeographicFilters(query, clearListEnvelope, isNeedsDispatchFilter);
-            query = ApplySearchTextFilter(query, queryParams.SearchText);
+            var requestedPage = queryParams.Page ?? 0;
+            var pageSize = queryParams.PageSize ?? 500;
+            var isDoneFilter = IsDoneFilter(queryParams.StatusFilter);
 
-            switch (page)
-            {
-                case AppPage.Dispatch:
-                    if (queryParams.DateCutoff.HasValue)
-                    {
-                        query = query.Where(JobDateOnOrBefore(queryParams.DateCutoff.Value));
-                    }
+            var query = await ScopeAsync(includeFinished: false);
 
-                    if (queryParams.StartDate.HasValue)
-                    {
-                        query = query.Where(JobDateOnOrAfter(queryParams.StartDate.Value));
-                    }
-
-                    query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
-
-                    break;
-                case AppPage.Domestic:
-                    query = ApplyNationwideSpecificFilters(
-                        query,
-                        queryParams,
-                        isInternal,
-                        windowPane ?? NationwideWidget.JobList,
-                        clientIds
-                    );
-                    break;
-                case AppPage.JobSearch:
-                case AppPage.Prebooks:
-                default:
-                    return new JobSearchResult
-                    {
-                        Jobs = [],
-                        TotalCount = 0,
-                        HasMore = false
-                    };
-            }
+            // The despatch views drop finished (POD'd) work, so on the dispatch board the Done tab, and
+            // the header's Done count, read the same scope through the finished-inclusive views instead.
+            var finishedQuery = page == AppPage.Dispatch && (isDoneFilter || requestedPage == 0)
+                ? await ScopeAsync(includeFinished: true)
+                : null;
 
             // The stats header describes the list as a whole, so its counts come off the query as it
             // stands before the category tab narrows it — otherwise picking a tab would rewrite the
             // very numbers it was picked from. Everything else the user asked for still applies.
             var statsQuery = query;
-            query = ApplyStatusFilter(query, queryParams.StatusFilter);
+            query = ApplyStatusFilter(isDoneFilter && finishedQuery != null ? finishedQuery : query,
+                queryParams.StatusFilter);
 
             // Resolve the distinct job IDs for this page up-front. Paginating over distinct IDs
             // keeps page sizes consistent and lets us project only the page's jobs (no duplicate
             // rows). Even when the caller omits Page, the non-paginated path is bounded by a safety
             // ceiling so this query can never materialise an unbounded view.
-            var requestedPage = queryParams.Page ?? 0;
-            var pageSize = queryParams.PageSize ?? 500;
 
             var (pageJobIds, totalCount, hasMore) = await ResolveJobIdPageAsync(
                 query.Select(j => j.UcjbId).Distinct(),
@@ -213,7 +184,7 @@ public partial class BaseJobRepository(
 
             // Answered with the first page only; the client keeps it while it scrolls.
             var statusCounts = requestedPage == 0
-                ? await CountStatusBucketsAsync(statsQuery, cancellationToken)
+                ? await CountStatusBucketsAsync(statsQuery, finishedQuery, cancellationToken)
                 : null;
 
             var allJobs = await Context.TucJobs
@@ -275,6 +246,23 @@ public partial class BaseJobRepository(
                 MapItems = page == AppPage.Dispatch ? mapItems : null,
                 StatusCounts = statusCounts
             };
+
+            async Task<IQueryable<TucJob>> ScopeAsync(bool includeFinished)
+            {
+                var scoped = await BuildBaseQueryAsync(selectedViewIds, isUsTenant, includeFinished);
+                scoped = ApplyGeographicFilters(scoped, clearListEnvelope, isNeedsDispatchFilter);
+                scoped = ApplySearchTextFilter(scoped, queryParams.SearchText);
+
+                return page == AppPage.Dispatch
+                    ? ApplyDispatchDateFilters(scoped, queryParams)
+                    : ApplyNationwideSpecificFilters(
+                        scoped,
+                        queryParams,
+                        isInternal,
+                        windowPane ?? NationwideWidget.JobList,
+                        clientIds
+                    );
+            }
         }
         catch (Exception e)
         {
@@ -283,9 +271,25 @@ public partial class BaseJobRepository(
         }
     }
 
-    protected async Task<IQueryable<TucJob>> BuildBaseQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
+    private static IQueryable<TucJob> ApplyDispatchDateFilters(IQueryable<TucJob> query, JobQueryParams queryParams)
     {
-        var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant);
+        if (queryParams.DateCutoff.HasValue)
+        {
+            query = query.Where(JobDateOnOrBefore(queryParams.DateCutoff.Value));
+        }
+
+        if (queryParams.StartDate.HasValue)
+        {
+            query = query.Where(JobDateOnOrAfter(queryParams.StartDate.Value));
+        }
+
+        return ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
+    }
+
+    protected async Task<IQueryable<TucJob>> BuildBaseQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant,
+        bool includeFinished = false)
+    {
+        var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant, includeFinished);
 
         if (!isUsTenant && (selectedViewIds == null || selectedViewIds.Count == 0))
         {
@@ -343,13 +347,20 @@ public partial class BaseJobRepository(
     }
 
     protected async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(IReadOnlyList<int> selectedViewIds,
-        bool isUsTenant)
+        bool isUsTenant, bool includeFinished = false)
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
             if (!isUsTenant)
             {
                 return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+            }
+
+            if (includeFinished)
+            {
+                return Context.DeswebQryDespatchJobViewFilters
+                    .FromSqlRaw($"SELECT DISTINCT UcjbId FROM {DespatchViewName(isUsTenant, includeFinished)}")
+                    .Select(x => x.UcjbId);
             }
 
             return Context.DeswebQryDespatchJobViewFilters
@@ -382,10 +393,7 @@ public partial class BaseJobRepository(
 
         return Context.DeswebQryDespatchJobViewFilters
             .FromSqlRaw(
-                isUsTenant
-                    ? $"SELECT DISTINCT UcjbId FROM DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}"
-                    : $"SELECT DISTINCT UcjbId FROM DESWEB_qryDespatch WHERE {combinedFilters}"
-            )
+                $"SELECT DISTINCT UcjbId FROM {DespatchViewName(isUsTenant, includeFinished)} WHERE {combinedFilters}")
             .Select(x => x.UcjbId);
     }
 
@@ -462,12 +470,27 @@ public partial class BaseJobRepository(
     /// <remarks>
     /// The view the base query joins through fans a job out across rows, so the ids are reduced to
     /// a distinct set and re-joined before classifying — the same shape the total count uses, so
-    /// the two can never disagree.
+    /// the two can never disagree. When <paramref name="doneSource"/> is given, Done is counted off it
+    /// instead, so the header agrees with the Done tab that lists from it.
     /// </remarks>
     private async Task<JobListStatusCounts> CountStatusBucketsAsync(
-        IQueryable<TucJob> query, CancellationToken cancellationToken)
+        IQueryable<TucJob> query, IQueryable<TucJob> doneSource, CancellationToken cancellationToken)
     {
-        var tallies = await query
+        var tallies = await TallyBucketsAsync(query, cancellationToken);
+        if (doneSource == null)
+        {
+            return JobListStatusCounts.FromBuckets(tallies);
+        }
+
+        var doneTallies = await TallyBucketsAsync(doneSource.Where(LiveBucketIs(JobListBucket.Done)), cancellationToken);
+
+        return JobListStatusCounts.FromBuckets(
+            [.. tallies.Where(t => t.Bucket != JobListBucket.Done), .. doneTallies]);
+    }
+
+    private Task<List<JobListBucketTally>> TallyBucketsAsync(
+        IQueryable<TucJob> query, CancellationToken cancellationToken) =>
+        query
             .Select(j => j.UcjbId)
             .Distinct()
             .Join(Context.TucJobs, id => id, j => j.UcjbId, (_, j) => j)
@@ -477,10 +500,33 @@ public partial class BaseJobRepository(
             .TagWith("DespatchQry - Status Counts")
             .ToListAsync(cancellationToken);
 
-        return JobListStatusCounts.FromBuckets(tallies);
+    /// <summary>
+    /// The despatch view a list scopes through. The <c>…All</c> twins keep finished (POD'd) jobs the
+    /// live views drop, for the Done tab.
+    /// </summary>
+    internal static string DespatchViewName(bool isUsTenant, bool includeFinished) =>
+        (isUsTenant ? "DESWEB_qry_Despatch_Job_View_Filters" : "DESWEB_qryDespatch")
+        + (includeFinished ? "All" : string.Empty);
+
+    private static bool IsDoneFilter(string statusFilter) =>
+        string.Equals(statusFilter, "delivered", StringComparison.OrdinalIgnoreCase);
+
+    private static readonly Expression<Func<TucJob, JobListBucket>> LiveBucket =
+        JobListStatusBuckets.Over(JobStatusSnapshots.Live);
+
+    /// <summary>
+    /// The header's bucket rule as a filter, so a category tab lists exactly the jobs its count counts.
+    /// </summary>
+    private static Expression<Func<TucJob, bool>> LiveBucketIs(JobListBucket bucket, bool negate = false)
+    {
+        Expression test = Expression.Equal(
+            Expression.Convert(LiveBucket.Body, typeof(int)),
+            Expression.Constant((int)bucket));
+
+        return Expression.Lambda<Func<TucJob, bool>>(negate ? Expression.Not(test) : test, LiveBucket.Parameters);
     }
 
-    private static IQueryable<TucJob> ApplyStatusFilter(IQueryable<TucJob> query, string statusFilter)
+    internal static IQueryable<TucJob> ApplyStatusFilter(IQueryable<TucJob> query, string statusFilter)
     {
         var completed = (int?)JobStatus.Completed;
         var dispatched = (int?)JobStatus.Dispatched;
@@ -497,10 +543,8 @@ public partial class BaseJobRepository(
                 && j.UcjbStatus != accepted
                 && j.UcjbStatus != pickedUp
                 && j.UcjbStatus != inTransit),
-            "in-progress" => query.Where(j =>
-                j.UcjbStatus != completed),
-            "delivered" => query.Where(j =>
-                j.UcjbStatus == completed),
+            "in-progress" => query.Where(LiveBucketIs(JobListBucket.Done, negate: true)),
+            "delivered" => query.Where(LiveBucketIs(JobListBucket.Done)),
             _ => query // "all" or null — no filter
         };
     }
