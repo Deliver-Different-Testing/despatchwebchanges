@@ -833,7 +833,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
     private static string[] GetFoldersByPhotoType(JobPhotoType photoType) =>
         photoType switch
         {
-            JobPhotoType.Delivery => ["DeliverySignatures", "DeliveryPhotos"],
+            JobPhotoType.Delivery => ["DeliverySignatures", "DeliveryPhotos", "DeliveryScannedDocuments"],
             JobPhotoType.Pickup => ["PickupScannedDocuments", "PickupPhotos", "PickupSignatures"],
             _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
         };

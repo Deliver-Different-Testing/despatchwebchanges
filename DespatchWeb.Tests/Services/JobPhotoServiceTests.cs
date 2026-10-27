@@ -395,6 +395,24 @@ public class JobPhotoServiceTests
         Assert.Contains(result, p => p.S3Key == juneKey);
     }
 
+    // The driver app files delivery document scans under DeliveryScannedDocuments, mirroring pickup.
+    [Fact]
+    public async Task GetDeliveryPhotosAsync_DeliveryScannedDocument_IsReturned()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string scanKey = "DeliveryScannedDocuments/2024/07/5-DeliveryScannedDocument-1";
+        StubSingleObjectForPrefix("DeliveryScannedDocuments/2024/07/5-", scanKey);
+
+        // Act
+        var result = await service.GetDeliveryPhotosAsync(5, 2024, 7);
+
+        // Assert
+        Assert.Contains(result, p => p.S3Key == scanKey);
+    }
+
     [Fact]
     public async Task GetDeliveryPhotosAsync_PhotoInPreviousMonthAcrossYearBoundary_IsFound()
     {
@@ -574,7 +592,7 @@ public class JobPhotoServiceTests
     [Fact]
     public async Task ArchiveJobCapturedMediaAsync_ArchivesCapturedMedia_MovesEachUnderArchivePrefix()
     {
-        // Arrange — one object in each of the five captured-media folders for the completion month.
+        // Arrange — one object in each of the six captured-media folders for the completion month.
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
@@ -582,6 +600,7 @@ public class JobPhotoServiceTests
         {
             ["DeliverySignatures/2024/07/5-"] = "DeliverySignatures/2024/07/5-20240705120000.png",
             ["DeliveryPhotos/2024/07/5-"] = "DeliveryPhotos/2024/07/5-20240705120100.jpg",
+            ["DeliveryScannedDocuments/2024/07/5-"] = "DeliveryScannedDocuments/2024/07/5-DeliveryScannedDocument-1",
             ["PickupScannedDocuments/2024/07/5-"] = "PickupScannedDocuments/2024/07/5-20240705120200.pdf",
             ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg",
             ["PickupSignatures/2024/07/5-"] = "PickupSignatures/2024/07/5-20240705120400.png"
@@ -596,8 +615,8 @@ public class JobPhotoServiceTests
         var result = await service.ArchiveJobCapturedMediaAsync(5, 2024, 7);
 
         // Assert
-        Assert.Equal(5, result.TotalFiles);
-        Assert.Equal(5, result.SuccessfulFiles);
+        Assert.Equal(6, result.TotalFiles);
+        Assert.Equal(6, result.SuccessfulFiles);
         Assert.Equal(0, result.FailedFiles);
         Assert.True(result.IsSuccess);
 
@@ -644,7 +663,7 @@ public class JobPhotoServiceTests
     [Fact]
     public async Task ArchiveJobCapturedMediaAsync_DoesNotTouchJobAttachments()
     {
-        // Arrange — only the four captured-media folders are searched; a JobAttachments object,
+        // Arrange — only the captured-media folders are searched; a JobAttachments object,
         // even though it exists for the job, must never be archived.
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
@@ -702,7 +721,7 @@ public class JobPhotoServiceTests
     [Fact]
     public async Task CountJobCapturedMediaAsync_CountsEveryCapturedFolderWithoutArchiving()
     {
-        // Arrange — the same five folders the archive walks, one object in each.
+        // Arrange — the same six folders the archive walks, one object in each.
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
@@ -710,6 +729,7 @@ public class JobPhotoServiceTests
         {
             ["DeliverySignatures/2024/07/5-"] = "DeliverySignatures/2024/07/5-20240705120000.png",
             ["DeliveryPhotos/2024/07/5-"] = "DeliveryPhotos/2024/07/5-20240705120100.jpg",
+            ["DeliveryScannedDocuments/2024/07/5-"] = "DeliveryScannedDocuments/2024/07/5-DeliveryScannedDocument-1",
             ["PickupScannedDocuments/2024/07/5-"] = "PickupScannedDocuments/2024/07/5-20240705120200.pdf",
             ["PickupPhotos/2024/07/5-"] = "PickupPhotos/2024/07/5-20240705120300.jpg",
             ["PickupSignatures/2024/07/5-"] = "PickupSignatures/2024/07/5-20240705120400.png"
@@ -719,7 +739,7 @@ public class JobPhotoServiceTests
         var count = await service.CountJobCapturedMediaAsync(5, 2024, 7);
 
         // Assert — the probe is read-only.
-        Assert.Equal(5, count);
+        Assert.Equal(6, count);
         await _s3ClientMock.DidNotReceive()
             .CopyObjectAsync(Arg.Any<CopyObjectRequest>(), Arg.Any<CancellationToken>());
         await _s3ClientMock.DidNotReceive()
