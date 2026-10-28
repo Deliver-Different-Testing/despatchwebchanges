@@ -1,6 +1,6 @@
 /*
  * Three icon-only radios on a faint track over the shell bar. The checked chip is the
- * bar's own scrim fill, so it reads on both the Ink and gold bars. Unlayered, so it
+ * bar's own scrim fill, so it reads on both the Ink and a light custom-primary bar. Unlayered, so it
  * outranks Mantine's @layer without extra specificity.
  */
 .root {

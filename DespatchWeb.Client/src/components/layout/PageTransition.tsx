@@ -18,9 +18,10 @@ export const PageTransition: React.FC = () => {
     return (
         <Stack h="100%" mih="50vh" align="center" justify="center" gap="sm" role="status">
             <div className={styles.glass}>
-                <Loader size="sm" color="var(--theme-primary, currentColor)"/>
+                <Loader size="sm" color="var(--mantine-primary-color-filled)"/>
             </div>
             <Text size="sm" c="dimmed">Loading Despatch</Text>
         </Stack>
     );
 };
+

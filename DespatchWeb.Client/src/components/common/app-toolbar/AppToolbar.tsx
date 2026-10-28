@@ -1,7 +1,7 @@
 /**
  * React App Toolbar Component
  *
- * The shell app bar — Ink Blue on US tenants, the brand gold elsewhere.
+ * The shell app bar — Ink Blue, or the tenant's custom primary when one is set.
  * Layout: Logo | Keyline | Breadcrumbs | Spacer | Actions | Menu
  * Chrome mirrors Integration Manager's AppShell.Header.
  */

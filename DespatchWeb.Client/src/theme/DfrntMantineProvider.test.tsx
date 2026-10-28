@@ -4,6 +4,7 @@ import {useMantineTheme} from '@mantine/core';
 import {DfrntMantineProvider} from './DfrntMantineProvider';
 import {COLOR_MODE_STORAGE_KEY} from '../hooks/useColorMode';
 import {APPEARANCE_STORAGE_KEY} from '../hooks/useAppearance';
+import {clearSessionContext, setSessionContext} from '../api/session';
 
 describe('DfrntMantineProvider', () => {
     beforeEach(() => window.localStorage.clear());
@@ -50,4 +51,19 @@ describe('DfrntMantineProvider', () => {
 
         expect(document.documentElement.dataset.ddContrast).toBe('standard');
     });
+
+    it('uses the DFRNT cyan primary for a non-US tenant with no appearance set', () => {
+        setSessionContext({
+            contactId: 1, staffId: null, firstName: null, fullName: null, email: null, dispatcher: null,
+            timeZone: null, countryCode: null, isUsTenant: false, currencyCode: 'NZD',
+            clientInternal: false, isNetworkPartner: false, visibleFeatures: null, npMapCenter: null, hubUrl: null,
+        });
+        const PrimaryProbe = () => <span data-testid="probe">{useMantineTheme().colors.brand[5]}</span>;
+
+        render(<DfrntMantineProvider><PrimaryProbe/></DfrntMantineProvider>);
+
+        expect(screen.getByTestId('probe')).toHaveTextContent('#3bc7f4');
+        clearSessionContext();
+    });
 });
+
