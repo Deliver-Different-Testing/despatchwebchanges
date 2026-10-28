@@ -27,26 +27,6 @@ export const dfrntPrimaryPalette = {
     A700: '#1eb2e6',
 };
 
-// Non-US "urgent" primary — warm amber/gold (#f4c430). US tenants use the cyan
-// dfrntPrimaryPalette above; non-US (NZ) tenants use this. Gold is a light hue, so
-// anything filled with it needs DARK (Ink) text, not white.
-export const urgentPrimaryPalette = {
-    50: '#fef9e7',
-    100: '#fcefc4',
-    200: '#fae49d',
-    300: '#f8d976',
-    400: '#f6d058',
-    500: '#f4c430',  // Main color - warm amber gold
-    600: '#e5b52a',
-    700: '#d4a324',
-    800: '#c3911e',
-    900: '#a87614',
-    A100: '#fff8e1',
-    A200: '#ffecb3',
-    A400: '#ffd54f',
-    A700: '#ffc107',
-};
-
 // Ink Blue (#0d0c2c) — the DFRNT shell / neutral-dark family. Backs the app bar,
 // side-nav header and any dark chrome. MUI-style 50→900 from the brand ink ramp.
 export const inkBluePalette = {
@@ -62,7 +42,7 @@ export const inkBluePalette = {
     900: '#0d0c2c',  // Ink Blue - shell
 };
 
-// Ink-Blue shell tokens for US tenants (app bar + side-nav header). White-based
+// Ink-Blue shell tokens (app bar + side-nav header), for every tenant. White-based
 // content on the dark scrim. Mirrors the Mantine `sidebarColors` in the DFRNT
 // brand theme.
 export const shellColors = {
@@ -74,25 +54,6 @@ export const shellColors = {
     textMuted: 'rgba(255, 255, 255, 0.38)',
     hoverBg: 'rgba(255, 255, 255, 0.08)',
 };
-
-// Gold shell tokens for non-US tenants. Same shape, but the content is Ink-based:
-// gold is a light hue, so white on it fails WCAG. The secondary/muted steps sit a
-// little stronger than their white counterparts because dark ink fades faster
-// against a bright fill than white does against navy.
-export const goldShellColors = {
-    appBar: urgentPrimaryPalette[500],  // #f4c430
-    panel: inkBluePalette[800],
-    border: 'rgba(13, 12, 44, 0.14)',
-    textPrimary: 'rgba(13, 12, 44, 0.95)',
-    textSecondary: 'rgba(13, 12, 44, 0.65)',
-    textMuted: 'rgba(13, 12, 44, 0.45)',
-    hoverBg: 'rgba(13, 12, 44, 0.08)',
-};
-
-/** The shell tokens for a tenant — Ink Blue on US, gold elsewhere. */
-export function getShellColors(isUsCustomer: boolean): typeof shellColors {
-    return isUsCustomer ? shellColors : goldShellColors;
-}
 
 // AI feature accent — the DFRNT grape/purple (#824ae0) signature used across AI
 // surfaces (draft buttons, summary cards, the BETA chip). A light/main/dark ramp so

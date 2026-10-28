@@ -10,7 +10,7 @@ import {
 } from './dfrntMantineTheme';
 import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
 import {contrastRatio, getMd3Scheme} from './md3';
-import {dfrntPrimaryPalette, urgentPrimaryPalette, inkBluePalette} from './palettes';
+import {dfrntPrimaryPalette, inkBluePalette} from './palettes';
 
 describe('dfrntTheme glass dropdowns', () => {
     it('gives Menu and Popover dropdowns the glass and panel classes', () => {
@@ -35,8 +35,6 @@ describe('dfrntTheme', () => {
         // Mantine needs a 10-tuple, so the ramps are declared separately from
         // palettes.ts — but the anchor hexes must never drift apart.
         expect(dfrntBrand.cyan).toBe(dfrntPrimaryPalette[500]);
-        expect(dfrntBrand.gold).toBe(urgentPrimaryPalette[500]);
-        expect(dfrntBrand.goldDeep).toBe(urgentPrimaryPalette[900]);
         expect(dfrntBrand.inkBlue).toBe(inkBluePalette[900]);
     });
 
@@ -68,42 +66,25 @@ describe('dfrntTheme', () => {
     });
 });
 
-describe('createDfrntTheme — per-tenant brand', () => {
-    it('gives US tenants the Cyan ramp on the Ink Blue shell', () => {
-        const theme = createDfrntTheme(true);
+describe('createDfrntTheme — built-in brand', () => {
+    it('is DFRNT Cyan on the Ink Blue shell for every tenant, with the reversed wordmark', () => {
+        const theme = createDfrntTheme();
         expect(theme.colors?.brand?.[5]).toBe(dfrntBrand.cyan);
         expect(theme.other?.shell?.appBar).toBe(dfrntBrand.inkBlue);
         expect(theme.other?.scrim?.text).toBe('#fff');
         expect(theme.other?.shell?.logoSrc).toBe('images/dfrnt_logo_reversed.png');
+        expect(theme.colors?.ink?.[9]).toBe(dfrntBrand.inkBlue);
+        expect(theme.colors?.red?.[5]).toBe(dfrntBrand.red);
+        expect(theme.black).toBe(dfrntBrand.inkBlue);
     });
-
-    it('gives non-US tenants the gold ramp with Ink content and the dark wordmark', () => {
-        const theme = createDfrntTheme(false);
-        expect(theme.colors?.brand?.[5]).toBe(dfrntBrand.gold);
-        expect(theme.other?.shell?.appBar).toBe(dfrntBrand.gold);
-        expect(theme.other?.scrim?.text).toBe(dfrntBrand.inkBlue);
-        expect(theme.other?.shell?.logoSrc).toBe('images/dfrnt_logo.png');
-    });
-
-    it('keeps both tenants on the same Ink and semantic ramps', () => {
-        for (const theme of [createDfrntTheme(true), createDfrntTheme(false)]) {
-            expect(theme.colors?.ink?.[9]).toBe(dfrntBrand.inkBlue);
-            expect(theme.colors?.red?.[5]).toBe(dfrntBrand.red);
-            expect(theme.black).toBe(dfrntBrand.inkBlue);
-        }
-    });
-
 });
 
 describe('dfrntCssVariablesResolver', () => {
-    it('publishes the tenant shell chrome as CSS variables', () => {
-        const us = dfrntCssVariablesResolver(createDfrntTheme(true) as never);
-        const nonUs = dfrntCssVariablesResolver(createDfrntTheme(false) as never);
+    it('publishes the Ink shell chrome as CSS variables', () => {
+        const vars = dfrntCssVariablesResolver(createDfrntTheme() as never);
 
-        expect(us.variables['--dd-shell-bar']).toBe(dfrntBrand.inkBlue);
-        expect(us.variables['--dd-on-shell']).toBe('#fff');
-        expect(nonUs.variables['--dd-shell-bar']).toBe(dfrntBrand.gold);
-        expect(nonUs.variables['--dd-on-shell']).toBe(dfrntBrand.inkBlue);
+        expect(vars.variables['--dd-shell-bar']).toBe(dfrntBrand.inkBlue);
+        expect(vars.variables['--dd-on-shell']).toBe('#fff');
     });
 
     it('paints page and card surfaces a tone apart in each colour scheme', () => {
@@ -233,17 +214,16 @@ describe('createDfrntTheme — user appearance', () => {
     const dk = getMd3Scheme('dark');
 
     it('generates the brand and secondary ramps from the chosen colours, keeping the status ramps fixed', () => {
-        const theme = createDfrntTheme(true, {highContrast: false, primary: '#13b964', secondary: '#dc3246'});
+        const theme = createDfrntTheme({highContrast: false, primary: '#13b964', secondary: '#dc3246'});
         expect(theme.colors?.brand?.[5]).toBe('#13b964');
         expect(theme.colors?.reflex?.[5]).toBe('#dc3246');
         expect(theme.colors?.red).toEqual(dfrntTheme.colors?.red);
         expect(theme.colors?.green).toEqual(dfrntTheme.colors?.green);
     });
 
-    it('picks shell content by contrast, so a dark custom primary gets the reversed set', () => {
-        const theme = createDfrntTheme(false, {highContrast: false, primary: '#132279'});
-        expect(theme.other?.shell?.appBar).toBe('#132279');
-        expect(theme.other?.shell?.logoSrc).toBe('images/dfrnt_logo_reversed.png');
+    it('leaves the Ink shell alone when a custom primary is chosen', () => {
+        const theme = createDfrntTheme({highContrast: false, primary: '#f4c430'});
+        expect(theme.other?.shell?.appBar).toBe(dfrntBrand.inkBlue);
         expect(theme.other?.scrim?.text).toBe('#fff');
     });
 
@@ -251,7 +231,7 @@ describe('createDfrntTheme — user appearance', () => {
         const standard = dfrntCssVariablesResolver(dfrntTheme as never);
         expect(standard.light['--mantine-color-text']).toBeUndefined();
         const custom = dfrntCssVariablesResolver(
-            createDfrntTheme(true, {highContrast: false, textLight: '#222222', textDark: '#eeeeee'}) as never,
+            createDfrntTheme({highContrast: false, textLight: '#222222', textDark: '#eeeeee'}) as never,
         );
         expect(custom.light['--mantine-color-text']).toBe('#222222');
         expect(custom.dark['--mantine-color-text']).toBe('#eeeeee');
@@ -264,8 +244,8 @@ describe('createDfrntTheme — user appearance', () => {
     });
 
     it('in high contrast, lifts dimmed text, borders and every coloured text role to 7:1 in both schemes', () => {
-        for (const isUs of [true, false]) {
-            const vars = dfrntCssVariablesResolver(createDfrntTheme(isUs, {highContrast: true}) as never);
+        for (const primary of [undefined, '#f4c430']) {
+            const vars = dfrntCssVariablesResolver(createDfrntTheme({highContrast: true, primary}) as never);
             for (const [mode, surfaces] of [
                 ['light', [light.surface, light.surfaceContainerLowest]],
                 ['dark', [dk.surface, dk.surfaceContainer, dk.surfaceContainerHigh]],

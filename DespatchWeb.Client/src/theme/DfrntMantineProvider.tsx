@@ -14,7 +14,6 @@ import {MantineProvider} from '@mantine/core';
 import {DatesProvider} from '@mantine/dates';
 import {GlassProvider} from '@deliver-different/glass';
 import {createDfrntTheme, dfrntCssVariablesResolver} from './dfrntMantineTheme';
-import {isUsTenant} from './tenant';
 import {toThemeAppearance} from './appearance';
 import {useAppearance} from '../hooks/useAppearance';
 import {ColorModeProvider, useColorMode} from '../hooks/useColorMode';
@@ -32,7 +31,7 @@ const ThemedSubtree: React.FC<DfrntMantineProviderProps> = ({children}) => {
         () => toThemeAppearance(resolved, systemPrefersMoreContrast),
         [resolved, systemPrefersMoreContrast],
     );
-    const theme = useMemo(() => createDfrntTheme(isUsTenant(), appearance), [appearance]);
+    const theme = useMemo(() => createDfrntTheme(appearance), [appearance]);
     // Translucent glass lowers the contrast of whatever sits on it, so high contrast turns it off.
     const glassEnabled = useLiquidGlassEnabled() && !appearance.highContrast;
     // Native controls and scrollbars follow the scheme.

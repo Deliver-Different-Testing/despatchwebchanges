@@ -26,7 +26,6 @@
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
 import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
 import {contrastRatio, getMd3Scheme, type Md3Mode} from './md3';
-import {isUsTenant} from './tenant';
 import {generateRamp} from './colorMath';
 import {TEXT_MIN_CONTRAST_HIGH, type ThemeAppearance} from './appearance';
 
@@ -35,17 +34,12 @@ import {TEXT_MIN_CONTRAST_HIGH, type ThemeAppearance} from './appearance';
 const cyan: MantineColorsTuple = [
     '#e7f8fe', '#d8f4fd', '#b1e9fb', '#82dcf8', '#5bd1f5',
     '#3bc7f4', '#1eb2e6', '#1590c0', '#0f6f96', '#0a4d69',
-]; // Cyan — the US tenant primary
+]; // Cyan — the built-in DFRNT primary
 
 const gold: MantineColorsTuple = [
     '#fef9e7', '#fcefc4', '#fae49d', '#f8d976', '#f6d058',
     '#f4c430', '#e5b52a', '#d4a324', '#c3911e', '#a87614',
-]; // Warm amber gold — the non-US ("urgent") tenant primary
-
-/** The tenant's primary ramp. Mirrors `dfrntPrimaryPalette`/`urgentPrimaryPalette` in palettes.ts. */
-function brandRamp(isUsCustomer: boolean): MantineColorsTuple {
-    return isUsCustomer ? cyan : gold;
-}
+]; // Warm amber gold
 
 const ink: MantineColorsTuple = [
     '#ecebf1', '#cfced5', '#a8a7b6', '#83829a', '#6e6d80',
@@ -118,58 +112,27 @@ export const dfrntBrand = {
     red: red[5],
 } as const;
 
-/** The app-bar fill: Ink Blue for US tenants, the brand fill (gold unless customised) otherwise. */
-function shellFill(isUsCustomer: boolean, brandFill?: string): string {
-    return isUsCustomer ? ink[9] : brandFill ?? gold[5];
-}
-
-function inkReadsOn(fill: string): boolean {
-    return contrastRatio(ink[9], fill) >= contrastRatio('#ffffff', fill);
-}
-
 /**
  * The shell surface (app bar + side-nav account header) and the logo that reads on
- * it. US tenants get the Ink-Blue navy in both colour modes; non-US tenants get the
- * brand fill. Content on the fill is Ink or white, whichever contrasts more, so the
- * light gold default (or a user's own light primary) carries Ink content and the
- * standard (dark) wordmark, and a dark fill gets the reversed set.
+ * it: Ink Blue in both colour modes for every tenant. A tenant or user primary
+ * recolours controls and highlights, never the shell.
  */
-export function getSidebarColors(isUsCustomer: boolean, brandFill?: string) {
-    const appBar = shellFill(isUsCustomer, brandFill);
-    return !inkReadsOn(appBar)
-        ? {
-            appBar,
-            bg: ink[8], // drawer panel, one tier lighter than the bar
-            logoSrc: 'images/dfrnt_logo_reversed.png',
-            border: 'rgba(255, 255, 255, 0.10)',
-            textPrimary: 'rgba(255, 255, 255, 0.95)',
-            textSecondary: 'rgba(255, 255, 255, 0.60)',
-            textMuted: 'rgba(255, 255, 255, 0.38)',
-            hoverBg: 'rgba(255, 255, 255, 0.08)',
-        }
-        : {
-            appBar,
-            bg: ink[8],
-            logoSrc: 'images/dfrnt_logo.png',
-            // Ink at the same alphas as the white set would fade out on a bright
-            // fill, so the secondary/muted steps sit a little stronger.
-            border: 'rgba(13, 12, 44, 0.14)',
-            textPrimary: 'rgba(13, 12, 44, 0.95)',
-            textSecondary: 'rgba(13, 12, 44, 0.65)',
-            textMuted: 'rgba(13, 12, 44, 0.45)',
-            hoverBg: 'rgba(13, 12, 44, 0.08)',
-        };
-}
+export const sidebarColors = {
+    appBar: ink[9],
+    bg: ink[8], // drawer panel, one tier lighter than the bar
+    logoSrc: 'images/dfrnt_logo_reversed.png',
+    border: 'rgba(255, 255, 255, 0.10)',
+    textPrimary: 'rgba(255, 255, 255, 0.95)',
+    textSecondary: 'rgba(255, 255, 255, 0.60)',
+    textMuted: 'rgba(255, 255, 255, 0.38)',
+    hoverBg: 'rgba(255, 255, 255, 0.08)',
+};
 
-/**
- * Overlays for content sitting on the shell scrim (shell chrome, dialog headers) —
- * white-based on a dark bar (Ink), Ink-based on a light one (gold).
- */
-export function getOnBrandScrim(isUsCustomer: boolean, brandFill?: string) {
-    const onInk = inkReadsOn(shellFill(isUsCustomer, brandFill));
-    const on = onInk ? '13,12,44' : '255,255,255';
+/** Overlays for content sitting on the Ink shell scrim (shell chrome, dialog headers). */
+export const onBrandScrim = (() => {
+    const on = '255,255,255';
     return {
-        text: onInk ? '#0d0c2c' : '#fff',
+        text: '#fff',
         bodyText: `rgba(${on},0.85)`,
         subtleText: `rgba(${on},0.8)`,
         mutedText: `rgba(${on},0.7)`,
@@ -180,13 +143,7 @@ export function getOnBrandScrim(isUsCustomer: boolean, brandFill?: string) {
         solidHoverFill: `rgba(${on},0.9)`,
         border: `rgba(${on},0.4)`,
     };
-}
-
-/** The current tenant's shell tokens, for the few consumers outside a provider. */
-export const sidebarColors = getSidebarColors(isUsTenant());
-
-/** The current tenant's scrim overlays, for the few consumers outside a provider. */
-export const onBrandScrim = getOnBrandScrim(isUsTenant());
+})();
 
 /** Theme-aware palette for code / terminal blocks (on Ink Blue). */
 export const codeBlockPalette = {
@@ -232,15 +189,15 @@ declare module '@mantine/core' {
 const STANDARD_APPEARANCE: ThemeAppearance = {highContrast: false};
 
 /**
- * Builds the theme for a tenant and the user's resolved appearance. `brand` is the
- * tenant's primary ramp (or one generated from the user's primary), so every
+ * Builds the theme for a resolved appearance (tenant default with the user's
+ * override on top). `brand` is DFRNT cyan unless a primary is chosen, so every
  * `color="brand"` / `--mantine-color-brand-*` consumer follows without edits; a
  * custom secondary replaces the `reflex` (links / info) ramp. The semantic status
  * ramps (red, green, orange) are never customised, so a status reads the same for
  * everyone.
  */
-export function createDfrntTheme(isUsCustomer: boolean = isUsTenant(), appearance: ThemeAppearance = STANDARD_APPEARANCE) {
-    const brand = appearance.primary ? generateRamp(appearance.primary) : brandRamp(isUsCustomer);
+export function createDfrntTheme(appearance: ThemeAppearance = STANDARD_APPEARANCE) {
+    const brand = appearance.primary ? generateRamp(appearance.primary) : cyan;
     const secondary = appearance.secondary ? generateRamp(appearance.secondary) : reflex;
     return createTheme({
         primaryColor: 'brand',
@@ -320,8 +277,8 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant(), appearanc
             Tabs: {styles: {tab: {paddingBlock: 14, fontWeight: 500}}},
         },
         other: {
-            shell: getSidebarColors(isUsCustomer, appearance.primary),
-            scrim: getOnBrandScrim(isUsCustomer, appearance.primary),
+            shell: sidebarColors,
+            scrim: onBrandScrim,
             code: codeBlockPalette,
             tokens,
             appearance,
