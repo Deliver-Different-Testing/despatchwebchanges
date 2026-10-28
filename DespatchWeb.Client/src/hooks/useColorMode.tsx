@@ -56,15 +56,20 @@ function isPreference(value: unknown): value is ColorModePreference {
     return value === 'light' || value === 'dark' || value === 'system';
 }
 
-function readStoredPreference(): ColorModePreference {
-    if (typeof window === 'undefined') return 'system';
+/** The pick saved in this browser, or null when the user has never chosen one here. */
+function readExplicitPreference(): ColorModePreference | null {
+    if (typeof window === 'undefined') return null;
     try {
         const stored = window.localStorage.getItem(COLOR_MODE_STORAGE_KEY);
         if (isPreference(stored)) return stored;
     } catch {
-        /* localStorage unavailable — fall through to default */
+        /* localStorage unavailable — treat as no choice */
     }
-    return 'system';
+    return null;
+}
+
+function readStoredPreference(): ColorModePreference {
+    return readExplicitPreference() ?? 'system';
 }
 
 function getSystemMode(): Md3Mode {
@@ -101,7 +106,8 @@ function canSyncWithServer(): boolean {
 
 /**
  * Reconciles with the server once per page (islands share one window): a saved
- * server value wins and is broadcast; with none saved, the local value seeds it.
+ * server value wins and is broadcast; with none saved, only a choice made in this
+ * browser seeds it, so opening a page never saves the 'system' default.
  */
 async function syncFromServerOnce(): Promise<void> {
     const flagged = window as unknown as Record<string, boolean>;
@@ -113,7 +119,8 @@ async function syncFromServerOnce(): Promise<void> {
             persist(value);
             window.dispatchEvent(new CustomEvent<ColorModePreference>(CHANGE_EVENT, {detail: value}));
         } else {
-            saveToServer(readStoredPreference());
+            const local = readExplicitPreference();
+            if (local) saveToServer(local);
         }
     } catch (error) {
         console.error('Failed to load appearance preference from server:', error);

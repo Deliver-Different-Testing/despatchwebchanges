@@ -29,14 +29,13 @@ export function setPanelHideButtonEnabled(enabled: boolean): void {
 /**
  * Pulls the setting from the server into localStorage so the existing
  * synchronous isPanelHideButtonEnabled() read sees it, the same read-through
- * pattern Auto-mate settings use. If the server has nothing yet, seeds it
- * from the current (default) local value so the setting follows the user to
- * their next device.
+ * pattern Auto-mate settings use. If the server has nothing yet, seeds it only
+ * from a choice made in this browser, so opening a page never saves the default.
  */
 export async function loadPanelHideButtonSettingFromServer(): Promise<void> {
     const value = await getPreference(StaffPreferenceKey.ShowPanelHideButton);
     if (value === null) {
-        persistToServer();
+        if (localStorage.getItem(storageKey()) !== null) persistToServer();
         return;
     }
     localStorage.setItem(storageKey(), value === 'true' ? 'true' : 'false');

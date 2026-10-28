@@ -54,12 +54,23 @@ describe('panelHideButtonSettings', () => {
             expect(isPanelHideButtonEnabled()).toBe(false);
         });
 
-        it('seeds the server from the local (default) value when nothing is saved yet', async () => {
+        it('writes nothing when neither the server nor this browser has a saved choice', async () => {
             mockGetPreference.mockResolvedValue(null);
 
             await loadPanelHideButtonSettingFromServer();
 
-            expect(mockSavePreference).toHaveBeenCalledWith('ShowPanelHideButton', 'true');
+            expect(mockSavePreference).not.toHaveBeenCalled();
+            expect(isPanelHideButtonEnabled()).toBe(true);
+        });
+
+        it('seeds the server from a choice made in this browser when nothing is saved yet', async () => {
+            mockGetPreference.mockResolvedValue(null);
+            setPanelHideButtonEnabled(false);
+            mockSavePreference.mockClear();
+
+            await loadPanelHideButtonSettingFromServer();
+
+            expect(mockSavePreference).toHaveBeenCalledWith('ShowPanelHideButton', 'false');
         });
     });
 });
