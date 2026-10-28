@@ -602,6 +602,67 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         Assert.Equal([1, 2, 3, 5], result);
     }
 
+    [Fact]
+    public void DispatchJobInRange_MatchesPickupOrDeliverByDateInRange()
+    {
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 13), deliverBy: new DateTime(2024, 6, 15, 10, 0, 0)), // delivers in range
+            JobOn(2, new DateTime(2024, 6, 15)), // picked up in range, no deliver-by
+            JobOn(3, new DateTime(2024, 6, 13), deliverBy: new DateTime(2024, 6, 16, 9, 0, 0)), // delivers after range
+            JobOn(4, new DateTime(2024, 6, 13)), // picked up before range, no deliver-by
+            JobOn(5, new DateTime(2024, 6, 15), deliverBy: new DateTime(2024, 6, 17)), // picked up in range
+            JobOn(6, new DateTime(2024, 6, 13), deliverBy: new DateTime(2024, 6, 14, 23, 59, 0)) // delivers before range
+        }.AsQueryable();
+
+        var result = jobs
+            .Where(BaseJobRepository.DispatchJobInRange(new DateTime(2024, 6, 15), new DateTime(2024, 6, 15, 23, 59, 0),
+                useTime: false))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 2, 5], result);
+    }
+
+    [Fact]
+    public void DispatchJobInRange_UseTime_BoundsDeliverByAtEndTime()
+    {
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 13), deliverBy: new DateTime(2024, 6, 15, 14, 30, 0)), // exactly at end
+            JobOn(2, new DateTime(2024, 6, 13), deliverBy: new DateTime(2024, 6, 15, 15, 0, 0)), // after end time
+            JobOn(3, new DateTime(2024, 6, 15), new DateTime(1, 1, 1, 15, 0, 0)), // pickup after end time
+            JobOn(4, new DateTime(2024, 6, 15), new DateTime(1, 1, 1, 9, 0, 0)) // pickup before end time
+        }.AsQueryable();
+
+        var result = jobs
+            .Where(BaseJobRepository.DispatchJobInRange(new DateTime(2024, 6, 15), new DateTime(2024, 6, 15, 14, 30, 0),
+                useTime: true))
+            .Select(j => j.UcjbId)
+            .ToList();
+
+        Assert.Equal([1, 4], result);
+    }
+
+    [Fact]
+    public void DispatchJobInRange_OpenEndedBounds()
+    {
+        var jobs = new List<TucJob>
+        {
+            JobOn(1, new DateTime(2024, 6, 10), deliverBy: new DateTime(2024, 6, 20)),
+            JobOn(2, new DateTime(2024, 6, 10)),
+            JobOn(3, new DateTime(2024, 6, 20))
+        }.AsQueryable();
+
+        var startOnly = jobs.Where(BaseJobRepository.DispatchJobInRange(new DateTime(2024, 6, 15), null, false))
+            .Select(j => j.UcjbId).ToList();
+        var endOnly = jobs.Where(BaseJobRepository.DispatchJobInRange(null, new DateTime(2024, 6, 15), false))
+            .Select(j => j.UcjbId).ToList();
+
+        Assert.Equal([1, 3], startOnly);
+        Assert.Equal([1, 2], endOnly);
+    }
+
     // ---- Current-work predicate (fix: count and drill-down list must share one definition) ----
     // Tested in-memory (LINQ-to-objects) for the same reason as the date filters above.
 
@@ -737,12 +798,13 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private static TucJob JobOn(int id, DateTime date, DateTime? time = null) => new()
+    private static TucJob JobOn(int id, DateTime date, DateTime? time = null, DateTime? deliverBy = null) => new()
     {
         UcjbId = id,
         UcjbNumber = $"JOB{id:000}",
         UcjbDate = date,
-        UcjbTime = time
+        UcjbTime = time,
+        DeliverByTime = deliverBy
     };
 
     private static TucJob CreateJob(int id, string jobNumber) => new()

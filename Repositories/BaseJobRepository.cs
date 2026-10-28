@@ -278,12 +278,9 @@ public partial class BaseJobRepository(
             query = query.Where(JobDateOnOrBefore(queryParams.DateCutoff.Value));
         }
 
-        if (queryParams.StartDate.HasValue)
-        {
-            query = query.Where(JobDateOnOrAfter(queryParams.StartDate.Value));
-        }
-
-        return ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
+        return queryParams.StartDate.HasValue || queryParams.EndDate.HasValue
+            ? query.Where(DispatchJobInRange(queryParams.StartDate, queryParams.EndDate, queryParams.UseTime))
+            : query;
     }
 
     protected async Task<IQueryable<TucJob>> BuildBaseQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant,
@@ -770,6 +767,57 @@ public partial class BaseJobRepository(
             || (j.UcjbDate >= filterDate
                 && j.UcjbDate < nextDay
                 && (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime));
+    }
+
+    /// <summary>
+    /// The dispatch board's date range: a job matches when its pickup date (<c>UcjbDate</c>) or its
+    /// deliver-by date falls in the range, so a job picked up earlier still shows on the day it
+    /// delivers. Either bound may be open. With <paramref name="useTime"/> the end bound is an exact
+    /// date-time rather than the whole end day.
+    /// </summary>
+    internal static Expression<Func<TucJob, bool>> DispatchJobInRange(
+        DateTimeOffset? start, DateTimeOffset? end, bool useTime)
+    {
+        Expression<Func<TucJob, bool>> pickup = _ => true;
+        Expression<Func<TucJob, bool>> delivery = j => j.DeliverByTime.HasValue;
+
+        if (start.HasValue)
+        {
+            var startInclusive = start.Value.Date;
+            pickup = AndAlso(pickup, JobDateOnOrAfter(start.Value));
+            delivery = AndAlso(delivery, j => j.DeliverByTime >= startInclusive);
+        }
+
+        if (end.HasValue)
+        {
+            var endInclusive = end.Value.DateTime;
+            var exclusiveEnd = end.Value.Date.AddDays(1);
+            pickup = AndAlso(pickup, useTime ? JobDateTimeOnOrBefore(end.Value) : JobDateOnOrBefore(end.Value));
+            delivery = AndAlso(delivery, useTime
+                ? j => j.DeliverByTime <= endInclusive
+                : j => j.DeliverByTime < exclusiveEnd);
+        }
+
+        return Combine(pickup, delivery, Expression.OrElse);
+    }
+
+    private static Expression<Func<TucJob, bool>> AndAlso(
+        Expression<Func<TucJob, bool>> left, Expression<Func<TucJob, bool>> right) =>
+        Combine(left, right, Expression.AndAlso);
+
+    private static Expression<Func<TucJob, bool>> Combine(
+        Expression<Func<TucJob, bool>> left,
+        Expression<Func<TucJob, bool>> right,
+        Func<Expression, Expression, BinaryExpression> merge)
+    {
+        var parameter = left.Parameters[0];
+        var rightBody = new ParameterReplacer(right.Parameters[0], parameter).Visit(right.Body);
+        return Expression.Lambda<Func<TucJob, bool>>(merge(left.Body, rightBody), parameter);
+    }
+
+    private sealed class ParameterReplacer(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
+    {
+        protected override Expression VisitParameter(ParameterExpression node) => node == from ? to : node;
     }
 
     /// <summary>
