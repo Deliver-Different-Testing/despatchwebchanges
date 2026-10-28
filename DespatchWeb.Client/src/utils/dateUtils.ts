@@ -308,9 +308,10 @@ export function getTimezoneAbbreviation(timezone: string, at?: Date | Dayjs): st
 /**
  * Get full timezone name (e.g., "Pacific Standard Time")
  * @param timezone - Windows or IANA timezone string
+ * @param at - Wall-clock moment the name is for (a job's time); defaults to now
  * @returns Full timezone name
  */
-export function getTimezoneName(timezone: string): string {
+export function getTimezoneName(timezone: string, at?: Date | Dayjs): string {
     if (!timezone) return '';
 
     try {
@@ -321,7 +322,11 @@ export function getTimezoneName(timezone: string): string {
             timeZoneName: 'long',
         });
 
-        const parts = formatter.formatToParts(new Date());
+        // The name for the moment the job is at (standard or daylight), not today's
+        const instant = at && dayjs.isDayjs(at)
+            ? dayjs.tz(at.format('YYYY-MM-DDTHH:mm:ss'), ianaTimezone).toDate()
+            : (at as Date | undefined) ?? new Date();
+        const parts = formatter.formatToParts(instant);
         const tzPart = parts.find(p => p.type === 'timeZoneName');
 
         return tzPart?.value || timezone;
