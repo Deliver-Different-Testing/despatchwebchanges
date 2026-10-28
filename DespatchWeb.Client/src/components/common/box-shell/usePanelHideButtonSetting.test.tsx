@@ -27,6 +27,16 @@ describe('usePanelHideButtonSetting', () => {
         expect(result.current).toBe(true);
     });
 
+    it('keeps the default without saving it when nothing is saved anywhere', async () => {
+        mockGetPreference.mockResolvedValue(null);
+
+        const {result} = renderHook(() => usePanelHideButtonSetting());
+
+        await waitFor(() => expect(mockGetPreference).toHaveBeenCalled());
+        expect(result.current).toBe(true);
+        expect(mockSavePreference).not.toHaveBeenCalled();
+    });
+
     it('reconciles to false once the server value loads', async () => {
         mockGetPreference.mockResolvedValue('false');
 

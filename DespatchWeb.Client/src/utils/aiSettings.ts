@@ -56,13 +56,15 @@ export function setAiAutoOpenEnabled(enabled: boolean): void {
  * Pulls Auto-mate settings from the server into localStorage so the existing
  * synchronous isAiEnabled()/isAiAutoOpenEnabled() reads see them, the same
  * read-through pattern dispatch layouts use. If the server has nothing yet,
- * seeds it from whatever is currently in localStorage so the setting follows
- * the user to their next device.
+ * seeds it only from choices made in this browser, so opening Settings never
+ * saves the defaults.
  */
 export async function loadAutoMateFromServer(): Promise<void> {
     const json = await getPreference(AUTO_MATE_PREFERENCE_KEY);
     if (json === null) {
-        persistAutoMateToServer();
+        const hasLocalChoice = localStorage.getItem(storageKey()) !== null
+            || localStorage.getItem(autoOpenStorageKey()) !== null;
+        if (hasLocalChoice) persistAutoMateToServer();
         return;
     }
 
