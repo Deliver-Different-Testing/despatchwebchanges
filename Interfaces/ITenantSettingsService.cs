@@ -20,4 +20,10 @@ public interface ITenantSettingsService
     /// delivery (a client-side LastDeliveryLabelMode, e.g. <c>locality</c>), or null when unconfigured.
     /// </summary>
     Task<string?> GetCourierFlagLastDeliveryDefaultAsync();
+
+    /// <summary>
+    /// Returns the tenant's default appearance (JSON: contrast level plus optional primary,
+    /// secondary and body-text colours), or null when unconfigured. Validated client-side.
+    /// </summary>
+    Task<string?> GetAppearanceDefaultAsync();
 }

@@ -49,4 +49,28 @@ public class TenantSettingsControllerTests
         var json = Assert.IsType<JsonResult>(result);
         Assert.Equal("region", json.Value);
     }
+
+    [Fact]
+    public async Task GetAppearanceDefault_ReturnsTheStoredJson()
+    {
+        _tenantSettingsServiceMock.GetAppearanceDefaultAsync().Returns("{\"contrast\":\"high\"}");
+        var controller = CreateController();
+
+        var result = await controller.GetAppearanceDefault();
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Equal("{\"contrast\":\"high\"}", json.Value);
+    }
+
+    [Fact]
+    public async Task GetAppearanceDefault_WhenTheReadFails_Returns500()
+    {
+        _tenantSettingsServiceMock.GetAppearanceDefaultAsync()
+            .Returns(Task.FromException<string?>(new InvalidOperationException("Invalid column name")));
+        var controller = CreateController();
+
+        var result = await controller.GetAppearanceDefault();
+
+        Assert.Equal(500, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
 }

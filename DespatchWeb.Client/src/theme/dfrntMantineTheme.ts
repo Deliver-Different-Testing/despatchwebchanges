@@ -25,8 +25,10 @@
  */
 import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@mantine/core';
 import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
-import {getMd3Scheme} from './md3';
+import {contrastRatio, getMd3Scheme, type Md3Mode} from './md3';
 import {isUsTenant} from './tenant';
+import {generateRamp} from './colorMath';
+import {TEXT_MIN_CONTRAST_HIGH, type ThemeAppearance} from './appearance';
 
 // --- Brand ramps (0 lightest → 9 darkest) ---
 
@@ -116,16 +118,27 @@ export const dfrntBrand = {
     red: red[5],
 } as const;
 
+/** The app-bar fill: Ink Blue for US tenants, the brand fill (gold unless customised) otherwise. */
+function shellFill(isUsCustomer: boolean, brandFill?: string): string {
+    return isUsCustomer ? ink[9] : brandFill ?? gold[5];
+}
+
+function inkReadsOn(fill: string): boolean {
+    return contrastRatio(ink[9], fill) >= contrastRatio('#ffffff', fill);
+}
+
 /**
  * The shell surface (app bar + side-nav account header) and the logo that reads on
  * it. US tenants get the Ink-Blue navy in both colour modes; non-US tenants get the
- * gold brand fill, which is a light hue and so carries Ink content and the standard
- * (dark) wordmark rather than the reversed one.
+ * brand fill. Content on the fill is Ink or white, whichever contrasts more, so the
+ * light gold default (or a user's own light primary) carries Ink content and the
+ * standard (dark) wordmark, and a dark fill gets the reversed set.
  */
-export function getSidebarColors(isUsCustomer: boolean) {
-    return isUsCustomer
+export function getSidebarColors(isUsCustomer: boolean, brandFill?: string) {
+    const appBar = shellFill(isUsCustomer, brandFill);
+    return !inkReadsOn(appBar)
         ? {
-            appBar: ink[9],
+            appBar,
             bg: ink[8], // drawer panel, one tier lighter than the bar
             logoSrc: 'images/dfrnt_logo_reversed.png',
             border: 'rgba(255, 255, 255, 0.10)',
@@ -135,7 +148,7 @@ export function getSidebarColors(isUsCustomer: boolean) {
             hoverBg: 'rgba(255, 255, 255, 0.08)',
         }
         : {
-            appBar: gold[5],
+            appBar,
             bg: ink[8],
             logoSrc: 'images/dfrnt_logo.png',
             // Ink at the same alphas as the white set would fade out on a bright
@@ -150,12 +163,13 @@ export function getSidebarColors(isUsCustomer: boolean) {
 
 /**
  * Overlays for content sitting on the shell scrim (shell chrome, dialog headers) —
- * white-based on the Ink bar, Ink-based on the gold one.
+ * white-based on a dark bar (Ink), Ink-based on a light one (gold).
  */
-export function getOnBrandScrim(isUsCustomer: boolean) {
-    const on = isUsCustomer ? '255,255,255' : '13,12,44';
+export function getOnBrandScrim(isUsCustomer: boolean, brandFill?: string) {
+    const onInk = inkReadsOn(shellFill(isUsCustomer, brandFill));
+    const on = onInk ? '13,12,44' : '255,255,255';
     return {
-        text: isUsCustomer ? '#fff' : '#0d0c2c',
+        text: onInk ? '#0d0c2c' : '#fff',
         bodyText: `rgba(${on},0.85)`,
         subtleText: `rgba(${on},0.8)`,
         mutedText: `rgba(${on},0.7)`,
@@ -209,16 +223,25 @@ declare module '@mantine/core' {
         scrim: typeof onBrandScrim;
         code: typeof codeBlockPalette;
         tokens: typeof tokens;
+        appearance: ThemeAppearance;
     }
 }
 
 // --- The theme ---
 
+const STANDARD_APPEARANCE: ThemeAppearance = {highContrast: false};
+
 /**
- * Builds the theme for a tenant. `brand` is the tenant's primary ramp, so every
- * `color="brand"` / `--mantine-color-brand-*` consumer follows without edits.
+ * Builds the theme for a tenant and the user's resolved appearance. `brand` is the
+ * tenant's primary ramp (or one generated from the user's primary), so every
+ * `color="brand"` / `--mantine-color-brand-*` consumer follows without edits; a
+ * custom secondary replaces the `reflex` (links / info) ramp. The semantic status
+ * ramps (red, green, orange) are never customised, so a status reads the same for
+ * everyone.
  */
-export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
+export function createDfrntTheme(isUsCustomer: boolean = isUsTenant(), appearance: ThemeAppearance = STANDARD_APPEARANCE) {
+    const brand = appearance.primary ? generateRamp(appearance.primary) : brandRamp(isUsCustomer);
+    const secondary = appearance.secondary ? generateRamp(appearance.secondary) : reflex;
     return createTheme({
         primaryColor: 'brand',
         primaryShade: {light: 5, dark: 4},
@@ -227,7 +250,7 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
         // FloatingIndicator and the control transitions read this; without it
         // Mantine animates regardless of the OS preference.
         respectReducedMotion: true,
-        colors: {brand: brandRamp(isUsCustomer), cyan, gold, ink, reflex, grape, green, orange, red, gray, dark},
+        colors: {brand, cyan, gold, ink, reflex: secondary, grape, green, orange, red, gray, dark},
         white: '#ffffff',
         black: ink[9],
         fontFamily: '"Plus Jakarta Sans Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -297,15 +320,82 @@ export function createDfrntTheme(isUsCustomer: boolean = isUsTenant()) {
             Tabs: {styles: {tab: {paddingBlock: 14, fontWeight: 500}}},
         },
         other: {
-            shell: getSidebarColors(isUsCustomer),
-            scrim: getOnBrandScrim(isUsCustomer),
+            shell: getSidebarColors(isUsCustomer, appearance.primary),
+            scrim: getOnBrandScrim(isUsCustomer, appearance.primary),
             code: codeBlockPalette,
             tokens,
+            appearance,
         },
     });
 }
 
 export const dfrntTheme = createDfrntTheme();
+
+/** Ramps whose `light`/`text`/`outline` roles carry meaning on the page (badges, links, alerts). */
+const ROLE_RAMPS = ['brand', 'reflex', 'red', 'green', 'orange', 'grape', 'ink', 'cyan', 'gold'] as const;
+
+/** Status/marker colours on the job list and elsewhere, published as `--dd-indicator-*`. */
+const INDICATOR_RAMPS = {info: 'reflex', error: 'red', warning: 'orange', success: 'green', brand: 'brand'} as const;
+
+type ResolverTheme = Parameters<CSSVariablesResolver>[0];
+
+function surfacesFor(mode: Md3Mode): string[] {
+    const scheme = getMd3Scheme(mode);
+    return mode === 'light'
+        ? [scheme.surface, scheme.surfaceContainerLowest]
+        : [scheme.surface, scheme.surfaceContainer, scheme.surfaceContainerHigh];
+}
+
+/**
+ * The mildest shade of a ramp that reaches `min` against every page/card surface of
+ * the scheme (darker in light mode, lighter in dark) so the hue survives where it
+ * can; the scheme's text colour when no shade does (e.g. pale gold).
+ */
+function strongShade(ramp: readonly string[], mode: Md3Mode, min: number, fallback: string): string {
+    const order = mode === 'light' ? [6, 7, 8, 9] : [3, 2, 1, 0];
+    const surfaces = surfacesFor(mode);
+    return order.map(i => ramp[i]).find(hex => surfaces.every(bg => contrastRatio(hex, bg) >= min)) ?? fallback;
+}
+
+/** Standard: shade 5 of each ramp. High contrast: a shade that reaches 4.5:1 on the scheme. */
+function indicatorVariables(theme: ResolverTheme, highContrast?: {mode: Md3Mode; fallback: string}): Record<string, string> {
+    return Object.fromEntries(Object.entries(INDICATOR_RAMPS).map(([name, ramp]) => [
+        `--dd-indicator-${name}`,
+        highContrast
+            ? strongShade(theme.colors[ramp], highContrast.mode, 4.5, highContrast.fallback)
+            : `var(--mantine-color-${ramp}-5)`,
+    ]));
+}
+
+/**
+ * High contrast strengthens what is already there rather than swapping palettes:
+ * dimmed text and placeholders go full-strength, hairlines become outlines, and every
+ * coloured text role (light badges, links, alerts) moves to a shade reaching 7:1.
+ */
+function highContrastVariables(theme: ResolverTheme, mode: Md3Mode): Record<string, string> {
+    const scheme = getMd3Scheme(mode);
+    // Secondary text shares the full-strength colour: the dark scheme's onSurfaceVariant stops short of 7:1.
+    const text = mode === 'light' ? theme.colors.gray[8] : scheme.onSurface;
+    const border = mode === 'light' ? theme.colors.gray[6] : scheme.outline;
+    const vars: Record<string, string> = {
+        '--mantine-color-dimmed': text,
+        '--mantine-color-placeholder': text,
+        '--mantine-color-default-border': border,
+        '--dd-outline-variant': border,
+        '--mantine-color-gray-light-color': text,
+        '--mantine-color-gray-text': text,
+        '--mantine-color-gray-outline': text,
+        ...indicatorVariables(theme, {mode, fallback: text}),
+    };
+    for (const name of ROLE_RAMPS) {
+        const strong = strongShade(theme.colors[name], mode, TEXT_MIN_CONTRAST_HIGH, text);
+        vars[`--mantine-color-${name}-light-color`] = strong;
+        vars[`--mantine-color-${name}-text`] = strong;
+        vars[`--mantine-color-${name}-outline`] = strong;
+    }
+    vars['--mantine-color-anchor'] = vars['--mantine-color-brand-text'];
+    return vars;
+}
 
 /**
  * Bridges the DFRNT surface ladder (md3.ts) into Mantine's CSS variables per
@@ -318,12 +408,14 @@ export const dfrntTheme = createDfrntTheme();
 export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
     const light = getMd3Scheme('light');
     const dk = getMd3Scheme('dark');
+    const {highContrast, textLight, textDark} = theme.other.appearance ?? STANDARD_APPEARANCE;
     return {
         variables: {
             // Shell chrome, published as vars so the static style objects in
             // `toolbarIconStyles` don't each need the theme threaded to them.
             '--dd-shell-bar': theme.other.shell.appBar,
             '--dd-on-shell': theme.other.scrim.text,
+            ...indicatorVariables(theme),
         },
         light: {
             '--mantine-color-body': light.surface, // #f4f2f1 page
@@ -334,6 +426,8 @@ export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
             '--dd-dialog-section': 'var(--mantine-color-white)',
             '--dd-dialog-bar': 'var(--mantine-color-gray-1)',
             '--dd-dialog-body': 'var(--mantine-color-gray-2)',
+            ...(highContrast ? highContrastVariables(theme, 'light') : {}),
+            ...(textLight ? {'--mantine-color-text': textLight} : {}),
         },
         dark: {
             '--mantine-color-body': dk.surface, // #2c2a30 page
@@ -364,6 +458,8 @@ export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
             '--mantine-color-gray-light-hover': `color-mix(in srgb, ${dk.onSurfaceVariant} 20%, transparent)`,
             '--mantine-color-gray-filled': dk.surfaceContainerHighest,
             '--mantine-color-gray-filled-hover': dk.surfaceBright,
+            ...(highContrast ? highContrastVariables(theme, 'dark') : {}),
+            ...(textDark ? {'--mantine-color-text': textDark} : {}),
         },
     };
 };

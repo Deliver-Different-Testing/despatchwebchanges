@@ -66,6 +66,34 @@ public class TenantSettingsServiceTests : IAsyncDisposable
         Assert.Equal("locality", await service.GetCourierFlagLastDeliveryDefaultAsync());
     }
 
+    [Fact]
+    public async Task GetAppearanceDefaultAsync_ReturnsTheStoredJson()
+    {
+        await using (var context = _db.CreateContext())
+        {
+            var setting = CreateMinimalSetting();
+            setting.AppearanceDefaultsJson = "{\"contrast\":\"high\",\"primary\":\"#2a4eff\"}";
+            context.TblSettings.Add(setting);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+        var service = CreateService();
+
+        Assert.Equal("{\"contrast\":\"high\",\"primary\":\"#2a4eff\"}", await service.GetAppearanceDefaultAsync());
+    }
+
+    [Fact]
+    public async Task GetAppearanceDefaultAsync_WhenNotConfigured_ReturnsNull()
+    {
+        await using (var context = _db.CreateContext())
+        {
+            context.TblSettings.Add(CreateMinimalSetting());
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+        var service = CreateService();
+
+        Assert.Null(await service.GetAppearanceDefaultAsync());
+    }
+
     private static TblSetting CreateMinimalSetting() => new()
     {
         SettingId = 1,

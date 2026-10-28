@@ -34,6 +34,7 @@ import {
     loadPanelHideButtonSettingFromServer,
 } from '../../utils/panelHideButtonSettings';
 import {AddressFormatEditor} from './AddressFormatEditor';
+import {AppearanceSettingsSection} from './AppearanceSettingsSection';
 import {parseAddressFormatJson, serializeAddressFormatJson} from '../../components/job-list/jobAddressFormat';
 import type {AddressFormatSides, AddressLineFormat} from '../../types/address';
 import {StaffPreferenceKey} from '../../types/enums/staff-preference-key.enum';
@@ -326,6 +327,10 @@ export const SettingsPage: React.FC = () => {
                                 disabled={!liquidGlassSupported}
                                 onToggle={() => setLiquidGlassEnabled(!liquidGlassEnabled)}
                             />
+                        </Box>
+
+                        <Box mt={16}>
+                            <AppearanceSettingsSection/>
                         </Box>
                     </Box>
 

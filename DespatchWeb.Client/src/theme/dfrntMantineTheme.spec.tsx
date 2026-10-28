@@ -227,3 +227,61 @@ describe('Mantine rendering through the provider', () => {
         expect(screen.getByRole('button', {name: 'Dispatch'})).toBeInTheDocument();
     });
 });
+
+describe('createDfrntTheme — user appearance', () => {
+    const light = getMd3Scheme('light');
+    const dk = getMd3Scheme('dark');
+
+    it('generates the brand and secondary ramps from the chosen colours, keeping the status ramps fixed', () => {
+        const theme = createDfrntTheme(true, {highContrast: false, primary: '#13b964', secondary: '#dc3246'});
+        expect(theme.colors?.brand?.[5]).toBe('#13b964');
+        expect(theme.colors?.reflex?.[5]).toBe('#dc3246');
+        expect(theme.colors?.red).toEqual(dfrntTheme.colors?.red);
+        expect(theme.colors?.green).toEqual(dfrntTheme.colors?.green);
+    });
+
+    it('picks shell content by contrast, so a dark custom primary gets the reversed set', () => {
+        const theme = createDfrntTheme(false, {highContrast: false, primary: '#132279'});
+        expect(theme.other?.shell?.appBar).toBe('#132279');
+        expect(theme.other?.shell?.logoSrc).toBe('images/dfrnt_logo_reversed.png');
+        expect(theme.other?.scrim?.text).toBe('#fff');
+    });
+
+    it('sets the body text colour per scheme only when one is chosen', () => {
+        const standard = dfrntCssVariablesResolver(dfrntTheme as never);
+        expect(standard.light['--mantine-color-text']).toBeUndefined();
+        const custom = dfrntCssVariablesResolver(
+            createDfrntTheme(true, {highContrast: false, textLight: '#222222', textDark: '#eeeeee'}) as never,
+        );
+        expect(custom.light['--mantine-color-text']).toBe('#222222');
+        expect(custom.dark['--mantine-color-text']).toBe('#eeeeee');
+    });
+
+    it('publishes the job-list indicator colours at shade 5 by default', () => {
+        const vars = dfrntCssVariablesResolver(dfrntTheme as never);
+        expect(vars.variables['--dd-indicator-error']).toBe('var(--mantine-color-red-5)');
+        expect(vars.light['--dd-indicator-error']).toBeUndefined();
+    });
+
+    it('in high contrast, lifts dimmed text, borders and every coloured text role to 7:1 in both schemes', () => {
+        for (const isUs of [true, false]) {
+            const vars = dfrntCssVariablesResolver(createDfrntTheme(isUs, {highContrast: true}) as never);
+            for (const [mode, surfaces] of [
+                ['light', [light.surface, light.surfaceContainerLowest]],
+                ['dark', [dk.surface, dk.surfaceContainer, dk.surfaceContainerHigh]],
+            ] as const) {
+                const scheme = vars[mode];
+                for (const role of ['dimmed', 'brand-light-color', 'red-light-color', 'gold-text', 'reflex-text', 'gray-light-color']) {
+                    const color = scheme[`--mantine-color-${role}`];
+                    for (const bg of surfaces) {
+                        expect(contrastRatio(color, bg)).toBeGreaterThanOrEqual(7);
+                    }
+                }
+                for (const bg of surfaces) {
+                    expect(contrastRatio(scheme['--dd-indicator-warning'], bg)).toBeGreaterThanOrEqual(4.5);
+                }
+                expect(scheme['--dd-outline-variant']).toBe(scheme['--mantine-color-default-border']);
+            }
+        }
+    });
+});

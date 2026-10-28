@@ -19,3 +19,9 @@ export async function getTenantCourierFlagLastDeliveryDefault(): Promise<string 
     const mode = await apiClient.get<string | null>('TenantSettings/GetCourierFlagLastDeliveryDefault');
     return mode ?? null;
 }
+
+/** Returns the tenant's default appearance-settings JSON (unvalidated), or null when unconfigured. */
+export async function getTenantAppearanceDefault(): Promise<string | null> {
+    const json = await apiClient.get<string | null>('TenantSettings/GetAppearanceDefault');
+    return json ?? null;
+}
