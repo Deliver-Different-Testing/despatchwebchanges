@@ -485,7 +485,6 @@ public class TaskRepository(
         var job = await jobTask;
 
         ArgumentNullException.ThrowIfNull(job);
-        ArgumentNullException.ThrowIfNull(staffInfo);
 
         var currentDate = clock.TenantNow;
 
@@ -506,11 +505,11 @@ public class TaskRepository(
             notes: notes,
             pageCourier: false,
             closed: close,
-            originator: staffInfo.Id,
+            originator: staffInfo?.Id,
             description: notes,
             courierId: job.UcjbCourierId,
             jobId: jobId,
-            despatcher: staffInfo.Text,
+            despatcher: staffInfo?.Text,
             jobType: job.UcjbSpeed,
             dueTime: dueDate
         );
@@ -685,7 +684,7 @@ public class TaskRepository(
         string notes,
         bool pageCourier,
         bool closed,
-        int originator,
+        int? originator,
         string description,
         int? courierId,
         int jobId,

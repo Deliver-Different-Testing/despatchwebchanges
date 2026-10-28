@@ -12,7 +12,10 @@ public class StaffPreferenceRepository(
 {
     public async Task<string?> GetPreferenceAsync(string key)
     {
-        var staffId = infoService.GetStaffId();
+        if (await ResolveStaffIdAsync() is not { } staffId)
+        {
+            return null;
+        }
 
         return await Context.StaffPreferences
             .Where(p => p.StaffId == staffId && p.PreferenceKey == key)
@@ -22,7 +25,11 @@ public class StaffPreferenceRepository(
 
     public async Task SetPreferenceAsync(string key, string preferenceJson)
     {
-        var staffId = infoService.GetStaffId();
+        if (await ResolveStaffIdAsync() is not { } staffId)
+        {
+            return;
+        }
+
         var now = tenantClock.UtcNow;
 
         var existing = await Context.StaffPreferences
@@ -51,7 +58,10 @@ public class StaffPreferenceRepository(
 
     public async Task DeletePreferenceAsync(string key)
     {
-        var staffId = infoService.GetStaffId();
+        if (await ResolveStaffIdAsync() is not { } staffId)
+        {
+            return;
+        }
 
         var existing = await Context.StaffPreferences
             .AsTracking()
@@ -65,4 +75,10 @@ public class StaffPreferenceRepository(
         Context.StaffPreferences.Remove(existing);
         await Context.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Preferences hang off a tucStaff row (FK_StaffPreference_Staff). Tenant / DF Admin client logins can carry no
+    /// StaffID claim, or one that is an account-manager link with no staff row, so they have nowhere to store them.
+    /// </summary>
+    private async Task<int?> ResolveStaffIdAsync() => (await infoService.GetStaffInfoAsync())?.Id;
 }

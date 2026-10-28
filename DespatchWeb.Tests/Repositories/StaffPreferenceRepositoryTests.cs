@@ -1,5 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -21,7 +22,7 @@ public class StaffPreferenceRepositoryTests : IAsyncDisposable
     public StaffPreferenceRepositoryTests()
     {
         _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetStaffId().Returns(StaffId);
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns(new Suggestion { Id = StaffId, Text = "Jo Bloggs" });
     }
 
     public async ValueTask DisposeAsync()
@@ -158,5 +159,21 @@ public class StaffPreferenceRepositoryTests : IAsyncDisposable
         }
 
         Assert.Null(await repository.GetPreferenceAsync("AutoMate"));
+    }
+
+    [Fact]
+    public async Task WhenCallerHasNoStaffRecord_PreferencesAreNotStoredAndNothingThrows()
+    {
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns((Suggestion?)null);
+        var repository = CreateRepository();
+
+        await repository.SetPreferenceAsync("Appearance", "{\"theme\":\"dark\"}");
+
+        await using (var context = _db.CreateContext())
+        {
+            Assert.Equal(0, await context.StaffPreferences.CountAsync(TestContext.Current.CancellationToken));
+        }
+        Assert.Null(await repository.GetPreferenceAsync("Appearance"));
+        await repository.DeletePreferenceAsync("Appearance");
     }
 }

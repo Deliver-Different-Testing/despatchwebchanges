@@ -203,4 +203,17 @@ public class TaskRepositoryAddTests : IAsyncDisposable
         Assert.Equal(7, created.UcevOriginator);
         Assert.Equal("Christopher And", created.UcevDespatcher);
     }
+
+    [Fact]
+    public async Task AddEventAsync_WhenCallerHasNoStaffRecord_RecordsTheEventWithoutACreator()
+    {
+        _infoServiceMock.GetStaffInfoAsync().Returns((Suggestion?)null);
+        await SeedAsync(Job(560, contact: "Front desk"));
+
+        await CreateRepository().AddEventAsync(560, notes: "Restored", eventType: 3);
+
+        var created = await SingleEventAsync();
+        Assert.Null(created.UcevOriginator);
+        Assert.Null(created.UcevDespatcher);
+    }
 }
