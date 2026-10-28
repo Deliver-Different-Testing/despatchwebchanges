@@ -51,6 +51,21 @@ public class TenantSettingsServiceTests : IAsyncDisposable
         Assert.Equal("{\"fields\":[\"streetNumber\",\"streetName\"]}", result);
     }
 
+    [Fact]
+    public async Task GetCourierFlagLastDeliveryDefaultAsync_ReturnsTheStoredModeOrNull()
+    {
+        await using (var context = _db.CreateContext())
+        {
+            var setting = CreateMinimalSetting();
+            setting.CourierFlagLastDeliveryMode = "locality";
+            context.TblSettings.Add(setting);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+        var service = CreateService();
+
+        Assert.Equal("locality", await service.GetCourierFlagLastDeliveryDefaultAsync());
+    }
+
     private static TblSetting CreateMinimalSetting() => new()
     {
         SettingId = 1,

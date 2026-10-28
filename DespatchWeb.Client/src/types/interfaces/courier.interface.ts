@@ -55,8 +55,10 @@ export interface IAvailableCourierPosition {
     displayOrder?: number | null;
     courierFleetId?: number | null;
     courierFleetName?: string | null;
-    /** City (or suburb) of the courier's most recent completed delivery. */
-    lastDeliveryCity?: string | null;
+    /** Delivery address line 5 of the courier's most recent completed job: NZ suburb, US township/city. */
+    lastDeliveryLocality?: string | null;
+    /** Line 6 of that job: NZ city, US state. */
+    lastDeliveryRegion?: string | null;
     /** When that delivery was completed, ISO 8601 in tenant time. */
     lastDeliveryTime?: string | null;
 }

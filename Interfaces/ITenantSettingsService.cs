@@ -14,4 +14,10 @@ public interface ITenantSettingsService
     /// when no tenant default is configured.
     /// </summary>
     Task<string?> GetDispatchAddressFormatDefaultAsync();
+
+    /// <summary>
+    /// Returns the tenant's default for which place the map courier flags name for a driver's last
+    /// delivery (a client-side LastDeliveryLabelMode, e.g. <c>locality</c>), or null when unconfigured.
+    /// </summary>
+    Task<string?> GetCourierFlagLastDeliveryDefaultAsync();
 }

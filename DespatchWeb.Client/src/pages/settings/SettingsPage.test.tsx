@@ -16,7 +16,8 @@ import {
     loadPanelHideButtonSettingFromServer,
 } from '../../utils/panelHideButtonSettings';
 import {deletePreference, getPreference, savePreference} from '../../api/preferencesApi';
-import {getTenantAddressFormatDefault} from '../../api/tenantSettingsApi';
+import {getTenantAddressFormatDefault, getTenantCourierFlagLastDeliveryDefault} from '../../api/tenantSettingsApi';
+import {StaffPreferenceKey} from '../../types/enums/staff-preference-key.enum';
 import {useColorMode} from '../../hooks/useColorMode';
 import {isLiquidGlassSupported} from '../../hooks/glassSupport';
 
@@ -51,6 +52,12 @@ jest.mock('../../api/preferencesApi', () => ({
 
 jest.mock('../../api/tenantSettingsApi', () => ({
     getTenantAddressFormatDefault: jest.fn(),
+    getTenantCourierFlagLastDeliveryDefault: jest.fn(),
+}));
+
+jest.mock('../../api/session', () => ({
+    ...jest.requireActual('../../api/session'),
+    getSession: () => ({isUsCustomer: true}),
 }));
 
 jest.mock('../../services/toastService', () => ({
@@ -70,6 +77,7 @@ const mockGetPreference = getPreference as jest.Mock;
 const mockSavePreference = savePreference as jest.Mock;
 const mockDeletePreference = deletePreference as jest.Mock;
 const mockGetTenantAddressFormatDefault = getTenantAddressFormatDefault as jest.Mock;
+const mockGetTenantCourierFlagLastDeliveryDefault = getTenantCourierFlagLastDeliveryDefault as jest.Mock;
 const mockUseColorMode = useColorMode as jest.Mock;
 const mockSetColorPreference = jest.fn();
 
@@ -92,6 +100,7 @@ describe('SettingsPage', () => {
         mockSavePreference.mockResolvedValue(undefined);
         mockDeletePreference.mockResolvedValue(undefined);
         mockGetTenantAddressFormatDefault.mockResolvedValue(null);
+        mockGetTenantCourierFlagLastDeliveryDefault.mockResolvedValue(null);
         mockUseColorMode.mockReturnValue({mode: 'light', preference: 'system', setPreference: mockSetColorPreference});
     });
 
@@ -118,6 +127,35 @@ describe('SettingsPage', () => {
         await user.click(screen.getByRole('radio', {name: 'Dark'}));
 
         expect(mockSetColorPreference).toHaveBeenCalledWith('dark');
+    });
+
+    describe('Driver flags', () => {
+        it('follows the company default until the user picks an override, which saves immediately', async () => {
+            const user = setupUser();
+            mockGetTenantCourierFlagLastDeliveryDefault.mockResolvedValue('region');
+            renderWithMantine(<SettingsPage />);
+
+            const companyDefault = await screen.findByRole('radio', {name: 'Company default (State)'});
+            expect(companyDefault).toBeChecked();
+
+            await user.click(screen.getByRole('radio', {name: 'Township or city'}));
+
+            expect(mockSavePreference).toHaveBeenCalledWith(StaffPreferenceKey.CourierFlagLastDelivery, '"locality"');
+        });
+
+        it('shows a saved override and clears it when the company default is picked again', async () => {
+            const user = setupUser();
+            mockGetPreference.mockImplementation((key: string) =>
+                Promise.resolve(key === StaffPreferenceKey.CourierFlagLastDelivery ? '"off"' : null));
+            renderWithMantine(<SettingsPage />);
+
+            const lastDelivery = screen.getByRole('radiogroup', {name: /Last delivery/});
+            await waitFor(() => expect(within(lastDelivery).getByRole('radio', {name: "Don't show"})).toBeChecked());
+
+            await user.click(screen.getByRole('radio', {name: 'Company default (Township or city)'}));
+
+            expect(mockDeletePreference).toHaveBeenCalledWith(StaffPreferenceKey.CourierFlagLastDelivery);
+        });
     });
 
     it('seeds both Auto-mate toggles from the stored preferences', () => {

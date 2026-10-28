@@ -1054,7 +1054,11 @@ describe('JobListContextMenu', () => {
             await act(async () => {});
 
             fireEvent.click(screen.getByText('Task groups'));
-            fireEvent.click(await screen.findByText('Pickup Events'));
+            const group = await screen.findByText('Pickup Events');
+            // A real click starts with mousedown, which the parent menu sees as an outside click.
+            fireEvent.mouseDown(group);
+            expect(props.onClose).not.toHaveBeenCalled();
+            fireEvent.click(group);
 
             await waitFor(() => {
                 expect(mockedOpenEventGroupDialog).toHaveBeenCalledWith({

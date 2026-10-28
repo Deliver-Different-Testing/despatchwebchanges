@@ -13,3 +13,9 @@ export async function getTenantAddressFormatDefault(): Promise<string | null> {
     const json = await apiClient.get<string | null>('TenantSettings/GetDispatchAddressFormatDefault');
     return json ?? null;
 }
+
+/** Returns the tenant's default courier-flag last-delivery mode (unvalidated), or null when unconfigured. */
+export async function getTenantCourierFlagLastDeliveryDefault(): Promise<string | null> {
+    const mode = await apiClient.get<string | null>('TenantSettings/GetCourierFlagLastDeliveryDefault');
+    return mode ?? null;
+}

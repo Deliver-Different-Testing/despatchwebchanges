@@ -34,6 +34,7 @@ export function DispatchMap({
     clearListId,
     onEnvelopeUpdate,
     preferenceScope,
+    courierFlagLastDelivery,
 }: DispatchMapProps) {
     // Refs for managers
     const jobMarkerManagerRef = useRef<JobMarkerManager | null>(null);
@@ -188,12 +189,13 @@ export function DispatchMap({
         }
 
         courierMarkerManagerRef.current.setAutoZoom(controlState.autoZoomEnabled);
+        courierMarkerManagerRef.current.setLastDeliveryMode(courierFlagLastDelivery);
         courierMarkerManagerRef.current.updateMarkers(
             couriers,
             controlState.couriersLargeViewEnabled ? false : controlState.urgentArmyOnlyEnabled,
             controlState.couriersLargeViewEnabled
         );
-    }, [couriers, isReady, showAvailableCouriers, controlState.urgentArmyOnlyEnabled, controlState.couriersLargeViewEnabled, controlState.autoZoomEnabled]);
+    }, [couriers, isReady, showAvailableCouriers, controlState.urgentArmyOnlyEnabled, controlState.couriersLargeViewEnabled, controlState.autoZoomEnabled, courierFlagLastDelivery]);
 
     // Refetch couriers on map view change
     useEffect(() => {
