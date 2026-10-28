@@ -142,6 +142,52 @@ public class NoteRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SaveNoteAsync_NewActiveNote_StampsUpdatedDateInTenantTime()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobs.Add(CreateJob(jobId, "JOB100"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // US tenant: tenant wall clock 17h behind the NZ server clock that getdate() returns
+        var usClock = new FakeTenantClock(TestDates.Now.AddHours(-17));
+        var repository = new NoteRepository(_contextFactoryMock, _tenantInfoServiceMock, usClock);
+        var viewModel = new TucNoteViewModel { NoteId = 0, JobId = jobId, NoteText = "New note", NoteTypeId = 1 };
+
+        // Act
+        await repository.SaveNoteAsync(viewModel, TestContext.Current.CancellationToken);
+
+        // Assert — an omitted UpdatedDate falls back to the server-clock getdate() default
+        var note = await _context.TucNotes.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(usClock.TenantNow, note.UpdatedDate);
+        Assert.Equal(usClock.UtcNow, note.UpdatedDateUtc);
+    }
+
+    [Fact]
+    public async Task SaveNoteAsync_NewArchivedNote_StampsUpdatedDateInTenantTime()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // US tenant: tenant wall clock 17h behind the NZ server clock that getdate() returns
+        var usClock = new FakeTenantClock(TestDates.Now.AddHours(-17));
+        var repository = new NoteRepository(_contextFactoryMock, _tenantInfoServiceMock, usClock);
+        var viewModel = new TucNoteViewModel { NoteId = 0, JobId = jobId, NoteText = "New note", NoteTypeId = 1 };
+
+        // Act
+        await repository.SaveNoteAsync(viewModel, TestContext.Current.CancellationToken);
+
+        // Assert
+        var note = await _context.TucNoteArchives.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(usClock.TenantNow, note.UpdatedDate);
+        Assert.Equal(usClock.UtcNow, note.UpdatedDateUtc);
+    }
+
+    [Fact]
     public async Task GetNotesByJobIdAsync_NoTucNoteRows_FallsBackToUcjbNotesColumn()
     {
         // Arrange — a job whose pickup note only ever landed in the UcjbNotes column
