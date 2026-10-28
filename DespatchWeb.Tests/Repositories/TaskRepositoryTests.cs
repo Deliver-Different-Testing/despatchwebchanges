@@ -179,6 +179,29 @@ public class TaskRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public void ApplyFilters_IncludeOverdue_KeepsOpenTasksDueBeforeTheWindow()
+    {
+        var events = new[]
+        {
+            CreateEvent(1, e => { e.UcevDueTime = new DateTime(2025, 1, 1); e.UcevClosed = false; }),
+            CreateEvent(2, e => { e.UcevDueTime = new DateTime(2025, 1, 1); e.UcevClosed = true; }),
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2025, 6, 15)),
+            CreateEvent(4, e => { e.UcevDueTime = new DateTime(2025, 12, 31); e.UcevClosed = false; })
+        };
+
+        var filters = new TaskTableFiltersRequest
+        {
+            StartDate = new DateTimeOffset(2025, 3, 1, 0, 0, 0, TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2025, 9, 1, 0, 0, 0, TimeSpan.Zero),
+            IncludeOverdue = true
+        };
+
+        var results = ApplyFiltersInMemory(events, filters);
+
+        Assert.Equal([1, 3], results.Select(e => e.UcevId).Order());
+    }
+
+    [Fact]
     public void ApplyFilters_EndDateOnly_ReturnsEventsOnOrBefore()
     {
         var events = new[]
