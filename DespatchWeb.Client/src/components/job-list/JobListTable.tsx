@@ -75,7 +75,7 @@ function StaleDeliveryAddressMarker({job}: {job: DispatchJob}) {
             label={staleAddressSummary(job.toAddress)}
         >
             <Box component="span" data-testid="stale-delivery-address" style={{display: 'inline-flex', verticalAlign: 'text-bottom', marginRight: 4}}>
-                <Icon lucide={TriangleAlert} size={13} color="var(--mantine-color-orange-6)" aria-label="Delivery address may be out of date"/>
+                <Icon lucide={TriangleAlert} size={13} color="var(--dd-indicator-warning)" aria-label="Delivery address may be out of date"/>
             </Box>
         </Tooltip>
     );
@@ -823,7 +823,7 @@ const CellContent: React.FC<{
                         {job.direct && (
                             <Tooltip label="Direct" withArrow>
                                 <Box component="span" ml={4} style={{display: 'inline-flex'}}>
-                                    <Icon lucide={Zap} size={14} color="var(--mantine-color-orange-5)"/>
+                                    <Icon lucide={Zap} size={14} color="var(--dd-indicator-warning)"/>
                                 </Box>
                             </Tooltip>
                         )}
@@ -951,7 +951,7 @@ const CellContent: React.FC<{
                     <Text
                         component="span"
                         fz="inherit"
-                        c={overdue ? 'light-dark(var(--mantine-color-red-5), var(--mantine-color-red-5))' : undefined}
+                        c={overdue ? 'var(--dd-indicator-error)' : undefined}
                         fw={overdue ? 600 : 'inherit'}
                     >
                         {remain}

@@ -44,7 +44,7 @@ export const ACTION_BUTTON_COMPACT_GLYPH_SIZE = 14;
 /**
  * The selected chip's border and fill colour — the same ladder `SegmentedToggle`
  * uses, so a selection means one colour across single- and multi-select controls.
- * `'brand'` resolves to the tenant's WCAG 1.4.11-safe accent (cyan-7 / gold-9);
+ * `'brand'` resolves to the brand ramp's WCAG 1.4.11-safe step (brand-7);
  * any other Mantine colour key takes its shade-7 step.
  */
 export const actionButtonAccent = segmentedToggleAccent;

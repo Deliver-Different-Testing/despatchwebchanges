@@ -168,7 +168,7 @@ export const SideNav: React.FC<SideNavProps> = ({
      * rail is what carries WCAG 1.4.11's 3:1 state boundary — hence the darker brand
      * step (cyan-7 / gold-9) rather than the light primary.
      */
-    const navAccent = getHeaderSurfaceAccent(isUsCustomer);
+    const navAccent = getHeaderSurfaceAccent();
 
     return (
         <Drawer.Root

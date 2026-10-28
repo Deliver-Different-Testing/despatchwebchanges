@@ -5,15 +5,14 @@
  * chrome is expressed with **CSS variables, not `sx`** — plain style objects and
  * Mantine props over `var(--mantine-*)` tokens.
  *
- * Only the `primary` variant is tenant-dependent (Ink-Blue on US, gold elsewhere).
- * The semantic fills and the neutral `surface` bar are the same on both — the
- * neutral bar carries no brand colour at all, painting its glyph and its washes
- * in the body text colour so both follow the colour scheme.
+ * Only the `primary` accent carries the brand, as a `--mantine-color-brand-*` variable
+ * so it follows a tenant or user primary. The neutral `surface` bar carries no brand
+ * colour at all, painting its glyph and its washes in the body text colour so both
+ * follow the colour scheme.
  */
 import type React from 'react';
 import {alpha} from '@mantine/core';
 import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
-import {isUsTenant} from '../../../../theme/tenant';
 
 /** Header variants that map onto a brand fill. */
 export type HeaderVariant =
@@ -38,7 +37,7 @@ export type PanelHeaderVariant = HeaderVariant | 'surface';
  * {@link getHeaderAccents} — a colour change there, not a solid fill bar, is
  * the separator now.
  */
-export function getHeaderColors(_isUsCustomer: boolean): Record<PanelHeaderVariant, {bg: string; fg: string}> {
+export function getHeaderColors(): Record<PanelHeaderVariant, {bg: string; fg: string}> {
     const neutral = {bg: 'var(--dd-surface-container)', fg: 'var(--mantine-color-text)'};
     return {
         primary: neutral,
@@ -56,10 +55,9 @@ export function getHeaderColors(_isUsCustomer: boolean): Record<PanelHeaderVaria
  * meaning now the header bar itself is neutral. `'surface'` (plain page/panel
  * headers) gets no accent at all: a neutral icon, since it isn't semantic.
  */
-export function getHeaderAccents(isUsCustomer: boolean): Record<PanelHeaderVariant, string> {
+export function getHeaderAccents(): Record<PanelHeaderVariant, string> {
     return {
-        // The tenant's primary: Cyan on US, the brand gold elsewhere.
-        primary: isUsCustomer ? dfrntBrand.cyan : dfrntBrand.gold,
+        primary: 'var(--mantine-color-brand-5)',
         secondary: dfrntBrand.purple,
         info: dfrntBrand.cyan,
         success: dfrntBrand.green,
@@ -70,21 +68,21 @@ export function getHeaderAccents(isUsCustomer: boolean): Record<PanelHeaderVaria
 }
 
 /**
- * The tenant's brand accent for use on paper — a darker step of the ramp, since
- * neither the Cyan nor the gold 500 reads there. Used by the controls that need to
+ * The brand accent for use on paper — a darker step of the ramp, since a light
+ * primary (the Cyan 500, or a pale custom colour) doesn't read there. Used by the controls that need to
  * signal selection on a light surface (`ActionButton`, `SegmentedToggle`, the
  * job-list view options tick), not by header chrome: the neutral bar is fully
  * neutral so it can follow the colour scheme.
  */
-export function getHeaderSurfaceAccent(isUsCustomer: boolean): string {
-    return isUsCustomer ? '#1590c0' : dfrntBrand.goldDeep;
+export function getHeaderSurfaceAccent(): string {
+    return 'var(--mantine-color-brand-7)';
 }
 
-export const headerColors = getHeaderColors(isUsTenant());
+export const headerColors = getHeaderColors();
 
-export const headerAccents = getHeaderAccents(isUsTenant());
+export const headerAccents = getHeaderAccents();
 
-export const headerSurfaceAccent = getHeaderSurfaceAccent(isUsTenant());
+export const headerSurfaceAccent = getHeaderSurfaceAccent();
 
 /** The header's on-colour — text and the close button sit in this. */
 export function headerOnColor(variant: PanelHeaderVariant = 'primary'): string {

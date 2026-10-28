@@ -20,8 +20,6 @@ import {
 } from './index';
 import {alpha} from '@mantine/core';
 import {getHeaderColors, getHeaderAccents, getHeaderSurfaceAccent} from './styles';
-import {dfrntBrand} from '../../../../theme/dfrntMantineTheme';
-import {dfrntPrimaryPalette, urgentPrimaryPalette} from '../../../../theme/palettes';
 import {renderWithMantine} from '../../../../test/utils';
 
 interface Handlers {
@@ -246,25 +244,15 @@ describe('header style helpers', () => {
         expect(headerChipProps('warning').style['--ti-color']).toBe(headerAccentColor('warning'));
     });
 
-    it('gives the icon chip the tenant primary accent — matching the MUI dialogs', () => {
-        // Asserted through the factory rather than the module-level `headerAccents`,
-        // which is bound to whichever tenant the bundle booted in.
-        //
-        // These must equal the MUI `headerChromeSx` fill (`palette.primary.main`) so
-        // a Mantine dialog and an unmigrated MUI one opened in the same session
-        // signal the same primary colour, even though the bar itself is neutral now.
-        expect(getHeaderAccents(true).primary).toBe(dfrntPrimaryPalette[500]);
-        expect(getHeaderAccents(false).primary).toBe(urgentPrimaryPalette[500]);
+    it('gives the icon chip the brand primary as a CSS variable, so it follows a custom primary', () => {
+        expect(getHeaderAccents().primary).toBe('var(--mantine-color-brand-5)');
     });
 
-    it('keeps the neutral bar off the tenant switch entirely, including primary', () => {
+    it('keeps the neutral bar free of brand colour, and points the on-paper accent at the darker brand step', () => {
         for (const variant of ['primary', 'secondary', 'info', 'success', 'warning', 'error', 'surface'] as const) {
-            expect(getHeaderColors(false)[variant]).toEqual(getHeaderColors(true)[variant]);
+            expect(getHeaderColors()[variant]).toEqual(getHeaderColors().surface);
         }
-        // The on-paper brand accent still follows the tenant, even though the neutral
-        // bar no longer uses it.
-        expect(getHeaderSurfaceAccent(false)).toBe(dfrntBrand.goldDeep);
-        expect(getHeaderSurfaceAccent(true)).not.toBe(getHeaderSurfaceAccent(false));
+        expect(getHeaderSurfaceAccent()).toBe('var(--mantine-color-brand-7)');
     });
 
     /**
