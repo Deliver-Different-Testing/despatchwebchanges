@@ -23,12 +23,12 @@ const TIME_FORMAT = 'HH:mm';
 /**
  * Format timezone for display (e.g., "America/New_York" -> "Eastern Daylight Time")
  */
-function formatTimezoneDisplay(tz: string | { text?: string } | undefined | null): string {
+function formatTimezoneDisplay(tz: string | { text?: string } | undefined | null, at?: Dayjs): string {
     // Handle timezone objects (e.g. {text: "Pacific/Auckland"}) that may be passed via `as any`
     const tzStr = typeof tz === 'string' ? tz : tz?.text ?? '';
     if (!tzStr) return '';
     try {
-        return getTimezoneName(tzStr);
+        return getTimezoneName(tzStr, at);
     } catch {
         return tzStr.replace(/_/g, ' ');
     }
@@ -231,7 +231,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                 />
                                 <Box>
                                     <Text size="sm" c="dimmed" fw={500}>Job timezone</Text>
-                                    <Text>{formatTimezoneDisplay(selectedTimeZone)}</Text>
+                                    <Text>{formatTimezoneDisplay(selectedTimeZone, dateTime.isValid() ? dateTime : undefined)}</Text>
                                 </Box>
                             </Group>
                         </Paper>
