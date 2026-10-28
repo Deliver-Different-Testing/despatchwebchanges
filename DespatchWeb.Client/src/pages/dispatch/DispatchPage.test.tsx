@@ -145,7 +145,12 @@ const dispatchMapProps: {
     mapCenter?: {lat: number; lng: number};
     mapZoom?: number;
     preferenceScope?: string | number;
+    courierFlagLastDelivery?: string;
 } = {};
+const tenantFlagDefaultMock = jest.fn().mockResolvedValue(null);
+jest.mock('../../api/tenantSettingsApi', () => ({
+    getTenantCourierFlagLastDeliveryDefault: () => tenantFlagDefaultMock(),
+}));
 jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
     DispatchMap: (props: {
         onMarkerClick?: (item: {jobId: number}) => void;
@@ -154,12 +159,14 @@ jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
         mapCenter?: {lat: number; lng: number};
         mapZoom?: number;
         preferenceScope?: string | number;
+        courierFlagLastDelivery?: string;
     }) => {
         dispatchMapProps.showAvailableCouriers = props.showAvailableCouriers;
         dispatchMapProps.jobs = props.jobs;
         dispatchMapProps.mapCenter = props.mapCenter;
         dispatchMapProps.mapZoom = props.mapZoom;
         dispatchMapProps.preferenceScope = props.preferenceScope;
+        dispatchMapProps.courierFlagLastDelivery = props.courierFlagLastDelivery;
         return (
             <div data-testid="mock-dispatch-map">
                 <button onClick={() => props.onMarkerClick?.({jobId: 55})}>click-marker</button>
@@ -248,6 +255,29 @@ describe('DispatchPage', () => {
         jobListParamPushes.length = 0;
         getPreferenceMock.mockReset().mockResolvedValue(null);
         savePreferenceMock.mockReset().mockResolvedValue(undefined);
+        tenantFlagDefaultMock.mockReset().mockResolvedValue(null);
+    });
+
+    describe('courier flag last delivery', () => {
+        it('gives US maps the township by default, then the tenant default once it loads', async () => {
+            let resolveTenant: (mode: string) => void = () => {};
+            tenantFlagDefaultMock.mockReturnValue(new Promise((resolve) => { resolveTenant = resolve; }));
+            renderPage({isUsCustomer: true});
+            await waitFor(() => expect(dispatchMapProps.courierFlagLastDelivery).toBe('locality'));
+
+            await act(async () => resolveTenant('time'));
+
+            await waitFor(() => expect(dispatchMapProps.courierFlagLastDelivery).toBe('time'));
+        });
+
+        it('lets the user override win over the tenant default', async () => {
+            tenantFlagDefaultMock.mockResolvedValue('time');
+            getPreferenceMock.mockImplementation((key: string) =>
+                Promise.resolve(key === 'CourierFlagLastDelivery' ? JSON.stringify('off') : null));
+            renderPage({isUsCustomer: true});
+
+            await waitFor(() => expect(dispatchMapProps.courierFlagLastDelivery).toBe('off'));
+        });
     });
 
     describe('courier display mode', () => {

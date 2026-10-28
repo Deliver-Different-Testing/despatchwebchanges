@@ -11,6 +11,7 @@
  */
 
 import type {IAvailableCourierPosition} from '../../../types/interfaces/courier.interface';
+import type {LastDeliveryLabelMode} from '../../../types/courierFlagLastDelivery';
 
 export type CourierStatus = 'noJobs' | 'hasJobs' | 'overdue';
 
@@ -20,6 +21,8 @@ export type MarkerLabelMode = 'name' | 'number' | 'both';
 export interface CourierFlagDisplaySettings {
     markerLabel: MarkerLabelMode;
     showJobCount: boolean;
+    /** Which place the last-delivery line names. Unset keeps the original region-first behaviour. */
+    lastDelivery?: LastDeliveryLabelMode;
     /** Uniform size multiplier for the rendered flag. Defaults to {@link DEFAULT_MARKER_SCALE}. */
     markerScale?: number;
 }
@@ -33,7 +36,7 @@ export interface CourierFlagColors {
 export interface CourierFlagLines {
     /** Driver and job counts, e.g. "Dave 4/1". Always present. */
     primary: string;
-    /** Last delivery, e.g. "Ponsonby · 12m". Null when the courier has no completed job. */
+    /** Last delivery, e.g. "Ponsonby · 12m". Null when the courier has no completed job or the line is hidden. */
     secondary: string | null;
 }
 
@@ -96,14 +99,33 @@ export function getCourierFlagLines(
         : null;
     const primary = [label, jobCount].filter(Boolean).join(' ');
 
+    const mode = settings.lastDelivery ?? 'region';
     const minutes = lastDeliveryMinutes(courier.lastDeliveryTime);
-    if (minutes === null) {
+    if (minutes === null || mode === 'off') {
         // No completed delivery to report — the flag stays the compact single-line pill.
         return {primary, secondary: null};
     }
 
-    const city = courier.lastDeliveryCity?.trim();
-    return {primary, secondary: city ? `${city} · ${minutes}m` : `${minutes}m`};
+    const place = mode === 'time' ? undefined : lastDeliveryPlace(courier, mode);
+    return {primary, secondary: place ? `${place} · ${minutes}m` : `${minutes}m`};
+}
+
+/** The named place for the mode, falling back to whichever line is filled in — blank lines are common. */
+function lastDeliveryPlace(
+    courier: IAvailableCourierPosition,
+    mode: Exclude<LastDeliveryLabelMode, 'time' | 'off'>,
+): string | undefined {
+    const locality = courier.lastDeliveryLocality?.trim() || undefined;
+    const region = courier.lastDeliveryRegion?.trim() || undefined;
+
+    switch (mode) {
+        case 'locality':
+            return locality ?? region;
+        case 'region':
+            return region ?? locality;
+        case 'localityRegion':
+            return [locality, region].filter(Boolean).join(', ') || undefined;
+    }
 }
 
 export function getCourierStatus(courier: IAvailableCourierPosition): CourierStatus {
@@ -239,7 +261,7 @@ export function createCourierTooltipHtml(courier: IAvailableCourierPosition): st
     const minutes = lastDeliveryMinutes(courier.lastDeliveryTime);
     const lastDelivery = minutes === null
         ? ''
-        : `Last delivery: ${escapeXml(courier.lastDeliveryCity) || 'Unknown'}<br>`
+        : `Last delivery: ${escapeXml(lastDeliveryPlace(courier, 'localityRegion')) || 'Unknown'}<br>`
           + `${minutes} min${minutes === 1 ? '' : 's'} ago<br>`;
 
     return `

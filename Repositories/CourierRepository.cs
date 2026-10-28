@@ -1833,13 +1833,17 @@ public class CourierRepository(
     }
 
     /// <summary>
-    /// The city and completion time of each courier's most recently completed job, keyed by courier.
-    /// Feeds the "last delivery" line on the map courier flags. Scoped to the last 30 days so the
-    /// descending index on ucjbComplTime carries the scan instead of walking the whole job history;
+    /// The delivery place and completion time of each courier's most recently completed job, keyed by
+    /// courier. Feeds the "last delivery" line on the map courier flags. Scoped to the last 30 days so
+    /// the descending index on ucjbComplTime carries the scan instead of walking the whole job history;
     /// a courier who has not delivered in a month reads as having no last delivery, which is the
     /// same thing as far as the flag is concerned.
     /// </summary>
-    private async Task<Dictionary<int, (string City, DateTime CompletedAt)>> GetLastDeliveriesAsync(
+    /// <remarks>
+    /// Address lines 5 and 6 mean different things per country (NZ: suburb, city; US: township/city,
+    /// state), so both are returned raw and the client picks what to show from the user's flag setting.
+    /// </remarks>
+    private async Task<Dictionary<int, LastDelivery>> GetLastDeliveriesAsync(
         List<int> courierIds, DateTime now, CancellationToken cancellationToken)
     {
         var completionCutoff = now.AddDays(-LastDeliveryLookbackDays);
@@ -1855,13 +1859,8 @@ public class CourierRepository(
             .Select(g => new
             {
                 CourierId = g.Key,
-                // Address line 6 is the city and line 5 the suburb (see JobMappings.Rating); suburban
-                // drops routinely leave the city blank — empty as often as null — and a blank flag
-                // line helps nobody.
-                City = g.OrderByDescending(j => j.UcjbComplTime)
-                    .Select(j => j.DeliveryAddressLine6 == null || j.DeliveryAddressLine6 == ""
-                        ? j.DeliveryAddressLine5
-                        : j.DeliveryAddressLine6)
+                Place = g.OrderByDescending(j => j.UcjbComplTime)
+                    .Select(j => new { j.DeliveryAddressLine5, j.DeliveryAddressLine6 })
                     .FirstOrDefault(),
                 CompletedAt = g.Max(j => j.UcjbComplTime)
             })
@@ -1870,8 +1869,11 @@ public class CourierRepository(
 
         return lastDeliveries
             .Where(d => d.CompletedAt.HasValue)
-            .ToDictionary(d => d.CourierId, d => (d.City, d.CompletedAt!.Value));
+            .ToDictionary(d => d.CourierId, d => new LastDelivery(
+                d.Place?.DeliveryAddressLine5, d.Place?.DeliveryAddressLine6, d.CompletedAt!.Value));
     }
+
+    private readonly record struct LastDelivery(string? Locality, string? Region, DateTime CompletedAt);
 
     private async Task<IReadOnlyList<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
         CourierLocationRequest data, CancellationToken cancellationToken = default)
@@ -1977,7 +1979,8 @@ public class CourierRepository(
                         DisplayOrder = c.DisplayOrder,
                         CourierFleetId = c.CourierFleetId,
                         CourierFleetName = c.CourierFleetName,
-                        LastDeliveryCity = hasLastDelivery ? lastDelivery.City : null,
+                        LastDeliveryLocality = hasLastDelivery ? lastDelivery.Locality : null,
+                        LastDeliveryRegion = hasLastDelivery ? lastDelivery.Region : null,
                         LastDeliveryTime = hasLastDelivery
                             ? TimeZoneHelper.SetDateTimeWithTimeZone(lastDelivery.CompletedAt, tenantTimeZone)
                             : null
@@ -2099,7 +2102,8 @@ public class CourierRepository(
                         DisplayOrder = c.DisplayOrder,
                         CourierFleetId = c.CourierFleetId,
                         CourierFleetName = c.CourierFleetName,
-                        LastDeliveryCity = hasLastDelivery ? lastDelivery.City : null,
+                        LastDeliveryLocality = hasLastDelivery ? lastDelivery.Locality : null,
+                        LastDeliveryRegion = hasLastDelivery ? lastDelivery.Region : null,
                         LastDeliveryTime = hasLastDelivery
                             ? TimeZoneHelper.SetDateTimeWithTimeZone(lastDelivery.CompletedAt, tenantTimeZone)
                             : null

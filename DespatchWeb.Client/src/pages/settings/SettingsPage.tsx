@@ -12,7 +12,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Badge, Box, Button, Group, Stack, Text, Title, Tooltip} from '@mantine/core';
 import styles from './SettingsPage.module.css';
-import {ArrowLeftRight, EyeOff, MapPin, Palette, RotateCcw, Save, TriangleAlert} from 'lucide-react';
+import {ArrowLeftRight, EyeOff, Flag, MapPin, Palette, RotateCcw, Save, TriangleAlert} from 'lucide-react';
 import {SectionHeading, SettingRadioGroup, SettingRow} from '../../components/common/settings-controls/SettingsControls';
 import {AutoMateLogo} from '../../components/common/auto-mate-logo/AutoMateLogo';
 import {Icon} from '../../components/common/icon/Icon';
@@ -42,6 +42,9 @@ import {getTenantAddressFormatDefault} from '../../api/tenantSettingsApi';
 import {DialogShell, dialogSize, DialogHeader, DialogFooter} from '../../components/dialogs/shared/mantine';
 import {toastService} from '../../services/toastService';
 import {registerUnsavedChangesGuard, type LeaveDecision} from '../../routes/unsavedChangesGuard';
+import {getSession} from '../../api/session';
+import {useCourierFlagLastDelivery} from '../../hooks/useCourierFlagLastDelivery';
+import {lastDeliveryChoiceOptions, type LastDeliveryChoice} from '../../services/courierFlagLastDeliveryPreference';
 
 const EMPTY_FORMAT: AddressLineFormat = {line1: [], line2: []};
 
@@ -56,6 +59,8 @@ export const SettingsPage: React.FC = () => {
     const liquidGlassEnabled = useLiquidGlassEnabled();
     const liquidGlassSupported = isLiquidGlassSupported();
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
+    const isUsCustomer = getSession().isUsCustomer ?? false;
+    const courierFlag = useCourierFlagLastDelivery(isUsCustomer);
     const [aiAutoOpen, setAiAutoOpenState] = useState<boolean>(isAiAutoOpenEnabled);
     const [hideButtonEnabled, setHideButtonEnabledState] = useState<boolean>(isPanelHideButtonEnabled);
 
@@ -336,6 +341,22 @@ export const SettingsPage: React.FC = () => {
                                 layouts. You can still use the Show/Hide Panels dialog."
                             checked={hideButtonEnabled}
                             onToggle={toggleHideButtonEnabled}
+                        />
+                    </Box>
+
+                    <Box>
+                        <SectionHeading
+                            icon={<Icon lucide={Flag} size={20}/>}
+                            title="Driver flags"
+                        />
+
+                        <SettingRadioGroup<LastDeliveryChoice>
+                            title="Last delivery"
+                            description="Choose what driver flags on the Dispatch and Courier maps show about each
+                                driver's last delivery. Your admin sets the company default."
+                            value={courierFlag.userOverride ?? 'default'}
+                            options={lastDeliveryChoiceOptions(isUsCustomer, courierFlag.tenantDefault)}
+                            onChange={(choice) => void courierFlag.saveOverride(choice === 'default' ? null : choice)}
                         />
                     </Box>
                 </div>

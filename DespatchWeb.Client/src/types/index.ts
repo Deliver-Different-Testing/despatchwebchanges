@@ -19,3 +19,4 @@ export * from './driverManagement';
 export * from './dispatchJob';
 export * from './settings';
 export * from './courierDisplayMode';
+export * from './courierFlagLastDelivery';

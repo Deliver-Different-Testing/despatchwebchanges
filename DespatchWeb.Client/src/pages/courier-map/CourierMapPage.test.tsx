@@ -29,6 +29,11 @@ jest.mock('../../api/preferencesApi', () => ({
     savePreference: jest.fn(() => Promise.resolve()),
 }));
 
+const mockTenantFlagDefault = jest.fn(() => Promise.resolve<string | null>(null));
+jest.mock('../../api/tenantSettingsApi', () => ({
+    getTenantCourierFlagLastDeliveryDefault: () => mockTenantFlagDefault(),
+}));
+
 // Mock useCourierMap hook
 jest.mock('./useCourierMap', () => ({
     useCourierMap: jest.fn(() => ({
@@ -193,6 +198,17 @@ describe('CourierMapPage Component', () => {
     });
 
     describe('Display Settings', () => {
+        it('flags the last delivery the way the shared courier flag setting resolves', async () => {
+            mockTenantFlagDefault.mockResolvedValueOnce('time');
+            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+
+            renderWithProviders(<CourierMapPage {...createDefaultProps({isUsCustomer: true})} />);
+
+            expect(useCourierMapMock.mock.calls.at(-1)[0].displaySettings.lastDelivery).toBe('locality');
+            await waitFor(() =>
+                expect(useCourierMapMock.mock.calls.at(-1)[0].displaySettings.lastDelivery).toBe('time'));
+        });
+
         it('renders the display-settings control alongside fit-all and refresh', () => {
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);

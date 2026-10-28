@@ -21,5 +21,6 @@ public enum StaffPreferenceKey
     CourierMapDisplaySettings,
     ShowPanelHideButton,
     Appearance,
-    LiquidGlass
+    LiquidGlass,
+    CourierFlagLastDelivery
 }

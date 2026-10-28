@@ -353,6 +353,8 @@ public partial class TblSetting
 
     public string DispatchAddressFormatJson { get; set; }
 
+    public string CourierFlagLastDeliveryMode { get; set; }
+
     public bool PolygonZoneResolutionEnabled { get; set; }
 
     public virtual TucStaff InternetJobStaff { get; set; }

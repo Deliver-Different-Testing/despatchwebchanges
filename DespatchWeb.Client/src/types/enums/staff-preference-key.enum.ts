@@ -18,4 +18,5 @@ export enum StaffPreferenceKey {
     ShowPanelHideButton = 'ShowPanelHideButton',
     Appearance = 'Appearance',
     LiquidGlass = 'LiquidGlass',
+    CourierFlagLastDelivery = 'CourierFlagLastDelivery',
 }
