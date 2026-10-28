@@ -50,16 +50,16 @@ describe('SideNav', () => {
             });
         });
 
-        it('keeps the account header Ink Blue for every tenant, whatever the primary', () => {
+        it('follows a light primary bar, flipping the header content to Ink', () => {
             renderWithMantine(
                 <SideNav {...defaultProps} isUsCustomer={false} companyName="Acme" />,
                 {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})}
             );
 
-            expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#0d0c2c'});
+            expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#f4c430'});
             expect(screen.getByTestId('sidenav-avatar')).toHaveStyle({
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                color: 'rgba(255, 255, 255, 0.95)',
+                backgroundColor: 'rgba(13, 12, 44, 0.2)',
+                color: 'rgba(13, 12, 44, 0.95)',
             });
         });
 
@@ -78,9 +78,8 @@ describe('SideNav', () => {
         });
 
         it('paints the chip in the account header\'s own on-colour, whatever the primary', () => {
-            // The header is a fixed Ink shell surface and a primary may be too light or
-            // too dark to read on it, so the chip borrows the avatar's scrim treatment
-            // rather than a brand variant.
+            // The header takes the bar's fill (Ink, or the primary), so a brand variant
+            // could vanish on it; the chip borrows the avatar's scrim treatment instead.
             const {unmount} = renderWithMantine(
                 <SideNav {...defaultProps} isNetworkPartner={true} isUsCustomer={true} />
             );
@@ -95,8 +94,8 @@ describe('SideNav', () => {
                 {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})}
             );
             expect(screen.getByTestId('sidenav-np-chip')).toHaveStyle({
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                color: 'rgba(255, 255, 255, 0.95)',
+                backgroundColor: 'rgba(13, 12, 44, 0.2)',
+                color: 'rgba(13, 12, 44, 0.95)',
             });
         });
 

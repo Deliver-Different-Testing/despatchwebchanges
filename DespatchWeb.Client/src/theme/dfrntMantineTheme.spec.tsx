@@ -221,10 +221,16 @@ describe('createDfrntTheme — user appearance', () => {
         expect(theme.colors?.green).toEqual(dfrntTheme.colors?.green);
     });
 
-    it('leaves the Ink shell alone when a custom primary is chosen', () => {
-        const theme = createDfrntTheme({highContrast: false, primary: '#f4c430'});
-        expect(theme.other?.shell?.appBar).toBe(dfrntBrand.inkBlue);
-        expect(theme.other?.scrim?.text).toBe('#fff');
+    it('paints the shell in the primary, with Ink or white content by the validation rule', () => {
+        const light = createDfrntTheme({highContrast: false, primary: '#f4c430'});
+        expect(light.other?.shell?.appBar).toBe('#f4c430');
+        expect(light.other?.shell?.logoSrc).toBe('images/dfrnt_logo.png');
+        expect(light.other?.scrim?.text).toBe(dfrntBrand.inkBlue);
+
+        const dark = createDfrntTheme({highContrast: false, primary: '#132279'});
+        expect(dark.other?.shell?.appBar).toBe('#132279');
+        expect(dark.other?.shell?.logoSrc).toBe('images/dfrnt_logo_reversed.png');
+        expect(dark.other?.scrim?.text).toBe('#fff');
     });
 
     it('sets the body text colour per scheme only when one is chosen', () => {

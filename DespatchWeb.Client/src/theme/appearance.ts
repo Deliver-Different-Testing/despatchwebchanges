@@ -101,8 +101,13 @@ function surfacesFor(field: 'textLight' | 'textDark'): string[] {
     return [dark.surface, dark.surfaceContainer, dark.surfaceContainerHigh];
 }
 
+/** Whether Ink (rather than white) is the text colour on a filled `fill`, as Mantine's autoContrast decides. */
+export function inkReadsOnFill(fill: string): boolean {
+    return luminance(fill) > LUMINANCE_THRESHOLD;
+}
+
 function onFill(fill: string): string {
-    return luminance(fill) > LUMINANCE_THRESHOLD ? ON_FILL_DARK : ON_FILL_LIGHT;
+    return inkReadsOnFill(fill) ? ON_FILL_DARK : ON_FILL_LIGHT;
 }
 
 /** The worst-case WCAG ratio for a chosen colour, against the minimum it has to meet. */

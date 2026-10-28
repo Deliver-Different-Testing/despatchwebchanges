@@ -27,7 +27,7 @@ import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@
 import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
 import {contrastRatio, getMd3Scheme, type Md3Mode} from './md3';
 import {generateRamp} from './colorMath';
-import {TEXT_MIN_CONTRAST_HIGH, type ThemeAppearance} from './appearance';
+import {inkReadsOnFill, TEXT_MIN_CONTRAST_HIGH, type ThemeAppearance} from './appearance';
 
 // --- Brand ramps (0 lightest → 9 darkest) ---
 
@@ -114,25 +114,44 @@ export const dfrntBrand = {
 
 /**
  * The shell surface (app bar + side-nav account header) and the logo that reads on
- * it: Ink Blue in both colour modes for every tenant. A tenant or user primary
- * recolours controls and highlights, never the shell.
+ * it. The bar is the primary colour (tenant default or the user's own), Ink Blue
+ * when none is chosen. Content on it is Ink or white by the same rule the colour
+ * validation uses, so a light primary carries Ink content and the standard (dark)
+ * wordmark, and a dark one the reversed set.
  */
-export const sidebarColors = {
-    appBar: ink[9],
-    bg: ink[8], // drawer panel, one tier lighter than the bar
-    logoSrc: 'images/dfrnt_logo_reversed.png',
-    border: 'rgba(255, 255, 255, 0.10)',
-    textPrimary: 'rgba(255, 255, 255, 0.95)',
-    textSecondary: 'rgba(255, 255, 255, 0.60)',
-    textMuted: 'rgba(255, 255, 255, 0.38)',
-    hoverBg: 'rgba(255, 255, 255, 0.08)',
-};
+export function getSidebarColors(primary?: string) {
+    const appBar = primary ?? ink[9];
+    return inkReadsOnFill(appBar)
+        ? {
+            appBar,
+            bg: ink[8], // drawer panel
+            logoSrc: 'images/dfrnt_logo.png',
+            // Ink at the same alphas as the white set would fade out on a bright
+            // fill, so the secondary/muted steps sit a little stronger.
+            border: 'rgba(13, 12, 44, 0.14)',
+            textPrimary: 'rgba(13, 12, 44, 0.95)',
+            textSecondary: 'rgba(13, 12, 44, 0.65)',
+            textMuted: 'rgba(13, 12, 44, 0.45)',
+            hoverBg: 'rgba(13, 12, 44, 0.08)',
+        }
+        : {
+            appBar,
+            bg: ink[8], // drawer panel, one tier lighter than the Ink bar
+            logoSrc: 'images/dfrnt_logo_reversed.png',
+            border: 'rgba(255, 255, 255, 0.10)',
+            textPrimary: 'rgba(255, 255, 255, 0.95)',
+            textSecondary: 'rgba(255, 255, 255, 0.60)',
+            textMuted: 'rgba(255, 255, 255, 0.38)',
+            hoverBg: 'rgba(255, 255, 255, 0.08)',
+        };
+}
 
-/** Overlays for content sitting on the Ink shell scrim (shell chrome, dialog headers). */
-export const onBrandScrim = (() => {
-    const on = '255,255,255';
+/** Overlays for content sitting on the shell scrim (shell chrome, dialog headers). */
+export function getOnBrandScrim(primary?: string) {
+    const onInk = inkReadsOnFill(primary ?? ink[9]);
+    const on = onInk ? '13,12,44' : '255,255,255';
     return {
-        text: '#fff',
+        text: onInk ? '#0d0c2c' : '#fff',
         bodyText: `rgba(${on},0.85)`,
         subtleText: `rgba(${on},0.8)`,
         mutedText: `rgba(${on},0.7)`,
@@ -143,7 +162,13 @@ export const onBrandScrim = (() => {
         solidHoverFill: `rgba(${on},0.9)`,
         border: `rgba(${on},0.4)`,
     };
-})();
+}
+
+/** The default (Ink) shell tokens, for the few consumers outside a provider. */
+export const sidebarColors = getSidebarColors();
+
+/** The default (Ink) scrim overlays, for the few consumers outside a provider. */
+export const onBrandScrim = getOnBrandScrim();
 
 /** Theme-aware palette for code / terminal blocks (on Ink Blue). */
 export const codeBlockPalette = {
@@ -191,7 +216,8 @@ const STANDARD_APPEARANCE: ThemeAppearance = {highContrast: false};
 /**
  * Builds the theme for a resolved appearance (tenant default with the user's
  * override on top). `brand` is DFRNT cyan unless a primary is chosen, so every
- * `color="brand"` / `--mantine-color-brand-*` consumer follows without edits; a
+ * `color="brand"` / `--mantine-color-brand-*` consumer follows without edits, and
+ * the app bar takes the primary too (Ink Blue without one); a
  * custom secondary replaces the `reflex` (links / info) ramp. The semantic status
  * ramps (red, green, orange) are never customised, so a status reads the same for
  * everyone.
@@ -277,8 +303,8 @@ export function createDfrntTheme(appearance: ThemeAppearance = STANDARD_APPEARAN
             Tabs: {styles: {tab: {paddingBlock: 14, fontWeight: 500}}},
         },
         other: {
-            shell: sidebarColors,
-            scrim: onBrandScrim,
+            shell: getSidebarColors(appearance.primary),
+            scrim: getOnBrandScrim(appearance.primary),
             code: codeBlockPalette,
             tokens,
             appearance,

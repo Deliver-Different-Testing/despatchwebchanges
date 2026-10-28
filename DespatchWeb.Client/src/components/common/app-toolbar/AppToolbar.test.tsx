@@ -95,9 +95,10 @@ describe('AppToolbar', () => {
             expect(logo).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
         });
 
-        it('keeps the reversed logo when a custom primary is chosen, since the bar stays Ink', () => {
+        it('switches to the standard (dark) logo on a light primary bar', () => {
+            // White on gold is illegible, so the wordmark follows the bar's fill.
             renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})});
-            expect(screen.getByAltText('DFRNT')).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
+            expect(screen.getByAltText('DFRNT')).toHaveAttribute('src', 'images/dfrnt_logo.png');
         });
 
         it('should render the logo with custom URL', () => {
@@ -202,12 +203,18 @@ describe('AppToolbar', () => {
     });
 
     describe('App bar chrome', () => {
-        it('keeps the bar Ink Blue with white content under a custom primary', () => {
+        it('paints the bar in the primary colour with Ink content on a light primary', () => {
             renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})});
             expect(screen.getByRole('banner')).toHaveStyle({
-                backgroundColor: '#0d0c2c',
-                color: '#fff',
+                backgroundColor: '#f4c430',
+                color: '#0d0c2c',
             });
+        });
+
+        it('keeps white content on a dark primary bar', () => {
+            renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme({highContrast: false, primary: '#132279'})});
+            expect(screen.getByRole('banner')).toHaveStyle({backgroundColor: '#132279', color: '#fff'});
+            expect(screen.getByAltText('DFRNT')).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
         });
 
         it('renders the bar as a 56px Ink-Blue banner, matching Integration Manager', () => {

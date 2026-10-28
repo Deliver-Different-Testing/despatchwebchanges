@@ -43,19 +43,20 @@ describe('AppearanceSettingsSection', () => {
         const user = setupUser();
         renderWithMantine(<AppearanceSettingsSection/>);
 
-        expect(screen.getByRole('radio', {name: 'Company default (High)'})).toBeChecked();
-        expect(screen.getByLabelText('Primary colour')).toHaveAttribute('placeholder', 'Company default (#132279)');
-        expect(screen.getByRole('button', {name: 'Save appearance'})).toBeDisabled();
+        expect(screen.getByRole('radio', {name: 'Company default'})).toBeChecked();
+        expect(screen.getByText('Currently high.')).toBeInTheDocument();
+        expect(screen.getByLabelText('Primary colour')).toHaveAttribute('placeholder', 'Company default, #132279');
+        expect(screen.getByRole('button', {name: 'Save colours and contrast'})).toBeDisabled();
         expect(screen.getByRole('button', {name: 'Reset to company default'})).toBeDisabled();
 
         await user.click(screen.getByRole('radio', {name: 'Standard'}));
-        await user.click(screen.getByRole('button', {name: 'Save appearance'}));
+        await user.click(screen.getByRole('button', {name: 'Save colours and contrast'}));
 
         await waitFor(() => expect(mockSave).toHaveBeenCalledWith(
             StaffPreferenceKey.ThemeCustomisation,
             JSON.stringify({contrast: 'standard'}),
         ));
-        expect(toastService.showSuccessToast).toHaveBeenCalledWith('Appearance saved');
+        expect(toastService.showSuccessToast).toHaveBeenCalledWith('Colours and contrast saved');
     });
 
     it('blocks saving a text colour below the contrast minimum until the nearest accessible colour is used', async () => {
@@ -64,13 +65,13 @@ describe('AppearanceSettingsSection', () => {
 
         await user.type(screen.getByLabelText('Text colour in the light theme'), '#f4c430');
 
-        expect(await screen.findByText(/Needs at least 4.5:1/)).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Save appearance'})).toBeDisabled();
+        expect(await screen.findByText(/Needs 4\.5:1 or more/)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Save colours and contrast'})).toBeDisabled();
 
-        await user.click(screen.getByRole('button', {name: 'Use nearest accessible colour'}));
+        await user.click(screen.getByRole('button', {name: /^Use #[0-9a-f]{6} instead$/}));
 
-        expect(screen.queryByText(/Needs at least/)).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Save appearance'})).toBeEnabled();
+        expect(screen.queryByText(/Needs 4\.5:1 or more/)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Save colours and contrast'})).toBeEnabled();
     });
 
     it('resets to the company default by deleting the preference', async () => {
@@ -83,5 +84,22 @@ describe('AppearanceSettingsSection', () => {
 
         await waitFor(() => expect(mockDelete).toHaveBeenCalledWith(StaffPreferenceKey.ThemeCustomisation));
         expect(screen.getByLabelText('Primary colour')).toHaveValue('');
+    });
+
+    it('applies a suggested colour and previews the app bar in it, falling back to the company primary', async () => {
+        seed({tenant: {primary: '#132279'}});
+        const user = setupUser();
+        renderWithMantine(<AppearanceSettingsSection/>);
+
+        const preview = screen.getByRole('figure', {name: 'Preview of your colours'});
+        const bars = () => Array.from(preview.querySelectorAll<HTMLElement>('[data-mode]'))
+            .map(pane => pane.style.getPropertyValue('--pv-bar'));
+        expect(bars()).toEqual(['#132279', '#132279']);
+
+        await user.click(screen.getByRole('button', {name: 'Suggested #f4c430'}));
+
+        expect(screen.getByLabelText('Primary colour')).toHaveValue('#f4c430');
+        expect(bars()).toEqual(['#f4c430', '#f4c430']);
+        expect(screen.getByRole('button', {name: 'Save colours and contrast'})).toBeEnabled();
     });
 });

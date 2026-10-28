@@ -12,7 +12,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Badge, Box, Button, Group, Stack, Text, Title, Tooltip} from '@mantine/core';
 import styles from './SettingsPage.module.css';
-import {ArrowLeftRight, EyeOff, Flag, MapPin, Palette, RotateCcw, Save, TriangleAlert} from 'lucide-react';
+import {ArrowLeftRight, EyeOff, Flag, MapPin, Palette, RotateCcw, Save, SwatchBook, TriangleAlert} from 'lucide-react';
 import {SectionHeading, SettingRadioGroup, SettingRow} from '../../components/common/settings-controls/SettingsControls';
 import {AutoMateLogo} from '../../components/common/auto-mate-logo/AutoMateLogo';
 import {Icon} from '../../components/common/icon/Icon';
@@ -328,10 +328,6 @@ export const SettingsPage: React.FC = () => {
                                 onToggle={() => setLiquidGlassEnabled(!liquidGlassEnabled)}
                             />
                         </Box>
-
-                        <Box mt={16}>
-                            <AppearanceSettingsSection/>
-                        </Box>
                     </Box>
 
                     <Box>
@@ -366,75 +362,89 @@ export const SettingsPage: React.FC = () => {
                     </Box>
                 </div>
 
-                <Box className={styles.addressFormat}>
-                    <SectionHeading
-                        icon={<Icon lucide={MapPin} size={20}/>}
-                        title="Address format"
-                    />
+                <div className={styles.secondColumn}>
+                    <Box className={styles.addressFormat}>
+                        <SectionHeading
+                            icon={<Icon lucide={MapPin} size={20}/>}
+                            title="Address format"
+                        />
 
-                    <Text fz="sm" c="dimmed" mb={12}>
-                        Choose which fields appear in pickup and delivery addresses, and which line each
-                        sits on. Your admin sets the default. Changes aren&apos;t applied until you save.
-                    </Text>
-
-                    {addressLoadError && (
-                        <Text fz="sm" c="orange" mb={12}>
-                            Couldn&apos;t load your organisation&apos;s default format. Showing your saved
-                            format instead. Refresh to try again.
+                        <Text fz="sm" c="dimmed" mb={12}>
+                            Choose which fields appear in pickup and delivery addresses, and which line each
+                            sits on. Your admin sets the default. Changes aren&apos;t applied until you save.
                         </Text>
-                    )}
 
-                    <div className={styles.editors}>
-                        <Stack gap={8}>
-                            <Group justify="space-between">
-                                <Text fz="sm" fw={600}>Pickup</Text>
-                                <ActionButton
-                                    size="compact"
-                                    leftSection={<Icon lucide={ArrowLeftRight} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                                    onClick={() => setDeliveryDraft(pickupDraft)}
-                                >
-                                    Copy to delivery
-                                </ActionButton>
-                            </Group>
-                            <AddressFormatEditor value={pickupDraft} onChange={setPickupDraft}/>
-                        </Stack>
+                        {addressLoadError && (
+                            <Text fz="sm" c="orange" mb={12}>
+                                Couldn&apos;t load your organisation&apos;s default format. Showing your saved
+                                format instead. Refresh to try again.
+                            </Text>
+                        )}
 
-                        <Stack gap={8}>
-                            <Group justify="space-between">
-                                <Text fz="sm" fw={600}>Delivery</Text>
-                                <ActionButton
-                                    size="compact"
-                                    leftSection={<Icon lucide={ArrowLeftRight} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                                    onClick={() => setPickupDraft(deliveryDraft)}
-                                >
-                                    Copy to pickup
-                                </ActionButton>
-                            </Group>
-                            <AddressFormatEditor value={deliveryDraft} onChange={setDeliveryDraft}/>
-                        </Stack>
-                    </div>
+                        <div className={styles.editors}>
+                            <Stack gap={8}>
+                                <Group justify="space-between">
+                                    <Text fz="sm" fw={600}>Pickup</Text>
+                                    <ActionButton
+                                        size="compact"
+                                        leftSection={<Icon lucide={ArrowLeftRight} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                                        onClick={() => setDeliveryDraft(pickupDraft)}
+                                    >
+                                        Copy to delivery
+                                    </ActionButton>
+                                </Group>
+                                <AddressFormatEditor value={pickupDraft} onChange={setPickupDraft}/>
+                            </Stack>
 
-                    <Group justify="space-between" mt={16}>
-                        <Tooltip label="Already using the default" disabled={hasAddressOverride}>
-                            <span>
-                                <ActionButton
-                                    leftSection={<Icon lucide={RotateCcw} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                                    onClick={handleResetAddressFormat}
-                                    disabled={!hasAddressOverride}
-                                >
-                                    Reset to default
-                                </ActionButton>
-                            </span>
-                        </Tooltip>
-                        <ActionButton
-                            leftSection={<Icon lucide={Save} size={ACTION_BUTTON_GLYPH_SIZE}/>}
-                            onClick={handleSaveClick}
-                            disabled={!isDirty}
-                        >
-                            Save changes
-                        </ActionButton>
-                    </Group>
-                </Box>
+                            <Stack gap={8}>
+                                <Group justify="space-between">
+                                    <Text fz="sm" fw={600}>Delivery</Text>
+                                    <ActionButton
+                                        size="compact"
+                                        leftSection={<Icon lucide={ArrowLeftRight} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                                        onClick={() => setPickupDraft(deliveryDraft)}
+                                    >
+                                        Copy to pickup
+                                    </ActionButton>
+                                </Group>
+                                <AddressFormatEditor value={deliveryDraft} onChange={setDeliveryDraft}/>
+                            </Stack>
+                        </div>
+
+                        <Group justify="space-between" mt={16}>
+                            <Tooltip label="Already using the default" disabled={hasAddressOverride}>
+                                <span>
+                                    <ActionButton
+                                        leftSection={<Icon lucide={RotateCcw} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                                        onClick={handleResetAddressFormat}
+                                        disabled={!hasAddressOverride}
+                                    >
+                                        Reset to default
+                                    </ActionButton>
+                                </span>
+                            </Tooltip>
+                            <ActionButton
+                                leftSection={<Icon lucide={Save} size={ACTION_BUTTON_GLYPH_SIZE}/>}
+                                onClick={handleSaveClick}
+                                disabled={!isDirty}
+                            >
+                                Save changes
+                            </ActionButton>
+                        </Group>
+                    </Box>
+
+                    <Box>
+                        <SectionHeading
+                            icon={<Icon lucide={SwatchBook} size={20}/>}
+                            title="Colours and contrast"
+                        />
+                        <Text fz="sm" c="dimmed" mb={16}>
+                            Choose your own colours and contrast for Despatch. Anything you leave empty uses
+                            your company’s branding.
+                        </Text>
+                        <AppearanceSettingsSection/>
+                    </Box>
+                </div>
             </div>
 
             <DialogShell
