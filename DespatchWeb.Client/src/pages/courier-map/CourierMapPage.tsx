@@ -30,6 +30,7 @@ import type { CourierMapDisplaySettings } from './CourierMapDisplaySettings';
 import { getPreference, savePreference } from '../../api/preferencesApi';
 import { StaffPreferenceKey } from '../../types/enums/staff-preference-key.enum';
 import { loadSelectedFleetIds, saveSelectedFleetIds } from './courierMapFleetFilterStorage';
+import { useCourierFlagLastDelivery } from '../../hooks/useCourierFlagLastDelivery';
 
 interface CourierMapPageInternalProps extends CourierMapPageProps {
     apiKey: string | null;
@@ -62,6 +63,11 @@ export function CourierMapPage({
     // loads, matching the DispatchCourierDisplayMode pattern (see courierDisplayMode.ts).
     const [displaySettings, setDisplaySettings] = useState<CourierMapDisplaySettings>(LIVE_TEMPLATE);
     const mapViewControlsRef = useRef<MapZoomViewControlsHandle>(null);
+    const { mode: lastDelivery } = useCourierFlagLastDelivery(isUsCustomer);
+    const flagDisplaySettings = useMemo(
+        () => ({ ...displaySettings, lastDelivery }),
+        [displaySettings, lastDelivery]
+    );
 
     useEffect(() => {
         let cancelled = false;
@@ -119,7 +125,7 @@ export function CourierMapPage({
         apiKey,
         isUsCustomer,
         mapCenter,
-        displaySettings,
+        displaySettings: flagDisplaySettings,
         onMarkerTap: (driver) => handleDriverClickRef.current(driver),
     });
 

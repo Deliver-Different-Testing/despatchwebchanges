@@ -7,6 +7,7 @@
  */
 
 import type {MarkerLabelMode} from '../../components/common/here-map/courierFlagSvg';
+import type {LastDeliveryLabelMode} from '../../types/courierFlagLastDelivery';
 
 export type {MarkerLabelMode};
 export type MarkerColorMode = 'status' | 'single';
@@ -24,6 +25,11 @@ export interface CourierMapDisplaySettings {
     singleTextColor?: string;
     /** Uniform marker size multiplier. Unset falls back to {@link DEFAULT_MARKER_SCALE}. Not part of a template — like the custom colors, picking a preset resets it. */
     markerScale?: number;
+    /**
+     * The flags' last-delivery place. Never persisted with these settings: it is the shared courier
+     * flag setting (tenant default + per-user override on the Settings page), merged in at render.
+     */
+    lastDelivery?: LastDeliveryLabelMode;
 }
 
 /** New default: matches the requested satellite + traffic + numbered-marker look. */

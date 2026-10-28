@@ -458,7 +458,7 @@ describe('DispatchCourierMarkerManager', () => {
     describe('Last Delivery Line', () => {
         it('adds a second line with the last delivery city and elapsed minutes', () => {
             manager.updateMarkers([createMockCourier({
-                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryLocality: 'Ponsonby',
                 lastDeliveryTime: minutesAgo(12),
             })]);
 
@@ -476,7 +476,7 @@ describe('DispatchCourierMarkerManager', () => {
 
         it('repaints the flag and refreshes the marker payload as the minutes tick', () => {
             const at = (mins: number) => createMockCourier({
-                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryLocality: 'Ponsonby',
                 lastDeliveryTime: minutesAgo(mins),
             });
 
@@ -490,6 +490,24 @@ describe('DispatchCourierMarkerManager', () => {
             expect(marker.setIcon).toHaveBeenCalled();
             // The tooltip reads off the marker, so the payload has to move with it.
             expect(marker.getData().lastDeliveryTime).toBe(older.lastDeliveryTime);
+        });
+        it('names the place the last-delivery setting picks and repaints when it changes', () => {
+            const bronx = createMockCourier({
+                lastDeliveryLocality: 'Bronx',
+                lastDeliveryRegion: 'New York',
+                lastDeliveryTime: minutesAgo(12),
+            });
+            manager.setLastDeliveryMode('locality');
+            manager.updateMarkers([bronx]);
+            expect(mockH.map.Icon.mock.calls.at(-1)![0]).toContain('Bronx · 12m');
+
+            const marker = mockMarkerInstances[0];
+            marker.setIcon.mockClear();
+            manager.setLastDeliveryMode('region');
+            manager.updateMarkers([bronx]);
+
+            expect(marker.setIcon).toHaveBeenCalled();
+            expect(mockH.map.Icon.mock.calls.at(-1)![0]).toContain('New York · 12m');
         });
     });
 
@@ -845,7 +863,7 @@ describe('DispatchCourierMarkerManager', () => {
                 isUrgentArmyDriver: true,
                 totalJobs: 5,
                 overDueJobs: 2,
-                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryLocality: 'Ponsonby',
                 lastDeliveryTime: minutesAgo(12),
             })]);
 
@@ -878,7 +896,7 @@ describe('DispatchCourierMarkerManager', () => {
 
         it('singularises a one-minute-old delivery and names an unknown city', () => {
             manager.updateMarkers([createMockCourier({
-                lastDeliveryCity: null,
+                lastDeliveryLocality: null,
                 lastDeliveryTime: minutesAgo(1),
             })]);
 
@@ -985,7 +1003,7 @@ describe('DispatchCourierMarkerManager', () => {
 
         it('anchors a two-line flag lower, and the large pennant lower still', () => {
             manager.updateMarkers([
-                createMockCourier({lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(12)}),
+                createMockCourier({lastDeliveryLocality: 'Ponsonby', lastDeliveryTime: minutesAgo(12)}),
             ], false, false);
             expect(mockH.map.Icon.mock.calls.at(-1)![1].anchor)
                 .toEqual({x: 4, y: COURIER_FLAG_HEIGHT.twoLine});

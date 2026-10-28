@@ -1556,7 +1556,7 @@ public class CourierRepositoryTests : IAsyncDisposable
     }
 
     // The courier flag on the maps shows where the driver last dropped and how long ago, so the
-    // driver list carries the most recent completed job's delivery city and completion time.
+    // driver list carries the most recent completed job's delivery place and completion time.
     [Theory]
     [InlineData(false)] // NZ query path
     [InlineData(true)]  // US query path
@@ -1575,9 +1575,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
-                CompletedJob(1, new DateTime(2024, 1, 15, 8, 0, 0), city: "Newmarket"),
-                CompletedJob(2, new DateTime(2024, 1, 15, 9, 30, 0), city: "Ponsonby"),
-                CompletedJob(3, new DateTime(2024, 1, 14, 16, 0, 0), city: "Takapuna")
+                CompletedJob(1, new DateTime(2024, 1, 15, 8, 0, 0), locality: "Newmarket", region: "Auckland"),
+                CompletedJob(2, new DateTime(2024, 1, 15, 9, 30, 0), locality: "Ponsonby", region: "Auckland"),
+                CompletedJob(3, new DateTime(2024, 1, 14, 16, 0, 0), locality: "Takapuna", region: "North Shore")
             );
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
@@ -1591,8 +1591,44 @@ public class CourierRepositoryTests : IAsyncDisposable
 
         // Assert
         var driver = Assert.Single(result);
-        Assert.Equal("Ponsonby", driver.LastDeliveryCity);
+        Assert.Equal("Ponsonby", driver.LastDeliveryLocality);
+        Assert.Equal("Auckland", driver.LastDeliveryRegion);
         Assert.Equal(new DateTime(2024, 1, 15, 9, 30, 0), driver.LastDeliveryTime?.DateTime);
+    }
+
+    // US addresses keep the township/city on line 5 and the state on line 6 — the reverse of what a
+    // flag that only read line 6 assumed — so both lines come back and the client picks per setting.
+    [Fact]
+    public async Task GetAvailableCouriersAsync_UsLastDelivery_ReturnsTownshipAndState()
+    {
+        // Arrange
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(
+                CompletedJob(1, new DateTime(2024, 1, 15, 9, 0, 0), locality: "Bronx", region: "New York"));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal("Bronx", driver.LastDeliveryLocality);
+        Assert.Equal("New York", driver.LastDeliveryRegion);
     }
 
     [Fact]
@@ -1622,39 +1658,9 @@ public class CourierRepositoryTests : IAsyncDisposable
 
         // Assert
         var driver = Assert.Single(result);
-        Assert.Null(driver.LastDeliveryCity);
+        Assert.Null(driver.LastDeliveryLocality);
+        Assert.Null(driver.LastDeliveryRegion);
         Assert.Null(driver.LastDeliveryTime);
-    }
-
-    [Fact]
-    public async Task GetAvailableCouriersAsync_LastDeliveryWithoutCity_FallsBackToSuburb()
-    {
-        // Arrange - address line 6 (city) is often blank on suburban drops; line 5 (suburb) is not
-        await SetupAvailableCourier(
-            courierId: 1,
-            fleetId: (int)CourierFleet.UaAuckland,
-            fleetName: "UA Auckland",
-            displayOnClearlistsDespatch: true,
-            lat: -36.85m,
-            lng: 174.76m);
-
-        await using (var context = CreateContext())
-        {
-            context.TucJobs.Add(
-                CompletedJob(1, new DateTime(2024, 1, 15, 9, 0, 0), city: null, suburb: "Grey Lynn"));
-            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
-        }
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetAvailableCouriersAsync(
-            NzWideBounds,
-            cancellationToken: TestContext.Current.CancellationToken);
-
-        // Assert
-        var driver = Assert.Single(result);
-        Assert.Equal("Grey Lynn", driver.LastDeliveryCity);
     }
 
     [Fact]
@@ -1672,9 +1678,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
-                CompletedJob(1, new DateTime(2024, 1, 15, 8, 0, 0), city: "Newmarket"),
-                CompletedJob(2, new DateTime(2024, 1, 15, 9, 30, 0), city: "Ponsonby", isVoid: true),
-                CompletedJob(3, new DateTime(2024, 1, 15, 9, 45, 0), city: "Takapuna",
+                CompletedJob(1, new DateTime(2024, 1, 15, 8, 0, 0), locality: "Newmarket"),
+                CompletedJob(2, new DateTime(2024, 1, 15, 9, 30, 0), locality: "Ponsonby", isVoid: true),
+                CompletedJob(3, new DateTime(2024, 1, 15, 9, 45, 0), locality: "Takapuna",
                     status: (int)JobStatus.Void));
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
@@ -1688,41 +1694,10 @@ public class CourierRepositoryTests : IAsyncDisposable
 
         // Assert
         var driver = Assert.Single(result);
-        Assert.Equal("Newmarket", driver.LastDeliveryCity);
+        Assert.Equal("Newmarket", driver.LastDeliveryLocality);
     }
 
-    [Fact]
-    public async Task GetAvailableCouriersAsync_LastDeliveryWithBlankCity_FallsBackToSuburb()
-    {
-        // Arrange - a blank city is far more common in this data than a null one
-        await SetupAvailableCourier(
-            courierId: 1,
-            fleetId: (int)CourierFleet.UaAuckland,
-            fleetName: "UA Auckland",
-            displayOnClearlistsDespatch: true,
-            lat: -36.85m,
-            lng: 174.76m);
-
-        await using (var context = CreateContext())
-        {
-            context.TucJobs.Add(
-                CompletedJob(1, new DateTime(2024, 1, 15, 9, 0, 0), city: "", suburb: "Grey Lynn"));
-            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
-        }
-
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetAvailableCouriersAsync(
-            NzWideBounds,
-            cancellationToken: TestContext.Current.CancellationToken);
-
-        // Assert
-        var driver = Assert.Single(result);
-        Assert.Equal("Grey Lynn", driver.LastDeliveryCity);
-    }
-
-    private static TucJob CompletedJob(int id, DateTime completedAt, string? city, string? suburb = null,
+    private static TucJob CompletedJob(int id, DateTime completedAt, string? locality, string? region = null,
         bool isVoid = false, int status = (int)JobStatus.Completed) => new()
     {
         UcjbId = id,
@@ -1733,8 +1708,8 @@ public class CourierRepositoryTests : IAsyncDisposable
         UcjbJobDone = true,
         UcjbVoid = isVoid,
         UcjbStatus = status,
-        DeliveryAddressLine5 = suburb,
-        DeliveryAddressLine6 = city
+        DeliveryAddressLine5 = locality,
+        DeliveryAddressLine6 = region
     };
 
     /// <summary>

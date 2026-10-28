@@ -7,6 +7,7 @@
 import type { IDispatchMapItem } from '../../../types/interfaces/job.interface';
 import type { IAvailableCourierPosition } from '../../../types/interfaces/courier.interface';
 import type { AddressType } from '../../../types/enums/address-type.enum';
+import type { LastDeliveryLabelMode } from '../../../types/courierFlagLastDelivery';
 import React from "react";
 
 // Re-export for convenience
@@ -39,6 +40,8 @@ export interface DispatchMapProps {
      * unscoped `${key}-${ContactID}`.
      */
     preferenceScope?: string | number;
+    /** Which place the courier flags' last-delivery line names (user setting). */
+    courierFlagLastDelivery?: LastDeliveryLabelMode;
 }
 
 /**

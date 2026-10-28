@@ -5,6 +5,7 @@
  */
 
 import type {CourierMarkerData, IAvailableCourierPosition} from './DispatchMap.types';
+import type {LastDeliveryLabelMode} from '../../../types/courierFlagLastDelivery';
 import {COURIER_LABEL_COLORS, ICON_CACHE_LIMIT, MARKER_COLORS, POSITION_THRESHOLD,} from './DispatchMap.types';
 import {createMapTooltipElement, removeStaleMarkers, safeRemoveObject} from '../here-map/hereMapUtils';
 import type {CourierFlagColors, CourierFlagLines} from '../here-map/courierFlagSvg';
@@ -28,6 +29,7 @@ export class DispatchCourierMarkerManager {
     private tooltipElement: HTMLDivElement | null = null;
     private autoZoomEnabled: boolean = true;
     private largeViewEnabled: boolean = false;
+    private lastDeliveryMode: LastDeliveryLabelMode | undefined;
 
     // Store bound handlers for cleanup
     private readonly handleTap: (evt: any) => void;
@@ -160,6 +162,14 @@ export class DispatchCourierMarkerManager {
     }
 
     /**
+     * Which place the flags' last-delivery line names. Takes effect on the next `updateMarkers`, whose
+     * cache-key comparison repaints every flag whose text changed.
+     */
+    setLastDeliveryMode(mode: LastDeliveryLabelMode | undefined): void {
+        this.lastDeliveryMode = mode;
+    }
+
+    /**
      * Set auto zoom preference
      */
     setAutoZoom(enabled: boolean): void {
@@ -241,7 +251,11 @@ export class DispatchCourierMarkerManager {
      * driver at a glance, not for reading their workload — but keeps the last-delivery line.
      */
     private getFlagLines(courier: IAvailableCourierPosition, largeView: boolean): CourierFlagLines {
-        const lines = getCourierFlagLines(courier);
+        const lines = getCourierFlagLines(courier, {
+            markerLabel: 'name',
+            showJobCount: true,
+            lastDelivery: this.lastDeliveryMode,
+        });
         return largeView
             ? {...lines, primary: courier.courierName.split(' ')[0]}
             : lines;

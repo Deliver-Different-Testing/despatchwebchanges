@@ -74,6 +74,7 @@ import type {TruckMode} from '../../components/common/driver-locations/DriverLoc
 import {getPreference} from '../../api/preferencesApi';
 import {StaffPreferenceKey} from '../../types/enums/staff-preference-key.enum';
 import {defaultCourierDisplayMode, type CourierDisplayMode} from './lib/courierDisplayMode';
+import {useCourierFlagLastDelivery} from '../../hooks/useCourierFlagLastDelivery';
 import {loadDialog} from '../../components/dialogs/dialogRegistry';
 
 const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
@@ -299,6 +300,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded once on mount
     }, []);
+
+    const {mode: courierFlagLastDelivery} = useCourierFlagLastDelivery(isUsCustomer);
 
     // Highlight-sync callback captured from the job list (V1 ReactJobList.selectJob)
     // so selecting a job from the map or supports highlights the matching row.
@@ -691,6 +694,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                             clearListId={clearListId}
                             showAvailableCouriers
                             preferenceScope={LegacyAppPage.Dispatch}
+                            courierFlagLastDelivery={courierFlagLastDelivery}
                         />
                     </Box>
                 );
@@ -770,7 +774,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             default:
                 return null;
         }
-    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, mapJobs, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode, pageViews, viewsLoading, toggleView, clearViews, mapCourierWork?.jobs, mapView.center, mapView.zoom, refreshIntervals.jobsMs, refreshIntervals.tasksMs, refreshIntervals.driverLocationsMs, courierDisplayMode]);
+    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, mapJobs, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode, pageViews, viewsLoading, toggleView, clearViews, mapCourierWork?.jobs, mapView.center, mapView.zoom, refreshIntervals.jobsMs, refreshIntervals.tasksMs, refreshIntervals.driverLocationsMs, courierDisplayMode, courierFlagLastDelivery]);
 
     const subtitleFor = useCallback((boxName: string) => {
         if (boxName === DispatchBoxes.JobDetail) {

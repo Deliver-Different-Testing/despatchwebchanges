@@ -143,7 +143,7 @@ describe('CourierMarkerManager', () => {
         it('reads like the dispatch flag for name and job counts, but hides the last-delivery line unless selected', () => {
             manager.updateMarkers([driver({
                 overDueJobs: 1,
-                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryLocality: 'Ponsonby',
                 lastDeliveryTime: minutesAgo(12),
             })]);
 
@@ -154,7 +154,7 @@ describe('CourierMarkerManager', () => {
 
         it('shows the last-delivery line too once the courier is selected', () => {
             manager.updateMarkers([driver({
-                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryLocality: 'Ponsonby',
                 lastDeliveryTime: minutesAgo(12),
             })]);
 
@@ -210,7 +210,7 @@ describe('CourierMarkerManager', () => {
                 .toEqual({x: 4, y: COURIER_FLAG_HEIGHT.oneLine});
 
             manager.updateMarkers([driver({
-                courierId: 2, lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(3),
+                courierId: 2, lastDeliveryLocality: 'Ponsonby', lastDeliveryTime: minutesAgo(3),
             })]);
             manager.setSelectedCourier(2);
             expect(mockH.map.Icon.mock.calls.at(-1)![1].anchor)
@@ -219,13 +219,13 @@ describe('CourierMarkerManager', () => {
 
         it('repaints and refreshes the payload as the minutes tick while selected', () => {
             manager.updateMarkers([driver({
-                lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(12),
+                lastDeliveryLocality: 'Ponsonby', lastDeliveryTime: minutesAgo(12),
             })]);
             manager.setSelectedCourier(1);
             const marker = mockMarkerInstances[0];
             marker.setIcon.mockClear();
 
-            const later = driver({lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(13)});
+            const later = driver({lastDeliveryLocality: 'Ponsonby', lastDeliveryTime: minutesAgo(13)});
             manager.updateMarkers([later]);
 
             expect(marker.setIcon).toHaveBeenCalled();
@@ -234,12 +234,12 @@ describe('CourierMarkerManager', () => {
 
         it('does not repaint an unselected marker as the minutes tick, since the line is hidden', () => {
             manager.updateMarkers([driver({
-                lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(12),
+                lastDeliveryLocality: 'Ponsonby', lastDeliveryTime: minutesAgo(12),
             })]);
             const marker = mockMarkerInstances[0];
             marker.setIcon.mockClear();
 
-            const later = driver({lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(13)});
+            const later = driver({lastDeliveryLocality: 'Ponsonby', lastDeliveryTime: minutesAgo(13)});
             manager.updateMarkers([later]);
 
             expect(marker.setIcon).not.toHaveBeenCalled();
@@ -254,7 +254,7 @@ describe('CourierMarkerManager', () => {
                 isUrgentArmyDriver: true,
                 totalJobs: 4,
                 overDueJobs: 1,
-                lastDeliveryCity: 'Ponsonby',
+                lastDeliveryLocality: 'Ponsonby',
                 lastDeliveryTime: minutesAgo(12),
             })]);
 
@@ -401,7 +401,7 @@ describe('CourierMarkerManager', () => {
             manager.updateMarkers([driver()]);
             manager.setSelectedCourier(1);
 
-            manager.updateMarkers([driver({lastDeliveryCity: 'Ponsonby', lastDeliveryTime: minutesAgo(1)})]);
+            manager.updateMarkers([driver({lastDeliveryLocality: 'Ponsonby', lastDeliveryTime: minutesAgo(1)})]);
 
             expect(lastSvg()).toContain(HIGHLIGHT_BORDER_COLOR);
         });

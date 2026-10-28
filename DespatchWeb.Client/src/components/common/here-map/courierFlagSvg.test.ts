@@ -5,12 +5,14 @@ import {
     courierFlagAnchor,
     courierFlagCacheKey,
     createCourierFlagSvg,
+    createCourierTooltipHtml,
     createLargeCourierFlagSvg,
     DEFAULT_MARKER_SCALE,
     getCourierFlagLines,
     getCourierStatus,
     lastDeliveryMinutes,
 } from './courierFlagSvg';
+import type {LastDeliveryLabelMode} from '../../../types/courierFlagLastDelivery';
 
 const COLORS = {bg: '#C8E6C9', text: '#1B5E20', border: '#A5D6A7'};
 
@@ -89,7 +91,7 @@ describe('getCourierFlagLines', () => {
 
     it('builds the secondary line from the last delivery city and elapsed minutes', () => {
         const lines = getCourierFlagLines(courier({
-            lastDeliveryCity: 'Ponsonby',
+            lastDeliveryLocality: 'Ponsonby',
             lastDeliveryTime: minutesAgo(12),
         }), NAME_WITH_COUNT);
         expect(lines.secondary).toBe('Ponsonby · 12m');
@@ -97,7 +99,7 @@ describe('getCourierFlagLines', () => {
 
     it('omits the secondary line entirely when there is no last delivery', () => {
         expect(getCourierFlagLines(courier(), NAME_WITH_COUNT).secondary).toBeNull();
-        expect(getCourierFlagLines(courier({lastDeliveryCity: 'Ponsonby'}), NAME_WITH_COUNT).secondary).toBeNull();
+        expect(getCourierFlagLines(courier({lastDeliveryLocality: 'Ponsonby'}), NAME_WITH_COUNT).secondary).toBeNull();
     });
 
     it('shows the elapsed minutes alone when the city is missing', () => {
@@ -107,10 +109,51 @@ describe('getCourierFlagLines', () => {
 
     it('never renders a negative age from a clock-skewed timestamp', () => {
         const lines = getCourierFlagLines(courier({
-            lastDeliveryCity: 'Ponsonby',
+            lastDeliveryLocality: 'Ponsonby',
             lastDeliveryTime: minutesAgo(-5),
         }), NAME_WITH_COUNT);
         expect(lines.secondary).toBe('Ponsonby · 0m');
+    });
+});
+
+describe('getCourierFlagLines last delivery mode', () => {
+    // US-shaped: line 5 is the township, line 6 the state.
+    const bronx = (overrides: Partial<IAvailableCourierPosition> = {}) => courier({
+        lastDeliveryLocality: 'Bronx',
+        lastDeliveryRegion: 'New York',
+        lastDeliveryTime: minutesAgo(12),
+        ...overrides,
+    });
+    const secondary = (c: IAvailableCourierPosition, lastDelivery: LastDeliveryLabelMode) =>
+        getCourierFlagLines(c, {...NAME_WITH_COUNT, lastDelivery}).secondary;
+
+    it('shows the place the mode asks for', () => {
+        expect(secondary(bronx(), 'locality')).toBe('Bronx · 12m');
+        expect(secondary(bronx(), 'region')).toBe('New York · 12m');
+        expect(secondary(bronx(), 'localityRegion')).toBe('Bronx, New York · 12m');
+        expect(secondary(bronx(), 'time')).toBe('12m');
+        expect(secondary(bronx(), 'off')).toBeNull();
+    });
+
+    it('falls back to whichever place is filled in rather than showing a bare age', () => {
+        expect(secondary(bronx({lastDeliveryLocality: '  '}), 'locality')).toBe('New York · 12m');
+        expect(secondary(bronx({lastDeliveryRegion: ''}), 'region')).toBe('Bronx · 12m');
+        expect(secondary(bronx({lastDeliveryRegion: null}), 'localityRegion')).toBe('Bronx · 12m');
+    });
+
+    it('defaults to the region with a locality fallback when no mode is set', () => {
+        expect(getCourierFlagLines(bronx(), NAME_WITH_COUNT).secondary).toBe('New York · 12m');
+    });
+});
+
+describe('createCourierTooltipHtml', () => {
+    it('names the full last delivery place regardless of the flag setting', () => {
+        const html = createCourierTooltipHtml(courier({
+            lastDeliveryLocality: 'Bronx',
+            lastDeliveryRegion: 'New York',
+            lastDeliveryTime: minutesAgo(12),
+        }));
+        expect(html).toContain('Last delivery: Bronx, New York');
     });
 });
 

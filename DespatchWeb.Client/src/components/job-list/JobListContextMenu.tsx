@@ -573,7 +573,16 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
     return (
         <>
-            <Menu opened={open} onClose={closeAll} position="bottom-start" withinPortal shadow="md" width={240}>
+            {/* The Task Groups submenu sits outside this dropdown; clicks in it must not close the parent. */}
+            <Menu
+                opened={open}
+                onClose={closeAll}
+                closeOnClickOutside={!eventGroupsAnchor}
+                position="bottom-start"
+                withinPortal
+                shadow="md"
+                width={240}
+            >
                 <Menu.Target>
                     <div style={menuTargetStyle} aria-hidden="true"/>
                 </Menu.Target>
