@@ -20,7 +20,7 @@ describe('ThemeBootstrap', () => {
         document.documentElement.removeAttribute('style');
     });
 
-    it('applies the NZ brand, theme-nz class and en-nz locale before children render', () => {
+    it('sets the en-nz locale before children render for a non-US tenant', () => {
         setSessionContext(context(false));
         let localeSeenByChild = '';
         const Child = () => {
@@ -31,19 +31,20 @@ describe('ThemeBootstrap', () => {
 
         expect(getByText('child')).toBeInTheDocument();
         expect(localeSeenByChild).toBe('en-nz');
-        expect(document.body).toHaveClass('theme-nz');
-        expect(document.body).not.toHaveClass('theme-us');
-        expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#f4c430');
-        expect(document.documentElement.style.getPropertyValue('--theme-primary-light')).toBe('rgba(244, 196, 48, 0.15)');
     });
 
-    it('applies the US brand and keeps the en locale', () => {
+    it('keeps the en locale for a US tenant', () => {
         setSessionContext(context(true));
         render(<ThemeBootstrap><span/></ThemeBootstrap>);
 
         expect(dayjs.locale()).toBe('en');
-        expect(document.body).toHaveClass('theme-us');
-        expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#3bc7f4');
-        expect(document.documentElement.style.getPropertyValue('--theme-primary-strong')).toBe('rgba(59, 199, 244, 0.5)');
+    });
+
+    it.each([false, true])('never picks theme colours from the tenant country (isUsTenant=%s)', (isUs) => {
+        setSessionContext(context(isUs));
+        render(<ThemeBootstrap><span/></ThemeBootstrap>);
+
+        expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('');
+        expect(document.body.className).toBe('');
     });
 });

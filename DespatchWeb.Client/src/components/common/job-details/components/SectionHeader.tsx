@@ -43,7 +43,7 @@ interface SectionHeaderProps {
  * Pickup and delivery keep the map-flag blue/green — the same `reflexBlue` /
  * `green` the MUI theme served them as `info` / `success`. They are deliberately
  * NOT the tenant brand: the map flags are fixed for every tenant, so keying
- * these off the brand would break the pairing on the gold tenant. Everything
+ * these off the brand would break the pairing on a tenant with a custom primary. Everything
  * else is the neutral card bar, whose tokens are colour-scheme aware.
  */
 export const sectionHeaderColors: Record<SectionHeaderVariant, {bg: string; fg: string}> = {

@@ -15,7 +15,7 @@ const GLYPH_SIZE = 14;
 
 /**
  * Light / dark / match-device picker for the side-nav account header. It sits on the
- * shell bar (Ink or gold), so it takes the bar's scrim overlays rather than the page
+ * shell bar (Ink, or a tenant's custom primary), so it takes the bar's scrim overlays rather than the page
  * scheme. Native radios keep arrow-key navigation and `aria-checked` for free.
  */
 export const ColorModeSwitcher: React.FC = () => {
