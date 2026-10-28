@@ -27,4 +27,18 @@ public class TenantSettingsController(ITenantSettingsService tenantSettingsServi
             return StatusCode(500, e.Message);
         }
     }
+
+    public async Task<IActionResult> GetCourierFlagLastDeliveryDefault()
+    {
+        try
+        {
+            var mode = await tenantSettingsService.GetCourierFlagLastDeliveryDefaultAsync();
+            return Json(mode);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting tenant courier flag last delivery default: {Error}", e.Message);
+            return StatusCode(500, e.Message);
+        }
+    }
 }

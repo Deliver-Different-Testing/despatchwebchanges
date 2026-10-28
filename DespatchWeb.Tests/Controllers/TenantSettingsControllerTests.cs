@@ -37,4 +37,16 @@ public class TenantSettingsControllerTests
         var json = Assert.IsType<JsonResult>(result);
         Assert.Null(json.Value);
     }
+
+    [Fact]
+    public async Task GetCourierFlagLastDeliveryDefault_ReturnsTheStoredMode()
+    {
+        _tenantSettingsServiceMock.GetCourierFlagLastDeliveryDefaultAsync().Returns("region");
+        var controller = CreateController();
+
+        var result = await controller.GetCourierFlagLastDeliveryDefault();
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Equal("region", json.Value);
+    }
 }

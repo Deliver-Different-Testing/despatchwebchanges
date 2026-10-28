@@ -16,4 +16,13 @@ public sealed class TenantSettingsService(IDbContextFactory<DespatchContext> con
             .Select(s => s.DispatchAddressFormatJson)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<string?> GetCourierFlagLastDeliveryDefaultAsync()
+    {
+        await using var ctx = await contextFactory.CreateDbContextAsync();
+
+        return await ctx.TblSettings
+            .Select(s => s.CourierFlagLastDeliveryMode)
+            .FirstOrDefaultAsync();
+    }
 }
