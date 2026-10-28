@@ -13,5 +13,8 @@ public sealed class TaskTableFiltersRequest
     public int? JobId { get; init; }
     public DateTimeOffset? StartDate { get; init; }
     public DateTimeOffset? EndDate { get; init; }
+
+    /// <summary>Also return open tasks due before StartDate, so old overdue work stays visible.</summary>
+    public bool IncludeOverdue { get; init; }
     public int? Limit { get; init; }
 }

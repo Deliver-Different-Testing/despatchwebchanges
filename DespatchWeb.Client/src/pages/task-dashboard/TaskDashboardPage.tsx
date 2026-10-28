@@ -59,7 +59,7 @@ import {
 } from '../../components/common/panel-controls';
 import {SegmentedToggle} from '../../components/common/segmented-toggle';
 import {NoData} from '../../components/common/no-data/NoData';
-import {formatDateForApi} from '../../utils/dateUtils';
+import {formatDateForApi, getIanaTimezone, tenantNow} from '../../utils/dateUtils';
 import {
     useActiveStaff,
     useEventTypes,
@@ -105,8 +105,8 @@ const loadRefreshIntervalMsForUser = (): number | false =>
 
 // Helper to set default date filter
 const setDateFilterDefaults = (): DateFilterData => ({
-    startDate: dayjs().subtract(1, 'day').startOf('day'),
-    endDate: dayjs().add(7, 'days').endOf('day'),
+    startDate: tenantNow().subtract(1, 'day').startOf('day'),
+    endDate: tenantNow().add(7, 'days').endOf('day'),
 });
 
 // Task date group definition
@@ -184,8 +184,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             if (saved) {
                 const parsed = JSON.parse(saved);
                 return {
-                    startDate: dayjs(parsed.startDate),
-                    endDate: dayjs(parsed.endDate),
+                    startDate: dayjs(parsed.startDate).tz(getIanaTimezone()),
+                    endDate: dayjs(parsed.endDate).tz(getIanaTimezone()),
                 };
             }
         } catch { /* ignore localStorage errors */
@@ -244,6 +244,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
         filters.startDate = formatDateForApi(dateFilterData.startDate);
         filters.endDate = formatDateForApi(dateFilterData.endDate);
         filters.limit = TASK_LIST_LIMIT;
+        filters.includeOverdue = true;
 
         return filters;
     }, [staffFilter, eventTypeFilter, searchQuery, dateFilterData]);
@@ -302,7 +303,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     // Open, not-yet-overdue, and due before the end of today.
     const isTaskDueToday = useCallback((task: ExtendedTask): boolean => {
         if (task.closed || isTaskOverdue(task)) return false;
-        return !task.dueDate.isAfter(dayjs().endOf('day'));
+        return !task.dueDate.isAfter(tenantNow().endOf('day'));
     }, [isTaskOverdue]);
 
     // Apply the time-to-action filter. `All` is all active work; the four cards
@@ -357,7 +358,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             }];
         }
 
-        const now = dayjs();
+        const now = tenantNow();
         const todayStart = now.startOf('day');
         const todayEnd = now.endOf('day');
         const tomorrowEnd = todayStart.add(1, 'day').endOf('day');

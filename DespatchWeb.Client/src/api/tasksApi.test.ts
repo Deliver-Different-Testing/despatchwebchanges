@@ -89,6 +89,15 @@ describe('tasksApi', () => {
             expect(result[1].createdAt).toBeUndefined();
         });
 
+        it('should set the due display strings the "Set due" control reads', async () => {
+            mockApiClient.get.mockResolvedValueOnce([{...mockTaskResponse[0], dueDate: '2024-01-15T10:00:00'}]);
+
+            const [task] = await getAllTasks();
+
+            expect(task._dueDateString).toBe('Jan/15/2024');
+            expect(task._dueTimeString).toBe('10:00');
+        });
+
         it.each([
             ['searchText', {searchText: 'follow up'}],
             ['staffId', {staffId: 5}],
@@ -99,6 +108,7 @@ describe('tasksApi', () => {
             ['courierId', {courierId: 10}],
             ['jobId', {jobId: 123}],
             ['limit', {limit: 1000}],
+            ['includeOverdue', {includeOverdue: true}],
         ])('should pass %s filter', async (_, filters) => {
             mockApiClient.get.mockResolvedValueOnce([]);
             await getAllTasks(filters);

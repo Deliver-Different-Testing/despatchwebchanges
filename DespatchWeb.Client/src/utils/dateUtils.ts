@@ -85,6 +85,11 @@ export function formatDateForApi(date: Date | Dayjs | string, timeZone?: string)
     return dayjsDate.format();
 }
 
+/** Now on the tenant's wall clock. Use it for day boundaries ("today", "yesterday"), which bare dayjs() takes from the browser's zone. */
+export function tenantNow(): Dayjs {
+    return dayjs().tz(getIanaTimezone());
+}
+
 /**
  * Parse a date string from API response
  * @param dateString - ISO date string from API

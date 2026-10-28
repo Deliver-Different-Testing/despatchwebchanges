@@ -591,7 +591,13 @@ public class TaskRepository(
     )
     {
         // Apply date filters based on the available parameters
-        if (filters.StartDate.HasValue && filters.EndDate.HasValue)
+        if (filters.StartDate.HasValue && filters.EndDate.HasValue && filters.IncludeOverdue)
+        {
+            query = query.Where(e => (e.UcevDueTime >= filters.StartDate.Value &&
+                                      e.UcevDueTime <= filters.EndDate.Value)
+                                     || (!e.UcevClosed && e.UcevDueTime < filters.StartDate.Value));
+        }
+        else if (filters.StartDate.HasValue && filters.EndDate.HasValue)
         {
             // If both start and end dates are provided, filter for events within that range
             query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value &&
