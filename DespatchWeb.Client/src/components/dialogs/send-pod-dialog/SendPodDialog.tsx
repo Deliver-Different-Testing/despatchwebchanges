@@ -268,7 +268,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                 Add
                             </Button>
                         </Group>
-                        <Text fz="xs" mt={6} c={freeError ? 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))' : 'dimmed'}>
+                        <Text fz="xs" mt={6} c={freeError ? 'var(--mantine-color-error)' : 'dimmed'}>
                             {freeError || 'Press Enter or comma to add multiple'}
                         </Text>
                     </Paper>

@@ -1489,7 +1489,7 @@ interface ErrorStateProps {
 function ErrorState({message, onRetry}: ErrorStateProps) {
     return (
         <Stack flex={1} align="center" justify="center" gap={16} p={40}>
-            <Box c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))">
+            <Box c="var(--mantine-color-error)">
                 <Icon lucide={CircleAlert} size={64}/>
             </Box>
             <Title order={5}>Couldn't load messages</Title>

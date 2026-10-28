@@ -289,12 +289,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                             : alpha('var(--mantine-color-green-6)', 0.25)}`,
                     }}
                 >
-                    <Text size="xs" fw={500} c={hasChildSumMismatch ? 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))' : 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))'}>
+                    <Text size="xs" fw={500} c={hasChildSumMismatch ? 'var(--mantine-color-error)' : 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))'}>
                         {hasChildSumMismatch
                             ? `Parent must equal children total — set to $${childSum.toFixed(2)}`
                             : 'Parent matches children total'}
                     </Text>
-                    <Text size="xs" fw={700} c={hasChildSumMismatch ? 'light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))' : 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))'}>
+                    <Text size="xs" fw={700} c={hasChildSumMismatch ? 'var(--mantine-color-error)' : 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))'}>
                         ${childSum.toFixed(2)}
                     </Text>
                 </Group>
@@ -385,7 +385,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
 
             {/* Error message */}
             {errorMessage && (
-                <Text c="light-dark(var(--mantine-color-red-6), var(--mantine-color-red-4))" size="sm" mt="md">{errorMessage}</Text>
+                <Text c="var(--mantine-color-error)" size="sm" mt="md">{errorMessage}</Text>
             )}
         </Box>
     );
