@@ -422,6 +422,9 @@ export const dfrntCssVariablesResolver: CSSVariablesResolver = (theme) => {
             '--dd-dialog-section': dk.surfaceContainerHigh,
             '--dd-dialog-bar': dk.surfaceContainer,
             '--dd-dialog-body': dk.surfaceContainerLow,
+            // Mantine's dark error is red-8, which vanishes on the charcoal ladder; red-2 is
+            // the only step that holds 4.5:1 for small error text up to the dialog tier.
+            '--mantine-color-error': theme.colors.red[2],
             // Mantine's gray-0..4 are fixed palette values that never flip, and the app uses
             // them as quiet fills (zebra rows, headers, hovers) and hairline borders. Remap
             // them onto the dark ladder so those follow the scheme. `white` is left alone:

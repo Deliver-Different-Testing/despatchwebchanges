@@ -177,6 +177,23 @@ describe('dfrntCssVariablesResolver — dialog planes', () => {
     });
 });
 
+describe('dfrntCssVariablesResolver — error colour in dark mode', () => {
+    const vars = dfrntCssVariablesResolver(dfrntTheme as never);
+    const dark = getMd3Scheme('dark');
+
+    it('uses the pale red so validation text reads at AA on every dark tier up to dialog sections', () => {
+        const error = vars.dark['--mantine-color-error'];
+        expect(error).toBe(dfrntTheme.colors?.red?.[2]);
+        for (const surface of [dark.surface, dark.surfaceContainer, dark.surfaceContainerHigh]) {
+            expect(contrastRatio(error, surface)).toBeGreaterThanOrEqual(4.5);
+        }
+    });
+
+    it('leaves the light scheme error to Mantine', () => {
+        expect(vars.light['--mantine-color-error']).toBeUndefined();
+    });
+});
+
 describe('DFRNT brand contrast', () => {
     it.each([
         ['Cyan', dfrntBrand.cyan],
