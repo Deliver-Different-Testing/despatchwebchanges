@@ -63,6 +63,7 @@
     <PackageReference Include="AWSSDK.SSO" />
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="Magick.NET-Q8-AnyCPU" />
+    <PackageReference Include="DeliverDifferent.AgentAccess" />
     <PackageReference Include="DeliverDifferentReporting" />
     <PackageReference Include="ExcelDataReader" />
     <PackageReference Include="PdfSharp" />
