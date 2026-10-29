@@ -355,6 +355,8 @@ public partial class TblSetting
 
     public string CourierFlagLastDeliveryMode { get; set; }
 
+    public string AppearanceDefaultsJson { get; set; }
+
     public bool PolygonZoneResolutionEnabled { get; set; }
 
     public virtual TucStaff InternetJobStaff { get; set; }

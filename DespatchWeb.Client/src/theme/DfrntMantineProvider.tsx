@@ -8,12 +8,14 @@
  *
  * Mantine's component stylesheet is imported once in main.tsx, so this provider only injects the theme CSS variables.
  */
-import React, {useEffect} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {MantineProvider} from '@mantine/core';
 import {DatesProvider} from '@mantine/dates';
 import {GlassProvider} from '@deliver-different/glass';
-import {dfrntTheme, dfrntCssVariablesResolver} from './dfrntMantineTheme';
+import {createDfrntTheme, dfrntCssVariablesResolver} from './dfrntMantineTheme';
+import {toThemeAppearance} from './appearance';
+import {useAppearance} from '../hooks/useAppearance';
 import {ColorModeProvider, useColorMode} from '../hooks/useColorMode';
 import {ReactQueryProvider} from '../api';
 import {useLiquidGlassEnabled} from '../hooks/useLiquidGlassPreference';
@@ -24,14 +26,25 @@ interface DfrntMantineProviderProps {
 
 const ThemedSubtree: React.FC<DfrntMantineProviderProps> = ({children}) => {
     const {mode} = useColorMode();
-    const glassEnabled = useLiquidGlassEnabled();
+    const {resolved, systemPrefersMoreContrast} = useAppearance();
+    const appearance = useMemo(
+        () => toThemeAppearance(resolved, systemPrefersMoreContrast),
+        [resolved, systemPrefersMoreContrast],
+    );
+    const theme = useMemo(() => createDfrntTheme(appearance), [appearance]);
+    // Translucent glass lowers the contrast of whatever sits on it, so high contrast turns it off.
+    const glassEnabled = useLiquidGlassEnabled() && !appearance.highContrast;
     // Native controls and scrollbars follow the scheme.
     useEffect(() => {
         document.documentElement.style.colorScheme = mode;
     }, [mode]);
+    // Hook for the global rules in highContrast.css that CSS variables can't express.
+    useEffect(() => {
+        document.documentElement.dataset.ddContrast = appearance.highContrast ? 'high' : 'standard';
+    }, [appearance.highContrast]);
     return (
         <MantineProvider
-            theme={dfrntTheme}
+            theme={theme}
             cssVariablesResolver={dfrntCssVariablesResolver}
             forceColorScheme={mode}
         >

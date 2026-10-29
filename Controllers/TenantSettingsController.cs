@@ -41,4 +41,18 @@ public class TenantSettingsController(ITenantSettingsService tenantSettingsServi
             return StatusCode(500, e.Message);
         }
     }
+
+    public async Task<IActionResult> GetAppearanceDefault()
+    {
+        try
+        {
+            var json = await tenantSettingsService.GetAppearanceDefaultAsync();
+            return Json(json);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting tenant appearance default: {Error}", e.Message);
+            return StatusCode(500, e.Message);
+        }
+    }
 }

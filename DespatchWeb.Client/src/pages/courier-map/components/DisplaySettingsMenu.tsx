@@ -68,8 +68,8 @@ const TEXT_COLOR_SWATCHES = [dfrntBrand.white, dfrntBrand.inkBlue];
  * Per-option indicator colors for the settings menu's segmented controls, so the
  * highlighted pill is a distinct hue per choice rather than the same neutral fill —
  * a glance at the color tells you what's selected without reading the label.
- * "brand" tracks the tenant's actual primary (cyan/gold), so "Live" always reads as
- * this tenant's own live accent rather than a hardcoded one.
+ * "brand" tracks the theme's primary (tenant default or the user's own), so "Live"
+ * always reads as that primary rather than a hardcoded accent.
  */
 const PRESET_COLORS: Record<'live' | 'classic', string> = {live: 'brand', classic: 'ink'};
 const MARKER_LABEL_COLORS: Record<CourierMapDisplaySettings['markerLabel'], string> = {

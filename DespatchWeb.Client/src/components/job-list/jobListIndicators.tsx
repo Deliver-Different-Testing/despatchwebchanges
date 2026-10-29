@@ -55,11 +55,11 @@ export interface IndicatorDef {
 const iconMarker = (testId: string, el: React.ReactElement): IconMarker => ({kind: 'icon', icon: el, testId});
 const dotMarker = (color: string): DotMarker => ({kind: 'dot', color});
 
-const INFO = 'var(--mantine-color-reflex-5)';
-const ERROR = 'var(--mantine-color-red-5)';
-const WARNING = 'var(--mantine-color-orange-5)';
-const SUCCESS = 'var(--mantine-color-green-5)';
-const BRAND = 'var(--mantine-color-brand-5)';
+const INFO = 'var(--dd-indicator-info)';
+const ERROR = 'var(--dd-indicator-error)';
+const WARNING = 'var(--dd-indicator-warning)';
+const SUCCESS = 'var(--dd-indicator-success)';
+const BRAND = 'var(--dd-indicator-brand)';
 const MUTED = 'var(--mantine-color-dimmed)';
 /** The related-job link — a lighter step of the info ramp, so it reads as secondary to it. */
 const RELATED = 'var(--mantine-color-reflex-3)';

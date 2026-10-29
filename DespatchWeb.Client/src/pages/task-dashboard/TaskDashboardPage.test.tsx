@@ -215,6 +215,7 @@ describe('TaskDashboardPage', () => {
         expect(mockTasksApi.getAllTasks).toHaveBeenCalled();
         const lastCall = mockTasksApi.getAllTasks.mock.calls[0]?.[0];
         expect(lastCall?.showCompleted).toBe(true);
+        expect(lastCall?.includeOverdue).toBe(true);
         expect(mockTasksApi.getActiveStaff).toHaveBeenCalled();
         expect(mockTasksApi.getEventTypes).toHaveBeenCalled();
 

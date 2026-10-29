@@ -1,0 +1,151 @@
+.figure {
+    margin: 0;
+}
+
+.panes {
+    display: grid;
+    gap: 16px;
+}
+
+/* A small app window: the app bar over the page, in the colours being chosen. */
+.window {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--mantine-color-default-border);
+    box-shadow: 0 8px 24px -12px rgba(13, 12, 44, 0.45);
+    font-size: 12px;
+    color: var(--pv-text);
+}
+
+.bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 34px;
+    padding: 0 12px;
+    background: var(--pv-bar);
+    color: var(--pv-on-bar);
+}
+
+.wordmark {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.crumb {
+    opacity: 0.7;
+}
+
+.page {
+    padding: 14px;
+    background: var(--pv-page);
+}
+
+.card {
+    background: var(--pv-card);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.window[data-high-contrast] {
+    font-weight: 500;
+}
+
+.window[data-high-contrast] .card {
+    outline: 1px solid var(--pv-border);
+    box-shadow: none;
+}
+
+.cardHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.heading {
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.button {
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--pv-primary);
+    color: var(--pv-on-primary);
+    font-weight: 600;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--pv-border);
+}
+
+.row[data-selected] {
+    background: color-mix(in srgb, var(--pv-primary) 16%, var(--pv-card));
+    box-shadow: inset 3px 0 0 var(--pv-primary);
+}
+
+.job {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.route {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.badge {
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Status colours are fixed for everyone. */
+.badge[data-status='late'] {
+    background: color-mix(in srgb, #dc3246 14%, var(--pv-card));
+    color: #bb2a3c;
+}
+
+.badge[data-status='done'] {
+    background: color-mix(in srgb, #13b964 14%, var(--pv-card));
+    color: #0b7d44;
+}
+
+.window[data-mode='dark'] .badge[data-status='late'] {
+    color: #f1adb5;
+}
+
+.window[data-mode='dark'] .badge[data-status='done'] {
+    color: #a1e3c1;
+}
+
+.foot {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 8px;
+}
+
+.muted {
+    color: var(--pv-muted);
+}
+
+.link {
+    color: var(--pv-secondary);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* The apps draw links from a lighter step of the secondary ramp in dark mode. */
+.window[data-mode='dark'] .link {
+    color: color-mix(in srgb, var(--pv-secondary) 55%, #ffffff);
+}

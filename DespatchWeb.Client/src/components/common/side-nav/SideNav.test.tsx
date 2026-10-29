@@ -7,7 +7,6 @@ import {fireEvent, screen} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
 import {SideNav} from './SideNav';
 import {createDfrntTheme} from '../../../theme/dfrntMantineTheme';
-import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 
 describe('SideNav', () => {
     const defaultProps = {
@@ -39,7 +38,7 @@ describe('SideNav', () => {
             expect(screen.getByText('Test Company')).toBeInTheDocument();
         });
 
-        it('carries the US app bar\'s Ink Blue on the account header', () => {
+        it('carries the app bar\'s Ink Blue on the account header', () => {
             renderWithMantine(<SideNav {...defaultProps} isUsCustomer={true} companyName="Acme" />);
 
             // The header picks up the bar's colour so the two shell surfaces read as
@@ -51,10 +50,10 @@ describe('SideNav', () => {
             });
         });
 
-        it('follows a non-US gold bar, flipping the header content to Ink', () => {
+        it('follows a light primary bar, flipping the header content to Ink', () => {
             renderWithMantine(
                 <SideNav {...defaultProps} isUsCustomer={false} companyName="Acme" />,
-                {theme: createDfrntTheme(false)}
+                {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})}
             );
 
             expect(screen.getByTestId('sidenav-account')).toHaveStyle({backgroundColor: '#f4c430'});
@@ -78,10 +77,9 @@ describe('SideNav', () => {
             expect(screen.queryByTestId('sidenav-np-chip')).not.toBeInTheDocument();
         });
 
-        it('paints the chip in the account header\'s own on-colour for either tenant', () => {
-            // The header is a fixed shell surface (Ink on US, gold on NZ) and both brand
-            // primaries are too light to read on it, so the chip borrows the avatar's
-            // scrim treatment rather than a brand variant.
+        it('paints the chip in the account header\'s own on-colour, whatever the primary', () => {
+            // The header takes the bar's fill (Ink, or the primary), so a brand variant
+            // could vanish on it; the chip borrows the avatar's scrim treatment instead.
             const {unmount} = renderWithMantine(
                 <SideNav {...defaultProps} isNetworkPartner={true} isUsCustomer={true} />
             );
@@ -93,7 +91,7 @@ describe('SideNav', () => {
 
             renderWithMantine(
                 <SideNav {...defaultProps} isNetworkPartner={true} isUsCustomer={false} />,
-                {theme: createDfrntTheme(false)}
+                {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})}
             );
             expect(screen.getByTestId('sidenav-np-chip')).toHaveStyle({
                 backgroundColor: 'rgba(13, 12, 44, 0.2)',
@@ -158,20 +156,13 @@ describe('SideNav', () => {
             expect(screen.queryByRole('button', {name: 'Close navigation menu'})).not.toBeInTheDocument();
         });
 
-        it('hands the active rail a brand step dark enough to read, on either tenant', () => {
+        it('hands the active rail the brand ramp\'s darker step, so it follows a custom primary', () => {
             // The 12% wash is ~1.05:1 on the panel, so the 4px rail is what actually
-            // carries WCAG 1.4.11's 3:1 state boundary — it has to be the darker step,
-            // and it differs per tenant.
-            const {unmount} = renderWithMantine(<SideNav {...defaultProps} isUsCustomer={true} />);
+            // carries WCAG 1.4.11's 3:1 state boundary — it has to be the darker step.
+            renderWithMantine(<SideNav {...defaultProps} />);
             expect(
                 screen.getByRole('navigation', {name: 'Main navigation'}).style.getPropertyValue('--sidenav-accent')
-            ).toBe(getHeaderSurfaceAccent(true));
-            unmount();
-
-            renderWithMantine(<SideNav {...defaultProps} isUsCustomer={false} />, {theme: createDfrntTheme(false)});
-            expect(
-                screen.getByRole('navigation', {name: 'Main navigation'}).style.getPropertyValue('--sidenav-accent')
-            ).toBe(getHeaderSurfaceAccent(false));
+            ).toBe('var(--mantine-color-brand-7)');
         });
     });
 

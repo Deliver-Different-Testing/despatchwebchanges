@@ -59,6 +59,14 @@ describe('aiSettings', () => {
             expect(isAiAutoOpenEnabled()).toBe(true);
         });
 
+        it('writes nothing when neither the server nor this browser has a saved choice', async () => {
+            mockGetPreference.mockResolvedValue(null);
+
+            await loadAutoMateFromServer();
+
+            expect(mockSavePreference).not.toHaveBeenCalled();
+        });
+
         it('seeds the server from local values when nothing is saved yet', async () => {
             mockGetPreference.mockResolvedValue(null);
             setAiEnabled(true); // local-only so far

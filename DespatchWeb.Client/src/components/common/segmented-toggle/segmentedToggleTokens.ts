@@ -40,10 +40,10 @@ export function segmentedToggleHeight(variant: SegmentedToggleVariant): number {
 /**
  * The indicator's border/accent colour.
  *
- * `'brand'` resolves to {@link headerSurfaceAccent} — cyan-7 `#1590c0` on US
- * tenants, gold-9 on the rest. Those are the steps dark enough to clear WCAG
- * 1.4.11's 3:1 against a white card bar (3.67:1 and 4.11:1); the brand-5 primaries
- * are only ~2:1 and would leave the selected state resting on an invisible fill.
+ * `'brand'` resolves to {@link headerSurfaceAccent} — the brand ramp's shade 7
+ * (cyan-7 `#1590c0` built in), the step dark enough to clear WCAG 1.4.11's 3:1
+ * against a white card bar (3.67:1); the cyan-5 primary is only ~2:1 and would
+ * leave the selected state resting on an invisible fill.
  * Any other Mantine colour key takes the same shade-7 step for the same reason.
  */
 export function segmentedToggleAccent(color: string): string {

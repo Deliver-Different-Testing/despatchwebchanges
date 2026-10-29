@@ -7,6 +7,8 @@ import '@mantine/dates/styles.layer.css';
 import '@mantine/notifications/styles.layer.css';
 // Shared Liquid Glass classes (.dfrnt-glass*): global, unlayered, used by the dropdown/map/dialog glass.
 import '@deliver-different/glass/glass.css';
+// High-contrast and forced-colours rules keyed on <html data-dd-contrast>; unlayered so they outrank Mantine.
+import './theme/highContrast.css';
 import '@fontsource-variable/plus-jakarta-sans';
 import './utils/dayjsSetup';
 import {applyLegacyHashRedirect} from './utils/legacyHash';
