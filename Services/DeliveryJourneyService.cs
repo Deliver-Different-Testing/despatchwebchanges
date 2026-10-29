@@ -1021,6 +1021,7 @@ public sealed partial class DeliveryJourneyService(
             nameof(DeliveryJourneyChangeType.JobUpdate) => !string.IsNullOrEmpty(dto.FieldName)
                 ? $"{FormatFieldName(dto.FieldName)} Updated"
                 : "Job Updated",
+            nameof(DeliveryJourneyChangeType.VoiceAgent) => "Voice Agent",
             _ => "Job Updated"
         };
 
@@ -1053,6 +1054,7 @@ public sealed partial class DeliveryJourneyService(
             nameof(DeliveryJourneyChangeType.JobUpdate) => !string.IsNullOrEmpty(dto.FieldName)
                 ? $"{FormatFieldName(dto.FieldName)} Updated"
                 : "Job Updated",
+            nameof(DeliveryJourneyChangeType.VoiceAgent) => "Voice Agent",
             _ => "Job Updated"
         };
 
@@ -1202,6 +1204,7 @@ public sealed partial class DeliveryJourneyService(
             nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment) => "hub",
             nameof(DeliveryJourneyChangeType.FlightAssignment) => "flight",
             nameof(DeliveryJourneyChangeType.JobUpdate) => GetIconForFieldName(fieldName),
+            nameof(DeliveryJourneyChangeType.VoiceAgent) => "record_voice_over",
             _ => "update"
         };
 

@@ -944,6 +944,61 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_VoiceAgentRow_RendersTitleIconCommentsAndCourier()
+    {
+        // Arrange
+        await SeedCouriersAsync(new TucCourier
+        {
+            UccrId = 9, Code = "C9", UccrName = "Sam", UccrSurname = "Driver",
+            UccrEmail = "sam@test.com", UccrMobile = "1",
+            Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T"
+        });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = nameof(DeliveryJourneyChangeType.VoiceAgent),
+            UpdatedByType = "Courier",
+            CourierId = 9,
+            Comments = "Sam Driver (6007) reported: can't find the address: long driveway (call abc)",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        // Assert
+        Assert.Equal("Voice Agent", entry.Title);
+        Assert.Equal("record_voice_over", entry.Icon);
+        Assert.Contains("can't find the address: long driveway", entry.Description);
+        Assert.Equal("Sam Driver", entry.PerformedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedVoiceAgentRow_RendersTitleIconAndComments()
+    {
+        // Arrange
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = nameof(DeliveryJourneyChangeType.VoiceAgent),
+            UpdatedByType = "System",
+            Comments = "Call abc: driver asked for the customer phone number",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+
+        // Act
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        // Assert
+        Assert.Equal("Voice Agent", entry.Title);
+        Assert.Equal("record_voice_over", entry.Icon);
+        Assert.Contains("driver asked for the customer phone number", entry.Description);
+    }
+
+    [Fact]
     public async Task GetDeliveryJourneyForJobAsync_SetsPerformedBy_FromStaffOnStatusRow()
     {
         // Arrange
