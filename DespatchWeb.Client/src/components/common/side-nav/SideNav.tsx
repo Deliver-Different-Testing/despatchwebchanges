@@ -166,9 +166,9 @@ export const SideNav: React.FC<SideNavProps> = ({
     /**
      * The active row's rail. The 12% wash alone is ~1.05:1 against the panel, so the
      * rail is what carries WCAG 1.4.11's 3:1 state boundary — hence the darker brand
-     * step (cyan-7 / gold-9) rather than the light primary.
+     * step (cyan-7 by default) rather than the light primary.
      */
-    const navAccent = getHeaderSurfaceAccent(isUsCustomer);
+    const navAccent = getHeaderSurfaceAccent();
 
     return (
         <Drawer.Root

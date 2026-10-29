@@ -460,11 +460,11 @@ describe('StickyNotes', () => {
             expect(await screen.findByText('Notes')).toBeInTheDocument();
             unmount();
 
-            // Same tree under the other tenant's ramp: the panel still renders, and
-            // nothing in it is pinned to one tenant's primary.
+            // Same tree under a custom primary: the panel still renders, and nothing
+            // in it is pinned to the built-in primary.
             render(
                 <QueryClientProvider client={createTestQueryClient()}>
-                    <MantineProvider theme={createDfrntTheme(false)} env="test">
+                    <MantineProvider theme={createDfrntTheme({highContrast: false, primary: '#f4c430'})} env="test">
                         <StickyNotes {...createDefaultProps()} />
                     </MantineProvider>
                 </QueryClientProvider>

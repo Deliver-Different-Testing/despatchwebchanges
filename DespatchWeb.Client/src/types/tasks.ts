@@ -49,6 +49,8 @@ export interface TaskFiltersRequest {
     jobId?: number;
     /** Row cap. Omitted, the server falls back to its own default (500). */
     limit?: number;
+    /** Also return open tasks due before startDate, so old overdue work shows. */
+    includeOverdue?: boolean;
 }
 
 export interface StaffSuggestion {

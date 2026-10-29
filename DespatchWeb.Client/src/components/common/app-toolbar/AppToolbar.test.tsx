@@ -88,16 +88,16 @@ describe('AppToolbar', () => {
             expect(screen.getByText('New Title')).toBeInTheDocument();
         });
 
-        it('should render the reversed (white) logo on the US navy bar', () => {
+        it('should render the reversed (white) logo on the Ink bar', () => {
             renderWithMantine(<AppToolbar {...defaultProps} />);
             const logo = screen.getByAltText('DFRNT');
             expect(logo).toBeInTheDocument();
             expect(logo).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
         });
 
-        it('should render the standard (dark) logo on a non-US gold bar', () => {
+        it('switches to the standard (dark) logo on a light primary bar', () => {
             // White on gold is illegible, so the wordmark follows the bar's fill.
-            renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme(false)});
+            renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})});
             expect(screen.getByAltText('DFRNT')).toHaveAttribute('src', 'images/dfrnt_logo.png');
         });
 
@@ -203,15 +203,21 @@ describe('AppToolbar', () => {
     });
 
     describe('App bar chrome', () => {
-        it('renders a non-US bar in the brand gold with Ink content', () => {
-            renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme(false)});
+        it('paints the bar in the primary colour with Ink content on a light primary', () => {
+            renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})});
             expect(screen.getByRole('banner')).toHaveStyle({
                 backgroundColor: '#f4c430',
                 color: '#0d0c2c',
             });
         });
 
-        it('renders the bar as a 56px Ink-Blue banner on US tenants, matching Integration Manager', () => {
+        it('keeps white content on a dark primary bar', () => {
+            renderWithMantine(<AppToolbar {...defaultProps} />, {theme: createDfrntTheme({highContrast: false, primary: '#132279'})});
+            expect(screen.getByRole('banner')).toHaveStyle({backgroundColor: '#132279', color: '#fff'});
+            expect(screen.getByAltText('DFRNT')).toHaveAttribute('src', 'images/dfrnt_logo_reversed.png');
+        });
+
+        it('renders the bar as a 56px Ink-Blue banner, matching Integration Manager', () => {
             renderWithMantine(<AppToolbar {...defaultProps} />);
             // Mantine has no AppBar, so the navy is set on the header itself —
             // guard it, or the bar silently reverts to white. The 56px height is

@@ -277,6 +277,13 @@ public static partial class JobMappings
             DeliveryLatitude = j.DeliveryLatitude,
             DeliveryLongitude = j.DeliveryLongitude,
 
+            // The job's own zones, so the list labels a ready time EST or EDT for its date (not today's)
+            PickUpTimeZone = j.PickupTimeZone != null
+                ? new Suggestion { Id = j.PickupTimeZone.Id, Text = j.PickupTimeZone.Name }
+                : null,
+            DeliveryTimeZone = j.DeliverByTimeZone != null
+                ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
+                : null,
             Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
             IsArchived = false,
             Locked = j.UcjbLocked ?? false,

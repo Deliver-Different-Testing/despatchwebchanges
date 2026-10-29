@@ -31,9 +31,9 @@
 }
 
 /*
- * Active: a faint brand wash plus the rail. The label deliberately stays Ink — both
- * tenant primaries are light enough that tinting it lands at 2.1:1 (cyan) / 3.9:1
- * (gold), so weight carries the emphasis and the rail carries the brand. The wash
+ * Active: a faint brand wash plus the rail. The label deliberately stays Ink — the
+ * default cyan primary is light enough that tinting it lands at 2.1:1 (and light custom
+ * primaries are no better), so weight carries the emphasis and the rail carries the brand. The wash
  * alone is ~1.05:1 against the panel, well under WCAG 1.4.11's 3:1 for a state
  * boundary, which is why the rail is load-bearing rather than decorative.
  */

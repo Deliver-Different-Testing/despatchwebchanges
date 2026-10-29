@@ -19,7 +19,14 @@ import {
     EventTypeSuggestion,
     EventGroupViewModel,
 } from '../types';
-import {formatDateForApi, parseDateFromApi, formatRelativeDateTime, getTenantTimezone} from '../utils/dateUtils';
+import {
+    formatDateForApi,
+    parseDateFromApi,
+    formatRelativeDateTime,
+    getTenantTimezone,
+    formatLongDate,
+    formatTime,
+} from '../utils/dateUtils';
 import {Dayjs} from 'dayjs';
 import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-history/TaskHistory.interfaces';
 import {RequestOptions} from "./requestOptions";
@@ -28,10 +35,13 @@ import {RequestOptions} from "./requestOptions";
  * Transform API response to Task with Dayjs date
  */
 function transformTask(apiTask: TaskApiResponse): Task {
+    const dueDate = parseDateFromApi(apiTask.dueDate);
     return {
         ...apiTask,
-        dueDate: parseDateFromApi(apiTask.dueDate),
+        dueDate,
         createdAt: apiTask.createdAt ? parseDateFromApi(apiTask.createdAt) : undefined,
+        _dueDateString: dueDate.isValid() ? formatLongDate(dueDate) : undefined,
+        _dueTimeString: dueDate.isValid() ? formatTime(dueDate) : undefined,
     };
 }
 
@@ -54,6 +64,7 @@ export async function getAllTasks(filters?: TaskFiltersRequest, options?: Reques
         if (filters.courierId !== undefined) params.courierId = filters.courierId;
         if (filters.jobId !== undefined) params.jobId = filters.jobId;
         if (filters.limit !== undefined) params.limit = filters.limit;
+        if (filters.includeOverdue) params.includeOverdue = true;
     }
 
     const response = await apiClient.get<TaskApiResponse[]>('task/GetAllTasks', params, options);

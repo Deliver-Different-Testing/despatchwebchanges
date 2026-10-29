@@ -17,6 +17,13 @@
     min-width: 0;
 }
 
+.secondColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    min-width: 0;
+}
+
 .addressFormat {
     min-width: 0;
 }
@@ -34,7 +41,7 @@
         gap: 48px;
     }
 
-    .addressFormat {
+    .secondColumn {
         padding-left: 48px;
         border-left: 1px solid var(--mantine-color-default-border);
     }

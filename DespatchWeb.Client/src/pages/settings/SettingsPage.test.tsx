@@ -53,6 +53,7 @@ jest.mock('../../api/preferencesApi', () => ({
 jest.mock('../../api/tenantSettingsApi', () => ({
     getTenantAddressFormatDefault: jest.fn(),
     getTenantCourierFlagLastDeliveryDefault: jest.fn(),
+    getTenantAppearanceDefault: jest.fn(),
 }));
 
 jest.mock('../../api/session', () => ({

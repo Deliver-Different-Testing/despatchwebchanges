@@ -3,8 +3,8 @@
  *
  * The solid brand-fill header for the DFRNT dialog design language: a 40×40 icon
  * chip, a title (+ optional subtitle) and a close button, over a flat colour bar.
- * `variant` selects the fill (primary = Ink Blue on the US tenant, the brand gold
- * elsewhere; error = red, warning = orange, …) — see {@link headerColors}.
+ * `variant` selects the fill (primary = Ink Blue, or the tenant's custom primary
+ * when one is set; error = red, warning = orange, …) — see {@link headerColors}.
  *
  * Pass a plain icon element as `icon` (e.g. `icon={<Icon lucide={Bell} />}`); the
  * chip centres and sizes it.

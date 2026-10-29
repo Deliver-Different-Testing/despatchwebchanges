@@ -1,7 +1,7 @@
 /**
  * React App Toolbar Component
  *
- * The shell app bar — Ink Blue on US tenants, the brand gold elsewhere.
+ * The shell app bar — Ink Blue, or the tenant's custom primary when one is set.
  * Layout: Logo | Keyline | Breadcrumbs | Spacer | Actions | Menu
  * Chrome mirrors Integration Manager's AppShell.Header.
  */
@@ -76,8 +76,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     beta,
 }) => {
     // The shell fill, its on-colour and the wordmark that reads on it all come from
-    // the theme, so the tenant's bar (Ink navy on US, gold elsewhere) is a provider
-    // concern rather than a prop.
+    // the theme, so the bar is a provider concern rather than a prop.
     const {shell, scrim} = useMantineTheme().other;
     const greeting = greetUser(firstName);
     const resolvedCrumbs = resolveCrumbs(breadcrumbs, title);

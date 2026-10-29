@@ -104,6 +104,16 @@ describe('ColorModeProvider', () => {
         await waitFor(() => expect(mockSavePreference).toHaveBeenCalledWith(StaffPreferenceKey.Appearance, 'light'));
     });
 
+    it('writes nothing for a signed-in user when neither the server nor this browser has a saved choice', async () => {
+        win.ContactID = 7;
+        render(<ColorModeProvider><Probe/></ColorModeProvider>);
+
+        await waitFor(() => expect(mockGetPreference).toHaveBeenCalledWith(StaffPreferenceKey.Appearance));
+        await act(async () => {});
+        expect(mockSavePreference).not.toHaveBeenCalled();
+        expect(screen.getByTestId('probe-state')).toHaveTextContent('system:light');
+    });
+
     it('does not touch the server when there is no signed-in staff member', () => {
         render(<ColorModeProvider><Probe/></ColorModeProvider>);
 

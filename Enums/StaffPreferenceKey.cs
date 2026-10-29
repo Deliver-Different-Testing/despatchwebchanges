@@ -22,5 +22,6 @@ public enum StaffPreferenceKey
     ShowPanelHideButton,
     Appearance,
     LiquidGlass,
-    CourierFlagLastDelivery
+    CourierFlagLastDelivery,
+    ThemeCustomisation
 }

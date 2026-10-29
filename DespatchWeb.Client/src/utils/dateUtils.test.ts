@@ -33,6 +33,7 @@ import {
     formatMins,
     formatInfoLogDateTimeString,
     formatDateFromApi,
+    tenantNow,
 } from './dateUtils';
 
 describe('dateUtils', () => {
@@ -303,6 +304,20 @@ describe('dateUtils', () => {
         ])('parseDateFromApi → formatTime preserves 14:30 regardless of offset %s', (offset) => {
             const parsed = parseDateFromApi(`2024-06-15T14:30:00${offset}`);
             expect(formatTime(parsed)).toBe('14:30');
+        });
+    });
+
+    describe('tenantNow', () => {
+        afterEach(() => jest.useRealTimers());
+
+        it("is the tenant's wall clock, so its day boundaries ignore the browser zone", () => {
+            jest.useFakeTimers({now: new Date('2026-10-29T03:00:00Z')});
+            (window as any).TimeZone = 'Eastern Standard Time';
+
+            const now = tenantNow();
+
+            expect(now.format('YYYY-MM-DD HH:mm')).toBe('2026-10-28 23:00');
+            expect(now.startOf('day').toISOString()).toBe('2026-10-28T04:00:00.000Z');
         });
     });
 
