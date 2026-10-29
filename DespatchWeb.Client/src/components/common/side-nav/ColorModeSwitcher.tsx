@@ -3,6 +3,7 @@ import {Tooltip, useMantineTheme} from '@mantine/core';
 import {Monitor, Moon, Sun} from 'lucide-react';
 import {Icon} from '../icon/Icon';
 import {useColorMode, type ColorModePreference} from '../../../hooks/useColorMode';
+import type {onBrandScrim} from '../../../theme/dfrntMantineTheme';
 import classes from './ColorModeSwitcher.module.css';
 
 const OPTIONS: {value: ColorModePreference; label: string; icon: typeof Sun}[] = [
@@ -14,13 +15,14 @@ const OPTIONS: {value: ColorModePreference; label: string; icon: typeof Sun}[] =
 const GLYPH_SIZE = 14;
 
 /**
- * Light / dark / match-device picker for the side-nav account header. It sits on the
- * shell bar (Ink, or a tenant's custom primary), so it takes the bar's scrim overlays rather than the page
- * scheme. Native radios keep arrow-key navigation and `aria-checked` for free.
+ * Light / dark / match-device picker for shell chrome. It takes the shell's scrim overlays rather
+ * than the page scheme: the theme's (which follows the tenant's primary) unless `scrim` pins one,
+ * as the always-Ink side menu does. Native radios keep arrow-key navigation and `aria-checked` for free.
  */
-export const ColorModeSwitcher: React.FC = () => {
+export const ColorModeSwitcher: React.FC<{scrim?: typeof onBrandScrim}> = ({scrim: scrimProp}) => {
     const {preference, setPreference} = useColorMode();
-    const {scrim} = useMantineTheme().other;
+    const themeScrim = useMantineTheme().other.scrim;
+    const scrim = scrimProp ?? themeScrim;
 
     return (
         <div

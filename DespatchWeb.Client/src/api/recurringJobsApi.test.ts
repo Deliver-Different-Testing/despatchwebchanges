@@ -1,5 +1,5 @@
 /**
- * Recurring Jobs API Service Tests
+ * Recurring jobs API Service Tests
  */
 
 import {recurringJobsApi} from './recurringJobsApi';

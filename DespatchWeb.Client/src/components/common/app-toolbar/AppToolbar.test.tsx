@@ -32,10 +32,10 @@ describe('AppToolbar', () => {
                 <AppToolbar
                     {...defaultProps}
                     title={undefined}
-                    breadcrumbs={[{label: 'Dashboards'}, {label: 'Recurring Jobs'}]}
+                    breadcrumbs={[{label: 'Dashboards'}, {label: 'Recurring jobs'}]}
                 />
             );
-            expect(screen.getByRole('heading', {level: 1, name: 'Recurring Jobs'}))
+            expect(screen.getByRole('heading', {level: 1, name: 'Recurring jobs'}))
                 .toHaveStyle({fontWeight: 600, fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.95)'});
             expect(screen.getByText('Dashboards'))
                 .toHaveStyle({fontWeight: 400, fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)'});
@@ -48,14 +48,14 @@ describe('AppToolbar', () => {
                     title={undefined}
                     breadcrumbs={[
                         {label: 'Dashboards'},
-                        {label: 'Recurring Jobs'},
+                        {label: 'Recurring jobs'},
                     ]}
                 />
             );
             expect(screen.getByText('Dashboards')).toBeInTheDocument();
-            expect(screen.getByText('Recurring Jobs')).toBeInTheDocument();
+            expect(screen.getByText('Recurring jobs')).toBeInTheDocument();
             // Current page is the h1; ancestor is not
-            expect(screen.getByRole('heading', {level: 1})).toHaveTextContent('Recurring Jobs');
+            expect(screen.getByRole('heading', {level: 1})).toHaveTextContent('Recurring jobs');
         });
 
         it('should not render ancestor crumbs as links when href is absent', () => {
@@ -65,7 +65,7 @@ describe('AppToolbar', () => {
                     title={undefined}
                     breadcrumbs={[
                         {label: 'Dashboards'},
-                        {label: 'Recurring Jobs'},
+                        {label: 'Recurring jobs'},
                     ]}
                 />
             );
@@ -238,7 +238,7 @@ describe('AppToolbar', () => {
                 <AppToolbar
                     {...defaultProps}
                     title={undefined}
-                    breadcrumbs={[{label: 'Dashboards'}, {label: 'Recurring Jobs'}]}
+                    breadcrumbs={[{label: 'Dashboards'}, {label: 'Recurring jobs'}]}
                 />
             );
             // A Mantine Divider draws the rule as a border, so the tint rides

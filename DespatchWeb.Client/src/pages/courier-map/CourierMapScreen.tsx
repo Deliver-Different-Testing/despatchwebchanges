@@ -30,7 +30,7 @@ export const CourierMapScreen: React.FC = () => {
     const {apiKey, isPending} = useHereMapsApiKey();
 
     return (
-        <PageFrame section="Operations" title="Courier Map">
+        <PageFrame section="Operations" title="Courier map">
             <ErrorBoundary>
                 {!isPending && (
                     <CourierMapPage

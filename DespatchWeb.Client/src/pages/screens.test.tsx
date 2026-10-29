@@ -45,9 +45,9 @@ beforeEach(() => jest.clearAllMocks());
 
 describe.each([
     ['OverviewScreen', <OverviewScreen/>, 'overview', 'Dashboards', 'Overview'],
-    ['TaskDashboardScreen', <TaskDashboardScreen/>, 'tasks', 'Dashboards', 'Task Dashboard'],
+    ['TaskDashboardScreen', <TaskDashboardScreen/>, 'tasks', 'Dashboards', 'Task dashboard'],
     ['DriverManagementScreen', <DriverManagementScreen/>, 'drivers', 'Operations', 'Drivers'],
-    ['RecurringJobsScreen', <RecurringJobsScreen/>, 'recurring', 'Dashboards', 'Recurring Jobs'],
+    ['RecurringJobsScreen', <RecurringJobsScreen/>, 'recurring', 'Dashboards', 'Recurring jobs'],
     ['SettingsScreen', <SettingsScreen/>, 'settings', 'Account', 'Settings'],
 ])('%s', (_name, element, testId, section, title) => {
     it('renders the page inside the frame with section/title breadcrumb', () => {
@@ -90,7 +90,7 @@ describe('CourierMapScreen', () => {
 
         expect(await screen.findByTestId('map')).toBeInTheDocument();
         expect(propsOf('map')).toMatchObject({apiKey: 'key-1', isUsCustomer: true, mapCenter: {lat: 39.8283, lng: -98.5795}});
-        expect(screen.getByRole('heading', {name: 'Courier Map'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Courier map'})).toBeInTheDocument();
     });
 
     it('falls back to a null key when the lookup fails', async () => {
