@@ -41,6 +41,7 @@ describe('getEventColorTone', () => {
         expect(getEventColorTone('route')).toBe('info');
         expect(getEventColorTone('person')).toBe('info');
         expect(getEventColorTone('add_circle')).toBe('info');
+        expect(getEventColorTone('record_voice_over')).toBe('info');
     });
 
     it('falls back to secondary for unknown / generic-edit / note / reference icons', () => {
@@ -75,6 +76,10 @@ describe('getEventIconEntry', () => {
             expect(['lucide', 'tabler']).toContain(entry.lib);
             expect(entry.component).toBeDefined();
         }
+    });
+
+    it('maps the voice agent icon to a real glyph, not the fallback', () => {
+        expect(getEventIconEntry('record_voice_over')).not.toBe(getEventIconEntry('unknown_icon'));
     });
 
     it('falls back to the same entry for an unknown name and for nullish input', () => {
