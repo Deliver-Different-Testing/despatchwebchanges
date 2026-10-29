@@ -13,7 +13,7 @@
 import React from 'react';
 import {Icon} from '../icon/Icon';
 import {
-    ArrowLeftRight, ArrowUp, Ban, Bell, Building2, Calendar,
+    ArrowLeftRight, ArrowUp, AudioLines, Ban, Bell, Building2, Calendar,
     CalendarDays, Circle, CircleCheck, CircleDollarSign, CirclePlus, Clock,
     CreditCard, DollarSign, Gauge, Headset, Image, Lock,
     MessageSquare, Network, NotebookPen, NotebookText, PenTool, PhoneCall,
@@ -59,6 +59,7 @@ export const EVENT_ICONS = {
     pin_drop: {lib: 'tabler', component: IconMapPin},
     published_with_changes: {lib: 'lucide', component: RefreshCcwDot},
     qr_code_2: {lib: 'lucide', component: QrCode},
+    record_voice_over: {lib: 'lucide', component: AudioLines},
     report_problem: {lib: 'lucide', component: TriangleAlert},
     route: {lib: 'tabler', component: IconRoute},
     scale: {lib: 'lucide', component: Scale},
@@ -142,6 +143,7 @@ const TONE_BY_ICON: Record<string, EventColorTone> = {
     published_with_changes: 'info',
     route: 'info',
     person: 'info',
+    record_voice_over: 'info',
 };
 
 export function getEventColorTone(name: string | undefined | null): EventColorTone {
