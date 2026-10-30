@@ -1975,12 +1975,22 @@ public partial class JobRepository(
 
                 // A parent save also drops the stop jobs' own lines (scoped but not reusable above).
                 // Lines already flagged are history and are kept either way.
-                var removed = scoped.Except(matched.Where(i => i != null)).Where(IsActiveLine).ToList();
-                if (flagRemovals)
-                    removed.ForEach(i => i.ItemStatus = (byte)JobItemStatus.NotForDelivery);
-                else
-                    Context.TucJobItems.RemoveRange(removed);
+                var removedItemIds = scoped.Except(matched.Where(i => i != null)).Where(IsActiveLine)
+                    .Select(i => i.ItemId).ToList();
                 await Context.SaveChangesAsync();
+
+                // One set-based statement: RemoveRange/SaveChanges issues a DELETE per row, and the totals
+                // trigger then fires per row (qty stepping 486 -> 1, a courier note + journal rows each time).
+                if (removedItemIds.Count > 0)
+                {
+                    var removedLines = Context.TucJobItems
+                        .Where(i => i.JobId == effectiveJobId && removedItemIds.Contains(i.ItemId));
+                    if (flagRemovals)
+                        await removedLines.ExecuteUpdateAsync(s => s
+                            .SetProperty(i => i.ItemStatus, (byte?)JobItemStatus.NotForDelivery));
+                    else
+                        await removedLines.ExecuteDeleteAsync();
+                }
 
                 // Parent lines drive the family total; a stop job with its own lines is totalled on its
                 // own, and falls back to the parent's total when it has none (mirrors the read mapping).
