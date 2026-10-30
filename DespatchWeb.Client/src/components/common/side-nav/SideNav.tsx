@@ -1,15 +1,16 @@
 /**
  * React Side Nav Component
  *
- * A modern replacement for the AngularJS side-nav component using a Mantine Drawer.
+ * The DFRNT side menu (the brand skill's Sidebar: solid Ink panel, logo + name header,
+ * inset accent bar on the active row, identity card at the foot) in a Mantine Drawer
+ * that slides in from the right.
  */
 
 import React, {useMemo, useCallback} from 'react';
-import {Avatar, Badge, Box, Divider, Drawer, em, Group, NavLink, ScrollArea, Stack, Text, useMantineTheme} from '@mantine/core';
+import {Avatar, Badge, Box, Divider, Drawer, em, Group, Image, NavLink, ScrollArea, Stack, Text} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
 import {
     CalendarDays,
-    CircleUserRound,
     LayoutDashboard,
     ChartColumn,
     CircleCheckBig,
@@ -21,35 +22,29 @@ import {
 } from 'lucide-react';
 import {IconTruck, IconMap} from '@tabler/icons-react';
 import dayjs from 'dayjs';
-import {Icon} from '../icon/Icon';
-import {getHeaderSurfaceAccent} from '../../dialogs/shared/mantine/styles';
+import {Icon, UI_ICON_SIZE} from '../icon/Icon';
 import {NavItem, SideNavProps} from "./SideNav.types";
 import {ColorModeSwitcher} from './ColorModeSwitcher';
 import {isDashboardVisible} from '../../../services/featureVisibility';
 import {navRoutes, statesForFeatureKey} from '../../../routes/routeTable';
+import {onBrandScrim, sideMenuColors as shell} from '../../../theme/dfrntMantineTheme';
 import classes from './SideNav.module.css';
 
 const drawerWidth = 264;
 
-/**
- * Bigger than the shared `UI_ICON_SIZE` (20), which is the *dense* default for
- * controls and table rows. A 48px drawer row is not dense UI — this is the classic
- * drawer's 24px glyph, and with the 20px gap below it rebuilds that drawer's 44px
- * icon column.
- */
-const NAV_ICON_SIZE = 24;
+export const APP_BLURB = 'Book, dispatch and track your jobs';
 
 type NavDisplay = {label: string; icon: React.ReactNode; nzOnly?: boolean};
 
 const NAV_ITEM_DISPLAY: Record<string, (isUsCustomer: boolean) => NavDisplay> = {
-    dashboard: () => ({label: 'Dashboard', icon: <Icon lucide={LayoutDashboard} size={NAV_ICON_SIZE} />}),
-    shipping: isUs => ({label: isUs ? 'Domestic' : 'Nationwide', icon: <Icon tabler={IconTruck} size={NAV_ICON_SIZE} />}),
-    overview: () => ({label: 'Overview', icon: <Icon lucide={ChartColumn} size={NAV_ICON_SIZE} />}),
-    tasks: () => ({label: 'Tasks', icon: <Icon lucide={CircleCheckBig} size={NAV_ICON_SIZE} />}),
-    jobSearch: () => ({label: 'Job Search', icon: <Icon lucide={Search} size={NAV_ICON_SIZE} />}),
-    recurringJobs: () => ({label: 'Recurring Jobs', icon: <Icon lucide={Clock} size={NAV_ICON_SIZE} />}),
-    courierMap: () => ({label: 'Courier Map', icon: <Icon tabler={IconMap} size={NAV_ICON_SIZE} />}),
-    driverManagement: () => ({label: 'Driver Management', icon: <Icon lucide={UserCog} size={NAV_ICON_SIZE} />, nzOnly: true}),
+    dashboard: () => ({label: 'Dashboard', icon: <Icon lucide={LayoutDashboard} />}),
+    shipping: isUs => ({label: isUs ? 'Domestic' : 'Nationwide', icon: <Icon tabler={IconTruck} />}),
+    overview: () => ({label: 'Overview', icon: <Icon lucide={ChartColumn} />}),
+    tasks: () => ({label: 'Tasks', icon: <Icon lucide={CircleCheckBig} />}),
+    jobSearch: () => ({label: 'Job search', icon: <Icon lucide={Search} />}),
+    recurringJobs: () => ({label: 'Recurring jobs', icon: <Icon lucide={Clock} />}),
+    courierMap: () => ({label: 'Courier map', icon: <Icon tabler={IconMap} />}),
+    driverManagement: () => ({label: 'Driver management', icon: <Icon lucide={UserCog} />, nzOnly: true}),
 };
 
 /** Below this the panel goes full-bleed, matching the toolbar's compact breakpoint. */
@@ -63,6 +58,20 @@ const getInitials = (name: string): string =>
         .map((word) => word.charAt(0).toUpperCase())
         .join('');
 
+/**
+ * Rows read the shell tokens, never the theme primary, so a tenant's Branding primary
+ * can't leak into the menu. Active = inset accent bar + 600 weight, no fill; the hover
+ * tint lives in `SideNav.module.css` because Mantine only applies `--nl-hover` to the active row.
+ */
+const rowStyle = (active: boolean): React.CSSProperties => ({
+    color: active ? shell.textPrimary : shell.textSecondary,
+    fontWeight: active ? 600 : 500,
+    boxShadow: active ? `inset 3px 0 0 ${shell.activeAccent}` : undefined,
+    '--nl-bg': shell.hoverBg,
+    '--nl-hover': shell.hoverBg,
+    '--nl-color': shell.textPrimary,
+} as React.CSSProperties);
+
 export const SideNav: React.FC<SideNavProps> = ({
     open,
     userName,
@@ -75,32 +84,13 @@ export const SideNav: React.FC<SideNavProps> = ({
     onMouseEnter,
     onMouseLeave,
 }) => {
-    const theme = useMantineTheme();
-    const shell = theme.other.shell;
-    const scrim = theme.other.scrim;
     const currentYear = dayjs().year();
     const isCompact = useMediaQuery(COMPACT_QUERY);
 
-    /**
-     * The fixed-size section keeps Lucide and Tabler glyphs on the same axis. The row
-     * chrome itself — rail, hover wash, active wash — lives in `SideNav.module.css`,
-     * since inline styles cannot express a pseudo-state.
-     */
-    const navItemStyles = useMemo(() => ({
-        section: {
-            width: NAV_ICON_SIZE,
-            height: NAV_ICON_SIZE,
-            marginInlineEnd: 20,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        label: {fontSize: 16},
-    }), []);
-
     const currentDate = useMemo(() => {
-        const locale = isUsCustomer ? 'en' : 'en-nz';
-        return dayjs().locale(locale).format('dddd, MMMM D, YYYY');
+        return isUsCustomer
+            ? dayjs().locale('en').format('dddd, MMMM D, YYYY')
+            : dayjs().locale('en-nz').format('dddd, D MMMM YYYY');
     }, [isUsCustomer]);
 
     const filteredNavItems = useMemo((): NavItem[] => {
@@ -135,7 +125,7 @@ export const SideNav: React.FC<SideNavProps> = ({
     const settingsNavItem: NavItem = useMemo(() => ({
         id: 'settings',
         label: 'Settings',
-        icon: <Icon lucide={SettingsIcon} size={NAV_ICON_SIZE} />,
+        icon: <Icon lucide={SettingsIcon} />,
         state: 'settings',
     }), []);
 
@@ -148,27 +138,21 @@ export const SideNav: React.FC<SideNavProps> = ({
                 key={item.id}
                 component="button"
                 className={classes.navLink}
-                classNames={{section: classes.section}}
                 active={isActive}
                 aria-current={isActive ? 'page' : undefined}
-                color="brand"
-                variant="subtle"
                 label={item.label}
                 leftSection={item.icon}
                 onClick={() => handleNavClick(item.state)}
-                styles={navItemStyles}
+                fz="sm"
+                py={12}
+                px={16}
+                style={rowStyle(isActive)}
             />
         );
-    }, [currentState, handleNavClick, navItemStyles]);
+    }, [currentState, handleNavClick]);
 
     const initials = getInitials(userName);
-
-    /**
-     * The active row's rail. The 12% wash alone is ~1.05:1 against the panel, so the
-     * rail is what carries WCAG 1.4.11's 3:1 state boundary — hence the darker brand
-     * step (cyan-7 by default) rather than the light primary.
-     */
-    const navAccent = getHeaderSurfaceAccent();
+    const keyline = `1px solid ${shell.border}`;
 
     return (
         <Drawer.Root
@@ -187,95 +171,43 @@ export const SideNav: React.FC<SideNavProps> = ({
                     content: {
                         display: 'flex',
                         flexDirection: 'column',
-                        // Same tier as Modal/Menu — a panel floating over the page —
-                        // and it follows the colour scheme instead of pinning a literal.
-                        backgroundColor: 'var(--dd-surface-container-high)',
+                        // A solid shell panel in both schemes — never glass, never the tenant primary.
+                        backgroundColor: shell.bg,
                     },
                 }}
             >
-                {/* Account header — carries the app bar's Ink Blue so the two shell
-                    surfaces read as one. The colour change is the separator, so there
-                    is no keyline beneath it. */}
-                <Box
-                    component="header"
-                    data-testid="sidenav-account"
-                    px={20}
-                    pt={24}
-                    pb={20}
-                    ta="center"
-                    style={{position: 'relative', backgroundColor: shell.appBar, color: shell.textPrimary}}
-                >
-                    <Box style={{position: 'absolute', top: 12, insetInlineEnd: 12}}>
-                        <ColorModeSwitcher />
-                    </Box>
-                    <Avatar
-                        data-testid="sidenav-avatar"
-                        size={56}
-                        mx="auto"
-                        mb={10}
-                        radius="xl"
-                        fz="1.25rem"
-                        style={{backgroundColor: scrim.fillStrong, color: shell.textPrimary, fontWeight: 600}}
-                    >
-                        {initials || <Icon lucide={CircleUserRound} size={36} />}
-                    </Avatar>
-                    <Text fz="0.6875rem" fw={700} lts="0.08em" tt="uppercase" lh={1.4} c={shell.textSecondary}>
-                        {companyName}
-                    </Text>
-                    <Group justify="center" gap={6} wrap="nowrap">
-                        <Text fz="1rem" fw={600} lh={1.3} truncate c={shell.textPrimary}>
-                            {userName}
-                        </Text>
-                        {/* Both brand primaries are too light to read on this bar, so the
-                            chip borrows the avatar's scrim rather than a brand variant. */}
-                        {isNetworkPartner && (
-                            <Badge
-                                data-testid="sidenav-np-chip"
-                                size="sm"
-                                radius="sm"
-                                variant="filled"
-                                style={{
-                                    backgroundColor: scrim.fillStrong,
-                                    color: shell.textPrimary,
-                                    flexShrink: 0,
-                                }}
-                            >
-                                Network Partner
-                            </Badge>
-                        )}
-                    </Group>
-                    {/* `textSecondary`, not `textMuted` — 0.38 white on Ink is unreadable
-                        at 0.7rem, and the old drawer set this line at the same 0.60 as
-                        the company eyebrow above it. */}
-                    <Group justify="center" gap={6} mt={6} c={shell.textSecondary}>
-                        <Icon lucide={CalendarDays} size={13} />
-                        <Text fz="0.7rem" lh={1.2} c="inherit">{currentDate}</Text>
+                {/* Logo + company name */}
+                <Box component="header" data-testid="sidenav-account" p="md" style={{flexShrink: 0, borderBottom: keyline}}>
+                    <Group gap="sm" wrap="nowrap">
+                        <Box w={40} h={40} display="flex" style={{alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>
+                            <Image src={shell.logoSrc} alt="" w={32} h={32} fit="contain" />
+                        </Box>
+                        <Box style={{flex: 1, minWidth: 0}}>
+                            <Text component="h1" m={0} fz="md" fw={700} c={shell.textPrimary} truncate>
+                                {companyName}
+                            </Text>
+                            <Text fz="xs" c={shell.textSecondary} lh={1.35}>{APP_BLURB}</Text>
+                            <Group gap={6} wrap="nowrap" mt={2} c={shell.textMuted}>
+                                <Icon lucide={CalendarDays} size={13} />
+                                <Text fz="xs" c="inherit" truncate>{currentDate}</Text>
+                            </Group>
+                        </Box>
                     </Group>
                 </Box>
 
-                {/* Navigation Menu */}
                 <ScrollArea style={{flex: 1}} type="never">
-                    <Box
-                        component="nav"
-                        aria-label="Main navigation"
-                        pb={8}
-                        style={{'--sidenav-accent': navAccent} as React.CSSProperties}
-                    >
-                        {/* Same eyebrow as the company name above it — the two label their
-                            section identically, so they get one treatment rather than the
-                            old drawer's near-miss 0.675rem/0.09em. Aligned to the glyph
-                            column (4px rail + 16px row padding), not the old 18px. */}
+                    <Stack component="nav" aria-label="Main navigation" gap={4} py="md" px={8}>
                         <Text
                             component="h2"
-                            px={20}
-                            pt={16}
+                            m={0}
+                            px={16}
                             pb={4}
                             fz="0.6875rem"
                             fw={700}
                             lts="0.08em"
                             tt="uppercase"
                             lh={1.4}
-                            c="dimmed"
+                            c={shell.textMuted}
                         >
                             Menu
                         </Text>
@@ -284,21 +216,54 @@ export const SideNav: React.FC<SideNavProps> = ({
                         {/* Settings sits apart from the dashboards above it — a utility
                             item, not gated by dashboardFeatureKeys — so it gets its own
                             divider rather than joining the filtered list. */}
-                        <Divider my={8} mx={20}/>
+                        <Divider my={8} mx={16} color={shell.border}/>
                         {renderNavItem(settingsNavItem)}
-                    </Box>
+                    </Stack>
                 </ScrollArea>
 
-                {/* Footer */}
-                <Stack gap={4} px="md" py={16} ta="center" style={{borderTop: '1px solid var(--mantine-color-default-border)'}}>
-                    <Text fz={12} fw={400} lh={1.3} c="dimmed">&copy; {currentYear} Deliver DFRNT</Text>
-                    {isUsCustomer && (
-                        <Group justify="center" gap={6} align="center" c="dimmed">
-                            <Icon lucide={Heart} size={14} color={theme.colors.red[4]} />
-                            <Text fz={12} fw={400} lh={1.3} c="inherit">Made with aroha in Aotearoa</Text>
-                        </Group>
-                    )}
-                </Stack>
+                {/* Action strip */}
+                <Group justify="center" px={12} py={8} style={{flexShrink: 0, borderTop: keyline}}>
+                    <ColorModeSwitcher scrim={onBrandScrim} />
+                </Group>
+
+                {/* Identity card */}
+                <Box data-testid="sidenav-identity" p="md" style={{flexShrink: 0, borderTop: keyline}}>
+                    <Group gap="sm" wrap="nowrap">
+                        <Avatar
+                            data-testid="sidenav-avatar"
+                            aria-hidden
+                            size={32}
+                            color={shell.activeAccent}
+                            variant="filled"
+                            autoContrast
+                            style={{flexShrink: 0}}
+                        >
+                            {initials}
+                        </Avatar>
+                        <Box style={{flex: 1, minWidth: 0}}>
+                            <Group gap={6} wrap="nowrap">
+                                <Text fz="sm" fw={500} c={shell.textPrimary} truncate>{userName}</Text>
+                                {isNetworkPartner && (
+                                    <Badge
+                                        data-testid="sidenav-np-chip"
+                                        size="xs"
+                                        variant="filled"
+                                        style={{backgroundColor: onBrandScrim.fillStrong, color: shell.textPrimary, flexShrink: 0}}
+                                    >
+                                        Network Partner
+                                    </Badge>
+                                )}
+                            </Group>
+                            <Text fz="xs" c={shell.textMuted} truncate>&copy; {currentYear} Deliver DFRNT</Text>
+                            {isUsCustomer && (
+                                <Group gap={4} wrap="nowrap" c={shell.textMuted}>
+                                    <Icon lucide={Heart} size={12} color="var(--mantine-color-red-4)" />
+                                    <Text fz="xs" c="inherit" truncate>Made with aroha in Aotearoa</Text>
+                                </Group>
+                            )}
+                        </Box>
+                    </Group>
+                </Box>
             </Drawer.Content>
         </Drawer.Root>
     );

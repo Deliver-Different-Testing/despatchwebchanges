@@ -3,7 +3,8 @@
  * hover, plus the tape strip and the hover-revealed delete action. All of it is
  * pseudo-element / pseudo-class / descendant work with no inline equivalent.
  *
- * The per-note tilt and fill come in as `--note-rotate` / `--note-fill`.
+ * The per-note tilt and fill come in as `--note-rotate` / `--note-fill`; the fill is
+ * already scheme-aware (`light-dark()`), so only the ink flips here.
  */
 .note {
     --note-ink-heading: rgba(0, 0, 0, 0.7);
@@ -12,16 +13,14 @@
     --note-ink-meta: rgba(0, 0, 0, 0.62);
     --note-ink-author: rgba(0, 0, 0, 0.5);
     --note-ink-glyph: rgba(0, 0, 0, 0.6);
-    --note-paper: var(--note-fill);
     position: relative;
     transform: rotate(var(--note-rotate, 0deg));
-    background-color: var(--note-paper);
+    background-color: var(--note-fill);
     transition: transform 200ms ease, box-shadow 200ms ease;
 }
 
-/* Dark mode: keep each category's hue but sink it into the dark surface, with light ink. */
+/* Dark mode: the fill sinks into the dark surface on its own, so switch to light ink. */
 :global([data-mantine-color-scheme='dark']) .note {
-    --note-paper: color-mix(in srgb, var(--note-fill) 26%, var(--mantine-color-dark-7));
     --note-ink-heading: rgba(255, 255, 255, 0.92);
     --note-ink-body: rgba(255, 255, 255, 0.9);
     --note-ink-meta: rgba(255, 255, 255, 0.72);

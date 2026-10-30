@@ -1,7 +1,7 @@
 /**
  * CourierMarkerManager Tests
  *
- * The Courier Map draws the same courier flag as the dispatch map — driver and job counts,
+ * The Courier map draws the same courier flag as the dispatch map — driver and job counts,
  * plus the last-delivery line once selected — but colours it from the Mantine theme so it
  * follows dark mode. These tests pin that parity, since the two managers are separate classes
  * over one shared flag builder.

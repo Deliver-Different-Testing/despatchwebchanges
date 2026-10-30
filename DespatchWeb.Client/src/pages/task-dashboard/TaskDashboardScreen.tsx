@@ -6,7 +6,7 @@ import {getSession} from '../../api/session';
 import {noopRegisterRefresh, showPageToast} from '../pageToasts';
 
 export const TaskDashboardScreen: React.FC = () => (
-    <PageFrame section="Dashboards" title="Task Dashboard">
+    <PageFrame section="Dashboards" title="Task dashboard">
         <ErrorBoundary>
             <TaskDashboardPage
                 showToast={showPageToast}

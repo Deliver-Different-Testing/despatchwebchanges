@@ -1,5 +1,5 @@
 /**
- * Driver Management API Service Tests
+ * Driver management API Service Tests
  */
 
 import {driverManagementApi} from './driverManagementApi';

@@ -9,7 +9,11 @@ import '@mantine/notifications/styles.layer.css';
 import '@deliver-different/glass/glass.css';
 // High-contrast and forced-colours rules keyed on <html data-dd-contrast>; unlayered so they outrank Mantine.
 import './theme/highContrast.css';
-import '@fontsource-variable/plus-jakarta-sans';
+import '@fontsource/plus-jakarta-sans/400.css';
+import '@fontsource/plus-jakarta-sans/500.css';
+import '@fontsource/plus-jakarta-sans/600.css';
+import '@fontsource/plus-jakarta-sans/700.css';
+import '@fontsource/plus-jakarta-sans/800.css';
 import './utils/dayjsSetup';
 import {applyLegacyHashRedirect} from './utils/legacyHash';
 import {fetchSessionContext} from './hooks/useSessionContext';

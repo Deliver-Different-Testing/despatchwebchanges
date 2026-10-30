@@ -14,7 +14,7 @@ export interface RecurringJobsScreenProps {
 const noopAddStop = (): void => undefined;
 
 export const RecurringJobsScreen: React.FC<RecurringJobsScreenProps> = ({onAddStop = noopAddStop}) => (
-    <PageFrame section="Dashboards" title="Recurring Jobs">
+    <PageFrame section="Dashboards" title="Recurring jobs">
         <ErrorBoundary>
             <RecurringJobsPage
                 showToast={showPageToast}

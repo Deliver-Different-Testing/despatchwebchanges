@@ -30,23 +30,28 @@ const PRICING_UPDATE_NOTE_TYPE_ID = 1100;
 const ADDRESS_UPDATE_NOTE_TYPE_ID = 1101;
 
 /**
- * The sticky-note fills. Deliberately literal pastels rather than theme tokens:
- * they mimic physical note paper and carry the note's category. All sit in the
- * same luminance band so the ink stays legible on every one of them. In dark mode
- * the CSS tints them into the dark surface and switches to light ink.
+ * A sticky-note fill: a light shade of a fixed Mantine ramp (never the tenant-driven
+ * `brand`), sunk into the dark surface in dark mode so the hue survives under light ink.
  */
+const noteFill = (hue: string, shade = 1): string => {
+    const paper = `var(--mantine-color-${hue}-${shade})`;
+    return `light-dark(${paper}, color-mix(in srgb, ${paper} 26%, var(--mantine-color-dark-7)))`;
+};
+
+/** One distinct hue per note category, so the ink stays legible on every one. */
 export const NOTE_FILLS = {
-    important: '#ffccbc', // Orange for important
-    internal: '#fff9c4',  // Yellow
-    consignment: '#bbdefb', // Blue
-    client: '#c8e6c9',    // Green
-    flightUpdate: '#d1c4e9', // Lavender
-    agentUpdate: '#ffe0b2',  // Peach
-    pickup: '#b2dfdb',       // Mint
-    delivery: '#b2ebf2',     // Pale cyan
-    pricingUpdate: '#f8bbd0', // Pale pink
-    addressUpdate: '#eceff1', // Pale grey
-    default: '#e1f5fe',   // Light blue default
+    important: noteFill('red'),
+    internal: noteFill('yellow'),
+    consignment: noteFill('blue'),
+    client: noteFill('green'),
+    flightUpdate: noteFill('violet'),
+    agentUpdate: noteFill('orange'),
+    pickup: noteFill('teal'),
+    delivery: noteFill('cyan'),
+    pricingUpdate: noteFill('pink'),
+    // gray.2 is the near-white page tone, so the warm gray needs .3 to read as a note.
+    addressUpdate: noteFill('gray', 3),
+    default: noteFill('indigo'),
 } as const;
 
 const FILL_BY_TYPE_ID: Record<number, string> = {

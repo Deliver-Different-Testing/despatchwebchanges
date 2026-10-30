@@ -3,11 +3,11 @@
  *
  * The standard footer: a default (outlined) Cancel and a filled primary action,
  * both `miw={100}`, over a keyline top border. While `submitting` the confirm
- * button shows Mantine's built-in loader and both buttons disable. Buttons are
- * pill-shaped via the theme's Button default radius.
+ * button shows Mantine's built-in loader and both buttons disable. Below the `xs`
+ * breakpoint the actions stack full-width, primary on top.
  */
 import React from 'react';
-import {Button, Group} from '@mantine/core';
+import {Button, Flex} from '@mantine/core';
 import {dialogFooterBg, dialogFooterBorder, dialogStickyChromeStyle} from './styles';
 import {DialogFooterProps} from "./DialogFooterProps";
 import {useGlassAllowed} from '../../../../hooks/useGlassStrategy';
@@ -27,8 +27,11 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
 }) => {
     const glass = useGlassAllowed();
     return (
-    <Group
+    <Flex
+        direction={{base: 'column-reverse', xs: 'row'}}
+        align={{base: 'stretch', xs: 'center'}}
         justify="flex-end"
+        wrap="wrap"
         gap="sm"
         px="lg"
         py="md"
@@ -56,7 +59,7 @@ export const DialogFooter: React.FC<DialogFooterProps> = ({
                 {confirmLabel}
             </Button>
         )}
-    </Group>
+    </Flex>
     );
 };
 

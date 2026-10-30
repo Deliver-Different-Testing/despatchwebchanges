@@ -1,6 +1,6 @@
 /** @jest-environment node */
 /**
- * Job Search API Service Tests
+ * Job search API Service Tests
  *
  * Unit tests for all fetch functions in jobSearchApi.ts.
  * Mocks apiClient and transformDispatchJobDTO to verify correct

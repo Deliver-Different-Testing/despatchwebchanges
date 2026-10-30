@@ -95,6 +95,14 @@ const createDefaultProps = (overrides?: Partial<StickyNotesProps>): StickyNotesP
 };
 
 describe('StickyNotes', () => {
+    it('fills every note category from a distinct fixed theme ramp that follows the scheme', () => {
+        const fills = Object.values(NOTE_FILLS);
+        const hues = fills.map(fill => /^light-dark\(var\(--mantine-color-([a-z]+)-\d\), color-mix\(/.exec(fill)?.[1]);
+        expect(hues).not.toContain(undefined);
+        expect(hues).not.toContain('brand');
+        expect(new Set(hues).size).toBe(fills.length);
+    });
+
     beforeEach(() => {
         // Setup default mock implementations
         mockedNotesApi.getJobNotes.mockResolvedValue(createMockNotes());
