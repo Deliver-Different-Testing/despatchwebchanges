@@ -20,6 +20,11 @@ public sealed class AnthropicSettings
     /// </summary>
     public AiModelProfile Judgment { get; init; } = new();
 
+    /// <summary>
+    /// The Auto-mate chat. A whole turn, tool rounds included, must finish within TimeoutSeconds.
+    /// </summary>
+    public AiModelProfile Chat { get; init; } = new();
+
     public int RateLimitPerUserPerMinute { get; init; }
     public int RateLimitPerTenantPerMinute { get; init; }
 
@@ -27,6 +32,10 @@ public sealed class AnthropicSettings
     // insights) via a short-lived response cache. 0 disables it.
     public int ResponseCacheSeconds { get; init; }
 
-    public AiModelProfile For(AiTaskClass taskClass) =>
-        taskClass == AiTaskClass.Judgment ? Judgment : Drafting;
+    public AiModelProfile For(AiTaskClass taskClass) => taskClass switch
+    {
+        AiTaskClass.Judgment => Judgment,
+        AiTaskClass.Chat => Chat,
+        _ => Drafting
+    };
 }

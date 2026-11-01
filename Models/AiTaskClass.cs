@@ -10,5 +10,8 @@ namespace DespatchWeb.Models;
 public enum AiTaskClass
 {
     Drafting,
-    Judgment
+    Judgment,
+
+    /// <summary>The Auto-mate chat: open-ended questions answered with read-only tools and help articles.</summary>
+    Chat
 }

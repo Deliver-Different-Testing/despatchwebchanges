@@ -13,6 +13,8 @@ jest.mock('./api/session', () => {
 });
 jest.mock('./routes/unsavedChangesGuard', () => ({confirmNavigationAllowed: jest.fn()}));
 jest.mock('./hooks/useAddStopFlow', () => ({useAddStopFlow: () => ({addRecurringJobStop: jest.fn()})}));
+jest.mock('./components/auto-mate-chat/AutoMateChatProvider', () => ({AutoMateChatProvider: ({children}: {children: React.ReactNode}) => <>{children}</>}));
+jest.mock('./components/auto-mate-chat/AutoMateChat', () => ({AutoMateChat: () => null}));
 
 // jsdom has no fetch Request; the data router only needs url/signal/method from it.
 if (typeof globalThis.Request === 'undefined') {

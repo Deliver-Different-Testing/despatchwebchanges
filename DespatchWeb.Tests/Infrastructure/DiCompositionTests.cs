@@ -3,12 +3,14 @@ using DeliverDifferentReporting.Services;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Extensions;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Services.AutoMate;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Infrastructure;
@@ -34,7 +36,10 @@ public class DiCompositionTests
                 // reads IOptions<AnthropicSettings>.Value, which validates the profiles.
                 ["Anthropic:Drafting:Model"] = "claude-haiku-4-5",
                 ["Anthropic:Judgment:Model"] = "claude-sonnet-5",
-                ["Anthropic:Judgment:Effort"] = "low"
+                ["Anthropic:Judgment:Effort"] = "low",
+                ["Anthropic:Chat:Model"] = "claude-sonnet-5-5",
+                ["Anthropic:Chat:Effort"] = "low",
+                ["Anthropic:Chat:ForcedToolChoice"] = "false"
             })
             .Build();
         services.AddSingleton<IConfiguration>(config);
@@ -45,6 +50,8 @@ public class DiCompositionTests
         services.AddSingleton(Substitute.For<IConnectionStringManager>());
         services.AddSingleton(Substitute.For<IDistributedCache>());
         services.AddSingleton(Substitute.For<IWebHostEnvironment>());
+        services.AddSingleton(Substitute.For<IHostEnvironment>());
+        services.AddScoped(_ => Substitute.For<IScopeProvider>());
         services.AddSingleton(Substitute.For<ITenantBrandingService>());
         services.AddMemoryCache();
         services.AddHttpClient();
@@ -59,6 +66,7 @@ public class DiCompositionTests
         services.AddSupportServices();
         services.AddTenantServices();
         services.AddAiServices();
+        services.AddAutoMateChat();
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -77,5 +85,13 @@ public class DiCompositionTests
         Assert.NotNull(sp.GetRequiredService<ITenantClock>());
         Assert.NotNull(sp.GetRequiredService<IDeliveryJourneyService>());
         Assert.NotNull(sp.GetRequiredService<IAiSummarizationService>());
+        Assert.NotNull(sp.GetRequiredService<IAutoMateChatService>());
+        Assert.NotNull(sp.GetRequiredService<IServiceTokenProvider>());
+        Assert.NotNull(sp.GetRequiredService<ICspKnowledgeClient>());
+
+        var toolNames = sp.GetServices<IAutoMateTool>().Select(t => t.Definition.Name).Order().ToList();
+        Assert.Equal(
+            ["find_client", "find_drivers", "get_article", "get_job", "get_job_activity", "search_jobs", "search_knowledge_base"],
+            toolNames);
     }
 }

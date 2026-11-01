@@ -25,6 +25,8 @@ import type {ErrorType} from './pages/error-page/ErrorPage';
 import type {PrebookListModel} from './types';
 import {PwaUpdatePrompt} from './components/PwaUpdatePrompt';
 import {NavigationProvider, type Navigation, type NavigationParams} from './routes/NavigationContext';
+import {AutoMateChatProvider} from './components/auto-mate-chat/AutoMateChatProvider';
+import {AutoMateChat} from './components/auto-mate-chat/AutoMateChat';
 import {ROUTES, resolveAlias, routePath, type RouteEntry} from './routes/routeTable';
 
 const lazyScreen = <K extends string>(load: () => Promise<Record<K, React.ComponentType<any>>>, name: K) =>
@@ -133,9 +135,12 @@ export const SpaLayout: React.FC = () => (
     <RouterNavigationProvider>
         <UnsavedChangesBlocker/>
         <PageProgress/>
-        <Suspense fallback={<PageTransition/>}>
-            <Outlet/>
-        </Suspense>
+        <AutoMateChatProvider>
+            <Suspense fallback={<PageTransition/>}>
+                <Outlet/>
+            </Suspense>
+            <AutoMateChat/>
+        </AutoMateChatProvider>
     </RouterNavigationProvider>
 );
 
