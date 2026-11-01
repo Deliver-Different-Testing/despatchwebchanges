@@ -1,6 +1,8 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interceptors;
+using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Extensions;
 
@@ -29,5 +31,12 @@ public static class DatabaseServiceCollectionExtensions
         // Phase 2: Override the factory with our tenant-aware implementation
         // that resolves the real connection string per-request from cached tenant config.
         services.AddScoped<IDbContextFactory<DespatchContext>, DynamicDespatchDbContextFactory>();
+
+        // Readiness (/healthz) waits on this, so fresh pods take no traffic until the model is built.
+        services.AddSingleton<EfModelWarmupState>();
+        services.AddHostedService(sp => new EfModelWarmupService(
+            sp.GetRequiredService<IOptions<DbContextOptions<DespatchContext>>>(),
+            sp.GetRequiredService<StaffSessionContextInterceptor>(),
+            sp.GetRequiredService<EfModelWarmupState>()));
     }
 }

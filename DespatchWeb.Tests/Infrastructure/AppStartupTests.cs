@@ -1,11 +1,14 @@
 ﻿using System.Net;
 using Amazon.S3;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Infrastructure;
@@ -25,6 +28,18 @@ public class AppStartupTests(AppStartupTests.TestApp factory) : IClassFixture<Ap
         var response = await _client.GetAsync("/health/live", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task EfModelWarmup_RunsAtStartup_AndGatesReadiness()
+    {
+        var state = factory.Services.GetRequiredService<EfModelWarmupState>();
+        await state.Completion.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
+
+        var healthChecks = factory.Services.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value;
+
+        Assert.True(state.IsReady);
+        Assert.Contains(healthChecks.Registrations, r => r.Name == "ef_model_warmup");
     }
 
     [Fact]

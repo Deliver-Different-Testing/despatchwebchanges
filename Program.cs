@@ -19,7 +19,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddHealthChecks()
-    .AddCheck<SqlServerHealthCheck>("sql_server_health_check");
+    .AddCheck<SqlServerHealthCheck>("sql_server_health_check")
+    .AddCheck<EfModelWarmupHealthCheck>("ef_model_warmup");
 builder.Services.AddControllersWithViews()
     .AddNewtonsoftJson(options => NewtonsoftSettings.Apply(options.SerializerSettings));
 

@@ -69,7 +69,17 @@ public class DynamicDespatchDbContextFactory(
         // Always connect as ourselves, whichever app last wrote the entry we read.
         connectionString = TenantConnectionCache.ApplyOwnCredentials(connectionString);
 
-        var optionsBuilder = new DbContextOptionsBuilder<DespatchContext>(_options);
+        var scope = serviceProvider.GetRequiredService<IScopeProvider>();
+        return new DespatchContext(BuildOptions(_options, connectionString, staffSessionContextInterceptor), scope);
+    }
+
+    /// <summary>Shared with <see cref="Services.EfModelWarmupService"/> so both resolve the same cached model.</summary>
+    internal static DbContextOptions<DespatchContext> BuildOptions(
+        DbContextOptions<DespatchContext> baseOptions,
+        string connectionString,
+        StaffSessionContextInterceptor staffSessionContextInterceptor)
+    {
+        var optionsBuilder = new DbContextOptionsBuilder<DespatchContext>(baseOptions);
         optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
         {
             sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
@@ -81,8 +91,6 @@ public class DynamicDespatchDbContextFactory(
         // open so the JobDeliveryJourney triggers can attribute the change.
         optionsBuilder.AddInterceptors(staffSessionContextInterceptor);
 
-
-        var scope = serviceProvider.GetRequiredService<IScopeProvider>();
-        return new DespatchContext(optionsBuilder.Options, scope);
+        return optionsBuilder.Options;
     }
 }
