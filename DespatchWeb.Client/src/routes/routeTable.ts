@@ -41,7 +41,7 @@ export const ROUTES: readonly RouteEntry[] = [
     },
     {state: 'jobSearchV2', path: '/jobSearchV2', kind: 'alias', redirectTo: 'jobSearch', featureKey: dashboardFeatureKeys.jobSearch},
     {
-        state: 'recurringJobs', path: '/recurringJobs', kind: 'page', title: 'Recurring Jobs', section: 'Dashboards',
+        state: 'recurringJobs', path: '/recurringJobs', kind: 'page', title: 'Recurring jobs', section: 'Dashboards',
         featureKey: dashboardFeatureKeys.recurringJobs, navId: 'recurringJobs', navOrder: 6, landingOrder: 6,
     },
     {
@@ -49,7 +49,7 @@ export const ROUTES: readonly RouteEntry[] = [
         featureKey: dashboardFeatureKeys.overview, navId: 'overview', navOrder: 3, landingOrder: 4,
     },
     {
-        state: 'taskDashboard', path: '/taskDashboard', kind: 'page', title: 'Task Dashboard', section: 'Dashboards',
+        state: 'taskDashboard', path: '/taskDashboard', kind: 'page', title: 'Task dashboard', section: 'Dashboards',
         featureKey: dashboardFeatureKeys.taskDashboard, navId: 'tasks', navOrder: 4, landingOrder: 5,
     },
     {
@@ -57,7 +57,7 @@ export const ROUTES: readonly RouteEntry[] = [
         featureKey: dashboardFeatureKeys.driverManagement, navId: 'driverManagement', navOrder: 8, landingOrder: 8,
     },
     {
-        state: 'courierMap', path: '/courierMap', kind: 'page', title: 'Courier Map', section: 'Operations',
+        state: 'courierMap', path: '/courierMap', kind: 'page', title: 'Courier map', section: 'Operations',
         featureKey: dashboardFeatureKeys.courierMap, navId: 'courierMap', navOrder: 7, landingOrder: 7,
     },
     {state: 'settings', path: '/settings', kind: 'page', title: 'Settings', section: 'Account'},

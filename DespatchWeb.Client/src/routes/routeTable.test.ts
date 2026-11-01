@@ -89,6 +89,6 @@ describe('routeTable', () => {
     it('records titles and sections for pages', () => {
         expect(getRoute('settings')).toMatchObject({title: 'Settings', section: 'Account'});
         expect(getRoute('nationwide')).toMatchObject({title: 'Nationwide', section: 'Operations'});
-        expect(getRoute('taskDashboard')).toMatchObject({title: 'Task Dashboard', section: 'Dashboards'});
+        expect(getRoute('taskDashboard')).toMatchObject({title: 'Task dashboard', section: 'Dashboards'});
     });
 });

@@ -4,6 +4,7 @@ import {renderWithMantine} from '../../../test/utils';
 import {ColorModeContext} from '../../../hooks/useColorMode';
 import {ColorModeSwitcher} from './ColorModeSwitcher';
 import {SideNav} from './SideNav';
+import {createDfrntTheme, onBrandScrim} from '../../../theme/dfrntMantineTheme';
 
 const setPreference = jest.fn();
 
@@ -30,11 +31,14 @@ describe('ColorModeSwitcher', () => {
         expect(setPreference).toHaveBeenCalledWith('dark');
     });
 
-    it('sits in the side nav account header', () => {
+    it('sits in the side nav on the Ink scrim, whatever the tenant primary', () => {
         renderWithMantine(
             <SideNav open userName="John Doe" isUsCustomer={false} currentState="home" onClose={jest.fn()} onNavigate={jest.fn()} />,
+            {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})},
         );
 
-        expect(screen.getByTestId('sidenav-account')).toContainElement(screen.getByRole('radiogroup', {name: 'Colour mode'}));
+        const switcher = screen.getByRole('radiogroup', {name: 'Colour mode'});
+        expect(screen.getByRole('dialog')).toContainElement(switcher);
+        expect(switcher).toHaveStyle({color: onBrandScrim.text});
     });
 });

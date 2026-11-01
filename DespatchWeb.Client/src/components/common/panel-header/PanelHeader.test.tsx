@@ -25,11 +25,11 @@ describe('PanelHeader', () => {
         const {rerender} = renderPanel(<PanelHeader icon={tune} title="Filters" />);
         expect(screen.getByText('Filters')).toBeInTheDocument();
 
-        rerender(<PanelHeader icon={tune} title="Recurring Jobs" count={12} />);
-        expect(screen.getByText('Recurring Jobs (12)')).toBeInTheDocument();
+        rerender(<PanelHeader icon={tune} title="Recurring jobs" count={12} />);
+        expect(screen.getByText('Recurring jobs (12)')).toBeInTheDocument();
 
-        rerender(<PanelHeader icon={tune} title="Recurring Jobs" />);
-        expect(screen.getByText('Recurring Jobs')).toBeInTheDocument();
+        rerender(<PanelHeader icon={tune} title="Recurring jobs" />);
+        expect(screen.getByText('Recurring jobs')).toBeInTheDocument();
     });
 
     it('renders a SymbolIcon glyph as an svg badge', () => {

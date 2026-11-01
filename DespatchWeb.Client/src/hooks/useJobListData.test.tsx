@@ -399,7 +399,7 @@ describe('useJobListData', () => {
         });
 
         it('drops the held status counts once the list is disabled', async () => {
-            // Job Search disables the list it is not searching. An emptied list must not keep
+            // Job search disables the list it is not searching. An emptied list must not keep
             // showing the numbers it had before.
             const counts = {total: 4, active: 2, transit: 1, done: 1};
             const config = createMockFetchConfig({

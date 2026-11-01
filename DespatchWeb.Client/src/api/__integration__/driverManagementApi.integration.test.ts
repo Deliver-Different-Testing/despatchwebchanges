@@ -1,6 +1,6 @@
 /** @jest-environment jest-fixed-jsdom */
 /**
- * Driver Management API Integration Tests
+ * Driver management API Integration Tests
  *
  * Tests the driverManagementApi service using MSW to intercept real HTTP requests.
  */

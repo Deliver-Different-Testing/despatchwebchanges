@@ -7,7 +7,7 @@
  *
  * Deviations from the skill's copy, all deliberate:
  *   - `carrierBrandColors` dropped — despatchweb has no carrier logo surfaces.
- *   - Plus Jakarta Sans is bundled from `@fontsource-variable/plus-jakarta-sans`
+ *   - Plus Jakarta Sans is bundled from the static `@fontsource/plus-jakarta-sans` weights
  *     (imported in `main.tsx`), not loaded from Google Fonts.
  *   - `dfrntBrand` semantic-hex export added for the non-Mantine consumers that
  *     need a plain hex (the dialog header map).
@@ -167,6 +167,12 @@ export function getOnBrandScrim(primary?: string) {
 /** The default (Ink) shell tokens, for the few consumers outside a provider. */
 export const sidebarColors = getSidebarColors();
 
+/**
+ * The side menu's shell: always the Ink panel and a Cyan active bar, whatever the
+ * tenant's Branding primary, so the menu reads the same for every tenant.
+ */
+export const sideMenuColors = {...sidebarColors, activeAccent: cyan[5]};
+
 /** The default (Ink) scrim overlays, for the few consumers outside a provider. */
 export const onBrandScrim = getOnBrandScrim();
 
@@ -236,10 +242,10 @@ export function createDfrntTheme(appearance: ThemeAppearance = STANDARD_APPEARAN
         colors: {brand, cyan, gold, ink, reflex: secondary, grape, green, orange, red, gray, dark},
         white: '#ffffff',
         black: ink[9],
-        fontFamily: '"Plus Jakarta Sans Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         fontFamilyMonospace: 'ui-monospace, SFMono-Regular, Menlo, monospace',
         headings: {
-            fontFamily: '"Plus Jakarta Sans Variable", sans-serif',
+            fontFamily: '"Plus Jakarta Sans", sans-serif',
             fontWeight: '600',
         },
         defaultRadius: 'sm',

@@ -1,6 +1,6 @@
 /** @jest-environment jest-fixed-jsdom */
 /**
- * Job Search API Integration Tests
+ * Job search API Integration Tests
  *
  * Tests the jobSearchApi functions using MSW to intercept real HTTP requests.
  * Verifies correct endpoint URLs, request parameters, DTO transformation,
