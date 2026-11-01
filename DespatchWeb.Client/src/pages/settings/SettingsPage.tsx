@@ -24,6 +24,8 @@ import {aiAccentColor} from '../../theme/designTokens';
 import {
     isAiEnabled,
     isAiAutoOpenEnabled,
+    isAiChatEnabled,
+    setAiChatEnabled,
     setAiEnabled,
     setAiAutoOpenEnabled,
     loadAutoMateFromServer,
@@ -63,6 +65,7 @@ export const SettingsPage: React.FC = () => {
     const isUsCustomer = getSession().isUsCustomer ?? false;
     const courierFlag = useCourierFlagLastDelivery(isUsCustomer);
     const [aiAutoOpen, setAiAutoOpenState] = useState<boolean>(isAiAutoOpenEnabled);
+    const [aiChat, setAiChatState] = useState<boolean>(isAiChatEnabled);
     const [hideButtonEnabled, setHideButtonEnabledState] = useState<boolean>(isPanelHideButtonEnabled);
 
     // Address format: draft state the user edits freely, and the last-saved
@@ -132,6 +135,7 @@ export const SettingsPage: React.FC = () => {
         void loadAutoMateFromServer().then(() => {
             setAiEnabledState(isAiEnabled());
             setAiAutoOpenState(isAiAutoOpenEnabled());
+            setAiChatState(isAiChatEnabled());
         });
     }, []);
 
@@ -153,6 +157,14 @@ export const SettingsPage: React.FC = () => {
         setAiAutoOpenState((prev) => {
             const next = !prev;
             setAiAutoOpenEnabled(next);
+            return next;
+        });
+    };
+
+    const toggleAiChat = () => {
+        setAiChatState((prev) => {
+            const next = !prev;
+            setAiChatEnabled(next);
             return next;
         });
     };
@@ -290,6 +302,15 @@ export const SettingsPage: React.FC = () => {
                                 checked={aiAutoOpen}
                                 disabled={!aiEnabled}
                                 onToggle={toggleAiAutoOpen}
+                            />
+
+                            <SettingRow
+                                title="Auto-mate chat assistant"
+                                description="Adds a chat window to every page where you can ask Auto-mate how to do things
+                                    in Despatch, with answers drawn from the help articles."
+                                accent={aiAccentColor}
+                                checked={aiChat}
+                                onToggle={toggleAiChat}
                             />
                         </Stack>
                     </Box>

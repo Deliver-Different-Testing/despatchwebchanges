@@ -27,7 +27,7 @@ public static class AiServiceCollectionExtensions
     }
 
     internal static bool ValidateProfiles(AnthropicSettings settings) =>
-        IsValid(settings.Drafting) && IsValid(settings.Judgment);
+        IsValid(settings.Drafting) && IsValid(settings.Judgment) && IsValid(settings.Chat);
 
     private static bool IsValid(AiModelProfile profile) =>
         profile is { MaxTokens: >= 256 and <= 64000, TimeoutSeconds: >= 1 and <= 600 }

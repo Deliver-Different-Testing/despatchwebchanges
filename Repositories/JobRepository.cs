@@ -4472,22 +4472,34 @@ public partial class JobRepository(
         {
             _ = MarkJobAsReadAsync(jobId);
 
-            var result = await GetLiveJobByIdAsync(jobId) ?? await GetArchivedJobByIdAsync(jobId);
-
-            // A network partner sees their pay in place of the tenant's charge, on every job in the
-            // group. Done here, not in the mapping, so the tenant's figure never reaches the client.
-            if (Context.CurrentIsNetworkPartner)
-            {
-                await SubstituteNetworkPartnerChargesAsync(result);
-            }
-
-            return result;
+            return await LoadJobGroupAsync(jobId);
         }
         catch (Exception e)
         {
             Log.Error(e, "Error occurred getting job {JobId}. Please see exception", jobId);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Retrieves a single job by ID without marking it as read, for lookups made on the user's
+    /// behalf (the Auto-mate chat) that must not look as if the user opened the job.
+    /// </summary>
+    public async Task<JobViewModel> GetJobWithoutMarkingReadAsync(int jobId) =>
+        (await LoadJobGroupAsync(jobId)).Job;
+
+    private async Task<JobGroupViewModel> LoadJobGroupAsync(int jobId)
+    {
+        var result = await GetLiveJobByIdAsync(jobId) ?? await GetArchivedJobByIdAsync(jobId);
+
+        // A network partner sees their pay in place of the tenant's charge, on every job in the
+        // group. Done here, not in the mapping, so the tenant's figure never reaches the client.
+        if (Context.CurrentIsNetworkPartner)
+        {
+            await SubstituteNetworkPartnerChargesAsync(result);
+        }
+
+        return result;
     }
 
     /// <summary>

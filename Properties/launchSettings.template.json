@@ -12,6 +12,7 @@
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy",
         "SQLHealthCheckConnection": "",
         "SQLCredentials": "",
         "PublicPath": "https://hub.local.deliverdifferent.com/Account/login",
@@ -25,8 +26,6 @@
         "SMTP_Port": "2525",
         "RedisConfig": "",
         "Domain": "local.deliverdifferent.com",
-        "GoogleMapsKey": "",
-        "GoogleMapsDevKey": "",
         "HereMapsAPIKey": "",
         "HereMapsID": "",
         "HereMapsCode": "",
@@ -35,11 +34,12 @@
         "Issuer": "",
         "Audience": "",
         "ClaimsKey": "",
-        "FlightWebhook": "https://flightwebhooks.staging.deliverdifferent.com/webhook",
         "HubUrl": "https://hub.staging.deliverdifferent.com/",
         "WebAPIUrl": "http://api.local.deliverdifferent.com:53750/api",
         "IntegrationManagerUrl": "http://integrationmanager.local.deliverdifferent.com:5173/",
-        "ANTHROPIC_API_KEY": ""
+        "ANTHROPIC_API_KEY": "",
+        "CspKnowledge__BaseUrl": "http://localhost:5310",
+        "ServiceAuth__ClientSecret": ""
       }
     },
     "DespatchWeb": {
@@ -48,6 +48,7 @@
       "applicationUrl": "http://despatch.local.deliverdifferent.com:63277",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy",
         "SQLHealthCheckConnection": "",
         "SQLCredentials": "",
         "PublicPath": "https://hub.local.deliverdifferent.com/Account/login",
@@ -61,8 +62,6 @@
         "SMTP_Port": "2525",
         "RedisConfig": "",
         "Domain": "",
-        "GoogleMapsKey": "",
-        "GoogleMapsDevKey": "",
         "HereMapsAPIKey": "",
         "HereMapsID": "",
         "HereMapsCode": "",
@@ -71,11 +70,12 @@
         "Issuer": "",
         "Audience": "",
         "ClaimsKey": "",
-        "FlightWebhook": "https://flightwebhooks.staging.deliverdifferent.com/webhook",
         "HubUrl": "https://hub.staging.deliverdifferent.com/",
         "WebAPIUrl": "http://api.local.deliverdifferent.com:53750/api",
         "IntegrationManagerUrl": "http://integrationmanager.local.deliverdifferent.com:5173/",
-        "ANTHROPIC_API_KEY": ""
+        "ANTHROPIC_API_KEY": "",
+        "CspKnowledge__BaseUrl": "http://localhost:5310",
+        "ServiceAuth__ClientSecret": ""
       }
     }
   }

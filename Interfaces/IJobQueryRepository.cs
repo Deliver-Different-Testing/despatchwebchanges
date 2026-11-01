@@ -83,6 +83,7 @@ public interface IJobQueryRepository
 
     Task<JobGroupViewModel> GetJobByIdAsync(int jobId);
     Task<JobViewModel?> GetSingleJobById(int jobId);
+    Task<JobViewModel?> GetJobWithoutMarkingReadAsync(int jobId);
 
     Task<IReadOnlyList<PodMediaLeg>> GetPodMediaLegsAsync(int jobId);
 

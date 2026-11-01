@@ -1,7 +1,10 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Anthropic.Exceptions;
 using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.AutoMate;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -584,4 +587,72 @@ public class AiController(
 
         return Json(new { recorded = true });
     }
+
+    /// <summary>The Auto-mate chat, streamed as server-sent events.</summary>
+    [HttpPost]
+    public async Task Chat(
+        [FromBody] AutoMateChatRequest request, [FromServices] IAutoMateChatService chatService, CancellationToken ct)
+    {
+        // Customers and partners have no staff id; their contact id, negated, keeps them out of the staff key space.
+        var userId = tenantInfo.GetStaffIdOrNull() ?? -tenantInfo.GetContactId();
+        var tenantId = tenantInfo.GetTenantTimeZone();
+
+        if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
+        {
+            Response.StatusCode = 429;
+            await Response.WriteAsJsonAsync(new { error = "Too many requests. Wait a moment, then try again." }, ct);
+            return;
+        }
+
+        AutoMateStreamEvent last = null;
+        try
+        {
+            await using var events = chatService.ChatStreamAsync(request ?? new AutoMateChatRequest(), ct).GetAsyncEnumerator(ct);
+            var hasFirst = await events.MoveNextAsync();
+
+            // Nothing has been sent yet, so a failure before any output can still be a real HTTP error.
+            if (hasFirst && events.Current is { Type: "error", HttpStatus: { } status } failure)
+            {
+                last = failure;
+                Response.StatusCode = status;
+                await Response.WriteAsJsonAsync(new { error = failure.Error }, ct);
+                return;
+            }
+
+            Response.ContentType = "text/event-stream";
+            Response.Headers.CacheControl = "no-cache";
+            // Stops the nginx ingress buffering the stream into one late response.
+            Response.Headers["X-Accel-Buffering"] = "no";
+
+            for (var more = hasFirst; more; more = await events.MoveNextAsync())
+            {
+                last = events.Current;
+                var json = JsonSerializer.Serialize(last, StreamJsonOptions);
+                await Response.WriteAsync($"data: {json}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            Log.Debug("Auto-mate chat cancelled: the user closed the chat or navigated away mid-answer");
+        }
+        catch (Exception e) when (!Response.HasStarted)
+        {
+            Log.Error(e, "Auto-mate chat failed before streaming");
+            Response.StatusCode = 500;
+            await Response.WriteAsJsonAsync(new { error = "Auto-mate couldn't answer. Please try again." }, CancellationToken.None);
+        }
+        finally
+        {
+            if (last?.Usage is { } usage)
+            {
+                await rateLimiter.RecordTokenUsageAsync(userId, tenantId, nameof(Chat), AiTaskClass.Chat, usage);
+            }
+        }
+    }
+
+    private static readonly JsonSerializerOptions StreamJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 }
