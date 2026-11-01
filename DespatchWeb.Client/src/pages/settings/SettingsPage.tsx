@@ -338,7 +338,7 @@ export const SettingsPage: React.FC = () => {
 
                         <SettingRow
                             title="Show hide button on each panel"
-                            description="Adds a hide icon to each panel header on custom Dispatch and Job Search
+                            description="Adds a hide icon to each panel header on custom Dispatch and Job search
                                 layouts. You can still use the Show/Hide Panels dialog."
                             checked={hideButtonEnabled}
                             onToggle={toggleHideButtonEnabled}

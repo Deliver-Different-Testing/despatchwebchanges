@@ -245,7 +245,7 @@
 
 /* Additive: unread outweighs every other weight rule. */
 .row[data-unread='true'] > td {
-    font-weight: 900;
+    font-weight: 800;
 }
 
 /* Additive: a brief flash as a job appears in the list. */

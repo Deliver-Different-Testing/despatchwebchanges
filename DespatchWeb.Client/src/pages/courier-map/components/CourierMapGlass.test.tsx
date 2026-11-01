@@ -36,7 +36,7 @@ const controlsProps = {
     onDisplaySettingsChange: jest.fn(),
 } as unknown as MapControlsProps;
 
-describe('Courier Map liquid glass', () => {
+describe('Courier map liquid glass', () => {
     afterEach(() => localStorage.clear());
 
     it('leaves the drivers card and map controls plain while Liquid Glass is off (the default)', () => {

@@ -197,6 +197,15 @@ describe('DialogShell scrolling', () => {
 });
 
 describe('DialogFooter options', () => {
+    it('stacks the actions full-width, primary on top, below the xs breakpoint', () => {
+        renderWithMantine(<DialogFooter onCancel={jest.fn()} onConfirm={jest.fn()} confirmLabel="Save"/>);
+
+        const css = Array.from(document.querySelectorAll('style')).map(tag => tag.textContent).join(' ');
+        const footerCss = css.slice(css.indexOf('column-reverse'));
+        expect(footerCss).toMatch(/^column-reverse/);
+        expect(footerCss).toMatch(/36em[^]*flex-direction:\s*row/);
+    });
+
     it('drops the confirm button for view-only dialogs', () => {
         renderWithMantine(
             <DialogFooter onCancel={jest.fn()} onConfirm={jest.fn()} confirmLabel="Save" hideConfirm/>,

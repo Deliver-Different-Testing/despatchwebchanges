@@ -1,6 +1,6 @@
 /**
  * Confirm dialog shown when the user clicks a parent or child chip in the
- * Recurring Log timeline. Confirming opens the live job in Job Search in a
+ * Recurring Log timeline. Confirming opens the live job in Job search in a
  * new tab via openJobInSearch (navigationService.ts).
  *
  * Composed from the shared Mantine dialog primitives per CLAUDE.md.
@@ -39,13 +39,13 @@ export const OpenJobConfirmDialog: React.FC<OpenJobConfirmDialogProps> = ({
             <DialogHeader
                 icon={<Icon lucide={ExternalLink}/>}
                 title={`Open job ${displayNumber}`}
-                subtitle="Job Search will open in a new tab"
+                subtitle="Job search will open in a new tab"
                 onClose={onCancel}
             />
 
             <Box p={24} bg={dialogContentBg}>
                 <Text>
-                    Open the live job <strong>{displayNumber}</strong> in Job Search? It will open in a new browser tab so you can keep this recurring log open.
+                    Open the live job <strong>{displayNumber}</strong> in Job search? It will open in a new browser tab so you can keep this recurring log open.
                 </Text>
             </Box>
 

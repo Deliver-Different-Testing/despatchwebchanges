@@ -32,7 +32,7 @@ describe('saveTasks', () => {
 
     it('adds the tasks then invalidates the task cache', async () => {
         // The dialog renders in its own React root, so nothing else refreshes an open
-        // Task Dashboard or dispatch Tasks panel — without this invalidation the tasks a
+        // Task dashboard or dispatch Tasks panel — without this invalidation the tasks a
         // user just created stay invisible until the next poll.
         await saveTasks(7, events);
 

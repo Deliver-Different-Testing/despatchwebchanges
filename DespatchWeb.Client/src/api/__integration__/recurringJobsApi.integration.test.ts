@@ -1,6 +1,6 @@
 /** @jest-environment jest-fixed-jsdom */
 /**
- * Recurring Jobs API Integration Tests
+ * Recurring jobs API Integration Tests
  *
  * Tests the recurringJobsApi service using MSW to intercept real HTTP requests.
  * Verifies correct endpoint URLs, request parameters, response handling,
