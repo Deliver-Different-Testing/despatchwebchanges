@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm';
 
 import {useAutoMateChat} from './autoMateChatContext';
 import {createChatAdapter} from './chatAdapter';
+import {CHAT_MARKDOWN_COMPONENTS} from './chatMarkdown';
 import {AutoMateLogo} from '../common/auto-mate-logo/AutoMateLogo';
 import {useNavigation} from '../../routes/NavigationContext';
 import {getPageContext, getSuggestedPrompts} from '../../constants/autoMatePrompts';
@@ -31,7 +32,7 @@ function MarkdownText({text}: {text: string}) {
     return (
         <div className={styles.markdown}>
             <Suspense fallback={<Text size="sm">{text}</Text>}>
-                <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>{text}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={CHAT_MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
             </Suspense>
         </div>
     );
