@@ -79,6 +79,31 @@ describe('Auto-mate chat', () => {
         await waitFor(() => expect(screen.queryByText('Auto-mate assistant')).not.toBeInTheDocument());
     });
 
+    it('shows what Auto-mate is doing until the answer starts, then removes the status', async () => {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        mockStreamChat.mockImplementation(async function* (): AsyncGenerator<AutoMateStreamEvent> {
+            yield {type: 'tool_use', toolName: 'get_job'};
+            await gate;
+            yield {type: 'text_delta', text: 'Job 42 is on time.'};
+            yield {type: 'done'};
+        });
+        const user = setupUser();
+        renderChat(true);
+
+        await user.click(screen.getByRole('button', {name: 'Open Auto-mate assistant'}));
+        await user.click(await screen.findByRole('textbox'));
+        await user.paste('Is job 42 late?');
+        await user.click(screen.getByRole('button', {name: 'Send message'}));
+
+        expect(await screen.findByRole('status')).toHaveTextContent('Looking up the job…');
+
+        await act(async () => release());
+
+        expect(await screen.findByText('Job 42 is on time.')).toBeInTheDocument();
+        await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+    });
+
     it('follows the setting when it changes elsewhere, e.g. the Settings page', async () => {
         renderChat(false);
 

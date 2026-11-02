@@ -5,7 +5,7 @@ export interface KbSource {
 }
 
 export interface AutoMateStreamEvent {
-    type: 'text_delta' | 'tool_use' | 'done' | 'error';
+    type: 'text_delta' | 'tool_use' | 'status' | 'done' | 'error';
     text?: string;
     toolName?: string;
     error?: string;

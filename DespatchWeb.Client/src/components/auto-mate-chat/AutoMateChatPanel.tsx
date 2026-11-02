@@ -69,10 +69,29 @@ function SourceBadges() {
     );
 }
 
+/** Shown from the moment a question is sent until the answer's text streams, and again during later tool calls. */
+function ChatStatus() {
+    const label = useAuiState((s) => {
+        if (s.message.status?.type !== 'running') return null;
+        const status = s.message.metadata.custom.status as string | undefined;
+        const hasText = s.message.parts.some((p) => p.type === 'text' && p.text.length > 0);
+        return status ?? (hasText ? null : 'Thinking…');
+    });
+    if (!label) return null;
+
+    return (
+        <Group gap={6} mt={4} role="status" aria-live="polite">
+            <AutoMateLogo size={14} animated/>
+            <Text size="xs" c="dimmed">{label}</Text>
+        </Group>
+    );
+}
+
 function AssistantMessage() {
     return (
         <MessagePrimitive.Root className={`${styles.msg} ${styles.msgAssistant}`}>
             <MessagePrimitive.Parts components={{Text: MarkdownText}}/>
+            <ChatStatus/>
             <SourceBadges/>
         </MessagePrimitive.Root>
     );
