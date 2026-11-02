@@ -31,7 +31,6 @@ export const AiDraftButton: React.FC<AiDraftButtonProps> = ({
     return (
         <Button
             variant="outline"
-            color="grape"
             size={size}
             onClick={onClick}
             disabled={disabled}
