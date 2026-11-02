@@ -94,3 +94,17 @@ if (typeof globalThis.TextEncoder === 'undefined') {
     const {TextEncoder, TextDecoder} = require('util');
     Object.assign(globalThis, {TextEncoder, TextDecoder});
 }
+
+// assistant-stream builds TransformStreams and subclasses Response at import time; jsdom omits both.
+if (typeof window !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const webStreams = require('node:stream/web') as Record<string, unknown>;
+    for (const name of ['ReadableStream', 'WritableStream', 'TransformStream'] as const) {
+        const target = globalThis as Record<string, unknown>;
+        if (typeof target[name] === 'undefined') target[name] = webStreams[name];
+    }
+    if (typeof globalThis.Response === 'undefined') {
+        // Import-time base class only; tests that need a working Response run under the node environment.
+        globalThis.Response = class {} as unknown as typeof Response;
+    }
+}

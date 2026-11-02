@@ -2,6 +2,9 @@ import {
     isAiEnabled,
     setAiEnabled,
     isAiAutoOpenEnabled,
+    isAiChatEnabled,
+    setAiChatEnabled,
+    AI_CHAT_CHANGED_EVENT,
     setAiAutoOpenEnabled,
     loadAutoMateFromServer,
 } from './aiSettings';
@@ -29,7 +32,7 @@ describe('aiSettings', () => {
             expect(isAiEnabled()).toBe(true);
             expect(mockSavePreference).toHaveBeenCalledWith(
                 'AutoMate',
-                JSON.stringify({aiEnabled: true, aiAutoOpen: false}),
+                JSON.stringify({aiEnabled: true, aiAutoOpen: false, chatEnabled: true}),
             );
         });
     });
@@ -44,8 +47,36 @@ describe('aiSettings', () => {
             expect(isAiAutoOpenEnabled()).toBe(true);
             expect(mockSavePreference).toHaveBeenCalledWith(
                 'AutoMate',
-                JSON.stringify({aiEnabled: true, aiAutoOpen: true}),
+                JSON.stringify({aiEnabled: true, aiAutoOpen: true, chatEnabled: true}),
             );
+        });
+    });
+
+    describe('setAiChatEnabled', () => {
+        it('defaults to true, persists locally, notifies listeners and syncs chatEnabled to the server', () => {
+            const listener = jest.fn();
+            window.addEventListener(AI_CHAT_CHANGED_EVENT, listener);
+            expect(isAiChatEnabled()).toBe(true);
+
+            setAiChatEnabled(false);
+
+            window.removeEventListener(AI_CHAT_CHANGED_EVENT, listener);
+            expect(isAiChatEnabled()).toBe(false);
+            expect(listener).toHaveBeenCalledTimes(1);
+            expect(mockSavePreference).toHaveBeenCalledWith(
+                'AutoMate',
+                JSON.stringify({aiEnabled: false, aiAutoOpen: false, chatEnabled: false}),
+            );
+        });
+
+        it('is read back from the server payload, and absent means on', async () => {
+            mockGetPreference.mockResolvedValue(JSON.stringify({aiEnabled: false, aiAutoOpen: false, chatEnabled: false}));
+            await loadAutoMateFromServer();
+            expect(isAiChatEnabled()).toBe(false);
+
+            mockGetPreference.mockResolvedValue(JSON.stringify({aiEnabled: false, aiAutoOpen: false}));
+            await loadAutoMateFromServer();
+            expect(isAiChatEnabled()).toBe(true);
         });
     });
 
@@ -76,7 +107,7 @@ describe('aiSettings', () => {
 
             expect(mockSavePreference).toHaveBeenCalledWith(
                 'AutoMate',
-                JSON.stringify({aiEnabled: true, aiAutoOpen: false}),
+                JSON.stringify({aiEnabled: true, aiAutoOpen: false, chatEnabled: true}),
             );
         });
 
