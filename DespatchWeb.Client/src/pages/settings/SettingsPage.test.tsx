@@ -8,6 +8,8 @@ import {
     isAiAutoOpenEnabled,
     setAiEnabled,
     setAiAutoOpenEnabled,
+    isAiChatEnabled,
+    setAiChatEnabled,
     loadAutoMateFromServer,
 } from '../../utils/aiSettings';
 import {
@@ -35,6 +37,8 @@ jest.mock('../../utils/aiSettings', () => ({
     setAiEnabled: jest.fn(),
     isAiAutoOpenEnabled: jest.fn(),
     setAiAutoOpenEnabled: jest.fn(),
+    isAiChatEnabled: jest.fn(),
+    setAiChatEnabled: jest.fn(),
     loadAutoMateFromServer: jest.fn(),
 }));
 
@@ -67,6 +71,8 @@ jest.mock('../../services/toastService', () => ({
 
 const mockIsAiEnabled = isAiEnabled as jest.MockedFunction<typeof isAiEnabled>;
 const mockIsAiAutoOpenEnabled = isAiAutoOpenEnabled as jest.MockedFunction<typeof isAiAutoOpenEnabled>;
+const mockIsAiChatEnabled = isAiChatEnabled as jest.MockedFunction<typeof isAiChatEnabled>;
+const mockSetAiChatEnabled = setAiChatEnabled as jest.MockedFunction<typeof setAiChatEnabled>;
 const mockSetAiEnabled = setAiEnabled as jest.MockedFunction<typeof setAiEnabled>;
 const mockSetAiAutoOpenEnabled = setAiAutoOpenEnabled as jest.MockedFunction<typeof setAiAutoOpenEnabled>;
 const mockLoadAutoMateFromServer = loadAutoMateFromServer as jest.MockedFunction<typeof loadAutoMateFromServer>;
@@ -94,6 +100,7 @@ describe('SettingsPage', () => {
         jest.spyOn(console, 'error').mockImplementation(() => undefined);
         mockIsAiEnabled.mockReturnValue(false);
         mockIsAiAutoOpenEnabled.mockReturnValue(false);
+        mockIsAiChatEnabled.mockReturnValue(false);
         mockLoadAutoMateFromServer.mockResolvedValue(undefined);
         mockIsPanelHideButtonEnabled.mockReturnValue(true);
         mockLoadPanelHideButtonSettingFromServer.mockResolvedValue(undefined);
@@ -184,6 +191,18 @@ describe('SettingsPage', () => {
         await user.click(screen.getByRole('switch', {name: 'Show Auto-mate briefings'}));
 
         expect(mockSetAiEnabled).toHaveBeenCalledWith(true);
+    });
+
+    it('shows the chat assistant switch off by default and persists turning it on', async () => {
+        const user = setupUser();
+        renderWithMantine(<SettingsPage />);
+
+        const toggle = screen.getByRole('switch', {name: 'Auto-mate chat assistant'});
+        expect(toggle).not.toBeChecked();
+
+        await user.click(toggle);
+
+        expect(mockSetAiChatEnabled).toHaveBeenCalledWith(true);
     });
 
     describe('Liquid Glass', () => {

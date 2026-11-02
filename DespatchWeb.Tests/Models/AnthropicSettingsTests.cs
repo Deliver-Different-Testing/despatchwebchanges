@@ -16,10 +16,12 @@ public class AnthropicSettingsTests
     {
         var drafting = new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 1024 };
         var judgment = new AiModelProfile { Model = "claude-sonnet-5", Effort = "low", MaxTokens = 4096 };
-        var settings = new AnthropicSettings { Drafting = drafting, Judgment = judgment };
+        var chat = new AiModelProfile { Model = "claude-sonnet-5", MaxTokens = 2048 };
+        var settings = new AnthropicSettings { Drafting = drafting, Judgment = judgment, Chat = chat };
 
         Assert.Same(drafting, settings.For(AiTaskClass.Drafting));
         Assert.Same(judgment, settings.For(AiTaskClass.Judgment));
+        Assert.Same(chat, settings.For(AiTaskClass.Chat));
     }
 
     [Fact]
@@ -28,7 +30,8 @@ public class AnthropicSettingsTests
         var valid = new AnthropicSettings
         {
             Drafting = new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 1024 },
-            Judgment = new AiModelProfile { Model = "claude-sonnet-5", Effort = "low", MaxTokens = 4096 }
+            Judgment = new AiModelProfile { Model = "claude-sonnet-5", Effort = "low", MaxTokens = 4096 },
+            Chat = new AiModelProfile { Model = "claude-sonnet-5", MaxTokens = 2048 }
         };
         Assert.True(AiServiceCollectionExtensions.ValidateProfiles(valid));
 
@@ -41,7 +44,8 @@ public class AnthropicSettingsTests
                 Effort = "low",
                 MaxTokens = 1024
             },
-            Judgment = valid.Judgment
+            Judgment = valid.Judgment,
+            Chat = valid.Chat
         };
 
         Assert.False(AiServiceCollectionExtensions.ValidateProfiles(haikuWithEffort));
@@ -84,9 +88,23 @@ public class AnthropicSettingsTests
         var settings = new AnthropicSettings
         {
             Drafting = new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 1024 },
-            Judgment = new AiModelProfile { Model = model, MaxTokens = 4096, ForcedToolChoice = forced }
+            Judgment = new AiModelProfile { Model = model, MaxTokens = 4096, ForcedToolChoice = forced },
+            Chat = new AiModelProfile { Model = "claude-sonnet-5", MaxTokens = 2048 }
         };
 
         Assert.Equal(expectedValid, AiServiceCollectionExtensions.ValidateProfiles(settings));
+    }
+
+    [Fact]
+    public void ValidateProfiles_RejectsAnInvalidChatProfile()
+    {
+        var settings = new AnthropicSettings
+        {
+            Drafting = new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 1024 },
+            Judgment = new AiModelProfile { Model = "claude-sonnet-5", MaxTokens = 4096 },
+            Chat = new AiModelProfile { Model = "", MaxTokens = 2048 }
+        };
+
+        Assert.False(AiServiceCollectionExtensions.ValidateProfiles(settings));
     }
 }

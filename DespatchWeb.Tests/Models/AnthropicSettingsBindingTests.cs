@@ -29,6 +29,8 @@ public class AnthropicSettingsBindingTests
         ["Anthropic:Judgment:OutputPricePerMillion"] = "10.00",
         ["Anthropic:Judgment:CacheReadPricePerMillion"] = "0.20",
         ["Anthropic:Judgment:CacheWritePricePerMillion"] = "2.50",
+        ["Anthropic:Chat:Model"] = "claude-sonnet-5",
+        ["Anthropic:Chat:MaxTokens"] = "8000",
         ["Anthropic:RateLimitPerUserPerMinute"] = "5",
         ["Anthropic:RateLimitPerTenantPerMinute"] = "20",
         ["Anthropic:ResponseCacheSeconds"] = "90"
@@ -74,6 +76,7 @@ public class AnthropicSettingsBindingTests
 
         Assert.Equal(settings.Drafting, settings.For(AiTaskClass.Drafting));
         Assert.Equal(settings.Judgment, settings.For(AiTaskClass.Judgment));
+        Assert.Equal(settings.Chat, settings.For(AiTaskClass.Chat));
     }
 
     [Fact]
@@ -119,6 +122,8 @@ public class AnthropicSettingsBindingTests
             ["Anthropic:Drafting:MaxTokens"] = "2048",
             ["Anthropic:Judgment:Model"] = "claude-sonnet-5",
             ["Anthropic:Judgment:Effort"] = "medium",
+            ["Anthropic:Chat:Model"] = "claude-sonnet-5",
+            ["Anthropic:Chat:MaxTokens"] = "8000",
             ["Anthropic:ResponseCacheSeconds"] = "30"
         });
 

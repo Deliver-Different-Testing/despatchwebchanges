@@ -127,6 +127,8 @@ builder.Services
     .AddTenantServices()
     .AddAiServices();
 
+builder.Services.AddAutoMateChat();
+
 builder.Services.AddTenantBranding(opts =>
 {
     opts.BrandingApiBaseUrl = builder.Configuration["HubUrl"]!;

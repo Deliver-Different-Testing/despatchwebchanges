@@ -18,7 +18,7 @@ const config = {
         }],
     },
 
-    transformIgnorePatterns: ['/node_modules/(?!@deliver-different/glass/)'],
+    transformIgnorePatterns: ['/node_modules/(?!(@deliver-different/glass|@assistant-ui|assistant-stream|assistant-cloud|safe-content-frame|nanoid)/)'],
 
     moduleNameMapper: {
         '^@deliver-different/glass$': '<rootDir>/node_modules/@deliver-different/glass/dist/index.js',
