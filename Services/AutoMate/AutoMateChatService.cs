@@ -141,9 +141,13 @@ public sealed class AutoMateChatService(
         var kbConfigured = knowledge.IsConfigured;
         var pageContext = SanitizePageContext(request.PageContext, opts.MaxPageContextChars);
         var lastIsUser = cappedMessages[^1].Role != "assistant";
-        IReadOnlyList<CspKbHit> hits = lastIsUser && kbConfigured
-            ? await GroundAsync(cappedMessages[^1].Content, opts.GroundingTimeoutMs, ct)
-            : [];
+        IReadOnlyList<CspKbHit> hits = [];
+        if (lastIsUser && kbConfigured)
+        {
+            // Sent before grounding so the UI has something to show during the search.
+            yield return Status("searching_kb");
+            hits = await GroundAsync(cappedMessages[^1].Content, opts.GroundingTimeoutMs, ct);
+        }
 
         // Per-turn context goes in the last user message, never the system prompt, so the cached prefix holds.
         var preamble = new StringBuilder();
@@ -307,6 +311,8 @@ public sealed class AutoMateChatService(
     private static bool IsActive(IAutoMateTool tool, bool isStaff, bool kbConfigured) =>
         (isStaff || !tool.StaffOnly) && (kbConfigured || tool is not IKnowledgeBaseTool);
 
+    private static AutoMateStreamEvent Status(string phase) => new() { Type = "status", Text = phase };
+
     private static AutoMateStreamEvent Failure(string message, int status, UsageTotals? usage = null) =>
         new() { Type = "error", Error = message, HttpStatus = status, Usage = usage?.ToInfo() };
 
@@ -405,9 +411,12 @@ public sealed class AutoMateChatService(
             }
 
             state.Current = StartBlock(blockStart.ContentBlock);
-            return state.Current is ToolUseAccumulator toolUse
-                ? new AutoMateStreamEvent { Type = "tool_use", ToolName = toolUse.Name }
-                : null;
+            return state.Current switch
+            {
+                ToolUseAccumulator toolUse => new AutoMateStreamEvent { Type = "tool_use", ToolName = toolUse.Name },
+                ThinkingAccumulator or RedactedThinkingAccumulator => Status("thinking"),
+                _ => null
+            };
         }
 
         if (rawEvent.TryPickContentBlockDelta(out var delta))
@@ -632,9 +641,10 @@ public sealed class AutoMateChatService(
                 ParsedInput = element;
                 InputDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json) ?? new Dictionary<string, JsonElement>();
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
-                // Leave ParsedInput null so the call is answered with an is_error tool_result.
+                // ParsedInput stays null so the call is answered with an is_error tool_result.
+                Log.Warning(ex, "Auto-mate tool {ToolName} sent input that isn't valid JSON", Name);
             }
         }
     }

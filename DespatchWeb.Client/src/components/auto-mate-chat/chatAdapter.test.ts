@@ -25,7 +25,7 @@ describe('createChatAdapter', () => {
         const sources = [{articleId: 'a-1', title: 'Booking a job', isFaq: false}];
         stream([
             {type: 'text_delta', text: 'Open '},
-            {type: 'tool_use', toolName: 'search'},
+            {type: 'tool_use', toolName: 'search_jobs'},
             {type: 'text_delta', text: 'Jobs.'},
             {type: 'done', sources},
         ]);
@@ -41,8 +41,9 @@ describe('createChatAdapter', () => {
             pageContext: 'Job search',
         });
         expect(yielded).toEqual([
-            {content: [{type: 'text', text: 'Open '}]},
-            {content: [{type: 'text', text: 'Open Jobs.'}]},
+            {content: [{type: 'text', text: 'Open '}], metadata: {custom: {status: undefined}}},
+            {content: [{type: 'text', text: 'Open '}], metadata: {custom: {status: 'Searching jobs…'}}},
+            {content: [{type: 'text', text: 'Open Jobs.'}], metadata: {custom: {status: undefined}}},
             {content: [{type: 'text', text: 'Open Jobs.'}], metadata: {custom: {sources}}},
         ]);
     });
@@ -53,8 +54,29 @@ describe('createChatAdapter', () => {
         const yielded = await run(createChatAdapter(() => undefined), [msg('user', {type: 'text', text: 'Hi'})]);
 
         expect(yielded).toEqual([
-            {content: [{type: 'text', text: 'Partial'}]},
-            {content: [{type: 'text', text: 'Partial\n\nError: boom'}]},
+            {content: [{type: 'text', text: 'Partial'}], metadata: {custom: {status: undefined}}},
+            {content: [{type: 'text', text: 'Partial\n\nError: boom'}], metadata: {custom: {status: undefined}}},
+        ]);
+    });
+
+    it('yields a readable status with no parts while searching, thinking or running a tool', async () => {
+        stream([
+            {type: 'status', text: 'searching_kb'},
+            {type: 'status', text: 'thinking'},
+            {type: 'tool_use', toolName: 'get_job'},
+            {type: 'tool_use', toolName: 'some_new_tool'},
+            {type: 'text_delta', text: 'Done'},
+            {type: 'done'},
+        ]);
+
+        const yielded = await run(createChatAdapter(() => undefined), [msg('user', {type: 'text', text: 'Hi'})]);
+
+        expect(yielded).toEqual([
+            {content: [], metadata: {custom: {status: 'Searching help articles…'}}},
+            {content: [], metadata: {custom: {status: 'Thinking…'}}},
+            {content: [], metadata: {custom: {status: 'Looking up the job…'}}},
+            {content: [], metadata: {custom: {status: 'Working…'}}},
+            {content: [{type: 'text', text: 'Done'}], metadata: {custom: {status: undefined}}},
         ]);
     });
 });
