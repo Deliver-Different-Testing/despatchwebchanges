@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
@@ -452,30 +453,30 @@ public class CourierRepositorySortingTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task GetCourierDailyEarningsAsync_SortByHoursLogged_Asc()
+    public async Task GetCourierDailyEarningsAsync_SortByMinutesLogged_Asc()
     {
         await SeedEarningsCouriersAsync();
         var repository = CreateRepository();
-        var request = new PaginatedRequest { Page = 1, PageSize = 100, OrderBy = "hourslogged" };
+        var request = new PaginatedRequest { Page = 1, PageSize = 100, OrderBy = "minutesLogged" };
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
         // Mike: 120min, Zara: 240min, Alice: 480min
-        Assert.Equal(result.Items.Select(x => x.HoursLogged).OrderBy(x => x), result.Items.Select(x => x.HoursLogged));
+        Assert.Equal(result.Items.Select(x => x.MinutesLogged).OrderBy(x => x), result.Items.Select(x => x.MinutesLogged));
         Assert.Equal("Mike Carter", result.Items.First().Name);
         Assert.Equal("Alice Brown", result.Items.Last().Name);
     }
 
     [Fact]
-    public async Task GetCourierDailyEarningsAsync_SortByHoursLogged_Desc()
+    public async Task GetCourierDailyEarningsAsync_SortByMinutesLogged_Desc()
     {
         await SeedEarningsCouriersAsync();
         var repository = CreateRepository();
-        var request = new PaginatedRequest { Page = 1, PageSize = 100, OrderBy = "hourslogged", SortDescending = true };
+        var request = new PaginatedRequest { Page = 1, PageSize = 100, OrderBy = "minutesLogged", SortDescending = true };
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        Assert.Equal(result.Items.Select(x => x.HoursLogged).OrderByDescending(x => x), result.Items.Select(x => x.HoursLogged));
+        Assert.Equal(result.Items.Select(x => x.MinutesLogged).OrderByDescending(x => x), result.Items.Select(x => x.MinutesLogged));
         Assert.Equal("Alice Brown", result.Items.First().Name);
         Assert.Equal("Mike Carter", result.Items.Last().Name);
     }
@@ -543,7 +544,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
     {
         await SeedEarningsCouriersAsync();
         var repository = CreateRepository();
-        var request = new PaginatedRequest { Page = 1, PageSize = 100, OrderBy = "hourlyrate" };
+        var request = new PaginatedRequest { Page = 1, PageSize = 100, OrderBy = "hourlyRate" };
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
@@ -558,7 +559,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
     {
         await SeedEarningsCouriersAsync();
         var repository = CreateRepository();
-        var request = new PaginatedRequest { Page = 1, PageSize = 100, OrderBy = "hourlyrate", SortDescending = true };
+        var request = new PaginatedRequest { Page = 1, PageSize = 100, OrderBy = "hourlyRate", SortDescending = true };
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
@@ -567,4 +568,87 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         Assert.Equal("Alice Brown", result.Items.Last().Name);
     }
 
+    [Fact]
+    public async Task GetCourierDailyEarningsAsync_UnknownSortKey_Throws()
+    {
+        await SeedEarningsCouriersAsync();
+        var repository = CreateRepository();
+
+        var ex = await Assert.ThrowsAsync<InvalidListQueryException>(() =>
+            repository.GetCourierDailyEarningsAsync(new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "hoursLogged" }));
+
+        Assert.Contains("minutesLogged", ex.Message);
+    }
+
+    [Fact]
+    public async Task GetCourierDailyEarningsAsync_SortSpansPages()
+    {
+        await SeedEarningsCouriersAsync();
+        var repository = CreateRepository();
+
+        // Deliveries desc across the whole set: Mike(5), Zara(3), Alice(1)
+        var page1 = await repository.GetCourierDailyEarningsAsync(
+            new PaginatedRequest { Page = 1, PageSize = 2, OrderBy = "deliveries", SortDescending = true });
+        var page2 = await repository.GetCourierDailyEarningsAsync(
+            new PaginatedRequest { Page = 2, PageSize = 2, OrderBy = "deliveries", SortDescending = true });
+
+        Assert.Equal(["Mike Carter", "Zara Adams"], page1.Items.Select(x => x.Name));
+        Assert.Equal(["Alice Brown"], page2.Items.Select(x => x.Name));
+    }
+
+    [Fact]
+    public async Task GetCourierDailyEarningsAsync_TotalsCoverSameCouriersAsRows()
+    {
+        await SeedEarningsCouriersAsync();
+        await using (var context = CreateContext())
+        {
+            // Not logged in today, so outside the table scope: must not leak into the totals.
+            context.TucCouriers.Add(new TucCourier
+            {
+                UccrId = 4, Code = "N04", UccrName = "Nina", UccrSurname = "Offline",
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            });
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 50, UcjbNumber = "JOB050", UcjbCourierId = 4, UcjbDate = new DateTime(2024, 1, 15),
+                UcjbComplTime = new DateTime(2024, 1, 15, 9, 0, 0), CourierPayment = 999m
+            });
+            // Completed today but dated yesterday: rows use UcjbDate, so totals must too.
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 51, UcjbNumber = "JOB051", UcjbCourierId = 1, UcjbDate = new DateTime(2024, 1, 14),
+                UcjbComplTime = new DateTime(2024, 1, 15, 9, 0, 0), CourierPayment = 777m
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        var all = await repository.GetCourierDailyEarningsAsync(new PaginatedRequest { Page = 1, PageSize = 100 });
+        Assert.Equal(3, all.TotalActiveDrivers);
+        Assert.Equal(9, all.TotalDeliveriesToday);
+        Assert.Equal(210m, all.TotalEarningsToday);
+        Assert.Equal(15m, all.AverageHourlyRate);
+        Assert.Equal(all.Items.Sum(x => x.Earnings), all.TotalEarningsToday);
+
+        var searched = await repository.GetCourierDailyEarningsAsync(
+            new PaginatedRequest { Page = 1, PageSize = 100, SearchTerm = "Mike" });
+        Assert.Equal(1, searched.TotalActiveDrivers);
+        Assert.Equal(5, searched.TotalDeliveriesToday);
+        Assert.Equal(50m, searched.TotalEarningsToday);
+        Assert.Equal(25m, searched.AverageHourlyRate);
+    }
+
+    [Fact]
+    public async Task GetCourierDailyEarningsForExportAsync_UsesSameRowsAndMinutes()
+    {
+        await SeedEarningsCouriersAsync();
+        var repository = CreateRepository();
+
+        var rows = await repository.GetCourierDailyEarningsForExportAsync(
+            new PaginatedRequest { OrderBy = "minutesLogged" });
+
+        Assert.Equal([120, 240, 480], rows.Select(x => x.MinutesLogged));
+        Assert.Equal([5, 3, 1], rows.Select(x => x.Deliveries));
+    }
 }

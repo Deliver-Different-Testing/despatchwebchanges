@@ -116,6 +116,21 @@ public class AutoMateChatServiceTests
         type = "content_block_delta", index, delta = new { type = "text_delta", text }
     });
 
+    private static string ThinkingBlockStart(int index = 0) => Sse("content_block_start", new
+    {
+        type = "content_block_start", index, content_block = new { type = "thinking", thinking = "", signature = "" }
+    });
+
+    private static string ThinkingDelta(string thinking, int index = 0) => Sse("content_block_delta", new
+    {
+        type = "content_block_delta", index, delta = new { type = "thinking_delta", thinking }
+    });
+
+    private static string SignatureDelta(string signature, int index = 0) => Sse("content_block_delta", new
+    {
+        type = "content_block_delta", index, delta = new { type = "signature_delta", signature }
+    });
+
     private static string ToolBlockStart(string id, string name, int index = 0) => Sse("content_block_start", new
     {
         type = "content_block_start", index,
@@ -155,6 +170,42 @@ public class AutoMateChatServiceTests
 
         Assert.Equal(["text_delta", "text_delta", "done"], events.Select(e => e.Type));
         Assert.Equal("Hello world!", string.Concat(events.Where(e => e.Type == "text_delta").Select(e => e.Text)));
+    }
+
+    [Fact]
+    public async Task WithAKnowledgeBase_ASearchingStatusComesFirst()
+    {
+        ConfigureKnowledge();
+        QueueTextTurn("OK");
+
+        var events = await Run();
+
+        Assert.Equal(["status", "text_delta", "done"], events.Select(e => e.Type));
+        Assert.Equal("searching_kb", events[0].Text);
+    }
+
+    [Fact]
+    public async Task WithoutAKnowledgeBase_NoSearchingStatusIsSent()
+    {
+        _knowledge.IsConfigured.Returns(false);
+        QueueTextTurn("OK");
+
+        var events = await Run();
+
+        Assert.DoesNotContain(events, e => e.Type == "status");
+    }
+
+    [Fact]
+    public async Task AThinkingBlock_EmitsOneThinkingStatus()
+    {
+        _knowledge.IsConfigured.Returns(false);
+        _handler.Queue(MessageStart(), ThinkingBlockStart(), ThinkingDelta(""), ThinkingDelta(""), SignatureDelta("sig"), BlockStop(),
+            TextBlockStart(1), TextDelta("Done", 1), BlockStop(1), MessageDelta("end_turn"), MessageStop());
+
+        var events = await Run();
+
+        Assert.Equal(["status", "text_delta", "done"], events.Select(e => e.Type));
+        Assert.Equal("thinking", events[0].Text);
     }
 
     [Fact]
@@ -782,17 +833,16 @@ public class AutoMateChatServiceTests
     [Fact]
     public async Task CallerCancellation_Propagates_WhileStreaming()
     {
-        _handler.AsyncResponder = async (_, ct) =>
+        var requestSent = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var neverResponds = new TaskCompletionSource<HttpResponseMessage>();
+        _handler.AsyncResponder = (_, ct) =>
         {
-            await Task.Delay(Timeout.Infinite, ct);
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            requestSent.TrySetResult();
+            return neverResponds.Task.WaitAsync(ct);
         };
         using var cts = new CancellationTokenSource();
         var run = Run(ct: cts.Token);
-        while (_handler.Bodies.Count == 0)
-        {
-            await Task.Delay(5, TestContext.Current.CancellationToken);
-        }
+        await requestSent.Task.WaitAsync(TestContext.Current.CancellationToken);
 
         await cts.CancelAsync();
 

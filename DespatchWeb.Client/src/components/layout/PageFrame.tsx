@@ -53,10 +53,10 @@ export const PageFrame: React.FC<PageFrameProps> = ({title, section, beta, toolb
                 currentState={currentState}
                 onLogoClick={openHubUrl}
                 onNavigate={(state) => navigate(state)}
+                body={<div style={pageBodyStyle(scrollable)}>{children}</div>}
             >
                 {buildToolbarChildren(actions)}
             </AppShell>
-            <div style={pageBodyStyle(scrollable)}>{children}</div>
         </div>
     );
 };

@@ -48,6 +48,8 @@ export interface DataTableProps<T> {
     emptyIcon?: React.ReactNode;
     emptyTitle?: string;
     emptyMessage?: string;
+    /** Replaces the whole default empty block (icon/title/message) — e.g. an error or filtered-empty state with an action. */
+    emptyContent?: React.ReactNode;
     onRowClick?: (row: T) => void;
     /** Right-click on a row — used for context menus. */
     onRowContextMenu?: (event: React.MouseEvent, row: T) => void;
@@ -77,6 +79,7 @@ export function DataTable<T>({
     emptyIcon,
     emptyTitle = 'No data found',
     emptyMessage = 'No records match your search.',
+    emptyContent,
     onRowClick,
     onRowContextMenu,
     loadingMessage = 'Loading…',
@@ -146,11 +149,13 @@ export function DataTable<T>({
                         ) : rows.length === 0 ? (
                             <Table.Tr>
                                 <Table.Td colSpan={colSpan} ta="center" py={64}>
-                                    <Stack align="center" gap={4}>
-                                        {emptyIcon}
-                                        <Text fw={600} c="dimmed">{emptyTitle}</Text>
-                                        <Text fz="sm" c="dimmed">{emptyMessage}</Text>
-                                    </Stack>
+                                    {emptyContent ?? (
+                                        <Stack align="center" gap={4}>
+                                            {emptyIcon}
+                                            <Text fw={600} c="dimmed">{emptyTitle}</Text>
+                                            <Text fz="sm" c="dimmed">{emptyMessage}</Text>
+                                        </Stack>
+                                    )}
                                 </Table.Td>
                             </Table.Tr>
                         ) : (

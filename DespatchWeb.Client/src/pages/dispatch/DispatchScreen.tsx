@@ -145,7 +145,6 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
             onLoadLayout: layoutToolbar.loadLayout,
             onDeleteLayout: (index) => void layoutToolbar.deleteLayout(index),
             onRenameLayout: (index) => void layoutToolbar.renameLayout(index),
-            onImportLayouts: layoutToolbar.importLayouts,
             onCustomizePanels: () => void openCustomizePanels(),
             onResetLayout: resetLayout,
             columnEditMode,

@@ -13,6 +13,8 @@ export interface AppShellProps {
     logoUrl?: string;
     companyName?: string;
     children?: React.ReactNode;
+    /** The page body, rendered beneath the toolbar (inside the page column in the DFRNT sidebar style). */
+    body?: React.ReactNode;
     onLogoClick?: () => void;
     onNavigate: (state: string) => void;
     /** Show a BETA chip next to the page title (V2 pages). */

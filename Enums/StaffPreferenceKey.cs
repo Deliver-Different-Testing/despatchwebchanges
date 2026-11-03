@@ -23,5 +23,6 @@ public enum StaffPreferenceKey
     Appearance,
     LiquidGlass,
     CourierFlagLastDelivery,
-    ThemeCustomisation
+    ThemeCustomisation,
+    NavStyle
 }

@@ -50,7 +50,6 @@ export const JobSearchScreen: React.FC<JobSearchScreenProps> = ({jobId}) => {
             promptSaveLayout: bridge.promptSaveLayout,
             promptDeleteLayout: bridge.promptDeleteLayout,
             promptRenameLayout: bridge.promptRenameLayout,
-            importLegacyLayouts: bridge.importLegacyLayouts,
         };
     }, []);
 
@@ -102,7 +101,6 @@ export const JobSearchScreen: React.FC<JobSearchScreenProps> = ({jobId}) => {
             onLoadLayout: layoutToolbar.loadLayout,
             onDeleteLayout: (index) => void layoutToolbar.deleteLayout(index),
             onRenameLayout: (index) => void layoutToolbar.renameLayout(index),
-            onImportLayouts: layoutToolbar.importLayouts,
             onCustomizePanels: () => void openCustomizePanels(),
             onResetLayout: resetLayout,
             columnEditMode,

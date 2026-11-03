@@ -679,7 +679,6 @@ describe('NationwidePage', () => {
                     promptSaveLayout: expect.any(Function),
                     promptDeleteLayout: expect.any(Function),
                     promptRenameLayout: expect.any(Function),
-                    importLegacyLayouts: expect.any(Function),
                     resetCurrentLayout: expect.any(Function),
                     registerViewsListener: expect.any(Function),
                     setViewSelection: expect.any(Function),

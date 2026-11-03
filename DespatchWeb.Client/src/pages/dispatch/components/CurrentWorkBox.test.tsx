@@ -82,6 +82,7 @@ describe('CurrentWorkBox', () => {
     describe('non-US tenant', () => {
         it('prompts to select a courier when none is provided', () => {
             renderBox();
+            expect(screen.getByRole('heading', {name: 'No courier selected'})).toBeInTheDocument();
             expect(screen.getByText(/select a courier to view/i)).toBeInTheDocument();
             expect(screen.queryByRole('radio', {name: /all drivers/i})).not.toBeInTheDocument();
         });

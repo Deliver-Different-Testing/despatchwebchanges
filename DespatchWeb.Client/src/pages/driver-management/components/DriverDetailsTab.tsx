@@ -1,16 +1,12 @@
-import {Autocomplete, Badge, Card, Group, Loader, SimpleGrid, Stack, Text} from '@mantine/core';
-import {Car, IdCard, Info, Landmark, Mail, Phone, Search, ShieldCheck, UserSearch} from 'lucide-react';
+import {Autocomplete, Badge, Button, Card, Group, Loader, SimpleGrid, Stack, Text} from '@mantine/core';
+import {Car, IdCard, Info, Landmark, Mail, Phone, Search, ShieldCheck, TriangleAlert, UserSearch} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import classes from './DriverDetailsTab.module.css';
 import React, {useState} from 'react';
 import {PanelHeader} from '../../../components/common/panel-header';
 import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
-import type {ShowToastFn} from '../../../services/toastService';
+import {NoData} from '../../../components/common/no-data/NoData';
 import dayjs from 'dayjs';
-
-interface DriverDetailsTabProps {
-    showToast: ShowToastFn;
-}
 
 const formatDate = (dateStr?: string) => {
     if (!dateStr) return '\u2014';
@@ -39,12 +35,13 @@ const InfoCard = ({icon, title, children}: { icon: React.ReactNode; title: strin
     </Card>
 );
 
-export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _showToast}) => {
+export const DriverDetailsTab: React.FC = () => {
     const [searchText, setSearchText] = useState('');
     const [selectedDriverId, setSelectedDriverId] = useState<number>(0);
 
-    const {data: searchResults = [], isLoading: isSearching} = useDriverSearch(searchText);
-    const {data: driver, isLoading: isLoadingDetails} = useCourierDetails(selectedDriverId);
+    const {data: searchResults = [], isLoading: isSearching, isError: isSearchError, refetch: refetchSearch} = useDriverSearch(searchText);
+    const {data: driver, isLoading: isLoadingDetails, isError: isDetailsError, refetch: refetchDetails} = useCourierDetails(selectedDriverId);
+    const hasSearched = searchText.length >= 2;
 
     const handleDriverSelect = (value: string) => {
         setSearchText(value);
@@ -81,7 +78,13 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                         data={Array.from(new Set(searchResults.map(option => option.text)))}
                         rightSection={isSearching ? <Loader size={16} aria-label="Searching drivers"/> : undefined}
                     />
-                    {!isSearching && searchText.length > 0 && searchResults.length === 0 && (
+                    {isSearchError && (
+                        <Group gap={8} mt={4}>
+                            <Text fz="xs" c="red">Couldn&apos;t search drivers.</Text>
+                            <Button size="compact-xs" variant="subtle" onClick={() => refetchSearch()}>Try again</Button>
+                        </Group>
+                    )}
+                    {hasSearched && !isSearching && !isSearchError && searchResults.length === 0 && (
                         <Text fz="xs" c="dimmed" mt={4}>
                             No drivers match that search. Try fewer characters.
                         </Text>
@@ -95,7 +98,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                 </Group>
             )}
             {/* Driver Summary Bar */}
-            {!isLoadingDetails && driver && (
+            {!isLoadingDetails && !isDetailsError && driver && (
                 /*
                  * Was a bespoke Toolbar built from the legacy headerSurfaceSx /
                  * headerBadgeSx tokens. PanelHeader *is* that bar, so the summary
@@ -119,7 +122,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                 </Card>
             )}
             {/* Driver Information Grid */}
-            {!isLoadingDetails && driver && (
+            {!isLoadingDetails && !isDetailsError && driver && (
                 <SimpleGrid cols={{base: 1, md: 2, lg: 3}} spacing={16}>
                     <InfoCard icon={<Icon lucide={IdCard}/>} title="Basic information">
                         <InfoRow label="Code" value={driver.basicInformation.code} />
@@ -145,25 +148,45 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                     <InfoCard icon={<Icon lucide={ShieldCheck}/>} title="Compliance">
                         <InfoRow label="Dangerous goods" value={<BoolBadge value={driver.compliance.dangerousGoods} />} />
                         <InfoRow label="DG expiry" value={formatDate(driver.compliance.dangerousGoodsExpiry)} />
-                        <InfoRow label="License expiry" value={formatDate(driver.compliance.driversLicenceExpiry)} />
+                        <InfoRow label="Licence expiry" value={formatDate(driver.compliance.driversLicenceExpiry)} />
+                        <InfoRow label="WOF expiry" value={formatDate(driver.compliance.wofExpiry ?? undefined)} />
+                        <InfoRow label="Registration expiry" value={formatDate(driver.compliance.registrationExpiry ?? undefined)} />
                     </InfoCard>
 
                     <InfoCard icon={<Icon lucide={Landmark}/>} title="Banking & emergency">
                         <InfoRow label="Emergency contact" value={<BoolBadge value={driver.bankingAndEmergency.emergencyContact} />} />
+                        <InfoRow label="Emergency contact name" value={driver.bankingAndEmergency.emergencyContactName || '\u2014'} />
+                        <InfoRow label="Emergency contact phone" value={driver.bankingAndEmergency.emergencyContactPhone || '\u2014'} />
+                        <InfoRow label="Emergency contact relationship" value={driver.bankingAndEmergency.emergencyContactRelationship || '\u2014'} />
                         <InfoRow label="Bank" value={driver.bankingAndEmergency.bank || '\u2014'} />
                         <InfoRow label="Security check" value={<BoolBadge value={driver.bankingAndEmergency.securityCheck} />} />
+                        <InfoRow label="Security check date" value={formatDate(driver.bankingAndEmergency.securityCheckDate ?? undefined)} />
                     </InfoCard>
 
                     <InfoCard icon={<Icon lucide={Info}/>} title="Additional information">
                         <InfoRow label="Contract date" value={formatDate(driver.additionalInformation.contactSignDate)} />
                         <InfoRow label="Mobile insurance" value={driver.additionalInformation.mobileInsurence ?? '\u2014'} />
-                        <InfoRow label="Daily profit adjust" value={driver.additionalInformation.dailyProfitAdjust || '\u2014'} />
+                        {driver.additionalInformation.dailyProfitAdjust != null && (
+                            <InfoRow label="Daily profit adjust" value={driver.additionalInformation.dailyProfitAdjust || '\u2014'} />
+                        )}
                         <InfoRow label="Notes" value={driver.additionalInformation.notes || '\u2014'} />
                     </InfoCard>
                 </SimpleGrid>
             )}
+            {isDetailsError && (
+                <Card withBorder radius="lg">
+                    <NoData
+                        icon={<Icon lucide={TriangleAlert}/>}
+                        title="Couldn't load driver details"
+                        message="Check your connection, then try again."
+                        showAction
+                        actionText="Try again"
+                        onAction={() => refetchDetails()}
+                    />
+                </Card>
+            )}
             {/* Empty State */}
-            {!isLoadingDetails && !driver && (
+            {!isLoadingDetails && !isDetailsError && !driver && (
                 <Card withBorder radius="lg">
                     <Stack align="center" gap={4} py={64} c="dimmed">
                         <Icon lucide={UserSearch} size={48}/>

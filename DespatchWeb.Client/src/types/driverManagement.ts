@@ -64,18 +64,24 @@ export interface ComplianceInfo {
     dangerousGoods?: boolean;
     dangerousGoodsExpiry?: string;
     driversLicenceExpiry?: string;
+    wofExpiry?: string | null;
+    registrationExpiry?: string | null;
 }
 
 export interface BankingAndEmergency {
     emergencyContact: boolean;
     bank: string;
     securityCheck: boolean;
+    emergencyContactName?: string | null;
+    emergencyContactPhone?: string | null;
+    emergencyContactRelationship?: string | null;
+    securityCheckDate?: string | null;
 }
 
 export interface AdditionalInformation {
     contactSignDate?: string;
     mobileInsurence?: number;
-    dailyProfitAdjust: number;
+    dailyProfitAdjust?: number;
     notes: string;
 }
 
@@ -93,9 +99,10 @@ export interface TodayActiveDriver {
     status: string;
 }
 
+export type TodayActiveStatus = 'all' | 'active' | 'inactive';
+
 export interface TodayActiveDriverFilter {
-    location: string;
-    status: string;
+    status: TodayActiveStatus;
     fleet: number;
 }
 
@@ -107,20 +114,27 @@ export interface TodayActiveDriverPaginated extends PaginatedResponse<TodayActiv
 
 // ----- Compliance (Tab 2) -----
 
+export type ComplianceTypeFilter = '' | 'drivers_license' | 'dg_endorsement' | 'wof' | 'registration';
+export type ComplianceStatusFilter = '' | 'expired' | 'expiring' | 'valid' | 'not_set' | 'attention';
+export type ComplianceStatus = 'Expired' | 'Expiring soon' | 'Valid' | 'Not set';
+export type ComplianceType = 'Driver licence' | 'DG endorsement' | 'WOF' | 'Registration';
+export type ComplianceReminderChannel = 1 | 2;
+
 export interface CourierCompliance {
     courierId: number;
     code: string;
     name: string;
-    complianceType: string;
-    itemNumber: string;
-    expiryDate?: string;
-    status: string;
-    daysUntilExpiry: string;
+    complianceType: ComplianceType;
+    complianceTypeKey: string;
+    expiryDate: string | null;
+    status: ComplianceStatus;
+    /** Negative when overdue; null when no expiry is set. */
+    daysUntilExpiry: number | null;
 }
 
 export interface ComplianceFilter {
-    type: string;
-    status: string;
+    type: ComplianceTypeFilter;
+    status: ComplianceStatusFilter;
     fleet: number;
 }
 
@@ -128,6 +142,30 @@ export interface CourierCompliancePaginated extends PaginatedResponse<CourierCom
     totalExpired: number;
     totalExpiringSoon: number;
     totalValid: number;
+    totalNotSet: number;
+}
+
+export interface ComplianceReminderRequest {
+    courierIds?: number[];
+    filter?: {searchTerm: string; fleet: number; type: ComplianceTypeFilter; status: ComplianceStatusFilter};
+    channel: ComplianceReminderChannel;
+    /** Counts who would be reminded without sending anything. */
+    preview?: boolean;
+}
+
+export interface ComplianceReminderFailure {
+    courierId: number;
+    name: string;
+    reason: string;
+}
+
+export interface ComplianceReminderResult {
+    recipients: number;
+    sent: number;
+    nothingDue: number;
+    failed: number;
+    failures: ComplianceReminderFailure[];
+    maxRecipients: number;
 }
 
 // ----- After Hours (Tab 3) -----
@@ -175,7 +213,7 @@ export interface GroupEmailData {
 export interface CourierDailyEarnings {
     courierId: number;
     name: string;
-    hoursLogged: number;
+    minutesLogged: number;
     deliveries: number;
     earnings: number;
     hourlyRate: number;

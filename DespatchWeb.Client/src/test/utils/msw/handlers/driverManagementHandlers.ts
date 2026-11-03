@@ -34,15 +34,15 @@ export const mockCourierDetails: CourierDataDashboard = {
     basicInformation: {code: 'JS001', firstName: 'John', surname: 'Smith', email: 'john@example.com', address: '123 Main St'},
     contactInformation: {mobile: '021-123-4567', home: '09-123-4567', gstNumber: '12-345-678', irdNumber: '12-345-678'},
     vehicleInformation: {rego: 'ABC123', vehicleYear: 2020, vehicleModel: 'Toyota Hiace', vehicleInsurance: 'Full Cover'},
-    compliance: {dangerousGoods: true, dangerousGoodsExpiry: '2025-12-01', driversLicenceExpiry: '2026-06-15'},
-    bankingAndEmergency: {emergencyContact: true, bank: 'ANZ', securityCheck: true},
-    additionalInformation: {contactSignDate: '2023-01-15', mobileInsurence: 50, dailyProfitAdjust: 0, notes: 'Reliable driver'},
+    compliance: {dangerousGoods: true, dangerousGoodsExpiry: '2025-12-01', driversLicenceExpiry: '2026-06-15', wofExpiry: '2026-03-10', registrationExpiry: '2026-04-20'},
+    bankingAndEmergency: {emergencyContact: true, bank: 'ANZ', securityCheck: true, emergencyContactName: 'Mary Smith', emergencyContactPhone: '021-555-0000', emergencyContactRelationship: 'Spouse', securityCheckDate: '2024-03-01'},
+    additionalInformation: {contactSignDate: '2023-01-15', mobileInsurence: 50, notes: 'Reliable driver'},
 };
 
 export const mockTodayActiveDrivers: TodayActiveDriverPaginated = {
     items: [
         {courierId: 10, code: 'JS001', name: 'John Smith', fleet: 'Fleet Alpha', loginTime: '2025-01-15T08:00:00Z', logoutTime: undefined, duration: '4h 30m', deliveries: 12, status: 'Active'},
-        {courierId: 20, code: 'JD002', name: 'Jane Doe', fleet: 'Fleet Beta', loginTime: '2025-01-15T09:00:00Z', logoutTime: '2025-01-15T13:00:00Z', duration: '4h 0m', deliveries: 8, status: 'Offline'},
+        {courierId: 20, code: 'JD002', name: 'Jane Doe', fleet: 'Fleet Beta', loginTime: '2025-01-15T09:00:00Z', logoutTime: '2025-01-15T13:00:00Z', duration: '4h 0m', deliveries: 8, status: 'Inactive'},
     ],
     total: 2,
     page: 1,
@@ -54,8 +54,8 @@ export const mockTodayActiveDrivers: TodayActiveDriverPaginated = {
 
 export const mockComplianceList: CourierCompliancePaginated = {
     items: [
-        {courierId: 10, code: 'JS001', name: 'John Smith', complianceType: 'Driver\'s License', itemNumber: 'DL-12345', expiryDate: '2025-02-01', status: 'Expired', daysUntilExpiry: '-10'},
-        {courierId: 20, code: 'JD002', name: 'Jane Doe', complianceType: 'Insurance', itemNumber: 'INS-67890', expiryDate: '2025-06-15', status: 'Valid', daysUntilExpiry: '120'},
+        {courierId: 10, code: 'JS001', name: 'John Smith', complianceType: 'Driver licence', complianceTypeKey: 'drivers_license', expiryDate: '2025-02-01', status: 'Expired', daysUntilExpiry: -10},
+        {courierId: 20, code: 'JD002', name: 'Jane Doe', complianceType: 'WOF', complianceTypeKey: 'wof', expiryDate: '2025-06-15', status: 'Valid', daysUntilExpiry: 120},
     ],
     total: 2,
     page: 1,
@@ -63,6 +63,7 @@ export const mockComplianceList: CourierCompliancePaginated = {
     totalExpired: 1,
     totalExpiringSoon: 0,
     totalValid: 1,
+    totalNotSet: 0,
 };
 
 export const mockAfterHoursSchedule: AfterHoursPaginated = {
@@ -88,8 +89,8 @@ export const mockDriverEmails: PaginatedResponse<DriverEmail> = {
 
 export const mockDriverEarnings: CourierDailyEarningsPaginated = {
     items: [
-        {courierId: 10, name: 'John Smith', hoursLogged: 480, deliveries: 12, earnings: 250, hourlyRate: 31.25},
-        {courierId: 20, name: 'Jane Doe', hoursLogged: 360, deliveries: 8, earnings: 180, hourlyRate: 30},
+        {courierId: 10, name: 'John Smith', minutesLogged: 480, deliveries: 12, earnings: 250, hourlyRate: 31.25},
+        {courierId: 20, name: 'Jane Doe', minutesLogged: 360, deliveries: 8, earnings: 180, hourlyRate: 30},
     ],
     total: 2,
     page: 1,
@@ -130,14 +131,9 @@ export const driverManagementHandlers = [
         return HttpResponse.json(mockComplianceList);
     }),
 
-    // Send compliance reminder
-    http.post('*/courier/SendComplianceReminder', () => {
-        return new HttpResponse(null, {status: 200});
-    }),
-
-    // Send bulk compliance reminders
-    http.post('*/courier/SendBulkComplianceReminders', () => {
-        return new HttpResponse(null, {status: 200});
+    // Send compliance reminders
+    http.post('*/courier/SendComplianceReminders', () => {
+        return HttpResponse.json({recipients: 1, sent: 1, nothingDue: 0, failed: 0, failures: [], maxRecipients: 200});
     }),
 
     // Get after hours schedule

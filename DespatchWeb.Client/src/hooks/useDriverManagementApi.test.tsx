@@ -16,8 +16,8 @@ import {
     useCreateAfterHoursSchedule,
     useUpdateAfterHoursSchedule,
     useDeleteAfterHoursSchedule,
-    useSendComplianceReminder,
-    useSendBulkComplianceReminders,
+    useSendComplianceReminders,
+    useComplianceReminderPreview,
     useSendEmailToCouriers,
 } from './useDriverManagementApi';
 import {driverManagementApi} from '../api/driverManagementApi';
@@ -36,8 +36,7 @@ jest.mock('../api/driverManagementApi', () => ({
         createAfterHoursSchedule: jest.fn(),
         updateAfterHoursSchedule: jest.fn(),
         deleteAfterHoursSchedule: jest.fn(),
-        sendComplianceReminder: jest.fn(),
-        sendBulkComplianceReminders: jest.fn(),
+        sendComplianceReminders: jest.fn(),
         sendEmailToCouriers: jest.fn(),
     },
 }));
@@ -136,7 +135,7 @@ describe('useFleetOptions', () => {
 
 describe('useTodayActiveDrivers', () => {
     const query = {page: 1, pageSize: 100, orderBy: 'name', sortDescending: false, searchTerm: ''};
-    const filters = {location: 'all', status: 'all', fleet: 0};
+    const filters = {status: 'all' as const, fleet: 0};
 
     it('should fetch active drivers', async () => {
         const mockData = {items: [{courierId: 1}], total: 1, page: 1, pages: 1, totalActiveDrivers: 1, totalDriversActiveToday: 1, averageSessionTime: 120};
@@ -159,10 +158,10 @@ describe('useTodayActiveDrivers', () => {
 
 describe('useComplianceList', () => {
     const query = {page: 1, pageSize: 100, orderBy: 'code', sortDescending: false, searchTerm: ''};
-    const filters = {type: 'all', status: 'all', fleet: 0};
+    const filters = {type: '' as const, status: '' as const, fleet: 0};
 
     it('should fetch compliance list', async () => {
-        const mockData = {items: [], total: 0, page: 1, pages: 0, totalExpired: 0, totalExpiringSoon: 0, totalValid: 0};
+        const mockData = {items: [], total: 0, page: 1, pages: 0, totalExpired: 0, totalExpiringSoon: 0, totalValid: 0, totalNotSet: 0};
         mockApi.getCourierComplianceList.mockResolvedValueOnce(mockData);
 
         const {result} = renderHook(() => useComplianceList(query, filters), {wrapper: createQueryWrapper()});
@@ -269,35 +268,37 @@ describe('useDeleteAfterHoursSchedule', () => {
     });
 });
 
-describe('useSendComplianceReminder', () => {
-    it('should call sendComplianceReminder on mutateAsync', async () => {
-        mockApi.sendComplianceReminder.mockResolvedValueOnce(undefined);
+describe('useSendComplianceReminders', () => {
+    it('should call sendComplianceReminders and return the result', async () => {
+        mockApi.sendComplianceReminders.mockResolvedValueOnce({recipients: 2, sent: 2, nothingDue: 1, failed: 0, failures: [], maxRecipients: 200});
 
-        const {result} = renderHook(() => useSendComplianceReminder(), {wrapper: createQueryWrapper()});
+        const {result} = renderHook(() => useSendComplianceReminders(), {wrapper: createQueryWrapper()});
 
-        const item = {courierId: 1, code: 'JS01', name: 'John', complianceType: 'insurance', itemNumber: '123', status: 'expired', daysUntilExpiry: '-5'};
+        const request = {courierIds: [1], channel: 1 as const};
+        let response;
         await act(async () => {
-            await result.current.mutateAsync(item);
+            response = await result.current.mutateAsync(request);
         });
 
-        expect(mockApi.sendComplianceReminder).toHaveBeenCalledWith(item);
+        expect(mockApi.sendComplianceReminders).toHaveBeenCalledWith(request);
+        expect(response).toEqual({recipients: 2, sent: 2, nothingDue: 1, failed: 0, failures: [], maxRecipients: 200});
     });
 });
 
-describe('useSendBulkComplianceReminders', () => {
-    it('should call sendBulkComplianceReminders on mutateAsync', async () => {
-        mockApi.sendBulkComplianceReminders.mockResolvedValueOnce(undefined);
+describe('useComplianceReminderPreview', () => {
+    it('requests a preview only when a target is given', async () => {
+        mockApi.sendComplianceReminders.mockClear();
+        mockApi.sendComplianceReminders.mockResolvedValue({recipients: 2, sent: 2, nothingDue: 1, failed: 0, failures: [], maxRecipients: 200});
 
-        const {result} = renderHook(() => useSendBulkComplianceReminders(), {wrapper: createQueryWrapper()});
+        const {result: idle} = renderHook(() => useComplianceReminderPreview(null), {wrapper: createQueryWrapper()});
+        expect(idle.current.fetchStatus).toBe('idle');
+        expect(mockApi.sendComplianceReminders).not.toHaveBeenCalled();
 
-        const items = [
-            {courierId: 1, code: 'JS01', name: 'John', complianceType: 'insurance', itemNumber: '123', status: 'expired', daysUntilExpiry: '-5'},
-        ];
-        await act(async () => {
-            await result.current.mutateAsync(items);
-        });
+        const target = {courierIds: [1]};
+        const {result} = renderHook(() => useComplianceReminderPreview(target), {wrapper: createQueryWrapper()});
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-        expect(mockApi.sendBulkComplianceReminders).toHaveBeenCalledWith(items);
+        expect(mockApi.sendComplianceReminders).toHaveBeenCalledWith({courierIds: [1], channel: 1, preview: true}, expect.anything());
     });
 });
 

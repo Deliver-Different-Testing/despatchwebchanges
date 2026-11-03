@@ -24,7 +24,6 @@ function makeBridge() {
         promptSaveLayout: jest.fn().mockResolvedValue('Mine'),
         promptDeleteLayout: jest.fn().mockResolvedValue(true),
         promptRenameLayout: jest.fn().mockResolvedValue('Renamed'),
-        importLegacyLayouts: jest.fn().mockReturnValue({imported: [], skipped: []}),
     };
 }
 
@@ -61,11 +60,4 @@ describe('useLayoutToolbar', () => {
         expect(result.current.currentLayoutName).toBe('Default');
     });
 
-    it('toasts on import via the injected toast service', () => {
-        const bridge = makeBridge();
-        const {result} = renderHook(() => useLayoutToolbar({getBridge: () => bridge, storageKeys, defaultLayout}));
-
-        act(() => result.current.importLayouts());
-        expect(toastService.showInfoToast).toHaveBeenCalledWith('No V1 layouts to import');
-    });
 });

@@ -1,6 +1,5 @@
 import type {ILayout} from '../types/interfaces/layout.interfaces';
 import {
-    ImportLayoutsResult,
     LayoutStorageKeys,
     loadLastActiveLayoutName,
     loadLayouts,
@@ -22,7 +21,6 @@ export interface LayoutToolbarBridge {
     promptSaveLayout: () => Promise<string | null>;
     promptDeleteLayout: (layoutName: string) => Promise<boolean>;
     promptRenameLayout: (layoutName: string) => Promise<string | null>;
-    importLegacyLayouts: () => ImportLayoutsResult;
 }
 
 /** The controller fields the toolbar template binds to. Mutated in place. */
@@ -43,7 +41,6 @@ export interface LayoutToolbarActions {
     saveLayout: () => Promise<void>;
     loadLayout: (index: number) => void;
     deleteLayout: (index: number) => Promise<void>;
-    importLayouts: () => void;
     renameLayout: (index: number) => Promise<void>;
 }
 
@@ -56,7 +53,7 @@ export interface LayoutToolbarDeps {
 }
 
 /**
- * The layout dropdown's save / load / delete / rename / import behaviour, shared
+ * The layout dropdown's save / load / delete / rename behaviour, shared
  * by every AngularJS-hosted React page that owns a box layout. Storage is read
  * through the canonical `loadLayouts`, so the toolbar's list is identical to
  * what React renders — Default is always present at index 0, even when
@@ -117,17 +114,6 @@ export function createLayoutToolbarActions({
             selectLayout(DEFAULT_LAYOUT_NAME);
             getBridge()?.reloadLayoutsFromStorage();
             toastr.showSuccessToast('Layout deleted successfully');
-        },
-
-        importLayouts: () => {
-            const result = getBridge()?.importLegacyLayouts();
-            const imported = result?.imported.length ?? 0;
-            host.layouts = readLayouts();
-            if (imported > 0) {
-                toastr.showSuccessToast(`Imported ${imported} V1 layout${imported === 1 ? '' : 's'}`);
-            } else {
-                toastr.showInfoToast('No V1 layouts to import');
-            }
         },
 
         renameLayout: async (index: number) => {

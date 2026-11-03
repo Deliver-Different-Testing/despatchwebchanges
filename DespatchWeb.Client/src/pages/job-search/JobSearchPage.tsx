@@ -76,17 +76,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.JobSearch}-${getContactId()}`,
     }), []);
 
-    // Legacy (V1) storage keys — the source for "Import V1 layouts".
-    const legacyStorageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layoutsCS-${getContactId()}`,
-        lastActiveLayoutKey: `lastActiveLayoutCS-${getContactId()}`,
-        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.JobSearch}-${getContactId()}`,
-    }), []);
-
     const searchCriteria = useSearchCriteria({timeZone});
     const boxLayout = useBoxLayout({
         storageKeys,
-        legacyStorageKeys,
         page: 'JobSearch',
         createBoxes: createJobSearchBoxes,
         createDefaultLayout: createDefaultJobSearchLayout,
@@ -187,9 +179,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             setColumnEditMode,
             openInterCourierCharge,
             jobCreated,
-            importLegacyLayouts: boxLayout.importLegacyLayouts,
         });
-    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, promptSaveLayout, promptDeleteLayout, promptRenameLayout, openInterCourierCharge, jobCreated]);
+    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, promptSaveLayout, promptDeleteLayout, promptRenameLayout, openInterCourierCharge, jobCreated]);
 
     const fetchConfigMain = useMemo(() => ({
         fetchFn: fetchPodJobs,

@@ -1,20 +1,16 @@
-/**
- * Optimised: read-only tests consolidated to reduce render count.
- */
 import React from 'react';
-import { setupUser } from '../../../test/utils/setupUser';
-import {createTestQueryClient} from '../../../test/utils';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {MantineTestProvider} from '../../../test/utils';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {setupUser} from '../../../test/utils/setupUser';
+import {createTestQueryClient, MantineTestProvider} from '../../../test/utils';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {DriverComplianceTab} from './DriverComplianceTab';
 import {CourierCompliancePaginated} from '../../../types';
-import {useComplianceList, useSendComplianceReminder, useSendBulkComplianceReminders} from '../../../hooks/useDriverManagementApi';
+import {useComplianceList, useComplianceReminderPreview, useSendComplianceReminders} from '../../../hooks/useDriverManagementApi';
 
 jest.mock('../../../hooks/useDriverManagementApi', () => ({
     useComplianceList: jest.fn(),
-    useSendComplianceReminder: jest.fn(),
-    useSendBulkComplianceReminders: jest.fn(),
+    useComplianceReminderPreview: jest.fn(),
+    useSendComplianceReminders: jest.fn(),
 }));
 
 jest.mock('../../../api/driverManagementApi', () => ({
@@ -24,8 +20,8 @@ jest.mock('../../../api/driverManagementApi', () => ({
 }));
 
 const mockUseComplianceList = useComplianceList as jest.MockedFunction<typeof useComplianceList>;
-const mockUseSendComplianceReminder = useSendComplianceReminder as jest.MockedFunction<typeof useSendComplianceReminder>;
-const mockUseSendBulkComplianceReminders = useSendBulkComplianceReminders as jest.MockedFunction<typeof useSendBulkComplianceReminders>;
+const mockUseComplianceReminderPreview = useComplianceReminderPreview as jest.MockedFunction<typeof useComplianceReminderPreview>;
+const mockUseSendComplianceReminders = useSendComplianceReminders as jest.MockedFunction<typeof useSendComplianceReminders>;
 
 const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text: 'Fleet A'}]) => {
     const queryClient = createTestQueryClient();
@@ -38,123 +34,214 @@ const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text
     );
 };
 
-// Use a date 10 days ago for expired (within -30 day remindable window)
-const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
 const createMockData = (): CourierCompliancePaginated => ({
     items: [
-        {courierId: 10, code: 'JS001', name: 'John Smith', complianceType: "Driver's License", itemNumber: 'DL-12345', expiryDate: tenDaysAgo, status: 'Expired', daysUntilExpiry: '-10'},
-        {courierId: 20, code: 'JD002', name: 'Jane Doe', complianceType: 'Insurance', itemNumber: 'INS-67890', expiryDate: '2099-06-15', status: 'Valid', daysUntilExpiry: '9999'},
+        {courierId: 10, code: 'JS001', name: 'John Smith', complianceType: 'Driver licence', complianceTypeKey: 'drivers_license', expiryDate: '2025-02-01', status: 'Expired', daysUntilExpiry: -10},
+        {courierId: 20, code: 'JD002', name: 'Jane Doe', complianceType: 'WOF', complianceTypeKey: 'wof', expiryDate: '2099-06-15', status: 'Valid', daysUntilExpiry: 120},
+        {courierId: 30, code: 'BW003', name: 'Bob Wilson', complianceType: 'Registration', complianceTypeKey: 'registration', expiryDate: null, status: 'Not set', daysUntilExpiry: null},
+        {courierId: 40, code: 'AB004', name: 'Amy Bell', complianceType: 'DG endorsement', complianceTypeKey: 'dg_endorsement', expiryDate: '2099-01-01', status: 'Expiring soon', daysUntilExpiry: 0},
     ],
-    total: 2,
+    total: 4,
     page: 1,
     pages: 1,
     totalExpired: 1,
-    totalExpiringSoon: 0,
+    totalExpiringSoon: 1,
     totalValid: 1,
+    totalNotSet: 1,
 });
 
-const setupMocks = (data?: CourierCompliancePaginated, isLoading = false) => {
+const emptyData = (): CourierCompliancePaginated => ({
+    items: [], total: 0, page: 1, pages: 0,
+    totalExpired: 0, totalExpiringSoon: 0, totalValid: 0, totalNotSet: 0,
+});
+
+const mutateAsync = jest.fn();
+const refetch = jest.fn();
+
+const previewResult = (recipients: number, maxRecipients = 200) =>
+    ({recipients, sent: 0, nothingDue: 0, failed: 0, failures: [], maxRecipients});
+
+const setupMocks = (overrides: {data?: CourierCompliancePaginated; isLoading?: boolean; isError?: boolean; preview?: object; isSending?: boolean} = {}) => {
     mockUseComplianceList.mockReturnValue({
-        data: data ?? createMockData(),
-        isLoading,
-        isError: false,
-        error: null,
+        data: overrides.isError ? undefined : overrides.data ?? createMockData(),
+        isLoading: overrides.isLoading ?? false,
+        isError: overrides.isError ?? false,
+        refetch,
     } as any);
-    mockUseSendComplianceReminder.mockReturnValue({
-        mutateAsync: jest.fn().mockResolvedValue(undefined),
-        isLoading: false,
-    } as any);
-    mockUseSendBulkComplianceReminders.mockReturnValue({
-        mutateAsync: jest.fn().mockResolvedValue(undefined),
-        isLoading: false,
-    } as any);
+    mutateAsync.mockReset().mockResolvedValue({...previewResult(1), sent: 1});
+    mockUseSendComplianceReminders.mockReturnValue({mutateAsync, isPending: overrides.isSending ?? false} as any);
+    mockUseComplianceReminderPreview.mockReturnValue(
+        (overrides.preview ?? {data: previewResult(1), isLoading: false, isError: false}) as any);
 };
 
+const lastPreviewTarget = () => {
+    const calls = mockUseComplianceReminderPreview.mock.calls;
+    return calls[calls.length - 1][0];
+};
+
+const lastQuery = () => mockUseComplianceList.mock.calls[mockUseComplianceList.mock.calls.length - 1];
+
 describe('DriverComplianceTab', () => {
-    it('should render column headers and stats', () => {
+    it('renders server-computed rows, columns and the four stat cards', () => {
         setupMocks();
         renderWithProviders();
 
-        // Column headers
-        expect(screen.getByText('Code')).toBeInTheDocument();
-        expect(screen.getByText('Name')).toBeInTheDocument();
-        // 'Type' also appears as filter label
-        expect(screen.getAllByText('Type').length).toBeGreaterThanOrEqual(1);
-        expect(screen.getByText('Item/Number')).toBeInTheDocument();
-        expect(screen.getByText('Expiry date')).toBeInTheDocument();
-        // 'Status' also appears as filter label
-        expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
         expect(screen.getByText('Days until expiry')).toBeInTheDocument();
+        expect(screen.queryByText('Item/Number')).not.toBeInTheDocument();
+        expect(screen.queryByText('Total drivers')).not.toBeInTheDocument();
+        for (const label of ['Expired', 'Expiring soon', 'Not set', 'Valid']) {
+            expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(1);
+        }
 
-        // Stats: Expired
-        expect(screen.getAllByText('Expired').length).toBeGreaterThanOrEqual(1);
-
-        // Stats: Expiring soon
-        expect(screen.getAllByText('Expiring soon').length).toBeGreaterThan(0);
-
-        // Stats: Valid
-        expect(screen.getAllByText('Valid').length).toBeGreaterThanOrEqual(1);
-
-        // Stats: Total drivers
-        expect(screen.getByText('Total drivers')).toBeInTheDocument();
+        expect(screen.getByText('10 days overdue')).toBeInTheDocument();
+        expect(screen.getByText('120 days')).toBeInTheDocument();
+        expect(screen.getByText('Today')).toBeInTheDocument();
+        expect(screen.getByText('—')).toBeInTheDocument();
     });
 
-    it('should update orderBy when Name header is clicked', async () => {
+    it('starts on the Needs attention default with server ordering, and sends contract sort keys', () => {
         setupMocks();
         renderWithProviders();
+
+        expect(lastQuery()[0].orderBy).toBe('');
+        expect(lastQuery()[1]).toEqual({type: '', status: 'attention', fleet: 0});
 
         fireEvent.click(screen.getByText('Name'));
-
-        await waitFor(() => {
-            const lastCall = mockUseComplianceList.mock.calls[mockUseComplianceList.mock.calls.length - 1];
-            expect(lastCall[0].orderBy).toBe('name');
-        });
+        expect(lastQuery()[0].orderBy).toBe('name');
+        fireEvent.click(screen.getByText('Days until expiry'));
+        expect(lastQuery()[0].orderBy).toBe('daysUntilExpiry');
+        fireEvent.click(screen.getByText('Expiry date'));
+        expect(lastQuery()[0].orderBy).toBe('expiryDate');
     });
 
-    describe('Bulk reminders dialog', () => {
-        it('should open dialog when Send Reminders button is clicked and there are remindable items', async () => {
-            const user = setupUser();
-            setupMocks();
-            renderWithProviders();
+    it('sends a per-row reminder for that courier only, choosing SMS, and toasts only the sent count', async () => {
+        const user = setupUser();
+        const showToast = jest.fn();
+        setupMocks();
+        mutateAsync.mockResolvedValue({...previewResult(1), sent: 1, nothingDue: 2});
+        renderWithProviders(showToast);
 
-            await user.click(screen.getByRole('button', {name: /Send reminders/}));
+        const buttons = screen.getAllByRole('button', {name: 'Send reminder'});
+        expect(buttons[1]).toBeDisabled();
+        expect(buttons[0]).toBeEnabled();
 
-            expect(screen.getByText('Send bulk reminders')).toBeInTheDocument();
-            expect(screen.getByText(/Send a reminder email to/)).toBeInTheDocument();
-        });
+        await user.click(buttons[0]);
+        expect(lastPreviewTarget()).toEqual({courierIds: [10]});
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText('John Smith')).toBeInTheDocument();
+        expect(within(dialog).getByText(/will get a reminder about everything that needs renewing/)).toBeInTheDocument();
+        await user.click(within(dialog).getByLabelText('SMS'));
+        await user.click(within(dialog).getByRole('button', {name: 'Send reminders'}));
 
-        it('should close dialog when Cancel is clicked', async () => {
-            const user = setupUser();
-            setupMocks();
-            renderWithProviders();
-
-            await user.click(screen.getByRole('button', {name: /Send reminders/}));
-            expect(screen.getByText('Send bulk reminders')).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: 'Cancel'}));
-
-            await waitFor(() =>
-                expect(screen.queryByText('Send bulk reminders')).not.toBeInTheDocument(),
-            );
-        });
+        await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({courierIds: [10], channel: 2}));
+        expect(showToast).toHaveBeenCalledTimes(1);
+        expect(showToast).toHaveBeenCalledWith('Reminders sent to 1 driver', 'success');
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     });
 
-    it('should show loading indicator when isLoading is true', () => {
-        setupMocks(undefined, true);
+    it('previews the bulk count from the current filters, sends them, warns about failures, and shows a 400 message', async () => {
+        const user = setupUser();
+        const showToast = jest.fn();
+        setupMocks({preview: {data: previewResult(3), isLoading: false, isError: false}});
+        mutateAsync.mockResolvedValueOnce({
+            ...previewResult(3), sent: 1, failed: 4,
+            failures: [1, 2, 3, 4].map(id => ({courierId: id, name: `Driver ${id}`, reason: 'no device'})),
+        });
+        renderWithProviders(showToast);
+
+        fireEvent.change(screen.getByPlaceholderText('Search compliance…'), {target: {value: 'smith'}});
+        await waitFor(() => expect(lastQuery()[0].searchTerm).toBe('smith'));
+        await user.click(screen.getByRole('button', {name: /Send reminders/}));
+        expect(lastPreviewTarget()).toEqual({filter: {searchTerm: 'smith', fleet: 0, type: '', status: 'attention'}});
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByText("3 drivers will get a reminder about the items you've filtered to.")).toBeInTheDocument();
+        await user.click(within(dialog).getByRole('button', {name: 'Send reminders'}));
+
+        await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({
+            filter: {searchTerm: 'smith', fleet: 0, type: '', status: 'attention'},
+            channel: 1,
+        }));
+        await waitFor(() => expect(showToast).toHaveBeenCalledWith(
+            "4 couldn't be sent: Driver 1 (no device), Driver 2 (no device), Driver 3 (no device) and 1 more", 'warning'));
+        expect(showToast).toHaveBeenCalledWith('Reminders sent to 1 driver', 'success');
+
+        await user.click(screen.getByRole('button', {name: /Send reminders/}));
+        mutateAsync.mockRejectedValueOnce({status: 400, message: 'Too many recipients.'});
+        await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: 'Send reminders'}));
+        await waitFor(() => expect(showToast).toHaveBeenCalledWith('Too many recipients.', 'error'));
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('disables Send while the preview loads, when no one is due, and when over the limit', async () => {
+        const user = setupUser();
+        setupMocks({preview: {data: undefined, isLoading: true, isError: false}});
+        const loading = renderWithProviders();
+        await user.click(screen.getByRole('button', {name: /Send reminders/}));
+        expect(screen.getByLabelText('Checking who will get a reminder')).toBeInTheDocument();
+        expect(within(screen.getByRole('dialog')).getByRole('button', {name: 'Send reminders'})).toBeDisabled();
+        loading.unmount();
+
+        setupMocks({preview: {data: previewResult(0), isLoading: false, isError: false}});
+        const none = renderWithProviders();
+        await user.click(screen.getByRole('button', {name: /Send reminders/}));
+        expect(screen.getByText('No one in these filters needs a reminder.')).toBeInTheDocument();
+        expect(within(screen.getByRole('dialog')).getByRole('button', {name: 'Send reminders'})).toBeDisabled();
+        none.unmount();
+
+        setupMocks({preview: {data: previewResult(250), isLoading: false, isError: false}});
+        renderWithProviders();
+        await user.click(screen.getByRole('button', {name: /Send reminders/}));
+        expect(screen.getByText(/That's 250 drivers\. Narrow the filters to 200 or fewer\./)).toBeInTheDocument();
+        expect(within(screen.getByRole('dialog')).getByRole('button', {name: 'Send reminders'})).toBeDisabled();
+    });
+
+    it('keeps the dialog busy and blocks a second send while the mutation is pending', async () => {
+        const user = setupUser();
+        setupMocks({isSending: true});
         renderWithProviders();
 
+        await user.click(screen.getByRole('button', {name: /Send reminders/}));
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByRole('button', {name: 'Send reminders'})).toBeDisabled();
+        expect(within(dialog).getByRole('button', {name: 'Cancel'})).toBeDisabled();
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Send reminders'}));
+        expect(mutateAsync).not.toHaveBeenCalled();
+    });
+
+    it('closes the dialog on Cancel', async () => {
+        const user = setupUser();
+        setupMocks();
+        renderWithProviders();
+
+        await user.click(screen.getByRole('button', {name: /Send reminders/}));
+        await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    it('shows loading, load-failed (with retry), true-empty and filtered-empty states', async () => {
+        const user = setupUser();
+        setupMocks({isLoading: true});
+        const loading = renderWithProviders();
         expect(screen.getByText('Loading…')).toBeInTheDocument();
-    });
+        loading.unmount();
 
-    it('should show empty message when no items', () => {
-        setupMocks({
-            items: [], total: 0, page: 1, pages: 0,
-            totalExpired: 0, totalExpiringSoon: 0, totalValid: 0,
-        });
+        setupMocks({isError: true});
+        const failed = renderWithProviders();
+        expect(screen.getByText("Couldn't load compliance items")).toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Try again'}));
+        expect(refetch).toHaveBeenCalled();
+        failed.unmount();
+
+        setupMocks({data: emptyData()});
         renderWithProviders();
+        expect(screen.getByText('Nothing needs attention')).toBeInTheDocument();
 
-        expect(screen.getByText('No compliance records')).toBeInTheDocument();
-        expect(screen.getByText('No compliance records match your search.')).toBeInTheDocument();
+        fireEvent.change(screen.getByPlaceholderText('Search compliance…'), {target: {value: 'zzz'}});
+        await screen.findByText('No compliance items match these filters');
+        expect(screen.getByText('No compliance items match these filters')).toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Clear filters'}));
+        expect(lastQuery()[0].searchTerm).toBe('');
+        expect(screen.getByText('Nothing needs attention')).toBeInTheDocument();
     });
 });

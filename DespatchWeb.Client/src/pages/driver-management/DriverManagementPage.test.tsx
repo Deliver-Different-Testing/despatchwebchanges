@@ -68,6 +68,18 @@ describe('DriverManagementPage', () => {
         });
     });
 
+    describe('Fleet options', () => {
+        it('shows a retryable notice when the fleet options fail to load', () => {
+            const refetch = jest.fn();
+            mockUseFleetOptions.mockReturnValue({data: undefined, isLoading: false, isError: true, error: null, refetch} as any);
+            renderPage();
+
+            expect(screen.getByRole('alert')).toHaveTextContent('fleet filter is unavailable');
+            fireEvent.click(screen.getByRole('button', {name: 'Try again'}));
+            expect(refetch).toHaveBeenCalled();
+        });
+    });
+
     describe('Tab switching', () => {
         it('should switch to TodayActive tab when clicked', () => {
             renderPage();

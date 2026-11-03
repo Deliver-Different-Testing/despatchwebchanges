@@ -34,6 +34,8 @@ export interface AppToolbarProps {
     onMenuClick?: () => void;
     /** Show a BETA chip next to the page title (V2 pages). */
     beta?: boolean;
+    /** Breadcrumbs and actions only: no logo, keyline or menu button (the DFRNT sidebar carries those). */
+    slim?: boolean;
 }
 
 function greetUser(userName: string): string {
@@ -74,6 +76,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     onMenuHover,
     onMenuClick,
     beta,
+    slim = false,
 }) => {
     // The shell fill, its on-colour and the wordmark that reads on it all come from
     // the theme, so the bar is a provider concern rather than a prop.
@@ -99,7 +102,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
         >
             <Group h="100%" px="md" gap="md" wrap="nowrap">
                 {/* Logo - Brand Identity */}
-                <Box
+                {!slim && <Box
                     component="img"
                     src={resolvedLogo}
                     alt="DFRNT"
@@ -111,10 +114,10 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                         cursor: onLogoClick ? 'pointer' : 'default',
                         transition: 'opacity 0.2s',
                     }}
-                />
+                />}
 
                 {/* Keyline separating the brand mark from the location path */}
-                {resolvedCrumbs.length > 0 && (
+                {!slim && resolvedCrumbs.length > 0 && (
                     <Divider
                         data-testid="toolbar-keyline"
                         orientation="vertical"
@@ -187,7 +190,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                 )}
 
                 {/* Menu Button */}
-                <Tooltip label={greeting}>
+                {!slim && <Tooltip label={greeting}>
                     <ActionIcon
                         variant="subtle"
                         size="lg"
@@ -200,7 +203,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                     >
                         <Icon lucide={MenuIcon} size={18} />
                     </ActionIcon>
-                </Tooltip>
+                </Tooltip>}
             </Group>
         </Box>
     );

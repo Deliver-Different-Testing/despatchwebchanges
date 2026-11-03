@@ -1,5 +1,5 @@
 import React from 'react';
-import {screen, waitFor, act} from '@testing-library/react';
+import {screen, waitFor, act, within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {renderWithMantine} from '../../test/utils';
 import {setupUser} from '../../test/utils/setupUser';
@@ -58,7 +58,11 @@ describe('Auto-mate chat', () => {
         const user = setupUser();
         renderChat(true, '/dispatch?jobId=42');
 
-        await user.click(screen.getByRole('button', {name: 'Open Auto-mate assistant'}));
+        const launcher = screen.getByRole('button', {name: 'Open Auto-mate assistant'});
+        expect(launcher).toHaveAttribute('data-variant', 'filled');
+        expect(within(launcher).getByRole('img', {name: 'Auto-mate'}).tagName.toLowerCase()).toBe('svg');
+
+        await user.click(launcher);
         expect(await screen.findByText('Auto-mate assistant')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Open Auto-mate assistant'})).not.toBeInTheDocument();
         expect(screen.getByText("What's happening with this job?")).toBeInTheDocument();
@@ -77,6 +81,31 @@ describe('Auto-mate chat', () => {
 
         await user.click(screen.getByRole('button', {name: 'Close assistant'}));
         await waitFor(() => expect(screen.queryByText('Auto-mate assistant')).not.toBeInTheDocument());
+    });
+
+    it('shows what Auto-mate is doing until the answer starts, then removes the status', async () => {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        mockStreamChat.mockImplementation(async function* (): AsyncGenerator<AutoMateStreamEvent> {
+            yield {type: 'tool_use', toolName: 'get_job'};
+            await gate;
+            yield {type: 'text_delta', text: 'Job 42 is on time.'};
+            yield {type: 'done'};
+        });
+        const user = setupUser();
+        renderChat(true);
+
+        await user.click(screen.getByRole('button', {name: 'Open Auto-mate assistant'}));
+        await user.click(await screen.findByRole('textbox'));
+        await user.paste('Is job 42 late?');
+        await user.click(screen.getByRole('button', {name: 'Send message'}));
+
+        expect(await screen.findByRole('status')).toHaveTextContent('Looking up the job…');
+
+        await act(async () => release());
+
+        expect(await screen.findByText('Job 42 is on time.')).toBeInTheDocument();
+        await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
     });
 
     it('follows the setting when it changes elsewhere, e.g. the Settings page', async () => {

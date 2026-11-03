@@ -1,6 +1,5 @@
 import type {ShowToastFn} from '../../services/toastService';
 import type {DfrntPageViewModel} from '../../types/interfaces/dfrnt-page-view-model.interface';
-import type {ImportLayoutsResult} from '../../components/common/box-shell/layoutPersistence';
 import type {StoredDateFilter} from '../../utils/dateFilterStorage';
 
 export interface NationwideLayoutBridge {
@@ -12,8 +11,6 @@ export interface NationwideLayoutBridge {
     promptDeleteLayout: (layoutName: string) => Promise<boolean>;
     /** Opens the shared "Rename layout" dialog; resolves the new name, or null if cancelled. */
     promptRenameLayout: (layoutName: string) => Promise<string | null>;
-    /** Copy the operator's V1 Nationwide layouts into this page's store. */
-    importLegacyLayouts: () => ImportLayoutsResult;
     /** Restore the current layout to the shipped arrangement (toolbar → Layouts → Reset layout). */
     resetCurrentLayout: () => void;
     /**

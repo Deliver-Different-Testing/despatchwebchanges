@@ -134,6 +134,23 @@ describe('AppToolbar', () => {
         });
     });
 
+    describe('Slim variant', () => {
+        it('keeps breadcrumbs, actions and height but drops the logo, keyline and menu button', () => {
+            renderWithMantine(
+                <AppToolbar {...defaultProps} title={undefined} breadcrumbs={[{label: 'Dashboards'}, {label: 'Search'}]} slim>
+                    <button>Action</button>
+                </AppToolbar>
+            );
+
+            expect(screen.getByRole('heading', {level: 1, name: 'Search'})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Action'})).toBeInTheDocument();
+            expect(screen.queryByAltText('DFRNT')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('toolbar-keyline')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /navigation menu/i})).not.toBeInTheDocument();
+            expect(screen.getByRole('banner')).toHaveStyle({height: `${APP_BAR_HEIGHT_PX}px`});
+        });
+    });
+
     describe('Greeting', () => {
         it('should show greeting tooltip on avatar hover', async () => {
             renderWithMantine(<AppToolbar {...defaultProps} />);
