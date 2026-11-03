@@ -69,7 +69,7 @@ public class TaskRepository(
 
         if (filters != null)
         {
-            query = ApplyFilters(query, filters);
+            query = ApplyFilters(query, filters, value => infoService.ConvertUtcToTenantTimeZone(value.UtcDateTime).DateTime);
         }
 
         query = ApplyOrdering(query, filters, today.DateTime);
@@ -636,38 +636,48 @@ public class TaskRepository(
                          || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.GE)
                          || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
 
+    /// <param name="toTenantWallClock">
+    /// Converts a request bound to the tenant's wall-clock time. ucevDueTime is a tenant wall-clock
+    /// <c>datetime</c>; comparing it to a DateTimeOffset makes SQL Server cast the column to
+    /// datetimeoffset as +00:00, shifting every bound by the tenant's UTC offset.
+    /// </param>
     internal static IQueryable<TucEvent> ApplyFilters(
         IQueryable<TucEvent> query,
-        TaskTableFiltersRequest filters
+        TaskTableFiltersRequest filters,
+        Func<DateTimeOffset, DateTime> toTenantWallClock
     )
     {
+        var start = filters.StartDate is { } startDate ? toTenantWallClock(startDate) : (DateTime?)null;
+        var end = filters.EndDate is { } endDate ? toTenantWallClock(endDate) : (DateTime?)null;
+
         // Apply date filters based on the available parameters
-        if (filters.StartDate.HasValue && filters.EndDate.HasValue && filters.IncludeOverdue)
+        if (start.HasValue && end.HasValue && filters.IncludeOverdue)
         {
-            query = query.Where(e => (e.UcevDueTime >= filters.StartDate.Value &&
-                                      e.UcevDueTime <= filters.EndDate.Value)
-                                     || (!e.UcevClosed && e.UcevDueTime < filters.StartDate.Value));
+            query = query.Where(e => (e.UcevDueTime >= start.Value &&
+                                      e.UcevDueTime <= end.Value)
+                                     || (!e.UcevClosed && e.UcevDueTime < start.Value));
         }
-        else if (filters.StartDate.HasValue && filters.EndDate.HasValue)
+        else if (start.HasValue && end.HasValue)
         {
             // If both start and end dates are provided, filter for events within that range
-            query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value &&
-                                     e.UcevDueTime <= filters.EndDate.Value);
+            query = query.Where(e => e.UcevDueTime >= start.Value &&
+                                     e.UcevDueTime <= end.Value);
         }
-        else if (filters.StartDate.HasValue)
+        else if (start.HasValue)
         {
             // If only startDate is provided, filter for events on or after that date
-            query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value);
+            query = query.Where(e => e.UcevDueTime >= start.Value);
         }
-        else if (filters.EndDate.HasValue)
+        else if (end.HasValue)
         {
             // If only endDate is provided, filter for events on or before that date
-            query = query.Where(e => e.UcevDueTime <= filters.EndDate.Value);
+            query = query.Where(e => e.UcevDueTime <= end.Value);
         }
-        else if (filters.Date.HasValue)
+        else if (filters.Date is { } date)
         {
             // Fall back to the original date filter if no range is specified
-            query = query.Where(e => e.UcevDueTime.Date <= filters.Date);
+            var day = toTenantWallClock(date).Date;
+            query = query.Where(e => e.UcevDueTime.Date <= day);
         }
 
         if (filters.JobId.HasValue)
