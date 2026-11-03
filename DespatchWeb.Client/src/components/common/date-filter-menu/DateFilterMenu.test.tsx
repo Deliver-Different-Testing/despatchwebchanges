@@ -9,6 +9,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import {DateFilterData, DateFilterMenu} from './DateFilterMenu';
 import {renderWithMantine} from '../../../test/utils';
+import {getInputDateFormat} from '../../../utils/dateUtils';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -323,6 +324,18 @@ describe('DateFilterMenu', () => {
             expect(await screen.findByLabelText('Time range')).toBeChecked();
         });
 
+        it('should save all_time when Reset is clicked', async () => {
+            renderWithProviders(
+                <DateFilterMenu {...defaultProps} appPage="testPage" />
+            );
+
+            openMenu();
+            await selectOption('Custom dates');
+            fireEvent.click(screen.getByText('Reset'));
+
+            expect(localStorage.getItem('dateRangeOption-testPage')).toBe('all_time');
+        });
+
         it('should restore today option from localStorage', async () => {
             localStorage.setItem('dateRangeOption-testPage', 'today');
 
@@ -405,24 +418,52 @@ describe('DateFilterMenu', () => {
             expect(call.useTime).toBe(true);
         });
 
-        it('should call onRefreshData on mount with default dates when saved option is custom_date', () => {
+        it('should keep the persisted custom range on mount and show it when opened', async () => {
             localStorage.setItem('dateRangeOption-initCustom', 'custom_date');
             const onRefreshData = jest.fn();
+            const persisted: DateFilterData = {
+                startDate: dayjs('2026-10-01'),
+                endDate: dayjs('2026-10-15'),
+            };
 
             renderWithProviders(
                 <DateFilterMenu
-                    dateFilterData={null}
+                    dateFilterData={persisted}
                     onRefreshData={onRefreshData}
                     appPage="initCustom"
                 />
             );
 
-            expect(onRefreshData).toHaveBeenCalledTimes(1);
+            expect(onRefreshData).not.toHaveBeenCalled();
 
-            const call = onRefreshData.mock.calls[0][0] as DateFilterData;
-            expect(call.startDate).toBeDefined();
-            expect(call.endDate).toBeDefined();
-            expect(call.useTime).toBeFalsy();
+            openMenu();
+
+            const format = getInputDateFormat();
+            expect(await screen.findByLabelText('Custom dates')).toBeChecked();
+            expect(screen.getByLabelText('Start date')).toHaveValue(persisted.startDate.format(format));
+            expect(screen.getByLabelText('End date')).toHaveValue(persisted.endDate.format(format));
+        });
+
+        it('should fall back to the last 7 days when the saved option is custom_date but no range is stored', async () => {
+            localStorage.setItem('dateRangeOption-initCustomAllTime', 'custom_date');
+            const onRefreshData = jest.fn();
+
+            renderWithProviders(
+                <DateFilterMenu
+                    dateFilterData={{startDate: dayjs(0), endDate: dayjs().add(24, 'hours')}}
+                    onRefreshData={onRefreshData}
+                    appPage="initCustomAllTime"
+                />
+            );
+
+            expect(onRefreshData).not.toHaveBeenCalled();
+
+            openMenu();
+
+            const format = getInputDateFormat();
+            const now = dayjs().tz('Pacific/Auckland');
+            expect(await screen.findByLabelText('Start date')).toHaveValue(now.subtract(7, 'days').format(format));
+            expect(screen.getByLabelText('End date')).toHaveValue(now.format(format));
         });
 
         it('should only call onRefreshData once on mount (not on re-renders)', () => {
