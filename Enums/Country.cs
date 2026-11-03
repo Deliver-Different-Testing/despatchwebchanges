@@ -5,7 +5,8 @@ namespace DespatchWeb.Enums;
 public enum Country
 {
     [Description("NZ")] Nz = 1,
-    [Description("US")] Us = 2
+    [Description("US")] Us = 2,
+    [Description("AU")] Au = 3
 }
 
 public static class CountryExtensions

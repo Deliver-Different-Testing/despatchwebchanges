@@ -12,11 +12,12 @@ public class SessionContextServiceTests : IDisposable
     private readonly IClientRepository _clients = Substitute.For<IClientRepository>();
     private readonly IFeatureVisibilityService _features = Substitute.For<IFeatureVisibilityService>();
     private readonly INetworkPartnerContextService _np = Substitute.For<INetworkPartnerContextService>();
+    private readonly ITenantMapCentreService _tenantMap = Substitute.For<ITenantMapCentreService>();
     private readonly string? _originalHubUrl = Environment.GetEnvironmentVariable("HubUrl");
 
     public void Dispose() => Environment.SetEnvironmentVariable("HubUrl", _originalHubUrl);
 
-    private SessionContextService CreateSut() => new(_clients, _features, _np);
+    private SessionContextService CreateSut() => new(_clients, _features, _np, _tenantMap);
 
     private static ClaimsPrincipal User(string contactId = "100", string countryCode = "NZ", string staffId = "7") =>
         new(new ClaimsIdentity(
@@ -93,6 +94,44 @@ public class SessionContextServiceTests : IDisposable
         var dto = await CreateSut().BuildAsync(User());
 
         Assert.Null(dto.VisibleFeatures);
+    }
+
+    [Theory]
+    [InlineData("US", "USD")]
+    [InlineData("AU", "AUD")]
+    [InlineData("NZ", "NZD")]
+    public async Task BuildAsync_CurrencyFollowsCountry(string countryCode, string currency)
+    {
+        _clients.ValidateClientAsync(100).Returns(new ClientViewModel());
+
+        Assert.Equal(currency, (await CreateSut().BuildAsync(User("100", countryCode))).CurrencyCode);
+    }
+
+    [Theory]
+    [InlineData("NZ")]
+    [InlineData("US")]
+    public async Task BuildAsync_NzAndUsKeepTheirHardCodedMapCentre_AndNeverQueryTheTenantOne(string countryCode)
+    {
+        _clients.ValidateClientAsync(100).Returns(new ClientViewModel());
+        _tenantMap.GetMapCentreAsync().Returns(new MapCentre(-36.85m, 174.76m));
+
+        var dto = await CreateSut().BuildAsync(User("100", countryCode));
+
+        Assert.Null(dto.TenantMapCenter);
+        await _tenantMap.DidNotReceive().GetMapCentreAsync();
+    }
+
+    [Fact]
+    public async Task BuildAsync_CarriesTenantMapCentre_AndSurvivesItsFailure()
+    {
+        _clients.ValidateClientAsync(100).Returns(new ClientViewModel());
+        _tenantMap.GetMapCentreAsync().Returns(new MapCentre(-33.8679m, 151.2073m));
+
+        Assert.Equal(new MapCentre(-33.8679m, 151.2073m), (await CreateSut().BuildAsync(User("100", "AU"))).TenantMapCenter);
+
+        _tenantMap.GetMapCentreAsync().ThrowsAsync(new InvalidOperationException("boom"));
+
+        Assert.Null((await CreateSut().BuildAsync(User("100", "AU"))).TenantMapCenter);
     }
 
     [Fact]

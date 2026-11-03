@@ -235,6 +235,12 @@ public sealed class TenantInfoService(
     }
 
     /// <summary>
+    /// Determines if the current tenant is an Australian tenant.
+    /// </summary>
+    /// <returns>True if the tenant's country code is "AU".</returns>
+    public bool IsAuTenant() => string.Equals(GetCountryCode(), "AU", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Gets the current staff member's information (ID and full name) with 8-hour caching.
     /// Returns null when no TucStaff row matches the current staff ID claim.
     /// </summary>

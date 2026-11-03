@@ -115,10 +115,10 @@ describe('driverManagementApi integration', () => {
             );
 
             const query = {page: 1, pageSize: 100, orderBy: 'name', sortDescending: false, searchTerm: ''};
-            const filters = {location: 'all', status: 'all', fleet: 0};
+            const filters = {status: 'all' as const, fleet: 0};
             const result = await driverManagementApi.getTodayActiveDrivers(query, filters);
 
-            expect(capturedBody).toMatchObject({page: 1, pageSize: 100, location: 'all', status: 'all', fleet: 0});
+            expect(capturedBody).toMatchObject({page: 1, pageSize: 100, status: 'all', fleet: 0});
             expect(result.items).toHaveLength(2);
             expect(result.totalActiveDrivers).toBe(1);
         });
@@ -132,7 +132,7 @@ describe('driverManagementApi integration', () => {
 
             await expect(driverManagementApi.getTodayActiveDrivers(
                 {page: 1, pageSize: 10, orderBy: 'name', sortDescending: false},
-                {location: 'all', status: 'all', fleet: 0}
+                {status: 'all' as const, fleet: 0}
             )).rejects.toMatchObject({status: 500});
         });
     });
@@ -148,48 +148,29 @@ describe('driverManagementApi integration', () => {
             );
 
             const query = {page: 1, pageSize: 100, orderBy: 'code', sortDescending: false, searchTerm: ''};
-            const filters = {type: 'all', status: 'expired', fleet: 0};
+            const filters = {type: '' as const, status: 'expired' as const, fleet: 0};
             const result = await driverManagementApi.getCourierComplianceList(query, filters);
 
-            expect(capturedBody).toMatchObject({page: 1, type: 'all', status: 'expired'});
+            expect(capturedBody).toMatchObject({page: 1, type: '', status: 'expired'});
             expect(result.items).toHaveLength(2);
             expect(result.totalExpired).toBe(1);
         });
     });
 
-    describe('sendComplianceReminder', () => {
-        it('sends reminder with code and type', async () => {
+    describe('sendComplianceReminders', () => {
+        it('posts the request and returns the reminder summary', async () => {
             let capturedBody: unknown;
             server.use(
-                http.post('*/courier/SendComplianceReminder', async ({request}) => {
+                http.post('*/courier/SendComplianceReminders', async ({request}) => {
                     capturedBody = await request.json();
-                    return new HttpResponse(null, {status: 200});
+                    return HttpResponse.json({recipients: 1, sent: 1, nothingDue: 0, failed: 0, failures: [], maxRecipients: 200});
                 })
             );
 
-            const item = {courierId: 10, code: 'JS001', name: 'John', complianceType: 'insurance', itemNumber: 'INS-123', status: 'expired', daysUntilExpiry: '-5'};
-            await driverManagementApi.sendComplianceReminder(item);
+            const result = await driverManagementApi.sendComplianceReminders({courierIds: [10], channel: 1, preview: true});
 
-            expect(capturedBody).toMatchObject({code: 'JS001', type: 'insurance'});
-        });
-    });
-
-    describe('sendBulkComplianceReminders', () => {
-        it('sends bulk reminders with items array', async () => {
-            let capturedBody: unknown;
-            server.use(
-                http.post('*/courier/SendBulkComplianceReminders', async ({request}) => {
-                    capturedBody = await request.json();
-                    return new HttpResponse(null, {status: 200});
-                })
-            );
-
-            const items = [
-                {courierId: 10, code: 'JS001', name: 'John', complianceType: 'insurance', itemNumber: 'INS-123', status: 'expired', daysUntilExpiry: '-5'},
-            ];
-            await driverManagementApi.sendBulkComplianceReminders(items);
-
-            expect(capturedBody).toMatchObject({items});
+            expect(capturedBody).toMatchObject({courierIds: [10], channel: 1, preview: true});
+            expect(result).toMatchObject({recipients: 1, sent: 1, maxRecipients: 200});
         });
     });
 

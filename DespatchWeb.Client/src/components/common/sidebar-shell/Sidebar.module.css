@@ -1,0 +1,36 @@
+/*
+ * Sidebar layout mechanics only - row colours come from the side menu shell tokens
+ * (rowStyle in Sidebar.tsx), never the tenant primary.
+ */
+.aside {
+    transition: width 180ms ease;
+}
+
+/*
+ * Mantine only uses --nl-hover for the active row; every other row hovers to gray-0 (light) or
+ * dark-6 (dark), which on the Ink panel turns the white labels invisible in light mode. Hover every
+ * row with the shell's own tint.
+ */
+.aside :global(.mantine-NavLink-root):hover {
+    background-color: var(--nl-hover);
+}
+
+/* Rail (collapsed): icon-only rows, glyph centred in the 72px rail. */
+.navLinkRail {
+    justify-content: center;
+}
+
+/* With no label Mantine still lays out the left section's margin and an empty body cell. */
+.navLinkRail :global(.mantine-NavLink-section) {
+    margin: 0;
+}
+
+.navLinkRail :global(.mantine-NavLink-body) {
+    display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .aside {
+        transition: none;
+    }
+}

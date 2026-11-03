@@ -20,4 +20,5 @@ export enum StaffPreferenceKey {
     LiquidGlass = 'LiquidGlass',
     CourierFlagLastDelivery = 'CourierFlagLastDelivery',
     ThemeCustomisation = 'ThemeCustomisation',
+    NavStyle = 'NavStyle',
 }

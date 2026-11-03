@@ -33,7 +33,7 @@ const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text
 const createMockData = (): TodayActiveDriverPaginated => ({
     items: [
         {courierId: 1, code: 'JS001', name: 'John Smith', fleet: 'Fleet A', loginTime: '2025-01-15T08:00:00Z', logoutTime: undefined, duration: '4h 30m', deliveries: 12, status: 'Active'},
-        {courierId: 2, code: 'JD002', name: 'Jane Doe', fleet: 'Fleet B', loginTime: '2025-01-15T09:00:00Z', logoutTime: '2025-01-15T13:00:00Z', duration: '4h 0m', deliveries: 8, status: 'Offline'},
+        {courierId: 2, code: 'JD002', name: 'Jane Doe', fleet: 'Fleet B', loginTime: '2025-01-15T09:00:00Z', logoutTime: '2025-01-15T13:00:00Z', duration: '4h 0m', deliveries: 8, status: 'Inactive'},
     ],
     total: 2,
     page: 1,
@@ -43,13 +43,15 @@ const createMockData = (): TodayActiveDriverPaginated => ({
     averageSessionTime: 255,
 });
 
-const setupMocks = (data?: TodayActiveDriverPaginated, isLoading = false) => {
+const refetch = jest.fn();
+
+const setupMocks = (data?: TodayActiveDriverPaginated, isLoading = false, isError = false) => {
     mockUseTodayActiveDrivers.mockReturnValue({
-        data: data ?? createMockData(),
+        data: isError ? undefined : data ?? createMockData(),
         isLoading,
-        isError: false,
+        isError,
         error: null,
-        refetch: jest.fn(),
+        refetch,
     } as any);
 };
 
@@ -72,6 +74,28 @@ describe('TodayActiveTab', () => {
         expect(screen.getByText('Currently online')).toBeInTheDocument();
         expect(screen.getByText('Total today')).toBeInTheDocument();
         expect(screen.getByText('Average session')).toBeInTheDocument();
+        expect(screen.getByText('4h 15m')).toBeInTheDocument();
+        expect(screen.queryByText('On break')).not.toBeInTheDocument();
+    });
+
+    it('sends contract status values, no location, and contract sort keys', () => {
+        setupMocks();
+        renderWithProviders();
+
+        const lastCall = () => mockUseTodayActiveDrivers.mock.calls[mockUseTodayActiveDrivers.mock.calls.length - 1];
+        expect(lastCall()[1]).toEqual({status: 'all', fleet: 0});
+
+        for (const [label, key] of [['Login time', 'loginTime'], ['Logout time', 'logoutTime'], ['Duration', 'duration'], ['Deliveries', 'deliveries'], ['Fleet', 'fleet']] as const) {
+            fireEvent.click(screen.getByText(label, {selector: 'span'}));
+            expect(lastCall()[0].orderBy).toBe(key);
+        }
+    });
+
+    it('rounds the average session before splitting hours and minutes', () => {
+        setupMocks({...createMockData(), averageSessionTime: 119.7});
+        renderWithProviders();
+
+        expect(screen.getByText('2h 0m')).toBeInTheDocument();
     });
 
     it('updates orderBy and direction when sortable headers are clicked', () => {
@@ -103,7 +127,15 @@ describe('TodayActiveTab', () => {
         });
         renderWithProviders();
 
-        expect(screen.getByText('No active drivers')).toBeInTheDocument();
-        expect(screen.getByText('No active drivers match your search.')).toBeInTheDocument();
+        expect(screen.getByText('No drivers logged in today')).toBeInTheDocument();
+    });
+
+    it('should show a retryable error state when the load fails', () => {
+        setupMocks(undefined, false, true);
+        renderWithProviders();
+
+        expect(screen.getByText("Couldn't load drivers")).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'Try again'}));
+        expect(refetch).toHaveBeenCalled();
     });
 });

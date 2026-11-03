@@ -144,7 +144,7 @@ public partial class BaseJobRepository(
             {
                 Log.Debug("ClearListId {ClearListID} provided. Getting ClearListEnvelope", selectedClearListId);
 
-                var country = isUsTenant ? Country.Us : Country.Nz;
+                var country = isUsTenant ? Country.Us : infoService.IsAuTenant() ? Country.Au : Country.Nz;
                 clearListEnvelope =
                     await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(selectedClearListId.Value, country);
 

@@ -18,9 +18,15 @@ import {
     loadPanelHideButtonSettingFromServer,
 } from '../../utils/panelHideButtonSettings';
 import {deletePreference, getPreference, savePreference} from '../../api/preferencesApi';
-import {getTenantAddressFormatDefault, getTenantCourierFlagLastDeliveryDefault} from '../../api/tenantSettingsApi';
+import {
+    getTenantAddressFormatDefault,
+    getTenantCourierFlagLastDeliveryDefault,
+    getTenantNavStyleDefault,
+} from '../../api/tenantSettingsApi';
 import {StaffPreferenceKey} from '../../types/enums/staff-preference-key.enum';
 import {useColorMode} from '../../hooks/useColorMode';
+import {resetNavStyleStore} from '../../hooks/useNavStyle';
+import {toastService} from '../../services/toastService';
 import {isLiquidGlassSupported} from '../../hooks/glassSupport';
 
 jest.mock('../../hooks/glassSupport', () => ({
@@ -57,6 +63,7 @@ jest.mock('../../api/preferencesApi', () => ({
 jest.mock('../../api/tenantSettingsApi', () => ({
     getTenantAddressFormatDefault: jest.fn(),
     getTenantCourierFlagLastDeliveryDefault: jest.fn(),
+    getTenantNavStyleDefault: jest.fn(),
     getTenantAppearanceDefault: jest.fn(),
 }));
 
@@ -85,6 +92,7 @@ const mockSavePreference = savePreference as jest.Mock;
 const mockDeletePreference = deletePreference as jest.Mock;
 const mockGetTenantAddressFormatDefault = getTenantAddressFormatDefault as jest.Mock;
 const mockGetTenantCourierFlagLastDeliveryDefault = getTenantCourierFlagLastDeliveryDefault as jest.Mock;
+const mockGetTenantNavStyleDefault = getTenantNavStyleDefault as jest.Mock;
 const mockUseColorMode = useColorMode as jest.Mock;
 const mockSetColorPreference = jest.fn();
 
@@ -97,6 +105,8 @@ function radioFor(side: 'pickup' | 'delivery', fieldLabel: string, lineLabel: 'H
 describe('SettingsPage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        localStorage.clear();
+        resetNavStyleStore();
         jest.spyOn(console, 'error').mockImplementation(() => undefined);
         mockIsAiEnabled.mockReturnValue(false);
         mockIsAiAutoOpenEnabled.mockReturnValue(false);
@@ -109,6 +119,7 @@ describe('SettingsPage', () => {
         mockDeletePreference.mockResolvedValue(undefined);
         mockGetTenantAddressFormatDefault.mockResolvedValue(null);
         mockGetTenantCourierFlagLastDeliveryDefault.mockResolvedValue(null);
+        mockGetTenantNavStyleDefault.mockResolvedValue(null);
         mockUseColorMode.mockReturnValue({mode: 'light', preference: 'system', setPreference: mockSetColorPreference});
     });
 
@@ -135,6 +146,44 @@ describe('SettingsPage', () => {
         await user.click(screen.getByRole('radio', {name: 'Dark'}));
 
         expect(mockSetColorPreference).toHaveBeenCalledWith('dark');
+    });
+
+    describe('Navigation style', () => {
+        const navRadio = (name: string) =>
+            within(screen.getByRole('radiogroup', {name: /Navigation style/})).getByRole('radio', {name});
+
+        it('follows the company default, saves an override immediately, and clears it again', async () => {
+            const user = setupUser();
+            mockGetTenantNavStyleDefault.mockResolvedValue('dfrnt');
+            renderWithMantine(<SettingsPage />);
+
+            const companyDefault = navRadio('Company default');
+            expect(companyDefault).toBeChecked();
+
+            await user.click(navRadio('DFRNT sidebar'));
+            await waitFor(() => expect(mockSavePreference)
+                .toHaveBeenCalledWith(StaffPreferenceKey.NavStyle, '"dfrnt"'));
+            await waitFor(() => expect(navRadio('DFRNT sidebar')).toBeChecked());
+
+            await user.click(navRadio('Company default'));
+            await waitFor(() => expect(mockDeletePreference).toHaveBeenCalledWith(StaffPreferenceKey.NavStyle));
+            await waitFor(() => expect(navRadio('Company default')).toBeChecked());
+        });
+
+        it('shows the saved override and, when the save fails, an error toast and the unchanged choice', async () => {
+            const user = setupUser();
+            mockGetPreference.mockImplementation((key: string) =>
+                Promise.resolve(key === StaffPreferenceKey.NavStyle ? '"dispatch"' : null));
+            mockSavePreference.mockRejectedValue(new Error('offline'));
+            renderWithMantine(<SettingsPage />);
+
+            await waitFor(() => expect(navRadio('Dispatch')).toBeChecked());
+
+            await user.click(navRadio('DFRNT sidebar'));
+
+            await waitFor(() => expect(toastService.showErrorToast).toHaveBeenCalled());
+            expect(navRadio('Dispatch')).toBeChecked();
+        });
     });
 
     describe('Driver flags', () => {

@@ -62,7 +62,6 @@ export {
     useCreateAfterHoursSchedule,
     useUpdateAfterHoursSchedule,
     useDeleteAfterHoursSchedule,
-    useSendComplianceReminder,
-    useSendBulkComplianceReminders,
+    useSendComplianceReminders,
     useSendEmailToCouriers,
 } from './useDriverManagementApi';

@@ -2,8 +2,6 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {IBox, ILayout} from '../../../types/interfaces/layout.interfaces';
 import {
     clearBoxVisibility,
-    ImportLayoutsResult,
-    importLayoutsFrom,
     LayoutStorageKeys,
     loadBoxVisibility,
     loadLastActiveLayoutName,
@@ -40,11 +38,6 @@ export interface UseBoxLayoutOptions {
      * and local changes are pushed back (debounced). Omit to stay localStorage-only.
      */
     page?: string;
-    /**
-     * Storage keys for the legacy (V1) layouts, used as the source for
-     * `importLegacyLayouts`. Omit when there is no V1 layout store to import from.
-     */
-    legacyStorageKeys?: LayoutStorageKeys;
 }
 
 export interface UseBoxLayoutResult {
@@ -74,8 +67,6 @@ export interface UseBoxLayoutResult {
     removeColumn: () => void;
     /** Restore the current layout to the shipped arrangement and clear its panel visibility. */
     resetCurrentLayout: () => void;
-    /** Copy custom layouts from the legacy (V1) store into this page's store. */
-    importLegacyLayouts: () => ImportLayoutsResult;
 }
 
 export function useBoxLayout({
@@ -83,7 +74,6 @@ export function useBoxLayout({
     createBoxes,
     createDefaultLayout,
     page,
-    legacyStorageKeys,
 }: UseBoxLayoutOptions): UseBoxLayoutResult {
     const defaultLayout = useMemo(() => createDefaultLayout(), [createDefaultLayout]);
 
@@ -372,13 +362,6 @@ export function useBoxLayout({
         bumpVersion();
     }, [storageKeys, currentLayoutName, createDefaultLayout, createBoxes, bumpVersion]);
 
-    const importLegacyLayouts = useCallback((): ImportLayoutsResult => {
-        if (!legacyStorageKeys) return {imported: [], skipped: []};
-        const result = importLayoutsFrom(legacyStorageKeys, storageKeys, defaultLayout);
-        if (result.imported.length > 0) reloadFromStorage();
-        return result;
-    }, [legacyStorageKeys, storageKeys, defaultLayout, reloadFromStorage]);
-
     return {
         layouts,
         currentLayoutName,
@@ -399,7 +382,6 @@ export function useBoxLayout({
         addColumn,
         removeColumn,
         resetCurrentLayout,
-        importLegacyLayouts,
     };
 }
 

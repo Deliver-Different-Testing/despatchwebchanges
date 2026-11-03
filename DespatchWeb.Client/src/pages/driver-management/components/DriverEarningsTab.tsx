@@ -6,7 +6,7 @@ import {driverManagementApi} from '../../../api/driverManagementApi';
 import {DollarSign, Download, RefreshCw, TrendingUp, Truck, Users} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, formatMinutes, ListEmptyState, SearchField, SortState, StatCard} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import {dataTablePagingProps} from './dataTablePaging';
@@ -17,7 +17,7 @@ interface DriverEarningsTabProps {
 
 const columns: DataTableColumn<CourierDailyEarnings>[] = [
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
-    {key: 'hoursLogged', label: 'Hours logged', sortable: true, width: '120px', align: 'right', render: (row) => `${row.hoursLogged.toFixed(1)}h`},
+    {key: 'minutesLogged', label: 'Hours', sortable: true, width: '120px', align: 'right', render: (row) => formatMinutes(row.minutesLogged)},
     {key: 'deliveries', label: 'Deliveries', sortable: true, width: '110px', align: 'right', render: (row) => row.deliveries},
     {key: 'earnings', label: 'Earnings', sortable: true, width: '110px', align: 'right', render: (row) => formatCurrency(row.earnings)},
     {key: 'hourlyRate', label: 'Hourly rate', sortable: true, width: '110px', align: 'right', render: (row) => `${formatCurrency(row.hourlyRate)}/h`},
@@ -29,8 +29,8 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
     });
     const [sort, setSort] = useState<SortState>({column: 'name', direction: 'asc'});
 
-    const {data, isLoading, refetch} = useDriverEarnings(query);
-    const items = data?.items ?? [];
+    const {data, isLoading, isError, refetch} = useDriverEarnings(query);
+    const items = isError ? [] : data?.items ?? [];
     const stats = {
         totalEarningsToday: data?.totalEarningsToday ?? 0,
         averageHourlyRate: data?.averageHourlyRate ?? 0,
@@ -42,6 +42,8 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
         setSort(newSort);
         setQuery(q => ({...q, orderBy: newSort.column, sortDescending: newSort.direction === 'desc', page: 1}));
     };
+
+    const handleClearFilters = () => setQuery(q => ({...q, searchTerm: '', page: 1}));
 
     const handleExport = async () => {
         try {
@@ -83,17 +85,26 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
 
             {/* Table */}
             <DataTable<CourierDailyEarnings>
-                totalCount={data?.total ?? 0}
+                totalCount={isError ? 0 : data?.total ?? 0}
                 rows={items}
                 columns={columns}
-                rowKey={(_, idx) => idx}
+                rowKey={(row) => row.courierId}
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
-                emptyIcon={<Icon lucide={DollarSign}/>}
-                emptyTitle="No earnings data"
-                emptyMessage="No earnings data matches your search."
+                emptyContent={
+                    <ListEmptyState
+                        noun="earnings"
+                        isError={isError}
+                        onRetry={() => refetch()}
+                        isFiltered={!!query.searchTerm}
+                        onClearFilters={handleClearFilters}
+                        emptyIcon={<Icon lucide={DollarSign}/>}
+                        emptyTitle="No earnings data"
+                        emptyMessage="No driver earnings recorded yet today."
+                    />
+                }
             />
         </Stack>
     );

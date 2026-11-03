@@ -13,7 +13,9 @@ import {queryKeys} from '../../../api/queryClient';
 import {JobListPanel} from '../../../components/job-list/JobListPanel';
 import {CurrentWorkAllDrivers, IDriverWorkOverview} from '../../../components/common/current-work-all-drivers';
 import {IconTruck} from '@tabler/icons-react';
+import {UserSearch} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
+import {NoData} from '../../../components/common/no-data/NoData';
 import {CourierSearchField} from './CourierSearchField';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
 import {SegmentedToggle} from '../../../components/common/segmented-toggle';
@@ -90,10 +92,6 @@ export interface CurrentWorkBoxProps {
     /** Card header DOM node; the breadcrumb + truck button portal into it. */
     headerSlot?: HTMLElement | null;
 }
-
-const EmptyMessage: React.FC<{children: React.ReactNode}> = ({children}) => (
-    <Text p="lg" c="dimmed" ta="center">{children}</Text>
-);
 
 /**
  * "Current work" panel for the React dispatch page. Mirrors the AngularJS
@@ -227,7 +225,11 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             onJobSelect={onJobSelect}
         />
     ) : (
-        <EmptyMessage>Select a courier to view their current work.</EmptyMessage>
+        <NoData
+            title="No courier selected"
+            message="Select a courier to view their current work."
+            icon={<Icon lucide={UserSearch}/>}
+        />
     );
 
     return (

@@ -93,6 +93,23 @@ public class AddressLookupServiceTests
     }
 
     [Fact]
+    public async Task AutocompleteAddressSearchAsync_AuCustomer_SendsAusCountryCode()
+    {
+        // Arrange
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.IsAuTenant().Returns(true);
+        SetupHttpResponse(new HereMapsAutocompleteResponse { Items = [] });
+        var service = CreateService();
+
+        // Act
+        await service.AutocompleteAddressSearchAsync("123 George");
+
+        // Assert
+        Assert.Single(_httpHandler.Requests);
+        Assert.Contains("countryCode%3AAUS", _httpHandler.Requests[0].RequestUri!.ToString());
+    }
+
+    [Fact]
     public async Task AutocompleteAddressSearchAsync_ValidResponse_ReturnsResults()
     {
         // Arrange

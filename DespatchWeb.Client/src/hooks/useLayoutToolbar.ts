@@ -21,7 +21,6 @@ export interface UseLayoutToolbarResult {
     loadLayout: (index: number) => void;
     deleteLayout: (index: number) => Promise<void>;
     renameLayout: (index: number) => Promise<void>;
-    importLayouts: () => void;
 }
 
 /** React-state wrapper over {@link createLayoutToolbarActions}. */
@@ -78,10 +77,6 @@ export function useLayoutToolbar(params: UseLayoutToolbarParams): UseLayoutToolb
             },
             deleteLayout: wrapAsync(actions.deleteLayout),
             renameLayout: wrapAsync(actions.renameLayout),
-            importLayouts: () => {
-                actions.importLayouts();
-                sync();
-            },
         };
     }, [snapshot, actions, sync]);
 }

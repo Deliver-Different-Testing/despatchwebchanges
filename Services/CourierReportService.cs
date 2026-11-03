@@ -63,7 +63,6 @@ public sealed class CourierReportService(
         ["Code"] = x => FormatCsvField(x.Code),
         ["Name"] = x => FormatCsvField(x.Name),
         ["Type"] = x => FormatCsvField(x.ComplianceType),
-        ["Item/Number"] = x => FormatCsvField(x.ItemNumber),
         ["Expiry Date"] = x => x.ExpiryDate.HasValue ? x.ExpiryDate.Value.ToString("dd/MM/yyyy") : string.Empty,
         ["Status"] = x => FormatCsvField(x.Status),
         ["Days Until Expiry"] = x => FormatCsvField(x.DaysUntilExpiry)
@@ -143,7 +142,7 @@ public sealed class CourierReportService(
     private static readonly Dictionary<string, Func<CourierDailyEarningsViewModel, string>> DriverEarningsCsvColumns = new()
     {
         ["Name"] = x => FormatCsvField(x.Name),
-        ["Hours Logged"] = x => x.HoursLogged.ToString("F1"),
+        ["Hours Logged"] = x => (x.MinutesLogged / 60.0).ToString("F1"),
         ["Deliveries"] = x => x.Deliveries.ToString(),
         ["Earnings"] = x => x.Earnings.ToString("F2"),
         ["Hourly Rate"] = x => x.HourlyRate.ToString("F2")

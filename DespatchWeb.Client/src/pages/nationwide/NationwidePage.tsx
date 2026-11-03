@@ -163,15 +163,8 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.Domestic}-${getContactId()}`,
     }), []);
 
-    const legacyStorageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layoutsNW-${getContactId()}`,
-        lastActiveLayoutKey: `lastActiveLayoutNW-${getContactId()}`,
-        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.Domestic}-${getContactId()}`,
-    }), []);
-
     const boxLayout = useBoxLayout({
         storageKeys,
-        legacyStorageKeys,
         page: 'Nationwide',
         createBoxes: createNationwideBoxes,
         createDefaultLayout: createDefaultNationwideLayout,
@@ -247,7 +240,6 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             promptSaveLayout: layoutPrompts.promptSaveLayout,
             promptDeleteLayout: layoutPrompts.promptDeleteLayout,
             promptRenameLayout: layoutPrompts.promptRenameLayout,
-            importLegacyLayouts: boxLayout.importLegacyLayouts,
             resetCurrentLayout: boxLayout.resetCurrentLayout,
             registerViewsListener,
             setViewSelection: applyViewSelection,
@@ -258,7 +250,6 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         onLayoutBridgeReady,
         boxLayout.setCurrentLayoutName,
         boxLayout.reloadFromStorage,
-        boxLayout.importLegacyLayouts,
         boxLayout.resetCurrentLayout,
         layoutPrompts.promptSaveLayout,
         layoutPrompts.promptDeleteLayout,

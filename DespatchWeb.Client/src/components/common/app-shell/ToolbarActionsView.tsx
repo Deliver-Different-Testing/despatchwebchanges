@@ -46,7 +46,6 @@ export interface ToolbarActionsConfig {
         onLoadLayout: (index: number) => void;
         onDeleteLayout: (index: number) => void;
         onRenameLayout?: (index: number) => void;
-        onImportLayouts?: () => void;
         onCustomizePanels?: () => void;
         onResetLayout?: () => void;
         columnEditMode?: boolean;
@@ -172,7 +171,6 @@ export function buildToolbarChildren(toolbarActions: ToolbarActionsConfig | null
                     onLoadLayout={toolbarActions.layouts.onLoadLayout}
                     onDeleteLayout={toolbarActions.layouts.onDeleteLayout}
                     onRenameLayout={toolbarActions.layouts.onRenameLayout}
-                    onImportLayouts={toolbarActions.layouts.onImportLayouts}
                     onCustomizePanels={toolbarActions.layouts.onCustomizePanels}
                     onResetLayout={toolbarActions.layouts.onResetLayout}
                     columnEditMode={toolbarActions.layouts.columnEditMode}

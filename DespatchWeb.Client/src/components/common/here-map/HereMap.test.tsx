@@ -353,6 +353,18 @@ describe('getDefaultMapCenter', () => {
         expect(getDefaultMapCenter()).toEqual({lat: -36.85, lng: 174.76});
     });
 
+    it('uses the tenant map centre when there is no partner address, so AU does not open on NZ', () => {
+        (window as any).serverConfig = {isUSCustomer: false, npMapCenter: null, tenantMapCenter: {lat: -33.8679, lng: 151.2073}};
+        expect(getDefaultMapCenter()).toEqual({lat: -33.8679, lng: 151.2073});
+    });
+
+    it('prefers the partner address over the tenant map centre', () => {
+        (window as any).serverConfig = {
+            isUSCustomer: false, npMapCenter: {lat: -36.85, lng: 174.76}, tenantMapCenter: {lat: -33.8679, lng: 151.2073},
+        };
+        expect(getDefaultMapCenter()).toEqual({lat: -36.85, lng: 174.76});
+    });
+
     it('falls back to the country centre when the partner address is not geocoded', () => {
         (window as any).serverConfig = {isUSCustomer: true, npMapCenter: null};
         expect(getDefaultMapCenter()).toEqual(US_MAP_CENTER);

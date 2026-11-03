@@ -51,6 +51,30 @@ public class TenantSettingsControllerTests
     }
 
     [Fact]
+    public async Task GetNavStyleDefault_ReturnsTheStoredStyle()
+    {
+        _tenantSettingsServiceMock.GetNavStyleDefaultAsync().Returns("dfrnt");
+        var controller = CreateController();
+
+        var result = await controller.GetNavStyleDefault();
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Equal("dfrnt", json.Value);
+    }
+
+    [Fact]
+    public async Task GetNavStyleDefault_WhenTheReadFails_Returns500()
+    {
+        _tenantSettingsServiceMock.GetNavStyleDefaultAsync()
+            .Returns(Task.FromException<string?>(new InvalidOperationException("Invalid column name")));
+        var controller = CreateController();
+
+        var result = await controller.GetNavStyleDefault();
+
+        Assert.Equal(500, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
     public async Task GetAppearanceDefault_ReturnsTheStoredJson()
     {
         _tenantSettingsServiceMock.GetAppearanceDefaultAsync().Returns("{\"contrast\":\"high\"}");

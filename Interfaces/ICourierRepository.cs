@@ -46,6 +46,7 @@ public interface ICourierRepository
     Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId);
 
     Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(CourierComplianceFilterRequest request);
+    Task<IReadOnlyList<DriverComplianceAttention>> GetComplianceAttentionAsync(IReadOnlyCollection<int> courierIds, CourierComplianceFilterRequest filter);
 
     Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(CourierAfterHoursFilterRequest request);
     Task<TodayActiveDriversPaginatedResponse> GetTodayActiveDriversAsync(TodayActiveDriversFilterRequest request);

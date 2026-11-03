@@ -54,13 +54,15 @@ const createMockData = (): AfterHoursPaginated => ({
     totalActiveDrivers: 2,
 });
 
-const setupMocks = (data?: AfterHoursPaginated, isLoading = false) => {
+const refetch = jest.fn();
+
+const setupMocks = (data?: AfterHoursPaginated, isLoading = false, isError = false) => {
     mockUseAfterHoursSchedule.mockReturnValue({
-        data: data ?? createMockData(),
+        data: isError ? undefined : data ?? createMockData(),
         isLoading,
-        isError: false,
+        isError,
         error: null,
-        refetch: jest.fn(),
+        refetch,
     } as any);
     mockUseCreateAfterHoursSchedule.mockReturnValue({
         mutateAsync: jest.fn().mockResolvedValue(undefined),
@@ -102,14 +104,20 @@ describe('AfterHoursTab', () => {
         expect(screen.getByText('Active drivers')).toBeInTheDocument();
     });
 
-    it('updates orderBy when the Driver name header is clicked', () => {
+    it('starts sorted by courierName and sends the contract sort keys', () => {
         setupMocks();
         renderWithProviders();
 
-        fireEvent.click(screen.getByText('Driver name'));
+        const lastCall = () => mockUseAfterHoursSchedule.mock.calls[mockUseAfterHoursSchedule.mock.calls.length - 1][0];
+        expect(lastCall().orderBy).toBe('courierName');
+        expect(lastCall().sortDescending).toBe(false);
 
-        const lastCall = mockUseAfterHoursSchedule.mock.calls[mockUseAfterHoursSchedule.mock.calls.length - 1][0];
-        expect(lastCall.orderBy).toBe('courierName');
+        for (const [label, key] of [['Driver code', 'courierCode'], ['Days', 'days'], ['Start time', 'startTime'], ['End time', 'endTime'], ['Duration', 'duration']] as const) {
+            fireEvent.click(screen.getByText(label));
+            expect(lastCall().orderBy).toBe(key);
+        }
+        fireEvent.click(screen.getByText('Driver name'));
+        expect(lastCall().orderBy).toBe('courierName');
     });
 
     it('opens the delete dialog and closes it on Cancel', async () => {
@@ -151,7 +159,16 @@ describe('AfterHoursTab', () => {
             renderWithProviders();
 
             expect(screen.getByText('No after hours schedules')).toBeInTheDocument();
-            expect(screen.getByText('No after hours schedules match your search.')).toBeInTheDocument();
+            expect(screen.getByText('Add a schedule to roster drivers outside normal hours.')).toBeInTheDocument();
+        });
+
+        it('should show a retryable error state when the load fails', () => {
+            setupMocks(undefined, false, true);
+            renderWithProviders();
+
+            expect(screen.getByText("Couldn't load schedules")).toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button', {name: 'Try again'}));
+            expect(refetch).toHaveBeenCalled();
         });
     });
 });

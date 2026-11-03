@@ -6,7 +6,8 @@ import {
     AfterHoursFilter,
     AfterHoursPaginated,
     ComplianceFilter,
-    CourierCompliance,
+    ComplianceReminderRequest,
+    ComplianceReminderResult,
     CourierCompliancePaginated,
     CourierDailyEarningsPaginated,
     CourierDataDashboard,
@@ -118,15 +119,23 @@ export function useDeleteAfterHoursSchedule() {
     });
 }
 
-export function useSendComplianceReminder() {
-    return useMutation<void, Error, CourierCompliance>({
-        mutationFn: (item) => driverManagementApi.sendComplianceReminder(item),
+/** The preview is channel-independent, so switching channel in the dialog does not refetch it. */
+export function useComplianceReminderPreview(target: Omit<ComplianceReminderRequest, 'channel' | 'preview'> | null) {
+    return useQuery<ComplianceReminderResult, Error>({
+        queryKey: ['driverManagement', 'complianceReminderPreview', target],
+        queryFn: ({signal}) => driverManagementApi.sendComplianceReminders({...target!, channel: 1, preview: true}, {signal}),
+        enabled: target !== null,
+        gcTime: 0,
     });
 }
 
-export function useSendBulkComplianceReminders() {
-    return useMutation<void, Error, CourierCompliance[]>({
-        mutationFn: (items) => driverManagementApi.sendBulkComplianceReminders(items),
+export function useSendComplianceReminders() {
+    const queryClient = useQueryClient();
+    return useMutation<ComplianceReminderResult, Error, ComplianceReminderRequest>({
+        mutationFn: (request) => driverManagementApi.sendComplianceReminders(request),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: ['driverManagement', 'compliance']});
+        },
     });
 }
 

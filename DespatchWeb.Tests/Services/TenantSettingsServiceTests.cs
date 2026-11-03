@@ -66,6 +66,26 @@ public class TenantSettingsServiceTests : IAsyncDisposable
         Assert.Equal("locality", await service.GetCourierFlagLastDeliveryDefaultAsync());
     }
 
+    [Theory]
+    [InlineData("dispatch", "dispatch")]
+    [InlineData("dfrnt", "dfrnt")]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData("sidebar", null)]
+    public async Task GetNavStyleDefaultAsync_ReturnsOnlyAKnownStyle(string? stored, string? expected)
+    {
+        await using (var context = _db.CreateContext())
+        {
+            var setting = CreateMinimalSetting();
+            setting.DespatchNavStyle = stored;
+            context.TblSettings.Add(setting);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+        var service = CreateService();
+
+        Assert.Equal(expected, await service.GetNavStyleDefaultAsync());
+    }
+
     [Fact]
     public async Task GetAppearanceDefaultAsync_ReturnsTheStoredJson()
     {

@@ -41,7 +41,7 @@ import {DispatchJobActionsMenu, DispatchJobActionId} from './components/Dispatch
 import {BoxShell} from '../../components/common/box-shell/BoxShell';
 import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
 import {usePanelHideButtonSetting} from '../../components/common/box-shell/usePanelHideButtonSetting';
-import type {ImportLayoutsResult, LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
+import type {LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
 import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
 import {useLayoutPrompts} from '../../components/layout-prompts/useLayoutPrompts';
 import DispatchBoxes from './lib/dispatchBoxes';
@@ -110,8 +110,6 @@ export interface DispatchLayoutBridge {
     openInterCourierCharge: () => void;
     /** A job was just created — refresh the list and select it. */
     jobCreated: (jobId: number) => void;
-    /** Copy the user's V1 layouts into this page's (V2) layout store. */
-    importLegacyLayouts: () => ImportLayoutsResult;
 }
 
 export interface DispatchPageProps {
@@ -142,16 +140,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         boxVisibilityKeyBase: `boxVisibilityV2-${LegacyAppPage.Dispatch}-${getContactId()}`,
     }), []);
 
-    // Legacy (V1) storage keys — the source for "Import V1 layouts".
-    const legacyStorageKeys = useMemo<LayoutStorageKeys>(() => ({
-        layoutsKey: `layout-${getContactId()}`,
-        lastActiveLayoutKey: `lastActiveLayout-${getContactId()}`,
-        boxVisibilityKeyBase: `boxVisibility-${LegacyAppPage.Dispatch}-${getContactId()}`,
-    }), []);
-
     const boxLayout = useBoxLayout({
         storageKeys,
-        legacyStorageKeys,
         createBoxes: createDispatchBoxes,
         createDefaultLayout: createDefaultDispatchLayout,
         page: 'Dispatch',
@@ -411,9 +401,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             setColumnEditMode,
             openInterCourierCharge,
             jobCreated,
-            importLegacyLayouts: boxLayout.importLegacyLayouts,
         });
-    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.importLegacyLayouts, boxLayout.resetCurrentLayout, promptSaveLayout, promptDeleteLayout, promptRenameLayout, applyFilters, registerViewsListener, applyViewSelection, applyRefreshIntervals, openInterCourierCharge, jobCreated]);
+    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, boxLayout.resetCurrentLayout, promptSaveLayout, promptDeleteLayout, promptRenameLayout, applyFilters, registerViewsListener, applyViewSelection, applyRefreshIntervals, openInterCourierCharge, jobCreated]);
 
     const fetchConfigMain = useMemo(() => {
         const baseParams = {

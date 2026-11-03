@@ -1,5 +1,5 @@
 import {createLayoutToolbarActions, LayoutToolbarHost} from './layoutToolbarActions';
-import type {ImportLayoutsResult, LayoutStorageKeys} from '../components/common/box-shell/layoutPersistence';
+import type {LayoutStorageKeys} from '../components/common/box-shell/layoutPersistence';
 import type {ILayout} from '../types/interfaces/layout.interfaces';
 
 const storageKeys: LayoutStorageKeys = {
@@ -20,7 +20,6 @@ function makeBridge() {
         promptSaveLayout: jest.fn<Promise<string | null>, []>().mockResolvedValue(null),
         promptDeleteLayout: jest.fn<Promise<boolean>, [string]>().mockResolvedValue(false),
         promptRenameLayout: jest.fn<Promise<string | null>, [string]>().mockResolvedValue(null),
-        importLegacyLayouts: jest.fn<ImportLayoutsResult, []>().mockReturnValue({imported: [], skipped: []}),
     };
 }
 
@@ -173,36 +172,6 @@ describe('createLayoutToolbarActions', () => {
         });
     });
 
-    describe('importLayouts', () => {
-        it('reports the imported count, pluralised, and refreshes the host list', () => {
-            const {actions, host, bridge, toastr} = setup();
-            bridge!.importLegacyLayouts.mockReturnValue({imported: ['Morning', 'Night'], skipped: []});
-
-            actions.importLayouts();
-
-            expect(toastr.showSuccessToast).toHaveBeenCalledWith('Imported 2 V1 layouts');
-            expect(host.layouts.map(l => l.name)).toEqual(['Default']);
-        });
-
-        it('uses the singular form for a single imported layout', () => {
-            const {actions, bridge, toastr} = setup();
-            bridge!.importLegacyLayouts.mockReturnValue({imported: ['Morning'], skipped: []});
-
-            actions.importLayouts();
-
-            expect(toastr.showSuccessToast).toHaveBeenCalledWith('Imported 1 V1 layout');
-        });
-
-        it('reports nothing to import as info, not success', () => {
-            const {actions, toastr} = setup();
-
-            actions.importLayouts();
-
-            expect(toastr.showInfoToast).toHaveBeenCalledWith('No V1 layouts to import');
-            expect(toastr.showSuccessToast).not.toHaveBeenCalled();
-        });
-    });
-
     describe('renameLayout', () => {
         it('never renames Default and never prompts for it', async () => {
             const {actions, bridge} = setup();
@@ -266,7 +235,6 @@ describe('createLayoutToolbarActions', () => {
         await actions.saveLayout();
         await actions.deleteLayout(1);
         await actions.renameLayout(1);
-        actions.importLayouts();
 
         expect(localStorage.getItem(storageKeys.layoutsKey)).toBeNull();
         expect(host.currentLayoutName).toBeUndefined();

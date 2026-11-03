@@ -14,7 +14,7 @@ describe('getSession', () => {
         const defaults = {
             contactId: 0, firstName: '', fullName: '', dispatcher: '', timeZone: '',
             isNetworkPartner: false, clientInternal: false, visibleFeatures: null,
-            isUsCustomer: undefined, currencyCode: '', npMapCenter: null,
+            isUsCustomer: undefined, currencyCode: '', countryCode: '', npMapCenter: null, tenantMapCenter: null,
         };
         expect(getSession()).toEqual(defaults);
         setSessionContext(dto);
@@ -27,9 +27,11 @@ describe('getSession', () => {
         expect(getSession()).toEqual({
             contactId: 5, firstName: 'Jane', fullName: 'Jane Doe', dispatcher: '',
             timeZone: 'Pacific/Auckland', isNetworkPartner: true, clientInternal: true,
-            visibleFeatures: ['dw-dispatch'], isUsCustomer: true, currencyCode: 'USD',
-            npMapCenter: {lat: 1, lng: 2},
+            visibleFeatures: ['dw-dispatch'], isUsCustomer: true, currencyCode: 'USD', countryCode: 'US',
+            npMapCenter: {lat: 1, lng: 2}, tenantMapCenter: null,
         });
+        setSessionContext({...dto, tenantMapCenter: {lat: -33.9, lng: 151.2}});
+        expect(getSession().tenantMapCenter).toEqual({lat: -33.9, lng: 151.2});
         setSessionContext({...dto, visibleFeatures: null, npMapCenter: null});
         expect(getSession()).toMatchObject({visibleFeatures: null, npMapCenter: null});
     });

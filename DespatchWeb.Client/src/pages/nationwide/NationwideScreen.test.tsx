@@ -11,7 +11,6 @@ const bridge = {
     promptSaveLayout: jest.fn(),
     promptDeleteLayout: jest.fn(),
     promptRenameLayout: jest.fn(),
-    importLegacyLayouts: jest.fn(() => ({imported: [], skipped: []})),
     resetCurrentLayout: jest.fn(),
     registerViewsListener: jest.fn((listener: (v: unknown[]) => void) => {
         listener([{id: 1, name: 'North', selected: false}, {id: 2, name: 'South', selected: true}]);

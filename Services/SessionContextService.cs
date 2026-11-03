@@ -11,7 +11,8 @@ namespace DespatchWeb.Services;
 public sealed class SessionContextService(
     IClientRepository clientRepository,
     IFeatureVisibilityService featureVisibilityService,
-    INetworkPartnerContextService networkPartnerContextService) : ISessionContextService
+    INetworkPartnerContextService networkPartnerContextService,
+    ITenantMapCentreService tenantMapCentreService) : ISessionContextService
 {
     public async Task<SessionContextDto> BuildAsync(ClaimsPrincipal user)
     {
@@ -31,6 +32,11 @@ public sealed class SessionContextService(
             featureVisibilityService.GetVisibleDashboardsAsync, "Dashboard visibility lookup");
         var mapCentre = await TryResolveAsync(
             networkPartnerContextService.GetMapCentreAsync, "Network partner map centre lookup");
+        // AU only: NZ and US keep their hard-coded centres, and SignUpPageSettings is not guaranteed to hold a sensible
+        // centre there (its column defaults are Auckland)
+        var tenantMapCentre = string.Equals(countryCode, "AU", StringComparison.OrdinalIgnoreCase)
+            ? await TryResolveAsync(tenantMapCentreService.GetMapCentreAsync, "Tenant map centre lookup")
+            : null;
 
         return new SessionContextDto(
             ContactId: clientDetail.StaffID ?? parsedContactId,
@@ -42,12 +48,13 @@ public sealed class SessionContextService(
             TimeZone: user.FindFirst("TimeZone")?.Value,
             CountryCode: countryCode,
             IsUsTenant: isUsTenant,
-            CurrencyCode: isUsTenant ? "USD" : "NZD",
+            CurrencyCode: isUsTenant ? "USD" : string.Equals(countryCode, "AU", StringComparison.OrdinalIgnoreCase) ? "AUD" : "NZD",
             ClientInternal: clientDetail.Internal,
             IsNetworkPartner: clientDetail.IsNetworkPartner,
             VisibleFeatures: visibleDashboards?.ToArray(),
             NpMapCenter: mapCentre,
-            HubUrl: Environment.GetEnvironmentVariable("HubUrl"));
+            HubUrl: Environment.GetEnvironmentVariable("HubUrl"),
+            TenantMapCenter: tenantMapCentre);
     }
 
     private static async Task<T?> TryResolveAsync<T>(Func<Task<T?>> resolve, string description)

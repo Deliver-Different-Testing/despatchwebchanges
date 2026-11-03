@@ -52,7 +52,6 @@ export const NationwideScreen: React.FC<NationwideScreenProps> = ({deepLinkJobId
         promptSaveLayout: bridge.promptSaveLayout,
         promptDeleteLayout: bridge.promptDeleteLayout,
         promptRenameLayout: bridge.promptRenameLayout,
-        importLegacyLayouts: bridge.importLegacyLayouts,
     }, [bridge]);
 
     const layoutToolbar = useLayoutToolbar({getBridge: () => layoutBridge, storageKeys, defaultLayout});
@@ -111,7 +110,6 @@ export const NationwideScreen: React.FC<NationwideScreenProps> = ({deepLinkJobId
             onLoadLayout: layoutToolbar.loadLayout,
             onDeleteLayout: index => void layoutToolbar.deleteLayout(index),
             onRenameLayout: index => void layoutToolbar.renameLayout(index),
-            onImportLayouts: layoutToolbar.importLayouts,
             onCustomizePanels: () => void openCustomizePanels(),
             onResetLayout: resetLayout,
         },
