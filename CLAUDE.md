@@ -29,20 +29,12 @@ cd DespatchWeb.Client && npx jest --no-coverage
 
 The SPA is `DespatchWeb.Client/` (Vite 8, `src/`, `index.html`). `npm run build` (`tsc -b && vite build`) writes `wwwroot/dist`; `npm run dev` runs the dev server, proxying `/api` and the MVC routes to the .NET host.
 
-## Workflow
+## Test mocking — NSubstitute, not Moq
 
-Work test-first: write the failing test before the implementation (see the `tdd-workflow` skill), then make it pass with the test commands in *Running Tests* above. Every behavioural change lands with a test that would fail without it.
-
-Bug reports go through the `fix-bug` skill (it is test-first, so it replaces `tdd-workflow` for that change). Its generic fallbacks do **not** apply here: use the commands in *Running Tests* above — the xUnit v3 executable, never `dotnet test` — and NSubstitute, never Moq.
-
-## Test mocking — use NSubstitute, not Moq
-
-New C# tests must use **NSubstitute** for test doubles, not Moq. Some legacy tests still use Moq; migrate them to NSubstitute opportunistically when you touch them, but never add new Moq usage.
-
-- Create substitutes with `Substitute.For<IService>()` (a plain field, no `.Object` indirection).
-- Stub with `sub.Method(args).Returns(value)`; `Task`/`Task<T>` methods auto-return completed tasks, so only stub when the value matters.
-- Verify with `await sub.Received(1).MethodAsync(...)` / `sub.DidNotReceive()` / `sub.DidNotReceiveWithAnyArgs()` — `await` the received-check on async methods. Match arguments with `Arg.Any<T>()` / `Arg.Is<T>(...)`.
-- For the SQLite-backed repository tests, get the context factory from `SqliteTestDatabase.CreateFactoryMock(context)` (the NSubstitute helper) rather than the `CreateMoqFactoryMock` variant.
+New C# tests use NSubstitute. Some legacy tests use Moq; migrate them when you
+touch them, never add new Moq usage. `await` received-checks on async methods.
+For SQLite-backed repository tests use `SqliteTestDatabase.CreateFactoryMock(context)`,
+not `CreateMoqFactoryMock`.
 
 ## Code comments
 
@@ -50,15 +42,9 @@ Only write comments when they are necessary and useful. Prefer self-explanatory 
 
 ## Database migrations
 
-DB schema changes go in the migrations project at `C:\Users\jacobt\RiderProjects\dbmigrationsv2\DatabaseScripts\Migrations\` using the existing `YYYYMMDDHHMMSS_Description.sql` convention. Do not put SQL inside the despatchweb repo.
-
-When adding indexes in a migration, only use **plain (non-unique, non-filtered) B-tree indexes**. Specifically:
-
-- No `CREATE UNIQUE INDEX` — uniqueness lives on the column definition or via a constraint, not the index itself.
-- No filtered indexes (`WHERE …` clause). If a query benefits from filtering, put the filter columns in the index key instead (e.g. composite `(Status, CreatedAt)` rather than `WHERE Status = 'X'` filtered on `(CreatedAt)`).
-- No included columns (`INCLUDE (…)`). Add them to the key if they're needed.
-
-If a use case genuinely needs a unique or filtered index, stop and ask first.
+Schema changes go in `dbmigrationsv2\DatabaseScripts\Migrations\`
+(`YYYYMMDDHHMMSS_Description.sql`), never in this repo. Load the
+`legacy-db-policy` skill before writing any migration or index.
 
 ## HERE Maps overlay controls
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import {screen, waitFor, act} from '@testing-library/react';
+import {screen, waitFor, act, within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {renderWithMantine} from '../../test/utils';
 import {setupUser} from '../../test/utils/setupUser';
@@ -58,7 +58,11 @@ describe('Auto-mate chat', () => {
         const user = setupUser();
         renderChat(true, '/dispatch?jobId=42');
 
-        await user.click(screen.getByRole('button', {name: 'Open Auto-mate assistant'}));
+        const launcher = screen.getByRole('button', {name: 'Open Auto-mate assistant'});
+        expect(launcher).toHaveAttribute('data-variant', 'filled');
+        expect(within(launcher).getByRole('img', {name: 'Auto-mate'}).tagName.toLowerCase()).toBe('svg');
+
+        await user.click(launcher);
         expect(await screen.findByText('Auto-mate assistant')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Open Auto-mate assistant'})).not.toBeInTheDocument();
         expect(screen.getByText("What's happening with this job?")).toBeInTheDocument();
