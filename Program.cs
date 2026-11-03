@@ -149,7 +149,7 @@ builder.Services.AddStackExchangeRedisCache(redisCacheConfig =>
     redisCacheConfig.ConfigurationOptions = redisConfigurationOptions;
 });
 
-builder.Services.AddAppAuthentication(domain);
+builder.Services.AddAppAuthentication(domain, AuthServiceCollectionExtensions.AgentAccessOptionsFrom(builder.Configuration));
 
 
 var app = builder.Build();
