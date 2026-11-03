@@ -113,6 +113,12 @@ describe('TaskItem', () => {
             expect(screen.getByText('ACME')).toBeInTheDocument();
         });
 
+        it('says a task with no job has none, instead of an empty Job fact', () => {
+            renderWithProviders(<TaskItem {...createDefaultProps({task: createMockTask({jobId: 0, jobNumber: ''})})} />);
+
+            expect(meta('jobNumber')).toHaveTextContent(/^JobNo job$/);
+        });
+
         it('names the type of every fact it shows', () => {
             renderWithProviders(<TaskItem {...createDefaultProps()} />);
 

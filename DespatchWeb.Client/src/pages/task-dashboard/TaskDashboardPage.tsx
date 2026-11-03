@@ -33,6 +33,7 @@ import {
     ListFilter,
     RefreshCw,
     Search,
+    Unlink,
     X,
 } from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
@@ -491,18 +492,27 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
     // Job Details panel content — shared between the side pane (≥ md) and the
     // drawer (< md); only one is mounted at a time via the isCompact guards.
-    const jobDetailsTitle = selectedTask ? `Job details - Job #${selectedTask.jobId}` : 'Job details';
+    const selectedTaskHasNoJob = Boolean(selectedTask) && !selectedTask?.jobId;
+    const jobDetailsTitle = selectedTask?.jobId ? `Job details - Job #${selectedTask.jobId}` : 'Job details';
     const jobDetailsBody = (
         <Box style={{flex: 1, overflow: 'auto'}}>
-            <JobDetails
-                config={{
-                    jobId: selectedTask?.jobId,
-                    isRecurringJob: false,
-                    isBulkJob: false,
-                    isUsCustomer,
-                    showToast,
-                } satisfies MountJobDetailsConfig}
-            />
+            {selectedTaskHasNoJob ? (
+                <NoData
+                    title="This task isn't linked to a job"
+                    message="There are no job details to show for it."
+                    icon={<Icon lucide={Unlink}/>}
+                />
+            ) : (
+                <JobDetails
+                    config={{
+                        jobId: selectedTask?.jobId,
+                        isRecurringJob: false,
+                        isBulkJob: false,
+                        isUsCustomer,
+                        showToast,
+                    } satisfies MountJobDetailsConfig}
+                />
+            )}
         </Box>
     );
 

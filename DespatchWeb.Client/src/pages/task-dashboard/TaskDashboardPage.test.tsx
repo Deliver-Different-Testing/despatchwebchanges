@@ -423,6 +423,20 @@ describe('TaskDashboardPage', () => {
         expect(await screen.findByText(/Job details - Job #100/)).toBeInTheDocument();
     });
 
+    it('says a task with no job is not linked, instead of showing Job #0', async () => {
+        mockTasksApi.getAllTasks.mockResolvedValue([
+            {...createMockTasks()[0], id: 9, title: 'Web Updated', jobId: 0, jobNumber: ''},
+        ]);
+        const user = setupUser();
+        renderWithProviders(<TaskDashboardPage {...createDefaultProps()} />);
+
+        await user.click(await screen.findByText('Web Updated'));
+
+        expect(await screen.findByText("This task isn't linked to a job")).toBeInTheDocument();
+        expect(screen.queryByText(/Job #0/)).not.toBeInTheDocument();
+        expect(screen.queryByTestId('job-details')).not.toBeInTheDocument();
+    });
+
     // ── Error Handling ──────────────────────────────────────────────
     it('handles API errors gracefully', async () => {
         mockTasksApi.getAllTasks.mockRejectedValue(new Error('API Error'));
