@@ -59,7 +59,7 @@ import {
 } from '../../components/common/panel-controls';
 import {SegmentedToggle} from '../../components/common/segmented-toggle';
 import {NoData} from '../../components/common/no-data/NoData';
-import {formatDateForApi, getIanaTimezone, tenantNow} from '../../utils/dateUtils';
+import {formatDateForApi, tenantNow} from '../../utils/dateUtils';
 import {
     useActiveStaff,
     useEventTypes,
@@ -83,11 +83,6 @@ const getViewPreferenceKey = () => {
     return `taskDashboardViewPreference-${contactId}`;
 };
 
-const getDateFilterKey = () => {
-    const contactId = getSession().contactId;
-    return `dateFilter-task-dashboard-${contactId}`;
-};
-
 const getRefreshIntervalKey = () => {
     const contactId = getSession().contactId;
     return `taskDashboardRefreshInterval-${contactId}`;
@@ -103,11 +98,15 @@ const TASK_LIST_LIMIT = 2000;
 const loadRefreshIntervalMsForUser = (): number | false =>
     loadRefreshIntervalMs(getRefreshIntervalKey());
 
-// Helper to set default date filter
-const setDateFilterDefaults = (): DateFilterData => ({
-    startDate: tenantNow().subtract(1, 'day').startOf('day'),
-    endDate: tenantNow().add(7, 'days').endOf('day'),
-});
+// The list view's window: yesterday to +7 days in the tenant's day. Always
+// resolved from now and never persisted, so it can't freeze on an old day.
+const listWindowFromNow = (): DateFilterData => {
+    const now = tenantNow();
+    return {
+        startDate: now.subtract(1, 'day').startOf('day'),
+        endDate: now.add(7, 'days').endOf('day'),
+    };
+};
 
 // Task date group definition
 interface TaskGroup {
@@ -177,21 +176,9 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     const [staffFilter, setStaffFilter] = useState('all');
     const [eventTypeFilter, setEventTypeFilter] = useState('all');
 
-    // Date filter (initialized from localStorage, falls back to defaults)
-    const [dateFilterData, setDateFilterData] = useState<DateFilterData>(() => {
-        try {
-            const saved = localStorage.getItem(getDateFilterKey());
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                return {
-                    startDate: dayjs(parsed.startDate).tz(getIanaTimezone()),
-                    endDate: dayjs(parsed.endDate).tz(getIanaTimezone()),
-                };
-            }
-        } catch { /* ignore localStorage errors */
-        }
-        return setDateFilterDefaults();
-    });
+    const [listWindow, setListWindow] = useState<DateFilterData>(listWindowFromNow);
+    // The calendar reports its visible range on mount and on every navigation.
+    const [calendarWindow, setCalendarWindow] = useState<DateFilterData>(listWindowFromNow);
 
     // Auto-refresh interval (ms; false = off), seeded from localStorage. Applied
     // as the React Query refetchInterval on the tasks list and configured via the
@@ -207,7 +194,13 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     // between refetches without re-rendering the whole tree on every second.
     const [nowTick, setNowTick] = useState(() => Date.now());
     useEffect(() => {
-        const id = setInterval(() => setNowTick(Date.now()), 15000);
+        const id = setInterval(() => {
+            setNowTick(Date.now());
+            // Roll the list window at the tenant's midnight. Same-day ticks keep the
+            // previous object so the query key doesn't change.
+            const next = listWindowFromNow();
+            setListWindow(prev => prev.startDate.isSame(next.startDate) ? prev : next);
+        }, 15000);
         return () => clearInterval(id);
     }, []);
 
@@ -241,13 +234,14 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             filters.searchText = searchQuery;
         }
 
-        filters.startDate = formatDateForApi(dateFilterData.startDate);
-        filters.endDate = formatDateForApi(dateFilterData.endDate);
+        const range = showFullCalendar ? calendarWindow : listWindow;
+        filters.startDate = formatDateForApi(range.startDate);
+        filters.endDate = formatDateForApi(range.endDate);
         filters.limit = TASK_LIST_LIMIT;
         filters.includeOverdue = true;
 
         return filters;
-    }, [staffFilter, eventTypeFilter, searchQuery, dateFilterData]);
+    }, [staffFilter, eventTypeFilter, searchQuery, showFullCalendar, calendarWindow, listWindow]);
 
     // React Query hooks
     const {
@@ -406,17 +400,6 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
         const viewMode = isCalendar ? ViewMode.Calendar : ViewMode.List;
 
-        // If switching to list view, reset to default date range
-        if (!isCalendar) {
-            const defaultFilter = setDateFilterDefaults();
-            setDateFilterData(defaultFilter);
-            try {
-                localStorage.setItem(getDateFilterKey(), JSON.stringify(defaultFilter));
-            } catch {
-                // Ignore localStorage errors
-            }
-        }
-
         try {
             localStorage.setItem(getViewPreferenceKey(), viewMode);
         } catch {
@@ -458,11 +441,10 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
     // Handle calendar view change
     const handleCalendarViewChange = useCallback(async (startDate: Date, endDate: Date) => {
-        const newDateFilter = {
+        setCalendarWindow({
             startDate: dayjs(startDate),
             endDate: dayjs(endDate),
-        };
-        setDateFilterData(newDateFilter);
+        });
     }, []);
 
     // Toast helpers

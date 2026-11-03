@@ -10,8 +10,7 @@ namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
 /// Tests for the static ApplyFilters method and ProjectToTaskViewModel projection in TaskRepository.
-/// Date filter tests use in-memory queryable (SQLite cannot translate DateTimeOffset-to-DateTime
-/// comparisons that SQL Server handles implicitly).
+/// Date filter tests use an in-memory queryable.
 /// SearchText tests use SQLite since EF.Functions.Like requires a real database provider.
 /// </summary>
 public class TaskRepositoryTests : IAsyncDisposable
@@ -39,7 +38,7 @@ public class TaskRepositoryTests : IAsyncDisposable
     {
         await using var context = _db.CreateContext();
         var query = context.TucEvents.AsQueryable();
-        var filtered = TaskRepository.ApplyFilters(query, filters);
+        var filtered = TaskRepository.ApplyFilters(query, filters, AsSentWallClock);
         return await filtered.ToListAsync(TestContext.Current.CancellationToken);
     }
 
@@ -48,9 +47,11 @@ public class TaskRepositoryTests : IAsyncDisposable
         TaskTableFiltersRequest filters)
     {
         var query = events.AsQueryable();
-        var filtered = TaskRepository.ApplyFilters(query, filters);
+        var filtered = TaskRepository.ApplyFilters(query, filters, AsSentWallClock);
         return [.. filtered];
     }
+
+    private static DateTime AsSentWallClock(DateTimeOffset value) => value.DateTime;
 
     private static TucEvent CreateEvent(int id, Action<TucEvent>? configure = null)
     {
@@ -176,6 +177,49 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var item = Assert.Single(results);
         Assert.Equal(2, item.UcevId);
+    }
+
+    [Fact]
+    public void ApplyFilters_DateWindow_ComparesTheDatetimeColumnWithoutCastingToDatetimeoffset()
+    {
+        var options = new DbContextOptionsBuilder<DespatchContext>()
+            .UseSqlServer("Server=unused;Database=unused")
+            .Options;
+        using var context = new DespatchContext(options);
+        var filters = new TaskTableFiltersRequest
+        {
+            StartDate = new DateTimeOffset(2026, 10, 22, 0, 0, 0, TimeSpan.FromHours(-4)),
+            EndDate = new DateTimeOffset(2026, 10, 30, 23, 59, 59, TimeSpan.FromHours(-4)),
+            IncludeOverdue = true
+        };
+
+        var sql = TaskRepository.ApplyFilters(context.TucEvents, filters, AsSentWallClock).ToQueryString();
+
+        Assert.DoesNotContain("datetimeoffset", sql, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ApplyFilters_DateWindow_BoundsAreTenantWallClock()
+    {
+        var auckland = TimeZoneInfo.FindSystemTimeZoneById("Pacific/Auckland");
+        var events = new[]
+        {
+            CreateEvent(1, e => { e.UcevDueTime = new DateTime(2026, 11, 2, 23, 30, 0); e.UcevClosed = true; }),
+            CreateEvent(2, e => { e.UcevDueTime = new DateTime(2026, 11, 3, 0, 30, 0); e.UcevClosed = true; }),
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2026, 11, 11, 22, 0, 0)),
+            CreateEvent(4, e => e.UcevDueTime = new DateTime(2026, 11, 12, 0, 30, 0))
+        };
+        var filters = new TaskTableFiltersRequest
+        {
+            StartDate = new DateTimeOffset(2026, 11, 2, 11, 0, 0, TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2026, 11, 11, 10, 59, 59, TimeSpan.Zero),
+            IncludeOverdue = true
+        };
+
+        var results = TaskRepository.ApplyFilters(events.AsQueryable(), filters,
+            value => TimeZoneInfo.ConvertTime(value, auckland).DateTime).ToList();
+
+        Assert.Equal([2, 3], results.Select(e => e.UcevId).Order());
     }
 
     [Fact]

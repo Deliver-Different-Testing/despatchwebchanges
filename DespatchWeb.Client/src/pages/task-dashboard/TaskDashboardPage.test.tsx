@@ -7,7 +7,7 @@
 import React from 'react';
 import { renderWithMantine } from '../../test/utils';
 import { setupUser } from '../../test/utils/setupUser';
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {useMediaQuery} from '@mantine/hooks';
@@ -15,6 +15,7 @@ import {TaskDashboardPage} from './TaskDashboardPage';
 import {TaskDashboardPageProps} from './TaskDashboardPage.interfaces';
 import {Task} from '../../types';
 import {tasksApi} from '../../api/tasksApi';
+import {tenantNow} from '../../utils/dateUtils';
 
 // Control the compact/expanded breakpoint deterministically. Defaults to
 // expanded (false) in beforeEach; the compact-layout test flips it to true.
@@ -224,6 +225,47 @@ describe('TaskDashboardPage', () => {
         expect(typeof setRefreshCallback.mock.calls[0][0]).toBe('function');
     });
 
+    // ── List window is always relative to the tenant's today ────────
+    it('ignores a previously saved date window and queries the tenant-relative list window', async () => {
+        localStorageMock.setStore({
+            'dateFilter-task-dashboard-1': JSON.stringify({
+                startDate: '2026-01-01T05:00:00.000Z',
+                endDate: '2026-01-09T04:59:59.999Z',
+            }),
+        });
+        renderWithProviders(<TaskDashboardPage {...createDefaultProps()} />);
+
+        await waitFor(() => expect(mockTasksApi.getAllTasks).toHaveBeenCalled());
+        const today = tenantNow();
+        const filters = mockTasksApi.getAllTasks.mock.calls[0][0];
+        expect(filters?.startDate).toBe(today.subtract(1, 'day').startOf('day').toISOString());
+        expect(filters?.endDate).toBe(today.add(7, 'days').endOf('day').toISOString());
+    });
+
+    it('rolls the list window forward at the tenant midnight without a reload', async () => {
+        jest.useFakeTimers({now: tenantNow().endOf('day').subtract(10, 'second').toDate()});
+        try {
+            const today = tenantNow();
+            renderWithProviders(<TaskDashboardPage {...createDefaultProps()} />);
+            await waitFor(() => expect(mockTasksApi.getAllTasks).toHaveBeenCalled());
+            expect(mockTasksApi.getAllTasks.mock.calls[0][0]?.startDate)
+                .toBe(today.subtract(1, 'day').startOf('day').toISOString());
+
+            act(() => {
+                jest.advanceTimersByTime(30_000);
+            });
+
+            const tomorrow = today.add(1, 'day');
+            await waitFor(() => {
+                const latest = mockTasksApi.getAllTasks.mock.calls.at(-1)?.[0];
+                expect(latest?.startDate).toBe(today.startOf('day').toISOString());
+                expect(latest?.endDate).toBe(tomorrow.add(7, 'days').endOf('day').toISOString());
+            });
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
     // ── Skeleton loading state ──────────────────────────────────────
     it('renders skeleton loading state while fetching tasks', async () => {
         mockTasksApi.getAllTasks.mockImplementation(
@@ -322,6 +364,12 @@ describe('TaskDashboardPage', () => {
 
         // Job Details still visible in two-column layout
         expect(screen.getByText('Job details')).toBeInTheDocument();
+
+        // The calendar's visible month, not the list window, drives the request
+        const monthStart = dayjs().startOf('month').startOf('week').toISOString();
+        await waitFor(() => {
+            expect(mockTasksApi.getAllTasks.mock.calls.at(-1)?.[0]?.startDate).toBe(monthStart);
+        });
     });
 
     // ── Load view preference from localStorage ──────────────────────
