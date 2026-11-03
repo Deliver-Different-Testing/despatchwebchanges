@@ -9,6 +9,7 @@ public static class ReportingServiceCollectionExtensions
     {
         services.AddScoped<IJobReportService, JobReportService>();
         services.AddScoped<ICourierReportService, CourierReportService>();
+        services.AddScoped<IComplianceReminderService, ComplianceReminderService>();
         services.AddScoped<IPodReportService, PodReportService>();
         services.AddScoped<IPriceReportService, PriceReportService>();
         

@@ -1,11 +1,14 @@
 import {pluralise} from '../../../utils/pluralise';
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
+import {useComplianceList, useComplianceReminderPreview, useSendComplianceReminders} from '../../../hooks/useDriverManagementApi';
 import {
-    useComplianceList,
-    useSendBulkComplianceReminders,
-    useSendComplianceReminder
-} from '../../../hooks/useDriverManagementApi';
-import {ComplianceFilter, CourierCompliance, FleetOption, PaginatedRequest} from '../../../types';
+    ComplianceFilter,
+    ComplianceReminderChannel,
+    ComplianceReminderResult,
+    CourierCompliance,
+    FleetOption,
+    PaginatedRequest,
+} from '../../../types';
 import {driverManagementApi} from '../../../api/driverManagementApi';
 import {summarizeCompliance} from '../../../api/aiAssistantApi';
 import {AiSummaryCard} from '../../../components/common/ai-summary-card/AiSummaryCard';
@@ -15,6 +18,7 @@ import {
     DataTableColumn,
     FilterToolbar,
     getComplianceTypeColor,
+    ListEmptyState,
     SearchField,
     SortState,
     StatCard,
@@ -22,8 +26,8 @@ import {
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 import {dataTablePagingProps} from './dataTablePaging';
-import {ActionIcon, Badge, Box, Button, Group, Select, Stack, Text, Tooltip} from '@mantine/core';
-import {CircleAlert, CircleCheck, Download, Mail, Send, ShieldCheck, TriangleAlert, Users} from 'lucide-react';
+import {ActionIcon, Alert, Badge, Button, Group, Loader, SegmentedControl, Select, Stack, Text, Tooltip} from '@mantine/core';
+import {CircleAlert, CircleCheck, CircleHelp, Download, Mail, Send, ShieldCheck, TriangleAlert} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
 import {
@@ -44,58 +48,61 @@ interface DriverComplianceTabProps {
     fleetOptions: FleetOption[];
 }
 
+const DEFAULT_FILTERS: ComplianceFilter = {type: '', status: 'attention', fleet: 0};
+
 /** Mantine palette keys — see chipColors for why these are not the tenant brand. */
-function getComplianceStatus(expiryDate?: string): { status: string; color: string; daysUntil: number } {
-    if (!expiryDate) return {status: 'Not set', color: 'gray', daysUntil: -999};
-    const today = dayjs();
-    const daysUntil = dayjs(expiryDate).diff(today, 'day');
-    if (daysUntil < 0) return {status: 'Expired', color: 'red', daysUntil};
-    if (daysUntil <= 30) return {status: 'Expiring soon', color: 'yellow', daysUntil};
-    return {status: 'Valid', color: 'green', daysUntil};
+const STATUS_COLORS: Record<CourierCompliance['status'], string> = {
+    'Expired': 'red',
+    'Expiring soon': 'yellow',
+    'Valid': 'green',
+    'Not set': 'gray',
+};
+
+function formatDaysUntil(days: number | null): string {
+    if (days === null) return '—';
+    if (days === 0) return 'Today';
+    if (days < 0) return `${Math.abs(days)} ${pluralise(Math.abs(days), 'day')} overdue`;
+    return `${days} ${pluralise(days, 'day')}`;
 }
 
-function formatDaysUntil(daysUntil: number): string {
-    if (daysUntil === -999) return '\u2014';
-    if (daysUntil < 0) return `${Math.abs(daysUntil)} days overdue`;
-    return `${daysUntil} days`;
+const MAX_FAILURE_NAMES = 3;
+
+function describeFailures({failed, failures}: ComplianceReminderResult): string {
+    const named = failures.slice(0, MAX_FAILURE_NAMES).map(f => `${f.name} (${f.reason})`).join(', ');
+    const more = failures.length - MAX_FAILURE_NAMES;
+    return `${failed} couldn't be sent: ${named}${more > 0 ? ` and ${more} more` : ''}`;
 }
 
+type ReminderTarget = {kind: 'row'; row: CourierCompliance} | {kind: 'bulk'};
 
 const columns: DataTableColumn<CourierCompliance>[] = [
     {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Badge size="sm" tt="none">{row.code}</Badge>},
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
     {key: 'complianceType', label: 'Type', sortable: true, render: (row) => <Badge size="sm" tt="none" color={getComplianceTypeColor(row.complianceType)}>{row.complianceType}</Badge>},
-    {key: 'itemNumber', label: 'Item/Number', sortable: true, render: (row) => row.itemNumber},
     {key: 'expiryDate', label: 'Expiry date', sortable: true, width: '120px', render: (row) => row.expiryDate ? dayjs(row.expiryDate).format('MMM D, YYYY') : ''},
-    {key: 'status', label: 'Status', sortable: true, sortKey: 'expiryDate', width: '120px', render: (row) => {
-        const cs = getComplianceStatus(row.expiryDate);
-        return <Badge size="sm" tt="none" color={cs.color}>{cs.status}</Badge>;
-    }},
-    {key: 'daysUntil', label: 'Days until expiry', sortable: true, sortKey: 'expiryDate', width: '140px', render: (row) => {
-        const cs = getComplianceStatus(row.expiryDate);
-        return <Badge size="sm" tt="none" color={cs.color}>{formatDaysUntil(cs.daysUntil)}</Badge>;
-    }},
+    {key: 'status', label: 'Status', sortable: true, width: '120px', render: (row) => <Badge size="sm" tt="none" color={STATUS_COLORS[row.status] ?? 'gray'}>{row.status}</Badge>},
+    {key: 'daysUntilExpiry', label: 'Days until expiry', sortable: true, width: '140px', render: (row) => <Badge size="sm" tt="none" color={STATUS_COLORS[row.status] ?? 'gray'}>{formatDaysUntil(row.daysUntilExpiry)}</Badge>},
     {key: 'actions', label: 'Actions', width: '80px', align: 'center', render: () => null},
 ];
 
 export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToast, fleetOptions}) => {
     const [query, setQuery] = useState<PaginatedRequest>({
-        orderBy: 'code', pageSize: 100, page: 1, searchTerm: '', sortDescending: false,
+        orderBy: '', pageSize: 100, page: 1, searchTerm: '', sortDescending: false,
     });
-    const [filters, setFilters] = useState<ComplianceFilter>({type: 'all', status: 'all', fleet: 0});
-    const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
-    const [sort, setSort] = useState<SortState>({column: 'code', direction: 'asc'});
+    const [filters, setFilters] = useState<ComplianceFilter>(DEFAULT_FILTERS);
+    const [reminderTarget, setReminderTarget] = useState<ReminderTarget | null>(null);
+    const [channel, setChannel] = useState<ComplianceReminderChannel>(1);
+    const [sort, setSort] = useState<SortState>({column: '', direction: 'asc'});
 
-    const {data, isLoading} = useComplianceList(query, filters);
-    const sendReminder = useSendComplianceReminder();
-    const sendBulk = useSendBulkComplianceReminders();
+    const {data, isLoading, isError, refetch} = useComplianceList(query, filters);
+    const sendReminders = useSendComplianceReminders();
 
-    const items = data?.items ?? [];
+    const items = isError ? [] : data?.items ?? [];
     const stats = {
         expired: data?.totalExpired ?? 0,
         expiring: data?.totalExpiringSoon ?? 0,
+        notSet: data?.totalNotSet ?? 0,
         valid: data?.totalValid ?? 0,
-        totalDrivers: data?.total ?? 0,
     };
 
     const handleSortChange = (newSort: SortState) => {
@@ -103,46 +110,49 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
         setQuery(q => ({...q, orderBy: newSort.column, sortDescending: newSort.direction === 'desc', page: 1}));
     };
 
-    const handleSendReminder = async (item: CourierCompliance) => {
-        try {
-            await sendReminder.mutateAsync(item);
-            showToast(`Reminder sent to ${item.name}`, 'success');
-        } catch {
-            showToast("Couldn't send the reminder. Check your connection and try again.", 'error');
-        }
+    const openReminderDialog = (target: ReminderTarget) => {
+        setChannel(1);
+        setReminderTarget(target);
     };
 
-    const remindableItems = items.filter(item => {
-        const {daysUntil} = getComplianceStatus(item.expiryDate);
-        return daysUntil <= 30 && daysUntil >= -30;
-    });
+    const previewTarget = useMemo(() => {
+        if (!reminderTarget) return null;
+        return reminderTarget.kind === 'row'
+            ? {courierIds: [reminderTarget.row.courierId]}
+            : {filter: {searchTerm: query.searchTerm ?? '', fleet: filters.fleet, type: filters.type, status: filters.status}};
+    }, [reminderTarget, query.searchTerm, filters.fleet, filters.type, filters.status]);
+    const preview = useComplianceReminderPreview(previewTarget);
+    const previewResult = preview.data;
+    const overLimit = !!previewResult && previewResult.recipients > previewResult.maxRecipients;
+    const canSend = !!previewResult && previewResult.recipients > 0 && !overLimit;
 
-    const handleOpenBulkDialog = () => {
-        if (remindableItems.length === 0) {
-            showToast('No drivers need reminders right now', 'info');
-            return;
-        }
-        setBulkDialogOpen(true);
-    };
-
-    const handleBulkReminders = async () => {
-        setBulkDialogOpen(false);
+    const handleConfirmReminders = async () => {
+        if (!previewTarget || !canSend || sendReminders.isPending) return;
         try {
-            await sendBulk.mutateAsync(remindableItems);
-            showToast(`Reminders sent to ${remindableItems.length} ${pluralise(remindableItems.length, 'driver')}`, 'success');
-        } catch {
-            showToast("Couldn't send the reminders. Check your connection and try again.", 'error');
+            const result = await sendReminders.mutateAsync({...previewTarget, channel});
+            setReminderTarget(null);
+            showToast(`Reminders sent to ${result.sent} ${pluralise(result.sent, 'driver')}`, 'success');
+            if (result.failed > 0) showToast(describeFailures(result), 'warning');
+        } catch (error) {
+            const apiError = error as {status?: number; message?: string};
+            showToast(
+                apiError.status === 400 && apiError.message
+                    ? apiError.message
+                    : "Couldn't send the reminders. Check your connection and try again.",
+                'error'
+            );
         }
     };
 
     const activeFilterCount =
-        (filters.type !== 'all' ? 1 : 0)
-        + (filters.status !== 'all' ? 1 : 0)
+        (filters.type !== DEFAULT_FILTERS.type ? 1 : 0)
+        + (filters.status !== DEFAULT_FILTERS.status ? 1 : 0)
         + (filters.fleet ? 1 : 0);
+    const isFiltered = activeFilterCount > 0 || !!query.searchTerm;
 
     const handleClearFilters = () => {
-        setFilters(f => ({...f, type: 'all', status: 'all', fleet: 0}));
-        setQuery(q => ({...q, page: 1}));
+        setFilters(DEFAULT_FILTERS);
+        setQuery(q => ({...q, searchTerm: '', page: 1}));
     };
 
     const handleExport = async () => {
@@ -157,15 +167,16 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
     const columnsWithActions: DataTableColumn<CourierCompliance>[] = columns.map(col =>
         col.key === 'actions'
             ? {...col, render: (row: CourierCompliance) => (
-                <Tooltip label="Send reminder">
+                <Tooltip label={row.status === 'Valid' ? 'Nothing due' : 'Send reminder'}>
                     <ActionIcon
                         variant="subtle"
                         color="gray"
                         size="sm"
                         aria-label="Send reminder"
+                        disabled={row.status === 'Valid'}
                         onClick={(e) => {
                             e.stopPropagation();
-                            return handleSendReminder(row);
+                            openReminderDialog({kind: 'row', row});
                         }}
                     >
                         <Icon lucide={Mail} size={16}/>
@@ -181,8 +192,8 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
             <Group gap={16}>
                 <StatCard value={stats.expired} label="Expired" color="var(--mantine-color-red-6)" icon={<Icon lucide={CircleAlert} size={28} color="var(--mantine-color-red-6)"/>} />
                 <StatCard value={stats.expiring} label="Expiring soon" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={TriangleAlert} size={28} color="var(--mantine-color-yellow-6)"/>} />
+                <StatCard value={stats.notSet} label="Not set" color="var(--mantine-color-gray-6)" icon={<Icon lucide={CircleHelp} size={28} color="var(--mantine-color-gray-6)"/>} />
                 <StatCard value={stats.valid} label="Valid" color="var(--mantine-color-green-6)" icon={<Icon lucide={CircleCheck} size={28} color="var(--mantine-color-green-6)"/>} />
-                <StatCard value={stats.totalDrivers} label="Total drivers" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users} size={28} color="var(--mantine-color-cyan-6)"/>} />
             </Group>
 
             {/* AI Compliance Risk Summary */}
@@ -203,7 +214,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                             size="compact-sm"
                             h={FILTER_CONTROL_HEIGHT}
                             leftSection={<Icon lucide={Send} size={16}/>}
-                            onClick={handleOpenBulkDialog}
+                            onClick={() => openReminderDialog({kind: 'bulk'})}
                         >
                             Send reminders
                         </Button>
@@ -214,7 +225,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                 }
             >
                 <Stack gap={CRITERION_LABEL_GAP}>
-                    <GroupLabel selected={filters.type !== 'all' ? 1 : 0}>Type</GroupLabel>
+                    <GroupLabel selected={filters.type !== DEFAULT_FILTERS.type ? 1 : 0}>Type</GroupLabel>
                     <Select
                         size="xs"
                         aria-label="Type"
@@ -223,21 +234,20 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                         styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
                         value={filters.type}
                         onChange={(value) => {
-                            setFilters(f => ({...f, type: value ?? 'all'}));
+                            setFilters(f => ({...f, type: (value ?? '') as ComplianceFilter['type']}));
                             setQuery(q => ({...q, page: 1}));
                         }}
                         data={[
-                            {value: 'all', label: 'All types'},
-                            {value: 'drivers_license', label: "Driver's licence"},
+                            {value: '', label: 'All types'},
+                            {value: 'drivers_license', label: 'Driver licence'},
                             {value: 'dg_endorsement', label: 'DG endorsement'},
-                            {value: 'insurance', label: 'Insurance'},
-                            {value: 'vehicle_wof', label: 'Vehicle WOF'},
-                            {value: 'vehicle_rego', label: 'Vehicle registration'},
+                            {value: 'wof', label: 'WOF'},
+                            {value: 'registration', label: 'Registration'},
                         ]}
                     />
                 </Stack>
                 <Stack gap={CRITERION_LABEL_GAP}>
-                    <GroupLabel selected={filters.status !== 'all' ? 1 : 0}>Status</GroupLabel>
+                    <GroupLabel selected={filters.status !== DEFAULT_FILTERS.status ? 1 : 0}>Status</GroupLabel>
                     <Select
                         size="xs"
                         aria-label="Status"
@@ -246,14 +256,16 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                         styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
                         value={filters.status}
                         onChange={(value) => {
-                            setFilters(f => ({...f, status: value ?? 'all'}));
+                            setFilters(f => ({...f, status: (value ?? '') as ComplianceFilter['status']}));
                             setQuery(q => ({...q, page: 1}));
                         }}
                         data={[
-                            {value: 'all', label: 'All statuses'},
+                            {value: 'attention', label: 'Needs attention'},
                             {value: 'expired', label: 'Expired'},
                             {value: 'expiring', label: 'Expiring soon'},
+                            {value: 'not_set', label: 'Not set'},
                             {value: 'valid', label: 'Valid'},
+                            {value: '', label: 'All statuses'},
                         ]}
                     />
                 </Stack>
@@ -285,43 +297,81 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
 
             {/* Table */}
             <DataTable<CourierCompliance>
-                totalCount={data?.total ?? 0}
+                totalCount={isError ? 0 : data?.total ?? 0}
                 rows={items}
                 columns={columnsWithActions}
-                rowKey={(_, idx) => idx}
+                rowKey={(row) => `${row.courierId}-${row.complianceTypeKey}`}
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
-                emptyIcon={<Icon lucide={ShieldCheck} size={40}/>}
-                emptyTitle="No compliance records"
-                emptyMessage="No compliance records match your search."
+                emptyContent={
+                    <ListEmptyState
+                        noun="compliance items"
+                        isError={isError}
+                        onRetry={() => refetch()}
+                        isFiltered={isFiltered}
+                        onClearFilters={handleClearFilters}
+                        emptyIcon={<Icon lucide={ShieldCheck} size={40}/>}
+                        emptyTitle="Nothing needs attention"
+                        emptyMessage="No expired, expiring or missing compliance items."
+                    />
+                }
             />
 
-            {/* Bulk Reminders Confirmation Dialog */}
-            {/* A raw MUI <Dialog> before; composed from the shared Mantine
-                primitives per CLAUDE.md. */}
             <DialogShell
-                opened={bulkDialogOpen}
-                onClose={() => setBulkDialogOpen(false)}
+                opened={reminderTarget !== null}
+                onClose={() => { if (!sendReminders.isPending) setReminderTarget(null); }}
                 size={dialogSize.sm}
-                label="Send bulk reminders"
+                label="Send compliance reminders"
             >
                 <DialogHeader
                     icon={<Icon lucide={Send}/>}
-                    title="Send bulk reminders"
-                    subtitle="Drivers with expiring or expired compliance items"
-                    onClose={() => setBulkDialogOpen(false)}
+                    title="Send compliance reminders"
+                    subtitle="Remind drivers to update their compliance items"
+                    onClose={() => setReminderTarget(null)}
                 />
-                <Box p={24} bg={dialogContentBg}>
-                    <Text>
-                        Send a reminder email to <strong>{remindableItems.length}</strong>{' '}
-                        {remindableItems.length === 1 ? 'driver' : 'drivers'}?
-                    </Text>
-                </Box>
+                <Stack p={24} gap={16} bg={dialogContentBg}>
+                    {preview.isLoading && <Loader size="sm" aria-label="Checking who will get a reminder"/>}
+                    {preview.isError && (
+                        <Group gap={8}>
+                            <Text fz="sm" c="red">Couldn&apos;t check who will get a reminder.</Text>
+                            <Button size="compact-sm" variant="subtle" onClick={() => preview.refetch()}>Try again</Button>
+                        </Group>
+                    )}
+                    {previewResult && !overLimit && (
+                        <Text>
+                            {previewResult.recipients === 0
+                                ? 'No one in these filters needs a reminder.'
+                                : reminderTarget?.kind === 'row'
+                                    ? <><strong>{reminderTarget.row.name}</strong> will get a reminder about everything that needs renewing.</>
+                                    : `${previewResult.recipients} ${pluralise(previewResult.recipients, 'driver')} will get a reminder about the items you've filtered to.`}
+                        </Text>
+                    )}
+                    {previewResult && overLimit && (
+                        <Alert color="yellow" icon={<Icon lucide={TriangleAlert}/>}>
+                            That&apos;s {previewResult.recipients} drivers. Narrow the filters to {previewResult.maxRecipients} or fewer.
+                        </Alert>
+                    )}
+                    <Stack gap={4}>
+                        <Text fz="sm" fw={500}>Send via</Text>
+                        <SegmentedControl
+                            aria-label="Reminder channel"
+                            value={String(channel)}
+                            onChange={(value) => setChannel(Number(value) as ComplianceReminderChannel)}
+                            disabled={sendReminders.isPending}
+                            data={[
+                                {value: '1', label: 'Driver app'},
+                                {value: '2', label: 'SMS'},
+                            ]}
+                        />
+                    </Stack>
+                </Stack>
                 <DialogFooter
-                    onCancel={() => setBulkDialogOpen(false)}
-                    onConfirm={handleBulkReminders}
+                    onCancel={() => setReminderTarget(null)}
+                    onConfirm={handleConfirmReminders}
+                    confirmDisabled={!canSend}
+                    submitting={sendReminders.isPending}
                     confirmLabel="Send reminders"
                     confirmIcon={<Icon lucide={Send}/>}
                 />

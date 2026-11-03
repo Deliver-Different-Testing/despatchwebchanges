@@ -8,7 +8,8 @@ import {
     TodayActiveDriverPaginated,
     ComplianceFilter,
     CourierCompliancePaginated,
-    CourierCompliance,
+    ComplianceReminderRequest,
+    ComplianceReminderResult,
     AfterHoursFilter,
     AfterHoursPaginated,
     AfterHoursCourierScheduleItem,
@@ -44,15 +45,8 @@ export const driverManagementApi = {
         }, options);
     },
 
-    sendComplianceReminder(item: CourierCompliance): Promise<void> {
-        return apiClient.post<void>('courier/SendComplianceReminder', {
-            code: item.code,
-            type: item.complianceType,
-        });
-    },
-
-    sendBulkComplianceReminders(items: CourierCompliance[]): Promise<void> {
-        return apiClient.post<void>('courier/SendBulkComplianceReminders', {items});
+    sendComplianceReminders(request: ComplianceReminderRequest, options?: RequestOptions): Promise<ComplianceReminderResult> {
+        return apiClient.post<ComplianceReminderResult>('courier/SendComplianceReminders', request, options);
     },
 
     getAfterHoursSchedule(
@@ -95,7 +89,6 @@ export const driverManagementApi = {
             orderBy: query.orderBy,
             sortDescending: query.sortDescending,
             searchTerm: query.searchTerm,
-            location: filters.location,
             status: filters.status,
             fleet: filters.fleet,
         }, options);

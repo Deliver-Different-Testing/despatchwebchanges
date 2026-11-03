@@ -28,17 +28,13 @@ export function getDayChipColor(day: string): string {
 // Compliance type colour mapping
 export function getComplianceTypeColor(type: string): string {
     switch (type?.toLowerCase()) {
-        case "driver's license":
-        case 'drivers license':
+        case 'driver licence':
             return 'blue';
         case 'dg endorsement':
             return 'yellow';
-        case 'insurance':
-            return 'cyan';
-        case 'vehicle wof':
+        case 'wof':
             return 'green';
-        case 'vehicle registration':
-        case 'vehicle rego':
+        case 'registration':
             return 'grape';
         default:
             return 'gray';

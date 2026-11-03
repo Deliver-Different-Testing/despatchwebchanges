@@ -12,6 +12,7 @@ import {
     DataTableColumn,
     FilterToolbar,
     getFleetChipStyle,
+    ListEmptyState,
     SearchField,
     SortState,
 } from './shared';
@@ -39,13 +40,22 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [sort, setSort] = useState<SortState>({column: 'code', direction: 'asc'});
 
-    const {data, isLoading} = useDriverEmails(query);
+    const {data, isLoading, isError, refetch} = useDriverEmails(query);
     const sendEmail = useSendEmailToCouriers();
 
-    const items = data?.items ?? [];
+    const items = isError ? [] : data?.items ?? [];
 
     const allSelected = items.length > 0 && items.every(e => selectedIds.has(e.courierId));
     const someSelected = items.some(e => selectedIds.has(e.courierId));
+
+    // Selection is per visible page: a new search or page invalidates it, so the
+    // "Compose email (N)" count always equals the recipients actually sent.
+    const clearSelection = () => setSelectedIds(prev => (prev.size === 0 ? prev : new Set()));
+
+    const handleSearchChange = (value: string) => {
+        clearSelection();
+        setQuery(q => ({...q, searchTerm: value, page: 1}));
+    };
 
     const toggleSelect = (courierId: number) => {
         setSelectedIds(prev => {
@@ -65,6 +75,7 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
     };
 
     const handleSortChange = (newSort: SortState) => {
+        clearSelection();
         setSort(newSort);
         setQuery(q => ({...q, orderBy: newSort.column, sortDescending: newSort.direction === 'desc', page: 1}));
     };
@@ -90,6 +101,8 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
     const handleSingleEmail = async (driver: DriverEmail) => {
         await openComposeDialog([driver]);
     };
+
+    const handleClearFilters = () => handleSearchChange('');
 
     const handleExport = async () => {
         try {
@@ -143,14 +156,14 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
             >
                 <SearchField
                     value={query.searchTerm ?? ''}
-                    onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
+                    onChange={handleSearchChange}
                     placeholder="Search emails…"
                 />
             </FilterToolbar>
 
             {/* Table */}
             <DataTable<DriverEmail>
-                totalCount={data?.total ?? 0}
+                totalCount={isError ? 0 : data?.total ?? 0}
                 rows={items}
                 columns={columnsWithActions}
                 rowKey={(row) => row.courierId}
@@ -158,6 +171,14 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
                 sort={sort}
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
+                onPageChange={(page) => {
+                    clearSelection();
+                    setQuery(q => ({...q, page}));
+                }}
+                onPageSizeChange={(pageSize) => {
+                    clearSelection();
+                    setQuery(q => ({...q, pageSize, page: 1}));
+                }}
                 checkboxSelection
                 allSelected={allSelected}
                 someSelected={someSelected}
@@ -172,9 +193,18 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
                     />
                 )}
                 isRowSelected={(row) => selectedIds.has(row.courierId)}
-                emptyIcon={<Icon lucide={Mail} size={40}/>}
-                emptyTitle="No driver emails"
-                emptyMessage="No driver emails match your search."
+                emptyContent={
+                    <ListEmptyState
+                        noun="drivers"
+                        isError={isError}
+                        onRetry={() => refetch()}
+                        isFiltered={!!query.searchTerm}
+                        onClearFilters={handleClearFilters}
+                        emptyIcon={<Icon lucide={Mail} size={40}/>}
+                        emptyTitle="No driver emails"
+                        emptyMessage="No drivers have an email address on file."
+                    />
+                }
             />
         </Stack>
     );

@@ -5,4 +5,5 @@ public sealed record CourierCompliancePaginatedResponse : PaginatedResponse<Cour
     public int TotalExpired { get; init; }
     public int TotalExpiringSoon { get; init; }
     public int TotalValid { get; init; }
+    public int TotalNotSet { get; init; }
 }

@@ -120,6 +120,13 @@ describe('DataTable', () => {
             expect(screen.getByText('Nothing Found')).toBeInTheDocument();
             expect(screen.getByText('Try different filters.')).toBeInTheDocument();
         });
+
+        it('should render emptyContent instead of the default block', () => {
+            renderTable({rows: [], totalCount: 0, emptyContent: <button>Retry me</button>});
+
+            expect(screen.getByRole('button', {name: 'Retry me'})).toBeInTheDocument();
+            expect(screen.queryByText('No data found')).not.toBeInTheDocument();
+        });
     });
 
     describe('Row click', () => {

@@ -45,13 +45,15 @@ const createMockData = (): PaginatedResponse<DriverEmail> => ({
     pages: 1,
 });
 
-const setupMocks = (data?: PaginatedResponse<DriverEmail>, isLoading = false) => {
+const refetch = jest.fn();
+
+const setupMocks = (data?: PaginatedResponse<DriverEmail>, isLoading = false, isError = false) => {
     mockUseDriverEmails.mockReturnValue({
-        data: data ?? createMockData(),
+        data: isError ? undefined : data ?? createMockData(),
         isLoading,
-        isError: false,
+        isError,
         error: null,
-        refetch: jest.fn(),
+        refetch,
     } as any);
 
     mockUseSendEmailToCouriers.mockReturnValue({
@@ -239,7 +241,34 @@ describe('DriverEmailsTab', () => {
             renderWithProviders();
 
             expect(screen.getByText('No driver emails')).toBeInTheDocument();
-            expect(screen.getByText('No driver emails match your search.')).toBeInTheDocument();
+            expect(screen.getByText('No drivers have an email address on file.')).toBeInTheDocument();
+        });
+
+        it('should show a retryable error state when the load fails', () => {
+            setupMocks(undefined, false, true);
+            renderWithProviders();
+
+            expect(screen.getByText("Couldn't load drivers")).toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button', {name: 'Try again'}));
+            expect(refetch).toHaveBeenCalled();
+        });
+    });
+
+    describe('Selection', () => {
+        it('clears the selection when the search text or page changes so the count matches recipients', async () => {
+            setupMocks({...createMockData(), total: 250, pages: 3});
+            renderWithProviders();
+
+            fireEvent.click(screen.getByLabelText('Select Alice Zara'));
+            expect(screen.getByRole('button', {name: /Compose email \(1\)/})).toBeInTheDocument();
+
+            fireEvent.change(screen.getByPlaceholderText('Search emails…'), {target: {value: 'bob'}});
+            await waitFor(() => expect(screen.getByRole('button', {name: /^Compose email\s*$/})).toBeInTheDocument());
+
+            fireEvent.click(screen.getByLabelText('Select Bob Young'));
+            expect(screen.getByRole('button', {name: /Compose email \(1\)/})).toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button', {name: 'Go to next page'}));
+            expect(screen.getByRole('button', {name: /^Compose email\s*$/})).toBeInTheDocument();
         });
     });
 });
