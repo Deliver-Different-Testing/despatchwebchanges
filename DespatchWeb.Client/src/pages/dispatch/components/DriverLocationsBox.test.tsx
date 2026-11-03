@@ -86,6 +86,16 @@ describe('DriverLocationsBox', () => {
         );
     });
 
+    it('forwards the time-range flag with the date range', async () => {
+        renderBox({despatchViewIds: [11], useTime: true});
+
+        await screen.findByTestId('dl-data');
+        expect(fetchDriverLocationsMock).toHaveBeenCalledWith(
+            expect.objectContaining({despatchViewIds: [11], useTime: true}),
+            expect.anything(),
+        );
+    });
+
     it('forwards the truck mode to the presentational component', async () => {
         renderBox({despatchViewIds: [11], truckMode: 'Only'});
 

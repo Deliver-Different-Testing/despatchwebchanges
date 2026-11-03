@@ -21,7 +21,8 @@ public class CourierController(
     public async Task<IActionResult> Index(
         [FromQuery] List<int> despatchViewIds,
         [FromQuery] DateTimeOffset? startDate = null,
-        [FromQuery] DateTimeOffset? endDate = null)
+        [FromQuery] DateTimeOffset? endDate = null,
+        [FromQuery] bool useTime = false)
     {
         try
         {
@@ -30,7 +31,7 @@ public class CourierController(
                 return Json(new ClearListViewModel());
             }
 
-            var result = await courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate);
+            var result = await courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate, useTime);
 
             return Json(result);
         }
