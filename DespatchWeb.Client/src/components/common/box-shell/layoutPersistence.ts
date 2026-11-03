@@ -235,56 +235,6 @@ export function writeLocalSnapshot(keys: LayoutStorageKeys, snapshot: LayoutSnap
     }
 }
 
-export interface ImportLayoutsResult {
-    imported: string[];
-    skipped: string[];
-}
-
-/**
- * Copy custom layouts from one storage location (e.g. the V1 keys) into another
- * (the forked V2 keys). Additive and non-destructive: the Default layout is
- * never copied, and a source layout whose name already exists in the target is
- * left untouched (reported as `skipped`). Each imported layout's box-visibility
- * record is carried across as well.
- */
-export function importLayoutsFrom(
-    source: LayoutStorageKeys,
-    target: LayoutStorageKeys,
-    defaultLayout: ILayout,
-): ImportLayoutsResult {
-    const imported: string[] = [];
-    const skipped: string[] = [];
-    if (!isLocalStorageAvailable()) return {imported, skipped};
-
-    const sourceLayouts = loadLayouts(source, defaultLayout);
-    const targetLayouts = loadLayouts(target, defaultLayout);
-    const seen = new Set(targetLayouts.map(l => l.name));
-
-    const merged = [...targetLayouts];
-    for (const layout of sourceLayouts) {
-        if (layout.name === defaultLayout.name) continue;
-        if (seen.has(layout.name)) {
-            skipped.push(layout.name);
-            continue;
-        }
-        merged.push(layout);
-        seen.add(layout.name);
-        imported.push(layout.name);
-
-        const visibility = loadBoxVisibility(source, layout.name);
-        if (visibility) {
-            try {
-                localStorage.setItem(boxVisibilityKey(target, layout.name), JSON.stringify(visibility));
-            } catch (error) {
-                console.error('Error copying box visibility during import:', error);
-            }
-        }
-    }
-
-    if (imported.length > 0) saveLayouts(target, merged);
-    return {imported, skipped};
-}
-
 /**
  * Rename a custom layout in storage. Renames it in the layouts array, moves its
  * box-visibility record to the new key, and repoints the last-active pointer if

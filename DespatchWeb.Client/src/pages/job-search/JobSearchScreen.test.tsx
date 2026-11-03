@@ -17,7 +17,6 @@ const mockBridge = {
     setColumnEditMode: jest.fn(),
     openInterCourierCharge: jest.fn(() => Promise.resolve()),
     jobCreated: jest.fn(),
-    importLegacyLayouts: jest.fn(),
 };
 const pageProps = jest.fn();
 let captured: ToolbarActionsConfig;
@@ -25,7 +24,7 @@ const toolbarKeys = jest.fn();
 const customizeKeys = jest.fn();
 const layoutHook = {
     layouts: [], currentLayoutName: 'Mine',
-    saveLayout: jest.fn(), loadLayout: jest.fn(), deleteLayout: jest.fn(), renameLayout: jest.fn(), importLayouts: jest.fn(),
+    saveLayout: jest.fn(), loadLayout: jest.fn(), deleteLayout: jest.fn(), renameLayout: jest.fn(),
 };
 const openCustomizePanels = jest.fn();
 

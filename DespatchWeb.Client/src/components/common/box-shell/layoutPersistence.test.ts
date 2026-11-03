@@ -4,7 +4,6 @@ import {
     boxVisibilityKey,
     clearBoxVisibility,
     addMissingFactoryBoxes,
-    importLayoutsFrom,
     loadBoxVisibility,
     loadLastActiveLayoutName,
     loadLayouts,
@@ -248,58 +247,6 @@ describe('box visibility', () => {
         saveBoxVisibility(keys, 'Default', sparse);
         expect(JSON.parse(localStorage.getItem(boxVisibilityKey(keys, 'Default'))!))
             .toEqual({a: {visible: true, collapsed: false}});
-    });
-});
-
-describe('importLayoutsFrom', () => {
-    const source: LayoutStorageKeys = {
-        layoutsKey: 'layout-v1',
-        lastActiveLayoutKey: 'lastActive-v1',
-        boxVisibilityKeyBase: 'boxVisibility-v1',
-    };
-    const target: LayoutStorageKeys = {
-        layoutsKey: 'layout-v2',
-        lastActiveLayoutKey: 'lastActive-v2',
-        boxVisibilityKeyBase: 'boxVisibility-v2',
-    };
-
-    const custom = (name: string): ILayout => ({name, layout: {columns: []}});
-
-    it('copies custom layouts into an empty target, ignoring Default', () => {
-        saveLayouts(source, [defaultLayout, custom('Wide'), custom('Tall')]);
-
-        const result = importLayoutsFrom(source, target, defaultLayout);
-
-        expect(result.imported).toEqual(['Wide', 'Tall']);
-        expect(result.skipped).toEqual([]);
-        const stored = loadLayouts(target, defaultLayout);
-        expect(stored.map(l => l.name)).toEqual(['Default', 'Wide', 'Tall']);
-    });
-
-    it('skips a source layout whose name already exists in the target', () => {
-        saveLayouts(source, [defaultLayout, custom('Wide')]);
-        saveLayouts(target, [defaultLayout, custom('Wide')]);
-
-        const result = importLayoutsFrom(source, target, defaultLayout);
-
-        expect(result.imported).toEqual([]);
-        expect(result.skipped).toEqual(['Wide']);
-        expect(loadLayouts(target, defaultLayout)).toHaveLength(2);
-    });
-
-    it('carries each imported layout\'s box-visibility record across', () => {
-        saveLayouts(source, [defaultLayout, custom('Wide')]);
-        saveBoxVisibility(source, 'Wide', {a: {name: 'a', visible: false, collapsed: true}});
-
-        importLayoutsFrom(source, target, defaultLayout);
-
-        expect(loadBoxVisibility(target, 'Wide')).toEqual({a: {visible: false, collapsed: true}});
-    });
-
-    it('is a no-op when the source has no custom layouts', () => {
-        const result = importLayoutsFrom(source, target, defaultLayout);
-        expect(result).toEqual({imported: [], skipped: []});
-        expect(localStorage.getItem(target.layoutsKey)).toBeNull();
     });
 });
 
