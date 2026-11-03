@@ -25,6 +25,7 @@ import {DateInput} from '@mantine/dates';
 import {Calendar, CalendarRange} from 'lucide-react';
 import dayjs, {Dayjs} from 'dayjs';
 import {getIanaTimezone, getInputDateFormat, getTimezoneName} from '../../../utils/dateUtils';
+import {getContactId} from '../../../api/session';
 import {Icon} from '../icon/Icon';
 import {toolbarIconButtonClassName, toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
 
@@ -122,7 +123,9 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     const ianaTimeZone = getIanaTimezone(timeZone);
     const timeZoneLong = getTimezoneName(timeZone);
 
-    const storageKey = `dateRangeOption-${appPage}`;
+    // Per user, like the range it pairs with; the per-browser key predates that and is read once.
+    const storageKey = `dateRangeOption-${appPage}-${getContactId()}`;
+    const legacyStorageKey = `dateRangeOption-${appPage}`;
 
     // State
     const [selectedRangeOption, setSelectedRangeOption] = useState<DateRangeOption>('all_time');
@@ -147,10 +150,12 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
 
         let option: DateRangeOption = 'all_time';
         try {
-            const saved = localStorage.getItem(storageKey);
+            const own = localStorage.getItem(storageKey);
+            const saved = own ?? localStorage.getItem(legacyStorageKey);
             if (saved && ['all_time', 'today', 'custom_minutes', 'custom_date'].includes(saved)) {
                 option = saved as DateRangeOption;
                 setSelectedRangeOption(option);
+                if (own === null) localStorage.setItem(storageKey, option);
             }
         } catch {
             // Ignore localStorage errors

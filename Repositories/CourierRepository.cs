@@ -357,6 +357,7 @@ public partial class CourierRepository(
         IReadOnlyList<int> despatchViewIds,
         DateTimeOffset? startDate = null,
         DateTimeOffset? endDate = null,
+        bool useTime = false,
         CancellationToken cancellationToken = default)
     {
         if (despatchViewIds.Count == 0)
@@ -369,9 +370,12 @@ public partial class CourierRepository(
             var currentDate = clock.TenantNow;
             var currentDateOnly = currentDate.Date;
 
-            // Use provided date range or default to today
-            var jobStartDate = startDate?.DateTime ?? currentDateOnly;
-            var jobEndDate = endDate?.DateTime ?? currentDateOnly.AddDays(1);
+            // Use provided date range or default to today. Like DispatchJobInRange, a date range covers
+            // whole days (end day included); only a time range (useTime) ends at the exact instant.
+            var jobStartDate = startDate?.Date ?? currentDateOnly;
+            var jobEndDate = endDate.HasValue
+                ? useTime ? endDate.Value.DateTime : endDate.Value.Date.AddDays(1)
+                : currentDateOnly.AddDays(1);
 
             // ===================================================================
             // WAVE 1: Independent queries (Clear Lists + Courier Data) - PARALLEL

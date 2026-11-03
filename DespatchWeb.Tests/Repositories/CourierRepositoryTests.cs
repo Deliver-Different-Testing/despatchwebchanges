@@ -295,7 +295,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
         var result =
-            await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
+            await repository.GetClearListsAsync([1], startDate, endDate, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result);
@@ -314,7 +314,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var startDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 17, 0, 0, 0, TimeSpan.Zero);
         var result =
-            await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
+            await repository.GetClearListsAsync([1], startDate, endDate, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - still returns the area structure even with no matching jobs
         Assert.NotNull(result);
@@ -433,12 +433,59 @@ public class CourierRepositoryTests : IAsyncDisposable
         var startDate = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 15, 10, 5, 0, TimeSpan.Zero);
         var result =
-            await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
+            await repository.GetClearListsAsync([1], startDate, endDate, useTime: true,
+                cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should stay in Bottom (5) because the full-day query still finds their job
         Assert.Single(result.Areas);
         Assert.Single(result.Areas[0].Bottom); // courier has a prebooked job today so should remain in Bottom/orange
         Assert.Empty(result.Areas[0].Middle); // courier should not move to Middle when they have jobs today
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_DateRange_IncludesJobsOnTheEndDay()
+    {
+        // A Custom dates range ending Jan 20 arrives as Jan 20 00:00; the job is later that day.
+        // The range drives the driver's destination codes; sections follow today's jobs.
+        await SetupClearListWithCourierAndPolygon(courierStatus: 5, jobDate: new DateTime(2024, 1, 20, 10, 0, 0));
+        var repository = CreateRepository();
+
+        var result = await repository.GetClearListsAsync([1],
+            new DateTimeOffset(2024, 1, 18, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2024, 1, 20, 0, 0, 0, TimeSpan.Zero),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotEmpty(Assert.Single(result.Areas[0].Middle).Destinations);
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_DateRange_IncludesJobsEarlierOnTheStartDay()
+    {
+        // The "last 7 days" draft carries the current time of day on its start.
+        await SetupClearListWithCourierAndPolygon(courierStatus: 5, jobDate: new DateTime(2024, 1, 18, 8, 0, 0));
+        var repository = CreateRepository();
+
+        var result = await repository.GetClearListsAsync([1],
+            new DateTimeOffset(2024, 1, 18, 14, 30, 0, TimeSpan.Zero),
+            new DateTimeOffset(2024, 1, 20, 14, 30, 0, TimeSpan.Zero),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotEmpty(Assert.Single(result.Areas[0].Middle).Destinations);
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_TimeRange_EndsAtTheExactInstant()
+    {
+        await SetupClearListWithCourierAndPolygon(courierStatus: 5, jobDate: new DateTime(2024, 1, 20, 10, 0, 0));
+        var repository = CreateRepository();
+
+        var result = await repository.GetClearListsAsync([1],
+            new DateTimeOffset(2024, 1, 18, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2024, 1, 20, 0, 0, 0, TimeSpan.Zero),
+            useTime: true,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Empty(Assert.Single(result.Areas[0].Middle).Destinations);
     }
 
     private async Task SetupBasicClearListData()

@@ -27,6 +27,7 @@ public interface ICourierRepository
         IReadOnlyList<int> despatchViewIds,
         DateTimeOffset? startDate = null,
         DateTimeOffset? endDate = null,
+        bool useTime = false,
         CancellationToken cancellationToken = default);
 
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(

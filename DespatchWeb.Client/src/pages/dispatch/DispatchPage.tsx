@@ -728,6 +728,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         despatchViewIds={filters.despatchViewIds}
                         startDate={filters.startDate}
                         endDate={filters.endDate}
+                        useTime={filters.useTime}
                         refetchIntervalMs={refreshIntervals.driverLocationsMs}
                         activeAreaId={clearListId}
                         onAreaSelect={setClearListId}
