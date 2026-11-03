@@ -25,6 +25,7 @@ import {DateInput} from '@mantine/dates';
 import {Calendar, CalendarRange} from 'lucide-react';
 import dayjs, {Dayjs} from 'dayjs';
 import {getIanaTimezone, getInputDateFormat, getTimezoneName} from '../../../utils/dateUtils';
+import {getContactId} from '../../../api/session';
 import {Icon} from '../icon/Icon';
 import {toolbarIconButtonClassName, toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
 
@@ -122,7 +123,9 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     const ianaTimeZone = getIanaTimezone(timeZone);
     const timeZoneLong = getTimezoneName(timeZone);
 
-    const storageKey = `dateRangeOption-${appPage}`;
+    // Per user, like the range it pairs with; the per-browser key predates that and is read once.
+    const storageKey = `dateRangeOption-${appPage}-${getContactId()}`;
+    const legacyStorageKey = `dateRangeOption-${appPage}`;
 
     // State
     const [selectedRangeOption, setSelectedRangeOption] = useState<DateRangeOption>('all_time');
@@ -147,17 +150,30 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
 
         let option: DateRangeOption = 'all_time';
         try {
-            const saved = localStorage.getItem(storageKey);
+            const own = localStorage.getItem(storageKey);
+            const saved = own ?? localStorage.getItem(legacyStorageKey);
             if (saved && ['all_time', 'today', 'custom_minutes', 'custom_date'].includes(saved)) {
                 option = saved as DateRangeOption;
                 setSelectedRangeOption(option);
+                if (own === null) localStorage.setItem(storageKey, option);
             }
         } catch {
             // Ignore localStorage errors
         }
 
-        // The parent already restored the applied custom range; emitting here would overwrite it.
-        if (option === 'custom_date') return;
+        // The parent already restored the applied range; emitting here would overwrite it.
+        if (option === 'custom_date') {
+            // An epoch start is "all time" (see customDateDraft), so the radio follows what the page fetches.
+            if (dateFilterData?.startDate.valueOf() === 0) {
+                setSelectedRangeOption('all_time');
+                try {
+                    localStorage.setItem(storageKey, 'all_time');
+                } catch {
+                    // Ignore
+                }
+            }
+            return;
+        }
 
         // Compute and emit initial dates so the job list fetches with the correct range
         const defaults = setDateFilterDefaults(ianaTimeZone);
@@ -280,15 +296,12 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                 newEndDate = dayjs().tz(ianaTimeZone).endOf('day');
                 break;
 
-            case 'custom_date':
-                // Keep current dates or set reasonable defaults
-                if (!startDate || startDate.valueOf() === 0) {
-                    newStartDate = dayjs().tz(ianaTimeZone).subtract(7, 'days');
-                }
-                if (!endDate || endDate.valueOf() === 0) {
-                    newEndDate = dayjs().tz(ianaTimeZone);
-                }
+            case 'custom_date': {
+                const draft = customDateDraft({startDate, endDate}, ianaTimeZone);
+                newStartDate = draft.startDate;
+                newEndDate = draft.endDate;
                 break;
+            }
 
             case 'custom_minutes':
                 newStartDate = defaults.startDate;

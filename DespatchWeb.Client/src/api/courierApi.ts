@@ -84,13 +84,14 @@ export async function fetchTruckCourierStatus(
  * range. Mirrors the V1 DispatchCoreService.getDriverLocations (`GET courier`).
  */
 export async function fetchDriverLocations(
-    params: {despatchViewIds: number[]; startDate?: Dayjs; endDate?: Dayjs},
+    params: {despatchViewIds: number[]; startDate?: Dayjs; endDate?: Dayjs; useTime?: boolean},
     options?: RequestOptions,
 ): Promise<IClearListViewModel> {
     return apiClient.get<IClearListViewModel>('courier', {
         despatchViewIds: params.despatchViewIds,
         startDate: params.startDate ? formatDateForApiWithTzs(params.startDate) : undefined,
         endDate: params.endDate ? formatDateForApiWithTzs(params.endDate) : undefined,
+        useTime: params.useTime ?? false,
     }, options);
 }
 
