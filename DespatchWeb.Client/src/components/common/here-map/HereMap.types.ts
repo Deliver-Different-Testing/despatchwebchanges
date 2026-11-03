@@ -105,8 +105,11 @@ export function getNetworkPartnerMapCenter(): { lat: number; lng: number } | nul
 
 export function getDefaultMapCenter(): { lat: number; lng: number } {
     // A network partner works one address, not a country, so their own address is
-    // a better opening view than the geographic centre of the tenant's country.
+    // a better opening view than the geographic centre of the tenant's country. After that the
+    // tenant's own centre (SignUpPageSettings), so an AU tenant doesn't open on NZ; the hard-coded
+    // US/NZ centres are only the fallback when the tenant has none.
     return getNetworkPartnerMapCenter()
+        ?? getSession().tenantMapCenter
         ?? (getSession().isUsCustomer ? US_MAP_CENTER : NZ_MAP_CENTER);
 }
 

@@ -95,9 +95,9 @@ public sealed class AiSummarizationService(
 
     private string RegionContext => tenantInfo.IsUsTenant()
         ? "a US-based courier dispatch company"
-        : "a New Zealand courier dispatch company";
+        : tenantInfo.IsAuTenant() ? "an Australian courier dispatch company" : "a New Zealand courier dispatch company";
 
-    private string CurrencyExample => tenantInfo.IsUsTenant() ? "$145" : "$145 NZD";
+    private string CurrencyExample => tenantInfo.IsUsTenant() ? "$145" : tenantInfo.IsAuTenant() ? "$145 AUD" : "$145 NZD";
 
     /// <summary>
     /// Rules every structured briefing needs. Each briefing is its own independent

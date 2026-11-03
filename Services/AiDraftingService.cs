@@ -48,7 +48,7 @@ public sealed class AiDraftingService(
 
     private string RegionContext => tenantInfo.IsUsTenant()
         ? "a US-based courier dispatch company"
-        : "a New Zealand courier dispatch company";
+        : tenantInfo.IsAuTenant() ? "an Australian courier dispatch company" : "a New Zealand courier dispatch company";
 
     // ---------------------------------------------------------------------
     //  Courier / staff message
