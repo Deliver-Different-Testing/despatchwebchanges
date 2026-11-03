@@ -8,6 +8,7 @@ import {getSpeedList} from '../../../api/jobDetailApi';
 import {toastService} from '../../../services/toastService';
 import {FIELD_META, formatChangeRequestValue, getFieldMeta, type JobChangeRequestFieldMeta} from '../../job-change-requests/jobChangeRequestFormatting';
 import {isUsCustomer} from '../../../utils/dateUtils';
+import {getSession} from '../../../api/session';
 import type {ISuggestion} from '../../../types/interfaces/job.interface';
 import type {JobChangeRequestResult} from '../../../types/jobChangeRequest';
 
@@ -506,6 +507,8 @@ function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
     const set = (key: keyof AddressDraft) => (event: React.ChangeEvent<HTMLInputElement>) =>
         onChange({...value, [key]: event.currentTarget.value});
     const isUs = isUsCustomer();
+    // AU keeps the state where NZ keeps the city, matching what Booking and the Edit Address dialog store
+    const isAu = !isUs && (getSession().countryCode ?? '').toUpperCase() === 'AU';
     return (
         <Stack gap="xs">
             <TextInput
@@ -521,7 +524,7 @@ function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
             />
             <Group gap="xs" grow align="flex-start">
                 {!isUs && <TextInput label="Suburb" value={value.addressLine3} onChange={set('addressLine3')}/>}
-                <TextInput label="City" value={value.addressLine4} onChange={set('addressLine4')}/>
+                <TextInput label={isAu ? 'State' : 'City'} value={value.addressLine4} onChange={set('addressLine4')}/>
                 {isUs && <TextInput label="State" value={value.addressLine5} onChange={set('addressLine5')}/>}
             </Group>
             <Group gap="xs" grow align="flex-start">

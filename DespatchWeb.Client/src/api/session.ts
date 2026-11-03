@@ -11,7 +11,10 @@ export interface Session {
     /** undefined when the server did not say; callers pick their own fallback. */
     isUsCustomer: boolean | undefined;
     currencyCode: string;
+    countryCode: string;
     npMapCenter: {lat: number; lng: number} | null;
+    /** The tenant's own map centre (SignUpPageSettings), or null when it has none. */
+    tenantMapCenter: {lat: number; lng: number} | null;
 }
 
 /** Shape returned by GET /api/context. */
@@ -30,6 +33,7 @@ export interface SessionContextDto {
     isNetworkPartner: boolean;
     visibleFeatures: string[] | null;
     npMapCenter: {lat: number; lng: number} | null;
+    tenantMapCenter?: {lat: number; lng: number} | null;
     hubUrl: string | null;
 }
 
@@ -54,7 +58,9 @@ const fromContext = (c: SessionContextDto): Session => ({
     visibleFeatures: c.visibleFeatures ?? null,
     isUsCustomer: c.isUsTenant,
     currencyCode: c.currencyCode,
+    countryCode: c.countryCode ?? '',
     npMapCenter: c.npMapCenter ?? null,
+    tenantMapCenter: c.tenantMapCenter ?? null,
 });
 
 const UNSET: Session = {
@@ -68,7 +74,9 @@ const UNSET: Session = {
     visibleFeatures: null,
     isUsCustomer: undefined,
     currencyCode: '',
+    countryCode: '',
     npMapCenter: null,
+    tenantMapCenter: null,
 };
 
 /**

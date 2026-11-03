@@ -11,7 +11,7 @@ const DEFAULTS: SessionContextDto = {
     // The server's answer is unknown by default, matching a missing serverConfig global.
     isUsTenant: undefined as unknown as boolean,
     currencyCode: '', clientInternal: false, isNetworkPartner: false, visibleFeatures: null,
-    npMapCenter: null, hubUrl: null,
+    npMapCenter: null, tenantMapCenter: null, hubUrl: null,
 };
 
 type Field = {
@@ -35,8 +35,8 @@ const FIELDS: Record<string, Field> = {
     VisibleFeatures: field('visibleFeatures', v => (Array.isArray(v) ? v : null)),
     CurrencyCode: field('currencyCode', v => v || ''),
     serverConfig: {
-        get: c => ({isUSCustomer: c.isUsTenant, npMapCenter: c.npMapCenter}),
-        set: (c, v) => ({...c, isUsTenant: v?.isUSCustomer, npMapCenter: v?.npMapCenter ?? null}),
+        get: c => ({isUSCustomer: c.isUsTenant, countryCode: c.countryCode, npMapCenter: c.npMapCenter, tenantMapCenter: c.tenantMapCenter}),
+        set: (c, v) => ({...c, isUsTenant: v?.isUSCustomer, countryCode: v?.countryCode ?? null, npMapCenter: v?.npMapCenter ?? null, tenantMapCenter: v?.tenantMapCenter ?? null}),
     },
 };
 

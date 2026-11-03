@@ -175,7 +175,8 @@ public class CourierRepository(
 
             var stopwatch = Stopwatch.StartNew();
 
-            var result = isUsTenant
+            // AU shares the US model: driver locations are ZipPolygon (postcode) areas the courier's GPS falls in
+            var result = isUsTenant || infoService.IsAuTenant()
                 ? await GetUsAvailableCourierPositionsAsync(data, cancellationToken)
                 : await GetNzAvailableCourierPositionsAsync(data, cancellationToken);
 
@@ -418,12 +419,14 @@ public class CourierRepository(
 
             // Process polygon mappings - use appropriate ID based on tenant
             var isUsTenant = infoService.IsUsTenant();
+            var isAuTenant = infoService.IsAuTenant();
+            var usesZipAreas = isUsTenant || isAuTenant;
 
             var polygonChannelsByClearListArea = allValidCourierGpsIds
                 .GroupBy(x => x.ClearListAreaId)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(x => new { MatchingId = isUsTenant ? x.ZipPolygonId : x.PolygonId, x.ChannelId })
+                    g => g.Select(x => new { MatchingId = usesZipAreas ? x.ZipPolygonId : x.PolygonId, x.ChannelId })
                         .ToList()
                 );
 
@@ -442,8 +445,8 @@ public class CourierRepository(
 
             // Group couriers by GPS polygon ID for area filtering
             var couriersByPolygon = allCourierData
-                .Where(c => isUsTenant ? c.ZipPolygonId.HasValue : c.PolygonId.HasValue)
-                .GroupBy(c => isUsTenant ? c.ZipPolygonId!.Value : c.PolygonId!.Value)
+                .Where(c => usesZipAreas ? c.ZipPolygonId.HasValue : c.PolygonId.HasValue)
+                .GroupBy(c => usesZipAreas ? c.ZipPolygonId!.Value : c.PolygonId!.Value)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // Process job counts — use full-day jobs so prebooked work is always counted
@@ -473,8 +476,26 @@ public class CourierRepository(
 
             Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup = [];
             Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>> coordinateLookup = [];
+            Dictionary<string, List<SuburbClearListAreaDto>> postcodeLookup = [];
 
-            if (isUsTenant)
+            if (isAuTenant)
+            {
+                // AU: driver locations are postcodes (ZipPolygon). Jobs sit in the area their delivery postcode belongs to;
+                // the US coordinate match needs the job to sit exactly on the zip's centre point, which a geocoded address doesn't.
+                var allPostcodes = allJobs
+                    .Where(j => !string.IsNullOrWhiteSpace(j.DeliveryPostCode))
+                    .Select(j => NormaliseAuPostcode(j.DeliveryPostCode))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var postcodeMappingsTask = GetPostcodeMappingsAsync(allPostcodes, cancellationToken);
+                await Task.WhenAll(postcodeMappingsTask, areaRemainingTask);
+                postcodeLookup = await postcodeMappingsTask;
+
+                Log.Information(
+                    "Wave 3 complete (AU): {PostcodeCount} postcode mappings, {AreaCount} area remaining counts",
+                    postcodeLookup.Count, (await areaRemainingTask).Count);
+            }
+            else if (isUsTenant)
             {
                 var allCoordinates = allJobs
                     .Where(j => j.DeliveryLatitude.HasValue && j.DeliveryLongitude.HasValue)
@@ -512,9 +533,9 @@ public class CourierRepository(
             // IN-MEMORY PROCESSING: Build clear lists for each area
             // ===================================================================
             Dictionary<string, int> columnDefinitions;
-            if (isUsTenant)
+            if (usesZipAreas)
             {
-                // US: sort by database AreaOrder, distribute round-robin across 4 columns
+                // US/AU: sort by database AreaOrder, distribute round-robin across 4 columns
                 clearLists = [.. clearLists.OrderBy(cl => cl.AreaOrder)];
                 columnDefinitions = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 for (var i = 0; i < clearLists.Count; i++)
@@ -592,7 +613,8 @@ public class CourierRepository(
                     suburbLookup,
                     coordinateLookup,
                     isUsTenant,
-                    currentDate
+                    currentDate,
+                    isAuTenant ? postcodeLookup : null
                 );
 
                 // Build sections (will be empty if no couriers)
@@ -2154,13 +2176,14 @@ public class CourierRepository(
         return results;
     }
 
-    private static List<ClearListResult> BuildClearListResultsInMemory(
+    internal static List<ClearListResult> BuildClearListResultsInMemory(
         List<CourierClearListDto> areaCouriers,
         Dictionary<int, List<CourierJobSuburbDto>> jobsByCourier,
         Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup,
         Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>> coordinateLookup,
         bool isUsTenant,
-        DateTime currentDate)
+        DateTime currentDate,
+        Dictionary<string, List<SuburbClearListAreaDto>> postcodeLookup = null)
     {
         var clearListResults = new List<ClearListResult>();
 
@@ -2176,7 +2199,15 @@ public class CourierRepository(
                     {
                         List<SuburbClearListAreaDto> areaOptions = null;
 
-                        if (isUsTenant)
+                        if (postcodeLookup != null)
+                        {
+                            // AU: by delivery postcode
+                            if (!string.IsNullOrWhiteSpace(job.DeliveryPostCode))
+                            {
+                                postcodeLookup.TryGetValue(NormaliseAuPostcode(job.DeliveryPostCode), out areaOptions);
+                            }
+                        }
+                        else if (isUsTenant)
                         {
                             if (job.DeliveryLatitude.HasValue && job.DeliveryLongitude.HasValue)
                             {
@@ -2427,7 +2458,8 @@ public class CourierRepository(
                 CourierId = job.UcjbCourierId.Value,
                 ToSuburbId = job.UcjbTo,
                 DeliveryLatitude = job.DeliveryLatitude,
-                DeliveryLongitude = job.DeliveryLongitude
+                DeliveryLongitude = job.DeliveryLongitude,
+                DeliveryPostCode = job.DeliveryAddressLine7
             })
             .TagWith("GetClearLists - Wave 2: All Jobs")
             .ToListAsync(cancellationToken);
@@ -2523,6 +2555,57 @@ public class CourierRepository(
                     Code = r.Code,
                     ChannelId = r.ChannelId
                 }).ToList());
+    }
+
+    /// <summary>
+    /// AU postcodes are 4 digits. Jobs booked while the zip padding still treated AU like the US were stored as
+    /// 5 digits with a leading zero (2000 as 02000); ZipPolygon.Zip holds the 4-digit form.
+    /// </summary>
+    internal static string NormaliseAuPostcode(string postcode)
+    {
+        var trimmed = postcode.Trim();
+        return trimmed.Length == 5 && trimmed[0] == '0' ? trimmed[1..] : trimmed;
+    }
+
+    /// <summary>
+    /// AU: postcode (ZipPolygon.Zip) to the clear list areas that include it.
+    /// </summary>
+    private async Task<Dictionary<string, List<SuburbClearListAreaDto>>> GetPostcodeMappingsAsync(
+        HashSet<string> postcodes, CancellationToken cancellationToken = default)
+    {
+        if (postcodes.Count == 0)
+        {
+            return new Dictionary<string, List<SuburbClearListAreaDto>>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var wanted = postcodes.ToList();
+
+        var results = await context.ZipPolygons
+            .Where(zp => wanted.Contains(zp.Zip))
+            .Join(context.TblClearListAreaPolygons,
+                zp => zp.ZipPolygonId,
+                cap => cap.ZipPolygonId,
+                (zp, cap) => new { zp.Zip, cap.ClearListAreaId })
+            .Join(context.TblClearListAreas,
+                x => x.ClearListAreaId,
+                cla => cla.ClearListAreaId,
+                (x, cla) => new { x.Zip, cla.ClearListAreaId, cla.Code, cla.ChannelId })
+            .TagWith("GetClearLists - Wave 3: Postcode Mappings (AU)")
+            .ToListAsync(cancellationToken);
+
+        return results
+            .GroupBy(r => r.Zip, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(r => new SuburbClearListAreaDto
+                {
+                    SuburbId = 0,
+                    ClearListAreaId = r.ClearListAreaId,
+                    Code = r.Code,
+                    ChannelId = r.ChannelId
+                }).ToList(),
+                StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task<Dictionary<string, int>> GetTotalRemainingForAllAreasAsync(

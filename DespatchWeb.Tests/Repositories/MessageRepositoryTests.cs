@@ -183,4 +183,14 @@ public sealed class MessageRepositoryTests : IAsyncDisposable
         Assert.Equal([1, 2], result.Select(m => m.MessageId));
         Assert.Equal(new DateTime(2024, 1, 15, 10, 0, 0), result.Single(m => m.MessageId == 1).MessageTime);
     }
+
+    [Theory]
+    [InlineData("+64 21 123 4567", false, false, "0211234567")]
+    [InlineData("+61 412 345 678", false, true, "0412345678")]
+    [InlineData("+1 212 555 0100", true, false, "2125550100")]
+    [InlineData("0412345678", false, true, "0412345678")]
+    public void NormalizeMobileNumber_FollowsTenantCountry(string input, bool isUs, bool isAu, string expected)
+    {
+        Assert.Equal(expected, MessageRepository.NormalizeMobileNumber(input, isUs, isAu));
+    }
 }

@@ -226,6 +226,21 @@ describe('JobChangeRequestDialog', () => {
             });
         });
 
+        describe('AU tenant', () => {
+            beforeEach(() => {
+                (window as any).serverConfig = {isUSCustomer: false, countryCode: 'AU'};
+            });
+
+            it('asks for a State where NZ asks for a City', () => {
+                renderDialog({preselectedFieldName: 'PickupAddress'});
+
+                expect(screen.getByLabelText(/Suburb/i)).toBeInTheDocument();
+                expect(screen.getByLabelText(/^State$/i)).toBeInTheDocument();
+                expect(screen.queryByLabelText(/City/i)).not.toBeInTheDocument();
+                expect(screen.getByLabelText(/Postcode/i)).toBeInTheDocument();
+            });
+        });
+
         describe('US tenant', () => {
             beforeEach(() => {
                 (window as any).serverConfig = {isUSCustomer: true};

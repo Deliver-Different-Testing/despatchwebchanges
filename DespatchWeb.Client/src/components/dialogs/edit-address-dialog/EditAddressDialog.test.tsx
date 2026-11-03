@@ -13,6 +13,7 @@ import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi'
 import {addressApi} from '../../../api/addressApi';
 import {renderWithMantine, suppressConsoleError} from '../../../test/utils';
 import {HERE_US_ADDRESS_FIELDS} from '../../../test/utils/mockData';
+import {clearSessionContext, setSessionContext, SessionContextDto} from '../../../api/session';
 
 // Mock the React Query hooks
 jest.mock('../../../hooks/useAddressApi', () => ({
@@ -919,5 +920,69 @@ describe('EditAddressDialog', () => {
             expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('');
             expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('');
         });
+    });
+});
+
+// AU keeps the state in line 6 (the Booking convention); HERE's "city" for an AU address is the metro name ("Sydney").
+describe('EditAddressDialog - AU tenant', () => {
+    const auContext: SessionContextDto = {
+        contactId: 1, staffId: 1, firstName: 'A', fullName: 'A B', email: null, dispatcher: null,
+        timeZone: 'Australia/Sydney', countryCode: 'AU', isUsTenant: false, currencyCode: 'AUD',
+        clientInternal: true, isNetworkPartner: false, visibleFeatures: null, npMapCenter: null, hubUrl: null,
+    };
+
+    const glebeResult: HereMapsLocationResult = {
+        title: '1 Bridge Road, Glebe NSW 2037',
+        id: 'here:af:address:au1',
+        resultType: 'houseNumber',
+        address: {
+            label: '1 Bridge Road, Glebe NSW 2037',
+            countryCode: 'AUS', countryName: 'Australia', stateCode: 'NSW', state: 'New South Wales',
+            district: 'Glebe', city: 'Sydney', street: 'Bridge Road', postalCode: '2037', houseNumber: '1',
+        },
+        position: {lat: -33.8744, lng: 151.1912},
+        access: [{lat: -33.8744, lng: 151.1912}],
+    };
+
+    beforeEach(() => {
+        setSessionContext(auContext);
+        mockUseAddressSearch.mockReturnValue({data: [glebeResult], isFetching: false, error: null} as any);
+        mockUseHereMapsApiKey.mockReturnValue({data: undefined, isLoading: false, error: null} as any);
+        mockAddressApi.getLocationDetailsById.mockResolvedValue({
+            title: glebeResult.title, id: glebeResult.id, resultType: 'houseNumber',
+            address: glebeResult.address, position: glebeResult.position,
+        });
+    });
+
+    afterEach(() => clearSessionContext());
+
+    it('labels line 6 State rather than City', () => {
+        renderWithProviders(createDefaultProps({isUsTenant: false}));
+
+        expect(screen.getByLabelText(/State/)).toBeInTheDocument();
+        expect(screen.queryByLabelText(/City/)).not.toBeInTheDocument();
+    });
+
+    it('puts the state code in line 6 when an address is picked, not the metro city', async () => {
+        renderWithProviders(createDefaultProps({isUsTenant: false}));
+
+        typeAddressSearch('1 Bridge');
+        fireEvent.click(await screen.findByRole('option', {name: /1 Bridge Road, Glebe/}));
+
+        await waitFor(() => {
+            expect((screen.getByLabelText(/Suburb/) as HTMLInputElement).value).toBe('Glebe');
+            expect((screen.getByLabelText(/State/) as HTMLInputElement).value).toBe('NSW');
+            expect((screen.getByLabelText(/Post code/) as HTMLInputElement).value).toBe('2037');
+        });
+    });
+
+    it('asks for a State, not a City, when line 6 is empty', async () => {
+        renderWithProviders(createDefaultProps({isUsTenant: false}));
+
+        fireEvent.change(screen.getByLabelText(/Street name/), {target: {value: 'Bridge Road'}});
+        fireEvent.change(screen.getByLabelText(/Post code/), {target: {value: '2037'}});
+        fireEvent.click(screen.getByRole('button', {name: /Save/i}));
+
+        expect(await screen.findByText(/State is required/)).toBeInTheDocument();
     });
 });

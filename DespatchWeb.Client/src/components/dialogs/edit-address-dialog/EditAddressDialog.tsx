@@ -12,6 +12,7 @@ import {
 } from '../../../types';
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../api/addressApi';
+import {getSession} from '../../../api/session';
 import {US_STATES, normalizeToStateAbbreviation} from '../../../utils/usStates';
 import {loadHereSdk} from '../../../utils/loadHereSdk';
 import type {ShowToastFn} from '../../../services/toastService';
@@ -96,6 +97,8 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     onSave,
     showToast,
 }) => {
+    // AU keeps the state in line 6 (Booking sends it there); the NZ layout would put HERE's city ("Sydney") in it.
+    const isAuTenant = !isUsTenant && (getSession().countryCode ?? '').toUpperCase() === 'AU';
     const markerIconUrl = addressType === AddressType.Delivery
         ? DELIVERY_MARKER_ICON_URL
         : PICKUP_MARKER_ICON_URL;
@@ -430,9 +433,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 setAddressLine7('');
             }
         } else {
-            // NZ Format
+            // NZ Format (AU: state in line 6)
             setAddressLine5(address.district || '');
-            setAddressLine6(address.city || '');
+            setAddressLine6(isAuTenant ? (address.stateCode || address.state || '') : (address.city || ''));
             setAddressLine7(address.postalCode || '');
         }
 
@@ -442,7 +445,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         // Update coordinates
         setLatitude(location.position.lat);
         setLongitude(location.position.lng);
-    }, [isUsTenant]);
+    }, [isUsTenant, isAuTenant]);
 
     // Handle map click - reverse geocode and update address
     handleMapClickRef.current = useCallback(async (lat: number, lng: number) => {
@@ -550,7 +553,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             }
         } else {
             if (!addressLine6) {
-                errors.addressLine6 = 'City is required';
+                errors.addressLine6 = isAuTenant ? 'State is required' : 'City is required';
             }
             if (!addressLine7) {
                 errors.addressLine7 = 'Post code is required';
@@ -559,7 +562,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
-    }, [addressLine4, addressLine5, addressLine6, addressLine7, stateAbbreviation, isUsTenant]);
+    }, [addressLine4, addressLine5, addressLine6, addressLine7, stateAbbreviation, isUsTenant, isAuTenant]);
 
     // Handle save
     const handleSave = async () => {
@@ -750,7 +753,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                     style={{flex: '0 0 40%'}}
                                 />
                                 <TextInput
-                                    label="City"
+                                    label={isAuTenant ? 'State' : 'City'}
                                     withAsterisk
                                     value={addressLine6}
                                     onChange={(e) => setAddressLine6(e.currentTarget.value)}
