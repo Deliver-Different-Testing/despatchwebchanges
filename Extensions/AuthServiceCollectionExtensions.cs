@@ -1,3 +1,5 @@
+using DeliverDifferent.AgentAccess;
+using DespatchWeb.Helpers;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Options;
@@ -8,11 +10,30 @@ public static class AuthServiceCollectionExtensions
 {
     public const string AuthRedirectHeader = "x-auth-redirect";
     private const string ContextPath = "/api/context";
+    private const string CookieScheme = "Identity.Application";
 
-    public static void AddAppAuthentication(this IServiceCollection services, string domain)
+    /// <summary>
+    /// Agent access (Hub-issued app pass from the MCP server) is on wherever HubUrl is set. Hub keeps it closed per
+    /// tenant until its gate opens, so no tenant gets agent traffic before that.
+    /// </summary>
+    public static AgentAccessOptions? AgentAccessOptionsFrom(IConfiguration configuration)
     {
-        services.AddAuthentication("Identity.Application")
-            .AddCookie("Identity.Application", options =>
+        var hubUrl = configuration["HubUrl"];
+        if (!Uri.TryCreate(hubUrl, UriKind.Absolute, out var hub) || hub.Scheme is not ("http" or "https")) return null;
+
+        return new AgentAccessOptions
+        {
+            AppName = "DespatchWeb",
+            HubAuthority = hubUrl!,
+            HubApiKey = configuration["PartnerDirectoryApiKey"] ?? string.Empty,
+            SqlCredentials = configuration["SQLCredentials"] ?? string.Empty
+        };
+    }
+
+    public static void AddAppAuthentication(this IServiceCollection services, string domain, AgentAccessOptions? agentAccess = null)
+    {
+        var authentication = services.AddAuthentication(agentAccess is null ? CookieScheme : AgentTokenAuthentication.HubOrAgentScheme)
+            .AddCookie(CookieScheme, options =>
             {
                 options.Cookie.Name = ".AspNet.SharedCookie";
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
@@ -38,6 +59,12 @@ public static class AuthServiceCollectionExtensions
                 options.Cookie.HttpOnly = true;
                 options.Cookie.Domain = domain;
             });
+
+        if (agentAccess is not null)
+        {
+            authentication.AddHubOrAgentPolicyScheme(CookieScheme).AddAgentTokenAuthentication(agentAccess);
+            services.AddAgentTenantConnectionStore<AgentTenantConnectionStore>();
+        }
 
         services.AddSession(options =>
         {
