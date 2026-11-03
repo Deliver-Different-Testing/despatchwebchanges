@@ -45,12 +45,13 @@ describe('AppShell', () => {
             expect(screen.getByText('page body')).toBeInTheDocument();
         });
 
-        it('renders the sidebar shell and slim toolbar for dfrnt, with the page body in the page column', () => {
+        it('renders the sidebar shell under a full-width toolbar for dfrnt, with the sidebar toggle in the bar', () => {
             mockUseNavStyle.mockReturnValue({style: 'dfrnt'});
             renderWithMantine(<AppShell {...defaultProps} body={<p>page body</p>} />);
 
             expect(screen.getByTestId('dfrnt-sidebar')).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: /navigation menu/i})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Collapse sidebar'})).toBeInTheDocument();
             expect(screen.getByRole('heading', {level: 1, name: 'Test Dashboard'})).toBeInTheDocument();
             expect(screen.getByText('page body')).toBeInTheDocument();
         });
