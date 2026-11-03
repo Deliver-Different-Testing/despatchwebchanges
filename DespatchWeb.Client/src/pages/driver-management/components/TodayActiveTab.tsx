@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {Badge, Group, Select, Stack} from '@mantine/core';
-import {Car, CircleDot, Clock, Download, PauseCircle, RefreshCw, Users} from 'lucide-react';
+import {Car, CircleDot, Clock, Download, RefreshCw, Users} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
 import {
@@ -11,7 +11,7 @@ import {
 import {useTodayActiveDrivers} from '../../../hooks/useDriverManagementApi';
 import {FleetOption, PaginatedRequest, TodayActiveDriver, TodayActiveDriverFilter} from '../../../types';
 import {driverManagementApi} from '../../../api/driverManagementApi';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, getFleetChipStyle} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, ListEmptyState, SearchField, SortState, StatCard, formatMinutes, getFleetChipStyle} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 import {dataTablePagingProps} from './dataTablePaging';
@@ -20,13 +20,6 @@ interface TodayActiveTabProps {
     showToast: ShowToastFn;
     fleetOptions: FleetOption[];
 }
-
-const formatSessionTime = (totalMinutes: number): string => {
-    if (totalMinutes === 0) return '0h 0m';
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = Math.round(totalMinutes % 60);
-    return `${hours}h ${minutes}m`;
-};
 
 const columns: DataTableColumn<TodayActiveDriver>[] = [
     {key: 'code', label: 'Code', sortable: true, width: '100px', render: (row) => <Badge size="sm" tt="none">{row.code}</Badge>},
@@ -44,17 +37,16 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
         orderBy: 'name', pageSize: 100, page: 1, searchTerm: '', sortDescending: false,
     });
     const [filters, setFilters] = useState<TodayActiveDriverFilter>({
-        location: 'all', status: 'all', fleet: 0,
+        status: 'all', fleet: 0,
     });
     const [sort, setSort] = useState<SortState>({column: 'name', direction: 'asc'});
 
-    const {data, isLoading, refetch} = useTodayActiveDrivers(query, filters);
-    const items = data?.items ?? [];
+    const {data, isLoading, isError, refetch} = useTodayActiveDrivers(query, filters);
+    const items = isError ? [] : data?.items ?? [];
     const stats = {
         totalActiveDrivers: data?.totalActiveDrivers ?? 0,
         totalDriversActiveToday: data?.totalDriversActiveToday ?? 0,
-        onBreak: 0,
-        averageSession: formatSessionTime(data?.averageSessionTime ?? 0),
+        averageSession: formatMinutes(data?.averageSessionTime ?? 0),
     };
 
     const handleSortChange = (newSort: SortState) => {
@@ -68,7 +60,7 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
 
     const handleClearFilters = () => {
         setFilters(f => ({...f, status: 'all', fleet: 0}));
-        setQuery(q => ({...q, page: 1}));
+        setQuery(q => ({...q, searchTerm: '', page: 1}));
     };
 
     const handleExport = async () => {
@@ -84,7 +76,6 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
             {/* Stats */}
             <Group gap={16}>
                 <StatCard value={stats.totalActiveDrivers} label="Currently online" color="var(--mantine-color-green-6)" icon={<Icon lucide={CircleDot} size={28} color="var(--mantine-color-green-6)"/>} />
-                <StatCard value={stats.onBreak} label="On break" color="var(--mantine-color-yellow-6)" icon={<Icon lucide={PauseCircle} size={28} color="var(--mantine-color-yellow-6)"/>} />
                 <StatCard value={stats.totalDriversActiveToday} label="Total today" color="var(--mantine-color-cyan-6)" icon={<Icon lucide={Users} size={28} color="var(--mantine-color-cyan-6)"/>} />
                 <StatCard value={stats.averageSession} label="Average session" color="var(--mantine-primary-color-filled)" icon={<Icon lucide={Clock} size={28} color="var(--mantine-primary-color-filled)"/>} />
             </Group>
@@ -114,14 +105,13 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
                         styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
                         value={filters.status}
                         onChange={(value) => {
-                            setFilters(f => ({...f, status: value ?? 'all'}));
+                            setFilters(f => ({...f, status: (value ?? 'all') as TodayActiveDriverFilter['status']}));
                             setQuery(q => ({...q, page: 1}));
                         }}
                         data={[
                             {value: 'all', label: 'All statuses'},
-                            {value: 'expired', label: 'Expired'},
-                            {value: 'expiring', label: 'Expiring soon'},
-                            {value: 'valid', label: 'Valid'},
+                            {value: 'active', label: 'Active'},
+                            {value: 'inactive', label: 'Inactive'},
                         ]}
                     />
                 </Stack>
@@ -153,17 +143,26 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
 
             {/* Table */}
             <DataTable<TodayActiveDriver>
-                totalCount={data?.total ?? 0}
+                totalCount={isError ? 0 : data?.total ?? 0}
                 rows={items}
                 columns={columns}
-                rowKey={(_, idx) => idx}
+                rowKey={(row) => row.courierId}
                 isLoading={isLoading}
                 sort={sort}
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
-                emptyIcon={<Icon lucide={Car} size={40}/>}
-                emptyTitle="No active drivers"
-                emptyMessage="No active drivers match your search."
+                emptyContent={
+                    <ListEmptyState
+                        noun="drivers"
+                        isError={isError}
+                        onRetry={() => refetch()}
+                        isFiltered={activeFilterCount > 0 || !!query.searchTerm}
+                        onClearFilters={handleClearFilters}
+                        emptyIcon={<Icon lucide={Car} size={40}/>}
+                        emptyTitle="No drivers logged in today"
+                        emptyMessage="Drivers appear here once they log in."
+                    />
+                }
             />
         </Stack>
     );

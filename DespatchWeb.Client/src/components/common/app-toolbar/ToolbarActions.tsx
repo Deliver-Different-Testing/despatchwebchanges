@@ -24,7 +24,6 @@ import {useDisclosure} from '@mantine/hooks';
 import {
     Check,
     Columns3,
-    Download,
     Eye,
     EyeOff,
     FilePen,
@@ -265,8 +264,6 @@ export interface LayoutsMenuProps {
     onDeleteLayout: (index: number) => void;
     /** Optional: rename a custom layout. When provided, a rename control appears on each custom row. */
     onRenameLayout?: (index: number) => void;
-    /** Optional: copy the user's legacy (V1) layouts into this page's store. */
-    onImportLayouts?: () => void;
     /** Optional: opens the panel-visibility and column-count settings. */
     onCustomizePanels?: () => void;
     /** Optional: restore the current layout to the shipped arrangement. */
@@ -318,7 +315,6 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
     onLoadLayout,
     onDeleteLayout,
     onRenameLayout,
-    onImportLayouts,
     onCustomizePanels,
     onResetLayout,
     columnEditMode,
@@ -363,11 +359,6 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
 
     const handleResetLayout = () => {
         onResetLayout?.();
-        handleClose();
-    };
-
-    const handleImportLayouts = () => {
-        onImportLayouts?.();
         handleClose();
     };
 
@@ -505,15 +496,6 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                     <PopoverRow onClick={handleResetLayout} icon={<Icon lucide={RotateCcw} size={16} />}>
                         Reset layout
                     </PopoverRow>
-                )}
-
-                {onImportLayouts && (
-                    <>
-                        <Divider my={4} />
-                        <PopoverRow onClick={handleImportLayouts} icon={<Icon lucide={Download} size={16} />}>
-                            Import V1 layouts
-                        </PopoverRow>
-                    </>
                 )}
             </Popover.Dropdown>
         </Popover>

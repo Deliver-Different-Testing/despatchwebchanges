@@ -26,6 +26,17 @@ public sealed class TenantSettingsService(IDbContextFactory<DespatchContext> con
             .FirstOrDefaultAsync();
     }
 
+    public async Task<string?> GetNavStyleDefaultAsync()
+    {
+        await using var ctx = await contextFactory.CreateDbContextAsync();
+
+        var style = await ctx.TblSettings
+            .Select(s => s.DespatchNavStyle)
+            .FirstOrDefaultAsync();
+
+        return style is "dispatch" or "dfrnt" ? style : null;
+    }
+
     public async Task<string?> GetAppearanceDefaultAsync()
     {
         await using var ctx = await contextFactory.CreateDbContextAsync();

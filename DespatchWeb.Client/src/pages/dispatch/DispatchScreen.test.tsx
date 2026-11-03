@@ -24,7 +24,6 @@ const bridge = {
     setColumnEditMode: jest.fn(),
     openInterCourierCharge: jest.fn(),
     jobCreated: jest.fn(),
-    importLegacyLayouts: jest.fn(),
 };
 let viewsListener: (views: unknown[]) => void;
 

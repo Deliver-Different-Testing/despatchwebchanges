@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {getContactId} from '../../api/session';
-import {Box, Card, Stack, Tabs} from '@mantine/core';
+import {Box, Button, Card, Group, Stack, Tabs, Text} from '@mantine/core';
 import {useFleetOptions} from '../../hooks/useDriverManagementApi';
 import {DriverManagementPageProps} from '../../types';
 import {DriverDetailsTab} from './components/DriverDetailsTab';
@@ -9,8 +9,6 @@ import {DriverComplianceTab} from './components/DriverComplianceTab';
 import {AfterHoursTab} from './components/AfterHoursTab';
 import {DriverEmailsTab} from './components/DriverEmailsTab';
 import {DriverEarningsTab} from './components/DriverEarningsTab';
-
-declare const ContactID: number;
 
 enum DriverManagementTabs {
     DriverDetails = 0,
@@ -47,7 +45,7 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
     setRefreshCallback,
 }) => {
     const [selectedTab, setSelectedTab] = useState<number>(getInitialTab);
-    const {data: fleetOptions = []} = useFleetOptions();
+    const {data: fleetOptions = [], isError: fleetOptionsFailed, refetch: refetchFleetOptions} = useFleetOptions();
 
     // Mantine's Tabs are keyed by string; the stored preference stays the numeric
     // index it has always been, so an existing localStorage value still resolves.
@@ -87,9 +85,16 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
                 </Tabs>
             </Card>
 
+            {fleetOptionsFailed && (
+                <Group gap={8} role="alert">
+                    <Text fz="sm" c="red">Couldn&apos;t load fleets, so the fleet filter is unavailable.</Text>
+                    <Button size="compact-sm" variant="subtle" onClick={() => refetchFleetOptions()}>Try again</Button>
+                </Group>
+            )}
+
             <Box style={{flex: 1, overflow: 'auto'}}>
                 {selectedTab === DriverManagementTabs.DriverDetails && (
-                    <DriverDetailsTab showToast={showToast} />
+                    <DriverDetailsTab />
                 )}
                 {selectedTab === DriverManagementTabs.TodayActive && (
                     <TodayActiveTab showToast={showToast} fleetOptions={fleetOptions} />

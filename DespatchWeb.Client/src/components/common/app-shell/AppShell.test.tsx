@@ -7,6 +7,10 @@ import React from 'react';
 import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
 import {AppShell} from './AppShell';
+import {useNavStyle} from '../../../hooks/useNavStyle';
+
+jest.mock('../../../hooks/useNavStyle', () => ({useNavStyle: jest.fn()}));
+const mockUseNavStyle = useNavStyle as jest.Mock;
 
 describe('AppShell', () => {
     const defaultProps = {
@@ -25,10 +29,31 @@ describe('AppShell', () => {
 
     beforeEach(() => {
         jest.useFakeTimers();
+        mockUseNavStyle.mockReturnValue({style: 'dispatch'});
     });
 
     afterEach(() => {
         jest.useRealTimers();
+    });
+
+    describe('Navigation style', () => {
+        it('renders the top bar and drawer for dispatch, with the page body beneath', () => {
+            renderWithMantine(<AppShell {...defaultProps} body={<p>page body</p>} />);
+
+            expect(screen.getByRole('button', {name: /navigation menu/i})).toBeInTheDocument();
+            expect(screen.queryByTestId('dfrnt-sidebar')).not.toBeInTheDocument();
+            expect(screen.getByText('page body')).toBeInTheDocument();
+        });
+
+        it('renders the sidebar shell and slim toolbar for dfrnt, with the page body in the page column', () => {
+            mockUseNavStyle.mockReturnValue({style: 'dfrnt'});
+            renderWithMantine(<AppShell {...defaultProps} body={<p>page body</p>} />);
+
+            expect(screen.getByTestId('dfrnt-sidebar')).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /navigation menu/i})).not.toBeInTheDocument();
+            expect(screen.getByRole('heading', {level: 1, name: 'Test Dashboard'})).toBeInTheDocument();
+            expect(screen.getByText('page body')).toBeInTheDocument();
+        });
     });
 
     describe('Rendering', () => {

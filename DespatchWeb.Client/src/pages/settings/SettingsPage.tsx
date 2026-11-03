@@ -47,6 +47,8 @@ import {toastService} from '../../services/toastService';
 import {registerUnsavedChangesGuard, type LeaveDecision} from '../../routes/unsavedChangesGuard';
 import {getSession} from '../../api/session';
 import {useCourierFlagLastDelivery} from '../../hooks/useCourierFlagLastDelivery';
+import {useNavStyle} from '../../hooks/useNavStyle';
+import {NAV_STYLE_CHOICES, type NavStyleChoice} from '../../services/navStylePreference';
 import {lastDeliveryChoiceOptions, type LastDeliveryChoice} from '../../services/courierFlagLastDeliveryPreference';
 
 const EMPTY_FORMAT: AddressLineFormat = {line1: [], line2: []};
@@ -64,6 +66,7 @@ export const SettingsPage: React.FC = () => {
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
     const isUsCustomer = getSession().isUsCustomer ?? false;
     const courierFlag = useCourierFlagLastDelivery(isUsCustomer);
+    const navStyle = useNavStyle();
     const [aiAutoOpen, setAiAutoOpenState] = useState<boolean>(isAiAutoOpenEnabled);
     const [aiChat, setAiChatState] = useState<boolean>(isAiChatEnabled);
     const [hideButtonEnabled, setHideButtonEnabledState] = useState<boolean>(isPanelHideButtonEnabled);
@@ -328,6 +331,17 @@ export const SettingsPage: React.FC = () => {
                             options={APPEARANCE_OPTIONS}
                             onChange={setColorPreference}
                         />
+
+                        <Box mt={16}>
+                            <SettingRadioGroup<NavStyleChoice>
+                                title="Navigation style"
+                                description="Choose the classic top bar with a menu drawer, or the DFRNT sidebar.
+                                    Your admin sets the company default."
+                                value={navStyle.userOverride ?? 'default'}
+                                options={NAV_STYLE_CHOICES}
+                                onChange={(choice) => void navStyle.saveOverride(choice === 'default' ? null : choice)}
+                            />
+                        </Box>
 
                         <Box mt={16}>
                             <SettingRow

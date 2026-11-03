@@ -366,24 +366,6 @@ describe('LayoutsMenu', () => {
         expect(screen.queryByLabelText('Rename Custom Layout 1')).not.toBeInTheDocument();
     });
 
-    it('should not render an Import V1 layouts entry without onImportLayouts', async () => {
-        renderWithMantine(<LayoutsMenu {...defaultProps} />);
-
-        fireEvent.click(screen.getByRole('button'));
-        expect(await screen.findByText('Add layout')).toBeInTheDocument();
-        expect(screen.queryByText('Import V1 layouts')).not.toBeInTheDocument();
-    });
-
-    it('should call onImportLayouts when Import V1 layouts is clicked', async () => {
-        const onImportLayouts = jest.fn();
-        renderWithMantine(<LayoutsMenu {...defaultProps} onImportLayouts={onImportLayouts} />);
-
-        fireEvent.click(screen.getByRole('button'));
-        fireEvent.click(await screen.findByText('Import V1 layouts'));
-
-        expect(onImportLayouts).toHaveBeenCalledTimes(1);
-    });
-
     it('should not render a Show/Hide Panels entry without onCustomizePanels', async () => {
         renderWithMantine(<LayoutsMenu {...defaultProps} />);
 

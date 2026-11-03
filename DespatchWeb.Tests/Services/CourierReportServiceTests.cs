@@ -175,15 +175,14 @@ public class CourierReportServiceTests
             new()
             {
                 Code = "C001", Name = "John Doe", ComplianceType = "Driver's License",
-                ItemNumber = "DL12345",
                 ExpiryDate = new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero),
-                Status = "Valid", DaysUntilExpiry = "117 days"
+                Status = "Valid", DaysUntilExpiry = 117
             },
             new()
             {
                 Code = "C002", Name = "Jane Smith", ComplianceType = "Insurance",
-                ItemNumber = "INS-789", ExpiryDate = null,
-                Status = "Not Set", DaysUntilExpiry = "\u2014"
+                ExpiryDate = null,
+                Status = "Not set", DaysUntilExpiry = null
             }
         };
 
@@ -198,7 +197,7 @@ public class CourierReportServiceTests
         // Assert
         var lines = GetCsvLines(fileBytes);
         Assert.Equal(3, lines.Length);
-        Assert.Equal("Code,Name,Type,Item/Number,Expiry Date,Status,Days Until Expiry", lines[0]);
+        Assert.Equal("Code,Name,Type,Expiry Date,Status,Days Until Expiry", lines[0]);
         Assert.Contains("C001", lines[1]);
         Assert.Contains("Driver's License", lines[1]);
         Assert.Contains("15/06/2026", lines[1]);
@@ -218,8 +217,8 @@ public class CourierReportServiceTests
             new()
             {
                 Code = "C001", Name = "Test", ComplianceType = "License",
-                ItemNumber = "123", ExpiryDate = null,
-                Status = "Not Set", DaysUntilExpiry = "\u2014"
+                ExpiryDate = null,
+                Status = "Not set", DaysUntilExpiry = null
             }
         };
 
@@ -234,7 +233,7 @@ public class CourierReportServiceTests
         // Assert
         var lines = GetCsvLines(fileBytes);
         var fields = lines[1].Split(',');
-        Assert.Empty(fields[4]);
+        Assert.Empty(fields[3]);
     }
 
     [Fact]
@@ -252,7 +251,7 @@ public class CourierReportServiceTests
         // Assert
         var lines = GetCsvLines(fileBytes);
         Assert.Single(lines);
-        Assert.Equal("Code,Name,Type,Item/Number,Expiry Date,Status,Days Until Expiry", lines[0]);
+        Assert.Equal("Code,Name,Type,Expiry Date,Status,Days Until Expiry", lines[0]);
     }
 
     [Fact]
@@ -490,12 +489,12 @@ public class CourierReportServiceTests
         {
             new()
             {
-                CourierId = 1, Name = "John Doe", HoursLogged = 7.5, Deliveries = 12, Earnings = 250.75m,
+                CourierId = 1, Name = "John Doe", MinutesLogged = 450, Deliveries = 12, Earnings = 250.75m,
                 HourlyRate = 33.43m
             },
             new()
             {
-                CourierId = 2, Name = "Jane Smith", HoursLogged = 4.0, Deliveries = 5, Earnings = 120.00m,
+                CourierId = 2, Name = "Jane Smith", MinutesLogged = 240, Deliveries = 5, Earnings = 120.00m,
                 HourlyRate = 30.00m
             }
         };
@@ -526,7 +525,7 @@ public class CourierReportServiceTests
         {
             new()
             {
-                CourierId = 1, Name = "New Driver", HoursLogged = 0, Deliveries = 0, Earnings = 0m, HourlyRate = 0m
+                CourierId = 1, Name = "New Driver", MinutesLogged = 0, Deliveries = 0, Earnings = 0m, HourlyRate = 0m
             }
         };
 

@@ -72,13 +72,13 @@ describe('driverManagementApi', () => {
             mockApiClient.post.mockResolvedValueOnce(mockResponse);
 
             const query = {page: 1, pageSize: 50, orderBy: 'code', sortDescending: false, searchTerm: 'test'};
-            const filters = {type: 'insurance', status: 'expired', fleet: 2};
+            const filters = {type: 'wof' as const, status: 'expired' as const, fleet: 2};
 
             const result = await driverManagementApi.getCourierComplianceList(query, filters);
 
             expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetCourierComplianceList', {
                 page: 1, pageSize: 50, orderBy: 'code', sortDescending: false, searchTerm: 'test',
-                type: 'insurance', status: 'expired', fleet: 2,
+                type: 'wof', status: 'expired', fleet: 2,
             }, undefined);
             expect(result).toEqual(mockResponse);
         });
@@ -89,35 +89,20 @@ describe('driverManagementApi', () => {
             mockApiClient.post.mockRejectedValueOnce(error);
             await expect(driverManagementApi.getCourierComplianceList(
                 {page: 1, pageSize: 10, orderBy: 'code', sortDescending: false},
-                {type: 'all', status: 'all', fleet: 0}
+                {type: '' as const, status: '' as const, fleet: 0}
             )).rejects.toEqual(error);
         });
     });
 
-    describe('sendComplianceReminder', () => {
-        it('should map item.complianceType to type in body', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
+    describe('sendComplianceReminders', () => {
+        it('should post the request body unchanged and return the result', async () => {
+            mockApiClient.post.mockResolvedValueOnce({recipients: 2, sent: 2, nothingDue: 1, failed: 0, failures: [], maxRecipients: 200});
 
-            const item = {courierId: 1, code: 'JS01', name: 'John', complianceType: 'insurance', itemNumber: '123', status: 'expired', daysUntilExpiry: '-5'};
-            await driverManagementApi.sendComplianceReminder(item);
+            const request = {courierIds: [1, 2], channel: 2 as const};
+            const result = await driverManagementApi.sendComplianceReminders(request);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('courier/SendComplianceReminder', {
-                code: 'JS01',
-                type: 'insurance',
-            });
-        });
-    });
-
-    describe('sendBulkComplianceReminders', () => {
-        it('should send items array in body', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-
-            const items = [
-                {courierId: 1, code: 'JS01', name: 'John', complianceType: 'insurance', itemNumber: '123', status: 'expired', daysUntilExpiry: '-5'},
-            ];
-            await driverManagementApi.sendBulkComplianceReminders(items);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith('courier/SendBulkComplianceReminders', {items});
+            expect(mockApiClient.post).toHaveBeenCalledWith('courier/SendComplianceReminders', request, undefined);
+            expect(result).toEqual({recipients: 2, sent: 2, nothingDue: 1, failed: 0, failures: [], maxRecipients: 200});
         });
     });
 
@@ -187,13 +172,13 @@ describe('driverManagementApi', () => {
             mockApiClient.post.mockResolvedValueOnce(mockResponse);
 
             const query = {page: 1, pageSize: 100, orderBy: 'name', sortDescending: false, searchTerm: ''};
-            const filters = {location: 'auckland', status: 'active', fleet: 3};
+            const filters = {status: 'active' as const, fleet: 3};
 
             const result = await driverManagementApi.getTodayActiveDrivers(query, filters);
 
             expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetTodayActiveDrivers', {
                 page: 1, pageSize: 100, orderBy: 'name', sortDescending: false, searchTerm: '',
-                location: 'auckland', status: 'active', fleet: 3,
+                status: 'active', fleet: 3,
             }, undefined);
             expect(result).toEqual(mockResponse);
         });
@@ -262,7 +247,7 @@ describe('driverManagementApi', () => {
             mockApiClient.postForBlob.mockResolvedValueOnce(mockResponse);
 
             const query = {page: 1, pageSize: 100, orderBy: 'name', sortDescending: false};
-            const filters = {location: 'all', status: 'all', fleet: 0};
+            const filters = {status: 'all' as const, fleet: 0};
             await driverManagementApi.exportTodayActiveDriversCsv(query, filters);
 
             expect(mockApiClient.postForBlob).toHaveBeenCalledWith('courier/ExportTodayActiveDriversCsv', {
@@ -279,7 +264,7 @@ describe('driverManagementApi', () => {
             mockApiClient.postForBlob.mockResolvedValueOnce(mockResponse);
 
             const query = {page: 1, pageSize: 100, orderBy: 'code', sortDescending: false};
-            const filters = {type: 'all', status: 'all', fleet: 0};
+            const filters = {type: '' as const, status: '' as const, fleet: 0};
             await driverManagementApi.exportComplianceCsv(query, filters);
 
             expect(mockApiClient.postForBlob).toHaveBeenCalledWith('courier/ExportComplianceCsv', {

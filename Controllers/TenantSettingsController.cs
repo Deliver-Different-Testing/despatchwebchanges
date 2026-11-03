@@ -42,6 +42,20 @@ public class TenantSettingsController(ITenantSettingsService tenantSettingsServi
         }
     }
 
+    public async Task<IActionResult> GetNavStyleDefault()
+    {
+        try
+        {
+            var style = await tenantSettingsService.GetNavStyleDefaultAsync();
+            return Json(style);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error getting tenant navigation style default: {Error}", e.Message);
+            return StatusCode(500, e.Message);
+        }
+    }
+
     public async Task<IActionResult> GetAppearanceDefault()
     {
         try

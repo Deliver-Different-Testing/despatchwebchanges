@@ -1766,13 +1766,13 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllCourierComplianceAsync(
             new CourierComplianceFilterRequest { Page = 1, PageSize = 50 });
 
-        // Assert - only the active courier is returned and counted
-        var item = Assert.Single(result.Items);
-        Assert.Equal("ACTIVE01", item.Code);
+        // Assert - only the active courier is returned and counted (no vehicle on record, so licence only)
+        Assert.All(result.Items, item => Assert.Equal("ACTIVE01", item.Code));
         Assert.Equal(1, result.Total);
         Assert.Equal(1, result.TotalValid);
         Assert.Equal(0, result.TotalExpired);
         Assert.Equal(0, result.TotalExpiringSoon);
+        Assert.Equal(0, result.TotalNotSet);
     }
 
     [Fact]
@@ -1787,8 +1787,8 @@ public class CourierRepositoryTests : IAsyncDisposable
             new CourierComplianceFilterRequest());
 
         // Assert - only the active courier is exported
-        var item = Assert.Single(result);
-        Assert.Equal("ACTIVE01", item.Code);
+        Assert.Equal(1, result.Count);
+        Assert.All(result, item => Assert.Equal("ACTIVE01", item.Code));
     }
 
     [Fact]

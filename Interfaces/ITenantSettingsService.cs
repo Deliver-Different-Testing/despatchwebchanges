@@ -22,6 +22,12 @@ public interface ITenantSettingsService
     Task<string?> GetCourierFlagLastDeliveryDefaultAsync();
 
     /// <summary>
+    /// Returns the tenant's default navigation style (<c>dispatch</c> or <c>dfrnt</c>), or null when
+    /// unconfigured or holding any other value.
+    /// </summary>
+    Task<string?> GetNavStyleDefaultAsync();
+
+    /// <summary>
     /// Returns the tenant's default appearance (JSON: contrast level plus optional primary,
     /// secondary and body-text colours), or null when unconfigured. Validated client-side.
     /// </summary>

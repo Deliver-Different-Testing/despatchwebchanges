@@ -15,7 +15,7 @@ export const AutoMateChatButton: React.FC = () => {
             <ActionIcon
                 onClick={toggle}
                 aria-label="Open Auto-mate assistant"
-                variant="default"
+                variant="filled"
                 radius="xl"
                 size={56}
                 style={{
@@ -26,7 +26,7 @@ export const AutoMateChatButton: React.FC = () => {
                     zIndex: AUTO_MATE_CHAT_BUTTON_Z_INDEX,
                 }}
             >
-                <AutoMateLogo size={28}/>
+                <AutoMateLogo variant="mono" size={32}/>
             </ActionIcon>
         </Tooltip>
     );

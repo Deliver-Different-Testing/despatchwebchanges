@@ -1,4 +1,6 @@
 using DespatchWeb.Controllers;
+using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
@@ -16,13 +18,15 @@ public class CourierControllerTests
     private readonly ITenantInfoService _tenantInfoService = Substitute.For<ITenantInfoService>();
     private readonly ITaskRepository _taskRepository = Substitute.For<ITaskRepository>();
     private readonly ICourierReportService _courierReportService = Substitute.For<ICourierReportService>();
+    private readonly IComplianceReminderService _complianceReminderService = Substitute.For<IComplianceReminderService>();
 
     private CourierController CreateController() =>
         new(
             _courierRepository,
             _tenantInfoService,
             _taskRepository,
-            _courierReportService);
+            _courierReportService,
+            _complianceReminderService);
 
     [Fact]
     public async Task Index_NoDespatchViews_ReturnsEmptyClearListWithoutQuerying()
@@ -776,5 +780,69 @@ public class CourierControllerTests
         await _courierRepository
             .Received(1)
             .GetCourierDailyEarningsAsync(Arg.Is<PaginatedRequest>(r => r!.SortDescending == true));
+    }
+
+    [Fact]
+    public async Task GetCourierComplianceList_InvalidListQuery_ReturnsBadRequest()
+    {
+        var request = new CourierComplianceFilterRequest { OrderBy = "bogus" };
+        _courierRepository.GetAllCourierComplianceAsync(request)
+            .ThrowsAsync(new InvalidListQueryException("Unknown sort key"));
+
+        var result = await CreateController().GetCourierComplianceList(request);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Unknown sort key", bad.Value);
+    }
+
+    [Fact]
+    public async Task ExportDriverEarningsCsv_InvalidListQuery_ReturnsBadRequest()
+    {
+        var request = new PaginatedRequest { OrderBy = "bogus" };
+        _courierReportService.GenerateDriverEarningsCsvAsync(request)
+            .ThrowsAsync(new InvalidListQueryException("Unknown sort key"));
+
+        var result = await CreateController().ExportDriverEarningsCsv(request);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task SendComplianceReminders_NeitherOrBothTargets_ReturnsBadRequest()
+    {
+        var controller = CreateController();
+
+        Assert.IsType<BadRequestObjectResult>(await controller.SendComplianceReminders(
+            new SendComplianceRemindersRequest { Channel = MessageDeliveryType.App }));
+        Assert.IsType<BadRequestObjectResult>(await controller.SendComplianceReminders(
+            new SendComplianceRemindersRequest
+            {
+                CourierIds = [1], Filter = new ComplianceReminderFilter(), Channel = MessageDeliveryType.App
+            }));
+        await _complianceReminderService.DidNotReceiveWithAnyArgs().SendAsync(null!);
+    }
+
+    [Fact]
+    public async Task SendComplianceReminders_Valid_ReturnsResult()
+    {
+        var request = new SendComplianceRemindersRequest { CourierIds = [1, 2], Channel = MessageDeliveryType.Sms };
+        var expected = new ComplianceReminderResult(1, 1, 1, 0, [], 200);
+        _complianceReminderService.SendAsync(request).Returns(expected);
+
+        var result = await CreateController().SendComplianceReminders(request);
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expected, json.Value);
+    }
+
+    [Fact]
+    public async Task SendComplianceReminders_InvalidChannel_ReturnsBadRequest()
+    {
+        var request = new SendComplianceRemindersRequest { CourierIds = [1], Channel = 0 };
+        _complianceReminderService.SendAsync(request).ThrowsAsync(new InvalidListQueryException("channel"));
+
+        var result = await CreateController().SendComplianceReminders(request);
+
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 }
