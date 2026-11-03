@@ -156,8 +156,19 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
             // Ignore localStorage errors
         }
 
-        // The parent already restored the applied custom range; emitting here would overwrite it.
-        if (option === 'custom_date') return;
+        // The parent already restored the applied range; emitting here would overwrite it.
+        if (option === 'custom_date') {
+            // An epoch start is "all time" (see customDateDraft), so the radio follows what the page fetches.
+            if (dateFilterData?.startDate.valueOf() === 0) {
+                setSelectedRangeOption('all_time');
+                try {
+                    localStorage.setItem(storageKey, 'all_time');
+                } catch {
+                    // Ignore
+                }
+            }
+            return;
+        }
 
         // Compute and emit initial dates so the job list fetches with the correct range
         const defaults = setDateFilterDefaults(ianaTimeZone);
@@ -280,15 +291,12 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                 newEndDate = dayjs().tz(ianaTimeZone).endOf('day');
                 break;
 
-            case 'custom_date':
-                // Keep current dates or set reasonable defaults
-                if (!startDate || startDate.valueOf() === 0) {
-                    newStartDate = dayjs().tz(ianaTimeZone).subtract(7, 'days');
-                }
-                if (!endDate || endDate.valueOf() === 0) {
-                    newEndDate = dayjs().tz(ianaTimeZone);
-                }
+            case 'custom_date': {
+                const draft = customDateDraft({startDate, endDate}, ianaTimeZone);
+                newStartDate = draft.startDate;
+                newEndDate = draft.endDate;
                 break;
+            }
 
             case 'custom_minutes':
                 newStartDate = defaults.startDate;

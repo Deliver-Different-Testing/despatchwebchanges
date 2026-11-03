@@ -10,6 +10,8 @@ import timezone from 'dayjs/plugin/timezone';
 import {DateFilterData, DateFilterMenu} from './DateFilterMenu';
 import {renderWithMantine} from '../../../test/utils';
 import {getInputDateFormat} from '../../../utils/dateUtils';
+import {loadDateFilterFrom} from '../../../utils/dateFilterStorage';
+import {useDateFilter} from '../../../hooks/useDateFilter';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -444,7 +446,7 @@ describe('DateFilterMenu', () => {
             expect(screen.getByLabelText('End date')).toHaveValue(persisted.endDate.format(format));
         });
 
-        it('should fall back to the last 7 days when the saved option is custom_date but no range is stored', async () => {
+        it('should fall back to All time when the saved option is custom_date but no range is stored', async () => {
             localStorage.setItem('dateRangeOption-initCustomAllTime', 'custom_date');
             const onRefreshData = jest.fn();
 
@@ -457,13 +459,48 @@ describe('DateFilterMenu', () => {
             );
 
             expect(onRefreshData).not.toHaveBeenCalled();
+            expect(localStorage.getItem('dateRangeOption-initCustomAllTime')).toBe('all_time');
 
             openMenu();
+            expect(await screen.findByLabelText('All time')).toBeChecked();
+
+            await selectOption('Custom dates');
 
             const format = getInputDateFormat();
             const now = dayjs().tz('Pacific/Auckland');
             expect(await screen.findByLabelText('Start date')).toHaveValue(now.subtract(7, 'days').format(format));
             expect(screen.getByLabelText('End date')).toHaveValue(now.format(format));
+        });
+
+        it('should keep the page-persisted custom range across a reload', async () => {
+            const rangeKey = 'dateFilter-reload-test';
+            const start = dayjs('2026-10-01');
+            const end = dayjs('2026-10-15');
+            localStorage.setItem('dateRangeOption-reload', 'custom_date');
+            localStorage.setItem(rangeKey, JSON.stringify({startDate: start, endDate: end, useTime: false}));
+            const stored = localStorage.getItem(rangeKey);
+
+            const Page = () => {
+                const [filter, setFilter] = useDateFilter(rangeKey, () => loadDateFilterFrom(rangeKey));
+                return (
+                    <DateFilterMenu
+                        dateFilterData={filter}
+                        appPage="reload"
+                        onRefreshData={(next) => setFilter({...next, useTime: next.useTime ?? false})}
+                    />
+                );
+            };
+
+            renderWithProviders(<Page/>).unmount();
+            renderWithProviders(<Page/>);
+
+            expect(localStorage.getItem(rangeKey)).toBe(stored);
+
+            openMenu();
+
+            const format = getInputDateFormat();
+            expect(await screen.findByLabelText('Start date')).toHaveValue(start.format(format));
+            expect(screen.getByLabelText('End date')).toHaveValue(end.format(format));
         });
 
         it('should only call onRefreshData once on mount (not on re-renders)', () => {
