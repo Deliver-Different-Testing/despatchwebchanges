@@ -1,5 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -335,15 +336,17 @@ public class NoteRepository(
     public async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
 
     // Helper Methods
-    private async Task<int> GetEffectiveJobId(int jobId, bool isArchived)
-    {
-        if (isArchived)
-        {
-            return await Context.GetEffectiveArchiveJobIdAsync(jobId);
-        }
+    private async Task<int?> FindEffectiveJobId(int jobId, bool isArchived) =>
+        isArchived
+            ? await Context.GetEffectiveExistingArchiveJobIdAsync(jobId)
+            : await Context.GetEffectiveExistingJobIdAsync(jobId);
 
-        return await Context.GetEffectiveJobIdAsync(jobId);
-    }
+    private async Task<int> GetEffectiveJobId(int jobId, bool isArchived) =>
+        await FindEffectiveJobId(jobId, isArchived) ?? 0;
+
+    private async Task<int> GetEffectiveJobIdForWrite(int jobId, bool isArchived) =>
+        await FindEffectiveJobId(jobId, isArchived)
+        ?? throw new JobNotFoundException($"Job {jobId} was not found, so the note could not be saved.");
 
     // Note Create/Update Operations
     private async Task CreateNoteAsync(TucNoteViewModel viewModel, int? staffId, DateTime currentTime,
@@ -360,7 +363,7 @@ public class NoteRepository(
             archivedNote.UpdatedDateUtc = clock.UtcNow;
             archivedNote.CreatedBy = staffId;
 
-            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, true);
+            var effectiveJobId = await GetEffectiveJobIdForWrite(viewModel.JobId.Value, true);
             archivedNote.JobId = effectiveJobId;
 
             await Context.TucNoteArchives.AddAsync(archivedNote, cancellationToken);
@@ -404,7 +407,7 @@ public class NoteRepository(
 
             // Use the effective job ID (parent if exists) so the note is found by
             // GetActiveNotesByJobIdAsync which also resolves to the parent.
-            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+            var effectiveJobId = await GetEffectiveJobIdForWrite(viewModel.JobId.Value, false);
             activeNote.JobId = effectiveJobId;
         }
 
@@ -455,7 +458,7 @@ public class NoteRepository(
             archivedNote.UpdatedDateUtc = clock.UtcNow;
             archivedNote.UpdatedBy = staffId;
 
-            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, true);
+            var effectiveJobId = await GetEffectiveJobIdForWrite(viewModel.JobId.Value, true);
             archivedNote.JobId = effectiveJobId;
 
             Context.TucNoteArchives.Update(archivedNote);
@@ -494,7 +497,7 @@ public class NoteRepository(
                 throw new ArgumentNullException(nameof(viewModel));
             }
 
-            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+            var effectiveJobId = await GetEffectiveJobIdForWrite(viewModel.JobId.Value, false);
             activeNote.JobId = effectiveJobId;
         }
 
@@ -541,7 +544,9 @@ public class NoteRepository(
         var notes = await Context.GetActiveNotesByJobIdAsync(effectiveJobId);
         if (notes.Count == 0)
         {
-            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, false);
+            // The family root, even when it has moved to the archive, is where the booking-time note lives
+            var familyRootId = await Context.GetEffectiveJobIdAsync(jobId);
+            var fallback = await BuildUcjbNotesFallbackAsync(jobId, familyRootId, false);
             if (fallback != null)
             {
                 return [fallback];
@@ -563,7 +568,8 @@ public class NoteRepository(
         var notes = await query.ToListAsync();
         if (notes.Count == 0)
         {
-            var fallback = await BuildUcjbNotesFallbackAsync(jobId, effectiveJobId, true);
+            var familyRootId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+            var fallback = await BuildUcjbNotesFallbackAsync(jobId, familyRootId, true);
             if (fallback != null)
             {
                 return [fallback];
