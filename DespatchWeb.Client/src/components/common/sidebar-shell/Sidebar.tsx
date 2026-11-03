@@ -1,14 +1,12 @@
 /**
  * DFRNT left sidebar: a solid Ink panel (never glass, never the tenant primary), logo + company
- * header, route-table sections, Settings below a divider, then the colour-mode switcher, the
- * collapse toggle and the identity card. Collapsed, it is a 72px icon rail with tooltips.
+ * header, route-table sections, Settings below a divider, then the colour-mode switcher and the
+ * identity card. Collapsed, it is a 72px icon rail with tooltips; the toggle lives in the app bar.
  * Ported from the brand skill's `assets/sidebar`, flattened to Despatch's route list.
  */
 
 import React from 'react';
 import {Avatar, Badge, Box, Divider, Group, Image, NavLink, ScrollArea, Stack, Text, Tooltip, UnstyledButton} from '@mantine/core';
-import {ChevronsLeft, ChevronsRight} from 'lucide-react';
-import {Icon} from '../icon/Icon';
 import {ColorModeSwitcher} from '../side-nav/ColorModeSwitcher';
 import type {NavItem} from '../side-nav/SideNav.types';
 import {onBrandScrim, sideMenuColors as shell} from '../../../theme/dfrntMantineTheme';
@@ -27,8 +25,6 @@ export interface SidebarProps {
     settingsItem: NavItem;
     currentState: string;
     collapsed: boolean;
-    /** Omitted when the rail is forced (small screens), which hides the toggle. */
-    onToggleCollapsed?: () => void;
     onNavigate: (state: string) => void;
     onLogoClick?: () => void;
     userName: string;
@@ -59,7 +55,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     settingsItem,
     currentState,
     collapsed,
-    onToggleCollapsed,
     onNavigate,
     onLogoClick,
     userName,
@@ -93,8 +88,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </Tooltip>
         ) : link;
     };
-
-    const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
 
     return (
         <Box
@@ -208,22 +201,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
             </Group>
 
-            {onToggleCollapsed && (
-                <Box px={12} pb={12} style={{flexShrink: 0, display: 'flex', justifyContent: collapsed ? 'center' : 'flex-end'}}>
-                    <Tooltip label={toggleLabel} position="right" withArrow openDelay={200}>
-                        <UnstyledButton
-                            onClick={onToggleCollapsed}
-                            aria-label={toggleLabel}
-                            aria-expanded={!collapsed}
-                            c={shell.textSecondary}
-                            p={6}
-                            style={{display: 'flex', borderRadius: 8}}
-                        >
-                            <Icon lucide={collapsed ? ChevronsRight : ChevronsLeft} size={18} />
-                        </UnstyledButton>
-                    </Tooltip>
-                </Box>
-            )}
         </Box>
     );
 };
