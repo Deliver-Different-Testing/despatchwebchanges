@@ -133,7 +133,7 @@ public sealed class AiInsightsService(
 
     private string RegionContext => tenantInfo.IsUsTenant()
         ? "a US-based courier dispatch company"
-        : "a New Zealand courier dispatch company";
+        : tenantInfo.IsAuTenant() ? "an Australian courier dispatch company" : "a New Zealand courier dispatch company";
 
     public async Task<ExtractBlockersResponse> ExtractBlockersAsync(int jobId, CancellationToken ct = default)
     {

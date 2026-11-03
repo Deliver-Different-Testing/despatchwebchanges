@@ -17,4 +17,5 @@ public sealed record SessionContextDto(
     bool IsNetworkPartner,
     string[]? VisibleFeatures,
     MapCentre? NpMapCenter,
-    string? HubUrl);
+    string? HubUrl,
+    MapCentre? TenantMapCenter = null);

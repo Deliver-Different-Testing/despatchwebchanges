@@ -16,11 +16,12 @@ public sealed class AddressLookupService(
     private static readonly string[] StringArray = ["categoryQuery", "chainQuery"];
     private const string UsCoordinates = "37.09024,-95.712891";
     private const string NzCoordinates = "-40.900557,174.885971";
+    private const string AuCoordinates = "-25.274398,133.775136";
     private static readonly JsonSerializerOptions CaseInsensitiveJsonOptions = new() { PropertyNameCaseInsensitive = true };
     
     /// <summary>
     /// Searches for address suggestions based on partial text input using HERE Maps autosuggest API.
-    /// Filters results by tenant country (US or NZ) and excludes category/chain queries.
+    /// Filters results by tenant country (US, AU or NZ) and excludes category/chain queries.
     /// </summary>
     /// <param name="text">The partial address text to search for (minimum 3 characters).</param>
     /// <returns>A list of matching location results with address labels and coordinates.</returns>
@@ -34,14 +35,15 @@ public sealed class AddressLookupService(
         try
         {
             var isUsTenant = infoService.IsUsTenant();
+            var isAuTenant = infoService.IsAuTenant();
             var queryParams = new Dictionary<string, string>
             {
                 ["q"] = text,
                 ["apiKey"] = _hereMapsApiKey,
                 ["at"] = isUsTenant
                     ? UsCoordinates
-                    : NzCoordinates,
-                ["in"] = $"countryCode:{(isUsTenant ? "USA" : "NZL")}",
+                    : isAuTenant ? AuCoordinates : NzCoordinates,
+                ["in"] = $"countryCode:{(isUsTenant ? "USA" : isAuTenant ? "AUS" : "NZL")}",
                 ["limit"] = "15"
             };
 

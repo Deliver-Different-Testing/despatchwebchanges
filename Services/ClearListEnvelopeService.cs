@@ -42,7 +42,7 @@ public sealed class ClearListEnvelopeService(
     /// Calculates the bounding envelope (min/max lat/long) for a clear list area, optionally including courier and job positions.
     /// </summary>
     /// <param name="clearListAreaId">The ID of the clear list area.</param>
-    /// <param name="country">The country (NZ or US) to determine which polygon/location strategy to use.</param>
+    /// <param name="country">The country (NZ, US or AU) to determine which polygon/location strategy to use.</param>
     /// <param name="includeCouriers">Whether to include courier and unassigned job locations in the envelope calculation.</param>
     /// <returns>The bounding envelope with min/max coordinates.</returns>
     public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
@@ -64,6 +64,7 @@ public sealed class ClearListEnvelopeService(
         {
             Country.Nz => await GetClearListEnvelopeNzAsync(clearListAreaId, includeCouriers),
             Country.Us => await GetClearListEnvelopeUsAsync(clearListAreaId, includeCouriers),
+            Country.Au => await GetClearListEnvelopeAuAsync(clearListAreaId, includeCouriers),
             _ => throw new ArgumentOutOfRangeException(nameof(country), country, null)
         };
     }
@@ -90,6 +91,33 @@ public sealed class ClearListEnvelopeService(
             .Concat(unassignedJobLocationsQuery);
 
         return await CalculateEnvelopeAsync(query);
+    }
+
+    /// <summary>
+    /// Calculates the envelope for an AU clear list area. The area is a set of postcodes (ZipPolygon) like the US, but a
+    /// geocoded AU address never sits exactly on a zip's centre point, so jobs are placed by their delivery postcode.
+    /// </summary>
+    private async Task<ClearListEnvelopeViewModel> GetClearListEnvelopeAuAsync(
+        int clearListAreaId,
+        bool includeCouriers)
+    {
+        // Three small queries combined in memory: a SQL UNION over these navigation-shaped queries does not translate
+        var coordinates = await GetClearListAreaBoundariesQuery(clearListAreaId).ToListAsync();
+
+        if (includeCouriers)
+        {
+            coordinates.AddRange(await GetCourierAndJobLocationsAuAsync(clearListAreaId));
+        }
+
+        return coordinates.Count == 0
+            ? new ClearListEnvelopeViewModel()
+            : new ClearListEnvelopeViewModel
+            {
+                MinimumLongitude = coordinates.Min(x => x.Longitude),
+                MinimumLatitude = coordinates.Min(x => x.Latitude),
+                MaximumLongitude = coordinates.Max(x => x.Longitude),
+                MaximumLatitude = coordinates.Max(x => x.Latitude)
+            };
     }
 
     /// <summary>
@@ -172,6 +200,59 @@ public sealed class ClearListEnvelopeService(
                         Longitude = (decimal)jt.DeliveryLongitude,
                         Latitude = (decimal)jt.DeliveryLatitude
                     })));
+
+    /// <summary>
+    /// AU: GPS positions of logged-in couriers on the area's channel who have an active job delivering to one of the area's
+    /// postcodes, plus the delivery coordinates of unassigned jobs delivering to them. AU postcodes are 4 digits; jobs booked
+    /// under the old US zip padding hold them as 5 (02000), so both forms are matched.
+    /// Plain filters over a postcode list rather than the nested joins the US version uses.
+    /// </summary>
+    private async Task<List<EnvelopeCoordinate>> GetCourierAndJobLocationsAuAsync(int clearListAreaId)
+    {
+        var channelId = await Context.TblClearListAreas
+            .Where(area => area.ClearListAreaId == clearListAreaId)
+            .Select(area => (int?)area.ChannelId)
+            .FirstOrDefaultAsync();
+
+        var zips = await Context.TblClearListAreaPolygons
+            .Where(polygon => polygon.ClearListAreaId == clearListAreaId && polygon.ZipPolygonId != null)
+            .Select(polygon => polygon.ZipPolygon.Zip)
+            .ToListAsync();
+
+        if (channelId == null || zips.Count == 0)
+        {
+            return [];
+        }
+
+        var postcodes = zips.Concat(zips.Select(zip => "0" + zip)).ToList();
+        var currentDate = clock.TenantNow;
+
+        var couriers = await Context.TucCouriers
+            .Where(courier => courier.UccrChannelId == channelId &&
+                              courier.CourierGps != null &&
+                              courier.CourierLogInOut.LogInTime <= currentDate &&
+                              courier.CourierLogInOut.LogOutTime == null &&
+                              courier.TucJobUcjbCouriers.Any(job => !job.UcjbJobDone && !job.UcjbVoid &&
+                                                                    postcodes.Contains(job.DeliveryAddressLine7)))
+            .Select(courier => new EnvelopeCoordinate
+            {
+                Longitude = (decimal)courier.CourierGps.Longitude,
+                Latitude = (decimal)courier.CourierGps.Latitude
+            })
+            .ToListAsync();
+
+        var unassignedJobs = await Context.TucJobs
+            .Where(job => !job.UcjbJobDone && !job.UcjbVoid && job.UcjbCourierId == null &&
+                          postcodes.Contains(job.DeliveryAddressLine7))
+            .Select(job => new EnvelopeCoordinate
+            {
+                Longitude = (decimal)job.DeliveryLongitude,
+                Latitude = (decimal)job.DeliveryLatitude
+            })
+            .ToListAsync();
+
+        return [.. couriers, .. unassignedJobs];
+    }
 
     /// <summary>
     /// Gets the polygon GPS coordinates for a NZ clear list area.

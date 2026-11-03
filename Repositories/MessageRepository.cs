@@ -237,7 +237,7 @@ public class MessageRepository(
 
                 if (!string.IsNullOrWhiteSpace(mobileNumber))
                 {
-                    message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
+                    message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant, infoService.IsAuTenant());
                 }
 
                 if (deliveryMethod == MessageDeliveryType.App)
@@ -434,7 +434,7 @@ public class MessageRepository(
 
         if (!string.IsNullOrWhiteSpace(mobileNumber))
         {
-            message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
+            message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant, infoService.IsAuTenant());
         }
 
         if (deliveryMethod == MessageDeliveryType.App)
@@ -473,7 +473,7 @@ public class MessageRepository(
             _ => throw new ArgumentException($"Invalid message type: {messageType}", nameof(messageType))
         };
 
-    private static string NormalizeMobileNumber(string phoneNumber, bool isUsTenant)
+    internal static string NormalizeMobileNumber(string phoneNumber, bool isUsTenant, bool isAuTenant = false)
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))
         {
@@ -482,7 +482,12 @@ public class MessageRepository(
 
         var normalized = phoneNumber.Replace(" ", string.Empty);
 
-        return isUsTenant ? normalized.Replace("+1", string.Empty) : normalized.Replace("+64", "0");
+        if (isUsTenant)
+        {
+            return normalized.Replace("+1", string.Empty);
+        }
+
+        return normalized.Replace(isAuTenant ? "+61" : "+64", "0");
     }
 
     private class CourierDataDto

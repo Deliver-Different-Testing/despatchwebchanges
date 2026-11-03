@@ -44,7 +44,7 @@ public class CourierController(
     {
         try
         {
-            var country = infoService.IsUsTenant() ? Country.Us : Country.Nz;
+            var country = infoService.IsUsTenant() ? Country.Us : infoService.IsAuTenant() ? Country.Au : Country.Nz;
             var result = await courierRepository.GetClearListAreaEnvelopeAsync(clearListId, country);
             return Json(result);
         }

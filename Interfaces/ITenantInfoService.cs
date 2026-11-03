@@ -22,6 +22,9 @@ public interface ITenantInfoService : IDisposable
     int GetContactId();
     bool IsUsTenant();
 
+    /// <summary>True when the tenant's country code is "AU".</summary>
+    bool IsAuTenant();
+
     /// <summary>
     /// tucClient.ClientTypeId for the logged-in user, stamped on the JWT at
     /// Hub login (Phase 5+ data-scope). 1=Internal, 2=Customer, 3=NetworkPartner,
