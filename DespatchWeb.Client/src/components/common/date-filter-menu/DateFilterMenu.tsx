@@ -101,6 +101,15 @@ function setDateFilterDefaults(ianaTimeZone: string): DateFilterData {
     };
 }
 
+/** An epoch start is "all time", which is no custom range, so offer the last week instead. */
+function customDateDraft(committed: DateFilterData | null, ianaTimeZone: string): DateFilterData {
+    if (committed && committed.startDate.valueOf() !== 0) {
+        return {startDate: committed.startDate, endDate: committed.endDate};
+    }
+    const now = dayjs().tz(ianaTimeZone);
+    return {startDate: now.subtract(7, 'days'), endDate: now};
+}
+
 export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                                                   dateFilterData,
                                                                   appPage = 'default',
@@ -147,6 +156,9 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
             // Ignore localStorage errors
         }
 
+        // The parent already restored the applied custom range; emitting here would overwrite it.
+        if (option === 'custom_date') return;
+
         // Compute and emit initial dates so the job list fetches with the correct range
         const defaults = setDateFilterDefaults(ianaTimeZone);
         let initStart: Dayjs;
@@ -163,11 +175,6 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                 initEnd = dayjs().tz(ianaTimeZone).add(selectedMinsOption, 'seconds');
                 useTime = true;
                 startMinsUpdate(selectedMinsOption);
-                break;
-            case 'custom_date':
-                // For custom dates, use whatever is already in state (defaults)
-                initStart = startDate;
-                initEnd = endDate;
                 break;
             case 'all_time':
             default:
@@ -207,6 +214,11 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         // The trigger sits inside AngularJS chrome that also listens for clicks.
         event.preventDefault();
         event.stopPropagation();
+        if (!opened && selectedRangeOption === 'custom_date') {
+            const draft = customDateDraft(dateFilterData, ianaTimeZone);
+            setStartDate(draft.startDate);
+            setEndDate(draft.endDate);
+        }
         setOpened((prev) => !prev);
     };
 
@@ -330,8 +342,14 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         setEndDate(defaults.endDate);
         setSelectedRangeOption('all_time');
 
+        try {
+            localStorage.setItem(storageKey, 'all_time');
+        } catch {
+            // Ignore
+        }
+
         onRefreshData(defaults);
-    }, [ianaTimeZone, stopMinsUpdate, onRefreshData]);
+    }, [ianaTimeZone, stopMinsUpdate, storageKey, onRefreshData]);
 
     const handleApply = useCallback(() => {
         if (startDate.isAfter(endDate)) {
