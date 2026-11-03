@@ -9,43 +9,18 @@
 import React, {useMemo, useCallback} from 'react';
 import {Avatar, Badge, Box, Divider, Drawer, em, Group, Image, NavLink, ScrollArea, Stack, Text} from '@mantine/core';
 import {useMediaQuery} from '@mantine/hooks';
-import {
-    CalendarDays,
-    LayoutDashboard,
-    ChartColumn,
-    CircleCheckBig,
-    Search,
-    Clock,
-    UserCog,
-    Settings as SettingsIcon,
-    Heart,
-} from 'lucide-react';
-import {IconTruck, IconMap} from '@tabler/icons-react';
+import {CalendarDays, Heart} from 'lucide-react';
 import dayjs from 'dayjs';
-import {Icon, UI_ICON_SIZE} from '../icon/Icon';
+import {Icon} from '../icon/Icon';
 import {NavItem, SideNavProps} from "./SideNav.types";
 import {ColorModeSwitcher} from './ColorModeSwitcher';
-import {isDashboardVisible} from '../../../services/featureVisibility';
-import {navRoutes, statesForFeatureKey} from '../../../routes/routeTable';
+import {useNavItems} from '../../../hooks/useNavItems';
 import {onBrandScrim, sideMenuColors as shell} from '../../../theme/dfrntMantineTheme';
 import classes from './SideNav.module.css';
 
 const drawerWidth = 264;
 
 export const APP_BLURB = 'Book, dispatch and track your jobs';
-
-type NavDisplay = {label: string; icon: React.ReactNode; nzOnly?: boolean};
-
-const NAV_ITEM_DISPLAY: Record<string, (isUsCustomer: boolean) => NavDisplay> = {
-    dashboard: () => ({label: 'Dashboard', icon: <Icon lucide={LayoutDashboard} />}),
-    shipping: isUs => ({label: isUs ? 'Domestic' : 'Nationwide', icon: <Icon tabler={IconTruck} />}),
-    overview: () => ({label: 'Overview', icon: <Icon lucide={ChartColumn} />}),
-    tasks: () => ({label: 'Tasks', icon: <Icon lucide={CircleCheckBig} />}),
-    jobSearch: () => ({label: 'Job search', icon: <Icon lucide={Search} />}),
-    recurringJobs: () => ({label: 'Recurring jobs', icon: <Icon lucide={Clock} />}),
-    courierMap: () => ({label: 'Courier map', icon: <Icon tabler={IconMap} />}),
-    driverManagement: () => ({label: 'Driver management', icon: <Icon lucide={UserCog} />, nzOnly: true}),
-};
 
 /** Below this the panel goes full-bleed, matching the toolbar's compact breakpoint. */
 const COMPACT_QUERY = `(max-width: ${em(768)})`;
@@ -93,41 +68,12 @@ export const SideNav: React.FC<SideNavProps> = ({
             : dayjs().locale('en-nz').format('dddd, D MMMM YYYY');
     }, [isUsCustomer]);
 
-    const filteredNavItems = useMemo((): NavItem[] => {
-        const navItems: NavItem[] = navRoutes().map(route => {
-            const {label, icon, nzOnly} = NAV_ITEM_DISPLAY[route.navId!](isUsCustomer);
-            return {
-                id: route.navId!,
-                label,
-                icon,
-                // Link straight at the page so the nav skips alias redirect hops.
-                state: route.state,
-                matchStates: statesForFeatureKey(route.featureKey!),
-                featureKey: route.featureKey,
-                nzOnly,
-            };
-        });
-
-        return navItems.filter(item => {
-            if (item.usOnly && !isUsCustomer) return false;
-            if (item.nzOnly && isUsCustomer) return false;
-            // DF Admin's grant, on top of the country filter. Ungated sessions
-            // pass everything, so this is inert for every audience but NP.
-            return !item.featureKey || isDashboardVisible(item.featureKey);
-        });
-    }, [isUsCustomer]);
+    const {navItems: filteredNavItems, settingsItem: settingsNavItem} = useNavItems(isUsCustomer);
 
     const handleNavClick = useCallback((state: string): void => {
         onNavigate(state);
         onClose();
     }, [onNavigate, onClose]);
-
-    const settingsNavItem: NavItem = useMemo(() => ({
-        id: 'settings',
-        label: 'Settings',
-        icon: <Icon lucide={SettingsIcon} />,
-        state: 'settings',
-    }), []);
 
     const renderNavItem = useCallback((item: NavItem) => {
         const isActive =

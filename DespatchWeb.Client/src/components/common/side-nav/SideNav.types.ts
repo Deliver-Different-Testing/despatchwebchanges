@@ -1,4 +1,5 @@
 ﻿import React from "react";
+import type {RouteSection} from "../../../routes/routeTable";
 
 export interface NavItem {
     id: string;
@@ -12,6 +13,8 @@ export interface NavItem {
      * one are never hidden by the DF-Admin grant.
      */
     featureKey?: string;
+    /** Route-table section, used to group the DFRNT sidebar. */
+    section?: RouteSection;
     usOnly?: boolean;
     nzOnly?: boolean;
 }

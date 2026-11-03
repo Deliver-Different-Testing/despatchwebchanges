@@ -20,6 +20,12 @@ export async function getTenantCourierFlagLastDeliveryDefault(): Promise<string 
     return mode ?? null;
 }
 
+/** Returns the tenant's default navigation style (unvalidated), or null when unconfigured. */
+export async function getTenantNavStyleDefault(): Promise<string | null> {
+    const style = await apiClient.get<string | null>('TenantSettings/GetNavStyleDefault');
+    return style ?? null;
+}
+
 /** Returns the tenant's default appearance-settings JSON (unvalidated), or null when unconfigured. */
 export async function getTenantAppearanceDefault(): Promise<string | null> {
     const json = await apiClient.get<string | null>('TenantSettings/GetAppearanceDefault');
