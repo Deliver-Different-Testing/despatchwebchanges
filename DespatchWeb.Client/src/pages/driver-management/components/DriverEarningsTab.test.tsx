@@ -35,8 +35,8 @@ const renderWithProviders = (showToast = jest.fn()) => {
 
 const createMockData = (): CourierDailyEarningsPaginated => ({
     items: [
-        {courierId: 1, name: 'Alice Brown', hoursLogged: 480, deliveries: 1, earnings: 100, hourlyRate: 12.5},
-        {courierId: 2, name: 'Mike Carter', hoursLogged: 120, deliveries: 5, earnings: 50, hourlyRate: 25},
+        {courierId: 1, name: 'Alice Brown', minutesLogged: 450, deliveries: 1, earnings: 100, hourlyRate: 12.5},
+        {courierId: 2, name: 'Mike Carter', minutesLogged: 0, deliveries: 5, earnings: 50, hourlyRate: 25},
     ],
     total: 2,
     page: 1,
@@ -47,13 +47,15 @@ const createMockData = (): CourierDailyEarningsPaginated => ({
     totalDeliveriesToday: 6,
 });
 
-const setupMocks = (data?: CourierDailyEarningsPaginated, isLoading = false) => {
+const refetch = jest.fn();
+
+const setupMocks = (data?: CourierDailyEarningsPaginated, isLoading = false, isError = false) => {
     mockUseDriverEarnings.mockReturnValue({
-        data: data ?? createMockData(),
+        data: isError ? undefined : data ?? createMockData(),
         isLoading,
-        isError: false,
+        isError,
         error: null,
-        refetch: jest.fn(),
+        refetch,
     } as any);
 };
 
@@ -64,10 +66,14 @@ describe('DriverEarningsTab', () => {
 
         // Column headers
         expect(screen.getByText('Name')).toBeInTheDocument();
-        expect(screen.getByText('Hours logged')).toBeInTheDocument();
+        expect(screen.getByText('Hours')).toBeInTheDocument();
         expect(screen.getByText('Deliveries')).toBeInTheDocument();
         expect(screen.getByText('Earnings')).toBeInTheDocument();
         expect(screen.getByText('Hourly rate')).toBeInTheDocument();
+
+        // minutesLogged renders as hours and minutes
+        expect(screen.getByText('7h 30m')).toBeInTheDocument();
+        expect(screen.getByText('0m')).toBeInTheDocument();
 
         // Stats: totalEarningsToday
         expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -104,8 +110,8 @@ describe('DriverEarningsTab', () => {
         expect(lastCall().sortDescending).toBe(true);
 
         // Click Hours logged
-        fireEvent.click(screen.getByText('Hours logged'));
-        expect(lastCall().orderBy).toBe('hoursLogged');
+        fireEvent.click(screen.getByText('Hours'));
+        expect(lastCall().orderBy).toBe('minutesLogged');
 
         // Click Deliveries
         fireEvent.click(screen.getByText('Deliveries'));
@@ -151,11 +157,11 @@ describe('DriverEarningsTab', () => {
             mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1][0];
 
         // Clicking a different column should reset page to 1
-        fireEvent.click(screen.getByText('Hours logged'));
+        fireEvent.click(screen.getByText('Hours'));
         expect(lastCall().page).toBe(1);
 
         // Hours logged is now active asc → click toggles to desc, verify sortDescending
-        fireEvent.click(screen.getByText('Hours logged'));
+        fireEvent.click(screen.getByText('Hours'));
         expect(lastCall().sortDescending).toBe(true);
     });
 
@@ -175,6 +181,15 @@ describe('DriverEarningsTab', () => {
         renderWithProviders();
 
         expect(screen.getByText('No earnings data')).toBeInTheDocument();
-        expect(screen.getByText('No earnings data matches your search.')).toBeInTheDocument();
+        expect(screen.getByText('No driver earnings recorded yet today.')).toBeInTheDocument();
+    });
+
+    it('should show a retryable error state when the load fails', () => {
+        setupMocks(undefined, false, true);
+        renderWithProviders();
+
+        expect(screen.getByText("Couldn't load earnings")).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'Try again'}));
+        expect(refetch).toHaveBeenCalled();
     });
 });

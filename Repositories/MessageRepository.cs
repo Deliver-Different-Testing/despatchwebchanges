@@ -181,7 +181,15 @@ public class MessageRepository(
         }
 
         await Context.TucManualMessages.AddAsync(message);
-        await Context.SaveChangesAsync();
+        try
+        {
+            await Context.SaveChangesAsync();
+        }
+        catch
+        {
+            Context.Entry(message).State = EntityState.Detached;
+            throw;
+        }
     }
 
     public async Task SendMultipleMessagesAsync(SendMultipleMessageRequest request)

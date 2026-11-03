@@ -14,7 +14,8 @@ public class CourierController(
     ICourierRepository courierRepository,
     ITenantInfoService infoService,
     ITaskRepository taskRepository,
-    ICourierReportService courierReportService
+    ICourierReportService courierReportService,
+    IComplianceReminderService complianceReminderService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -216,11 +217,41 @@ public class CourierController(
             var complianceList = await courierRepository.GetAllCourierComplianceAsync(request);
             return Json(complianceList);
         }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
+        }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
                     nameof(GetCourierComplianceList)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SendComplianceReminders([FromBody] SendComplianceRemindersRequest request)
+    {
+        try
+        {
+            if (request is null || !request.HasExactlyOneTarget)
+            {
+                return BadRequest("Specify exactly one of courierIds or filter.");
+            }
+
+            var result = await complianceReminderService.SendAsync(request);
+            return Json(result);
+        }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(SendComplianceReminders)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -232,6 +263,10 @@ public class CourierController(
         {
             var afterHoursSchedule = await courierRepository.GetAfterHoursCourierScheduleAsync(request);
             return Json(afterHoursSchedule);
+        }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
         }
         catch (Exception e)
         {
@@ -249,6 +284,10 @@ public class CourierController(
         {
             var todayActiveDrivers = await courierRepository.GetTodayActiveDriversAsync(request);
             return Json(todayActiveDrivers);
+        }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
         }
         catch (Exception e)
         {
@@ -283,6 +322,10 @@ public class CourierController(
             ArgumentNullException.ThrowIfNull(request);
             var courierEarnings = await courierRepository.GetCourierDailyEarningsAsync(request);
             return Json(courierEarnings);
+        }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
         }
         catch (Exception e)
         {
@@ -324,7 +367,7 @@ public class CourierController(
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
-                    nameof(GetAllCourierEmails)));
+                    nameof(SendEmailToCouriers)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -362,7 +405,7 @@ public class CourierController(
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
-                    nameof(UpdateAfterHoursCourierSchedule)));
+                    nameof(CreateAfterHoursCourierSchedule)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
@@ -439,6 +482,10 @@ public class CourierController(
             var (fileBytes, fileName) = await courierReportService.GenerateTodayActiveDriversCsvAsync(request);
             return File(fileBytes, "text/csv", fileName);
         }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
+        }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
@@ -456,6 +503,10 @@ public class CourierController(
             var (fileBytes, fileName) = await courierReportService.GenerateComplianceCsvAsync(request);
             return File(fileBytes, "text/csv", fileName);
         }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
+        }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
@@ -472,6 +523,10 @@ public class CourierController(
         {
             var (fileBytes, fileName) = await courierReportService.GenerateAfterHoursScheduleCsvAsync(request);
             return File(fileBytes, "text/csv", fileName);
+        }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
         }
         catch (Exception e)
         {
@@ -506,6 +561,10 @@ public class CourierController(
         {
             var (fileBytes, fileName) = await courierReportService.GenerateDriverEarningsCsvAsync(request);
             return File(fileBytes, "text/csv", fileName);
+        }
+        catch (InvalidListQueryException e)
+        {
+            return BadRequest(e.Message);
         }
         catch (Exception e)
         {

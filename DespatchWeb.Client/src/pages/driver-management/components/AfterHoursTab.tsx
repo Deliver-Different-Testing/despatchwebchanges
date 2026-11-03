@@ -19,21 +19,11 @@ import {
     dialogContentBg,
     dialogSize,
 } from '../../../components/dialogs/shared/mantine';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, getDayChipColor} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, ListEmptyState, SearchField, SortState, StatCard, getDayChipColor} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 import {dataTablePagingProps} from './dataTablePaging';
 import {loadDialog} from '../../../components/dialogs/dialogRegistry';
-
-interface WindowWithAfterhoursDialog {
-    ReactEditAfterhoursDialog?: {
-        open: (
-            schedule: AfterHoursCourierSchedule,
-            isUsTenant: boolean,
-            toastService: { showToast: ShowToastFn }
-        ) => Promise<AfterHoursCourierSchedule | null>;
-    };
-}
 
 interface AfterHoursTabProps {
     showToast: ShowToastFn;
@@ -76,19 +66,19 @@ const columns: DataTableColumn<AfterHoursCourierScheduleItem>[] = [
 
 export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCustomer}) => {
     const [query, setQuery] = useState<PaginatedRequest>({
-        orderBy: 'name', pageSize: 100, page: 1, searchTerm: '', sortDescending: false,
+        orderBy: 'courierName', pageSize: 100, page: 1, searchTerm: '', sortDescending: false,
     });
     const [filters, setFilters] = useState<AfterHoursFilter>({day: 'all'});
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [scheduleToDelete, setScheduleToDelete] = useState<AfterHoursCourierScheduleItem | null>(null);
-    const [sort, setSort] = useState<SortState>({column: 'name', direction: 'asc'});
+    const [sort, setSort] = useState<SortState>({column: 'courierName', direction: 'asc'});
 
-    const {data, isLoading, refetch} = useAfterHoursSchedule(query, filters);
+    const {data, isLoading, isError, refetch} = useAfterHoursSchedule(query, filters);
     const createMutation = useCreateAfterHoursSchedule();
     const updateMutation = useUpdateAfterHoursSchedule();
     const deleteMutation = useDeleteAfterHoursSchedule();
 
-    const items = data?.items ?? [];
+    const items = isError ? [] : data?.items ?? [];
     const stats = {
         totalAssignments: data?.total ?? 0,
         activeDrivers: data?.totalActiveDrivers ?? 0,
@@ -178,7 +168,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
 
     const handleClearFilters = () => {
         setFilters({day: 'all'});
-        setQuery(q => ({...q, page: 1}));
+        setQuery(q => ({...q, searchTerm: '', page: 1}));
     };
 
     const handleExport = async () => {
@@ -281,7 +271,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
 
             {/* Table */}
             <DataTable<AfterHoursCourierScheduleItem>
-                totalCount={data?.total ?? 0}
+                totalCount={isError ? 0 : data?.total ?? 0}
                 rows={items}
                 columns={columnsWithActions}
                 rowKey={(row) => row.afterHoursScheduleId}
@@ -289,9 +279,18 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 sort={sort}
                 onSortChange={handleSortChange}
                 {...dataTablePagingProps(query, setQuery)}
-                emptyIcon={<Icon lucide={Moon}/>}
-                emptyTitle="No after hours schedules"
-                emptyMessage="No after hours schedules match your search."
+                emptyContent={
+                    <ListEmptyState
+                        noun="schedules"
+                        isError={isError}
+                        onRetry={() => refetch()}
+                        isFiltered={activeFilterCount > 0 || !!query.searchTerm}
+                        onClearFilters={handleClearFilters}
+                        emptyIcon={<Icon lucide={Moon}/>}
+                        emptyTitle="No after hours schedules"
+                        emptyMessage="Add a schedule to roster drivers outside normal hours."
+                    />
+                }
             />
 
             {/* Delete Confirmation Dialog */}
