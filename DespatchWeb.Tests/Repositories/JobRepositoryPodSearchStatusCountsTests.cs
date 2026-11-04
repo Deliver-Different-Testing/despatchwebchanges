@@ -92,7 +92,8 @@ public class JobRepositoryPodSearchStatusCountsTests : IAsyncDisposable
         Assert.Equal(50, result.Jobs.Count);
         Assert.NotNull(result.StatusCounts);
         Assert.Equal(120, result.StatusCounts.Total);
-        Assert.Equal(40, result.StatusCounts.Active);
+        Assert.Equal(40, result.StatusCounts.Unassigned);
+        Assert.Equal(80, result.StatusCounts.Active);
         Assert.Equal(40, result.StatusCounts.Transit);
         Assert.Equal(40, result.StatusCounts.Done);
     }
@@ -124,7 +125,9 @@ public class JobRepositoryPodSearchStatusCountsTests : IAsyncDisposable
         Assert.NotNull(result.StatusCounts);
         Assert.Equal(3, result.StatusCounts.Total);
         Assert.Equal(1, result.StatusCounts.Done);
-        Assert.Equal(1, result.StatusCounts.Active);
+        Assert.Equal(1, result.StatusCounts.Unassigned);
+        // Active is everything not done, so the voided job counts there
+        Assert.Equal(2, result.StatusCounts.Active);
         // The voided job belongs to no bucket
         Assert.Equal(0, result.StatusCounts.Transit);
     }

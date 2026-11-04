@@ -273,6 +273,9 @@ export interface JobSearchResult {
 
 export interface JobListStatusCounts {
     total: number;
+    /** What the Unassigned tab lists. */
+    unassigned: number;
+    /** What the Active tab lists — everything not done, so `transit` is a part of it. */
     active: number;
     transit: number;
     done: number;
@@ -342,6 +345,12 @@ export interface JobListPanelProps {
      * the scope restores whatever the operator had chosen.
      */
     forcedCategory?: JobCategory;
+    /**
+     * The tabs this list offers (default: all four). A remembered tab outside the set is
+     * ignored, so a list can drop one that could never match — Current Work has no
+     * Unassigned, since every job in a courier's list is assigned to them.
+     */
+    categories?: readonly JobCategory[];
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
     /** If provided, React manages its own data fetching via React Query */

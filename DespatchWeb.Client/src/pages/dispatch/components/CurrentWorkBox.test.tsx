@@ -3,11 +3,12 @@ import {render, screen, waitFor, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // Stub the heavy children so the test exercises CurrentWorkBox's own wiring.
-const jobListPanelProps: {fetchConfig?: any; defaultCategory?: string} = {};
+const jobListPanelProps: {fetchConfig?: any; defaultCategory?: string; categories?: string[]} = {};
 jest.mock('../../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, fetchConfig, defaultCategory}: {storagePrefix: string; fetchConfig: any; defaultCategory?: string}) => {
+    JobListPanel: ({storagePrefix, fetchConfig, defaultCategory, categories}: {storagePrefix: string; fetchConfig: any; defaultCategory?: string; categories?: string[]}) => {
         jobListPanelProps.fetchConfig = fetchConfig;
         jobListPanelProps.defaultCategory = defaultCategory;
+        jobListPanelProps.categories = categories;
         return <div data-testid={`mock-job-list-${storagePrefix}`} />;
     },
 }));
@@ -92,9 +93,11 @@ describe('CurrentWorkBox', () => {
             expect(screen.getByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
         });
 
-        it('defaults the courier job list to their active work, not all of it', () => {
+        it('defaults the courier job list to their active work and never offers Unassigned', () => {
             renderBox({selectedJobCourierId: 42});
             expect(jobListPanelProps.defaultCategory).toBe('in-progress');
+            // Every job in one courier's list is assigned to them, so Unassigned could only ever be empty.
+            expect(jobListPanelProps.categories).toEqual(['in-progress', 'delivered', 'all']);
         });
 
         it('drives the current-work fetch off the page date filter (matching the other lists)', () => {

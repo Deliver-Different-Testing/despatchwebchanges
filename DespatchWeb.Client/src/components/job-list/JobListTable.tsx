@@ -56,6 +56,7 @@ import {
 import {JobListLegendDialog} from './JobListLegendDialog';
 import {FLIGHT_INDICATORS, INDICATORS, renderLegendMarker, renderTableIndicator} from './jobListIndicators';
 import {NoData} from '../common/no-data/NoData';
+import type {NoDataProps} from '../common/no-data/types';
 import classes from './JobListTable.module.css';
 import {resolvedStatusId, resolvedStatusLabel} from '../../utils/jobStatus';
 
@@ -256,6 +257,8 @@ interface JobListTableProps {
     onLoadMore?: () => void;
     hasMore?: boolean;
     isFetchingMore?: boolean;
+    /** Replaces the default empty state — e.g. when the category tab, not the data, emptied the list. */
+    emptyState?: Pick<NoDataProps, 'title' | 'message' | 'actionText' | 'onAction'>;
 }
 
 export const JobListTable: React.FC<JobListTableProps> = ({
@@ -279,6 +282,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                                               onLoadMore,
                                                               hasMore,
                                                               isFetchingMore,
+                                                              emptyState,
                                                           }) => {
     // Tick every 60s to keep time-dependent late/overdue checks current.
     // Stored as a ref to avoid re-rendering every row — only rows with
@@ -421,6 +425,8 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                 title="No jobs found"
                 message="No jobs match the current view."
                 icon={<Icon lucide={Briefcase} size={48}/>}
+                showAction={!!emptyState?.onAction}
+                {...emptyState}
             />
         );
     }

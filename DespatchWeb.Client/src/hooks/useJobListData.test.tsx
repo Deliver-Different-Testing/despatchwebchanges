@@ -373,7 +373,7 @@ describe('useJobListData', () => {
         it('keeps the first page status counts, which later pages do not repeat', async () => {
             // The stats header describes the whole result set, so the server answers it once with
             // the first page — a later page must not blank it out.
-            const counts = {total: 574, active: 300, transit: 260, done: 14};
+            const counts = {total: 574, unassigned: 30, active: 560, transit: 260, done: 14};
             const fetchFn = jest.fn()
                 .mockResolvedValueOnce({jobs: [{id: 1}] as any[], totalCount: 574, hasMore: true, statusCounts: counts})
                 .mockResolvedValueOnce({jobs: [{id: 2}] as any[], totalCount: 574, hasMore: false});
@@ -401,7 +401,7 @@ describe('useJobListData', () => {
         it('drops the held status counts once the list is disabled', async () => {
             // Job search disables the list it is not searching. An emptied list must not keep
             // showing the numbers it had before.
-            const counts = {total: 4, active: 2, transit: 1, done: 1};
+            const counts = {total: 4, unassigned: 1, active: 3, transit: 1, done: 1};
             const config = createMockFetchConfig({
                 fetchFn: jest.fn().mockResolvedValue(
                     {jobs: mockJobs, totalCount: 4, hasMore: false, statusCounts: counts}),

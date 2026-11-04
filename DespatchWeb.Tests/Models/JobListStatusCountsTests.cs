@@ -9,7 +9,7 @@ namespace DespatchWeb.Tests.Models;
 /// <summary>
 /// The lists that already hold every match in memory — the bulk list pages its own deduped set —
 /// count the stats header from those rows rather than asking the database a second time. These
-/// tests pin that the in-memory tally answers the same four numbers as the grouped one.
+/// tests pin that the in-memory tally answers the same numbers as the grouped one.
 /// </summary>
 [TestSubject(typeof(JobListStatusCounts))]
 public class JobListStatusCountsTests
@@ -29,18 +29,21 @@ public class JobListStatusCountsTests
         var counts = JobListStatusCounts.FromJobs(jobs);
 
         Assert.Equal(5, counts.Total);
-        Assert.Equal(2, counts.Active);
+        Assert.Equal(2, counts.Unassigned);
+        // Active is what the Active tab lists — everything not done, the voided job included
+        Assert.Equal(4, counts.Active);
         Assert.Equal(1, counts.Transit);
         Assert.Equal(1, counts.Done);
     }
 
     [Fact]
-    public void FromJobs_AssignedJob_IsNotActive()
+    public void FromJobs_AllocatedButUndispatchedJob_IsActiveButNotUnassigned()
     {
         var counts = JobListStatusCounts.FromJobs([Job(JobStatus.New, courier: "CR1")]);
 
         Assert.Equal(1, counts.Total);
-        Assert.Equal(0, counts.Active);
+        Assert.Equal(0, counts.Unassigned);
+        Assert.Equal(1, counts.Active);
     }
 
     [Fact]
@@ -49,6 +52,7 @@ public class JobListStatusCountsTests
         var counts = JobListStatusCounts.FromJobs([]);
 
         Assert.Equal(0, counts.Total);
+        Assert.Equal(0, counts.Unassigned);
         Assert.Equal(0, counts.Active);
         Assert.Equal(0, counts.Transit);
         Assert.Equal(0, counts.Done);

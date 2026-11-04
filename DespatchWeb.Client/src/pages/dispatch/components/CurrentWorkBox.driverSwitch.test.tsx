@@ -45,12 +45,15 @@ function Harness() {
     return (
         <>
             <button onClick={() => setLayoutBump(n => n + 1)}>bump-layout</button>
+            {/* A click on another of Alice's jobs in the main Job list. */}
+            <button onClick={() => setCurrentJob({id: 701, courierData: {courierId: 7}})}>select-other-alice-job</button>
             <CurrentWorkBox
                 key={`currentwork-${layoutBump}`}
                 showToast={jest.fn()}
                 isUsCustomer
                 startDate={dayjs('2026-07-14T00:00:00')}
                 endDate={dayjs('2026-07-14T23:59:59')}
+                selectedJobId={currentJob?.id}
                 selectedJobCourierId={currentJob?.courierData?.courierId}
                 onJobSelect={setCurrentJob}
             />
@@ -76,6 +79,7 @@ async function drillInto(name: string) {
 const backToAllDrivers = () => fireEvent.click(screen.getByRole('radio', {name: /all drivers/i}));
 const selectShownJob = () => fireEvent.click(screen.getByRole('button', {name: 'select-job'}));
 const bumpLayout = () => fireEvent.click(screen.getByRole('button', {name: 'bump-layout'}));
+const selectOtherAliceJob = () => fireEvent.click(screen.getByRole('button', {name: 'select-other-alice-job'}));
 
 describe('CurrentWorkBox — driver switch after search + drill-down', () => {
     beforeEach(() => sessionStorage.clear());
@@ -109,5 +113,25 @@ describe('CurrentWorkBox — driver switch after search + drill-down', () => {
         expect(screen.getByTestId('mock-job-list')).toHaveAttribute('data-courier-id', '8');
         bumpLayout(); // BoxShell-style remount of the box
         await waitFor(() => expect(screen.getByTestId('mock-job-list')).toHaveAttribute('data-courier-id', '8'));
+    });
+
+    it('D: select Alice job → back to all drivers → clicking another Alice job drills back into Alice', async () => {
+        renderHarness();
+        await drillInto('Alice');
+        selectShownJob(); // job 700, courier 7
+        backToAllDrivers();
+        expect(await screen.findByText('Bob')).toBeInTheDocument();
+        selectOtherAliceJob(); // job 701, same courier
+        await waitFor(() => expect(screen.getByTestId('mock-job-list')).toHaveAttribute('data-courier-id', '7'));
+    });
+
+    it('E: select Alice job → drill Bob → clicking another Alice job switches back to Alice', async () => {
+        renderHarness();
+        await drillInto('Alice');
+        selectShownJob();
+        backToAllDrivers();
+        await drillInto('Bob');
+        selectOtherAliceJob();
+        await waitFor(() => expect(screen.getByTestId('mock-job-list')).toHaveAttribute('data-courier-id', '7'));
     });
 });

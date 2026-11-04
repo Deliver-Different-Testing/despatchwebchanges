@@ -5,7 +5,7 @@
  * Follows the app's standard toolbar pattern (44px minHeight, divider border).
  */
 
-import React, {useCallback, useRef} from 'react';
+import React, {useCallback, useMemo, useRef} from 'react';
 import {Box, Group, Text, TextInput} from '@mantine/core';
 import {useDebouncedCallback} from '@mantine/hooks';
 import {ArchiveRestore, Mail, MailOpen, Search, X} from 'lucide-react';
@@ -46,16 +46,21 @@ interface JobListToolbarProps {
      * Defaults to true.
      */
     renderViewOptions?: boolean;
+    /** The tabs this list offers. Defaults to all four. */
+    categories?: readonly JobCategory[];
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-const CATEGORY_OPTIONS: {value: JobCategory; label: string}[] = [
-    {value: 'needs-dispatch', label: 'Unassigned'},
-    {value: 'in-progress', label: 'Active'},
-    {value: 'delivered', label: 'Done'},
-    {value: 'all', label: 'All'},
-];
+export const CATEGORY_LABELS: Record<JobCategory, string> = {
+    'needs-dispatch': 'Unassigned',
+    'in-progress': 'Active',
+    delivered: 'Done',
+    all: 'All',
+};
+
+const CATEGORY_OPTIONS: {value: JobCategory; label: string}[] =
+    (['needs-dispatch', 'in-progress', 'delivered', 'all'] as const).map(value => ({value, label: CATEGORY_LABELS[value]}));
 
 /**
  * The active tab keeps its category's semantic colour — Unassigned/Active/Done
@@ -88,6 +93,7 @@ const selectionBarStyle: React.CSSProperties = {
 };
 
 export const JobListToolbar: React.FC<JobListToolbarProps> = ({
+    categories,
     selectedCategory,
     onCategoryChange,
     searchQuery,
@@ -108,6 +114,10 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     showLoggedInSwitch,
     renderViewOptions = true,
 }) => {
+    const categoryOptions = useMemo(
+        () => (categories ? CATEGORY_OPTIONS.filter(o => categories.includes(o.value)) : CATEGORY_OPTIONS),
+        [categories],
+    );
     // Every operational page can bulk-dispatch; Nationwide was previously excluded,
     // which left it with no bulk assignment affordance at all.
     const allowDispatch = appPage === AppPage.Dispatch
@@ -176,7 +186,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 value={selectedCategory}
                 onChange={onCategoryChange}
                 color={CATEGORY_COLORS[selectedCategory]}
-                data={CATEGORY_OPTIONS}
+                data={categoryOptions}
             />
 
             {/* Search */}

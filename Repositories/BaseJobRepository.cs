@@ -525,21 +525,9 @@ public partial class BaseJobRepository(
 
     internal static IQueryable<TucJob> ApplyStatusFilter(IQueryable<TucJob> query, string statusFilter)
     {
-        var completed = (int?)JobStatus.Completed;
-        var dispatched = (int?)JobStatus.Dispatched;
-        var accepted = (int?)JobStatus.Accepted;
-        var pickedUp = (int?)JobStatus.PickedUp;
-        var inTransit = (int?)JobStatus.InTransit;
-
         return statusFilter?.ToLower() switch
         {
-            "needs-dispatch" => query.Where(j =>
-                j.UcjbCourierId == null
-                && j.UcjbStatus != completed
-                && j.UcjbStatus != dispatched
-                && j.UcjbStatus != accepted
-                && j.UcjbStatus != pickedUp
-                && j.UcjbStatus != inTransit),
+            "needs-dispatch" => query.Where(LiveBucketIs(JobListBucket.Unassigned)),
             "in-progress" => query.Where(LiveBucketIs(JobListBucket.Done, negate: true)),
             "delivered" => query.Where(LiveBucketIs(JobListBucket.Done)),
             _ => query // "all" or null — no filter
