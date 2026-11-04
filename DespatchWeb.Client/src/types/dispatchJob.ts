@@ -342,6 +342,11 @@ export interface JobListPanelProps {
      * the scope restores whatever the operator had chosen.
      */
     forcedCategory?: JobCategory;
+    /**
+     * Category tabs this panel never offers, e.g. Unassigned on a single driver's
+     * Current work. A stored or forced value naming one falls back to `defaultCategory`.
+     */
+    hiddenCategories?: readonly JobCategory[];
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
     /** If provided, React manages its own data fetching via React Query */

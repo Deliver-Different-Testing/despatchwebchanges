@@ -238,6 +238,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               onJobsLoaded,
                                                               defaultCategory,
                                                               forcedCategory,
+                                                              hiddenCategories,
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
@@ -286,7 +287,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // ── UI State ─────────────────────────────────────────────────────
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<JobCategory>(
-        () => forcedCategory ?? loadJobListCategory(storagePrefix) ?? defaultCategory ?? 'all',
+        () => [forcedCategory, loadJobListCategory(storagePrefix), defaultCategory]
+            .find((c): c is JobCategory => !!c && !hiddenCategories?.includes(c)) ?? 'all',
     );
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedRawQuery] = useDebouncedValue(searchQuery, 200);
@@ -936,6 +938,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onBulkMarkUnread={handleBulkMarkUnread}
                 showLoggedInSwitch={showLoggedInSwitch}
                 renderViewOptions={!headerSlot}
+                hiddenCategories={hiddenCategories}
             />
             {columnEditMode && (
                 <JobListColumnEditor
