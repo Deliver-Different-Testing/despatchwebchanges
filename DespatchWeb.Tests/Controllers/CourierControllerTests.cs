@@ -44,7 +44,7 @@ public class CourierControllerTests
         var model = Assert.IsType<ClearListViewModel>(jsonResult.Value);
         Assert.Empty(model.Areas);
         await _courierRepository.DidNotReceiveWithAnyArgs()
-            .GetClearListsAsync(null!, null, null, CancellationToken.None);
+            .GetClearListsAsync(null!, null, null, false, CancellationToken.None);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class CourierControllerTests
         var jsonResult = Assert.IsType<JsonResult>(result);
         Assert.IsType<ClearListViewModel>(jsonResult.Value);
         await _courierRepository.DidNotReceiveWithAnyArgs()
-            .GetClearListsAsync(null!, null, null, CancellationToken.None);
+            .GetClearListsAsync(null!, null, null, false, CancellationToken.None);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class CourierControllerTests
     {
         var expected = new ClearListViewModel();
         _courierRepository.GetClearListsAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<DateTimeOffset?>(),
-            Arg.Any<DateTimeOffset?>(), Arg.Any<CancellationToken>()).Returns(expected);
+            Arg.Any<DateTimeOffset?>(), Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(expected);
 
         var controller = CreateController();
 
@@ -76,7 +76,7 @@ public class CourierControllerTests
         // NSubstitute compare the token by value and the assertion misses.
         await _courierRepository.Received(1).GetClearListsAsync(
             Arg.Is<IReadOnlyList<int>>(ids => ids.SequenceEqual(new[] {7, 9})),
-            Arg.Any<DateTimeOffset?>(), Arg.Any<DateTimeOffset?>(), Arg.Any<CancellationToken>());
+            Arg.Any<DateTimeOffset?>(), Arg.Any<DateTimeOffset?>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -304,7 +304,7 @@ public class CourierControllerTests
         var despatchViewIds = new List<int> { 1, 2 };
         var expectedResult = new ClearListViewModel();
 
-        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>())
+        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, false, Arg.Any<CancellationToken>())
             .Returns(expectedResult);
 
         var controller = CreateController();
@@ -315,7 +315,7 @@ public class CourierControllerTests
         // Assert
         await _courierRepository
             .Received(1)
-            .GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>());
+            .GetClearListsAsync(despatchViewIds, null, null, false, Arg.Any<CancellationToken>());
         Assert.IsType<JsonResult>(result);
     }
 
@@ -328,7 +328,7 @@ public class CourierControllerTests
         var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
         var expectedResult = new ClearListViewModel();
 
-        _courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate, Arg.Any<CancellationToken>())
+        _courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate, false, Arg.Any<CancellationToken>())
             .Returns(expectedResult);
 
         var controller = CreateController();
@@ -339,9 +339,25 @@ public class CourierControllerTests
         // Assert
         await _courierRepository
             .Received(1)
-            .GetClearListsAsync(despatchViewIds, startDate, endDate, Arg.Any<CancellationToken>());
+            .GetClearListsAsync(despatchViewIds, startDate, endDate, false, Arg.Any<CancellationToken>());
 
         Assert.IsType<JsonResult>(result);
+    }
+
+    [Fact]
+    public async Task Index_WithTimeRange_PassesUseTimeToRepository()
+    {
+        var despatchViewIds = new List<int> { 1 };
+        var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2024, 1, 14, 3, 0, 0, TimeSpan.Zero);
+        _courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate, true, Arg.Any<CancellationToken>())
+            .Returns(new ClearListViewModel());
+
+        await CreateController().Index(despatchViewIds, startDate, endDate, useTime: true);
+
+        await _courierRepository
+            .Received(1)
+            .GetClearListsAsync(despatchViewIds, startDate, endDate, true, Arg.Any<CancellationToken>());
     }
 
     // Index_WithNullDespatchViewIds_DefaultsToFallbackId is deliberately gone: the
@@ -354,7 +370,7 @@ public class CourierControllerTests
         // Arrange
         var despatchViewIds = new List<int> { 1 };
 
-        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>())
+        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, false, Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();

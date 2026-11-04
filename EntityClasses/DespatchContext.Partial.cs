@@ -66,6 +66,26 @@ public partial class DespatchContext
                 .Select(j => j.ParentId ?? j.UcjbId)
                 .FirstOrDefault());
 
+    // A leg released from bulk before its parent keeps the parent's tblBulkJob id in ParentId, so the
+    // parent only counts when it is a row in the same table; otherwise the job is its own owner.
+    private static readonly Func<DespatchContext, int, Task<int?>> GetEffectiveExistingJobIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => (int?)(j.ParentId != null && context.TucJobs.Any(p => p.UcjbId == j.ParentId)
+                    ? j.ParentId.Value
+                    : j.UcjbId))
+                .FirstOrDefault());
+
+    private static readonly Func<DespatchContext, int, Task<int?>> GetEffectiveExistingArchiveJobIdCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => (int?)(j.ParentId != null && context.TucJobArchives.Any(p => p.UcjbId == j.ParentId)
+                    ? j.ParentId.Value
+                    : j.UcjbId))
+                .FirstOrDefault());
+
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveBulkJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int bulkJobId) =>
             context.TblBulkJobs
@@ -250,6 +270,12 @@ public partial class DespatchContext
     public async Task<int> GetEffectiveArchiveJobIdAsync(int jobId) =>
         await GetEffectiveArchiveJobIdCompiled(this, jobId);
 
+    public async Task<int?> GetEffectiveExistingJobIdAsync(int jobId) =>
+        await GetEffectiveExistingJobIdCompiled(this, jobId);
+
+    public async Task<int?> GetEffectiveExistingArchiveJobIdAsync(int jobId) =>
+        await GetEffectiveExistingArchiveJobIdCompiled(this, jobId);
+
     public async Task<int> GetEffectiveBulkJobIdAsync(int bulkJobId) =>
         await GetEffectiveBulkJobIdCompiled(this, bulkJobId);
 
@@ -349,6 +375,11 @@ public partial class DespatchContext
                 .HasPrincipalKey<TucJob>(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(d => d.NpAgent)
+                .WithMany()
+                .HasForeignKey(d => d.NpAgentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasQueryFilter(j =>
                 CurrentBypassFilters
                 || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
@@ -376,6 +407,11 @@ public partial class DespatchContext
 
         modelBuilder.Entity<TucJobArchive>(entity =>
         {
+            entity.HasOne(d => d.NpAgent)
+                .WithMany()
+                .HasForeignKey(d => d.NpAgentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasOne(d => d.UcjbClient)
                 .WithMany()
                 .HasForeignKey(d => d.UcjbClientId)

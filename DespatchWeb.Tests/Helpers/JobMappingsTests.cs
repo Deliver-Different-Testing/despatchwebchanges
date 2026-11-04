@@ -961,6 +961,43 @@ public class JobMappingsTests
     }
 
     [Fact]
+    public void JobListMappings_MapNetworkPartnerNameFromNpAgent()
+    {
+        var partner = new TucAgent { UcagId = 8, UcagName = "Proline Cabs", IsNetworkPartner = true };
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB-1",
+            UcjbDate = new DateTime(2024, 1, 15),
+            NpAgentId = 8,
+            NpAgent = partner
+        };
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB-1",
+            UcjbDate = new DateTime(2024, 1, 15),
+            NpAgentId = 8,
+            NpAgent = partner
+        };
+
+        Assert.Equal("Proline Cabs", JobMappings.JobDispatchMapping(isUsCustomer: false).Compile()(liveJob).NetworkPartnerName);
+        Assert.Equal("Proline Cabs", JobMappings.PodSearchMapping(isUsCustomer: false).Compile()(liveJob).NetworkPartnerName);
+        Assert.Equal("Proline Cabs", JobMappings.PodSearchArchivedMapping(isUsCustomer: false).Compile()(archivedJob).NetworkPartnerName);
+    }
+
+    [Fact]
+    public void JobListMappings_NetworkPartnerNameNull_WhenNoNpAgent()
+    {
+        var liveJob = new TucJob { UcjbId = 1, UcjbNumber = "JOB-1", UcjbDate = new DateTime(2024, 1, 15) };
+        var archivedJob = new TucJobArchive { UcjbId = 1, UcjbNumber = "JOB-1", UcjbDate = new DateTime(2024, 1, 15) };
+
+        Assert.Null(JobMappings.JobDispatchMapping(isUsCustomer: false).Compile()(liveJob).NetworkPartnerName);
+        Assert.Null(JobMappings.PodSearchMapping(isUsCustomer: false).Compile()(liveJob).NetworkPartnerName);
+        Assert.Null(JobMappings.PodSearchArchivedMapping(isUsCustomer: false).Compile()(archivedJob).NetworkPartnerName);
+    }
+
+    [Fact]
     public void JobArchiveMapping_MapsBasicFieldsCorrectly()
     {
         // Arrange

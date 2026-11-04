@@ -17,6 +17,8 @@ export interface DriverLocationsBoxProps {
     despatchViewIds: number[];
     startDate: Dayjs;
     endDate: Dayjs;
+    /** Time range: the end is an exact instant rather than the whole end day. */
+    useTime?: boolean;
     /** Auto-refresh interval in ms (React Query refetchInterval); false/undefined = off. */
     refetchIntervalMs?: number | false;
     /** The currently selected area's clear-list id (drives the row highlight + map filter). */
@@ -40,6 +42,7 @@ export const DriverLocationsBox: React.FC<DriverLocationsBoxProps> = ({
     despatchViewIds,
     startDate,
     endDate,
+    useTime = false,
     refetchIntervalMs = false,
     activeAreaId,
     onAreaSelect,
@@ -49,8 +52,8 @@ export const DriverLocationsBox: React.FC<DriverLocationsBoxProps> = ({
     const viewIds = despatchViewIds;
 
     const {data, isLoading} = useQuery({
-        queryKey: queryKeys.dispatch.driverLocations(viewIds, startDate.toISOString(), endDate.toISOString()),
-        queryFn: ({signal}) => fetchDriverLocations({despatchViewIds: viewIds, startDate, endDate}, {signal}),
+        queryKey: queryKeys.dispatch.driverLocations(viewIds, startDate.toISOString(), endDate.toISOString(), useTime),
+        queryFn: ({signal}) => fetchDriverLocations({despatchViewIds: viewIds, startDate, endDate, useTime}, {signal}),
         enabled: viewIds.length > 0,
         refetchInterval: refetchIntervalMs,
     });

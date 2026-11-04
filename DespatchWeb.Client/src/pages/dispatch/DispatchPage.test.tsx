@@ -23,6 +23,7 @@ const jobListFetchConfig: {
     initialParams?: {despatchViewIds?: number[]; statusFilter?: string; selectedClearListId?: number};
     refetchInterval?: number | false;
     forcedCategory?: string;
+    selectedJobId?: number | null;
 } = {};
 // What the page pushed into the mounted list instead of remounting it.
 const jobListParamPushes: Record<string, unknown>[] = [];
@@ -47,9 +48,10 @@ jest.mock('../../components/common/job-details/JobDetails', () => {
 });
 
 jest.mock('../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, onJobSelect, onJobsLoaded, topSlot, fetchConfig, forcedCategory, setUpdateSearchParamsCallback}: {
+    JobListPanel: ({storagePrefix, onJobSelect, selectedJobId, onJobsLoaded, topSlot, fetchConfig, forcedCategory, setUpdateSearchParamsCallback}: {
         storagePrefix: string;
         onJobSelect?: (j: unknown) => void;
+        selectedJobId?: number | null;
         onJobsLoaded?: (jobs: unknown[]) => void;
         topSlot?: React.ReactNode;
         fetchConfig?: {
@@ -63,6 +65,7 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
             jobListFetchConfig.initialParams = fetchConfig?.initialParams;
             jobListFetchConfig.refetchInterval = fetchConfig?.refetchInterval;
             jobListFetchConfig.forcedCategory = forcedCategory;
+            jobListFetchConfig.selectedJobId = selectedJobId;
             setUpdateSearchParamsCallback?.((params) => { jobListParamPushes.push(params); });
         }
         return (
@@ -78,7 +81,7 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
 const boxProps: {
     driverLocations?: {refetchIntervalMs?: number | false; activeAreaId?: number};
     supports?: {refetchIntervalMs?: number | false};
-    currentWork?: {refetchIntervalMs?: number | false; courierDisplayMode?: string; selectedJobCourierNumber?: string};
+    currentWork?: {refetchIntervalMs?: number | false; courierDisplayMode?: string; selectedJobCourierNumber?: string; selectedJobId?: number | null};
     overviewDeliveries?: {refetchIntervalMs?: number | false; despatchViewIds?: number[]};
     openJobs?: {refetchIntervalMs?: number | false; despatchViewIds?: number[]};
 } = {};
@@ -97,13 +100,18 @@ jest.mock('../../components/common/tasks-box/TasksBox', () => ({
     },
 }));
 jest.mock('./components/CurrentWorkBox', () => ({
-    CurrentWorkBox: (props: {refetchIntervalMs?: number | false; courierDisplayMode?: string; selectedJobCourierNumber?: string}) => {
+    CurrentWorkBox: (props: {refetchIntervalMs?: number | false; courierDisplayMode?: string; selectedJobCourierNumber?: string; selectedJobId?: number | null; onJobSelect?: (j: unknown) => void}) => {
         boxProps.currentWork = {
             refetchIntervalMs: props.refetchIntervalMs,
             courierDisplayMode: props.courierDisplayMode,
             selectedJobCourierNumber: props.selectedJobCourierNumber,
+            selectedJobId: props.selectedJobId,
         };
-        return <div data-testid="mock-current-work"/>;
+        return (
+            <div data-testid="mock-current-work">
+                <button onClick={() => props.onJobSelect?.({...sampleJob, id: 66, jobNo: 'JOB-66'})}>select-current-work-job</button>
+            </div>
+        );
     },
 }));
 
@@ -313,6 +321,21 @@ describe('DispatchPage', () => {
             renderPage();
             await user.click(screen.getByRole('button', {name: 'select-sample-job'}));
             expect(boxProps.currentWork?.selectedJobCourierNumber).toBe('007');
+        });
+
+        it('hands the Job list and Current work one shared selection, so only one job is highlighted', async () => {
+            const user = setupUser();
+            renderPage();
+            expect(jobListFetchConfig.selectedJobId).toBeNull();
+            expect(boxProps.currentWork?.selectedJobId).toBeNull();
+
+            await user.click(screen.getByRole('button', {name: 'select-current-work-job'}));
+            expect(jobListFetchConfig.selectedJobId).toBe(66);
+            expect(boxProps.currentWork?.selectedJobId).toBe(66);
+
+            await user.click(screen.getByRole('button', {name: 'select-sample-job'}));
+            expect(jobListFetchConfig.selectedJobId).toBe(55);
+            expect(boxProps.currentWork?.selectedJobId).toBe(55);
         });
     });
 

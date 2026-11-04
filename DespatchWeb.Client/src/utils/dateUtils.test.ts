@@ -148,6 +148,23 @@ describe('dateUtils', () => {
             const result = parseDateFromApi('2024-01-15T07:00:00-08:00');
             expect(result.format('HH:mm')).toBe('07:00');
         });
+
+        const apiValues = ['2026-10-28T16:54:04-04:00', '2026-10-28T16:54:04Z', '2026-10-29T09:54:04+13:00'];
+
+        it.each(apiValues)('keeps the wall clock and offset of %s', apiValue => {
+            expect(parseDateFromApi(apiValue).format().replace('+00:00', 'Z')).toBe(apiValue);
+        });
+
+        // #948: the instant drifted by the browser's own UTC offset, so overdue/"ago" checks were
+        // hours out everywhere but a UTC browser. getTimezoneOffset() minutes: PDT, EDT, NZDT, UTC.
+        describe.each([420, 240, -780, 0])('in a browser with getTimezoneOffset() %i', browserOffset => {
+            beforeEach(() => { jest.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(browserOffset); });
+            afterEach(() => { jest.restoreAllMocks(); });
+
+            it.each(apiValues)('keeps the real instant of %s', apiValue => {
+                expect(parseDateFromApi(apiValue).valueOf()).toBe(Date.parse(apiValue));
+            });
+        });
     });
 
     describe('locale-aware formatting', () => {

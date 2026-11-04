@@ -1,5 +1,5 @@
 import React from 'react';
-import {fireEvent, screen, within} from '@testing-library/react';
+import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
 import {SidebarShell} from './SidebarShell';
 import {SIDEBAR_COLLAPSED_STORAGE_KEY} from './useSidebarCollapsed';
@@ -48,12 +48,15 @@ describe('SidebarShell', () => {
         expect(screen.queryByRole('button', {name: 'Driver management'})).not.toBeInTheDocument();
     });
 
-    it('collapses to an icon rail, remembers it, and restores the labels when expanded', () => {
+    it('collapses to an icon rail from the app-bar toggle, remembers it, and restores the labels when expanded', () => {
         const {unmount} = renderWithMantine(<SidebarShell {...defaultProps} />);
         expect(screen.getByTestId('dfrnt-sidebar')).not.toHaveAttribute('data-collapsed');
         expect(screen.getByText('Job search')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+        const toggle = within(screen.getByRole('banner')).getByRole('button', {name: 'Collapse sidebar'});
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        expect(within(screen.getByTestId('dfrnt-sidebar')).queryByRole('button', {name: /sidebar/})).not.toBeInTheDocument();
+        fireEvent.click(toggle);
 
         expect(screen.getByTestId('dfrnt-sidebar')).toHaveAttribute('data-collapsed', 'true');
         expect(screen.queryByText('Job search')).not.toBeInTheDocument();
@@ -64,7 +67,9 @@ describe('SidebarShell', () => {
         renderWithMantine(<SidebarShell {...defaultProps} />);
         expect(screen.getByTestId('dfrnt-sidebar')).toHaveAttribute('data-collapsed', 'true');
 
-        fireEvent.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+        const expand = screen.getByRole('button', {name: 'Expand sidebar'});
+        expect(expand).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(expand);
         expect(screen.getByText('Job search')).toBeInTheDocument();
         expect(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe('0');
     });
@@ -78,17 +83,19 @@ describe('SidebarShell', () => {
         expect(await screen.findByRole('tooltip', {name: 'Job search'})).toBeInTheDocument();
     });
 
-    it('renders the slim toolbar with the actions, and the page body in the page column', () => {
+    it('runs the full-width toolbar above the sidebar with the logo and actions, and the page body beside the sidebar', () => {
         renderWithMantine(
             <SidebarShell {...defaultProps} body={<p>page body</p>}>
                 <button>Toolbar action</button>
             </SidebarShell>
         );
 
-        expect(screen.getByRole('banner')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'Toolbar action'})).toBeInTheDocument();
-        expect(screen.queryByAltText('DFRNT')).not.toBeInTheDocument();
-        expect(screen.getByText('page body')).toBeInTheDocument();
+        const banner = screen.getByRole('banner');
+        expect(within(banner).getByAltText('DFRNT')).toBeInTheDocument();
+        expect(within(banner).getByRole('button', {name: 'Toolbar action'})).toBeInTheDocument();
+        expect(within(banner).queryByRole('button', {name: /navigation menu/i})).not.toBeInTheDocument();
+        expect(banner).not.toContainElement(screen.getByTestId('dfrnt-sidebar'));
+        expect(screen.getByText('page body').parentElement?.parentElement).toContainElement(screen.getByTestId('dfrnt-sidebar'));
     });
 
     it('carries the identity card, colour mode switcher and network-partner chip in the footer', () => {
@@ -97,5 +104,44 @@ describe('SidebarShell', () => {
         expect(screen.getByTestId('sidebar-identity')).toHaveTextContent('John Doe');
         expect(screen.getByTestId('sidebar-np-chip')).toBeInTheDocument();
         expect(screen.getByRole('radiogroup', {name: 'Colour mode'})).toBeInTheDocument();
+    });
+
+    describe('on small screens', () => {
+        beforeEach(() => {
+            (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({
+                matches: true,
+                media: query,
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+            }));
+        });
+
+        afterEach(() => {
+            (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({
+                matches: false,
+                media: query,
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+            }));
+        });
+
+        it('opens the full labelled menu in a drawer from the toggle, and closes it on navigate', async () => {
+            renderWithMantine(<SidebarShell {...defaultProps} />);
+
+            await waitFor(() => expect(screen.queryByTestId('dfrnt-sidebar')).not.toBeInTheDocument());
+            fireEvent.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+
+            const sidebar = await screen.findByTestId('dfrnt-sidebar');
+            expect(sidebar).not.toHaveAttribute('data-collapsed');
+            expect(screen.getByRole('button', {name: 'Collapse sidebar'})).toHaveAttribute('aria-expanded', 'true');
+
+            fireEvent.click(within(sidebar).getByRole('button', {name: 'Job search'}));
+            expect(defaultProps.onNavigate).toHaveBeenCalledWith('jobSearch');
+            await waitFor(() => expect(screen.queryByTestId('dfrnt-sidebar')).not.toBeInTheDocument());
+        });
     });
 });

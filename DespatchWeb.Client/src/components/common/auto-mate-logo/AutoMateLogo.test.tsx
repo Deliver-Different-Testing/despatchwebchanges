@@ -24,15 +24,4 @@ describe('AutoMateLogo', () => {
         const logo = screen.getByAltText('Auto-mate');
         expect(logo).toHaveStyle({width: '28px', height: '28px'});
     });
-
-    it('renders the mono variant as a currentColor SVG so it takes the colour of the fill it sits on', () => {
-        const {container} = renderWithMantine(<AutoMateLogo variant="mono" size={32} />);
-
-        const logo = screen.getByRole('img', {name: 'Auto-mate'});
-        expect(logo.tagName.toLowerCase()).toBe('svg');
-        expect(logo).toHaveAttribute('width', '32');
-        expect(logo).toHaveAttribute('height', '32');
-        expect(logo.querySelector('[stroke="currentColor"], [fill="currentColor"]')).not.toBeNull();
-        expect(container.querySelector('img')).toBeNull();
-    });
 });

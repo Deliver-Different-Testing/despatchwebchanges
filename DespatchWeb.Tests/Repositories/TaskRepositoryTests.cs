@@ -10,8 +10,7 @@ namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
 /// Tests for the static ApplyFilters method and ProjectToTaskViewModel projection in TaskRepository.
-/// Date filter tests use in-memory queryable (SQLite cannot translate DateTimeOffset-to-DateTime
-/// comparisons that SQL Server handles implicitly).
+/// Date filter tests use an in-memory queryable.
 /// SearchText tests use SQLite since EF.Functions.Like requires a real database provider.
 /// </summary>
 public class TaskRepositoryTests : IAsyncDisposable
@@ -39,7 +38,7 @@ public class TaskRepositoryTests : IAsyncDisposable
     {
         await using var context = _db.CreateContext();
         var query = context.TucEvents.AsQueryable();
-        var filtered = TaskRepository.ApplyFilters(query, filters);
+        var filtered = TaskRepository.ApplyFilters(query, filters, AsSentWallClock);
         return await filtered.ToListAsync(TestContext.Current.CancellationToken);
     }
 
@@ -48,9 +47,11 @@ public class TaskRepositoryTests : IAsyncDisposable
         TaskTableFiltersRequest filters)
     {
         var query = events.AsQueryable();
-        var filtered = TaskRepository.ApplyFilters(query, filters);
+        var filtered = TaskRepository.ApplyFilters(query, filters, AsSentWallClock);
         return [.. filtered];
     }
+
+    private static DateTime AsSentWallClock(DateTimeOffset value) => value.DateTime;
 
     private static TucEvent CreateEvent(int id, Action<TucEvent>? configure = null)
     {
@@ -176,6 +177,49 @@ public class TaskRepositoryTests : IAsyncDisposable
 
         var item = Assert.Single(results);
         Assert.Equal(2, item.UcevId);
+    }
+
+    [Fact]
+    public void ApplyFilters_DateWindow_ComparesTheDatetimeColumnWithoutCastingToDatetimeoffset()
+    {
+        var options = new DbContextOptionsBuilder<DespatchContext>()
+            .UseSqlServer("Server=unused;Database=unused")
+            .Options;
+        using var context = new DespatchContext(options);
+        var filters = new TaskTableFiltersRequest
+        {
+            StartDate = new DateTimeOffset(2026, 10, 22, 0, 0, 0, TimeSpan.FromHours(-4)),
+            EndDate = new DateTimeOffset(2026, 10, 30, 23, 59, 59, TimeSpan.FromHours(-4)),
+            IncludeOverdue = true
+        };
+
+        var sql = TaskRepository.ApplyFilters(context.TucEvents, filters, AsSentWallClock).ToQueryString();
+
+        Assert.DoesNotContain("datetimeoffset", sql, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ApplyFilters_DateWindow_BoundsAreTenantWallClock()
+    {
+        var auckland = TimeZoneInfo.FindSystemTimeZoneById("Pacific/Auckland");
+        var events = new[]
+        {
+            CreateEvent(1, e => { e.UcevDueTime = new DateTime(2026, 11, 2, 23, 30, 0); e.UcevClosed = true; }),
+            CreateEvent(2, e => { e.UcevDueTime = new DateTime(2026, 11, 3, 0, 30, 0); e.UcevClosed = true; }),
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2026, 11, 11, 22, 0, 0)),
+            CreateEvent(4, e => e.UcevDueTime = new DateTime(2026, 11, 12, 0, 30, 0))
+        };
+        var filters = new TaskTableFiltersRequest
+        {
+            StartDate = new DateTimeOffset(2026, 11, 2, 11, 0, 0, TimeSpan.Zero),
+            EndDate = new DateTimeOffset(2026, 11, 11, 10, 59, 59, TimeSpan.Zero),
+            IncludeOverdue = true
+        };
+
+        var results = TaskRepository.ApplyFilters(events.AsQueryable(), filters,
+            value => TimeZoneInfo.ConvertTime(value, auckland).DateTime).ToList();
+
+        Assert.Equal([2, 3], results.Select(e => e.UcevId).Order());
     }
 
     [Fact]
@@ -496,6 +540,64 @@ public class TaskRepositoryTests : IAsyncDisposable
         Assert.Equal(new DateTimeOffset(2025, 6, 1, 9, 30, 0, TimeSpan.FromHours(12)),
             TaskRepository.ResolveCreatedAt(legacy, info, "Pacific/Auckland"));
         Assert.Null(TaskRepository.ResolveCreatedAt(new TaskViewModel(), info, "Pacific/Auckland"));
+    }
+
+    private static TaskViewModel UnlinkedTask(int id, string? storedJobNumber, int? clientId = 7) =>
+        new() { Id = id, StoredJobNumber = storedJobNumber, ClientId = clientId };
+
+    [Fact]
+    public void ProjectToTaskViewModel_CarriesStoredJobNumberAndClient()
+    {
+        var ev = CreateEvent(1, e =>
+        {
+            e.UcevJobNumber = "P3765V";
+            e.UcevClientId = 7;
+            e.UcevJob = new TucJob();
+        });
+
+        var vm = ProjectInMemory(ev);
+
+        Assert.Equal("P3765V", vm.StoredJobNumber);
+        Assert.Equal(7, vm.ClientId);
+    }
+
+    [Fact]
+    public async Task LinkUnlinkedTasksByJobNumber_LinksOnlyWhenOneLiveOrArchivedJobOfTheClientMatches()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 100, UcjbNumber = "LIVE1", UcjbClientId = 7 },
+                new TucJob { UcjbId = 101, UcjbNumber = "TWICE", UcjbClientId = 7 },
+                new TucJob { UcjbId = 102, UcjbNumber = "OTHERCLIENT", UcjbClientId = 8 });
+            seed.TucJobArchives.AddRange(
+                new TucJobArchive { UcjbId = 200, UcjbNumber = "ARCH1", UcjbClientId = 7 },
+                new TucJobArchive { UcjbId = 201, UcjbNumber = "TWICE", UcjbClientId = 7 });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var live = UnlinkedTask(1, "LIVE1");
+        var archived = UnlinkedTask(2, " ARCH1 ");
+        var ambiguous = UnlinkedTask(3, "TWICE");
+        var otherClient = UnlinkedTask(4, "OTHERCLIENT");
+        var placeholder = UnlinkedTask(5, "-");
+        var blank = UnlinkedTask(6, "  ");
+        var noClient = UnlinkedTask(7, "OTHERCLIENT", clientId: null);
+        var alreadyLinked = new TaskViewModel { Id = 8, JobId = 555, JobNumber = "KEEP", StoredJobNumber = "LIVE1", ClientId = 7 };
+        TaskViewModel[] tasks = [live, archived, ambiguous, otherClient, placeholder, blank, noClient, alreadyLinked];
+
+        await using var context = _db.CreateContext();
+        await TaskRepository.LinkUnlinkedTasksByJobNumberAsync(context, tasks);
+
+        Assert.Equal((100, "LIVE1"), (live.JobId, live.JobNumber));
+        Assert.Equal((200, "ARCH1"), (archived.JobId, archived.JobNumber));
+        Assert.Equal((102, "OTHERCLIENT"), (noClient.JobId, noClient.JobNumber));
+        Assert.Equal((555, "KEEP"), (alreadyLinked.JobId, alreadyLinked.JobNumber));
+        Assert.All([ambiguous, otherClient, placeholder, blank], t =>
+        {
+            Assert.Equal(0, t.JobId);
+            Assert.Null(t.JobNumber);
+        });
     }
 
     [Fact]

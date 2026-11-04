@@ -51,52 +51,96 @@ public class MessageRepository(
     public async Task<IReadOnlyList<RecentMessageViewModel>> GetRecentListAsync()
     {
         var staffId = infoService.GetStaffId();
-        var currentDate = clock.TenantNow;
-        var cutoffDate = currentDate.AddDays(-RecentMessageDays);
+        var partnerMessages = PartnerMessages(
+            Context.TucManualMessages, staffId, clock.TenantNow.AddDays(-RecentMessageDays));
 
-        var allMessages = await Context.TucManualMessages
-            .Where(m => m.UcmmDate >= cutoffDate)
-            .ForStaff(staffId)
-            .IncludeParticipants()
-            .OrderByDescending(m => m.UcmmDate)
-            .Take(1000)
-            .ToListAsync();
+        var latest = await LatestMessagePerPartner(partnerMessages).ToListAsync();
+        var unreadCounts = await partnerMessages
+            .Where(m => m.IsUnreadIncoming)
+            .GroupBy(m => new { m.OtherPartyId, m.IsCourier })
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Key, g => g.Count);
 
-        // Group by another party and build a result using helper service
-        var result = allMessages
-            .Select(m => new
+        var courierIds = latest.Where(m => m.IsCourier).Select(m => m.OtherPartyId).ToList();
+        var staffIds = latest.Where(m => !m.IsCourier).Select(m => m.OtherPartyId).ToList();
+
+        var couriers = await Context.TucCouriers
+            .Include(c => c.CourierLogInOut)
+            .Where(c => courierIds.Contains(c.UccrId))
+            .ToDictionaryAsync(c => c.UccrId);
+        var staff = await Context.TucStaffs
+            .Where(s => staffIds.Contains(s.UcstId))
+            .ToDictionaryAsync(s => s.UcstId);
+
+        return latest
+            .Select(m =>
             {
-                Message = m,
-                OtherParty = messageHelper.GetOtherParty(m, staffId),
-                IsIncoming = messageHelper.IsIncomingMessage(m, staffId)
-            })
-            .Where(x => x.OtherParty.Id > 0)
-            .GroupBy(x => new { x.OtherParty.Id, x.OtherParty.Type })
-            .Select(g =>
-            {
-                var latestMessage = g.OrderByDescending(x => x.Message.UcmmDate).First();
+                var otherParty = m.IsCourier
+                    ? messageHelper.DescribeCourier(m.OtherPartyId, couriers.GetValueOrDefault(m.OtherPartyId))
+                    : messageHelper.DescribeStaff(m.OtherPartyId, staff.GetValueOrDefault(m.OtherPartyId));
 
                 return new RecentMessageViewModel
                 {
-                    OtherPartyId = latestMessage.OtherParty.Id,
-                    OtherPartyType = latestMessage.OtherParty.Type,
-                    OtherPartyName = latestMessage.OtherParty.Name,
-                    OtherPartyInitials = latestMessage.OtherParty.Initials,
-                    OtherPartyStatus = messageHelper.GetCourierStatus(
-                        latestMessage.OtherParty.Type == OtherMessagePartyType.Courier
-                            ? GetCourierFromMessage(latestMessage.Message, latestMessage.OtherParty.Id)
-                            : null,
-                        currentDate),
-                    UnreadCount = g.Count(x => x.IsIncoming && !x.Message.Read),
-                    LastMessage = latestMessage.Message.UcmmMessage,
-                    LastMessageTime = latestMessage.Message.UcmmDate
+                    OtherPartyId = otherParty.Id,
+                    OtherPartyType = otherParty.Type,
+                    OtherPartyName = otherParty.Name,
+                    OtherPartyInitials = otherParty.Initials,
+                    // The list has always shown staff as offline; only couriers carry a live status.
+                    OtherPartyStatus = m.IsCourier ? otherParty.Status : "offline",
+                    UnreadCount = unreadCounts.GetValueOrDefault(new { m.OtherPartyId, m.IsCourier }),
+                    LastMessage = m.UcmmMessage,
+                    LastMessageTime = m.UcmmDate
                 };
             })
-            .OrderByDescending(x => x.LastMessageTime)
+            .OrderByDescending(c => c.LastMessageTime)
             .ToList();
-
-        return result;
     }
+
+    internal sealed class PartnerMessage
+    {
+        public int UcmmId { get; init; }
+        public string UcmmMessage { get; init; }
+        public DateTime UcmmDate { get; init; }
+        public int OtherPartyId { get; init; }
+        public bool IsCourier { get; init; }
+        public bool IsUnreadIncoming { get; init; }
+    }
+
+    /// <summary>
+    /// The current staff member's recent messages, each keyed by the other party. The key is never null:
+    /// EF drops null-keyed groups from a per-group First() (dotnet/efcore#29240).
+    /// </summary>
+    internal static IQueryable<PartnerMessage> PartnerMessages(
+        IQueryable<TucManualMessage> messages, int staffId, DateTime cutoffDate) =>
+        messages
+            .Where(m => m.UcmmDate >= cutoffDate)
+            .ForStaff(staffId)
+            .Select(m => new PartnerMessage
+            {
+                UcmmId = m.UcmmId,
+                UcmmMessage = m.UcmmMessage,
+                UcmmDate = m.UcmmDate,
+                OtherPartyId = m.UcmmSendFromStaffId == staffId
+                    ? m.UcmmSendToCourierId ?? m.UcmmSendToStaffId ?? 0
+                    : m.UcmmSendFromCourierId ?? m.UcmmSendFromStaffId ?? 0,
+                IsCourier = m.UcmmSendFromStaffId == staffId
+                    ? m.UcmmSendToCourierId != null
+                    : m.UcmmSendFromCourierId != null,
+                IsUnreadIncoming = m.UcmmSendToStaffId == staffId && !m.Read
+            })
+            .Where(m => m.OtherPartyId > 0);
+
+    /// <summary>
+    /// Top-1-per-group, which EF translates to ROW_NUMBER(). Kept apart from the unread count:
+    /// combining Count() and First() over this computed key in one projection doesn't translate.
+    /// </summary>
+    internal static IQueryable<PartnerMessage> LatestMessagePerPartner(IQueryable<PartnerMessage> partnerMessages) =>
+        partnerMessages
+            .GroupBy(m => new { m.OtherPartyId, m.IsCourier })
+            .Select(g => g
+                .OrderByDescending(m => m.UcmmDate)
+                .ThenByDescending(m => m.UcmmId)
+                .First());
 
     public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId,
         int limit = 200) =>
@@ -466,11 +510,6 @@ public class MessageRepository(
         message.UcmmSendToStaffId = sendToStaffId;
         message.Subject = "Staff Message";
     }
-
-    private static TucCourier GetCourierFromMessage(TucManualMessage message, int courierId) =>
-        message.UcmmSendFromCourierId == courierId
-            ? message.UcmmSendFromCourier
-            : message.UcmmSendToCourier;
 
     private static MessageDeliveryType GetDeliveryMethod(int messageType, bool isLoggedInToday) =>
         messageType switch

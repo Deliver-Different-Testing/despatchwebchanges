@@ -3,7 +3,17 @@
  */
 
 import {act, renderHook, waitFor} from '@testing-library/react';
-import {useAutoRefresh, useContactSearch, useConversations, useMessages, useQuickResponses,} from './useMessaging';
+import {
+    CONVERSATIONS_REFRESH_MS,
+    CONVERSATIONS_TIMEOUT_MS,
+    SLOW_LOAD_HINT_MS,
+    useAutoRefresh,
+    useContactSearch,
+    useConversations,
+    useMessages,
+    useQuickResponses,
+} from './useMessaging';
+import {createQueryWrapper} from '../test/utils';
 import messagingApi from "../api/messagingApi";
 import {DEFAULT_QUICK_RESPONSES, OtherMessagePartyType} from "../components/dialogs/messaging-dialog/types";
 
@@ -50,81 +60,125 @@ describe('useConversations', () => {
         },
     ];
 
-    it('should initialize with empty conversations', () => {
-        const { result } = renderHook(() => useConversations());
+    const renderConversations = (open = true) =>
+        renderHook(({isOpen}) => useConversations(isOpen), {
+            initialProps: {isOpen: open},
+            wrapper: createQueryWrapper(),
+        });
 
+    /** A getRecentList that stays in flight until resolved, recording the signal it was given. */
+    function deferredRecentList() {
+        let resolve!: (value: typeof mockConversations) => void;
+        let signal: AbortSignal | undefined;
+        mockMessagingApi.getRecentList.mockImplementation(options => {
+            signal = options?.signal;
+            return new Promise(r => { resolve = r; });
+        });
+        return {resolve: (v = mockConversations) => resolve(v), signal: () => signal};
+    }
+
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
+    it('loads only while open, with an abort signal and a timeout shorter than the default', async () => {
+        mockMessagingApi.getRecentList.mockResolvedValue(mockConversations);
+
+        const {result, rerender} = renderConversations(false);
+        expect(mockMessagingApi.getRecentList).not.toHaveBeenCalled();
         expect(result.current.conversations).toEqual([]);
+
+        rerender({isOpen: true});
+
+        await waitFor(() => expect(result.current.conversations).toEqual(mockConversations));
         expect(result.current.isLoading).toBe(false);
         expect(result.current.error).toBeNull();
+        expect(mockMessagingApi.getRecentList).toHaveBeenCalledWith({
+            signal: expect.any(AbortSignal),
+            timeout: CONVERSATIONS_TIMEOUT_MS,
+        });
     });
 
-    it('should load conversations successfully', async () => {
-        mockMessagingApi.getRecentList.mockResolvedValueOnce(mockConversations);
+    it('reports a failed first load once, without retrying behind the spinner', async () => {
+        mockMessagingApi.getRecentList.mockRejectedValue({status: 0, message: 'The server took too long to respond. Try again.'});
 
-        const { result } = renderHook(() => useConversations());
+        const {result} = renderConversations();
 
-        await act(async () => {
-            await result.current.loadConversations();
-        });
-
-        expect(result.current.conversations).toEqual(mockConversations);
+        await waitFor(() => expect(result.current.error).toBe('The server took too long to respond. Try again.'));
         expect(result.current.isLoading).toBe(false);
-        expect(result.current.error).toBeNull();
+        expect(mockMessagingApi.getRecentList).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle loading errors', async () => {
-        const error = new Error('Network error');
-        mockMessagingApi.getRecentList.mockRejectedValueOnce(error);
+    it('flags a slow first load after the hint delay', async () => {
+        jest.useFakeTimers();
+        const pending = deferredRecentList();
 
-        const { result } = renderHook(() => useConversations());
+        const {result} = renderConversations();
+        await waitFor(() => expect(result.current.isLoading).toBe(true));
+        expect(result.current.isSlow).toBe(false);
 
-        await act(async () => {
-            await result.current.loadConversations();
-        });
+        act(() => { jest.advanceTimersByTime(SLOW_LOAD_HINT_MS); });
+        expect(result.current.isSlow).toBe(true);
 
-        expect(result.current.conversations).toEqual([]);
-        expect(result.current.error).toBe('Network error');
+        await act(async () => { pending.resolve(); });
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        expect(result.current.isSlow).toBe(false);
     });
 
-    it('should load silently without showing loading state', async () => {
+    it('aborts the in-flight request when closed', async () => {
+        const pending = deferredRecentList();
+
+        const {result, rerender} = renderConversations();
+        await waitFor(() => expect(result.current.isLoading).toBe(true));
+        expect(pending.signal()?.aborted).toBe(false);
+
+        rerender({isOpen: false});
+
+        await waitFor(() => expect(pending.signal()?.aborted).toBe(true));
+    });
+
+    it('shows the cached list on reopen while it refreshes in the background', async () => {
         mockMessagingApi.getRecentList.mockResolvedValueOnce(mockConversations);
+        const {result, rerender} = renderConversations();
+        await waitFor(() => expect(result.current.conversations).toEqual(mockConversations));
 
-        const { result } = renderHook(() => useConversations());
+        rerender({isOpen: false});
+        deferredRecentList();
+        rerender({isOpen: true});
 
-        let loadingDuringCall = false;
-        await act(async () => {
-            const promise = result.current.loadConversations(true);
-            loadingDuringCall = result.current.isLoading;
-            await promise;
-        });
-
-        expect(loadingDuringCall).toBe(false);
+        await waitFor(() => expect(result.current.isRefreshing).toBe(true));
+        expect(result.current.isLoading).toBe(false);
         expect(result.current.conversations).toEqual(mockConversations);
     });
 
-    it('should update a conversation', async () => {
-        mockMessagingApi.getRecentList.mockResolvedValueOnce(mockConversations);
+    it('joins a manual refresh onto an in-flight load instead of racing it', async () => {
+        const pending = deferredRecentList();
+        const {result} = renderConversations();
+        await waitFor(() => expect(result.current.isLoading).toBe(true));
 
-        const { result } = renderHook(() => useConversations());
+        act(() => { void result.current.refresh(); });
+        await act(async () => { pending.resolve(); });
 
-        await act(async () => {
-            await result.current.loadConversations();
-        });
-
-        act(() => {
-            result.current.updateConversation(1, OtherMessagePartyType.Courier, {
-                unreadCount: 0,
-                lastMessage: 'Updated message',
-            });
-        });
-
-        expect(result.current.conversations[0].unreadCount).toBe(0);
-        expect(result.current.conversations[0].lastMessage).toBe('Updated message');
+        await waitFor(() => expect(result.current.conversations).toEqual(mockConversations));
+        expect(mockMessagingApi.getRecentList).toHaveBeenCalledTimes(1);
+        expect(pending.signal()?.aborted).toBe(false);
     });
 
-    it('should add a new conversation', () => {
-        const { result } = renderHook(() => useConversations());
+    it('polls while open', async () => {
+        jest.useFakeTimers();
+        mockMessagingApi.getRecentList.mockResolvedValue(mockConversations);
+        const {result} = renderConversations();
+        await waitFor(() => expect(result.current.conversations).toEqual(mockConversations));
 
+        await act(async () => { jest.advanceTimersByTime(CONVERSATIONS_REFRESH_MS); });
+
+        await waitFor(() => expect(mockMessagingApi.getRecentList).toHaveBeenCalledTimes(2));
+    });
+
+    it('updates and adds conversations in the cached list', async () => {
+        mockMessagingApi.getRecentList.mockResolvedValueOnce(mockConversations);
+        const {result} = renderConversations();
+        await waitFor(() => expect(result.current.conversations).toEqual(mockConversations));
         const newConversation = {
             otherPartyId: 3,
             otherPartyType: OtherMessagePartyType.Courier,
@@ -136,28 +190,17 @@ describe('useConversations', () => {
             lastMessageTime: '2024-01-15T11:00:00Z',
         };
 
-        act(() => {
-            result.current.addConversation(newConversation);
-        });
-
-        expect(result.current.conversations).toHaveLength(1);
-        expect(result.current.conversations[0]).toEqual(newConversation);
-    });
-
-    it('should not add duplicate conversation', async () => {
-        mockMessagingApi.getRecentList.mockResolvedValueOnce(mockConversations);
-
-        const { result } = renderHook(() => useConversations());
-
         await act(async () => {
-            await result.current.loadConversations();
+            await result.current.updateConversation(1, OtherMessagePartyType.Courier, {
+                unreadCount: 0,
+                lastMessage: 'Updated message',
+            });
+            await result.current.addConversation(newConversation);
+            await result.current.addConversation(mockConversations[1]);
         });
 
-        act(() => {
-            result.current.addConversation(mockConversations[0]);
-        });
-
-        expect(result.current.conversations).toHaveLength(2);
+        await waitFor(() => expect(result.current.conversations.map(c => c.otherPartyId)).toEqual([3, 1, 2]));
+        expect(result.current.conversations[1]).toMatchObject({unreadCount: 0, lastMessage: 'Updated message'});
     });
 });
 

@@ -11,6 +11,16 @@ public interface IMessageHelperService
     MessageParticipant GetOtherParty(TucManualMessage message, int currentStaffId);
 
     /// <summary>
+    /// Builds a courier participant; a null courier (missing or filtered row) yields "Unknown"
+    /// </summary>
+    MessageParticipant DescribeCourier(int courierId, TucCourier courier);
+
+    /// <summary>
+    /// Builds a staff participant; a null staff row yields "Unknown"
+    /// </summary>
+    MessageParticipant DescribeStaff(int staffId, TucStaff staff);
+
+    /// <summary>
     /// Checks if message is incoming to the specified staff member
     /// </summary>
     bool IsIncomingMessage(TucManualMessage message, int staffId);

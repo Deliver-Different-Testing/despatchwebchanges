@@ -36,6 +36,7 @@ public partial class TucJobArchive
     public virtual TucJobAddressDeatil AddressDetail { get; set; }
 
     public virtual TucStaff UcjbDisp { get; set; }
+    public virtual TucAgent NpAgent { get; set; }
 
     // Items via JobId (simple/parent jobs — ChildJobId is null)
     public virtual ICollection<TucJobItemsArchive> TucJobItemsArchiveJobs { get; set; } = new List<TucJobItemsArchive>();
