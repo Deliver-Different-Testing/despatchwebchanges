@@ -693,6 +693,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         refetchIntervalMs={refreshIntervals.jobsMs}
                         startDate={filters.startDate}
                         endDate={filters.endDate}
+                        selectedJobId={currentJob?.id}
                         selectedJobCourierId={currentJob?.courierData?.courierId}
                         selectedJobCourierName={
                             currentJob?.courierData?.courierName
