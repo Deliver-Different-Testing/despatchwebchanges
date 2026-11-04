@@ -1,7 +1,7 @@
 import {dashboardFeatureKeys} from '../services/featureVisibility';
 
 export type RouteKind = 'page' | 'alias' | 'error';
-export type RouteSection = 'Dashboards' | 'Operations' | 'Account';
+export type RouteSection = 'Dashboards' | 'Operations' | 'Dispatch';
 
 export interface RouteEntry {
     /** ui-router state name. */
@@ -60,7 +60,7 @@ export const ROUTES: readonly RouteEntry[] = [
         state: 'courierMap', path: '/courierMap', kind: 'page', title: 'Courier map', section: 'Operations',
         featureKey: dashboardFeatureKeys.courierMap, navId: 'courierMap', navOrder: 7, landingOrder: 7,
     },
-    {state: 'settings', path: '/settings', kind: 'page', title: 'Settings', section: 'Account'},
+    {state: 'settings', path: '/settings', kind: 'page', title: 'Setup', section: 'Dispatch'},
     {state: 'notFound', path: '/not-found', kind: 'error'},
     {state: 'error', path: '/error', kind: 'error'},
     {state: 'forbidden', path: '/forbidden', kind: 'error'},
