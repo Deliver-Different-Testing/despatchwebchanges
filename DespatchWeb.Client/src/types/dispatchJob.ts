@@ -273,6 +273,9 @@ export interface JobSearchResult {
 
 export interface JobListStatusCounts {
     total: number;
+    /** What the Unassigned tab lists. */
+    unassigned: number;
+    /** What the Active tab lists — everything not done, so `transit` is a part of it. */
     active: number;
     transit: number;
     done: number;
@@ -325,6 +328,11 @@ export interface JobListPanelProps {
     isUsCustomer?: boolean;
     appPage: AppPage;
     onJobSelect?: (job: DispatchJob) => void;
+    /**
+     * Highlighted job, owned by the host page so sibling lists share one selection;
+     * `null` means none. Leave unset for the panel to track its own clicks.
+     */
+    selectedJobId?: number | null;
     onJobDispatch?: (job: DispatchJob, courierId: number) => void;
     onRefresh?: () => void;
     onSearchChange?: (searchText: string) => void;

@@ -1,13 +1,13 @@
 namespace DespatchWeb.Helpers;
 
 /// <summary>
-/// Which column of the job list's stats header a job falls under. A voided job belongs to none of
-/// them — it is counted in the total and nowhere else.
+/// The disjoint classes the job list's stats header is folded from. <see cref="None"/> holds a voided
+/// job, and one with a courier that isn't yet underway — both count towards Total and Active only.
 /// </summary>
 public enum JobListBucket
 {
     None = 0,
-    Active = 1,
+    Unassigned = 1,
     Transit = 2,
     Done = 3
 }

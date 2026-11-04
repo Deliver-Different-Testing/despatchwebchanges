@@ -15,7 +15,7 @@ public class JobListStatusBucketsTests
 {
     private static bool IsDone(JobStatusSnapshot s) => JobListStatusBuckets.Classify(s) == JobListBucket.Done;
     private static bool IsInTransit(JobStatusSnapshot s) => JobListStatusBuckets.Classify(s) == JobListBucket.Transit;
-    private static bool IsActive(JobStatusSnapshot s) => JobListStatusBuckets.Classify(s) == JobListBucket.Active;
+    private static bool IsUnassigned(JobStatusSnapshot s) => JobListStatusBuckets.Classify(s) == JobListBucket.Unassigned;
 
     private static JobStatusSnapshot Snapshot(
         JobStatus? status = null,
@@ -105,39 +105,39 @@ public class JobListStatusBucketsTests
     // ── Active ───────────────────────────────────────────────────────────
 
     [Fact]
-    public void IsActive_UnassignedNewJob_Counts()
+    public void IsUnassigned_UnassignedNewJob_Counts()
     {
-        Assert.True(IsActive(Snapshot(JobStatus.New)));
+        Assert.True(IsUnassigned(Snapshot(JobStatus.New)));
     }
 
     [Fact]
-    public void IsActive_NoStatusAtAll_CountsAsNew()
+    public void IsUnassigned_NoStatusAtAll_CountsAsNew()
     {
-        Assert.True(IsActive(Snapshot()));
+        Assert.True(IsUnassigned(Snapshot()));
     }
 
     [Fact]
-    public void IsActive_JobWithACourier_DoesNotCount()
+    public void IsUnassigned_JobWithACourier_DoesNotCount()
     {
-        Assert.False(IsActive(Snapshot(JobStatus.New, hasCourier: true)));
+        Assert.False(IsUnassigned(Snapshot(JobStatus.New, hasCourier: true)));
     }
 
     [Fact]
-    public void IsActive_VoidedUnassignedJob_DoesNotCount()
+    public void IsUnassigned_VoidedUnassignedJob_DoesNotCount()
     {
-        Assert.False(IsActive(Snapshot(JobStatus.New, isVoid: true)));
+        Assert.False(IsUnassigned(Snapshot(JobStatus.New, isVoid: true)));
     }
 
     [Fact]
-    public void IsActive_DeliveredUnassignedJob_DoesNotCount()
+    public void IsUnassigned_DeliveredUnassignedJob_DoesNotCount()
     {
-        Assert.False(IsActive(Snapshot(JobStatus.Completed)));
+        Assert.False(IsUnassigned(Snapshot(JobStatus.Completed)));
     }
 
     [Fact]
-    public void IsActive_UnassignedButInTransit_DoesNotCount()
+    public void IsUnassigned_UnassignedButInTransit_DoesNotCount()
     {
-        Assert.False(IsActive(Snapshot(JobStatus.InTransit)));
+        Assert.False(IsUnassigned(Snapshot(JobStatus.InTransit)));
     }
 
     // ── The buckets never overlap ────────────────────────────────────────
@@ -172,7 +172,7 @@ public class JobListStatusBucketsTests
                 && resolved != (int)JobStatus.Completed
                 && resolved != (int)JobStatus.Void
                 && !inTransit.Contains(resolved),
-                IsActive(snapshot));
+                IsUnassigned(snapshot));
         }
     }
 

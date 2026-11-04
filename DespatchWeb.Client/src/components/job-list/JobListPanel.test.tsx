@@ -236,7 +236,7 @@ describe('JobListPanel', () => {
 
             // Empty state checks
             expect(screen.getByText('Total')).toBeInTheDocument();
-            expect(screen.getByText('Unassigned')).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: 'Unassigned'})).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'All'})).toBeInTheDocument();
             expect(screen.getByPlaceholderText('Search jobs…')).toBeInTheDocument();
             // Footer is hidden when there are no jobs to display
@@ -265,6 +265,34 @@ describe('JobListPanel', () => {
             // The row's category rides on `data-variant` (see JobListTable.module.css),
             // not a class, so styling refactors do not break this assertion.
             expect(row).toHaveAttribute('data-variant', 'selected');
+        });
+
+        it('highlights only the controlled selectedJobId, ignoring its own clicks until the prop moves', async () => {
+            const user = setupUser();
+            const onJobSelect = jest.fn();
+            const jobs = [
+                createMockDispatchJob({id: 10, jobNo: 'J010'}),
+                createMockDispatchJob({id: 20, jobNo: 'J020'}),
+            ];
+            const rowVariant = (jobNo: string) => screen.getByText(jobNo).closest('tr')?.getAttribute('data-variant');
+            const {result, props} = renderAndPushJobs(jobs, {onJobSelect, selectedJobId: 10});
+
+            expect(rowVariant('J010')).toBe('selected');
+            expect(rowVariant('J020')).not.toBe('selected');
+
+            // The owner decides: a click reports the job but the highlight waits for the prop.
+            await user.click(screen.getByText('J020'));
+            expect(onJobSelect).toHaveBeenCalledWith(jobs[1]);
+            expect(rowVariant('J010')).toBe('selected');
+
+            result.rerender(<JobListPanel {...props} selectedJobId={20}/>);
+            expect(rowVariant('J020')).toBe('selected');
+            expect(rowVariant('J010')).not.toBe('selected');
+
+            // Another panel's job (or none) clears this panel's highlight.
+            result.rerender(<JobListPanel {...props} selectedJobId={null}/>);
+            expect(rowVariant('J010')).not.toBe('selected');
+            expect(rowVariant('J020')).not.toBe('selected');
         });
 
         it('flattens its outer corners so it sits flush inside its host box', () => {
@@ -301,7 +329,7 @@ describe('JobListPanel', () => {
             renderAndPushJobs(jobs, {onCategoryChange});
 
             // Unassigned filter
-            fireEvent.click(screen.getByText('Unassigned'));
+            fireEvent.click(screen.getByRole('radio', {name: 'Unassigned'}));
             expect(onCategoryChange).toHaveBeenCalledWith('needs-dispatch');
             expect(screen.getByText('UNASSIGNED-1')).toBeInTheDocument();
             expect(screen.queryByText('DISPATCHED-1')).not.toBeInTheDocument();
@@ -342,6 +370,60 @@ describe('JobListPanel', () => {
 
             fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
             expect(screen.queryByText('UNDELIVERABLE-1')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Category scoping and the filter-caused empty state', () => {
+        const assignedJobs = () => [
+            createMockDispatchJob({id: 1, jobNo: 'ALLOCATED-1', statusId: 0, assignedCourier: {id: 5, text: '5 - Jane'}}),
+            createMockDispatchJob({id: 2, jobNo: 'DISPATCHED-1', statusId: 1, assignedCourier: {id: 5, text: '5 - Jane'}}),
+        ];
+
+        it('ignores a remembered tab the list does not offer and lands on its default', () => {
+            localStorage.setItem('currentWork_selectedCategory_42', 'needs-dispatch');
+            renderAndPushJobs(assignedJobs(), {
+                storagePrefix: 'currentWork',
+                defaultCategory: 'in-progress',
+                hiddenCategories: ['needs-dispatch'],
+            });
+
+            expect(screen.queryByRole('radio', {name: 'Unassigned'})).not.toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: 'Active'})).toBeChecked();
+            expect(screen.getByText('ALLOCATED-1')).toBeInTheDocument();
+            expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
+        });
+
+        it('still honours a remembered tab the list does offer', () => {
+            localStorage.setItem('currentWork_selectedCategory_42', 'delivered');
+            renderAndPushJobs(assignedJobs(), {
+                storagePrefix: 'currentWork',
+                defaultCategory: 'in-progress',
+                hiddenCategories: ['needs-dispatch'],
+            });
+
+            expect(screen.getByRole('radio', {name: 'Done'})).toBeChecked();
+        });
+
+        it('says the tab is hiding the rows and offers Show all, instead of claiming there are none', () => {
+            renderAndPushJobs(assignedJobs());
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
+            expect(screen.getByText('No Done jobs')).toBeInTheDocument();
+            expect(screen.getByText('2 jobs are hidden by the Done filter.')).toBeInTheDocument();
+            expect(screen.queryByText('No jobs match the current view.')).not.toBeInTheDocument();
+
+            fireEvent.click(screen.getByRole('button', {name: 'Show all'}));
+            expect(screen.getByRole('radio', {name: 'All'})).toBeChecked();
+            expect(screen.getByText('ALLOCATED-1')).toBeInTheDocument();
+            expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
+        });
+
+        it('keeps the plain empty state when the list itself is empty', () => {
+            renderAndPushJobs([]);
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
+            expect(screen.getByText('No jobs match the current view.')).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Show all'})).not.toBeInTheDocument();
         });
     });
 
@@ -450,20 +532,21 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 2, jobNo: 'J2', statusId: 1, assignedCourier: {id: 1, text: 'C'}}),
                 createMockDispatchJob({id: 3, jobNo: 'J3', statusId: 11, assignedCourier: {id: 2, text: 'C'}}),
                 createMockDispatchJob({id: 4, jobNo: 'J4', statusId: 6}),
+                createMockDispatchJob({id: 5, jobNo: 'J5', statusId: 0, assignedCourier: {id: 3, text: 'C'}}),
             ];
             renderAndPushJobs(jobs, {onJobSelect});
 
-            // Stats header — Active = needs-dispatch, Transit = dispatched/accepted/picked-up/in-transit, Done = delivered
+            // Each count predicts its tab: Unassigned = needs a courier, Active = not done (transit
+            // is a subset of it), Done = delivered. J5 has a courier but isn't dispatched yet.
             const totalLabel = screen.getByText('Total');
             const statsArea = totalLabel.closest('div')!.parentElement!;
-            expect(within(statsArea).getByText('4')).toBeInTheDocument();
             const statValue = (label: string) => within(within(statsArea).getByText(label).closest('div')!).getByText(/^\d+$/).textContent;
-            expect(statValue('Active')).toBe('1'); // J1 (New, no courier)
-            expect(statValue('Transit')).toBe('2'); // J2 (Dispatched) + J3 (InTransit)
-            expect(statValue('Done')).toBe('1'); // J4 (Completed)
+            expect([statValue('Total'), statValue('Unassigned'), statValue('Active'), statValue('Done')])
+                .toEqual(['5', '1', '4', '1']);
+            expect(within(statsArea).getByText('2 in transit')).toBeInTheDocument();
 
             // Footer
-            expect(screen.getByText(/Showing 4/)).toBeInTheDocument();
+            expect(screen.getByText(/Showing 5/)).toBeInTheDocument();
             expect(screen.getByText(/Last updated:/)).toBeInTheDocument();
 
             // Job selection
@@ -994,7 +1077,7 @@ describe('JobListPanel', () => {
             // whole list, so the server answers it before that filter and the numbers must not move.
             const unassigned = createMockDispatchJob({id: 1, jobNo: 'UNASSIGNED-1', statusId: 0});
             const delivered = createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6});
-            const statusCounts = {total: 2, active: 1, transit: 0, done: 1};
+            const statusCounts = {total: 2, unassigned: 1, active: 1, transit: 0, done: 1};
 
             const fetchConfig = createMockFetchConfig({
                 fetchFn: jest.fn().mockImplementation((params: JobListSearchParams) =>
@@ -1013,22 +1096,22 @@ describe('JobListPanel', () => {
             const statValue = (label: string) =>
                 within(within(statsArea).getByText(label).closest('div')!).getByText(/^\d+$/).textContent;
 
-            expect([statValue('Total'), statValue('Active'), statValue('Transit'), statValue('Done')])
-                .toEqual(['2', '1', '0', '1']);
+            expect([statValue('Total'), statValue('Unassigned'), statValue('Active'), statValue('Done')])
+                .toEqual(['2', '1', '1', '1']);
 
             fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
 
             // The tab starts a fresh query, and the header holds its numbers over the gap.
-            expect([statValue('Total'), statValue('Active'), statValue('Transit'), statValue('Done')])
-                .toEqual(['2', '1', '0', '1']);
+            expect([statValue('Total'), statValue('Unassigned'), statValue('Active'), statValue('Done')])
+                .toEqual(['2', '1', '1', '1']);
 
             // The list narrows to the one delivered row...
             expect(await screen.findByText(/Showing 1/)).toBeInTheDocument();
             expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
             // ...and the header did not follow it, nor blink to zero while the query was in flight.
-            expect([statValue('Total'), statValue('Active'), statValue('Transit'), statValue('Done')])
-                .toEqual(['2', '1', '0', '1']);
+            expect([statValue('Total'), statValue('Unassigned'), statValue('Active'), statValue('Done')])
+                .toEqual(['2', '1', '1', '1']);
         });
 
         it('fetches jobs via React Query, skips setJobsCallback, and registers updateSearchParams', async () => {
