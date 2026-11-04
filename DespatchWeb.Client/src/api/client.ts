@@ -30,6 +30,7 @@ function extractErrorMessage(error: AxiosError): string {
         if (typeof obj.title === 'string') return obj.title; // ASP.NET ProblemDetails
     }
     if (error.message === 'Network Error') return "Couldn't reach the server. Check your connection and try again.";
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return 'The server took too long to respond. Try again.';
     return error.message ?? 'Unknown error';
 }
 

@@ -107,11 +107,13 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
     const {
         conversations,
         isLoading: isConversationsLoading,
+        isSlow: isConversationsSlow,
+        isRefreshing: isConversationsRefreshing,
         error: conversationsError,
-        loadConversations,
+        refresh: refreshConversations,
         updateConversation,
         addConversation,
-    } = useConversations();
+    } = useConversations(open);
 
     const {
         messages,
@@ -135,23 +137,19 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         clearSearch,
     } = useContactSearch();
 
-    // Load initial data
     useEffect(() => {
         if (open) {
-            loadConversations().then(_ => {
-                return loadQuickResponses();
-            });
+            void loadQuickResponses();
         }
-    }, [open, loadConversations, loadQuickResponses]);
+    }, [open, loadQuickResponses]);
 
-    // Auto-refresh conversations every 20 seconds
-    useAutoRefresh(
-        useCallback(async () => {
-            await loadConversations(true);
-        }, [loadConversations]),
-        20000,
-        open && !showNewChatView
-    );
+    // A failed refresh keeps the list on screen, so say so rather than swapping in the error state.
+    const handleRefreshConversations = useCallback(async () => {
+        const result = await refreshConversations();
+        if (result.isError && result.data !== undefined) {
+            showToast(`Couldn't refresh conversations. ${result.error.message}`, 'error');
+        }
+    }, [refreshConversations, showToast]);
 
     // Auto-refresh messages every 10 seconds when a conversation is selected
     useAutoRefresh(
@@ -499,7 +497,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                     {conversationsError ? (
                         <ErrorState
                             message={conversationsError}
-                            onRetry={() => loadConversations()}
+                            onRetry={() => void refreshConversations()}
                         />
                     ) : (
                         <Box style={{display: 'flex', flex: 1, minHeight: 0}}>
@@ -508,9 +506,11 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                 conversations={conversations}
                                 selectedConversation={selectedConversation}
                                 isLoading={isConversationsLoading}
+                                isSlow={isConversationsSlow}
+                                isRefreshing={isConversationsRefreshing}
                                 totalUnreadCount={getTotalUnreadCount()}
                                 onSelectConversation={handleSelectConversation}
-                                onRefresh={() => loadConversations()}
+                                onRefresh={handleRefreshConversations}
                                 onNewChat={handleShowNewChat}
                                 onMarkRead={handleMarkConversationRead}
                             />
@@ -623,6 +623,8 @@ interface ConversationsPanelProps {
     conversations: RecentConversation[];
     selectedConversation: RecentConversation | null;
     isLoading: boolean;
+    isSlow: boolean;
+    isRefreshing: boolean;
     totalUnreadCount: number;
     onSelectConversation: (conv: RecentConversation) => void;
     onRefresh: () => void;
@@ -634,6 +636,8 @@ function ConversationsPanel({
                                 conversations,
                                 selectedConversation,
                                 isLoading,
+                                isSlow,
+                                isRefreshing,
                                 totalUnreadCount,
                                 onSelectConversation,
                                 onRefresh,
@@ -678,10 +682,9 @@ function ConversationsPanel({
                     variant="subtle"
                     color="gray"
                     onClick={onRefresh}
-                    disabled={isLoading}
                     aria-label="Refresh conversations"
                 >
-                    <Icon lucide={RefreshCw} className={isLoading ? styles.spinning : undefined}/>
+                    <Icon lucide={RefreshCw} className={isRefreshing ? styles.spinning : undefined}/>
                 </ActionIcon>
                 <ActionIcon variant="subtle" onClick={onNewChat} aria-label="New conversation">
                     <Icon lucide={MessageCirclePlus}/>
@@ -725,9 +728,14 @@ function ConversationsPanel({
 
             {/* Loading indicator */}
             {isLoading && conversations.length === 0 && (
-                <Group justify="center" p={32}>
+                <Stack align="center" gap={12} p={32}>
                     <Loader size={32} aria-label="Loading conversations"/>
-                </Group>
+                    {isSlow && (
+                        <Text role="status" fz="sm" c="dimmed" ta="center">
+                            Still loading conversations…
+                        </Text>
+                    )}
+                </Stack>
             )}
 
             {/* Conversations List */}

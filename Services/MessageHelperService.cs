@@ -19,64 +19,45 @@ public sealed class MessageHelperService(ITenantClock clock) : IMessageHelperSer
     /// <returns>A MessageParticipant object containing the other party's details.</returns>
     public MessageParticipant GetOtherParty(TucManualMessage message, int currentStaffId)
     {
-        var now = clock.TenantNow;
         if (message.UcmmSendFromStaffId == currentStaffId)
         {
             // Message is FROM current staff, so another party is the recipient
             if (message.UcmmSendToCourierId.HasValue)
-            {
-                return new MessageParticipant
-                {
-                    Id = message.UcmmSendToCourierId.Value,
-                    Type = OtherMessagePartyType.Courier,
-                    Name = GetParticipantName(courier: message.UcmmSendToCourier),
-                    Initials = GetParticipantInitials(courier: message.UcmmSendToCourier),
-                    Status = GetCourierStatus(message.UcmmSendToCourier, now)
-                };
-            }
+                return DescribeCourier(message.UcmmSendToCourierId.Value, message.UcmmSendToCourier);
 
             if (message.UcmmSendToStaffId.HasValue)
-            {
-                return new MessageParticipant
-                {
-                    Id = message.UcmmSendToStaffId.Value,
-                    Type = OtherMessagePartyType.Staff,
-                    Name = GetParticipantName(staff: message.UcmmSendToStaff),
-                    Initials = GetParticipantInitials(staff: message.UcmmSendToStaff),
-                    Status = "online" // Assume staff are always online
-                };
-            }
+                return DescribeStaff(message.UcmmSendToStaffId.Value, message.UcmmSendToStaff);
         }
         else
         {
             // Message is TO current staff, so another party is the sender
             if (message.UcmmSendFromCourierId.HasValue)
-            {
-                return new MessageParticipant
-                {
-                    Id = message.UcmmSendFromCourierId.Value,
-                    Type = OtherMessagePartyType.Courier,
-                    Name = GetParticipantName(courier: message.UcmmSendFromCourier),
-                    Initials = GetParticipantInitials(courier: message.UcmmSendFromCourier),
-                    Status = GetCourierStatus(message.UcmmSendFromCourier, now)
-                };
-            }
+                return DescribeCourier(message.UcmmSendFromCourierId.Value, message.UcmmSendFromCourier);
 
             if (message.UcmmSendFromStaffId.HasValue)
-            {
-                return new MessageParticipant
-                {
-                    Id = message.UcmmSendFromStaffId.Value,
-                    Type = OtherMessagePartyType.Staff,
-                    Name = GetParticipantName(staff: message.UcmmSendFromStaff),
-                    Initials = GetParticipantInitials(staff: message.UcmmSendFromStaff),
-                    Status = "online"
-                };
-            }
+                return DescribeStaff(message.UcmmSendFromStaffId.Value, message.UcmmSendFromStaff);
         }
 
         return new MessageParticipant { Id = 0, Type = OtherMessagePartyType.Staff, Name = "Unknown", Initials = "??" };
     }
+
+    public MessageParticipant DescribeCourier(int courierId, TucCourier courier) => new()
+    {
+        Id = courierId,
+        Type = OtherMessagePartyType.Courier,
+        Name = GetParticipantName(courier: courier),
+        Initials = GetParticipantInitials(courier: courier),
+        Status = GetCourierStatus(courier, clock.TenantNow)
+    };
+
+    public MessageParticipant DescribeStaff(int staffId, TucStaff staff) => new()
+    {
+        Id = staffId,
+        Type = OtherMessagePartyType.Staff,
+        Name = GetParticipantName(staff: staff),
+        Initials = GetParticipantInitials(staff: staff),
+        Status = "online" // Assume staff are always online
+    };
 
     /// <summary>
     /// Determines if a message is incoming (sent to the specified staff member).

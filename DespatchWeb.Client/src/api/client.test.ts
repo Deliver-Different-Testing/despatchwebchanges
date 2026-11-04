@@ -310,6 +310,15 @@ describe('ApiClient', () => {
             });
         });
 
+        it.each(['ECONNABORTED', 'ETIMEDOUT'])('should explain a %s timeout in plain language', async (code) => {
+            const errorHandler = mockResponseInterceptorUse.mock.calls[0][1];
+
+            await expect(errorHandler({code, message: 'timeout of 20000ms exceeded'})).rejects.toMatchObject({
+                status: 0,
+                message: 'The server took too long to respond. Try again.',
+            });
+        });
+
         it('should extract message from object response data', async () => {
             const interceptorCall = mockResponseInterceptorUse.mock.calls[0];
             const errorHandler = interceptorCall[1];
