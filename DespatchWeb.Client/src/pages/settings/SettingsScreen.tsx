@@ -4,7 +4,7 @@ import {ErrorBoundary} from '../../components/common/error-boundary';
 import {SettingsPage} from './SettingsPage';
 
 export const SettingsScreen: React.FC = () => (
-    <PageFrame section="Account" title="Settings" scrollable>
+    <PageFrame section="Dispatch" title="Setup" scrollable>
         <ErrorBoundary>
             <SettingsPage/>
         </ErrorBoundary>

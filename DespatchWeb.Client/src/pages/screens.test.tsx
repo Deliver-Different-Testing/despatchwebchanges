@@ -48,7 +48,7 @@ describe.each([
     ['TaskDashboardScreen', <TaskDashboardScreen/>, 'tasks', 'Dashboards', 'Task dashboard'],
     ['DriverManagementScreen', <DriverManagementScreen/>, 'drivers', 'Operations', 'Drivers'],
     ['RecurringJobsScreen', <RecurringJobsScreen/>, 'recurring', 'Dashboards', 'Recurring jobs'],
-    ['SettingsScreen', <SettingsScreen/>, 'settings', 'Account', 'Settings'],
+    ['SettingsScreen', <SettingsScreen/>, 'settings', 'Dispatch', 'Setup'],
 ])('%s', (_name, element, testId, section, title) => {
     it('renders the page inside the frame with section/title breadcrumb', () => {
         renderScreen(element);
