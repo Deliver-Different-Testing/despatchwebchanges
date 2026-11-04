@@ -26,7 +26,7 @@ export const AutoMateChatButton: React.FC = () => {
                     zIndex: AUTO_MATE_CHAT_BUTTON_Z_INDEX,
                 }}
             >
-                <AutoMateLogo size={28}/>
+                <AutoMateLogo size={44}/>
             </ActionIcon>
         </Tooltip>
     );
