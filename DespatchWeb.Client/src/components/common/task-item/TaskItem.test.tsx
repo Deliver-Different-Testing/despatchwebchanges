@@ -33,7 +33,7 @@ jest.mock('../../../utils/dateUtils', () => ({
 
 const renderWithProviders = (ui: React.ReactElement) => renderWithMantine(ui);
 
-/** 23:59 today: due today, and still ahead of now for any run outside the final minute. */
+/** 23:59 today: due today, and ahead of the suite's pinned midday clock. */
 const laterToday = () => dayjs().endOf('day').subtract(1, 'minute');
 
 // Sample task data
@@ -100,6 +100,23 @@ const openDueOption = async (option: 'Date' | 'Time') => {
 };
 
 describe('TaskItem', () => {
+    // Pin "now" to local midday so laterToday() is always ahead of it. Only Date is
+    // faked, so userEvent and Mantine keep real timers.
+    beforeEach(() => {
+        jest.useFakeTimers({
+            now: dayjs().hour(12).minute(0).second(0).millisecond(0).toDate(),
+            doNotFake: [
+                'hrtime', 'nextTick', 'performance', 'queueMicrotask', 'requestAnimationFrame',
+                'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback', 'setImmediate',
+                'clearImmediate', 'setInterval', 'clearInterval', 'setTimeout', 'clearTimeout',
+            ],
+        });
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
     describe('Row anatomy', () => {
         it('renders the headline, description, assignee and every fact', () => {
             renderWithProviders(<TaskItem {...createDefaultProps()} />);
@@ -111,6 +128,12 @@ describe('TaskItem', () => {
             expect(screen.getByText('Pickup')).toBeInTheDocument();
             expect(screen.getByText('ABC123 — John Smith')).toBeInTheDocument();
             expect(screen.getByText('ACME')).toBeInTheDocument();
+        });
+
+        it('says a task with no job has none, instead of an empty Job fact', () => {
+            renderWithProviders(<TaskItem {...createDefaultProps({task: createMockTask({jobId: 0, jobNumber: ''})})} />);
+
+            expect(meta('jobNumber')).toHaveTextContent(/^JobNo job$/);
         });
 
         it('names the type of every fact it shows', () => {
