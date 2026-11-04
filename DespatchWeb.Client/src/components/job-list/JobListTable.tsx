@@ -18,6 +18,7 @@ import {useDisclosure, useInterval} from '@mantine/hooks';
 import {Briefcase, ChevronUp, Info, TriangleAlert, UserPlus, UserSearch, Zap} from 'lucide-react';
 
 import {Icon} from '../common/icon/Icon';
+import {isNetworkPartnerSession} from '../dialogs/dispatch-dialog/dispatchSession';
 import {ActionButton, ACTION_BUTTON_COMPACT_GLYPH_SIZE, ACTION_BUTTON_COMPACT_HEIGHT} from '../common/action-button';
 import {SearchSelect} from '../common/search-select/SearchSelect';
 import type {DensityMode, DispatchJob, JobListSort} from '../../types/dispatchJob';
@@ -92,6 +93,21 @@ function getCourierCode(job: DispatchJob): string {
 
 function hasAssignedCourier(job: DispatchJob): boolean {
     return !!(job.assignedCourier || job.courier);
+}
+
+/** A signed-in network partner only sees its own jobs, so naming the partner on each is noise. */
+function getNetworkPartnerName(job: DispatchJob): string | null {
+    return isNetworkPartnerSession() ? null : (job.networkPartnerName || null);
+}
+
+function PartnerSubLine({job}: {job: DispatchJob}) {
+    const partnerName = getNetworkPartnerName(job);
+    if (!partnerName) return null;
+    return (
+        <Text size="xs" c="dimmed" lh={1.2} truncate>
+            {`via ${partnerName}`}
+        </Text>
+    );
 }
 
 // Timezone abbreviation — computed once per render
@@ -726,6 +742,7 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
                             {getCourierCode(job)}
                         </Text>
                     )}
+                    <PartnerSubLine job={job}/>
                 </>
             );
         }
@@ -733,9 +750,12 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
         const name = getCourierName(job);
         const display = code && name ? `${code} - ${name}` : (name || code);
         return (
-            <Text fz="inherit" truncate>
-                {display}
-            </Text>
+            <>
+                <Text fz="inherit" truncate>
+                    {display}
+                </Text>
+                <PartnerSubLine job={job}/>
+            </>
         );
     }
 
@@ -928,6 +948,15 @@ const CellContent: React.FC<{
                 return (
                     <Text fz="inherit" truncate>
                         {job.assignedAgent.agentName}
+                    </Text>
+                );
+            }
+            // Network partner holds the job but hasn't dispatched its own driver yet
+            const partnerName = getNetworkPartnerName(job);
+            if (partnerName && !hasAssignedCourier(job)) {
+                return (
+                    <Text fz="inherit" truncate>
+                        {`NP · ${partnerName}`}
                     </Text>
                 );
             }

@@ -130,6 +130,8 @@ public class DispatchJobViewModel
 
     public string SentToPartnerName { get; set; }
 
+    public string NetworkPartnerName { get; set; }
+
     // Name of the OTHER tenant on a partner pairing — populated for both the
     // sender (via JobPartnerDispatch) and the receiver (via the most recent
     // change-request pairing) so the UI can substitute the actual tenant name

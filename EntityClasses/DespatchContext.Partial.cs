@@ -375,6 +375,11 @@ public partial class DespatchContext
                 .HasPrincipalKey<TucJob>(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(d => d.NpAgent)
+                .WithMany()
+                .HasForeignKey(d => d.NpAgentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasQueryFilter(j =>
                 CurrentBypassFilters
                 || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
@@ -402,6 +407,11 @@ public partial class DespatchContext
 
         modelBuilder.Entity<TucJobArchive>(entity =>
         {
+            entity.HasOne(d => d.NpAgent)
+                .WithMany()
+                .HasForeignKey(d => d.NpAgentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasOne(d => d.UcjbClient)
                 .WithMany()
                 .HasForeignKey(d => d.UcjbClientId)

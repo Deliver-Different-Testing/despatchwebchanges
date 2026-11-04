@@ -5359,7 +5359,7 @@ public partial class JobRepository(
 
     /// <summary>
     /// Restores the given jobs back onto the dispatch board (the C# replacement for the legacy
-    /// uspRestoreJobs proc). Per job, it un-assigns the courier, clears dispatch/paging/completion
+    /// uspRestoreJobs proc). Per job, it un-assigns the courier, agent and network partner, clears dispatch/paging/completion
     /// state, resets the status to New and internal status to New Jobs, and re-shows the job via
     /// DisplayInDespatch = 1. Completed jobs are restored too (the operator confirms that in the
     /// UI). The POD name is cleared so the job re-enters the DESWEB_qryDespatch board view, which
@@ -5387,7 +5387,9 @@ public partial class JobRepository(
                 j.ParentId,
                 j.UcjbDispId,
                 j.UcjbJobDone,
-                j.UcjbVoid
+                j.UcjbVoid,
+                AgentName = j.Agent != null ? j.Agent.UcagName : null,
+                NetworkPartnerName = j.NpAgent != null ? j.NpAgent.UcagName : null
             })
             .ToListAsync();
 
@@ -5401,6 +5403,8 @@ public partial class JobRepository(
 
         Log.Information("RestoreJobsCore loaded {FoundCount} job(s) from TucJobs to evaluate for restore",
             jobs.Count);
+
+        var keepNetworkPartner = Context.CurrentIsNetworkPartner;
 
         foreach (var job in jobs)
         {
@@ -5450,7 +5454,20 @@ public partial class JobRepository(
                     .SetProperty(j => j.FdcourierId, (int?)null)
                     .SetProperty(j => j.FirstJob, false)
                     .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.NewJobs)
-                    .SetProperty(j => j.UcjbPodname, (string)null));
+                    .SetProperty(j => j.UcjbPodname, (string)null)
+                    .ClearAgentAssignments(keepNetworkPartner));
+
+            if (job.AgentName != null)
+            {
+                await SaveNoteAsync(job.UcjbId, $"Agent {job.AgentName} unassigned",
+                    noteType: NoteType.AgentUpdate);
+            }
+
+            if (job.NetworkPartnerName != null && !keepNetworkPartner)
+            {
+                await SaveNoteAsync(job.UcjbId, $"Network partner {job.NetworkPartnerName} unassigned",
+                    noteType: NoteType.AgentUpdate);
+            }
 
             Log.Information(
                 "RestoreJobsCore restored job {JobId} to New/NewJobs (courier cleared, completion/dispatch state reset; POD name cleared so the job re-enters the dispatch view)",
@@ -6973,6 +6990,7 @@ public partial class JobRepository(
             .Where(j => jobIds.Contains(j.UcjbId))
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(j => j.UcjbCourierId, courierId)
+                .SetProperty(j => j.AgentId, (int?)null)
                 .SetProperty(j => j.UcjbDispId, dispatcherStaffId > 0 ? dispatcherStaffId : null)
                 .SetProperty(j => j.DesCheck, false)
                 .SetProperty(j => j.FdcourierId, (int?)null)

@@ -179,6 +179,8 @@ export interface DispatchJob {
     assignedFlight?: AssignedFlight;
     assignedAgent?: AssignedAgent;
     sentToPartnerName?: string | null;
+    /** Network partner holding the job (tucJob.NpAgentId), whether or not it has dispatched its own driver yet. */
+    networkPartnerName?: string | null;
     conNote?: string;
     followupTime?: Dayjs;
     fromAirportId?: number;

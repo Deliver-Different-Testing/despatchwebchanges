@@ -136,6 +136,7 @@ public static partial class JobMappings
                     }
                     : null,
             IsAgentAssigned = j.Agent != null,
+            NetworkPartnerName = j.NpAgent != null ? j.NpAgent.UcagName : null,
 
             // SentToPartnerName is OUR outbound discriminator — populated only when
             // the linked pairing's OwnerTenantId matches the local tenant (we sent the
@@ -263,6 +264,7 @@ public static partial class JobMappings
                     Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                 }
                 : null,
+            NetworkPartnerName = j.NpAgent != null ? j.NpAgent.UcagName : null,
 
             StatusId = j.UcjbStatus,
             Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,

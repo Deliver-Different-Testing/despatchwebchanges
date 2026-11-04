@@ -450,6 +450,7 @@ public static partial class JobMappings
                     Text = j.UcjbCourier.UccrName + " " + j.UcjbCourier.UccrSurname
                 }
                 : null,
+            NetworkPartnerName = j.NpAgent != null ? j.NpAgent.UcagName : null,
 
             StatusId = j.UcjbStatus,
             Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
