@@ -17,6 +17,9 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// PdfSharp 6.5+ refuses to create documents until a licence is registered.
+PdfSharp.PdfSharpLicense.SetAgplLicense();
+
 // Add services to the container.
 builder.Services.AddHealthChecks()
     .AddCheck<SqlServerHealthCheck>("sql_server_health_check")

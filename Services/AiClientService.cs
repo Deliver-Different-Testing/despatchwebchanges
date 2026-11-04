@@ -138,11 +138,9 @@ public sealed class AiClientService(
         string forceToolName = null,
         bool enableCaching = false)
     {
-        var anthropicMessages = messages.Select(msg => new MessageParam
-        {
-            Role = msg.Role == "user" ? Role.User : Role.Assistant,
-            Content = msg.Content
-        }).ToList();
+        var anthropicMessages = messages.Select(msg => msg.Role == "user"
+            ? (MessageParam)new UserMessageParam { Content = msg.Content }
+            : new AssistantMessageParam { Content = msg.Content }).ToList();
 
         // Put the cache breakpoint on the system prompt. Rendering order is
         // tools -> system -> messages, so a breakpoint on the system block
