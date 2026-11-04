@@ -1249,6 +1249,24 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task RestoreNationwideJobAsync_ClearsAgentAndNetworkPartner()
+    {
+        const int jobId = 100;
+        var job = CreateJob(jobId, "JOB001");
+        job.AgentId = 7;
+        job.NpAgentId = 8;
+        _context.TucJobs.Add(job);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().RestoreNationwideJobAsync(jobId);
+
+        var restored = await _context.TucJobs.AsNoTracking()
+            .FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Null(restored.AgentId);
+        Assert.Null(restored.NpAgentId);
+    }
+
+    [Fact]
     public async Task GetFlightCarrierIdByCodeAsync_WithExistingCode_ReturnsId()
     {
         // Arrange

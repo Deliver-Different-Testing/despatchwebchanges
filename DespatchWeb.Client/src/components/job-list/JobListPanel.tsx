@@ -154,8 +154,8 @@ function getSortValue(
                 : getDeliveryAddressUs(job);
         case 'courier':
             return isUsCustomer
-                ? (job.courierData?.courierName || job.assignedCourier?.text || '')
-                : String(job.courierData?.courierNumber || job.assignedCourier?.id || '');
+                ? (job.courierData?.courierName || job.assignedCourier?.text || job.networkPartnerName || '')
+                : String(job.courierData?.courierNumber || job.assignedCourier?.id || job.networkPartnerName || '');
         case 'remaining':
             return job.remain ?? null;
         case 'status':

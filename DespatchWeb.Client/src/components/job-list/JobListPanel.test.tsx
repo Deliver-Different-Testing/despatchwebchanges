@@ -833,6 +833,20 @@ describe('JobListPanel', () => {
             expect(rows.map(el => el.textContent)).toEqual(['PO-100', 'PO-200', 'PO-300']);
         });
 
+        it('sorts network partner jobs by partner name in the courier column', () => {
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'J1', networkPartnerName: 'Zed Cabs'}),
+                createMockDispatchJob({id: 2, jobNo: 'J2', networkPartnerName: 'Alpha Cabs'}),
+                createMockDispatchJob({id: 3, jobNo: 'J3', networkPartnerName: 'Mid Cabs'}),
+            ];
+            renderAndPushJobs(jobs);
+
+            fireEvent.click(screen.getByText('Courier'));
+
+            const rows = screen.getAllByText(/^NP · \w+ Cabs$/);
+            expect(rows.map(el => el.textContent)).toEqual(['NP · Alpha Cabs', 'NP · Mid Cabs', 'NP · Zed Cabs']);
+        });
+
         it('sorts jobs correctly by delivery address column', () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'J1', deliveryAddress: {addressLine5: 'Zebra Town'} as any}),

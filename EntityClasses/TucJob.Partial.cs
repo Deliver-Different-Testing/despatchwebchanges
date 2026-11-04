@@ -7,4 +7,5 @@ public partial class TucJob
     public virtual TucClientContact LoggedInContact { get; set; }
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
     public virtual TucJobAddressDeatil AddressDetail { get; set; }
+    public virtual TucAgent NpAgent { get; set; }
 }
