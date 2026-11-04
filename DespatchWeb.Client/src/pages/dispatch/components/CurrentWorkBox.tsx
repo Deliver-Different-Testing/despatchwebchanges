@@ -34,15 +34,16 @@ const CURRENT_WORK_HIDDEN_CATEGORIES: readonly JobCategory[] = ['needs-dispatch'
  * but the panel is remounted whenever the dispatch shell re-keys its box layout
  * (e.g. a background remote-layout sync bumps `layoutVersion`). Persisting the
  * focus to sessionStorage keeps a manually-picked driver from snapping back to
- * the selected job's courier across those remounts. `appliedJobCourierId` records
- * the last `selectedJobCourierId` we drilled into so a remount replaying the same
- * value doesn't override a more-recent manual pick.
+ * the selected job's courier across those remounts. `appliedSelection` records
+ * the job selection we last drilled in for, so a remount replaying the same
+ * selection doesn't override a more-recent manual pick — while a click on any
+ * other job, even one for a driver focused earlier, still drills in.
  */
 interface CurrentWorkFocus {
     courierId?: number;
     mode: Mode;
     pickedCourierName?: string;
-    appliedJobCourierId?: number;
+    appliedSelection?: string;
 }
 
 const focusStorageKey = (): string => `dispatchCurrentWorkFocus_${getSession().contactId}`;
@@ -83,6 +84,8 @@ export interface CurrentWorkBoxProps {
     startDate: Dayjs;
     /** Page-level date filter end — caps the current work window at this day. */
     endDate: Dayjs;
+    /** Id of the currently selected job, if any. */
+    selectedJobId?: number;
     /** Courier id derived from the currently selected job, if any. */
     selectedJobCourierId?: number;
     /** Display name for the selected job's courier (shown in the breadcrumb). */
@@ -114,6 +117,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     refetchIntervalMs = false,
     startDate,
     endDate,
+    selectedJobId,
     selectedJobCourierId,
     selectedJobCourierName,
     selectedJobCourierNumber,
@@ -134,33 +138,34 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     const [pickedCourierName, setPickedCourierName] = useState<string | undefined>(
         restoredFocus?.pickedCourierName,
     );
-    // Last selected-job courier we drilled into; survives remounts via restore so a
-    // replayed selectedJobCourierId can't clobber a newer manual pick.
-    const appliedJobCourierIdRef = useRef<number | undefined>(restoredFocus?.appliedJobCourierId);
+    // Last job selection we drilled in for; survives remounts via restore so a
+    // replayed selection can't clobber a newer manual pick.
+    const appliedSelectionRef = useRef<string | undefined>(restoredFocus?.appliedSelection);
 
     const persistFocus = (next: Partial<CurrentWorkFocus>) => {
         writeFocus({
             courierId,
             mode,
             pickedCourierName,
-            appliedJobCourierId: appliedJobCourierIdRef.current,
+            appliedSelection: appliedSelectionRef.current,
             ...next,
         });
     };
 
     // Selecting a job elsewhere on the page drills into that job's courier here
-    // (matches V1 selectJob → getCurrentJobs(job.courierData.courierId)). Skip when
-    // the value is unchanged from the last drill-in — a remount replaying the same
-    // selectedJobCourierId must not override a driver picked from the overview since.
+    // (matches V1 selectJob → getCurrentJobs(job.courierData.courierId)). Keyed on the
+    // job as well as its courier: keying on the courier alone ignored a click on another
+    // job for a driver drilled into earlier, once the dispatcher had moved off them.
+    const selection = selectedJobCourierId ? `${selectedJobId ?? ''}:${selectedJobCourierId}` : undefined;
     useEffect(() => {
-        if (selectedJobCourierId && selectedJobCourierId !== appliedJobCourierIdRef.current) {
-            appliedJobCourierIdRef.current = selectedJobCourierId;
+        if (selectedJobCourierId && selection !== appliedSelectionRef.current) {
+            appliedSelectionRef.current = selection;
             setCourierId(selectedJobCourierId);
             setMode('detail');
             setPickedCourierName(undefined);
             persistFocus({courierId: selectedJobCourierId, mode: 'detail', pickedCourierName: undefined});
         }
-    }, [selectedJobCourierId]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [selection]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleCourierSearchSelect = (courier: CourierSuggestion) => {
         setCourierId(courier.id);

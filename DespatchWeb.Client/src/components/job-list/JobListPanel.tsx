@@ -13,7 +13,7 @@ import type {
     JobListSort,
 } from '../../types/dispatchJob';
 import {JobListStatsHeader} from './JobListStatsHeader';
-import {JobListToolbar} from './JobListToolbar';
+import {CATEGORY_LABELS, JobListToolbar} from './JobListToolbar';
 import {JobListViewOptions} from './JobListViewOptions';
 import {JobListColumnEditor} from './JobListColumnEditor';
 import {availableColumns, DEFAULT_COLUMN_WIDTHS, orderColumns} from './jobListColumns';
@@ -35,7 +35,7 @@ import {
 } from '../../api/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
-import {isDelivered, isDone, isInTransit, isUrgent, JOB_STATUS, needsDispatch, priorityRank} from './jobListHelpers';
+import {isDone, isInTransit, isUrgent, JOB_STATUS, needsDispatch, priorityRank} from './jobListHelpers';
 import {
     jobListStorageKey,
     loadJobListCategory,
@@ -494,14 +494,16 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const stats = useMemo(() => {
         if (hookData.statusCounts) return hookData.statusCounts;
 
-        const statsResult = {total: jobs.length, active: 0, transit: 0, done: 0};
+        // Counted with the same predicates the tabs filter by, so each number is what its tab shows.
+        const statsResult = {total: jobs.length, unassigned: 0, active: 0, transit: 0, done: 0};
         for (const j of jobs) {
-            if (needsDispatch(j)) statsResult.active++;
+            if (needsDispatch(j)) statsResult.unassigned++;
             if (isInTransit(j)) statsResult.transit++;
-            if (isDelivered(j)) statsResult.done++;
+            if (isDone(j, !!undeliverableIsDone)) statsResult.done++;
         }
+        statsResult.active = statsResult.total - statsResult.done;
         return statsResult;
-    }, [jobs, hookData.statusCounts]);
+    }, [jobs, hookData.statusCounts, undeliverableIsDone]);
 
     // ── Related job highlighting ────────────────────────────────────
     const relatedJobIds = useMemo(() => {
@@ -877,6 +879,22 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [showToast, fetchConfig, onRefresh]);
 
+    // Rows exist but the tab hides them all: say so and offer the way out, rather than
+    // the generic empty state, which reads as "there is no work".
+    const filterEmptyState = useMemo(() => {
+        if (selectedCategory === 'all' || debouncedSearchQuery || visibleJobs.length > 0 || stats.total === 0) {
+            return undefined;
+        }
+        if (fetchConfig && hookData.isLoading) return undefined;
+        const label = CATEGORY_LABELS[selectedCategory];
+        return {
+            title: `No ${label} jobs`,
+            message: `${stats.total} ${pluralise(stats.total, 'job is', 'jobs are')} hidden by the ${label} filter.`,
+            actionText: 'Show all',
+            onAction: () => handleCategoryChange('all'),
+        };
+    }, [selectedCategory, debouncedSearchQuery, visibleJobs.length, stats.total, fetchConfig, hookData.isLoading, handleCategoryChange]);
+
     // ── Render ───────────────────────────────────────────────────────
 
     return (
@@ -903,7 +921,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 </Progress.Root>
             )}
             {topSlot}
-            <JobListStatsHeader stats={stats}/>
+            <JobListStatsHeader stats={stats} hiddenCategories={hiddenCategories}/>
             {headerSlot && (
                 <HeaderSlotPortal slot={headerSlot}>
                     <JobListViewOptions
@@ -974,6 +992,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onLoadMore={fetchConfig ? hookData.fetchNextPage : undefined}
                 hasMore={fetchConfig ? hookData.hasMore : false}
                 isFetchingMore={fetchConfig ? hookData.isFetchingNextPage : false}
+                emptyState={filterEmptyState}
             />
             <JobListFooter
                 displayedCount={visibleJobs.length}

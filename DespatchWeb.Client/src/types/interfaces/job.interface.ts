@@ -1084,6 +1084,7 @@ export interface IJobSearchResultDto {
  */
 export interface IJobListStatusCounts {
     total: number;
+    unassigned: number;
     active: number;
     transit: number;
     done: number;

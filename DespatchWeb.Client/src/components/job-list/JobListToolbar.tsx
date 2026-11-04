@@ -52,12 +52,15 @@ interface JobListToolbarProps {
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-const CATEGORY_OPTIONS: {value: JobCategory; label: string}[] = [
-    {value: 'needs-dispatch', label: 'Unassigned'},
-    {value: 'in-progress', label: 'Active'},
-    {value: 'delivered', label: 'Done'},
-    {value: 'all', label: 'All'},
-];
+export const CATEGORY_LABELS: Record<JobCategory, string> = {
+    'needs-dispatch': 'Unassigned',
+    'in-progress': 'Active',
+    delivered: 'Done',
+    all: 'All',
+};
+
+const CATEGORY_OPTIONS: {value: JobCategory; label: string}[] =
+    (['needs-dispatch', 'in-progress', 'delivered', 'all'] as const).map(value => ({value, label: CATEGORY_LABELS[value]}));
 
 /**
  * The active tab keeps its category's semantic colour — Unassigned/Active/Done

@@ -273,6 +273,9 @@ export interface JobSearchResult {
 
 export interface JobListStatusCounts {
     total: number;
+    /** What the Unassigned tab lists. */
+    unassigned: number;
+    /** What the Active tab lists — everything not done, so `transit` is a part of it. */
     active: number;
     transit: number;
     done: number;
