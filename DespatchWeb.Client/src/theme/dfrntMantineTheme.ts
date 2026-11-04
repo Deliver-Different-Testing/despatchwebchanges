@@ -303,8 +303,9 @@ export function createDfrntTheme(appearance: ThemeAppearance = STANDARD_APPEARAN
             SegmentedControl: {defaultProps: {radius: 'sm', withItemsBorders: false}},
             // Kept fully round: a pill toggle track is the universal switch
             // affordance, not the decorative lozenge shape the rest of the
-            // controls moved away from.
-            Switch: {defaultProps: {radius: 9999}},
+            // controls moved away from. The thumb indicator dot is off because it
+            // shares the track colour and makes the thumb read as a hollow ring.
+            Switch: {defaultProps: {radius: 9999, withThumbIndicator: false}},
             Radio: {defaultProps: {size: 'sm'}},
             Tabs: {styles: {tab: {paddingBlock: 14, fontWeight: 500}}},
         },
