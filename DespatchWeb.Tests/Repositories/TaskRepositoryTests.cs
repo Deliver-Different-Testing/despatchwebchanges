@@ -542,6 +542,64 @@ public class TaskRepositoryTests : IAsyncDisposable
         Assert.Null(TaskRepository.ResolveCreatedAt(new TaskViewModel(), info, "Pacific/Auckland"));
     }
 
+    private static TaskViewModel UnlinkedTask(int id, string? storedJobNumber, int? clientId = 7) =>
+        new() { Id = id, StoredJobNumber = storedJobNumber, ClientId = clientId };
+
+    [Fact]
+    public void ProjectToTaskViewModel_CarriesStoredJobNumberAndClient()
+    {
+        var ev = CreateEvent(1, e =>
+        {
+            e.UcevJobNumber = "P3765V";
+            e.UcevClientId = 7;
+            e.UcevJob = new TucJob();
+        });
+
+        var vm = ProjectInMemory(ev);
+
+        Assert.Equal("P3765V", vm.StoredJobNumber);
+        Assert.Equal(7, vm.ClientId);
+    }
+
+    [Fact]
+    public async Task LinkUnlinkedTasksByJobNumber_LinksOnlyWhenOneLiveOrArchivedJobOfTheClientMatches()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 100, UcjbNumber = "LIVE1", UcjbClientId = 7 },
+                new TucJob { UcjbId = 101, UcjbNumber = "TWICE", UcjbClientId = 7 },
+                new TucJob { UcjbId = 102, UcjbNumber = "OTHERCLIENT", UcjbClientId = 8 });
+            seed.TucJobArchives.AddRange(
+                new TucJobArchive { UcjbId = 200, UcjbNumber = "ARCH1", UcjbClientId = 7 },
+                new TucJobArchive { UcjbId = 201, UcjbNumber = "TWICE", UcjbClientId = 7 });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var live = UnlinkedTask(1, "LIVE1");
+        var archived = UnlinkedTask(2, " ARCH1 ");
+        var ambiguous = UnlinkedTask(3, "TWICE");
+        var otherClient = UnlinkedTask(4, "OTHERCLIENT");
+        var placeholder = UnlinkedTask(5, "-");
+        var blank = UnlinkedTask(6, "  ");
+        var noClient = UnlinkedTask(7, "OTHERCLIENT", clientId: null);
+        var alreadyLinked = new TaskViewModel { Id = 8, JobId = 555, JobNumber = "KEEP", StoredJobNumber = "LIVE1", ClientId = 7 };
+        TaskViewModel[] tasks = [live, archived, ambiguous, otherClient, placeholder, blank, noClient, alreadyLinked];
+
+        await using var context = _db.CreateContext();
+        await TaskRepository.LinkUnlinkedTasksByJobNumberAsync(context, tasks);
+
+        Assert.Equal((100, "LIVE1"), (live.JobId, live.JobNumber));
+        Assert.Equal((200, "ARCH1"), (archived.JobId, archived.JobNumber));
+        Assert.Equal((102, "OTHERCLIENT"), (noClient.JobId, noClient.JobNumber));
+        Assert.Equal((555, "KEEP"), (alreadyLinked.JobId, alreadyLinked.JobNumber));
+        Assert.All([ambiguous, otherClient, placeholder, blank], t =>
+        {
+            Assert.Equal(0, t.JobId);
+            Assert.Null(t.JobNumber);
+        });
+    }
+
     [Fact]
     public void ProjectToTaskViewModel_CarriesCreatedFields()
     {

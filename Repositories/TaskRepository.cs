@@ -26,6 +26,7 @@ public class TaskRepository(
     private const int NotesMaxLength = 1000;
     private const int DescriptionMaxLength = 255;
     private const int JobNumberMaxLength = 50;
+    private const int JobNumberLookupBatchSize = 500;
 
     private static readonly HashSet<string> AutoResponseTypes =
         new(StringComparer.OrdinalIgnoreCase) { "Web", "Email", "Text" };
@@ -50,6 +51,8 @@ public class TaskRepository(
         Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
         EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
         JobNumber = e.UcevJob.UcjbNumber,
+        StoredJobNumber = e.UcevJobNumber,
+        ClientId = e.UcevClientId,
         CourierCode = e.UcevJob.UcjbCourier != null ? e.UcevJob.UcjbCourier.Code : null,
         CourierName = e.UcevJob.UcjbCourier != null
             ? e.UcevJob.UcjbCourier.UccrName + " " + e.UcevJob.UcjbCourier.UccrSurname
@@ -77,6 +80,8 @@ public class TaskRepository(
             .Select(ProjectToTaskViewModel)
             .ToListAsync();
 
+        await LinkUnlinkedTasksByJobNumberAsync(Context, tasks);
+
         foreach (var task in tasks)
         {
             task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
@@ -84,6 +89,52 @@ public class TaskRepository(
         }
 
         return tasks;
+    }
+
+    /// <summary>
+    /// Some events reach tucEvent with a job number but no job id. Link those to the job the number
+    /// names when exactly one live or archived job (of the event's client, when it has one) carries it.
+    /// </summary>
+    internal static async Task LinkUnlinkedTasksByJobNumberAsync(DespatchContext context, IReadOnlyList<TaskViewModel> tasks)
+    {
+        var unlinked = tasks
+            .Where(t => t.JobId == 0 && !string.IsNullOrWhiteSpace(t.StoredJobNumber) && t.StoredJobNumber.Trim() != "-")
+            .ToList();
+        if (unlinked.Count == 0)
+        {
+            return;
+        }
+
+        var numbers = unlinked.Select(t => t.StoredJobNumber.Trim()).Distinct().ToList();
+        var jobs = new List<(int Id, string Number, int? ClientId)>();
+        foreach (var batch in numbers.Chunk(JobNumberLookupBatchSize))
+        {
+            var rows = await context.TucJobs
+                .Where(j => batch.Contains(j.UcjbNumber))
+                .Select(j => new { j.UcjbId, j.UcjbNumber, j.UcjbClientId })
+                .Concat(context.TucJobArchives
+                    .Where(j => batch.Contains(j.UcjbNumber))
+                    .Select(j => new { j.UcjbId, j.UcjbNumber, j.UcjbClientId }))
+                .ToListAsync();
+            jobs.AddRange(rows.Select(r => (r.UcjbId, r.UcjbNumber.Trim(), r.UcjbClientId)));
+        }
+
+        // SQL Server compares job numbers case-insensitively; match the same way here.
+        var jobsByNumber = jobs.ToLookup(j => j.Number, StringComparer.OrdinalIgnoreCase);
+        foreach (var task in unlinked)
+        {
+            var matches = jobsByNumber[task.StoredJobNumber.Trim()]
+                .Where(j => task.ClientId is not > 0 || j.ClientId == task.ClientId)
+                .DistinctBy(j => j.Id)
+                .ToList();
+            if (matches.Count != 1)
+            {
+                continue;
+            }
+
+            task.JobId = matches[0].Id;
+            task.JobNumber = matches[0].Number;
+        }
     }
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)

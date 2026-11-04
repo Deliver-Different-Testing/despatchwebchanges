@@ -581,7 +581,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
 
             {config.showJobId !== false && (
                 <Fact stamp="jobNumber"
-                    hideLabel={compact} label="Job" value={task.jobNumber}/>
+                    hideLabel={compact} label="Job" value={task.jobId ? task.jobNumber : 'No job'}/>
             )}
 
             {config.showJobType !== false && task.eventType && (

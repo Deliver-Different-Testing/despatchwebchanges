@@ -33,11 +33,11 @@ const config = {
 
     // MSW and its dependencies use ESM - need to transform them
     transformIgnorePatterns: [
-        'node_modules[\\\\/](?!(msw|@mswjs|until-async|rettime|@open-draft|@dfrnt[\\\\/]glass)[\\\\/])',
+        'node_modules[\\\\/](?!(msw|@mswjs|until-async|rettime|@open-draft|@deliver-different[\\\\/]glass)[\\\\/])',
     ],
 
     moduleNameMapper: {
-        '^@dfrnt/glass$': '<rootDir>/node_modules/@dfrnt/glass/dist/index.js',
+        '^@deliver-different/glass$': '<rootDir>/node_modules/@deliver-different/glass/dist/index.js',
         '\\.(less|css|scss|sass)$': '<rootDir>/src/test/mocks/styleMock.ts',
         '^virtual:pwa-register/react$': '<rootDir>/src/test/mocks/pwaRegisterMock.ts',
     },
