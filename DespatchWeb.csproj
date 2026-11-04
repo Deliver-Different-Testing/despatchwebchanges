@@ -80,6 +80,8 @@
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="System.Linq.Async" />
+    <!-- Pins the transitive copy from Microsoft.Data.SqlClient past GHSA-846f-f764-76mx / GHSA-2fmv-rv2c-59x7. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <PackageReference Include="System.Linq.Dynamic.Core" />
     <PackageReference Include="TimeZoneConverter" />
   </ItemGroup>
