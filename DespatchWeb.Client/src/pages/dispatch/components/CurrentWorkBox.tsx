@@ -5,7 +5,7 @@ import {Box, Group, Stack, Text} from '@mantine/core';
 import {useDisclosure} from '@mantine/hooks';
 import type {Dayjs} from 'dayjs';
 import {AppPage} from '../../../types/dispatchJob';
-import type {DispatchJob, FetchConfig, JobListSearchParams} from '../../../types/dispatchJob';
+import type {DispatchJob, FetchConfig, JobCategory, JobListSearchParams} from '../../../types/dispatchJob';
 import type {ShowToastFn} from '../../../services/toastService';
 import {fetchCurrentWorkJobs} from '../../../api/jobSearchApi';
 import {fetchDriverWorkOverview} from '../../../api/courierApi';
@@ -25,6 +25,9 @@ import type {CourierSuggestion} from '../../../types';
 import {formatCourierDisplayLabel, type CourierDisplayMode} from '../lib/courierDisplayMode';
 
 type Mode = 'overview' | 'active' | 'detail';
+
+// Every job here is on the focused driver, so Unassigned can never match.
+const CURRENT_WORK_HIDDEN_CATEGORIES: readonly JobCategory[] = ['needs-dispatch'];
 
 /**
  * The drill-down focus (which driver the panel is showing) lives in local state,
@@ -219,6 +222,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             // GetCurrentWorkList deliberately returns done jobs too, so the panel has to
             // default to the courier's outstanding work (V1 mounted it the same way).
             defaultCategory="in-progress"
+            hiddenCategories={CURRENT_WORK_HIDDEN_CATEGORIES}
             fetchConfig={fetchConfig}
             hideLoggedInSwitch
             undeliverableIsDone

@@ -46,6 +46,8 @@ interface JobListToolbarProps {
      * Defaults to true.
      */
     renderViewOptions?: boolean;
+    /** Category tabs to leave out — ones that can never match in this panel's scope. */
+    hiddenCategories?: readonly JobCategory[];
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -107,6 +109,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     onBulkMarkUnread,
     showLoggedInSwitch,
     renderViewOptions = true,
+    hiddenCategories,
 }) => {
     // Every operational page can bulk-dispatch; Nationwide was previously excluded,
     // which left it with no bulk assignment affordance at all.
@@ -176,7 +179,9 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 value={selectedCategory}
                 onChange={onCategoryChange}
                 color={CATEGORY_COLORS[selectedCategory]}
-                data={CATEGORY_OPTIONS}
+                data={hiddenCategories?.length
+                    ? CATEGORY_OPTIONS.filter(o => !hiddenCategories.includes(o.value))
+                    : CATEGORY_OPTIONS}
             />
 
             {/* Search */}
