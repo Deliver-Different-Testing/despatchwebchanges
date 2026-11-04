@@ -5,6 +5,7 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {
     ChatMessage,
     DEFAULT_QUICK_RESPONSES,
@@ -15,60 +16,91 @@ import {
 } from "../components/dialogs/messaging-dialog/types";
 import messagingApi from "../api/messagingApi";
 
+export const conversationsQueryKey = ['messages', 'conversations'] as const;
+export const CONVERSATIONS_REFRESH_MS = 20_000;
+/** Shorter than the client-wide 30s so a stuck load turns into an error with Retry sooner. */
+export const CONVERSATIONS_TIMEOUT_MS = 20_000;
+export const SLOW_LOAD_HINT_MS = 8_000;
+
 /**
- * Hook for managing the conversation list
+ * The conversation list, fetched and polled only while the message center is open.
+ * Closing it aborts an in-flight load; reopening shows the cached list while it refreshes.
  */
-export function useConversations() {
-    const [conversations, setConversations] = useState<RecentConversation[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+export function useConversations(open: boolean) {
+    const queryClient = useQueryClient();
+    const query = useQuery({
+        queryKey: conversationsQueryKey,
+        queryFn: ({signal}) => messagingApi.getRecentList({signal, timeout: CONVERSATIONS_TIMEOUT_MS}),
+        enabled: open,
+        refetchInterval: open ? CONVERSATIONS_REFRESH_MS : false,
+        staleTime: 0,
+        // The panel offers Retry; silent retries would only hold the spinner up longer.
+        retry: false,
+    });
 
-    const loadConversations = useCallback(async (silent = false) => {
-        if (!silent) setIsLoading(true);
-        setError(null);
+    useEffect(() => {
+        if (!open) void queryClient.cancelQueries({queryKey: conversationsQueryKey});
+    }, [open, queryClient]);
 
-        try {
-            const data = await messagingApi.getRecentList();
-            setConversations(data);
-        } catch (err: unknown) {
-            console.error('Failed to load conversations:', err);
-            if (!silent) setError(err instanceof Error ? err.message : 'Failed to load conversations');
-        } finally {
-            if (!silent) setIsLoading(false);
+    const isLoading = query.isPending && query.isFetching;
+    const [isSlow, setIsSlow] = useState(false);
+    useEffect(() => {
+        if (!isLoading) {
+            setIsSlow(false);
+            return;
         }
-    }, []);
+        const timer = setTimeout(() => setIsSlow(true), SLOW_LOAD_HINT_MS);
+        return () => clearTimeout(timer);
+    }, [isLoading]);
+
+    const {refetch} = query;
+    // Joins an in-flight poll rather than cancelling it and starting over.
+    const refresh = useCallback(() => refetch({cancelRefetch: false}), [refetch]);
+
+    const setConversations = useCallback(async (
+        update: (previous: RecentConversation[]) => RecentConversation[],
+    ) => {
+        // An in-flight poll would otherwise land afterwards and overwrite the local change.
+        await queryClient.cancelQueries({queryKey: conversationsQueryKey});
+        queryClient.setQueryData<RecentConversation[]>(conversationsQueryKey, previous => update(previous ?? []));
+    }, [queryClient]);
 
     const updateConversation = useCallback((
         otherPartyId: number,
         otherPartyType: OtherMessagePartyType,
         updates: Partial<RecentConversation>
-    ) => {
-        setConversations(prev => prev.map(conv =>
-            conv.otherPartyId === otherPartyId && conv.otherPartyType === otherPartyType
-                ? { ...conv, ...updates }
-                : conv
-        ));
-    }, []);
+    ) => setConversations(previous => previous.map(conv =>
+        conv.otherPartyId === otherPartyId && conv.otherPartyType === otherPartyType
+            ? {...conv, ...updates}
+            : conv
+    )), [setConversations]);
 
-    const addConversation = useCallback((conversation: RecentConversation) => {
-        setConversations(prev => {
-            const exists = prev.some(
-                c => c.otherPartyId === conversation.otherPartyId &&
-                     c.otherPartyType === conversation.otherPartyType
-            );
-            if (exists) return prev;
-            return [conversation, ...prev];
-        });
-    }, []);
+    const addConversation = useCallback((conversation: RecentConversation) => setConversations(previous =>
+        previous.some(c =>
+            c.otherPartyId === conversation.otherPartyId && c.otherPartyType === conversation.otherPartyType)
+            ? previous
+            : [conversation, ...previous]
+    ), [setConversations]);
 
     return {
-        conversations,
+        conversations: query.data ?? EMPTY_CONVERSATIONS,
         isLoading,
-        error,
-        loadConversations,
+        isSlow,
+        isRefreshing: query.isFetching,
+        error: query.isError && query.data === undefined ? errorMessage(query.error) : null,
+        refresh,
         updateConversation,
         addConversation,
     };
+}
+
+const EMPTY_CONVERSATIONS: RecentConversation[] = [];
+
+function errorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+        return error.message;
+    }
+    return 'Failed to load conversations';
 }
 
 /**
