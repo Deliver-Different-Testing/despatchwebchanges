@@ -84,16 +84,17 @@ export interface CurrentWorkBoxProps {
     startDate: Dayjs;
     /** Page-level date filter end — caps the current work window at this day. */
     endDate: Dayjs;
-    /** Id of the currently selected job, if any. */
-    selectedJobId?: number;
+    /**
+     * The page's selected job (`null` for none): drills into its courier, and is
+     * highlighted here when it is in this driver's list.
+     */
+    selectedJobId?: number | null;
     /** Courier id derived from the currently selected job, if any. */
     selectedJobCourierId?: number;
     /** Display name for the selected job's courier (shown in the breadcrumb). */
     selectedJobCourierName?: string;
     /** Courier number for the selected job's courier, if known (shown in the breadcrumb). */
     selectedJobCourierNumber?: string;
-    /** The page's selected job, highlighted here when it is in this driver's list. */
-    selectedJobId?: number | null;
     /** How much courier info to show in the breadcrumb once a courier is focused. */
     courierDisplayMode?: CourierDisplayMode;
     onJobSelect?: (job: DispatchJob) => void;
@@ -123,7 +124,6 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     selectedJobCourierId,
     selectedJobCourierName,
     selectedJobCourierNumber,
-    selectedJobId,
     courierDisplayMode = 'name',
     onJobSelect,
     headerSlot,
