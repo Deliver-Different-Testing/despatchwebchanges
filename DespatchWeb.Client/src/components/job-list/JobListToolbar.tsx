@@ -5,7 +5,7 @@
  * Follows the app's standard toolbar pattern (44px minHeight, divider border).
  */
 
-import React, {useCallback, useMemo, useRef} from 'react';
+import React, {useCallback, useRef} from 'react';
 import {Box, Group, Text, TextInput} from '@mantine/core';
 import {useDebouncedCallback} from '@mantine/hooks';
 import {ArchiveRestore, Mail, MailOpen, Search, X} from 'lucide-react';
@@ -46,8 +46,8 @@ interface JobListToolbarProps {
      * Defaults to true.
      */
     renderViewOptions?: boolean;
-    /** The tabs this list offers. Defaults to all four. */
-    categories?: readonly JobCategory[];
+    /** Category tabs to leave out — ones that can never match in this panel's scope. */
+    hiddenCategories?: readonly JobCategory[];
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -93,7 +93,6 @@ const selectionBarStyle: React.CSSProperties = {
 };
 
 export const JobListToolbar: React.FC<JobListToolbarProps> = ({
-    categories,
     selectedCategory,
     onCategoryChange,
     searchQuery,
@@ -113,11 +112,8 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     onBulkMarkUnread,
     showLoggedInSwitch,
     renderViewOptions = true,
+    hiddenCategories,
 }) => {
-    const categoryOptions = useMemo(
-        () => (categories ? CATEGORY_OPTIONS.filter(o => categories.includes(o.value)) : CATEGORY_OPTIONS),
-        [categories],
-    );
     // Every operational page can bulk-dispatch; Nationwide was previously excluded,
     // which left it with no bulk assignment affordance at all.
     const allowDispatch = appPage === AppPage.Dispatch
@@ -186,7 +182,9 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 value={selectedCategory}
                 onChange={onCategoryChange}
                 color={CATEGORY_COLORS[selectedCategory]}
-                data={categoryOptions}
+                data={hiddenCategories?.length
+                    ? CATEGORY_OPTIONS.filter(o => !hiddenCategories.includes(o.value))
+                    : CATEGORY_OPTIONS}
             />
 
             {/* Search */}

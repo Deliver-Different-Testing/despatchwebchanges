@@ -26,6 +26,9 @@ import {formatCourierDisplayLabel, type CourierDisplayMode} from '../lib/courier
 
 type Mode = 'overview' | 'active' | 'detail';
 
+// Every job here is on the focused driver, so Unassigned can never match.
+const CURRENT_WORK_HIDDEN_CATEGORIES: readonly JobCategory[] = ['needs-dispatch'];
+
 /**
  * The drill-down focus (which driver the panel is showing) lives in local state,
  * but the panel is remounted whenever the dispatch shell re-keys its box layout
@@ -42,9 +45,6 @@ interface CurrentWorkFocus {
     pickedCourierName?: string;
     appliedSelection?: string;
 }
-
-// Every job in one courier's list is assigned to them, so an Unassigned tab could only ever be empty.
-const CURRENT_WORK_CATEGORIES: readonly JobCategory[] = ['in-progress', 'delivered', 'all'];
 
 const focusStorageKey = (): string => `dispatchCurrentWorkFocus_${getSession().contactId}`;
 
@@ -227,7 +227,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             // GetCurrentWorkList deliberately returns done jobs too, so the panel has to
             // default to the courier's outstanding work (V1 mounted it the same way).
             defaultCategory="in-progress"
-            categories={CURRENT_WORK_CATEGORIES}
+            hiddenCategories={CURRENT_WORK_HIDDEN_CATEGORIES}
             fetchConfig={fetchConfig}
             hideLoggedInSwitch
             undeliverableIsDone

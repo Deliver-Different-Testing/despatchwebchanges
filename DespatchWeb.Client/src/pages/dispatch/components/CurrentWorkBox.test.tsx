@@ -3,12 +3,12 @@ import {render, screen, waitFor, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // Stub the heavy children so the test exercises CurrentWorkBox's own wiring.
-const jobListPanelProps: {fetchConfig?: any; defaultCategory?: string; categories?: string[]} = {};
+const jobListPanelProps: {fetchConfig?: any; defaultCategory?: string; hiddenCategories?: string[]} = {};
 jest.mock('../../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, fetchConfig, defaultCategory, categories}: {storagePrefix: string; fetchConfig: any; defaultCategory?: string; categories?: string[]}) => {
+    JobListPanel: ({storagePrefix, fetchConfig, defaultCategory, hiddenCategories}: {storagePrefix: string; fetchConfig: any; defaultCategory?: string; hiddenCategories?: string[]}) => {
         jobListPanelProps.fetchConfig = fetchConfig;
         jobListPanelProps.defaultCategory = defaultCategory;
-        jobListPanelProps.categories = categories;
+        jobListPanelProps.hiddenCategories = hiddenCategories;
         return <div data-testid={`mock-job-list-${storagePrefix}`} />;
     },
 }));
@@ -76,6 +76,7 @@ describe('CurrentWorkBox', () => {
         mockOverview.drivers = undefined;
         jobListPanelProps.fetchConfig = undefined;
         jobListPanelProps.defaultCategory = undefined;
+        jobListPanelProps.hiddenCategories = undefined;
         sessionStorage.clear();
         jest.clearAllMocks();
     });
@@ -93,11 +94,11 @@ describe('CurrentWorkBox', () => {
             expect(screen.getByTestId('mock-job-list-dispatchCurrentWork')).toBeInTheDocument();
         });
 
-        it('defaults the courier job list to their active work and never offers Unassigned', () => {
+        it('defaults the courier job list to their active work and hides Unassigned', () => {
             renderBox({selectedJobCourierId: 42});
             expect(jobListPanelProps.defaultCategory).toBe('in-progress');
-            // Every job in one courier's list is assigned to them, so Unassigned could only ever be empty.
-            expect(jobListPanelProps.categories).toEqual(['in-progress', 'delivered', 'all']);
+            // Every job here is on the driver, so it can never be unassigned (#942).
+            expect(jobListPanelProps.hiddenCategories).toEqual(['needs-dispatch']);
         });
 
         it('drives the current-work fetch off the page date filter (matching the other lists)', () => {

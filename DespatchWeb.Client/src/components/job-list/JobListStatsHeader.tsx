@@ -13,8 +13,8 @@ import type {JobCategory, JobListStatusCounts} from '../../types/dispatchJob';
 
 interface JobListStatsHeaderProps {
     stats: JobListStatusCounts;
-    /** The tabs the list offers; a count for a tab it doesn't offer is left out. */
-    categories?: readonly JobCategory[];
+    /** Tabs the list doesn't offer; their counts are left out too. */
+    hiddenCategories?: readonly JobCategory[];
 }
 
 const containerStyle: React.CSSProperties = {
@@ -32,8 +32,8 @@ const statDotStyle = (color: string): React.CSSProperties => ({
     flexShrink: 0,
 });
 
-export const JobListStatsHeader: React.FC<JobListStatsHeaderProps> = ({stats, categories}) => {
-    const offers = (category: JobCategory) => !categories || categories.includes(category);
+export const JobListStatsHeader: React.FC<JobListStatsHeaderProps> = ({stats, hiddenCategories}) => {
+    const offers = (category: JobCategory) => !hiddenCategories?.includes(category);
     return (
         <Group align="center" gap="lg" px="md" py={6} wrap="nowrap" style={containerStyle}>
             <StatItem color="var(--mantine-color-gray-5)" label="Total" value={stats.total}/>

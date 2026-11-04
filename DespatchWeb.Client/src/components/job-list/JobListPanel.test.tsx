@@ -356,7 +356,7 @@ describe('JobListPanel', () => {
             renderAndPushJobs(assignedJobs(), {
                 storagePrefix: 'currentWork',
                 defaultCategory: 'in-progress',
-                categories: ['in-progress', 'delivered', 'all'],
+                hiddenCategories: ['needs-dispatch'],
             });
 
             expect(screen.queryByRole('radio', {name: 'Unassigned'})).not.toBeInTheDocument();
@@ -370,7 +370,7 @@ describe('JobListPanel', () => {
             renderAndPushJobs(assignedJobs(), {
                 storagePrefix: 'currentWork',
                 defaultCategory: 'in-progress',
-                categories: ['in-progress', 'delivered', 'all'],
+                hiddenCategories: ['needs-dispatch'],
             });
 
             expect(screen.getByRole('radio', {name: 'Done'})).toBeChecked();
@@ -607,6 +607,21 @@ describe('JobListPanel', () => {
             );
 
             expect(localStorage.getItem(key('selectedCategory'))).toBe('delivered');
+        });
+
+        it('falls back to defaultCategory when the stored category is hidden', () => {
+            localStorage.setItem(key('selectedCategory'), 'needs-dispatch');
+            renderAndPushJobs(
+                [
+                    createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
+                    createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
+                ],
+                {storagePrefix, defaultCategory: 'in-progress', hiddenCategories: ['needs-dispatch']},
+            );
+
+            expect(screen.getByRole('radio', {name: 'Active'})).toBeChecked();
+            expect(screen.queryByRole('radio', {name: 'Unassigned'})).not.toBeInTheDocument();
+            expect(screen.queryByText('DONE-1')).not.toBeInTheDocument();
         });
 
         it('persists the category filter and ignores an unrecognised stored value', () => {

@@ -54,13 +54,13 @@ describe('JobListToolbar', () => {
         expect(screen.getByRole('radiogroup', {name: 'Row density'})).toBeInTheDocument();
     });
 
-    it('offers only the categories the list passes in', () => {
-        renderWithMantine(
-            <JobListToolbar {...createDefaultProps()} categories={['in-progress', 'delivered', 'all']}/>,
-        );
+    it('leaves hidden categories out of the radio group', () => {
+        renderWithMantine(<JobListToolbar {...createDefaultProps()} hiddenCategories={['needs-dispatch']}/>);
 
         expect(screen.queryByRole('radio', {name: 'Unassigned'})).not.toBeInTheDocument();
-        expect(screen.getAllByRole('radio', {name: /^(Active|Done|All)$/})).toHaveLength(3);
+        for (const name of ['Active', 'Done', 'All']) {
+            expect(screen.getByRole('radio', {name})).toBeInTheDocument();
+        }
     });
 
     it('fires onCategoryChange when a category is clicked', async () => {

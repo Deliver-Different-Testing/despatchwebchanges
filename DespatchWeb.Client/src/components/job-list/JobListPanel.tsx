@@ -238,7 +238,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               onJobsLoaded,
                                                               defaultCategory,
                                                               forcedCategory,
-                                                              categories,
+                                                              hiddenCategories,
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
                                                               hideLoggedInSwitch,
@@ -287,12 +287,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // ── UI State ─────────────────────────────────────────────────────
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<JobCategory>(
-        () => {
-            // A remembered tab this list no longer offers would hide every row, so fall back to the default.
-            const stored = loadJobListCategory(storagePrefix);
-            const offered = stored && (!categories || categories.includes(stored)) ? stored : null;
-            return forcedCategory ?? offered ?? defaultCategory ?? 'all';
-        },
+        () => [forcedCategory, loadJobListCategory(storagePrefix), defaultCategory]
+            .find((c): c is JobCategory => !!c && !hiddenCategories?.includes(c)) ?? 'all',
     );
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedRawQuery] = useDebouncedValue(searchQuery, 200);
@@ -925,7 +921,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 </Progress.Root>
             )}
             {topSlot}
-            <JobListStatsHeader stats={stats} categories={categories}/>
+            <JobListStatsHeader stats={stats} hiddenCategories={hiddenCategories}/>
             {headerSlot && (
                 <HeaderSlotPortal slot={headerSlot}>
                     <JobListViewOptions
@@ -941,7 +937,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 </HeaderSlotPortal>
             )}
             <JobListToolbar
-                categories={categories}
                 selectedCategory={selectedCategory}
                 onCategoryChange={handleCategoryChange}
                 searchQuery={searchQuery}
@@ -961,6 +956,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onBulkMarkUnread={handleBulkMarkUnread}
                 showLoggedInSwitch={showLoggedInSwitch}
                 renderViewOptions={!headerSlot}
+                hiddenCategories={hiddenCategories}
             />
             {columnEditMode && (
                 <JobListColumnEditor

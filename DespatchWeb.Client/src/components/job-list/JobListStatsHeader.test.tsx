@@ -26,7 +26,7 @@ describe('JobListStatsHeader', () => {
 
     it('leaves out the counts for tabs the list does not offer', () => {
         renderWithMantine(
-            <JobListStatsHeader stats={defaultStats} categories={['in-progress', 'delivered', 'all']}/>,
+            <JobListStatsHeader stats={defaultStats} hiddenCategories={['needs-dispatch']}/>,
         );
 
         expect(screen.queryByText('Unassigned')).not.toBeInTheDocument();

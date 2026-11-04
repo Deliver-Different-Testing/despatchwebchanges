@@ -346,11 +346,10 @@ export interface JobListPanelProps {
      */
     forcedCategory?: JobCategory;
     /**
-     * The tabs this list offers (default: all four). A remembered tab outside the set is
-     * ignored, so a list can drop one that could never match — Current Work has no
-     * Unassigned, since every job in a courier's list is assigned to them.
+     * Category tabs this panel never offers, e.g. Unassigned on a single driver's
+     * Current work. A stored or forced value naming one falls back to `defaultCategory`.
      */
-    categories?: readonly JobCategory[];
+    hiddenCategories?: readonly JobCategory[];
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
     /** If provided, React manages its own data fetching via React Query */
