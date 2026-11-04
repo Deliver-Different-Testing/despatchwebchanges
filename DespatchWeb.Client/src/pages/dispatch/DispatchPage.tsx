@@ -293,14 +293,9 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
 
     const {mode: courierFlagLastDelivery} = useCourierFlagLastDelivery(isUsCustomer);
 
-    // Highlight-sync callback captured from the job list (V1 ReactJobList.selectJob)
-    // so selecting a job from the map or supports highlights the matching row.
-    const selectInListRef = useRef<((jobId: number) => void) | null>(null);
-
     const selectJob = useCallback((job: DispatchJob) => {
         setCurrentJob(job);
         setCurrentJobId(job.id);
-        selectInListRef.current?.(job.id);
     }, []);
 
     // Jobs currently loaded in the list — fed to the map as markers and used to
@@ -621,8 +616,9 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         forcedCategory={clearListId ? CLEAR_LIST_CATEGORY : undefined}
                         fetchConfig={fetchConfigMain as any}
                         onJobSelect={selectJob}
+                        // Both job lists highlight the page's one selection (#940).
+                        selectedJobId={currentJobId ?? null}
                         onJobsLoaded={handleJobsLoaded}
-                        setSelectJobCallback={(cb) => { selectInListRef.current = cb; }}
                         setUpdateSearchParamsCallback={(cb) => { pushListParams.current = cb; }}
                         headerSlot={headerSlot}
                         topSlot={
@@ -697,13 +693,13 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         refetchIntervalMs={refreshIntervals.jobsMs}
                         startDate={filters.startDate}
                         endDate={filters.endDate}
-                        selectedJobId={currentJob?.id}
                         selectedJobCourierId={currentJob?.courierData?.courierId}
                         selectedJobCourierName={
                             currentJob?.courierData?.courierName
                             ?? currentJob?.assignedCourier?.text
                         }
                         selectedJobCourierNumber={currentJob?.courierData?.courierNumber}
+                        selectedJobId={currentJobId ?? null}
                         courierDisplayMode={courierDisplayMode}
                         onJobSelect={selectJob}
                         headerSlot={headerSlot}
