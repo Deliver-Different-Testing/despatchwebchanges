@@ -5,12 +5,13 @@
  */
 
 import React from 'react';
-import {screen, waitFor} from '@testing-library/react';
+import {act, screen, waitFor} from '@testing-library/react';
 import {MessagingDialog, isNearBottom} from './MessagingDialog';
 import {dayjs} from '../../../utils/dateUtils';
 import {messagingApi} from '../../../api/messagingApi';
 import { suppressConsoleError } from '../../../test/utils';
-import {renderWithMantine as renderWithTheme} from '../../../test/utils';
+import {renderWithMantine} from '../../../test/utils';
+import {SLOW_LOAD_HINT_MS} from '../../../hooks/useMessaging';
 import { setupUser } from '../../../test/utils/setupUser';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
 
@@ -34,6 +35,7 @@ jest.mock('../../../api/messagingApi', () => {
 });
 
 const mockApi = messagingApi as jest.Mocked<typeof messagingApi>;
+const renderWithTheme = (ui: React.ReactElement) => renderWithMantine(ui, {withQueryClient: true});
 const defaultProps = {
     open: true,
     onClose: jest.fn(),
@@ -232,6 +234,42 @@ describe('MessagingDialog', () => {
 
         await user.click(screen.getByRole('button', {name: /Retry/i}));
         expect(await screen.findByText('Recovered')).toBeInTheDocument();
+    });
+
+    // ── Slow first load ─────────────────────────────────────────────
+    it('tells the user a slow first load is still in progress', async () => {
+        jest.useFakeTimers();
+        try {
+            setupApiDefaults();
+            mockApi.getRecentList.mockReturnValue(new Promise(() => {}));
+            renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+            expect(await screen.findByLabelText('Loading conversations')).toBeInTheDocument();
+            expect(screen.queryByText('Still loading conversations…')).not.toBeInTheDocument();
+
+            act(() => { jest.advanceTimersByTime(SLOW_LOAD_HINT_MS); });
+
+            expect(screen.getByRole('status')).toHaveTextContent('Still loading conversations…');
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    // ── Failed refresh keeps the list ───────────────────────────────
+    it('keeps the list and shows a toast when a manual refresh fails', async () => {
+        const user = setupUser();
+        setupApiDefaults([createConversation({otherPartyName: 'Still Here'})]);
+        const showToast = jest.fn();
+        renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast} />);
+        expect(await screen.findByText('Still Here')).toBeInTheDocument();
+
+        mockApi.getRecentList.mockRejectedValueOnce({status: 0, message: 'The server took too long to respond. Try again.'});
+        await user.click(screen.getByRole('button', {name: 'Refresh conversations'}));
+
+        await waitFor(() => expect(showToast).toHaveBeenCalledWith(
+            "Couldn't refresh conversations. The server took too long to respond. Try again.", 'error'));
+        expect(screen.getByText('Still Here')).toBeInTheDocument();
+        expect(screen.queryByText("Couldn't load messages")).not.toBeInTheDocument();
     });
 
     // ── Chat Panel: placeholder → select conversation → header, type, empty messages (single render) ─

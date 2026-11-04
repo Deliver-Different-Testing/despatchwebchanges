@@ -54,6 +54,15 @@ describe('JobListToolbar', () => {
         expect(screen.getByRole('radiogroup', {name: 'Row density'})).toBeInTheDocument();
     });
 
+    it('leaves hidden categories out of the radio group', () => {
+        renderWithMantine(<JobListToolbar {...createDefaultProps()} hiddenCategories={['needs-dispatch']}/>);
+
+        expect(screen.queryByRole('radio', {name: 'Unassigned'})).not.toBeInTheDocument();
+        for (const name of ['Active', 'Done', 'All']) {
+            expect(screen.getByRole('radio', {name})).toBeInTheDocument();
+        }
+    });
+
     it('fires onCategoryChange when a category is clicked', async () => {
         const user = setupUser();
         const props = createDefaultProps();

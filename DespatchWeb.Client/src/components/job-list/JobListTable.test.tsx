@@ -15,6 +15,7 @@ import {AppPage} from '../../types/dispatchJob';
 import dayjs from 'dayjs';
 import {searchActiveCouriersExtended} from '../../api/courierApi';
 import {createMockDispatchJob, STALE_ADDRESS_DEVICE, STALE_ADDRESS_LINES} from '../../test/utils/mockData';
+import {isNetworkPartnerSession} from '../dialogs/dispatch-dialog/dispatchSession';
 
 jest.mock('../../api/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn(),
@@ -38,7 +39,13 @@ jest.mock('@tanstack/react-virtual', () => ({
 jest.mock('../../utils/dateUtils', () =>
     require('../../test/mocks/dateUtilsMock').nzDateUtilsMock());
 
+jest.mock('../dialogs/dispatch-dialog/dispatchSession', () => ({
+    ...jest.requireActual('../dialogs/dispatch-dialog/dispatchSession'),
+    isNetworkPartnerSession: jest.fn(() => false),
+}));
+
 const mockedSearch = searchActiveCouriersExtended as jest.Mock;
+const mockedIsNetworkPartnerSession = isNetworkPartnerSession as jest.Mock;
 
 function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobListTable>>) {
     const resolved = {isUsCustomer: false, isJobSearchPage: false, ...overrides};
@@ -378,6 +385,44 @@ describe('JobListTable', () => {
             renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
 
             expect(screen.getByText('Acme Couriers')).toBeInTheDocument();
+        });
+
+        it('shows the network partner, not an Assign button, when a partner holds the job', () => {
+            const job = createMockDispatchJob({networkPartnerName: 'Proline Cabs'});
+
+            for (const appPage of [AppPage.Dispatch, AppPage.JobSearch, AppPage.Domestic]) {
+                const {unmount} = renderWithMantine(
+                    <JobListTable {...createDefaultProps({jobs: [job], appPage})}/>
+                );
+                expect(screen.getByText('NP · Proline Cabs')).toBeInTheDocument();
+                expect(screen.queryByText('Assign')).not.toBeInTheDocument();
+                unmount();
+            }
+        });
+
+        it("shows the partner's own driver with the partner underneath", () => {
+            const job = createMockDispatchJob({
+                networkPartnerName: 'Proline Cabs',
+                assignedCourier: {id: 10, text: 'John Smith'},
+                courierData: {courier: 'JS01', courierName: 'John Smith', courierNumber: '101'},
+            });
+            renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+            expect(screen.getByText('JS01 - John Smith')).toBeInTheDocument();
+            expect(screen.getByText('via Proline Cabs')).toBeInTheDocument();
+        });
+
+        it('leaves the partner label off for a signed-in network partner, whose jobs are all theirs', () => {
+            mockedIsNetworkPartnerSession.mockReturnValue(true);
+            try {
+                const job = createMockDispatchJob({networkPartnerName: 'Proline Cabs'});
+                renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+                expect(screen.queryByText('NP · Proline Cabs')).not.toBeInTheDocument();
+                expect(screen.getByText('Assign')).toBeInTheDocument();
+            } finally {
+                mockedIsNetworkPartnerSession.mockReturnValue(false);
+            }
         });
     });
 

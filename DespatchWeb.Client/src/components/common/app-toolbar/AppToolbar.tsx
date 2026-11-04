@@ -2,13 +2,13 @@
  * React App Toolbar Component
  *
  * The shell app bar — Ink Blue, or the tenant's custom primary when one is set.
- * Layout: Logo | Keyline | Breadcrumbs | Spacer | Actions | Menu
+ * Layout: [Sidebar toggle] | Logo | Keyline | Breadcrumbs | Spacer | Actions | [Menu]
  * Chrome mirrors Integration Manager's AppShell.Header.
  */
 
 import React from 'react';
 import {ActionIcon, Badge, Box, Divider, Group, Text, Tooltip, useMantineTheme} from '@mantine/core';
-import {Menu as MenuIcon, ChevronRight} from 'lucide-react';
+import {Menu as MenuIcon, ChevronRight, PanelLeft} from 'lucide-react';
 import dayjs from 'dayjs';
 import {Icon} from '../icon/Icon';
 import {toolbarIconButtonClassName, toolbarIconButtonStyle} from './ToolbarActions';
@@ -34,8 +34,13 @@ export interface AppToolbarProps {
     onMenuClick?: () => void;
     /** Show a BETA chip next to the page title (V2 pages). */
     beta?: boolean;
-    /** Breadcrumbs and actions only: no logo, keyline or menu button (the DFRNT sidebar carries those). */
-    slim?: boolean;
+    /** DFRNT sidebar shell: leads the bar with the sidebar toggle in place of the trailing menu button. */
+    sidebarToggle?: SidebarToggle;
+}
+
+export interface SidebarToggle {
+    open: boolean;
+    onToggle: () => void;
 }
 
 function greetUser(userName: string): string {
@@ -76,7 +81,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     onMenuHover,
     onMenuClick,
     beta,
-    slim = false,
+    sidebarToggle,
 }) => {
     // The shell fill, its on-colour and the wordmark that reads on it all come from
     // the theme, so the bar is a provider concern rather than a prop.
@@ -86,6 +91,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     const hasMultipleCrumbs = resolvedCrumbs.length > 1;
 
     const resolvedLogo = logoUrl ?? shell.logoSrc;
+    const toggleLabel = sidebarToggle?.open ? 'Collapse sidebar' : 'Expand sidebar';
 
     return (
         <Box
@@ -101,8 +107,25 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
             }}
         >
             <Group h="100%" px="md" gap="md" wrap="nowrap">
+                {sidebarToggle && (
+                    <Tooltip label={toggleLabel} position="bottom" withArrow openDelay={300}>
+                        <ActionIcon
+                            variant="subtle"
+                            size="lg"
+                            radius="xl"
+                            aria-label={toggleLabel}
+                            aria-expanded={sidebarToggle.open}
+                            onClick={sidebarToggle.onToggle}
+                            className={toolbarIconButtonClassName}
+                            style={{...toolbarIconButtonStyle, flexShrink: 0}}
+                        >
+                            <Icon lucide={PanelLeft} size={18} />
+                        </ActionIcon>
+                    </Tooltip>
+                )}
+
                 {/* Logo - Brand Identity */}
-                {!slim && <Box
+                <Box
                     component="img"
                     src={resolvedLogo}
                     alt="DFRNT"
@@ -114,10 +137,10 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                         cursor: onLogoClick ? 'pointer' : 'default',
                         transition: 'opacity 0.2s',
                     }}
-                />}
+                />
 
                 {/* Keyline separating the brand mark from the location path */}
-                {!slim && resolvedCrumbs.length > 0 && (
+                {resolvedCrumbs.length > 0 && (
                     <Divider
                         data-testid="toolbar-keyline"
                         orientation="vertical"
@@ -190,7 +213,7 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                 )}
 
                 {/* Menu Button */}
-                {!slim && <Tooltip label={greeting}>
+                {!sidebarToggle && <Tooltip label={greeting}>
                     <ActionIcon
                         variant="subtle"
                         size="lg"

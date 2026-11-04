@@ -18,6 +18,7 @@ import {useDisclosure, useInterval} from '@mantine/hooks';
 import {Briefcase, ChevronUp, Info, TriangleAlert, UserPlus, UserSearch, Zap} from 'lucide-react';
 
 import {Icon} from '../common/icon/Icon';
+import {isNetworkPartnerSession} from '../dialogs/dispatch-dialog/dispatchSession';
 import {ActionButton, ACTION_BUTTON_COMPACT_GLYPH_SIZE, ACTION_BUTTON_COMPACT_HEIGHT} from '../common/action-button';
 import {SearchSelect} from '../common/search-select/SearchSelect';
 import type {DensityMode, DispatchJob, JobListSort} from '../../types/dispatchJob';
@@ -56,6 +57,7 @@ import {
 import {JobListLegendDialog} from './JobListLegendDialog';
 import {FLIGHT_INDICATORS, INDICATORS, renderLegendMarker, renderTableIndicator} from './jobListIndicators';
 import {NoData} from '../common/no-data/NoData';
+import type {NoDataProps} from '../common/no-data/types';
 import classes from './JobListTable.module.css';
 import {resolvedStatusId, resolvedStatusLabel} from '../../utils/jobStatus';
 
@@ -91,6 +93,21 @@ function getCourierCode(job: DispatchJob): string {
 
 function hasAssignedCourier(job: DispatchJob): boolean {
     return !!(job.assignedCourier || job.courier);
+}
+
+/** A signed-in network partner only sees its own jobs, so naming the partner on each is noise. */
+function getNetworkPartnerName(job: DispatchJob): string | null {
+    return isNetworkPartnerSession() ? null : (job.networkPartnerName || null);
+}
+
+function PartnerSubLine({job}: {job: DispatchJob}) {
+    const partnerName = getNetworkPartnerName(job);
+    if (!partnerName) return null;
+    return (
+        <Text size="xs" c="dimmed" lh={1.2} truncate>
+            {`via ${partnerName}`}
+        </Text>
+    );
 }
 
 // Timezone abbreviation — computed once per render
@@ -256,6 +273,8 @@ interface JobListTableProps {
     onLoadMore?: () => void;
     hasMore?: boolean;
     isFetchingMore?: boolean;
+    /** Replaces the default empty state — e.g. when the category tab, not the data, emptied the list. */
+    emptyState?: Pick<NoDataProps, 'title' | 'message' | 'actionText' | 'onAction'>;
 }
 
 export const JobListTable: React.FC<JobListTableProps> = ({
@@ -279,6 +298,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                                               onLoadMore,
                                                               hasMore,
                                                               isFetchingMore,
+                                                              emptyState,
                                                           }) => {
     // Tick every 60s to keep time-dependent late/overdue checks current.
     // Stored as a ref to avoid re-rendering every row — only rows with
@@ -421,6 +441,8 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                 title="No jobs found"
                 message="No jobs match the current view."
                 icon={<Icon lucide={Briefcase} size={48}/>}
+                showAction={!!emptyState?.onAction}
+                {...emptyState}
             />
         );
     }
@@ -720,6 +742,7 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
                             {getCourierCode(job)}
                         </Text>
                     )}
+                    <PartnerSubLine job={job}/>
                 </>
             );
         }
@@ -727,9 +750,12 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
         const name = getCourierName(job);
         const display = code && name ? `${code} - ${name}` : (name || code);
         return (
-            <Text fz="inherit" truncate>
-                {display}
-            </Text>
+            <>
+                <Text fz="inherit" truncate>
+                    {display}
+                </Text>
+                <PartnerSubLine job={job}/>
+            </>
         );
     }
 
@@ -922,6 +948,15 @@ const CellContent: React.FC<{
                 return (
                     <Text fz="inherit" truncate>
                         {job.assignedAgent.agentName}
+                    </Text>
+                );
+            }
+            // Network partner holds the job but hasn't dispatched its own driver yet
+            const partnerName = getNetworkPartnerName(job);
+            if (partnerName && !hasAssignedCourier(job)) {
+                return (
+                    <Text fz="inherit" truncate>
+                        {`NP · ${partnerName}`}
                     </Text>
                 );
             }

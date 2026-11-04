@@ -77,10 +77,12 @@ export function SettingRow({title, description, badge, accent = BRAND_ACCENT, ch
                     checked={checked}
                     disabled={disabled}
                     aria-label={title}
-                    /* The card already toggles; without this a click on the switch counts twice. */
-                    onClick={(e) => e.stopPropagation()}
+                    /* The card already toggles, so clicks inside the switch must not reach it. This
+                       goes on the root via wrapperProps: a plain onClick lands on the hidden input,
+                       which a click on the track bypasses. */
+                    wrapperProps={{onClick: (e: React.MouseEvent) => e.stopPropagation()}}
                     onChange={onToggle}
-                    style={{'--switch-bg': accent} as React.CSSProperties}
+                    color={accent}
                 />
             </Group>
         </Paper>

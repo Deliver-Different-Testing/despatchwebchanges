@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -111,6 +112,110 @@ public class NoteRepositoryTests : IAsyncDisposable
         // Assert — the note should be returned
         Assert.Single(notes);
         Assert.Equal("Note on child job", notes[0].NoteText);
+    }
+
+    [Fact]
+    public async Task SaveNoteAsync_NewNoteOnBulkChildWhoseParentIsStillInBulk_IsStoredOnTheLeg()
+    {
+        // A leg released from bulk before its parent keeps the parent's tblBulkJob id as ParentId
+        const int bulkParentId = 9755812;
+        const int legJobId = 26442853;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = legJobId,
+            UcjbNumber = "E24343EDLHP",
+            ParentId = bulkParentId,
+            RootParentId = bulkParentId,
+            JobRelationshipTypeId = (int)JobRelationshipTypes.BulkChild
+        });
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        await repository.SaveNoteAsync(new TucNoteViewModel
+        {
+            NoteId = 0,
+            JobId = legJobId,
+            NoteText = "Note on linehaul leg",
+            NoteTypeId = 1
+        }, TestContext.Current.CancellationToken);
+
+        var stored = await _context.TucNotes.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(legJobId, stored.JobId);
+        var notes = await repository.GetNotesByJobIdAsync(legJobId);
+        Assert.Equal("Note on linehaul leg", Assert.Single(notes).NoteText);
+    }
+
+    [Fact]
+    public async Task SaveNoteAsync_UpdateNoteOnBulkChildWhoseParentIsStillInBulk_KeepsTheNoteOnTheLeg()
+    {
+        const int bulkParentId = 9755812;
+        const int legJobId = 26442853;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = legJobId,
+            UcjbNumber = "E24343EDLHP",
+            ParentId = bulkParentId,
+            JobRelationshipTypeId = (int)JobRelationshipTypes.BulkChild
+        });
+        _context.TucNotes.Add(new TucNote
+        {
+            NoteId = 1,
+            JobId = legJobId,
+            NoteText = "Original",
+            NoteTypeId = 1,
+            CreatedDate = TestDates.Now
+        });
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().SaveNoteAsync(new TucNoteViewModel
+        {
+            NoteId = 1,
+            JobId = legJobId,
+            NoteText = "Edited",
+            NoteTypeId = 1
+        }, TestContext.Current.CancellationToken);
+
+        var stored = await _context.TucNotes.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(legJobId, stored.JobId);
+        Assert.Equal("Edited", stored.NoteText);
+    }
+
+    [Fact]
+    public async Task SaveNoteAsync_NewNoteOnLiveLegWithArchivedParent_IsStoredOnTheLeg()
+    {
+        const int parentJobId = 100;
+        const int legJobId = 500;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobArchives.Add(CreateArchivedJob(parentJobId, "PARENT001"));
+        _context.TucJobs.Add(new TucJob { UcjbId = legJobId, UcjbNumber = "PARENT001LHP", ParentId = parentJobId });
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        await repository.SaveNoteAsync(
+            new TucNoteViewModel { NoteId = 0, JobId = legJobId, NoteText = "Leg note", NoteTypeId = 1 },
+            TestContext.Current.CancellationToken);
+
+        var stored = await _context.TucNotes.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(legJobId, stored.JobId);
+        Assert.Equal("Leg note", Assert.Single(await repository.GetNotesByJobIdAsync(legJobId)).NoteText);
+    }
+
+    [Fact]
+    public async Task SaveNoteAsync_NewNoteOnUnknownJob_ThrowsJobNotFound()
+    {
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await Assert.ThrowsAsync<JobNotFoundException>(() => CreateRepository().SaveNoteAsync(
+            new TucNoteViewModel { NoteId = 0, JobId = 424242, NoteText = "Orphan", NoteTypeId = 1 },
+            TestContext.Current.CancellationToken));
     }
 
     [Fact]

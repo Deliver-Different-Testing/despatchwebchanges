@@ -1,5 +1,5 @@
 import React from 'react';
-import {screen, waitFor, act, within} from '@testing-library/react';
+import {screen, waitFor, act} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {renderWithMantine} from '../../test/utils';
 import {setupUser} from '../../test/utils/setupUser';
@@ -49,6 +49,15 @@ describe('Auto-mate chat', () => {
         expect(screen.queryByText('Auto-mate assistant')).not.toBeInTheDocument();
     });
 
+    it('shows the brand Auto-mate logo at 44px on a surface launcher', () => {
+        renderChat(true);
+
+        const launcher = screen.getByRole('button', {name: 'Open Auto-mate assistant'});
+        expect(launcher).toHaveAttribute('data-variant', 'default');
+        expect(launcher.querySelector('img')).toHaveStyle({width: '44px', height: '44px'});
+        expect(launcher.querySelector('svg')).toBeNull();
+    });
+
     it('opens from the button with page suggestions, streams an answer with source badges, and closes', async () => {
         const sources = [{articleId: 'a-1', title: 'Booking a job', isFaq: false}];
         mockStreamChat.mockImplementation(async function* (): AsyncGenerator<AutoMateStreamEvent> {
@@ -58,11 +67,7 @@ describe('Auto-mate chat', () => {
         const user = setupUser();
         renderChat(true, '/dispatch?jobId=42');
 
-        const launcher = screen.getByRole('button', {name: 'Open Auto-mate assistant'});
-        expect(launcher).toHaveAttribute('data-variant', 'filled');
-        expect(within(launcher).getByRole('img', {name: 'Auto-mate'}).tagName.toLowerCase()).toBe('svg');
-
-        await user.click(launcher);
+        await user.click(screen.getByRole('button', {name: 'Open Auto-mate assistant'}));
         expect(await screen.findByText('Auto-mate assistant')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Open Auto-mate assistant'})).not.toBeInTheDocument();
         expect(screen.getByText("What's happening with this job?")).toBeInTheDocument();

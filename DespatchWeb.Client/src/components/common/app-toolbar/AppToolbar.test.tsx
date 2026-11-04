@@ -134,20 +134,30 @@ describe('AppToolbar', () => {
         });
     });
 
-    describe('Slim variant', () => {
-        it('keeps breadcrumbs, actions and height but drops the logo, keyline and menu button', () => {
-            renderWithMantine(
-                <AppToolbar {...defaultProps} title={undefined} breadcrumbs={[{label: 'Dashboards'}, {label: 'Search'}]} slim>
+    describe('Sidebar toggle', () => {
+        it('leads the bar with the toggle, keeps the logo and crumbs, and drops the menu button', () => {
+            const onToggle = jest.fn();
+            const {rerender} = renderWithMantine(
+                <AppToolbar {...defaultProps} title={undefined} breadcrumbs={[{label: 'Dashboards'}, {label: 'Search'}]} sidebarToggle={{open: true, onToggle}}>
                     <button>Action</button>
                 </AppToolbar>
             );
 
+            const toggle = screen.getByRole('button', {name: 'Collapse sidebar'});
+            expect(screen.getAllByRole('button')[0]).toBe(toggle);
+            expect(toggle).toHaveAttribute('aria-expanded', 'true');
+            expect(screen.getByAltText('DFRNT')).toBeInTheDocument();
+            expect(screen.getByTestId('toolbar-keyline')).toBeInTheDocument();
             expect(screen.getByRole('heading', {level: 1, name: 'Search'})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: 'Action'})).toBeInTheDocument();
-            expect(screen.queryByAltText('DFRNT')).not.toBeInTheDocument();
-            expect(screen.queryByTestId('toolbar-keyline')).not.toBeInTheDocument();
             expect(screen.queryByRole('button', {name: /navigation menu/i})).not.toBeInTheDocument();
             expect(screen.getByRole('banner')).toHaveStyle({height: `${APP_BAR_HEIGHT_PX}px`});
+
+            fireEvent.click(toggle);
+            expect(onToggle).toHaveBeenCalledTimes(1);
+
+            rerender(<AppToolbar {...defaultProps} sidebarToggle={{open: false, onToggle}} />);
+            expect(screen.getByRole('button', {name: 'Expand sidebar'})).toHaveAttribute('aria-expanded', 'false');
         });
     });
 

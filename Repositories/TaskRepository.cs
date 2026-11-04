@@ -26,6 +26,7 @@ public class TaskRepository(
     private const int NotesMaxLength = 1000;
     private const int DescriptionMaxLength = 255;
     private const int JobNumberMaxLength = 50;
+    private const int JobNumberLookupBatchSize = 500;
 
     private static readonly HashSet<string> AutoResponseTypes =
         new(StringComparer.OrdinalIgnoreCase) { "Web", "Email", "Text" };
@@ -50,6 +51,8 @@ public class TaskRepository(
         Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
         EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
         JobNumber = e.UcevJob.UcjbNumber,
+        StoredJobNumber = e.UcevJobNumber,
+        ClientId = e.UcevClientId,
         CourierCode = e.UcevJob.UcjbCourier != null ? e.UcevJob.UcjbCourier.Code : null,
         CourierName = e.UcevJob.UcjbCourier != null
             ? e.UcevJob.UcjbCourier.UccrName + " " + e.UcevJob.UcjbCourier.UccrSurname
@@ -66,7 +69,7 @@ public class TaskRepository(
 
         if (filters != null)
         {
-            query = ApplyFilters(query, filters);
+            query = ApplyFilters(query, filters, value => infoService.ConvertUtcToTenantTimeZone(value.UtcDateTime).DateTime);
         }
 
         query = ApplyOrdering(query, filters, today.DateTime);
@@ -77,6 +80,8 @@ public class TaskRepository(
             .Select(ProjectToTaskViewModel)
             .ToListAsync();
 
+        await LinkUnlinkedTasksByJobNumberAsync(Context, tasks);
+
         foreach (var task in tasks)
         {
             task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
@@ -84,6 +89,52 @@ public class TaskRepository(
         }
 
         return tasks;
+    }
+
+    /// <summary>
+    /// Some events reach tucEvent with a job number but no job id. Link those to the job the number
+    /// names when exactly one live or archived job (of the event's client, when it has one) carries it.
+    /// </summary>
+    internal static async Task LinkUnlinkedTasksByJobNumberAsync(DespatchContext context, IReadOnlyList<TaskViewModel> tasks)
+    {
+        var unlinked = tasks
+            .Where(t => t.JobId == 0 && !string.IsNullOrWhiteSpace(t.StoredJobNumber) && t.StoredJobNumber.Trim() != "-")
+            .ToList();
+        if (unlinked.Count == 0)
+        {
+            return;
+        }
+
+        var numbers = unlinked.Select(t => t.StoredJobNumber.Trim()).Distinct().ToList();
+        var jobs = new List<(int Id, string Number, int? ClientId)>();
+        foreach (var batch in numbers.Chunk(JobNumberLookupBatchSize))
+        {
+            var rows = await context.TucJobs
+                .Where(j => batch.Contains(j.UcjbNumber))
+                .Select(j => new { j.UcjbId, j.UcjbNumber, j.UcjbClientId })
+                .Concat(context.TucJobArchives
+                    .Where(j => batch.Contains(j.UcjbNumber))
+                    .Select(j => new { j.UcjbId, j.UcjbNumber, j.UcjbClientId }))
+                .ToListAsync();
+            jobs.AddRange(rows.Select(r => (r.UcjbId, r.UcjbNumber.Trim(), r.UcjbClientId)));
+        }
+
+        // SQL Server compares job numbers case-insensitively; match the same way here.
+        var jobsByNumber = jobs.ToLookup(j => j.Number, StringComparer.OrdinalIgnoreCase);
+        foreach (var task in unlinked)
+        {
+            var matches = jobsByNumber[task.StoredJobNumber.Trim()]
+                .Where(j => task.ClientId is not > 0 || j.ClientId == task.ClientId)
+                .DistinctBy(j => j.Id)
+                .ToList();
+            if (matches.Count != 1)
+            {
+                continue;
+            }
+
+            task.JobId = matches[0].Id;
+            task.JobNumber = matches[0].Number;
+        }
     }
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
@@ -585,38 +636,48 @@ public class TaskRepository(
                          || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.GE)
                          || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
 
+    /// <param name="toTenantWallClock">
+    /// Converts a request bound to the tenant's wall-clock time. ucevDueTime is a tenant wall-clock
+    /// <c>datetime</c>; comparing it to a DateTimeOffset makes SQL Server cast the column to
+    /// datetimeoffset as +00:00, shifting every bound by the tenant's UTC offset.
+    /// </param>
     internal static IQueryable<TucEvent> ApplyFilters(
         IQueryable<TucEvent> query,
-        TaskTableFiltersRequest filters
+        TaskTableFiltersRequest filters,
+        Func<DateTimeOffset, DateTime> toTenantWallClock
     )
     {
+        var start = filters.StartDate is { } startDate ? toTenantWallClock(startDate) : (DateTime?)null;
+        var end = filters.EndDate is { } endDate ? toTenantWallClock(endDate) : (DateTime?)null;
+
         // Apply date filters based on the available parameters
-        if (filters.StartDate.HasValue && filters.EndDate.HasValue && filters.IncludeOverdue)
+        if (start.HasValue && end.HasValue && filters.IncludeOverdue)
         {
-            query = query.Where(e => (e.UcevDueTime >= filters.StartDate.Value &&
-                                      e.UcevDueTime <= filters.EndDate.Value)
-                                     || (!e.UcevClosed && e.UcevDueTime < filters.StartDate.Value));
+            query = query.Where(e => (e.UcevDueTime >= start.Value &&
+                                      e.UcevDueTime <= end.Value)
+                                     || (!e.UcevClosed && e.UcevDueTime < start.Value));
         }
-        else if (filters.StartDate.HasValue && filters.EndDate.HasValue)
+        else if (start.HasValue && end.HasValue)
         {
             // If both start and end dates are provided, filter for events within that range
-            query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value &&
-                                     e.UcevDueTime <= filters.EndDate.Value);
+            query = query.Where(e => e.UcevDueTime >= start.Value &&
+                                     e.UcevDueTime <= end.Value);
         }
-        else if (filters.StartDate.HasValue)
+        else if (start.HasValue)
         {
             // If only startDate is provided, filter for events on or after that date
-            query = query.Where(e => e.UcevDueTime >= filters.StartDate.Value);
+            query = query.Where(e => e.UcevDueTime >= start.Value);
         }
-        else if (filters.EndDate.HasValue)
+        else if (end.HasValue)
         {
             // If only endDate is provided, filter for events on or before that date
-            query = query.Where(e => e.UcevDueTime <= filters.EndDate.Value);
+            query = query.Where(e => e.UcevDueTime <= end.Value);
         }
-        else if (filters.Date.HasValue)
+        else if (filters.Date is { } date)
         {
             // Fall back to the original date filter if no range is specified
-            query = query.Where(e => e.UcevDueTime.Date <= filters.Date);
+            var day = toTenantWallClock(date).Date;
+            query = query.Where(e => e.UcevDueTime.Date <= day);
         }
 
         if (filters.JobId.HasValue)

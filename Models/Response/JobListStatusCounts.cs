@@ -14,22 +14,33 @@ namespace DespatchWeb.Models.Response;
 public sealed record JobListStatusCounts
 {
     public int Total { get; init; }
+
+    /// <summary>What the Unassigned tab lists.</summary>
+    public int Unassigned { get; init; }
+
+    /// <summary>What the Active tab lists: everything not done, so <see cref="Transit"/> is a part of it.</summary>
     public int Active { get; init; }
     public int Transit { get; init; }
     public int Done { get; init; }
 
     /// <summary>
-    /// Folds the per-bucket tallies the database groups into the four numbers the header renders.
-    /// Total spans every bucket, voided jobs included — they show in the list, so they count.
+    /// Folds the per-bucket tallies the database groups into the numbers the header renders, each
+    /// matching the tab of the same name. Total spans every bucket, voided jobs included — they show
+    /// in the list, so they count; and Active is everything not done, as the Active tab filters it.
     /// </summary>
-    public static JobListStatusCounts FromBuckets(IReadOnlyCollection<JobListBucketTally> tallies) =>
-        new()
+    public static JobListStatusCounts FromBuckets(IReadOnlyCollection<JobListBucketTally> tallies)
+    {
+        var total = tallies.Sum(t => t.Count);
+        var done = tallies.Where(t => t.Bucket == JobListBucket.Done).Sum(t => t.Count);
+        return new JobListStatusCounts
         {
-            Total = tallies.Sum(t => t.Count),
-            Active = tallies.Where(t => t.Bucket == JobListBucket.Active).Sum(t => t.Count),
+            Total = total,
+            Unassigned = tallies.Where(t => t.Bucket == JobListBucket.Unassigned).Sum(t => t.Count),
+            Active = total - done,
             Transit = tallies.Where(t => t.Bucket == JobListBucket.Transit).Sum(t => t.Count),
-            Done = tallies.Where(t => t.Bucket == JobListBucket.Done).Sum(t => t.Count)
+            Done = done
         };
+    }
 
     /// <summary>
     /// The same fold for a list that already holds every match — the bulk list pages its own deduped

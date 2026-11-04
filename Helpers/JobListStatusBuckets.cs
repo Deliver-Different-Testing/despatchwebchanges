@@ -4,7 +4,7 @@ using DespatchWeb.Enums;
 namespace DespatchWeb.Helpers;
 
 /// <summary>
-/// The one rule that sorts a job into the stats header's Active / Transit / Done columns.
+/// The one rule that sorts a job into the stats header's Unassigned / Transit / Done buckets.
 /// <para>
 /// Held as an expression tree so the same rule serves both the counting done in SQL — EF translates
 /// it into the CASE the counts group by — and the bulk list, which classifies an already-
@@ -37,7 +37,7 @@ public static class JobListStatusBuckets
                   || s.StatusId == (int)JobStatus.InTransit
                     ? JobListBucket.Transit
                     : !s.HasCourier
-                        ? JobListBucket.Active
+                        ? JobListBucket.Unassigned
                         : JobListBucket.None;
 
     /// <summary>The same rule for a set already in memory.</summary>

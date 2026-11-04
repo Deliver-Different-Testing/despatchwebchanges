@@ -1,4 +1,5 @@
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -81,6 +82,11 @@ public class NoteController(
 
             return Ok();
         }
+        catch (JobNotFoundException ex)
+        {
+            Log.Error(ex, "CreateNote failed for job {JobId}: {Message}", noteViewModel.JobId, ex.Message);
+            return NotFound(ex.Message);
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}",
@@ -143,6 +149,11 @@ public class NoteController(
             }
 
             return Ok();
+        }
+        catch (JobNotFoundException ex)
+        {
+            Log.Error(ex, "UpdateNote failed for job {JobId}: {Message}", noteViewModel.JobId, ex.Message);
+            return NotFound(ex.Message);
         }
         catch (Exception ex)
         {

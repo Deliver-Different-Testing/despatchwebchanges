@@ -167,8 +167,8 @@ export const queryKeys = {
         currentWorkMap: (params: JobListSearchParams) => ['dispatch', 'currentWorkMap', params] as const,
         pageViews: (pageId: number) => ['dispatch', 'pageViews', pageId] as const,
         driverOverview: ['dispatch', 'driverOverview'] as const,
-        driverLocations: (viewIds: number[], startDate?: string, endDate?: string) =>
-            ['dispatch', 'driverLocations', viewIds, startDate, endDate] as const,
+        driverLocations: (viewIds: number[], startDate?: string, endDate?: string, useTime?: boolean) =>
+            ['dispatch', 'driverLocations', viewIds, startDate, endDate, useTime] as const,
         truckCourierStatus: (courierId: number) => ['dispatch', 'truckCourierStatus', courierId] as const,
     },
     nationwide: {

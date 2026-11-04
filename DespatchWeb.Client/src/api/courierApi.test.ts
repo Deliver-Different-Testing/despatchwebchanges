@@ -3,7 +3,7 @@
  * Courier API Service Tests
  */
 
-import {courierApi, getAvailableCourierLocations, getAllFleetOptions, getClearListEnvelope, searchActiveCouriersExtended, fetchDriverWorkOverview} from './courierApi';
+import {courierApi, getAvailableCourierLocations, getAllFleetOptions, getClearListEnvelope, searchActiveCouriersExtended, fetchDriverWorkOverview, fetchDriverLocations} from './courierApi';
 import {apiClient} from './client';
 import {createMockApiError} from '../test/utils';
 
@@ -17,6 +17,19 @@ jest.mock('./client', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('courierApi', () => {
+    describe('fetchDriverLocations', () => {
+        it('sends useTime so the server knows a date range covers whole days', async () => {
+            mockApiClient.get.mockResolvedValueOnce({areas: []});
+
+            await fetchDriverLocations({despatchViewIds: [3], useTime: true});
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier', expect.objectContaining({
+                despatchViewIds: [3],
+                useTime: true,
+            }), undefined);
+        });
+    });
+
     describe('searchActiveCouriers', () => {
         it('should call apiClient.get with correct endpoint and search text', async () => {
             const mockCouriers = [

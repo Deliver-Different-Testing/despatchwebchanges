@@ -1,5 +1,6 @@
 ﻿using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using JetBrains.Annotations;
@@ -19,6 +20,19 @@ public class NoteControllerTests
         _noteRepositoryMock,
         _recurringJobRepositoryMock
     );
+
+    [Fact]
+    public async Task CreateNote_WhenJobNotFound_ReturnsNotFoundWithTheMessage()
+    {
+        var note = new TucNoteViewModel { JobId = 424242, NoteText = "Orphan", NoteTypeId = 1 };
+        _noteRepositoryMock.SaveNoteAsync(note, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new JobNotFoundException("Job 424242 was not found, so the note could not be saved."));
+
+        var result = await CreateController().CreateNote(note);
+
+        var notFound = Assert.IsType<NotFoundObjectResult>(result.Result);
+        Assert.Equal("Job 424242 was not found, so the note could not be saved.", notFound.Value);
+    }
 
     [Theory]
     [InlineData("Note", NoteHistorySource.Note)]

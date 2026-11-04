@@ -23,7 +23,8 @@ public class BaseJobRepositoryStatusFilterTests : IAsyncDisposable
             Job(3, JobStatus.Dispatched, completedTime: new DateTime(2024, 6, 15, 9, 0, 0)),
             Job(4, JobStatus.Undeliverable, done: true),
             Job(5, JobStatus.Completed, isVoid: true),
-            Job(6, JobStatus.New));
+            Job(6, JobStatus.New),
+            Job(7, JobStatus.New, isVoid: true));
         _context.SaveChanges();
     }
 
@@ -47,7 +48,16 @@ public class BaseJobRepositoryStatusFilterTests : IAsyncDisposable
     {
         var ids = await FilteredIds("in-progress");
 
-        Assert.Equal([4, 5, 6], ids);
+        Assert.Equal([4, 5, 6, 7], ids);
+    }
+
+    [Fact]
+    public async Task ApplyStatusFilter_NeedsDispatch_MatchesEveryJobTheHeaderCountsAsUnassigned()
+    {
+        var ids = await FilteredIds("needs-dispatch");
+
+        // The voided job (7) is in no header bucket, so the Unassigned tab must not list it either
+        Assert.Equal([4, 6], ids);
     }
 
     [Theory]

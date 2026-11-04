@@ -36,7 +36,7 @@ describe('MessagingApiService', () => {
     });
 
     describe('getRecentList', () => {
-        it('should call apiClient.get with correct URL', async () => {
+        it('should call apiClient.get with the URL, abort signal and timeout', async () => {
             const mockConversations = [
                 {
                     otherPartyId: 1,
@@ -51,9 +51,11 @@ describe('MessagingApiService', () => {
             ];
             mockApiClient.get.mockResolvedValueOnce(mockConversations);
 
-            const result = await messagingApi.getRecentList();
+            const signal = new AbortController().signal;
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('messages/GetRecentList');
+            const result = await messagingApi.getRecentList({signal, timeout: 20_000});
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('messages/GetRecentList', undefined, {signal, timeout: 20_000});
             expect(result).toEqual(mockConversations);
         });
 

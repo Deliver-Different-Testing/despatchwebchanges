@@ -109,11 +109,9 @@ export function parseDateFromApi(dateString: string): Dayjs {
 
     const originalOffset = offsetMatch[1] === 'Z' ? '+00:00' : offsetMatch[1];
 
-    // Strip the timezone offset from the date string to prevent automatic conversion
-    const dateWithoutOffset = dateString.replace(/([+-]\d{2}:\d{2}|Z)$/, '');
-
-    // Parse as UTC (no conversion), then apply the original offset while keeping the time
-    return dayjs.utc(dateWithoutOffset).utcOffset(originalOffset, true);
+    // Keep the real instant and show it in the API's offset. Not utcOffset(offset, true):
+    // on a dayjs.utc() value that shifts the instant by the browser's own UTC offset.
+    return dayjs(dateString).utcOffset(originalOffset);
 }
 
 /**

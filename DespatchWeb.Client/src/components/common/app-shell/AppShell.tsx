@@ -74,6 +74,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 isUsCustomer={isUsCustomer}
                 isNetworkPartner={isNetworkPartner}
                 currentState={currentState}
+                logoUrl={logoUrl}
                 companyName={companyName}
                 body={body}
                 onLogoClick={onLogoClick}

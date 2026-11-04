@@ -698,8 +698,8 @@ public class NationwideJobRepository(
                 .SetProperty(j => j.DesCheck, false)
                 .SetProperty(j => j.FdcourierId, (int?)null)
                 .SetProperty(j => j.FirstJob, false)
-                .SetProperty(j => j.AgentId, (int?)null)
-                .SetProperty(j => j.UcjbFlightDetails, string.Empty));
+                .SetProperty(j => j.UcjbFlightDetails, string.Empty)
+                .ClearAgentAssignments(keepNetworkPartner: Context.CurrentIsNetworkPartner));
 
         // Get flight IDs for cascade deletion
         var flightIds = await Context.TucJobNationwides

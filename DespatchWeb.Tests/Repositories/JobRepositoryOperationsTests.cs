@@ -760,6 +760,27 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task AssignCourierToJobAsync_AgentAssignedJob_ClearsAgentButKeepsNetworkPartner()
+    {
+        await using (var context = CreateContext())
+        {
+            var seedJob = CreateJob(100, "JOB001");
+            seedJob.AgentId = 7;
+            seedJob.NpAgentId = 8;
+            context.TucJobs.Add(seedJob);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await CreateRepository().AssignCourierToJobAsync([100], courierId: 5);
+
+        await using var verifyContext = CreateContext();
+        var verifiedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        Assert.Equal(5, verifiedJob!.UcjbCourierId);
+        Assert.Null(verifiedJob.AgentId);
+        Assert.Equal(8, verifiedJob.NpAgentId);
+    }
+
+    [Fact]
     public async Task AssignCourierToJobAsync_AlwaysSetsStatusToDispatched()
     {
         // Arrange - job has a non-Dispatched status (e.g. After Hours or any other pre-dispatch status)

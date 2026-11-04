@@ -21,6 +21,12 @@ public class ContextController(
         var hubUrl = Environment.GetEnvironmentVariable("HubUrl");
         try
         {
+            // The AgentAccess package seeded the agent's tenant connection before the request got here.
+            if (User.FindFirst("auth_kind")?.Value == "agent")
+            {
+                return Ok(await sessionContextService.BuildAsync(User));
+            }
+
             var connectionString = User.FindFirst("Connection")?.Value;
             var tenantId = User.FindFirst("CurrentTenantID")?.Value;
             if (string.IsNullOrEmpty(connectionString) || string.IsNullOrEmpty(tenantId))

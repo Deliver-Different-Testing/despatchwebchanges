@@ -6,6 +6,7 @@
  */
 
 import {apiClient} from './client';
+import type {RequestOptions} from './requestOptions';
 import {
     ChatMessage,
     MessageContactOption,
@@ -25,8 +26,8 @@ export class MessagingApiService {
     /**
      * Get the list of recent conversations
      */
-    async getRecentList(): Promise<RecentConversation[]> {
-        return apiClient.get<RecentConversation[]>('messages/GetRecentList');
+    async getRecentList(options?: Pick<RequestOptions, 'signal' | 'timeout'>): Promise<RecentConversation[]> {
+        return apiClient.get<RecentConversation[]>('messages/GetRecentList', undefined, options);
     }
 
     /**

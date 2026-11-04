@@ -29,9 +29,16 @@ public sealed class TaskViewModel
 
     public string EventType { get; init; }
 
-    public int JobId { get; init; }
-    
-    public string JobNumber { get; init; }
+    public int JobId { get; set; }
+
+    public string JobNumber { get; set; }
+
+    /// <summary>Server-side only: the job number stored on the event, used to link an event that has no job id.</summary>
+    [Newtonsoft.Json.JsonIgnore]
+    public string StoredJobNumber { get; init; }
+
+    [Newtonsoft.Json.JsonIgnore]
+    public int? ClientId { get; init; }
 
     public string CourierCode { get; init; }
 

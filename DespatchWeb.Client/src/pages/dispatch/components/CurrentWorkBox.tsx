@@ -5,7 +5,7 @@ import {Box, Group, Stack, Text} from '@mantine/core';
 import {useDisclosure} from '@mantine/hooks';
 import type {Dayjs} from 'dayjs';
 import {AppPage} from '../../../types/dispatchJob';
-import type {DispatchJob, FetchConfig, JobListSearchParams} from '../../../types/dispatchJob';
+import type {DispatchJob, FetchConfig, JobCategory, JobListSearchParams} from '../../../types/dispatchJob';
 import type {ShowToastFn} from '../../../services/toastService';
 import {fetchCurrentWorkJobs} from '../../../api/jobSearchApi';
 import {fetchDriverWorkOverview} from '../../../api/courierApi';
@@ -26,20 +26,24 @@ import {formatCourierDisplayLabel, type CourierDisplayMode} from '../lib/courier
 
 type Mode = 'overview' | 'active' | 'detail';
 
+// Every job here is on the focused driver, so Unassigned can never match.
+const CURRENT_WORK_HIDDEN_CATEGORIES: readonly JobCategory[] = ['needs-dispatch'];
+
 /**
  * The drill-down focus (which driver the panel is showing) lives in local state,
  * but the panel is remounted whenever the dispatch shell re-keys its box layout
  * (e.g. a background remote-layout sync bumps `layoutVersion`). Persisting the
  * focus to sessionStorage keeps a manually-picked driver from snapping back to
- * the selected job's courier across those remounts. `appliedJobCourierId` records
- * the last `selectedJobCourierId` we drilled into so a remount replaying the same
- * value doesn't override a more-recent manual pick.
+ * the selected job's courier across those remounts. `appliedSelection` records
+ * the job selection we last drilled in for, so a remount replaying the same
+ * selection doesn't override a more-recent manual pick — while a click on any
+ * other job, even one for a driver focused earlier, still drills in.
  */
 interface CurrentWorkFocus {
     courierId?: number;
     mode: Mode;
     pickedCourierName?: string;
-    appliedJobCourierId?: number;
+    appliedSelection?: string;
 }
 
 const focusStorageKey = (): string => `dispatchCurrentWorkFocus_${getSession().contactId}`;
@@ -80,6 +84,11 @@ export interface CurrentWorkBoxProps {
     startDate: Dayjs;
     /** Page-level date filter end — caps the current work window at this day. */
     endDate: Dayjs;
+    /**
+     * The page's selected job (`null` for none): drills into its courier, and is
+     * highlighted here when it is in this driver's list.
+     */
+    selectedJobId?: number | null;
     /** Courier id derived from the currently selected job, if any. */
     selectedJobCourierId?: number;
     /** Display name for the selected job's courier (shown in the breadcrumb). */
@@ -111,6 +120,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     refetchIntervalMs = false,
     startDate,
     endDate,
+    selectedJobId,
     selectedJobCourierId,
     selectedJobCourierName,
     selectedJobCourierNumber,
@@ -131,33 +141,34 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     const [pickedCourierName, setPickedCourierName] = useState<string | undefined>(
         restoredFocus?.pickedCourierName,
     );
-    // Last selected-job courier we drilled into; survives remounts via restore so a
-    // replayed selectedJobCourierId can't clobber a newer manual pick.
-    const appliedJobCourierIdRef = useRef<number | undefined>(restoredFocus?.appliedJobCourierId);
+    // Last job selection we drilled in for; survives remounts via restore so a
+    // replayed selection can't clobber a newer manual pick.
+    const appliedSelectionRef = useRef<string | undefined>(restoredFocus?.appliedSelection);
 
     const persistFocus = (next: Partial<CurrentWorkFocus>) => {
         writeFocus({
             courierId,
             mode,
             pickedCourierName,
-            appliedJobCourierId: appliedJobCourierIdRef.current,
+            appliedSelection: appliedSelectionRef.current,
             ...next,
         });
     };
 
     // Selecting a job elsewhere on the page drills into that job's courier here
-    // (matches V1 selectJob → getCurrentJobs(job.courierData.courierId)). Skip when
-    // the value is unchanged from the last drill-in — a remount replaying the same
-    // selectedJobCourierId must not override a driver picked from the overview since.
+    // (matches V1 selectJob → getCurrentJobs(job.courierData.courierId)). Keyed on the
+    // job as well as its courier: keying on the courier alone ignored a click on another
+    // job for a driver drilled into earlier, once the dispatcher had moved off them.
+    const selection = selectedJobCourierId ? `${selectedJobId ?? ''}:${selectedJobCourierId}` : undefined;
     useEffect(() => {
-        if (selectedJobCourierId && selectedJobCourierId !== appliedJobCourierIdRef.current) {
-            appliedJobCourierIdRef.current = selectedJobCourierId;
+        if (selectedJobCourierId && selection !== appliedSelectionRef.current) {
+            appliedSelectionRef.current = selection;
             setCourierId(selectedJobCourierId);
             setMode('detail');
             setPickedCourierName(undefined);
             persistFocus({courierId: selectedJobCourierId, mode: 'detail', pickedCourierName: undefined});
         }
-    }, [selectedJobCourierId]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [selection]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleCourierSearchSelect = (courier: CourierSuggestion) => {
         setCourierId(courier.id);
@@ -219,10 +230,12 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             // GetCurrentWorkList deliberately returns done jobs too, so the panel has to
             // default to the courier's outstanding work (V1 mounted it the same way).
             defaultCategory="in-progress"
+            hiddenCategories={CURRENT_WORK_HIDDEN_CATEGORIES}
             fetchConfig={fetchConfig}
             hideLoggedInSwitch
             undeliverableIsDone
             onJobSelect={onJobSelect}
+            selectedJobId={selectedJobId}
         />
     ) : (
         <NoData

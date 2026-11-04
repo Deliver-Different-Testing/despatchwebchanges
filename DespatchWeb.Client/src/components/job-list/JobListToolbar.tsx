@@ -46,16 +46,21 @@ interface JobListToolbarProps {
      * Defaults to true.
      */
     renderViewOptions?: boolean;
+    /** Category tabs to leave out — ones that can never match in this panel's scope. */
+    hiddenCategories?: readonly JobCategory[];
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-const CATEGORY_OPTIONS: {value: JobCategory; label: string}[] = [
-    {value: 'needs-dispatch', label: 'Unassigned'},
-    {value: 'in-progress', label: 'Active'},
-    {value: 'delivered', label: 'Done'},
-    {value: 'all', label: 'All'},
-];
+export const CATEGORY_LABELS: Record<JobCategory, string> = {
+    'needs-dispatch': 'Unassigned',
+    'in-progress': 'Active',
+    delivered: 'Done',
+    all: 'All',
+};
+
+const CATEGORY_OPTIONS: {value: JobCategory; label: string}[] =
+    (['needs-dispatch', 'in-progress', 'delivered', 'all'] as const).map(value => ({value, label: CATEGORY_LABELS[value]}));
 
 /**
  * The active tab keeps its category's semantic colour — Unassigned/Active/Done
@@ -107,6 +112,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     onBulkMarkUnread,
     showLoggedInSwitch,
     renderViewOptions = true,
+    hiddenCategories,
 }) => {
     // Every operational page can bulk-dispatch; Nationwide was previously excluded,
     // which left it with no bulk assignment affordance at all.
@@ -176,7 +182,9 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 value={selectedCategory}
                 onChange={onCategoryChange}
                 color={CATEGORY_COLORS[selectedCategory]}
-                data={CATEGORY_OPTIONS}
+                data={hiddenCategories?.length
+                    ? CATEGORY_OPTIONS.filter(o => !hiddenCategories.includes(o.value))
+                    : CATEGORY_OPTIONS}
             />
 
             {/* Search */}

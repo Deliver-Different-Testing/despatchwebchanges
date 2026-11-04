@@ -9,6 +9,10 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import {DateFilterData, DateFilterMenu} from './DateFilterMenu';
 import {renderWithMantine} from '../../../test/utils';
+import {getInputDateFormat} from '../../../utils/dateUtils';
+import {loadDateFilterFrom} from '../../../utils/dateFilterStorage';
+import {useDateFilter} from '../../../hooks/useDateFilter';
+import {getContactId} from '../../../api/session';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -20,6 +24,9 @@ const renderWithProviders = (
 
 /** The dropdown is a `Popover`, so the trigger is the only button until it opens. */
 const openMenu = () => fireEvent.click(screen.getByRole('button', {name: 'Date filter'}));
+
+/** The saved range option is per user, like the range it pairs with. */
+const optionKey = (appPage: string) => `dateRangeOption-${appPage}-${getContactId()}`;
 
 const selectOption = async (label: string) => {
     fireEvent.click(await screen.findByLabelText(label));
@@ -308,11 +315,11 @@ describe('DateFilterMenu', () => {
             openMenu();
             await selectOption('Custom dates');
 
-            expect(localStorage.getItem('dateRangeOption-testPage')).toBe('custom_date');
+            expect(localStorage.getItem(optionKey('testPage'))).toBe('custom_date');
         });
 
         it('should restore saved option from localStorage', async () => {
-            localStorage.setItem('dateRangeOption-testPage', 'custom_minutes');
+            localStorage.setItem(optionKey('testPage'), 'custom_minutes');
 
             renderWithProviders(
                 <DateFilterMenu {...defaultProps} appPage="testPage" />
@@ -323,8 +330,44 @@ describe('DateFilterMenu', () => {
             expect(await screen.findByLabelText('Time range')).toBeChecked();
         });
 
+        it('should save all_time when Reset is clicked', async () => {
+            renderWithProviders(
+                <DateFilterMenu {...defaultProps} appPage="testPage" />
+            );
+
+            openMenu();
+            await selectOption('Custom dates');
+            fireEvent.click(screen.getByText('Reset'));
+
+            expect(localStorage.getItem(optionKey('testPage'))).toBe('all_time');
+        });
+
+        it('should honour a per-browser option saved before options were per user, and move it to the user', async () => {
+            localStorage.setItem('dateRangeOption-legacy', 'today');
+
+            renderWithProviders(<DateFilterMenu {...defaultProps} appPage="legacy" />);
+            openMenu();
+
+            expect(await screen.findByLabelText('Today')).toBeChecked();
+            expect(localStorage.getItem(optionKey('legacy'))).toBe('today');
+        });
+
+        it("should not pick up another user's saved option", async () => {
+            (window as unknown as {ContactID: number}).ContactID = 7;
+            const first = renderWithProviders(<DateFilterMenu {...defaultProps} appPage="shared" />);
+            openMenu();
+            await selectOption('Today');
+            first.unmount();
+
+            (window as unknown as {ContactID: number}).ContactID = 8;
+            renderWithProviders(<DateFilterMenu {...defaultProps} appPage="shared" />);
+            openMenu();
+
+            expect(await screen.findByLabelText('All time')).toBeChecked();
+        });
+
         it('should restore today option from localStorage', async () => {
-            localStorage.setItem('dateRangeOption-testPage', 'today');
+            localStorage.setItem(optionKey('testPage'), 'today');
 
             renderWithProviders(
                 <DateFilterMenu {...defaultProps} appPage="testPage" />
@@ -365,7 +408,7 @@ describe('DateFilterMenu', () => {
         });
 
         it('should call onRefreshData on mount with today dates when saved option is today', () => {
-            localStorage.setItem('dateRangeOption-initToday', 'today');
+            localStorage.setItem(optionKey('initToday'), 'today');
             const onRefreshData = jest.fn();
 
             renderWithProviders(
@@ -386,7 +429,7 @@ describe('DateFilterMenu', () => {
         });
 
         it('should call onRefreshData on mount with useTime when saved option is custom_minutes', () => {
-            localStorage.setItem('dateRangeOption-initMins', 'custom_minutes');
+            localStorage.setItem(optionKey('initMins'), 'custom_minutes');
             const onRefreshData = jest.fn();
 
             renderWithProviders(
@@ -405,24 +448,87 @@ describe('DateFilterMenu', () => {
             expect(call.useTime).toBe(true);
         });
 
-        it('should call onRefreshData on mount with default dates when saved option is custom_date', () => {
-            localStorage.setItem('dateRangeOption-initCustom', 'custom_date');
+        it('should keep the persisted custom range on mount and show it when opened', async () => {
+            localStorage.setItem(optionKey('initCustom'), 'custom_date');
             const onRefreshData = jest.fn();
+            const persisted: DateFilterData = {
+                startDate: dayjs('2026-10-01'),
+                endDate: dayjs('2026-10-15'),
+            };
 
             renderWithProviders(
                 <DateFilterMenu
-                    dateFilterData={null}
+                    dateFilterData={persisted}
                     onRefreshData={onRefreshData}
                     appPage="initCustom"
                 />
             );
 
-            expect(onRefreshData).toHaveBeenCalledTimes(1);
+            expect(onRefreshData).not.toHaveBeenCalled();
 
-            const call = onRefreshData.mock.calls[0][0] as DateFilterData;
-            expect(call.startDate).toBeDefined();
-            expect(call.endDate).toBeDefined();
-            expect(call.useTime).toBeFalsy();
+            openMenu();
+
+            const format = getInputDateFormat();
+            expect(await screen.findByLabelText('Custom dates')).toBeChecked();
+            expect(screen.getByLabelText('Start date')).toHaveValue(persisted.startDate.format(format));
+            expect(screen.getByLabelText('End date')).toHaveValue(persisted.endDate.format(format));
+        });
+
+        it('should fall back to All time when the saved option is custom_date but no range is stored', async () => {
+            localStorage.setItem(optionKey('initCustomAllTime'), 'custom_date');
+            const onRefreshData = jest.fn();
+
+            renderWithProviders(
+                <DateFilterMenu
+                    dateFilterData={{startDate: dayjs(0), endDate: dayjs().add(24, 'hours')}}
+                    onRefreshData={onRefreshData}
+                    appPage="initCustomAllTime"
+                />
+            );
+
+            expect(onRefreshData).not.toHaveBeenCalled();
+            expect(localStorage.getItem(optionKey('initCustomAllTime'))).toBe('all_time');
+
+            openMenu();
+            expect(await screen.findByLabelText('All time')).toBeChecked();
+
+            await selectOption('Custom dates');
+
+            const format = getInputDateFormat();
+            const now = dayjs().tz('Pacific/Auckland');
+            expect(await screen.findByLabelText('Start date')).toHaveValue(now.subtract(7, 'days').format(format));
+            expect(screen.getByLabelText('End date')).toHaveValue(now.format(format));
+        });
+
+        it('should keep the page-persisted custom range across a reload', async () => {
+            const rangeKey = 'dateFilter-reload-test';
+            const start = dayjs('2026-10-01');
+            const end = dayjs('2026-10-15');
+            localStorage.setItem(optionKey('reload'), 'custom_date');
+            localStorage.setItem(rangeKey, JSON.stringify({startDate: start, endDate: end, useTime: false}));
+            const stored = localStorage.getItem(rangeKey);
+
+            const Page = () => {
+                const [filter, setFilter] = useDateFilter(rangeKey, () => loadDateFilterFrom(rangeKey));
+                return (
+                    <DateFilterMenu
+                        dateFilterData={filter}
+                        appPage="reload"
+                        onRefreshData={(next) => setFilter({...next, useTime: next.useTime ?? false})}
+                    />
+                );
+            };
+
+            renderWithProviders(<Page/>).unmount();
+            renderWithProviders(<Page/>);
+
+            expect(localStorage.getItem(rangeKey)).toBe(stored);
+
+            openMenu();
+
+            const format = getInputDateFormat();
+            expect(await screen.findByLabelText('Start date')).toHaveValue(start.format(format));
+            expect(screen.getByLabelText('End date')).toHaveValue(end.format(format));
         });
 
         it('should only call onRefreshData once on mount (not on re-renders)', () => {

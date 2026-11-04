@@ -179,6 +179,8 @@ export interface DispatchJob {
     assignedFlight?: AssignedFlight;
     assignedAgent?: AssignedAgent;
     sentToPartnerName?: string | null;
+    /** Network partner holding the job (tucJob.NpAgentId), whether or not it has dispatched its own driver yet. */
+    networkPartnerName?: string | null;
     conNote?: string;
     followupTime?: Dayjs;
     fromAirportId?: number;
@@ -273,6 +275,9 @@ export interface JobSearchResult {
 
 export interface JobListStatusCounts {
     total: number;
+    /** What the Unassigned tab lists. */
+    unassigned: number;
+    /** What the Active tab lists — everything not done, so `transit` is a part of it. */
     active: number;
     transit: number;
     done: number;
@@ -325,6 +330,11 @@ export interface JobListPanelProps {
     isUsCustomer?: boolean;
     appPage: AppPage;
     onJobSelect?: (job: DispatchJob) => void;
+    /**
+     * Highlighted job, owned by the host page so sibling lists share one selection;
+     * `null` means none. Leave unset for the panel to track its own clicks.
+     */
+    selectedJobId?: number | null;
     onJobDispatch?: (job: DispatchJob, courierId: number) => void;
     onRefresh?: () => void;
     onSearchChange?: (searchText: string) => void;
@@ -342,6 +352,11 @@ export interface JobListPanelProps {
      * the scope restores whatever the operator had chosen.
      */
     forcedCategory?: JobCategory;
+    /**
+     * Category tabs this panel never offers, e.g. Unassigned on a single driver's
+     * Current work. A stored or forced value naming one falls back to `defaultCategory`.
+     */
+    hiddenCategories?: readonly JobCategory[];
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
     /** If provided, React manages its own data fetching via React Query */
