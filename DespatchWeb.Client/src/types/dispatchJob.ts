@@ -325,6 +325,11 @@ export interface JobListPanelProps {
     isUsCustomer?: boolean;
     appPage: AppPage;
     onJobSelect?: (job: DispatchJob) => void;
+    /**
+     * Highlighted job, owned by the host page so sibling lists share one selection;
+     * `null` means none. Leave unset for the panel to track its own clicks.
+     */
+    selectedJobId?: number | null;
     onJobDispatch?: (job: DispatchJob, courierId: number) => void;
     onRefresh?: () => void;
     onSearchChange?: (searchText: string) => void;

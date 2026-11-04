@@ -89,6 +89,8 @@ export interface CurrentWorkBoxProps {
     selectedJobCourierName?: string;
     /** Courier number for the selected job's courier, if known (shown in the breadcrumb). */
     selectedJobCourierNumber?: string;
+    /** The page's selected job, highlighted here when it is in this driver's list. */
+    selectedJobId?: number | null;
     /** How much courier info to show in the breadcrumb once a courier is focused. */
     courierDisplayMode?: CourierDisplayMode;
     onJobSelect?: (job: DispatchJob) => void;
@@ -117,6 +119,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     selectedJobCourierId,
     selectedJobCourierName,
     selectedJobCourierNumber,
+    selectedJobId,
     courierDisplayMode = 'name',
     onJobSelect,
     headerSlot,
@@ -227,6 +230,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             hideLoggedInSwitch
             undeliverableIsDone
             onJobSelect={onJobSelect}
+            selectedJobId={selectedJobId}
         />
     ) : (
         <NoData

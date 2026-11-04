@@ -2,7 +2,7 @@
 import {pluralise} from '../../utils/pluralise';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Progress} from '@mantine/core';
-import {useDebouncedValue, useDisclosure, useHotkeys, useLocalStorage} from '@mantine/hooks';
+import {useDebouncedValue, useDisclosure, useHotkeys, useLocalStorage, useUncontrolled} from '@mantine/hooks';
 import dayjs from 'dayjs';
 import type {
     CourierData,
@@ -230,6 +230,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               isUsCustomer,
                                                               appPage,
                                                               onJobSelect,
+                                                              selectedJobId: controlledSelectedJobId,
                                                               onRefresh,
                                                               onSearchChange,
                                                               onCategoryChange,
@@ -285,7 +286,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     }, [jobs, onJobsLoaded, fetchConfig]);
 
     // ── UI State ─────────────────────────────────────────────────────
-    const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
+    const [selectedJobId, setSelectedJobId] = useUncontrolled<number | null>({
+        value: controlledSelectedJobId,
+        finalValue: null,
+    });
     const [selectedCategory, setSelectedCategory] = useState<JobCategory>(
         () => [forcedCategory, loadJobListCategory(storagePrefix), defaultCategory]
             .find((c): c is JobCategory => !!c && !hiddenCategories?.includes(c)) ?? 'all',

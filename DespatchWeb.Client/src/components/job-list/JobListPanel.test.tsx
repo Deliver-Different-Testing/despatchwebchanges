@@ -267,6 +267,34 @@ describe('JobListPanel', () => {
             expect(row).toHaveAttribute('data-variant', 'selected');
         });
 
+        it('highlights only the controlled selectedJobId, ignoring its own clicks until the prop moves', async () => {
+            const user = setupUser();
+            const onJobSelect = jest.fn();
+            const jobs = [
+                createMockDispatchJob({id: 10, jobNo: 'J010'}),
+                createMockDispatchJob({id: 20, jobNo: 'J020'}),
+            ];
+            const rowVariant = (jobNo: string) => screen.getByText(jobNo).closest('tr')?.getAttribute('data-variant');
+            const {result, props} = renderAndPushJobs(jobs, {onJobSelect, selectedJobId: 10});
+
+            expect(rowVariant('J010')).toBe('selected');
+            expect(rowVariant('J020')).not.toBe('selected');
+
+            // The owner decides: a click reports the job but the highlight waits for the prop.
+            await user.click(screen.getByText('J020'));
+            expect(onJobSelect).toHaveBeenCalledWith(jobs[1]);
+            expect(rowVariant('J010')).toBe('selected');
+
+            result.rerender(<JobListPanel {...props} selectedJobId={20}/>);
+            expect(rowVariant('J020')).toBe('selected');
+            expect(rowVariant('J010')).not.toBe('selected');
+
+            // Another panel's job (or none) clears this panel's highlight.
+            result.rerender(<JobListPanel {...props} selectedJobId={null}/>);
+            expect(rowVariant('J010')).not.toBe('selected');
+            expect(rowVariant('J020')).not.toBe('selected');
+        });
+
         it('flattens its outer corners so it sits flush inside its host box', () => {
             renderWithMantineProviders(<JobListPanel {...createDefaultProps()}/>);
 
