@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Ai;
@@ -162,6 +163,26 @@ public class AiClientServiceTests
             [new AiMessage { Role = "user", Content = "hi" }],
             1024,
             enableCaching: enableCaching);
+
+    [Fact]
+    public void BuildMessageParameters_MapsConversationRolesAndContentInOrder()
+    {
+        var p = AiClientService.BuildMessageParameters(
+            new AiModelProfile { Model = "claude-haiku-4-5", MaxTokens = 1024 },
+            "You are a summarizer.",
+            [
+                new AiMessage { Role = "user", Content = "first" },
+                new AiMessage { Role = "assistant", Content = "reply" },
+                new AiMessage { Role = "user", Content = "second" },
+            ],
+            1024);
+
+        var sent = p.Messages
+            .Select(m => JsonDocument.Parse(JsonSerializer.Serialize(m)).RootElement)
+            .Select(m => (m.GetProperty("role").GetString(), m.GetProperty("content").GetString()));
+
+        Assert.Equal([("user", "first"), ("assistant", "reply"), ("user", "second")], sent);
+    }
 
     [Theory]
     [InlineData(false)]
