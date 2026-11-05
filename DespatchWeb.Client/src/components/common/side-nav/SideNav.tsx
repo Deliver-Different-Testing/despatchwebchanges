@@ -16,11 +16,10 @@ import {NavItem, SideNavProps} from "./SideNav.types";
 import {ColorModeSwitcher} from './ColorModeSwitcher';
 import {useNavItems} from '../../../hooks/useNavItems';
 import {onBrandScrim, sideMenuColors as shell} from '../../../theme/dfrntMantineTheme';
+import {APP_BLURB} from '../../../constants/app';
 import classes from './SideNav.module.css';
 
 const drawerWidth = 264;
-
-export const APP_BLURB = 'Book, dispatch and track your jobs';
 
 /** Below this the panel goes full-bleed, matching the toolbar's compact breakpoint. */
 const COMPACT_QUERY = `(max-width: ${em(768)})`;

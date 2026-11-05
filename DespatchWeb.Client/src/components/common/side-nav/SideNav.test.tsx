@@ -6,7 +6,8 @@ import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
 import dayjs from 'dayjs';
 import {renderWithMantine} from '../../../test/utils';
-import {APP_BLURB, SideNav} from './SideNav';
+import {SideNav} from './SideNav';
+import {APP_BLURB} from '../../../constants/app';
 import {createDfrntTheme, sideMenuColors} from '../../../theme/dfrntMantineTheme';
 
 describe('SideNav', () => {
