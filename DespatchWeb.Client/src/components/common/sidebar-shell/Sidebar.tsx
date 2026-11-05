@@ -1,7 +1,7 @@
 /**
- * DFRNT left sidebar: a solid Ink panel (never glass, never the tenant primary), logo + company
+ * DFRNT left sidebar: a solid Ink panel (never glass, never the tenant primary), app icon + name
  * header, route-table sections, Settings below a divider, then the colour-mode switcher and the
- * identity card. Collapsed, it is a 72px icon rail with tooltips; the toggle lives in the app bar.
+ * identity card (user + company). Collapsed, it is a 72px icon rail with tooltips; the toggle lives in the app bar.
  * Ported from the brand skill's `assets/sidebar`, flattened to Despatch's route list.
  */
 
@@ -10,6 +10,7 @@ import {Avatar, Badge, Box, Divider, Group, Image, NavLink, ScrollArea, Stack, T
 import {ColorModeSwitcher} from '../side-nav/ColorModeSwitcher';
 import type {NavItem} from '../side-nav/SideNav.types';
 import {onBrandScrim, sideMenuColors as shell} from '../../../theme/dfrntMantineTheme';
+import {APP_BLURB, APP_ICON_SRC, APP_NAME} from '../../../constants/app';
 import classes from './Sidebar.module.css';
 
 export const NAV_WIDTH = 264;
@@ -101,22 +102,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             bg={shell.bg}
             style={{flexShrink: 0, flexDirection: 'column'}}
         >
-            <Box p="md" style={{flexShrink: 0, borderBottom: keyline}}>
+            <Box data-testid="sidebar-header" p="md" style={{flexShrink: 0, borderBottom: keyline}}>
                 <Group gap="sm" wrap="nowrap" justify={collapsed ? 'center' : undefined}>
                     <UnstyledButton
                         onClick={onLogoClick}
-                        aria-label={`${companyName} home`}
+                        aria-label={`${APP_NAME} home`}
                         disabled={!onLogoClick}
                         style={{display: 'flex', flexShrink: 0, cursor: onLogoClick ? 'pointer' : 'default'}}
                     >
                         <Box w={40} h={40} display="flex" style={{alignItems: 'center', justifyContent: 'center'}}>
-                            <Image src={shell.logoSrc} alt="" w={32} h={32} fit="contain" />
+                            <Image src={APP_ICON_SRC} alt="" w={32} h={32} fit="contain" />
                         </Box>
                     </UnstyledButton>
                     {!collapsed && (
-                        <Text m={0} fz="md" fw={700} c={shell.textPrimary} truncate style={{flex: 1, minWidth: 0}}>
-                            {companyName}
-                        </Text>
+                        <Box style={{flex: 1, minWidth: 0}}>
+                            <Text component="h1" m={0} fz="md" fw={700} c={shell.textPrimary} truncate>
+                                {APP_NAME}
+                            </Text>
+                            <Text fz="xs" c={shell.textSecondary} lh={1.35}>{APP_BLURB}</Text>
+                        </Box>
                     )}
                 </Group>
             </Box>
@@ -186,6 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </Avatar>
                         <Box style={{flex: 1, minWidth: 0}}>
                             <Text fz="sm" fw={500} c={shell.textPrimary} truncate>{userName}</Text>
+                            <Text fz="xs" c={shell.textMuted} truncate>{companyName}</Text>
                             {isNetworkPartner && (
                                 <Badge
                                     data-testid="sidebar-np-chip"

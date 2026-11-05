@@ -4,6 +4,7 @@ import {renderWithMantine} from '../../../test/utils';
 import {SidebarShell} from './SidebarShell';
 import {SIDEBAR_COLLAPSED_STORAGE_KEY} from './useSidebarCollapsed';
 import {sideMenuColors} from '../../../theme/dfrntMantineTheme';
+import {APP_BLURB, APP_ICON_SRC, APP_NAME} from '../../../constants/app';
 
 describe('SidebarShell', () => {
     const defaultProps = {
@@ -98,10 +99,30 @@ describe('SidebarShell', () => {
         expect(screen.getByText('page body').parentElement?.parentElement).toContainElement(screen.getByTestId('dfrnt-sidebar'));
     });
 
+    it('heads the sidebar with the app icon, the app name and what the app does, not the company name', () => {
+        renderWithMantine(<SidebarShell {...defaultProps} companyName="Acme Couriers" />);
+
+        const header = screen.getByTestId('sidebar-header');
+        expect(header.querySelector('img')).toHaveAttribute('src', APP_ICON_SRC);
+        expect(within(header).getByRole('heading', {name: APP_NAME})).toBeInTheDocument();
+        expect(header).toHaveTextContent(APP_BLURB);
+        expect(header).not.toHaveTextContent('Acme Couriers');
+    });
+
+    it('keeps only the logo in the rail header, labelled as the app home', () => {
+        localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, '1');
+        renderWithMantine(<SidebarShell {...defaultProps} onLogoClick={jest.fn()} />);
+
+        const header = screen.getByTestId('sidebar-header');
+        expect(header).not.toHaveTextContent(APP_BLURB);
+        expect(within(header).getByRole('button', {name: `${APP_NAME} home`})).toBeInTheDocument();
+    });
+
     it('carries the identity card, colour mode switcher and network-partner chip in the footer', () => {
-        renderWithMantine(<SidebarShell {...defaultProps} isNetworkPartner />);
+        renderWithMantine(<SidebarShell {...defaultProps} companyName="Acme Couriers" isNetworkPartner />);
 
         expect(screen.getByTestId('sidebar-identity')).toHaveTextContent('John Doe');
+        expect(screen.getByTestId('sidebar-identity')).toHaveTextContent('Acme Couriers');
         expect(screen.getByTestId('sidebar-np-chip')).toBeInTheDocument();
         expect(screen.getByRole('radiogroup', {name: 'Colour mode'})).toBeInTheDocument();
     });

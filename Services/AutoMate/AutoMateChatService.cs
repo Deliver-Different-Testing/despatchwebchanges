@@ -130,11 +130,9 @@ public sealed class AutoMateChatService(
         }
 
         var messages = cappedMessages
-            .Select(m => new BetaMessageParam
-            {
-                Role = m.Role == "assistant" ? Anthropic.Models.Beta.Messages.Role.Assistant : Anthropic.Models.Beta.Messages.Role.User,
-                Content = m.Content
-            })
+            .Select(m => m.Role == "assistant"
+                ? (BetaMessageParam)new BetaAssistantMessageParam { Content = m.Content }
+                : new BetaUserMessageParam { Content = m.Content })
             .ToList();
 
         var isStaff = audience.IsStaff;
@@ -163,11 +161,7 @@ public sealed class AutoMateChatService(
 
         if (preamble.Length > 0 && lastIsUser)
         {
-            messages[^1] = new BetaMessageParam
-            {
-                Role = Anthropic.Models.Beta.Messages.Role.User,
-                Content = $"{preamble}{cappedMessages[^1].Content}"
-            };
+            messages[^1] = new BetaUserMessageParam { Content = $"{preamble}{cappedMessages[^1].Content}" };
         }
 
         var activeTools = tools.Where(t => IsActive(t, isStaff, kbConfigured)).ToList();
@@ -280,11 +274,7 @@ public sealed class AutoMateChatService(
                 yield break;
             }
 
-            messages.Add(new BetaMessageParam
-            {
-                Role = Anthropic.Models.Beta.Messages.Role.Assistant,
-                Content = new BetaMessageParamContent(state.AssistantContent)
-            });
+            messages.Add(new BetaAssistantMessageParam { Content = new BetaMessageContentParam(state.AssistantContent) });
 
             var toolResults = new List<BetaContentBlockParam>();
             foreach (var tool in state.ToolUseBlocks)
@@ -300,11 +290,7 @@ public sealed class AutoMateChatService(
                 });
             }
 
-            messages.Add(new BetaMessageParam
-            {
-                Role = Anthropic.Models.Beta.Messages.Role.User,
-                Content = new BetaMessageParamContent(toolResults)
-            });
+            messages.Add(new BetaUserMessageParam { Content = new BetaMessageContentParam(toolResults) });
         }
     }
 
