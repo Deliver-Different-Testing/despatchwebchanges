@@ -36,6 +36,9 @@ export interface JobAccessorialChargeDto {
     baseRate?: number;
     ratePerUnit?: number;
     percentageRate?: number;
+    driverBaseRate?: number;
+    driverRatePerUnit?: number;
+    driverPercentageRate?: number;
     freeAllowance?: number;
     freeAllowanceUnitTypeName?: string;
     minimumQuantity?: number;
@@ -45,6 +48,8 @@ export interface JobAccessorialChargeDto {
     itemCount: number;
     calculatedAmount?: number;
     overrideAmount?: number;
+    driverCalculatedAmount?: number;
+    driverOverrideAmount?: number;
     calculationOrder: number;
     notes?: string;
     addedAtStage?: string;
@@ -65,6 +70,7 @@ export interface JobAccessorialChargeUpdateRequest {
     itemCount: number;
     notes?: string;
     overrideAmount?: number;
+    driverOverrideAmount?: number;
 }
 
 export interface PortionJobInfo {

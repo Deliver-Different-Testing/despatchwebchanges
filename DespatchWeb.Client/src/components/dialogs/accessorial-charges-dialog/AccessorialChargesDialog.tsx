@@ -36,6 +36,7 @@ import {
     PortionJobInfo,
 } from './types';
 import {accessorialChargesApi} from '../../../api/accessorialChargesApi';
+import {getSession} from '../../../api/session';
 import {DialogShell, DialogHeader, dialogContentBg, dialogSize, headerOnColor, headerOverlayColor} from '../shared/mantine';
 import {Icon} from '../../common/icon/Icon';
 import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
@@ -48,6 +49,7 @@ interface AppliedRowState {
     itemCount: string;
     notes: string;
     overrideAmount: string;
+    driverOverrideAmount: string;
     isDirty: boolean;
     isSaving: boolean;
     isDeleting: boolean;
@@ -160,6 +162,9 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     job,
     showToast,
 }) => {
+    // Driver pay on accessorials doesn't apply to NZ (NZ pays the courier a % of the whole job).
+    const isNzTenant = (getSession().countryCode ?? '').toUpperCase() === 'NZ';
+
     // ── State ─────────────────────────────────────────────────────────────────
     const [availableCharges, setAvailableCharges] = useState<AccessorialChargeDto[]>([]);
     const [appliedCharges, setAppliedCharges] = useState<JobAccessorialChargeDto[]>([]);
@@ -300,6 +305,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     itemCount: String(c.itemCount ?? 1),
                     notes: c.notes ?? '',
                     overrideAmount: c.overrideAmount != null ? String(c.overrideAmount) : '',
+                    driverOverrideAmount: c.driverOverrideAmount != null ? String(c.driverOverrideAmount) : '',
                     isDirty: false,
                     isSaving: false,
                     isDeleting: false,
@@ -409,6 +415,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     itemCount: charge.itemCount,
                     notes: charge.notes || undefined,
                     overrideAmount: undefined,
+                    driverOverrideAmount: charge.driverOverrideAmount,
                 });
                 didSave = true;
             } catch (error: unknown) {
@@ -613,11 +620,13 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
         const itemCount = row.itemCount !== '' ? parseInt(row.itemCount, 10) : 1;
 
         const overrideAmount = row.overrideAmount !== '' ? parseFloat(row.overrideAmount) : undefined;
+        const driverOverrideAmount = row.driverOverrideAmount !== '' ? parseFloat(row.driverOverrideAmount) : undefined;
         const request: JobAccessorialChargeUpdateRequest = {
             inputValue: isNaN(inputValue as number) ? undefined : inputValue,
             itemCount: isNaN(itemCount) ? 1 : itemCount,
             notes: row.notes || undefined,
             overrideAmount: overrideAmount !== undefined && !isNaN(overrideAmount) ? overrideAmount : undefined,
+            driverOverrideAmount: driverOverrideAmount !== undefined && !isNaN(driverOverrideAmount) ? driverOverrideAmount : undefined,
         };
 
         setAppliedRowState(prev => ({
@@ -639,6 +648,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     itemCount: String(updated.itemCount ?? 1),
                     notes: updated.notes ?? '',
                     overrideAmount: updated.overrideAmount != null ? String(updated.overrideAmount) : '',
+                    driverOverrideAmount: updated.driverOverrideAmount != null ? String(updated.driverOverrideAmount) : '',
                     isDirty: false,
                     isSaving: false,
                     isDeleting: false,
@@ -1026,6 +1036,26 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                 disabled={row.isSaving || row.isDeleting}
                                                                 placeholder="Optional"
                                                             />
+                                                            {!isNzTenant && (
+                                                                <>
+                                                                    <Text size="xs" c="dimmed" mt={6}>
+                                                                        Driver: {formatCurrency(
+                                                                            row.driverOverrideAmount !== ''
+                                                                                ? parseFloat(row.driverOverrideAmount)
+                                                                                : (charge.driverOverrideAmount ?? charge.driverCalculatedAmount ?? undefined)
+                                                                        )}
+                                                                    </Text>
+                                                                    <NumberInput
+                                                                        size="xs"
+                                                                        label="Driver override"
+                                                                        value={row.driverOverrideAmount}
+                                                                        onChange={value => setRowField(charge.jobAccessorialChargeId, 'driverOverrideAmount', String(value ?? ''))}
+                                                                        w={110}
+                                                                        disabled={row.isSaving || row.isDeleting}
+                                                                        placeholder="Optional"
+                                                                    />
+                                                                </>
+                                                            )}
                                                         </Table.Td>
                                                         <Table.Td>
                                                             <TextInput
