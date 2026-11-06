@@ -263,6 +263,79 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
     });
 });
 
+// ── Remove a specific parcel ───────────────────────────────────────
+
+describe('EditParcelDimensionsDialog remove a specific parcel', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    const numberedParcels = (count: number) =>
+        Array.from({length: count}, (_, i) => mockParcel({weight: 5, barcode: `55-${i + 1}`}));
+
+    const confirmRemoval = async (user: ReturnType<typeof setupUser>, barcode: string) => {
+        await user.click(screen.getByRole('button', {name: `Remove parcel ${barcode}`}));
+        const confirmDialog = screen.getByRole('dialog', {name: 'Remove parcel'});
+        expect(within(confirmDialog).getByText(barcode, {selector: 'strong'})).toBeInTheDocument();
+        await user.click(within(confirmDialog).getByRole('button', {name: /^remove parcel$/i}));
+    };
+
+    it('removes only the chosen barcodes, updates totals, moves focus on and saves the rest', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55} parcels={numberedParcels(10)} />);
+
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        await confirmRemoval(user, '55-4');
+        await confirmRemoval(user, '55-6');
+
+        expect(screen.queryByRole('dialog', {name: 'Remove parcel'})).not.toBeInTheDocument();
+        expect(screen.getByText(/1 type · 8 parcels total/i)).toBeInTheDocument();
+        expect(screen.getByText('40.0 kg')).toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent('Parcel 55-6 removed. Save to apply.');
+        expect(screen.getByRole('button', {name: 'Remove parcel 55-7'})).toHaveFocus();
+
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        const saved = mockPost.mock.calls.find(c => c[0] === 'job/UpdateJobPackages')![1].parcels as ParcelDimensions[];
+        expect(saved.map(p => p.barcode)).toEqual(['55-1', '55-2', '55-3', '55-5', '55-7', '55-8', '55-9', '55-10']);
+    });
+
+    it('keeps the parcel when Keep parcel is clicked, and a removal makes Cancel ask to discard', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55} parcels={numberedParcels(2)} />);
+
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        await user.click(screen.getByRole('button', {name: 'Remove parcel 55-2'}));
+        const confirmDialog = screen.getByRole('dialog', {name: 'Remove parcel'});
+        await user.click(within(confirmDialog).getByRole('button', {name: /keep parcel/i}));
+
+        expect(screen.getByText(/2 parcels total/i)).toBeInTheDocument();
+
+        await confirmRemoval(user, '55-2');
+
+        expect(screen.getByText(/1 parcel total/i)).toBeInTheDocument();
+        // The one parcel left can't be removed, so focus falls back to the row's barcode toggle.
+        expect(screen.getByRole('button', {name: 'Remove parcel 55-1'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Hide barcodes'})).toHaveFocus();
+
+        await user.click(screen.getByRole('button', {name: /^cancel$/i}));
+        expect(screen.getByText('Discard unsaved changes')).toBeInTheDocument();
+    });
+
+    it('names a blank barcode by position and disables removal on a read-only job', async () => {
+        const user = setupUser();
+        const {unmount} = renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel()]} />);
+
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        expect(screen.getByRole('button', {name: 'Remove item 2'})).toBeEnabled();
+        unmount();
+
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} readOnly parcels={numberedParcels(2)} />);
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        expect(screen.getByRole('button', {name: 'Remove parcel 55-1'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Remove parcel 55-2'})).toBeDisabled();
+    });
+});
+
 // ── Weight validation ──────────────────────────────────────────────
 
 describe('EditParcelDimensionsDialog weight validation', () => {

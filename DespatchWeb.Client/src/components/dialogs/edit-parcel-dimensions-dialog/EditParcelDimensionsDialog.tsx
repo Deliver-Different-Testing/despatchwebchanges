@@ -1,5 +1,5 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {ActionIcon, Alert, Badge, Box, Button, Group, NumberInput, Table, Text, TextInput, Tooltip} from '@mantine/core';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {ActionIcon, Alert, Badge, Box, Button, Group, NumberInput, Table, Text, TextInput, Tooltip, VisuallyHidden} from '@mantine/core';
 import {ChevronDown, ChevronUp, Info, Minus, Plus, Trash2, TriangleAlert} from 'lucide-react';
 import {IconPackage, IconLock} from '@tabler/icons-react';
 import {Icon} from '../../common/icon/Icon';
@@ -21,6 +21,12 @@ interface ParcelItemType {
     quantity: number;
 }
 
+/** Keyed so removing a parcel from the middle doesn't shift React state onto its neighbours. */
+interface ParcelBarcode {
+    key: string;
+    value: string;
+}
+
 interface ParcelGroup {
     id: string;
     itemName: string;
@@ -29,21 +35,40 @@ interface ParcelGroup {
     height: string;
     weight: string;
     cubic: string;
-    barcodes: string[];
+    barcodes: ParcelBarcode[];
     expandedBarcodes: boolean;
     representativeItemId?: number;
 }
 
+interface PendingRemoval {
+    groupId: string;
+    key: string;
+    barcode: string;
+    itemNumber: number;
+}
+
+function newKey(): string {
+    return Math.random().toString(36).slice(2);
+}
+
+function newBarcode(value: string): ParcelBarcode {
+    return {key: newKey(), value};
+}
+
+function parcelLabel({barcode, itemNumber}: Pick<PendingRemoval, 'barcode' | 'itemNumber'>): string {
+    return barcode ? `Parcel ${barcode}` : `Item ${itemNumber}`;
+}
+
 function newGroup(): ParcelGroup {
     return {
-        id: Math.random().toString(36).slice(2),
+        id: newKey(),
         itemName: '',
         length: '',
         depth: '',
         height: '',
         weight: '',
         cubic: '',
-        barcodes: [''],
+        barcodes: [newBarcode('')],
         expandedBarcodes: false,
     };
 }
@@ -52,9 +77,9 @@ function nextBarcodeStart(groups: ParcelGroup[], jobNumber: string | number): nu
     const prefix = `${jobNumber}-`;
     let max = 0;
     for (const g of groups) {
-        for (const bc of g.barcodes) {
-            if (bc.startsWith(prefix)) {
-                const n = parseInt(bc.slice(prefix.length), 10);
+        for (const {value} of g.barcodes) {
+            if (value.startsWith(prefix)) {
+                const n = parseInt(value.slice(prefix.length), 10);
                 if (!isNaN(n) && n > max) max = n;
             }
         }
@@ -71,7 +96,7 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
         const key = `${p.itemName ?? ''}|${p.length ?? ''}|${p.depth ?? ''}|${p.height ?? ''}|${p.weight ?? ''}`;
         if (map.has(key)) {
             const existing = map.get(key)!;
-            existing.barcodes.push(p.barcode ?? '');
+            existing.barcodes.push(newBarcode(p.barcode ?? ''));
             // Per Job: the stored per-parcel weight/volume were divided across barcodes when
             // saved — sum them back up so the row displays the job-total contribution again,
             // instead of the shrunken per-parcel value (which would otherwise keep dividing
@@ -86,14 +111,14 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
             }
         } else {
             map.set(key, {
-                id: Math.random().toString(36).slice(2),
+                id: newKey(),
                 itemName: p.itemName ?? '',
                 length: p.length != null ? String(p.length) : '',
                 depth: p.depth != null ? String(p.depth) : '',
                 height: p.height != null ? String(p.height) : '',
                 weight: p.weight != null ? String(p.weight) : '',
                 cubic: p.cubic != null ? String(p.cubic) : '',
-                barcodes: [p.barcode ?? ''],
+                barcodes: [newBarcode(p.barcode ?? '')],
                 expandedBarcodes: false,
                 representativeItemId: p.itemId,
             });
@@ -132,7 +157,7 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
             ? `${length} × ${depth} × ${height} ${dimensionUnit}`
             : '';
 
-        return g.barcodes.map(barcode => ({
+        return g.barcodes.map(({value: barcode}) => ({
             itemName: g.itemName,
             length,
             depth,
@@ -198,6 +223,11 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     const [targetCubic, setTargetCubic] = useState('');
     const [itemTypesByItemId, setItemTypesByItemId] = useState<Map<number, ParcelItemType[]>>(new Map());
     const [isPerJob, setIsPerJob] = useState(false);
+    const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
+    const [pendingFocus, setPendingFocus] = useState<{removeKey: string} | {toggleGroupId: string} | null>(null);
+    const [removalStatus, setRemovalStatus] = useState('');
+    const removeButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+    const toggleButtonRefs = useRef(new Map<string, HTMLButtonElement>());
 
     const dimensionUnit = isUsCustomer ? 'in' : 'cm';
     const weightUnit = isUsCustomer ? 'lbs' : 'kg';
@@ -224,6 +254,8 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         setTargetCubic(loadedCubicTotal > 0 ? String(Math.round(loadedCubicTotal * 1000) / 1000) : '');
         setItemTypesByItemId(new Map());
         setIsPerJob(calculateDimsOncePerJob);
+        setPendingRemoval(null);
+        setRemovalStatus('');
 
         if (jobId) {
             apiClient.get<boolean>('job/IsJobParent', {jobId}).then(setIsParentJob).catch(() => {});
@@ -279,7 +311,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                 if (newQty < 1) return g;
                 const barcodes = [...g.barcodes];
                 if (delta > 0) {
-                    for (let i = 0; i < delta; i++) barcodes.push(jobNumber ? `${jobNumber}-${next++}` : '');
+                    for (let i = 0; i < delta; i++) barcodes.push(newBarcode(jobNumber ? `${jobNumber}-${next++}` : ''));
                 } else {
                     barcodes.splice(barcodes.length + delta, -delta);
                 }
@@ -289,20 +321,45 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         setIsFormDirty(true);
     }, [jobNumber]);
 
-    const updateBarcode = useCallback((id: string, index: number, value: string) => {
-        setGroups(prev => prev.map(g => {
-            if (g.id !== id) return g;
-            const barcodes = [...g.barcodes];
-            barcodes[index] = value;
-            return {...g, barcodes};
+    const updateBarcode = useCallback((id: string, key: string, value: string) => {
+        setGroups(prev => prev.map(g => g.id !== id ? g : {
+            ...g,
+            barcodes: g.barcodes.map(b => b.key === key ? {...b, value} : b),
         }));
         setIsFormDirty(true);
     }, []);
 
+    const confirmRemoveBarcode = useCallback(() => {
+        if (!pendingRemoval) return;
+        setPendingRemoval(null);
+        const group = groups.find(g => g.id === pendingRemoval.groupId);
+        const index = group?.barcodes.findIndex(b => b.key === pendingRemoval.key) ?? -1;
+        if (!group || index < 0 || group.barcodes.length <= 1) return;
+
+        const remaining = group.barcodes.filter(b => b.key !== pendingRemoval.key);
+        // Focus the parcel that took the removed one's place (or the one before it, if it was
+        // last); with a single parcel left its remove button is disabled, so use the row toggle.
+        setPendingFocus(remaining.length > 1
+            ? {removeKey: (remaining[index] ?? remaining[index - 1]).key}
+            : {toggleGroupId: group.id});
+        setGroups(prev => prev.map(g => g.id === group.id ? {...g, barcodes: remaining} : g));
+        setRemovalStatus(`${parcelLabel(pendingRemoval)} removed. Save to apply.`);
+        setIsFormDirty(true);
+    }, [pendingRemoval, groups]);
+
+    useEffect(() => {
+        if (!pendingFocus) return;
+        const target = 'removeKey' in pendingFocus
+            ? removeButtonRefs.current.get(pendingFocus.removeKey)
+            : toggleButtonRefs.current.get(pendingFocus.toggleGroupId);
+        target?.focus();
+        setPendingFocus(null);
+    }, [pendingFocus]);
+
     const addGroup = useCallback(() => {
         setGroups(prev => {
             const g = newGroup();
-            if (jobNumber) g.barcodes = [`${jobNumber}-${nextBarcodeStart(prev, jobNumber)}`];
+            if (jobNumber) g.barcodes = [newBarcode(`${jobNumber}-${nextBarcodeStart(prev, jobNumber)}`)];
             return [...prev, g];
         });
         setIsFormDirty(true);
@@ -575,6 +632,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             </Tooltip>
                                             <Tooltip label={g.expandedBarcodes ? 'Hide barcodes' : 'Show barcodes'}>
                                                 <ActionIcon
+                                                    ref={el => {
+                                                        if (el) toggleButtonRefs.current.set(g.id, el);
+                                                        else toggleButtonRefs.current.delete(g.id);
+                                                    }}
                                                     variant="subtle"
                                                     color="gray"
                                                     size="sm"
@@ -590,18 +651,38 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                 </Table.Tr>
 
                                 {g.expandedBarcodes && g.barcodes.map((barcode, i) => (
-                                    <Table.Tr key={`${g.id}-bc-${i}`} bg="var(--mantine-color-gray-0)">
+                                    <Table.Tr key={barcode.key} bg="var(--mantine-color-gray-0)">
                                         <Table.Td pl={32}>
                                             <Text fz="xs" c="dimmed">Item {i + 1}</Text>
                                         </Table.Td>
-                                        <Table.Td colSpan={7}>
+                                        <Table.Td colSpan={6}>
                                             <TextInput
                                                 size="sm"
                                                 disabled={readOnly}
-                                                value={barcode}
-                                                onChange={e => updateBarcode(g.id, i, e.currentTarget.value)}
+                                                value={barcode.value}
+                                                onChange={e => updateBarcode(g.id, barcode.key, e.currentTarget.value)}
                                                 label="Barcode"
                                             />
+                                        </Table.Td>
+                                        <Table.Td>
+                                            <Tooltip label="Remove parcel">
+                                                <span>
+                                                    <ActionIcon
+                                                        ref={el => {
+                                                            if (el) removeButtonRefs.current.set(barcode.key, el);
+                                                            else removeButtonRefs.current.delete(barcode.key);
+                                                        }}
+                                                        variant="subtle"
+                                                        color="red"
+                                                        size="sm"
+                                                        aria-label={barcode.value ? `Remove parcel ${barcode.value}` : `Remove item ${i + 1}`}
+                                                        onClick={() => setPendingRemoval({groupId: g.id, key: barcode.key, barcode: barcode.value, itemNumber: i + 1})}
+                                                        disabled={readOnly || g.barcodes.length <= 1}
+                                                    >
+                                                        <Icon lucide={Trash2} size={16}/>
+                                                    </ActionIcon>
+                                                </span>
+                                            </Tooltip>
                                         </Table.Td>
                                     </Table.Tr>
                                 ))}
@@ -742,6 +823,41 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     />
                 </span>
             </Tooltip>
+
+            <VisuallyHidden role="status" aria-live="polite">{removalStatus}</VisuallyHidden>
+
+            {/* Remove-parcel confirmation */}
+            <DialogShell
+                opened={pendingRemoval != null}
+                onClose={() => setPendingRemoval(null)}
+                size={dialogSize.sm}
+                label="Remove parcel"
+                /* The trigger is gone once the parcel is removed; confirmRemoveBarcode places focus. */
+                returnFocus={false}
+            >
+                <DialogHeader
+                    variant="error"
+                    icon={<Icon lucide={Trash2}/>}
+                    title="Remove parcel"
+                    subtitle={pendingRemoval ? parcelLabel(pendingRemoval) : undefined}
+                    onClose={() => setPendingRemoval(null)}
+                />
+                <Box p={24}>
+                    <Text>
+                        {pendingRemoval?.barcode
+                            ? <>Parcel <strong>{pendingRemoval.barcode}</strong></>
+                            : <strong>Item {pendingRemoval?.itemNumber}</strong>}
+                        {' '}will be removed from this job when you save. The other barcodes won&apos;t change.
+                    </Text>
+                </Box>
+                <DialogFooter
+                    onCancel={() => setPendingRemoval(null)}
+                    cancelLabel="Keep parcel"
+                    onConfirm={confirmRemoveBarcode}
+                    confirmLabel="Remove parcel"
+                    confirmColor="red"
+                />
+            </DialogShell>
 
             {/* Discard confirmation */}
             <DialogShell
