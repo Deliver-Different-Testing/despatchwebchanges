@@ -57,6 +57,8 @@ public partial class AirFreightRate
 
     public bool IsDefault { get; set; }
 
+    public string InternalName { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual ExtraCharge ExtraCharge { get; set; }

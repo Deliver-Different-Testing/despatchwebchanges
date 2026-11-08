@@ -272,6 +272,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             const saved = await openEventGroupDialog({
                 eventGroupId: groupId,
                 jobId: activeJob.id,
+                jobNumber: activeJob.jobNo,
                 toastService: {showToast},
             });
             if (saved) refresh();

@@ -175,10 +175,6 @@
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[tblBulkRunSchedule]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[tblBulkScan]",
          "ObjectType": 0
       },
@@ -488,6 +484,10 @@
       },
       {
          "Name": "[dbo].[DESWEB_qryDespatch]",
+         "ObjectType": 3
+      },
+      {
+         "Name": "[dbo].[tblBulkRunSchedule]",
          "ObjectType": 3
       },
       {
