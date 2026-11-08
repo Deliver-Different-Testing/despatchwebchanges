@@ -40,6 +40,7 @@ public sealed class AccessorialChargeService(
         };
 
         var calculatedAmount = Recalculate(updated);
+        var driverCalculatedAmount = RecalculateDriver(updated, calculatedAmount);
 
         var staffInfo = await tenantInfoService.GetStaffInfoAsync();
         var userName = staffInfo?.Text ?? "Unknown";
@@ -48,6 +49,8 @@ public sealed class AccessorialChargeService(
             jobAccessorialChargeId,
             calculatedAmount,
             request.OverrideAmount,
+            driverCalculatedAmount,
+            request.DriverOverrideAmount,
             request.InputValue,
             request.ItemCount,
             request.Notes,
@@ -56,7 +59,9 @@ public sealed class AccessorialChargeService(
         return updated with
         {
             CalculatedAmount = calculatedAmount,
-            OverrideAmount = request.OverrideAmount
+            OverrideAmount = request.OverrideAmount,
+            DriverCalculatedAmount = driverCalculatedAmount,
+            DriverOverrideAmount = request.DriverOverrideAmount
         };
     }
 
@@ -92,7 +97,29 @@ public sealed class AccessorialChargeService(
         return amount;
     }
 
-    private static decimal CalculateBillableAmount(JobAccessorialChargeDto jac)
+    /// <summary>
+    /// Mirrors the driver calculation in sp_AddJobAccessorial. Driver percentage is a percentage of the charge amount
+    /// (after min/max), not of the job amount. Null when the charge has no driver rate for its type.
+    /// The charge amount is rounded to 2dp first (away from zero), matching the decimal(10,2) assignment in
+    /// sp_AddJobAccessorial, so adding and editing a charge give the same driver amount.
+    /// </summary>
+    private static decimal? RecalculateDriver(JobAccessorialChargeDto jac, decimal chargeAmount) =>
+        jac.ChargeType switch
+        {
+            ChargeType.Flat => jac.DriverBaseRate,
+            ChargeType.PerUnit or ChargeType.Hourly => jac.DriverRatePerUnit.HasValue
+                ? CalculateBillableUnits(jac) * jac.ItemCount * jac.DriverRatePerUnit.Value
+                : null,
+            ChargeType.Percentage => jac.DriverPercentageRate.HasValue
+                ? Math.Round(chargeAmount, 2, MidpointRounding.AwayFromZero) * (jac.DriverPercentageRate.Value / 100m)
+                : null,
+            _ => null
+        };
+
+    private static decimal CalculateBillableAmount(JobAccessorialChargeDto jac) =>
+        CalculateBillableUnits(jac) * jac.ItemCount * (jac.RatePerUnit ?? 0);
+
+    private static decimal CalculateBillableUnits(JobAccessorialChargeDto jac)
     {
         var billable = jac.InputValue ?? 0;
 
@@ -120,6 +147,6 @@ public sealed class AccessorialChargeService(
             billable = jac.MinimumQuantity.Value;
         }
 
-        return billable * jac.ItemCount * (jac.RatePerUnit ?? 0);
+        return billable;
     }
 }

@@ -12,6 +12,7 @@ import {renderWithMantine} from '../../../test/utils';
 import {AccessorialChargesDialog} from './AccessorialChargesDialog';
 import {accessorialChargesApi} from '../../../api/accessorialChargesApi';
 import {isAiEnabled} from '../../../utils/aiSettings';
+import {clearSessionContext, setSessionContext, SessionContextDto} from '../../../api/session';
 import type {
     AccessorialChargeDto,
     AccessorialChargesDialogProps,
@@ -217,12 +218,63 @@ describe('AccessorialChargesDialog — applied charges', () => {
         renderDialog();
 
         const row = await appliedRow('Tail-lift');
-        fireEvent.change(within(row).getByPlaceholderText('Optional'), {target: {value: '99'}});
+        fireEvent.change(within(row).getByLabelText('Override'), {target: {value: '99'}});
         fireEvent.click(within(row).getByRole('button', {name: 'Save'}));
 
         await waitFor(() => expect(api.updateCharge).toHaveBeenCalledWith(
             900,
             expect.objectContaining({overrideAmount: 99}),
+        ));
+    });
+
+    it('shows the driver amount for an applied charge', async () => {
+        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as jest.Mock).mockResolvedValue([{...appliedFlat, driverCalculatedAmount: 8}]);
+        renderDialog();
+
+        const row = await appliedRow('Tail-lift');
+        expect(within(row).getByText(/Driver:/)).toHaveTextContent('8.00');
+    });
+
+    it('shows the driver override instead of the calculated driver amount when one is set', async () => {
+        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as jest.Mock).mockResolvedValue([
+            {...appliedFlat, driverCalculatedAmount: 8, driverOverrideAmount: 6},
+        ]);
+        renderDialog();
+
+        const row = await appliedRow('Tail-lift');
+        expect(within(row).getByText(/Driver:/)).toHaveTextContent('6.00');
+        expect(within(row).getByLabelText('Driver override')).toHaveValue('6');
+    });
+
+    it('sends a driver override amount when one is entered, without touching the customer override', async () => {
+        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as jest.Mock).mockResolvedValue([appliedFlat]);
+        renderDialog();
+
+        const row = await appliedRow('Tail-lift');
+        fireEvent.change(within(row).getByLabelText('Driver override'), {target: {value: '6'}});
+        fireEvent.click(within(row).getByRole('button', {name: 'Save'}));
+
+        await waitFor(() => expect(api.updateCharge).toHaveBeenCalledWith(
+            900,
+            expect.objectContaining({driverOverrideAmount: 6, overrideAmount: undefined}),
+        ));
+    });
+
+    it('keeps an existing driver override when only the customer override is changed', async () => {
+        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as jest.Mock).mockResolvedValue([{...appliedFlat, driverOverrideAmount: 6}]);
+        renderDialog();
+
+        const row = await appliedRow('Tail-lift');
+        fireEvent.change(within(row).getByLabelText('Override'), {target: {value: '99'}});
+        fireEvent.click(within(row).getByRole('button', {name: 'Save'}));
+
+        await waitFor(() => expect(api.updateCharge).toHaveBeenCalledWith(
+            900,
+            expect.objectContaining({overrideAmount: 99, driverOverrideAmount: 6}),
         ));
     });
 
@@ -360,5 +412,40 @@ describe('AccessorialChargesDialog — portion jobs', () => {
         await waitFor(() =>
             expect(screen.getByRole('tab', {name: 'Leg 2'})).toHaveAttribute('aria-selected', 'true'));
         expect(screen.getByRole('tab', {name: 'Leg 1'})).toHaveAttribute('aria-selected', 'false');
+    });
+});
+
+// Driver pay on accessorials doesn't apply to NZ (NZ pays the courier a % of the whole job), so its UI is hidden there.
+describe('AccessorialChargesDialog — driver pay by tenant country', () => {
+    const tenantContext = (countryCode: string): SessionContextDto => ({
+        contactId: 1, staffId: 1, firstName: 'A', fullName: 'A B', email: null, dispatcher: null,
+        timeZone: 'Pacific/Auckland', countryCode, isUsTenant: false, currencyCode: 'NZD',
+        clientInternal: true, isNetworkPartner: false, visibleFeatures: null, npMapCenter: null, hubUrl: null,
+    });
+
+    beforeEach(() => {
+        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as jest.Mock).mockResolvedValue([{...appliedFlat, driverCalculatedAmount: 8}]);
+    });
+
+    afterEach(() => clearSessionContext());
+
+    it('hides the driver amount and driver override for an NZ tenant', async () => {
+        setSessionContext(tenantContext('NZ'));
+        renderDialog();
+
+        const row = await appliedRow('Tail-lift');
+        expect(within(row).getByLabelText('Override')).toBeInTheDocument();
+        expect(within(row).queryByText(/Driver:/)).not.toBeInTheDocument();
+        expect(within(row).queryByLabelText('Driver override')).not.toBeInTheDocument();
+    });
+
+    it('shows the driver amount and driver override for an AU tenant', async () => {
+        setSessionContext(tenantContext('AU'));
+        renderDialog();
+
+        const row = await appliedRow('Tail-lift');
+        expect(within(row).getByText(/Driver:/)).toBeInTheDocument();
+        expect(within(row).getByLabelText('Driver override')).toBeInTheDocument();
     });
 });
