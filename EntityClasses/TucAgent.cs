@@ -107,6 +107,12 @@ public partial class TucAgent
 
     public string AccountsId { get; set; }
 
+    public DateTime? BctiAgreedDate { get; set; }
+
+    public string BctiAgreedBy { get; set; }
+
+    public string BctiAgreementRef { get; set; }
+
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
 
     public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();

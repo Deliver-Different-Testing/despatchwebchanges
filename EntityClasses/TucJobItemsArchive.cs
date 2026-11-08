@@ -37,6 +37,8 @@ public partial class TucJobItemsArchive
 
     public string Barcode { get; set; }
 
+    public byte? ItemStatus { get; set; }
+
     public virtual TucJobArchive ChildJob { get; set; }
 
     public virtual ICollection<TucJobItemTypesArchive> TucJobItemTypesArchives { get; set; } = new List<TucJobItemTypesArchive>();

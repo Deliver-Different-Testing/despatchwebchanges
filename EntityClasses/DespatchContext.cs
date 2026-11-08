@@ -283,6 +283,9 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
             entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.DriverBaseRate).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.DriverPercentageRate).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.DriverRatePerUnit).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.FreeAllowance).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())")
@@ -400,6 +403,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ExtraChargeId).HasColumnName("ExtraChargeID");
             entity.Property(e => e.FlightBaseCharge).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.GroundDistanceRateId).HasColumnName("GroundDistanceRateID");
+            entity.Property(e => e.InternalName).HasMaxLength(255);
             entity.Property(e => e.LastModified)
                 .HasDefaultValueSql("(getdate())", "DF__AirFreigh__LastM__6601D960")
                 .HasColumnType("datetime");
@@ -1108,6 +1112,8 @@ public partial class DespatchContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.DriverCalculatedAmount).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.DriverOverrideAmount).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.InputValue).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.ItemCount).HasDefaultValue(1);
             entity.Property(e => e.LastModified)
@@ -1700,6 +1706,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.NpAgentId, "IX_tblBulkJob_NpAgentId");
 
+            entity.HasIndex(e => e.ParentId, "IX_tblBulkJob_ParentID");
+
             entity.HasIndex(e => new { e.ShopRef1, e.ShopRef2, e.ClientId }, "IX_tblBulkJob_ShopRef1_ShopRef2_ClientID").HasFilter("([ShopRef1] IS NOT NULL)");
 
             entity.HasIndex(e => e.JobId, "JobId-NonClusteredIndex-20190417-112100").IsDescending();
@@ -2031,39 +2039,14 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TblBulkRunSchedule>(entity =>
         {
-            entity.HasKey(e => e.BulkRunScheduleId);
-
-            entity.ToTable("tblBulkRunSchedule");
-
-            entity.HasIndex(e => new { e.ScheduleId, e.DayOfWeek }, "IX_tblBulkRunSchedule_ScheduleId_DayOfWeek");
-
-            entity.HasIndex(e => e.ClientId, "idx_ClientId");
-
-            entity.HasIndex(e => e.Region, "idx_Region");
-
-            entity.HasIndex(e => e.SpeedId, "idx_SpeedId");
+            entity
+                .HasNoKey()
+                .ToView("tblBulkRunSchedule");
 
             entity.Property(e => e.CutoffTime).HasColumnType("time(0)");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.DropOffLocationId).HasColumnName("DropOffLocationID");
             entity.Property(e => e.Name).HasMaxLength(250);
-
-            entity.HasOne(d => d.Client).WithMany(p => p.TblBulkRunSchedules)
-                .HasForeignKey(d => d.ClientId)
-                .HasConstraintName("FK_tblBulkRunSchedule_tucClient");
-
-            entity.HasOne(d => d.ParentSpeed).WithMany(p => p.TblBulkRunScheduleParentSpeeds)
-                .HasForeignKey(d => d.ParentSpeedId)
-                .HasConstraintName("FK_tblBulkRunSchedule_tucJobType2");
-
-            entity.HasOne(d => d.RegionNavigation).WithMany(p => p.TblBulkRunSchedules)
-                .HasForeignKey(d => d.Region)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_tblBulkRunSchedule_tblBulkRegion");
-
-            entity.HasOne(d => d.Speed).WithMany(p => p.TblBulkRunScheduleSpeeds)
-                .HasForeignKey(d => d.SpeedId)
-                .HasConstraintName("FK_tblBulkRunSchedule_tucJobType");
         });
 
         modelBuilder.Entity<TblBulkScan>(entity =>
@@ -3834,6 +3817,7 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.CountryCode).HasMaxLength(50);
+            entity.Property(e => e.CourierFlagLastDeliveryMode).HasMaxLength(20);
             entity.Property(e => e.CourierServiceProcessed).HasPrecision(3);
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
@@ -3850,6 +3834,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DefaultItemCode).HasMaxLength(50);
             entity.Property(e => e.DefaultItemCodeFuel).HasMaxLength(50);
             entity.Property(e => e.DefaultRevenueAccount).HasMaxLength(50);
+            entity.Property(e => e.DespatchNavStyle).HasMaxLength(20);
             entity.Property(e => e.DespatchUniqueEmailNotifyAddress).HasMaxLength(200);
             entity.Property(e => e.DirectDebitBankAuthorisationCode).HasMaxLength(50);
             entity.Property(e => e.DpspayRoot)
@@ -4011,6 +3996,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.SystemName)
                 .IsRequired()
                 .HasMaxLength(50);
+            entity.Property(e => e.TenantLifecycleState).HasMaxLength(30);
             entity.Property(e => e.ToolTipImageDirectory)
                 .IsRequired()
                 .HasMaxLength(100);
@@ -4147,6 +4133,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AgentRateMarkup).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Association).HasMaxLength(50);
             entity.Property(e => e.AssociationMemberId).HasMaxLength(100);
+            entity.Property(e => e.BctiAgreedBy).HasMaxLength(100);
+            entity.Property(e => e.BctiAgreedDate).HasColumnType("date");
+            entity.Property(e => e.BctiAgreementRef).HasMaxLength(500);
             entity.Property(e => e.ContactEmail).HasMaxLength(200);
             entity.Property(e => e.ContactName).HasMaxLength(200);
             entity.Property(e => e.Created).HasColumnType("datetime");
@@ -5159,12 +5148,13 @@ public partial class DespatchContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("ucevDespatcher");
             entity.Property(e => e.UcevDueTime)
-                .HasDefaultValueSql("(getdate())", "DF_tucEvent_ucevDueTime")
+                .HasDefaultValueSql("([dbo].[UTL_GetTenantLocalDateTime]())", "DF_tucEvent_ucevDueTime")
                 .HasColumnType("datetime")
                 .HasColumnName("ucevDueTime");
             entity.Property(e => e.UcevEtatime)
                 .HasColumnType("datetime")
                 .HasColumnName("ucevETATime");
+            entity.Property(e => e.UcevEventTypeGroupId).HasColumnName("ucevEventTypeGroupId");
             entity.Property(e => e.UcevIsScheduled).HasColumnName("ucevIsScheduled");
             entity.Property(e => e.UcevJobId).HasColumnName("ucevJobID");
             entity.Property(e => e.UcevJobNumber)
@@ -6123,6 +6113,7 @@ public partial class DespatchContext : DbContext
                     tb.HasTrigger("AutomaticSpeedUpdate_Archive");
                     tb.HasTrigger("TR_tucJobArchive_PricingBreakdownArchive_Sync");
                     tb.HasTrigger("trg_TucJobArchive_Notes_Update");
+                    tb.HasTrigger("trg_tucJobArchive_Update");
                     tb.HasTrigger("tucJobArchive_Update_AddPickupAmountToNationwideAmount");
                     tb.HasTrigger("tucJobArchive_Update_AutomaticSpeedUpdate");
                     tb.HasTrigger("tucJobArchive_Update_BlockChanges");
@@ -6165,6 +6156,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UcjbClientRefb, "IX_tucJobArchive");
 
             entity.HasIndex(e => e.AgentId, "IX_tucJobArchive_AgentID");
+
+            entity.HasIndex(e => e.UcjbDate, "IX_tucJobArchive_Date_SettlementCover");
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobArchive_FromAirportId");
 
@@ -6614,6 +6607,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.RouteId, "IX_tucJobBooking_RouteId");
 
+            entity.HasIndex(e => new { e.RouteId, e.IsLinehaulMaster }, "IX_tucJobBooking_Route_Master");
+
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobBooking_ToAirportID");
 
             entity.HasIndex(e => e.InformationParentId, "InformationParentID");
@@ -6674,6 +6669,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DropoffAmount).HasColumnType("money");
             entity.Property(e => e.DropoffRawAmount).HasColumnType("money");
             entity.Property(e => e.DryIceWeight).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.FinalMileDeliveryMode).HasDefaultValue((byte)1, "DF_tucJobBooking_FinalMileDeliveryMode");
             entity.Property(e => e.FixedPrice).HasDefaultValue(true, "DF_tucJobBooking_FixedPrice");
             entity.Property(e => e.FromAddressExtras)
                 .HasMaxLength(200)
@@ -7124,7 +7120,11 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => new { e.JobId, e.ItemId });
 
-            entity.ToTable("tucJobItems", tb => tb.HasTrigger("trg_UpdateLiveJobTotals"));
+            entity.ToTable("tucJobItems", tb =>
+                {
+                    tb.HasTrigger("trg_UpdateLiveJobTotals");
+                    tb.HasTrigger("trg_tucJobItems_StatusPushToDevice");
+                });
 
             entity.HasIndex(e => e.ChildJobId, "IX_TucJobItems_ChildJob");
 
@@ -7141,7 +7141,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Cubic).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.Dgclass).HasColumnName("DGClass");
             entity.Property(e => e.Do).HasColumnName("DO");
-            entity.Property(e => e.ItemStatus).HasDefaultValue((byte)0);
+            entity.Property(e => e.ItemStatus).HasDefaultValue((byte)0, "DF_tucJobItems_ItemStatus");
             entity.Property(e => e.Notes).HasMaxLength(4000);
             entity.Property(e => e.Pu).HasColumnName("PU");
 
@@ -7539,7 +7539,11 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357FAA284A1B");
 
-            entity.ToTable("tucNote", tb => tb.HasTrigger("tucNote_Insert_SendToDevices"));
+            entity.ToTable("tucNote", tb =>
+                {
+                    tb.HasTrigger("tucNote_Insert_SendToDevices");
+                    tb.HasTrigger("tucNote_Update_SendToDevices");
+                });
 
             entity.HasIndex(e => e.CreatedDate, "IX_Note_CreatedDate");
 

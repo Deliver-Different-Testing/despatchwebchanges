@@ -405,6 +405,24 @@ public partial class DespatchContext
                 || (CurrentIsCustomerScoped && CurrentClientId != null && j.ClientId == CurrentClientId));
         });
 
+        modelBuilder.Entity<TblBulkRunSchedule>(entity =>
+        {
+            entity.HasOne(d => d.RegionNavigation)
+                .WithMany()
+                .HasForeignKey(d => d.Region);
+        });
+
+        // SQLite (tests) can't parse a schema-qualified function call in a column default, and
+        // EnsureCreated skips views, so the tblBulkRunSchedule view becomes a table there.
+        if (Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+        {
+            modelBuilder.Entity<TucEvent>()
+                .Property(e => e.UcevDueTime)
+                .HasDefaultValueSql("(getdate())", "DF_tucEvent_ucevDueTime");
+
+            modelBuilder.Entity<TblBulkRunSchedule>().ToTable("tblBulkRunSchedule");
+        }
+
         modelBuilder.Entity<TucJobArchive>(entity =>
         {
             entity.HasOne(d => d.NpAgent)

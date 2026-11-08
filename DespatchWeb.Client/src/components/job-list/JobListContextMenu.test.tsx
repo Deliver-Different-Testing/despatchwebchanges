@@ -1064,6 +1064,7 @@ describe('JobListContextMenu', () => {
                 expect(mockedOpenEventGroupDialog).toHaveBeenCalledWith({
                     eventGroupId: 10,
                     jobId: 1,
+                    jobNumber: 'J001',
                     toastService: {showToast: props.showToast},
                 });
             });

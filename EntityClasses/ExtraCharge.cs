@@ -137,5 +137,7 @@ public partial class ExtraCharge
 
     public bool? CubicAppliesPerItem { get; set; }
 
+    public bool ChargeGreaterOfWeightOrCubic { get; set; }
+
     public virtual ICollection<AirFreightRate> AirFreightRates { get; set; } = new List<AirFreightRate>();
 }

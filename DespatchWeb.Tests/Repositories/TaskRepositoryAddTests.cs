@@ -116,6 +116,47 @@ public class TaskRepositoryAddTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task CreateEventsForJobAsync_StampsTheTaskGroupTheItemCameFrom_SoNonTaskTypesStillListAsTasks()
+    {
+        // Late Delivery is a CE type, which the task list hides unless it was added from a group.
+        _infoServiceMock.GetStaffId().Returns(7);
+        await SeedAsync(
+            Staff(7, "Jo", "Bloggs"),
+            Job(559, contact: "Front desk"),
+            new TucEventType { UcetId = 2, UcetGroup = "CE", UcetName = "Late Delivery" },
+            new TucEventTypeGroup { Id = 4, Name = "Test set of events", CreatedBy = "test" },
+            new TucEventTypeEventTypeGroup { Id = 9, EventTypeId = 2, EventTypeGroupId = 4, Kind = "form" });
+
+        await CreateRepository().CreateEventsForJobAsync(559,
+        [
+            new NewTaskEvent
+            {
+                EventTypeGroupTypeGroupId = 9,
+                EventType = new Suggestion { Id = 2, Text = "Late Delivery" }
+            }
+        ]);
+
+        await using var context = _db.CreateContext();
+        var listed = await TaskRepository.ApplyTaskGroupFilter(context.TucEvents)
+            .SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(4, listed.UcevEventTypeGroupId);
+        Assert.Equal(559, listed.UcevJobId);
+    }
+
+    [Fact]
+    public async Task CreateEventsForJobAsync_UnknownGroupItem_LeavesTaskGroupEmpty()
+    {
+        _infoServiceMock.GetStaffId().Returns(7);
+        await SeedAsync(Staff(7, "Jo", "Bloggs"), Job(560, contact: "Front desk"));
+
+        await CreateRepository().CreateEventsForJobAsync(560,
+            [new NewTaskEvent { EventTypeGroupTypeGroupId = 999, EventType = new Suggestion { Id = 3, Text = "Delivery" } }]);
+
+        var created = await SingleEventAsync();
+        Assert.Null(created.UcevEventTypeGroupId);
+    }
+
+    [Fact]
     public async Task CreateEventsForJobAsync_StampsCreatedAtUtc_FromUtcClock()
     {
         _infoServiceMock.GetStaffId().Returns(7);

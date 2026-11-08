@@ -33,6 +33,10 @@ public partial class JobAccessorialCharge
 
     public string AddedAtStage { get; set; }
 
+    public decimal? DriverCalculatedAmount { get; set; }
+
+    public decimal? DriverOverrideAmount { get; set; }
+
     public virtual AccessorialCharge AccessorialCharge { get; set; }
 
     public virtual TucJob Job { get; set; }
