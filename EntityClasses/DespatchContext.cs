@@ -298,6 +298,9 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.PercentageRate).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.DriverBaseRate).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.DriverPercentageRate).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.DriverRatePerUnit).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.RatePerUnit).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.Tag).HasMaxLength(200);
 
@@ -1121,6 +1124,8 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.LastModifiedBy).HasMaxLength(255);
             entity.Property(e => e.OverrideAmount).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.DriverCalculatedAmount).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.DriverOverrideAmount).HasColumnType("decimal(10, 2)");
 
             entity.HasOne(d => d.AccessorialCharge).WithMany(p => p.JobAccessorialCharges)
                 .HasForeignKey(d => d.AccessorialChargeId)

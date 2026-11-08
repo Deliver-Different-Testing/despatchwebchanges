@@ -22,6 +22,9 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             BaseRate = jac.AccessorialCharge.BaseRate,
             RatePerUnit = jac.AccessorialCharge.RatePerUnit,
             PercentageRate = jac.AccessorialCharge.PercentageRate,
+            DriverBaseRate = jac.AccessorialCharge.DriverBaseRate,
+            DriverRatePerUnit = jac.AccessorialCharge.DriverRatePerUnit,
+            DriverPercentageRate = jac.AccessorialCharge.DriverPercentageRate,
             FreeAllowance = jac.AccessorialCharge.FreeAllowance,
             FreeAllowanceUnitTypeName = jac.AccessorialCharge.FreeAllowanceUnitType != null
                 ? jac.AccessorialCharge.FreeAllowanceUnitType.Name
@@ -33,6 +36,8 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             ItemCount = jac.ItemCount,
             CalculatedAmount = jac.CalculatedAmount,
             OverrideAmount = jac.OverrideAmount,
+            DriverCalculatedAmount = jac.DriverCalculatedAmount,
+            DriverOverrideAmount = jac.DriverOverrideAmount,
             CalculationOrder = jac.AccessorialCharge.CalculationOrder,
             Notes = jac.Notes,
             AddedAtStage = jac.AddedAtStage,
@@ -105,7 +110,7 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             .FirstOrDefaultAsync();
 
     public async Task UpdateChargeAsync(int jobAccessorialChargeId, decimal calculatedAmount, decimal? overrideAmount,
-        decimal? inputValue, int itemCount, string notes, string userName) =>
+        decimal? driverCalculatedAmount, decimal? driverOverrideAmount, decimal? inputValue, int itemCount, string notes, string userName) =>
         await Context.JobAccessorialCharges
             .Where(jac => jac.JobAccessorialChargeId == jobAccessorialChargeId)
             .ExecuteUpdateAsync(setters => setters
@@ -114,6 +119,8 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
                 .SetProperty(jac => jac.Notes, notes)
                 .SetProperty(jac => jac.CalculatedAmount, calculatedAmount)
                 .SetProperty(jac => jac.OverrideAmount, overrideAmount)
+                .SetProperty(jac => jac.DriverCalculatedAmount, driverCalculatedAmount)
+                .SetProperty(jac => jac.DriverOverrideAmount, driverOverrideAmount)
                 .SetProperty(jac => jac.LastModified, DateTime.UtcNow)
                 .SetProperty(jac => jac.LastModifiedBy, userName ?? "Unknown"));
 

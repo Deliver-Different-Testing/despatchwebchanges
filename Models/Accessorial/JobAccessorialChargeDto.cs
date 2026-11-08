@@ -12,6 +12,9 @@ public sealed record JobAccessorialChargeDto
     public decimal? BaseRate { get; init; }
     public decimal? RatePerUnit { get; init; }
     public decimal? PercentageRate { get; init; }
+    public decimal? DriverBaseRate { get; init; }
+    public decimal? DriverRatePerUnit { get; init; }
+    public decimal? DriverPercentageRate { get; init; }
     public decimal? FreeAllowance { get; init; }
     public string FreeAllowanceUnitTypeName { get; init; }
     public decimal? MinimumQuantity { get; init; }
@@ -21,6 +24,8 @@ public sealed record JobAccessorialChargeDto
     public int ItemCount { get; init; }
     public decimal? CalculatedAmount { get; init; }
     public decimal? OverrideAmount { get; init; }
+    public decimal? DriverCalculatedAmount { get; init; }
+    public decimal? DriverOverrideAmount { get; init; }
     public int CalculationOrder { get; init; }
     public string Notes { get; init; }
     public string AddedAtStage { get; init; }
