@@ -106,6 +106,13 @@ public sealed class AutoMateChatService(
         var opts = options.Value;
         var profile = anthropicSettings.Value.Chat;
 
+        if (!anthropicSettings.Value.IsConnected)
+        {
+            Log.Warning("Auto-mate chat is not connected to Claude (workload identity federation not configured or no identity token)");
+            yield return NotConnected();
+            yield break;
+        }
+
         if (breaker.IsOpen)
         {
             yield return Failure("Auto-mate is temporarily unavailable. Please try again shortly.", 503);
@@ -302,6 +309,15 @@ public sealed class AutoMateChatService(
     private static AutoMateStreamEvent Failure(string message, int status, UsageTotals? usage = null) =>
         new() { Type = "error", Error = message, HttpStatus = status, Usage = usage?.ToInfo() };
 
+    internal static AutoMateStreamEvent NotConnected(AiUsageInfo? usage = null) => new()
+    {
+        Type = "error",
+        Code = "not_connected",
+        Error = "Sorry, I'm not connected right now. Please try again later.",
+        HttpStatus = 503,
+        Usage = usage
+    };
+
     private AutoMateStreamEvent DoneEvent(string answer, IReadOnlyList<CspKbHit> hits, UsageTotals usage)
     {
         var sources = CitedSources(answer, hits, kbSources.Seen);
@@ -363,6 +379,12 @@ public sealed class AutoMateChatService(
             return Failure("Auto-mate took too long to answer. Please try again.", 504, usage);
         }
 
+        if (AiClientService.IsNotConnected(ex))
+        {
+            Log.Warning(ex, "Auto-mate chat could not authenticate to Claude");
+            return NotConnected(usage.ToInfo());
+        }
+
         if (ex is Anthropic5xxException or AnthropicIOException)
         {
             breaker.RecordFailure();
@@ -371,7 +393,7 @@ public sealed class AutoMateChatService(
         Log.Error(ex, "Claude API error in Auto-mate chat ({Model})", profile.Model);
         var (message, status) = ex switch
         {
-            AnthropicUnauthorizedException or AnthropicForbiddenException or AnthropicNotFoundException =>
+            AnthropicForbiddenException or AnthropicNotFoundException =>
                 ("Auto-mate isn't set up correctly. Contact support.", 503),
             AnthropicRateLimitException => ("Auto-mate is busy right now. Try again in a minute.", 429),
             AnthropicBadRequestException => ("Auto-mate couldn't process this conversation. Start a new chat and try again.", 400),

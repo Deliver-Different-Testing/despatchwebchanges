@@ -1,6 +1,7 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
+using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Extensions;
 
@@ -16,6 +17,9 @@ public static class AiServiceCollectionExtensions
             .Validate(ValidateProfiles, "Anthropic model profiles are invalid.")
             .ValidateOnStart();
 
+        // The one Anthropic client, shared by AiClientService and the Auto-mate chat (see AnthropicClientFactory).
+        // One retry, not the SDK default of two: each caller bounds the total wait with its own timeout.
+        services.AddSingleton(sp => AnthropicClientFactory.Create(sp.GetRequiredService<IOptions<AnthropicSettings>>().Value, maxRetries: 1));
         services.AddSingleton<IAiResponseCache, AiResponseCache>();
         services.AddSingleton<AiCircuitBreaker>();
         services.AddSingleton<IAiClientService, AiClientService>();

@@ -38,7 +38,6 @@
         "PartnerDirectoryApiKey": "",
         "WebAPIUrl": "http://api.local.deliverdifferent.com:53750/api",
         "IntegrationManagerUrl": "http://integrationmanager.local.deliverdifferent.com:5173/",
-        "ANTHROPIC_API_KEY": "",
         "CspKnowledge__BaseUrl": "http://localhost:5310",
         "ServiceAuth__ClientSecret": ""
       }
@@ -75,7 +74,6 @@
         "PartnerDirectoryApiKey": "",
         "WebAPIUrl": "http://api.local.deliverdifferent.com:53750/api",
         "IntegrationManagerUrl": "http://integrationmanager.local.deliverdifferent.com:5173/",
-        "ANTHROPIC_API_KEY": "",
         "CspKnowledge__BaseUrl": "http://localhost:5310",
         "ServiceAuth__ClientSecret": ""
       }

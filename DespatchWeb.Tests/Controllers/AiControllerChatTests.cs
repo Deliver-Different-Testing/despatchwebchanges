@@ -5,6 +5,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.AutoMate;
 using DespatchWeb.Models.Response;
+using DespatchWeb.Services.AutoMate;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -92,6 +93,19 @@ public class AiControllerChatTests
         var json = JsonDocument.Parse(Written).RootElement;
         Assert.Equal("Auto-mate is busy right now.", json.GetProperty("error").GetString());
         Assert.DoesNotContain("data:", Written);
+    }
+
+    [Fact]
+    public async Task NotConnectedBeforeAnyOutput_CarriesItsCodeInTheJsonBody()
+    {
+        Stream(AutoMateChatService.NotConnected());
+
+        await Act(new AutoMateChatRequest());
+
+        Assert.Equal(503, _http.Response.StatusCode);
+        var json = JsonDocument.Parse(Written).RootElement;
+        Assert.Equal("not_connected", json.GetProperty("code").GetString());
+        Assert.Equal("Sorry, I'm not connected right now. Please try again later.", json.GetProperty("error").GetString());
     }
 
     [Fact]

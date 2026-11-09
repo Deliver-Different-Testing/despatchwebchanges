@@ -1,4 +1,5 @@
 ﻿using Amazon.S3;
+using Anthropic;
 using DeliverDifferentReporting.Services;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Extensions;
@@ -31,7 +32,6 @@ public class DiCompositionTests
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Anthropic:ApiKey"] = "test-key",
                 // AnthropicSettings has no C# defaults; resolving AiResponseCache/AiClientService
                 // reads IOptions<AnthropicSettings>.Value, which validates the profiles.
                 ["Anthropic:Drafting:Model"] = "claude-haiku-4-5",
@@ -88,6 +88,9 @@ public class DiCompositionTests
         Assert.NotNull(sp.GetRequiredService<IAutoMateChatService>());
         Assert.NotNull(sp.GetRequiredService<IServiceTokenProvider>());
         Assert.NotNull(sp.GetRequiredService<ICspKnowledgeClient>());
+
+        // One client, so one set of workload-identity credentials: each identity token can be exchanged only once.
+        Assert.Single(services, d => d.ServiceType == typeof(AnthropicClient));
 
         var toolNames = sp.GetServices<IAutoMateTool>().Select(t => t.Definition.Name).Order().ToList();
         Assert.Equal(

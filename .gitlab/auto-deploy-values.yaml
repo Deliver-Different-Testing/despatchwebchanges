@@ -101,7 +101,20 @@ extraVolumes:
             audience: csp
             expirationSeconds: 600
             path: csp-token
+  # Projected token exchanged for a short-lived Anthropic token (workload identity federation; no API key).
+  # Each token is single-use, so it must rotate before the SDK refreshes: keep expirationSeconds well under the
+  # federation rule's 1h token lifetime.
+  - name: anthropic-token
+    projected:
+      sources:
+        - serviceAccountToken:
+            audience: https://api.anthropic.com
+            expirationSeconds: 600
+            path: token
 extraVolumeMounts:
   - name: dfrnt-csp-token
     mountPath: /var/run/secrets/dfrnt
+    readOnly: true
+  - name: anthropic-token
+    mountPath: /var/run/secrets/anthropic.com
     readOnly: true
