@@ -420,6 +420,10 @@ public partial class TucJobBooking
 
     public bool ContentsUnknownAtPickup { get; set; }
 
+    public int? ScheduleHeaderId { get; set; }
+
+    public byte FinalMileDeliveryMode { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucJobBooking BookingParent { get; set; }

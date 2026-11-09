@@ -17,6 +17,7 @@ import {createDialogHost} from '../../../utils/reactDialogHost';
 export interface OpenEventGroupDialogOptions {
     eventGroupId: number;
     jobId: number;
+    jobNumber?: string;
     toastService?: ToastService;
 }
 
@@ -24,13 +25,14 @@ function openAdminManager(): void {
     window.open(window.location.href.replace(/adminmanager/g, 'hub'), '_blank');
 }
 
-const host = createDialogHost<{events: EventGroupViewModel[]; users: StaffSuggestion[]; jobId: number}, boolean>({
+const host = createDialogHost<{events: EventGroupViewModel[]; users: StaffSuggestion[]; jobId: number; jobNumber?: string}, boolean>({
     containerId: 'react-event-group-dialog-root',
     render: ({open, payload, close, showToast}) => islandTree(
         <EventGroupDialog
             open={open}
             events={payload.events}
             users={payload.users}
+            jobNumber={payload.jobNumber}
             onClose={() => close(false)}
             onSave={async (events: EventGroupViewModel[]) => {
                 await saveTasks(payload.jobId, events);
@@ -39,7 +41,6 @@ const host = createDialogHost<{events: EventGroupViewModel[]; users: StaffSugges
                 close(true);
             }}
             onOpenAdminManager={openAdminManager}
-            showToast={showToast}
             timezone={getIanaTimezone(getTenantTimezone())}
         />
     ),
@@ -51,7 +52,7 @@ export async function openEventGroupDialog(options: OpenEventGroupDialogOptions)
         getActiveStaff(),
     ]);
 
-    return host.open({events, users, jobId: options.jobId}, options.toastService);
+    return host.open({events, users, jobId: options.jobId, jobNumber: options.jobNumber}, options.toastService);
 }
 
 export const reactEventGroupDialog = {

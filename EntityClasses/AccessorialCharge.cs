@@ -55,6 +55,12 @@ public partial class AccessorialCharge
 
     public bool AvailableAtCourier { get; set; }
 
+    public decimal? DriverBaseRate { get; set; }
+
+    public decimal? DriverRatePerUnit { get; set; }
+
+    public decimal? DriverPercentageRate { get; set; }
+
     public virtual ICollection<AccessorialChargeGroupMember> AccessorialChargeGroupMembers { get; set; } = new List<AccessorialChargeGroupMember>();
 
     public virtual UnitType FreeAllowanceUnitType { get; set; }

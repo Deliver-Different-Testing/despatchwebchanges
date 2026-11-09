@@ -353,13 +353,27 @@ public partial class TblSetting
 
     public string DispatchAddressFormatJson { get; set; }
 
-    public string CourierFlagLastDeliveryMode { get; set; }
+    public bool PolygonZoneResolutionEnabled { get; set; }
 
-    public string DespatchNavStyle { get; set; }
+    public string TenantLifecycleState { get; set; }
+
+    public bool AgentAccessEnabled { get; set; }
+
+    public bool AgentAccessForcedOff { get; set; }
+
+    public bool SealedToteContinuationEnabled { get; set; }
+
+    public bool ScheduleCoverageEnabled { get; set; }
+
+    public string CourierFlagLastDeliveryMode { get; set; }
 
     public string AppearanceDefaultsJson { get; set; }
 
-    public bool PolygonZoneResolutionEnabled { get; set; }
+    public bool UsesUrgentRating { get; set; }
+
+    public string DespatchNavStyle { get; set; }
+
+    public bool PolygonZoneRatingEnabled { get; set; }
 
     public virtual TucStaff InternetJobStaff { get; set; }
 }

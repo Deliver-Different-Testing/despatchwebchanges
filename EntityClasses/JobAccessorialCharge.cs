@@ -21,6 +21,10 @@ public partial class JobAccessorialCharge
 
     public decimal? OverrideAmount { get; set; }
 
+    public decimal? DriverCalculatedAmount { get; set; }
+
+    public decimal? DriverOverrideAmount { get; set; }
+
     public string Notes { get; set; }
 
     public DateTime? Created { get; set; }

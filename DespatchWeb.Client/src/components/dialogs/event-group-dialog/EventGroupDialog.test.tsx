@@ -22,20 +22,23 @@ const mockEvents: EventGroupViewModel[] = [
     },
 ];
 
+const twoEvents: EventGroupViewModel[] = [
+    mockEvents[0],
+    {...mockEvents[0], eventTypeGroupTypeGroupId: 2, eventType: {id: 2, text: 'Late Delivery'}, sequence: 2},
+];
+
+const baseProps: EventGroupDialogProps = {
+    open: true,
+    events: mockEvents,
+    users: [],
+    onClose: jest.fn(),
+    onSave: jest.fn(),
+    onOpenAdminManager: jest.fn(),
+    timezone: 'America/New_York',
+};
+
 const renderDialog = (props: Partial<EventGroupDialogProps> = {}) =>
-    renderWithMantine(
-        <EventGroupDialog
-                open
-                events={mockEvents}
-                users={[]}
-                onClose={jest.fn()}
-                onSave={jest.fn()}
-                onOpenAdminManager={jest.fn()}
-                showToast={jest.fn()}
-                timezone="America/New_York"
-            {...props}
-        />
-    );
+    renderWithMantine(<EventGroupDialog {...baseProps} {...props}/>);
 
 describe('EventGroupDialog timezone display', () => {
     it('shows the abbreviated timezone in the Due date header, not the raw IANA name', () => {
@@ -53,6 +56,64 @@ describe('EventGroupDialog timezone display', () => {
     });
 });
 
+describe('EventGroupDialog layout', () => {
+    it('names the group and the job, and shows each task once without a repeated group column', () => {
+        renderDialog({events: twoEvents, jobNumber: 'E50CRT'});
+
+        expect(screen.getByRole('heading', {name: 'Add tasks from "Group A"'})).toBeInTheDocument();
+        expect(screen.getByText('Job E50CRT')).toBeInTheDocument();
+        expect(screen.queryByRole('columnheader', {name: /group/i})).not.toBeInTheDocument();
+        expect(screen.getByText('Late Delivery')).toBeInTheDocument();
+    });
+});
+
+describe('EventGroupDialog selection', () => {
+    it('select-all ticks and unticks every task, and is indeterminate when only some are ticked', async () => {
+        const user = setupUser();
+        renderDialog({events: twoEvents});
+        const selectAll = screen.getByRole('checkbox', {name: 'Include all tasks'});
+
+        await user.click(screen.getByRole('checkbox', {name: 'Include Late Delivery'}));
+        expect(selectAll).toHaveAttribute('data-indeterminate', 'true');
+
+        await user.click(selectAll);
+        expect(screen.getByRole('checkbox', {name: 'Include Collection'})).toBeChecked();
+        expect(screen.getByRole('checkbox', {name: 'Include Late Delivery'})).toBeChecked();
+
+        await user.click(selectAll);
+        expect(screen.getByRole('checkbox', {name: 'Include Collection'})).not.toBeChecked();
+        expect(screen.getByRole('checkbox', {name: 'Include Late Delivery'})).not.toBeChecked();
+    });
+
+    it('disables an unticked task\'s due date and assignee and counts only ticked tasks on the button', async () => {
+        const user = setupUser();
+        renderDialog({events: twoEvents});
+        expect(screen.getByRole('button', {name: 'Add 2 tasks'})).toBeInTheDocument();
+
+        await user.click(screen.getByRole('checkbox', {name: 'Include Late Delivery'}));
+
+        expect(screen.getByRole('button', {name: 'Due date for Late Delivery'})).toBeDisabled();
+        expect(screen.getByRole('combobox', {name: 'Assign Late Delivery to'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Due date for Collection'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Add 1 task'})).toBeInTheDocument();
+    });
+
+    it('explains inline, without saving, when nothing is ticked', async () => {
+        const onSave = jest.fn();
+        const user = setupUser();
+        renderDialog({onSave});
+
+        await user.click(screen.getByRole('checkbox', {name: 'Include Collection'}));
+        await user.click(screen.getByRole('button', {name: 'Add 0 tasks'}));
+
+        expect(screen.getByText('Select at least one task to add.')).toBeInTheDocument();
+        expect(onSave).not.toHaveBeenCalled();
+
+        await user.click(screen.getByRole('checkbox', {name: 'Include Collection'}));
+        expect(screen.queryByText('Select at least one task to add.')).not.toBeInTheDocument();
+    });
+});
+
 describe('EventGroupDialog save', () => {
     it('labels the picked due time with the tenant zone, not the browser zone', async () => {
         const onSave = jest.fn().mockResolvedValue(undefined);
@@ -60,8 +121,22 @@ describe('EventGroupDialog save', () => {
         const user = setupUser();
         renderDialog({onSave, events: [{...mockEvents[0], dueTime: pickedAtTwo}]});
 
-        await user.click(screen.getByRole('button', {name: 'Save changes'}));
+        await user.click(screen.getByRole('button', {name: 'Add 1 task'}));
 
         expect(onSave.mock.calls[0][0][0].dueTime).toBe('2026-07-15T14:00:00-04:00');
+    });
+
+    it('opens ready to save again after a successful save, since the dialog host keeps it mounted', async () => {
+        const onSave = jest.fn().mockResolvedValue(undefined);
+        const user = setupUser();
+        const {rerender} = renderDialog({onSave});
+
+        await user.click(screen.getByRole('button', {name: 'Add 1 task'}));
+        rerender(<EventGroupDialog {...baseProps} onSave={onSave} open={false}/>);
+        rerender(<EventGroupDialog {...baseProps} onSave={onSave} open/>);
+
+        expect(screen.getByRole('button', {name: 'Add 1 task'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Cancel'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Close dialog'})).toBeEnabled();
     });
 });
