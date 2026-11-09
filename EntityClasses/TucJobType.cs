@@ -107,10 +107,6 @@ public partial class TucJobType
 
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();
 
-    public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleParentSpeeds { get; set; } = new List<TblBulkRunSchedule>();
-
-    public virtual ICollection<TblBulkRunSchedule> TblBulkRunScheduleSpeeds { get; set; } = new List<TblBulkRunSchedule>();
-
     public virtual ICollection<TblClientAvailableSpeed> TblClientAvailableSpeeds { get; set; } = new List<TblClientAvailableSpeed>();
 
     public virtual ICollection<TblClientContactJobType> TblClientContactJobTypes { get; set; } = new List<TblClientContactJobType>();

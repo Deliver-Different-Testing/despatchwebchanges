@@ -25,7 +25,7 @@ public class AccessorialChargeServiceTests
     private void SetupUpdateRepository() =>
         _repositoryMock.UpdateChargeAsync(
                 Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<decimal?>(),
-                Arg.Any<decimal?>(), Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>())
+                Arg.Any<decimal?>(), Arg.Any<decimal?>(), Arg.Any<decimal?>(), Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.CompletedTask);
 
     private async Task<JobAccessorialChargeDto> CallUpdate(JobAccessorialChargeDto existing,
@@ -279,6 +279,201 @@ public class AccessorialChargeServiceTests
         var result = await CallUpdate(jac);
 
         Assert.Equal(50m, result.CalculatedAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_Flat_ReturnsDriverBaseRate()
+    {
+        var jac = new JobAccessorialChargeDto
+            { ChargeType = "flat", BaseRate = 10m, DriverBaseRate = 8m, ItemCount = 1 };
+
+        var result = await CallUpdate(jac);
+
+        Assert.Equal(10m, result.CalculatedAmount);
+        Assert.Equal(8m, result.DriverCalculatedAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_Flat_NoDriverRate_ReturnsNull()
+    {
+        var jac = new JobAccessorialChargeDto { ChargeType = "flat", BaseRate = 10m, ItemCount = 1 };
+
+        var result = await CallUpdate(jac);
+
+        Assert.Null(result.DriverCalculatedAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_PerUnit_MultipliesInputByItemCountAndDriverRate()
+    {
+        var jac = new JobAccessorialChargeDto
+            { ChargeType = "per_unit", RatePerUnit = 10m, DriverRatePerUnit = 4m, ItemCount = 2 };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 5m, ItemCount = 2 });
+
+        Assert.Equal(100m, result.CalculatedAmount);
+        Assert.Equal(40m, result.DriverCalculatedAmount); // 5 * 2 * 4
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_PerUnit_UsesSameBillableUnitsAsCustomerAmount()
+    {
+        // Free allowance and minimum quantity apply to the driver side exactly as they do to the customer side.
+        var jac = new JobAccessorialChargeDto
+        {
+            ChargeType = "per_unit",
+            RatePerUnit = 10m,
+            DriverRatePerUnit = 4m,
+            FreeAllowance = 2m,
+            ItemCount = 1
+        };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 5m, ItemCount = 1 });
+
+        Assert.Equal(30m, result.CalculatedAmount);
+        Assert.Equal(12m, result.DriverCalculatedAmount); // (5 - 2) * 1 * 4
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_PerUnit_MinimumQuantity_BillableClampedToMinimum()
+    {
+        var jac = new JobAccessorialChargeDto
+        {
+            ChargeType = "per_unit",
+            RatePerUnit = 10m,
+            DriverRatePerUnit = 4m,
+            MinimumQuantity = 3m,
+            ItemCount = 1
+        };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 1m, ItemCount = 1 });
+
+        Assert.Equal(12m, result.DriverCalculatedAmount); // min qty 3 → 3 * 1 * 4
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_PerUnit_NoDriverRate_ReturnsNull()
+    {
+        var jac = new JobAccessorialChargeDto { ChargeType = "per_unit", RatePerUnit = 10m, ItemCount = 1 };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 5m, ItemCount = 1 });
+
+        Assert.Null(result.DriverCalculatedAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_Hourly_UsesDriverRatePerUnit()
+    {
+        var jac = new JobAccessorialChargeDto
+        {
+            ChargeType = "hourly",
+            RatePerUnit = 60m,
+            DriverRatePerUnit = 40m,
+            ItemCount = 1
+        };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 2m, ItemCount = 1 });
+
+        Assert.Equal(80m, result.DriverCalculatedAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_Percentage_IsPercentageOfChargeAmountNotInputValue()
+    {
+        var jac = new JobAccessorialChargeDto
+            { ChargeType = "percentage", PercentageRate = 10m, DriverPercentageRate = 80m, ItemCount = 1 };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 1000m, ItemCount = 1 });
+
+        Assert.Equal(100m, result.CalculatedAmount); // 1000 * 10%
+        Assert.Equal(80m, result.DriverCalculatedAmount); // 100 * 80%, not 1000 * 80%
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_Percentage_RoundsChargeAmountToTwoDecimalsFirst_MatchingStoredProc()
+    {
+        // Charge = 329.325 * 10% = 32.9325. sp_AddJobAccessorial stores it as 32.93 (decimal(10,2)) before applying
+        // the driver %, giving 26.344 (stored 26.34). Applying 80% to the unrounded 32.9325 would give 26.346 (26.35).
+        var jac = new JobAccessorialChargeDto
+            { ChargeType = "percentage", PercentageRate = 10m, DriverPercentageRate = 80m, ItemCount = 1 };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 329.325m, ItemCount = 1 });
+
+        Assert.Equal(26.344m, result.DriverCalculatedAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_Percentage_UsesChargeAmountAfterMinMaxClamp()
+    {
+        var jac = new JobAccessorialChargeDto
+        {
+            ChargeType = "percentage",
+            PercentageRate = 10m,
+            DriverPercentageRate = 80m,
+            MaximumCharge = 50m,
+            ItemCount = 1
+        };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 1000m, ItemCount = 1 });
+
+        Assert.Equal(50m, result.CalculatedAmount); // 100 capped at 50
+        Assert.Equal(40m, result.DriverCalculatedAmount); // 50 * 80%
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_Percentage_NoDriverPercentage_ReturnsNull()
+    {
+        var jac = new JobAccessorialChargeDto { ChargeType = "percentage", PercentageRate = 10m, ItemCount = 1 };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 1000m, ItemCount = 1 });
+
+        Assert.Null(result.DriverCalculatedAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateDriver_QuoteBased_ReturnsNullEvenWhenDriverRatesSet()
+    {
+        var jac = new JobAccessorialChargeDto
+        {
+            ChargeType = "quote_based",
+            DriverBaseRate = 8m,
+            DriverRatePerUnit = 4m,
+            DriverPercentageRate = 80m,
+            ItemCount = 1
+        };
+
+        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 75m, ItemCount = 1 });
+
+        Assert.Null(result.DriverCalculatedAmount);
+    }
+
+    [Fact]
+    public async Task UpdateChargeAsync_DriverOverride_ReturnedAndPassedToRepository()
+    {
+        var jac = new JobAccessorialChargeDto
+            { ChargeType = "flat", BaseRate = 10m, DriverBaseRate = 8m, ItemCount = 1 };
+
+        var result = await CallUpdate(jac,
+            new JobAccessorialChargeUpdateRequest { ItemCount = 1, DriverOverrideAmount = 6m });
+
+        Assert.Equal(6m, result.DriverOverrideAmount);
+        Assert.Equal(8m, result.DriverCalculatedAmount); // the calculated value is kept alongside the override
+        await _repositoryMock.Received(1).UpdateChargeAsync(
+            1, 10m, null, 8m, 6m, null, 1, null, "Test User");
+    }
+
+    [Fact]
+    public async Task UpdateChargeAsync_CustomerOverride_DoesNotAffectDriverAmounts()
+    {
+        var jac = new JobAccessorialChargeDto
+            { ChargeType = "flat", BaseRate = 10m, DriverBaseRate = 8m, ItemCount = 1 };
+
+        var result = await CallUpdate(jac,
+            new JobAccessorialChargeUpdateRequest { ItemCount = 1, OverrideAmount = 5m });
+
+        Assert.Equal(5m, result.OverrideAmount);
+        Assert.Equal(8m, result.DriverCalculatedAmount);
+        Assert.Null(result.DriverOverrideAmount);
     }
 
     [Fact]

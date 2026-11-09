@@ -98,6 +98,26 @@ public class TaskRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public void ApplyTaskGroupFilter_ShowsAnyTypeAddedFromATaskGroup_ButNotSystemEventsOfThatType()
+    {
+        var events = new[]
+        {
+            CreateEvent(1, e =>
+            {
+                e.UcevTypeNavigation = new TucEventType { UcetGroup = "CE" };
+                e.UcevEventTypeGroupId = 4;
+            }),
+            CreateEventWithGroup(2, "CE")
+        };
+
+        var results = TaskRepository.ApplyTaskGroupFilter(events.AsQueryable())
+            .Select(e => e.UcevId)
+            .ToList();
+
+        Assert.Equal([1], results);
+    }
+
+    [Fact]
     public void ProjectToTaskViewModel_MapsCourierAndClientCodeFromJob()
     {
         var ev = CreateEvent(1, e => e.UcevJob = new TucJob

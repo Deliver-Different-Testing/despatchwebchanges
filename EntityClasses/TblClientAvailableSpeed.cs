@@ -63,6 +63,8 @@ public partial class TblClientAvailableSpeed
 
     public bool? Faf { get; set; }
 
+    public bool ScheduleOnly { get; set; }
+
     public virtual TucClient Client { get; set; }
 
     public virtual TucJobType Speed { get; set; }

@@ -13,19 +13,19 @@ public partial class TblBulkRunSchedule
 
     public short DayOfWeek { get; set; }
 
-    public TimeSpan StartTime { get; set; }
+    public TimeSpan? StartTime { get; set; }
 
-    public TimeSpan EndTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
 
-    public int MaxJobs { get; set; }
+    public int? MaxJobs { get; set; }
 
-    public int Region { get; set; }
+    public int? Region { get; set; }
 
     public int? ClientId { get; set; }
 
     public int? SpeedId { get; set; }
 
-    public int CutoffHours { get; set; }
+    public int? CutoffHours { get; set; }
 
     public string Description { get; set; }
 
@@ -64,12 +64,4 @@ public partial class TblBulkRunSchedule
     public byte? CutoffDay { get; set; }
 
     public TimeSpan? CutoffTime { get; set; }
-
-    public virtual TucClient Client { get; set; }
-
-    public virtual TucJobType ParentSpeed { get; set; }
-
-    public virtual TblBulkRegion RegionNavigation { get; set; }
-
-    public virtual TucJobType Speed { get; set; }
 }

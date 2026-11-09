@@ -457,6 +457,11 @@ public class TaskRepository(
             throw new ArgumentNullException(nameof(job));
         }
 
+        var groupItemIds = eventGroupViewModels.Select(e => e.EventTypeGroupTypeGroupId).Distinct().ToList();
+        var groupIdByItemId = await Context.TucEventTypeEventTypeGroups
+            .Where(x => groupItemIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.EventTypeGroupId);
+
         // Batch create all events
         var events = eventGroupViewModels.Select(eventGroup => new TucEvent
         {
@@ -481,7 +486,10 @@ public class TaskRepository(
             UcevJobId = job.UcjbId,
             UcevDespatcher = dispatcherName.Truncate(DespatcherMaxLength),
             UcevJobType = job.UcjbSpeed,
-            UcevDueTime = ToTenantWallClock(eventGroup.DueTime, currentDate)
+            UcevDueTime = ToTenantWallClock(eventGroup.DueTime, currentDate),
+            UcevEventTypeGroupId = groupIdByItemId.TryGetValue(eventGroup.EventTypeGroupTypeGroupId, out var groupId)
+                ? groupId
+                : null
         }).ToList();
 
         await Context.TucEvents.AddRangeAsync(events);
@@ -629,12 +637,15 @@ public class TaskRepository(
     /// Restricts an event query to the groups that surface as actionable tasks in the task
     /// dashboard. Must stay in sync with <see cref="JobRepository.EventTypeListAsync"/>, which is
     /// the list of event types offered by the "Add Task" dialog — otherwise a task the user can
-    /// create is saved but never shown.
+    /// create is saved but never shown. A task group can hold any event type, so rows added from a
+    /// group (<see cref="TucEvent.UcevEventTypeGroupId"/> set) are tasks whatever their type, while
+    /// the system's own CE/SE/OE events of the same types stay out.
     /// </summary>
     internal static IQueryable<TucEvent> ApplyTaskGroupFilter(IQueryable<TucEvent> query) =>
         query.Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
                          || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.GE)
-                         || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
+                         || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT)
+                         || t.UcevEventTypeGroupId != null);
 
     /// <param name="toTenantWallClock">
     /// Converts a request bound to the tenant's wall-clock time. ucevDueTime is a tenant wall-clock
