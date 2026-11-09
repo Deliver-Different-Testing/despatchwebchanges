@@ -59,6 +59,16 @@ describe('createChatAdapter', () => {
         ]);
     });
 
+    it('says it is not connected as a plain reply, without the Error prefix', async () => {
+        stream([{type: 'error', error: "Sorry, I'm not connected right now.", code: 'not_connected'}]);
+
+        const yielded = await run(createChatAdapter(() => undefined), [msg('user', {type: 'text', text: 'Hi'})]);
+
+        expect(yielded).toEqual([
+            {content: [{type: 'text', text: "Sorry, I'm not connected right now."}], metadata: {custom: {status: undefined}}},
+        ]);
+    });
+
     it('yields a readable status with no parts while searching, thinking or running a tool', async () => {
         stream([
             {type: 'status', text: 'searching_kb'},

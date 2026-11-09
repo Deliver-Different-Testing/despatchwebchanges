@@ -10,6 +10,9 @@ public sealed class AutoMateStreamEvent
     public string? Text { get; init; }
     public string? ToolName { get; init; }
     public string? Error { get; init; }
+
+    /// <summary>Machine-readable reason for an error the UI shows differently, e.g. <c>not_connected</c>.</summary>
+    public string? Code { get; init; }
     public IReadOnlyList<KbSource>? Sources { get; init; }
 
     /// <summary>Status to answer with when the error arrives before any output; never written into the stream.</summary>
