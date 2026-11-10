@@ -52,11 +52,11 @@
     "validate": "concurrently -n tsc,lint --kill-others-on-fail \"tsc -b\" \"oxlint src/ vite.config.ts --report-unused-disable-directives\"",
     "lint": "oxlint src/ vite.config.ts --report-unused-disable-directives",
     "lint:fix": "oxlint src/ vite.config.ts --report-unused-disable-directives --fix",
-    "test": "vitest --run",
+    "test": "vitest --run --project unit",
     "test:unit": "vitest --run --project unit",
     "test:integration": "vitest --run --project integration",
     "test:watch": "vitest",
-    "test:coverage": "vitest --run --coverage",
+    "test:coverage": "vitest --run --project unit --coverage",
     "prepare": "cd .. && husky"
   },
   "keywords": [],
