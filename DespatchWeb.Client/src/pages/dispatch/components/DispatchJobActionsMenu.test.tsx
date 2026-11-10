@@ -11,7 +11,7 @@ const job = {jobId: 55, jobNo: 'J55'} as unknown as DispatchJob;
 function renderMenu(overrides: Partial<React.ComponentProps<typeof DispatchJobActionsMenu>> = {}) {
     return render(
         <MantineTestProvider>
-            <DispatchJobActionsMenu currentJob={job} onAction={jest.fn()} {...overrides} />
+            <DispatchJobActionsMenu currentJob={job} onAction={vi.fn()} {...overrides} />
         </MantineTestProvider>,
     );
 }
@@ -24,7 +24,7 @@ describe('DispatchJobActionsMenu', () => {
 
     it('opens the available actions and fires onAction with the action id and job', async () => {
         const user = setupUser();
-        const onAction = jest.fn();
+        const onAction = vi.fn();
         renderMenu({onAction});
 
         await user.click(screen.getByRole('button', {name: 'Job actions'}));

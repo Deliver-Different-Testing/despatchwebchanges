@@ -22,7 +22,7 @@ function renderDriverSearch() {
     renderWithMantine(
         <CurrentWorkAllDrivers
             drivers={mockDrivers}
-            onDriverSelect={jest.fn()}
+            onDriverSelect={vi.fn()}
         />
     );
 
@@ -35,7 +35,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -48,7 +48,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -61,7 +61,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -74,7 +74,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -87,7 +87,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={[]}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -100,7 +100,7 @@ describe('CurrentWorkAllDrivers', () => {
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     loading={true}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -115,7 +115,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={singleJobDriver}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -128,7 +128,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -149,7 +149,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -224,7 +224,7 @@ describe('CurrentWorkAllDrivers', () => {
     describe('selection', () => {
         it('should call onDriverSelect when driver is clicked', async () => {
             const user = setupUser();
-            const onDriverSelect = jest.fn();
+            const onDriverSelect = vi.fn();
 
             renderWithMantine(
                 <CurrentWorkAllDrivers
@@ -248,7 +248,7 @@ describe('CurrentWorkAllDrivers', () => {
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     selectedCourierId={2}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -266,7 +266,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -300,7 +300,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={drivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -315,7 +315,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={drivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -330,7 +330,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={drivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -345,7 +345,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={drivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -359,7 +359,7 @@ describe('CurrentWorkAllDrivers', () => {
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
                     selectedCourierId={undefined}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -391,7 +391,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={driversWithNumbers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -417,7 +417,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -438,7 +438,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={longNameDriver}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -451,7 +451,7 @@ describe('CurrentWorkAllDrivers', () => {
             renderWithMantine(
                 <CurrentWorkAllDrivers
                     drivers={mockDrivers}
-                    onDriverSelect={jest.fn()}
+                    onDriverSelect={vi.fn()}
                 />
             );
 
@@ -472,7 +472,7 @@ describe('CurrentWorkAllDrivers', () => {
 
         it('should call onDriverSelect with complete driver object', async () => {
             const user = setupUser();
-            const onDriverSelect = jest.fn();
+            const onDriverSelect = vi.fn();
 
             renderWithMantine(
                 <CurrentWorkAllDrivers

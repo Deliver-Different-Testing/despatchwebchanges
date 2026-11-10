@@ -29,15 +29,15 @@ const defaultProps = {
     deliveries: [] as OverviewTableParentJob[],
     isLoading: false,
     sort: {column: 'jobName', direction: 'asc'} as SortState,
-    onSort: jest.fn(),
+    onSort: vi.fn(),
     page: 1,
     limit: 20,
     total: 0,
-    onPageChange: jest.fn(),
-    onLimitChange: jest.fn(),
-    onShowMap: jest.fn(),
-    onOpenJobDetail: jest.fn(),
-    onToggleExpand: jest.fn(),
+    onPageChange: vi.fn(),
+    onLimitChange: vi.fn(),
+    onShowMap: vi.fn(),
+    onOpenJobDetail: vi.fn(),
+    onToggleExpand: vi.fn(),
 };
 
 describe('DeliveriesTable', () => {

@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen} from '@testing-library/react';
 import { setupUser } from '../../../../test/utils/setupUser';
@@ -10,14 +11,14 @@ import nationwideApi from '../../../../api/nationwideApi';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-jest.mock('../../../../api/nationwideApi', () => ({
+vi.mock('../../../../api/nationwideApi', () => ({
     __esModule: true,
     default: {
-        getFlightWebhookStatus: jest.fn(),
+        getFlightWebhookStatus: vi.fn(),
     },
 }));
 
-const mockGetFlightWebhookStatus = nationwideApi.getFlightWebhookStatus as jest.Mock;
+const mockGetFlightWebhookStatus = nationwideApi.getFlightWebhookStatus as Mock;
 
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -26,7 +27,7 @@ function renderWithTheme(ui: React.ReactElement) {
 
 describe('FlightInformation', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('renders nothing when flight has no or undefined segments', () => {

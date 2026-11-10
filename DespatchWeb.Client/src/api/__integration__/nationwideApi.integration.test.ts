@@ -1,4 +1,3 @@
-/** @jest-environment jest-fixed-jsdom */
 /**
  * Nationwide API Integration Tests
  *

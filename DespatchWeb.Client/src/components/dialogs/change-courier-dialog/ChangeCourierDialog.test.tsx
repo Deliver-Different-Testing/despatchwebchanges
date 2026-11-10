@@ -22,10 +22,10 @@ const createMockProps = (overrides: Partial<ChangeCourierDialogProps> = {}): Cha
     open: true,
     jobNo: 'JOB-001',
     currentCourierName: 'Olive Old',
-    onClose: jest.fn(),
-    onSave: jest.fn().mockResolvedValue(undefined),
-    showToast: jest.fn(),
-    searchCouriers: jest.fn().mockResolvedValue(mockCouriers),
+    onClose: vi.fn(),
+    onSave: vi.fn().mockResolvedValue(undefined),
+    showToast: vi.fn(),
+    searchCouriers: vi.fn().mockResolvedValue(mockCouriers),
     ...overrides,
 });
 
@@ -110,7 +110,7 @@ describe('ChangeCourierDialog', () => {
 
     it('toasts an error, stays open, and re-enables on save failure', async () => {
         const props = createMockProps({
-            onSave: jest.fn().mockRejectedValue(new Error('API error')),
+            onSave: vi.fn().mockRejectedValue(new Error('API error')),
         });
         await advanceToConfirm(props);
 

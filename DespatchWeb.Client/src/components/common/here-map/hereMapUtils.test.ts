@@ -6,22 +6,22 @@ describe('safeRemoveObject', () => {
     });
 
     it('does nothing when object is null', () => {
-        const target = {removeObject: jest.fn()};
+        const target = {removeObject: vi.fn()};
         safeRemoveObject(target, null);
         expect(target.removeObject).not.toHaveBeenCalled();
     });
 
     it('delegates to target.removeObject when both are set', () => {
-        const target = {removeObject: jest.fn()};
+        const target = {removeObject: vi.fn()};
         const obj = {id: 'x'};
         safeRemoveObject(target, obj);
         expect(target.removeObject).toHaveBeenCalledWith(obj);
     });
 
     it('swallows IllegalOperationError-style throws and logs a warning', () => {
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const target = {
-            removeObject: jest.fn(() => {
+            removeObject: vi.fn(() => {
                 const e = new Error('H.map.Group#removeObject object not found');
                 e.name = 'IllegalOperationError';
                 throw e;
@@ -40,30 +40,30 @@ describe('safeRemoveObjects', () => {
     });
 
     it('does nothing for empty array', () => {
-        const target = {removeObjects: jest.fn()};
+        const target = {removeObjects: vi.fn()};
         safeRemoveObjects(target, []);
         expect(target.removeObjects).not.toHaveBeenCalled();
     });
 
     it('does nothing when objs is null/undefined', () => {
-        const target = {removeObjects: jest.fn()};
+        const target = {removeObjects: vi.fn()};
         safeRemoveObjects(target, null);
         safeRemoveObjects(target, undefined);
         expect(target.removeObjects).not.toHaveBeenCalled();
     });
 
     it('delegates to removeObjects for non-empty arrays', () => {
-        const target = {removeObjects: jest.fn()};
+        const target = {removeObjects: vi.fn()};
         const items = [{id: 'a'}, {id: 'b'}];
         safeRemoveObjects(target, items);
         expect(target.removeObjects).toHaveBeenCalledWith(items);
     });
 
     it('falls back to per-object removal when the batch throws', () => {
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-        const removeObject = jest.fn();
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const removeObject = vi.fn();
         const target = {
-            removeObjects: jest.fn(() => {
+            removeObjects: vi.fn(() => {
                 throw new Error('one stale entry breaks the whole batch');
             }),
             removeObject,
@@ -80,8 +80,8 @@ describe('safeRemoveObjects', () => {
     });
 
     it('per-object fallback continues past a single failing item', () => {
-        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-        const removeObject = jest
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const removeObject = vi
             .fn()
             .mockImplementationOnce(() => {})
             .mockImplementationOnce(() => {
@@ -89,7 +89,7 @@ describe('safeRemoveObjects', () => {
             })
             .mockImplementationOnce(() => {});
         const target = {
-            removeObjects: jest.fn(() => {
+            removeObjects: vi.fn(() => {
                 throw new Error('batch failed');
             }),
             removeObject,
@@ -123,7 +123,7 @@ describe('createMapTooltipElement', () => {
 
 describe('removeStaleMarkers', () => {
     it('removes the markers whose ids are gone, in one batch, and keeps the rest', () => {
-        const group = {removeObjects: jest.fn()};
+        const group = {removeObjects: vi.fn()};
         const markers = new Map<number, {marker?: unknown}>([
             [1, {marker: 'one'}],
             [2, {marker: 'two'}],
@@ -138,7 +138,7 @@ describe('removeStaleMarkers', () => {
     });
 
     it('forgets an entry that never got a marker without asking the map to remove it', () => {
-        const group = {removeObjects: jest.fn()};
+        const group = {removeObjects: vi.fn()};
         const markers = new Map<number, {marker?: unknown}>([[1, {}]]);
 
         removeStaleMarkers(markers, new Set<number>(), group);
@@ -148,7 +148,7 @@ describe('removeStaleMarkers', () => {
     });
 
     it('leaves the map alone when nothing is stale', () => {
-        const group = {removeObjects: jest.fn()};
+        const group = {removeObjects: vi.fn()};
         const markers = new Map<number, {marker?: unknown}>([[1, {marker: 'one'}]]);
 
         removeStaleMarkers(markers, new Set([1]), group);

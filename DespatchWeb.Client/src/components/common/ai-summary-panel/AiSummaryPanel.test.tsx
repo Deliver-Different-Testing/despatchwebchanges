@@ -25,7 +25,7 @@ const renderWithTheme = renderWithMantine;
 
 // Helper to create a mock fetchSummary that resolves with a summary
 const createMockFetch = (summary = 'Test summary content', delay = 0) => {
-    return jest.fn((_signal?: AbortSignal): Promise<AiSummaryResponse> =>
+    return vi.fn((_signal?: AbortSignal): Promise<AiSummaryResponse> =>
         new Promise((resolve) => {
             const timer = setTimeout(() => {
                 resolve({
@@ -40,7 +40,7 @@ const createMockFetch = (summary = 'Test summary content', delay = 0) => {
 
 // Helper to create a mock fetchSummary that rejects
 const createMockFetchError = (message = 'API Error') => {
-    return jest.fn((): Promise<AiSummaryResponse> => Promise.reject(new Error(message)));
+    return vi.fn((): Promise<AiSummaryResponse> => Promise.reject(new Error(message)));
 };
 
 describe('AiSummaryPanel', () => {
@@ -117,7 +117,7 @@ describe('AiSummaryPanel', () => {
     describe('Loading state', () => {
         it('shows skeleton placeholders and stop button while loading', async () => {
             // Use a fetch that never resolves to keep loading state
-            const neverResolve = jest.fn(
+            const neverResolve = vi.fn(
                 () => new Promise<AiSummaryResponse>(() => {})
             );
             renderWithTheme(
@@ -148,7 +148,7 @@ describe('AiSummaryPanel', () => {
     describe('Copy button', () => {
         it('shows copy button when summary is available and copies to clipboard when clicked', async () => {
             // Mock clipboard API
-            const writeTextMock = jest.fn().mockResolvedValue(undefined);
+            const writeTextMock = vi.fn().mockResolvedValue(undefined);
             Object.assign(navigator, {
                 clipboard: { writeText: writeTextMock },
             });
@@ -173,7 +173,7 @@ describe('AiSummaryPanel', () => {
     describe('Stop button', () => {
         it('stops loading when stop button is clicked', async () => {
             let resolvePromise: (value: AiSummaryResponse) => void;
-            const controlledFetch = jest.fn(
+            const controlledFetch = vi.fn(
                 () =>
                     new Promise<AiSummaryResponse>((resolve) => {
                         resolvePromise = resolve;
@@ -230,9 +230,9 @@ describe('AiSummaryPanel', () => {
 
     describe('Unmount abort', () => {
         it('aborts in-flight request on unmount', async () => {
-            const abortSpy = jest.spyOn(AbortController.prototype, 'abort');
+            const abortSpy = vi.spyOn(AbortController.prototype, 'abort');
 
-            const neverResolve = jest.fn(
+            const neverResolve = vi.fn(
                 () => new Promise<AiSummaryResponse>(() => {})
             );
             const { unmount } = renderWithTheme(

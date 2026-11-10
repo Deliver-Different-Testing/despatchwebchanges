@@ -14,12 +14,12 @@ describe('TextInputDialog', () => {
         title: 'Edit Reference',
         label: 'Enter reference',
         initialValue: 'REF-001',
-        onSubmit: jest.fn(),
-        onCancel: jest.fn(),
+        onSubmit: vi.fn(),
+        onCancel: vi.fn(),
     };
 
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('renders nothing when closed', () => {

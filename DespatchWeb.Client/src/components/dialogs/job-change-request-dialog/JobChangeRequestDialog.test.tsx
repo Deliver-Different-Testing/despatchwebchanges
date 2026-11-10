@@ -5,6 +5,7 @@
  * preselected prop priming, and submission paths.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {act, screen, waitFor, within} from '@testing-library/react';
 import {notifications} from '@mantine/notifications';
@@ -14,26 +15,26 @@ import {setupUser} from '../../../test/utils/setupUser';
 import {jobChangeRequestApi} from '../../../api/jobChangeRequestApi';
 import {getSpeedList} from '../../../api/jobDetailApi';
 
-jest.mock('../../../api/jobChangeRequestApi', () => ({
+vi.mock('../../../api/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {
-        create: jest.fn(),
+        create: vi.fn(),
     },
 }));
 
-jest.mock('../../../api/jobDetailApi', () => ({
-    getSpeedList: jest.fn(),
+vi.mock('../../../api/jobDetailApi', () => ({
+    getSpeedList: vi.fn(),
 }));
 
-const mockCreate = jobChangeRequestApi.create as jest.Mock;
-const mockGetSpeedList = getSpeedList as jest.Mock;
+const mockCreate = jobChangeRequestApi.create as Mock;
+const mockGetSpeedList = getSpeedList as Mock;
 
 function renderDialog(overrides: Partial<JobChangeRequestDialogProps> = {}) {
     const defaultProps: JobChangeRequestDialogProps = {
         open: true,
         jobId: 42,
         jobNo: 'JOB-100',
-        onClose: jest.fn(),
-        onSubmitted: jest.fn(),
+        onClose: vi.fn(),
+        onSubmitted: vi.fn(),
         ...overrides,
     };
 
@@ -43,7 +44,7 @@ function renderDialog(overrides: Partial<JobChangeRequestDialogProps> = {}) {
 
 describe('JobChangeRequestDialog', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockGetSpeedList.mockResolvedValue([
             {id: 1, text: 'Standard'},
             {id: 2, text: 'Express'},
@@ -89,7 +90,7 @@ describe('JobChangeRequestDialog', () => {
             success: true,
             request: {status: 'Applied'},
         });
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderDialog({onClose});
         // Default field is Notes — the value input is "New notes".
         await user.click(screen.getByLabelText(/New notes/i));
@@ -305,7 +306,7 @@ describe('JobChangeRequestDialog', () => {
                     open={true}
                     jobId={42}
                     jobNo="JOB-100"
-                    onClose={jest.fn()}
+                    onClose={vi.fn()}
                     preselectedFieldName="PartnerAgreedRate"
                     preInitialValue="50"
                 />,
@@ -317,7 +318,7 @@ describe('JobChangeRequestDialog', () => {
                     open={false}
                     jobId={42}
                     jobNo="JOB-100"
-                    onClose={jest.fn()}
+                    onClose={vi.fn()}
                     preselectedFieldName="PartnerAgreedRate"
                     preInitialValue="50"
                 />,
@@ -327,7 +328,7 @@ describe('JobChangeRequestDialog', () => {
                     open={true}
                     jobId={42}
                     jobNo="JOB-100"
-                    onClose={jest.fn()}
+                    onClose={vi.fn()}
                     preselectedFieldName="Quantity"
                     preInitialValue="7"
                 />,
@@ -469,7 +470,7 @@ describe('JobChangeRequestDialog', () => {
             success: false,
             message: 'A pending request for Notes already exists',
         });
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderDialog({onClose});
         await user.click(screen.getByLabelText(/New notes/i));
         await user.paste('x');

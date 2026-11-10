@@ -2,6 +2,7 @@
  * useTasksApi Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider, focusManager} from '@tanstack/react-query';
@@ -22,21 +23,21 @@ import {Task, StaffSuggestion, EventTypeSuggestion} from '../types';
 import {DeliveryJourney} from '../components/common/task-history/TaskHistory.interfaces';
 
 // Mock the tasksApi
-jest.mock('../api/tasksApi', () => ({
+vi.mock('../api/tasksApi', () => ({
     tasksApi: {
-        getAllTasks: jest.fn(),
-        getActiveStaff: jest.fn(),
-        getEventTypes: jest.fn(),
-        getDeliveryJourney: jest.fn(),
-        markTaskAsClosed: jest.fn(),
-        updateTaskDate: jest.fn(),
-        updateTaskTime: jest.fn(),
-        reassignTaskToStaff: jest.fn(),
-        unassignTask: jest.fn(),
+        getAllTasks: vi.fn(),
+        getActiveStaff: vi.fn(),
+        getEventTypes: vi.fn(),
+        getDeliveryJourney: vi.fn(),
+        markTaskAsClosed: vi.fn(),
+        updateTaskDate: vi.fn(),
+        updateTaskTime: vi.fn(),
+        reassignTaskToStaff: vi.fn(),
+        unassignTask: vi.fn(),
     },
 }));
 
-const mockTasksApi = tasksApi as jest.Mocked<typeof tasksApi>;
+const mockTasksApi = tasksApi as Mocked<typeof tasksApi>;
 
 // Create a fresh QueryClient for each test
 const createTestQueryClient = (queryOverrides?: {refetchOnWindowFocus?: boolean}) =>

@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * JobDetails.types utility function tests
  */

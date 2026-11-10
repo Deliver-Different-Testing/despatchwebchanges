@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 
 import React from 'react';
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
@@ -7,14 +8,14 @@ import { setupUser } from '../../../test/utils/setupUser';
 import type {ParcelDimensions} from './types';
 import {apiClient} from '../../../api/client';
 
-jest.mock('../../../api/client', () => ({
+vi.mock('../../../api/client', () => ({
     apiClient: {
-        get: jest.fn().mockResolvedValue(false),
-        post: jest.fn().mockResolvedValue({}),
+        get: vi.fn().mockResolvedValue(false),
+        post: vi.fn().mockResolvedValue({}),
     },
 }));
 
-const mockPost = apiClient.post as jest.Mock;
+const mockPost = apiClient.post as Mock;
 
 const mockParcel = (overrides?: Partial<ParcelDimensions>): ParcelDimensions => ({
     itemName: 'Box',
@@ -30,15 +31,15 @@ const defaultProps = {
     parcels: [mockParcel()],
     jobId: 1,
     isUsCustomer: false,
-    onClose: jest.fn(),
-    onSubmit: jest.fn(),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onSubmit: vi.fn(),
+    showToast: vi.fn(),
 };
 
 // ── Header parcel count ────────────────────────────────────────────
 
 describe('EditParcelDimensionsDialog header parcel count', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('shows singular parcel count for one parcel', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
@@ -63,7 +64,7 @@ describe('EditParcelDimensionsDialog header parcel count', () => {
 // ── Read-only (locked job) ─────────────────────────────────────────
 
 describe('EditParcelDimensionsDialog read-only mode', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('hides Save, shows Close, disables inputs and shows the view-only subtitle', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} readOnly />);
@@ -82,7 +83,7 @@ describe('EditParcelDimensionsDialog read-only mode', () => {
 // ── Discard changes confirmation ───────────────────────────────────
 
 describe('EditParcelDimensionsDialog discard changes confirmation', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('closes directly when no changes have been made', async () => {
         const user = setupUser();
@@ -146,7 +147,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
 // ── Row qty and delete ─────────────────────────────────────────────
 
 describe('EditParcelDimensionsDialog row quantity and delete', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('increases qty when + is clicked', async () => {
         const user = setupUser();
@@ -197,7 +198,7 @@ describe('EditParcelDimensionsDialog row quantity and delete', () => {
 // ── Barcode auto-fill from job number ──────────────────────────────
 
 describe('EditParcelDimensionsDialog barcode auto-fill', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     const savedParcels = () => {
         const call = mockPost.mock.calls.find(c => c[0] === 'job/UpdateJobPackages');
@@ -266,7 +267,7 @@ describe('EditParcelDimensionsDialog barcode auto-fill', () => {
 // ── Remove a specific parcel ───────────────────────────────────────
 
 describe('EditParcelDimensionsDialog remove a specific parcel', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     const numberedParcels = (count: number) =>
         Array.from({length: count}, (_, i) => mockParcel({weight: 5, barcode: `55-${i + 1}`}));
@@ -339,7 +340,7 @@ describe('EditParcelDimensionsDialog remove a specific parcel', () => {
 // ── Weight validation ──────────────────────────────────────────────
 
 describe('EditParcelDimensionsDialog weight validation', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('disables Save and shows error when a parcel has no weight', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
@@ -378,7 +379,7 @@ describe('EditParcelDimensionsDialog weight validation', () => {
 // ── Partner mode (Packages requires partner approval) ──────────────
 
 describe('EditParcelDimensionsDialog partnerMode', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('labels the action "Continue" instead of "Save"', () => {
         renderWithTheme(
@@ -394,8 +395,8 @@ describe('EditParcelDimensionsDialog partnerMode', () => {
 
     it('skips the UpdateJobPackages POST and resolves with captured parcels', async () => {
         const user = setupUser();
-        const onSubmit = jest.fn();
-        const showToast = jest.fn();
+        const onSubmit = vi.fn();
+        const showToast = vi.fn();
         renderWithTheme(
             <EditParcelDimensionsDialog
                 {...defaultProps}
@@ -421,7 +422,7 @@ describe('EditParcelDimensionsDialog partnerMode', () => {
 
     it('non-partner mode still POSTs to UpdateJobPackages', async () => {
         const user = setupUser();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithTheme(
             <EditParcelDimensionsDialog
                 {...defaultProps}

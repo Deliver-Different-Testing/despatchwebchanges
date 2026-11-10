@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Split Job API Service Tests
  */
@@ -9,14 +10,14 @@ import {createMockApiError} from '../test/utils';
 import {AddressViewModel} from '../types';
 import type {SplitJobRequest} from '../types/splitJobs';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 const createMockAddress = (): AddressViewModel => ({
     addressLine1: '123 Main St',

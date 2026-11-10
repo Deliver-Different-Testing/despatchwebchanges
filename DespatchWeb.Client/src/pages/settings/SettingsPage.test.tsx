@@ -1,3 +1,4 @@
+import type {Mock, MockedFunction} from 'vitest';
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
 import {renderWithMantine} from '../../test/utils';
@@ -29,72 +30,72 @@ import {resetNavStyleStore} from '../../hooks/useNavStyle';
 import {toastService} from '../../services/toastService';
 import {isLiquidGlassSupported} from '../../hooks/glassSupport';
 
-jest.mock('../../hooks/glassSupport', () => ({
-    ...jest.requireActual('../../hooks/glassSupport'),
-    isLiquidGlassSupported: jest.fn(),
+vi.mock('../../hooks/glassSupport', async () => ({
+    ...(await vi.importActual<typeof import('../../hooks/glassSupport')>('../../hooks/glassSupport')),
+    isLiquidGlassSupported: vi.fn(),
 }));
 
-jest.mock('../../hooks/useColorMode', () => ({
-    useColorMode: jest.fn(),
+vi.mock('../../hooks/useColorMode', () => ({
+    useColorMode: vi.fn(),
 }));
 
-jest.mock('../../utils/aiSettings', () => ({
-    isAiEnabled: jest.fn(),
-    setAiEnabled: jest.fn(),
-    isAiAutoOpenEnabled: jest.fn(),
-    setAiAutoOpenEnabled: jest.fn(),
-    isAiChatEnabled: jest.fn(),
-    setAiChatEnabled: jest.fn(),
-    loadAutoMateFromServer: jest.fn(),
+vi.mock('../../utils/aiSettings', () => ({
+    isAiEnabled: vi.fn(),
+    setAiEnabled: vi.fn(),
+    isAiAutoOpenEnabled: vi.fn(),
+    setAiAutoOpenEnabled: vi.fn(),
+    isAiChatEnabled: vi.fn(),
+    setAiChatEnabled: vi.fn(),
+    loadAutoMateFromServer: vi.fn(),
 }));
 
-jest.mock('../../utils/panelHideButtonSettings', () => ({
-    isPanelHideButtonEnabled: jest.fn(),
-    setPanelHideButtonEnabled: jest.fn(),
-    loadPanelHideButtonSettingFromServer: jest.fn(),
+vi.mock('../../utils/panelHideButtonSettings', () => ({
+    isPanelHideButtonEnabled: vi.fn(),
+    setPanelHideButtonEnabled: vi.fn(),
+    loadPanelHideButtonSettingFromServer: vi.fn(),
 }));
 
-jest.mock('../../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
-    deletePreference: jest.fn(),
+vi.mock('../../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
+    deletePreference: vi.fn(),
 }));
 
-jest.mock('../../api/tenantSettingsApi', () => ({
-    getTenantAddressFormatDefault: jest.fn(),
-    getTenantCourierFlagLastDeliveryDefault: jest.fn(),
-    getTenantNavStyleDefault: jest.fn(),
-    getTenantAppearanceDefault: jest.fn(),
+vi.mock('../../api/tenantSettingsApi', () => ({
+    getTenantAddressFormatDefault: vi.fn(),
+    getTenantCourierFlagLastDeliveryDefault: vi.fn(),
+    getTenantNavStyleDefault: vi.fn(),
+    getTenantAppearanceDefault: vi.fn(),
 }));
 
-jest.mock('../../api/session', () => ({
-    ...jest.requireActual('../../api/session'),
+vi.mock('../../api/session', async () => ({
+    ...(await vi.importActual<typeof import('../../api/session')>('../../api/session')),
     getSession: () => ({isUsCustomer: true}),
 }));
 
-jest.mock('../../services/toastService', () => ({
-    toastService: {showSuccessToast: jest.fn(), showErrorToast: jest.fn()},
+vi.mock('../../services/toastService', () => ({
+    toastService: {showSuccessToast: vi.fn(), showErrorToast: vi.fn()},
 }));
 
-const mockIsAiEnabled = isAiEnabled as jest.MockedFunction<typeof isAiEnabled>;
-const mockIsAiAutoOpenEnabled = isAiAutoOpenEnabled as jest.MockedFunction<typeof isAiAutoOpenEnabled>;
-const mockIsAiChatEnabled = isAiChatEnabled as jest.MockedFunction<typeof isAiChatEnabled>;
-const mockSetAiChatEnabled = setAiChatEnabled as jest.MockedFunction<typeof setAiChatEnabled>;
-const mockSetAiEnabled = setAiEnabled as jest.MockedFunction<typeof setAiEnabled>;
-const mockSetAiAutoOpenEnabled = setAiAutoOpenEnabled as jest.MockedFunction<typeof setAiAutoOpenEnabled>;
-const mockLoadAutoMateFromServer = loadAutoMateFromServer as jest.MockedFunction<typeof loadAutoMateFromServer>;
-const mockIsPanelHideButtonEnabled = isPanelHideButtonEnabled as jest.MockedFunction<typeof isPanelHideButtonEnabled>;
-const mockSetPanelHideButtonEnabled = setPanelHideButtonEnabled as jest.MockedFunction<typeof setPanelHideButtonEnabled>;
+const mockIsAiEnabled = isAiEnabled as MockedFunction<typeof isAiEnabled>;
+const mockIsAiAutoOpenEnabled = isAiAutoOpenEnabled as MockedFunction<typeof isAiAutoOpenEnabled>;
+const mockIsAiChatEnabled = isAiChatEnabled as MockedFunction<typeof isAiChatEnabled>;
+const mockSetAiChatEnabled = setAiChatEnabled as MockedFunction<typeof setAiChatEnabled>;
+const mockSetAiEnabled = setAiEnabled as MockedFunction<typeof setAiEnabled>;
+const mockSetAiAutoOpenEnabled = setAiAutoOpenEnabled as MockedFunction<typeof setAiAutoOpenEnabled>;
+const mockLoadAutoMateFromServer = loadAutoMateFromServer as MockedFunction<typeof loadAutoMateFromServer>;
+const mockIsPanelHideButtonEnabled = isPanelHideButtonEnabled as MockedFunction<typeof isPanelHideButtonEnabled>;
+const mockSetPanelHideButtonEnabled = setPanelHideButtonEnabled as MockedFunction<typeof setPanelHideButtonEnabled>;
 const mockLoadPanelHideButtonSettingFromServer =
-    loadPanelHideButtonSettingFromServer as jest.MockedFunction<typeof loadPanelHideButtonSettingFromServer>;
-const mockGetPreference = getPreference as jest.Mock;
-const mockSavePreference = savePreference as jest.Mock;
-const mockDeletePreference = deletePreference as jest.Mock;
-const mockGetTenantAddressFormatDefault = getTenantAddressFormatDefault as jest.Mock;
-const mockGetTenantCourierFlagLastDeliveryDefault = getTenantCourierFlagLastDeliveryDefault as jest.Mock;
-const mockGetTenantNavStyleDefault = getTenantNavStyleDefault as jest.Mock;
-const mockUseColorMode = useColorMode as jest.Mock;
-const mockSetColorPreference = jest.fn();
+    loadPanelHideButtonSettingFromServer as MockedFunction<typeof loadPanelHideButtonSettingFromServer>;
+const mockGetPreference = getPreference as Mock;
+const mockSavePreference = savePreference as Mock;
+const mockDeletePreference = deletePreference as Mock;
+const mockGetTenantAddressFormatDefault = getTenantAddressFormatDefault as Mock;
+const mockGetTenantCourierFlagLastDeliveryDefault = getTenantCourierFlagLastDeliveryDefault as Mock;
+const mockGetTenantNavStyleDefault = getTenantNavStyleDefault as Mock;
+const mockUseColorMode = useColorMode as Mock;
+const mockSetColorPreference = vi.fn();
 
 /** Pickup renders first, delivery second — both sides render an identically-labelled control per field. */
 function radioFor(side: 'pickup' | 'delivery', fieldLabel: string, lineLabel: 'Hidden' | 'Line 1' | 'Line 2') {
@@ -104,10 +105,10 @@ function radioFor(side: 'pickup' | 'delivery', fieldLabel: string, lineLabel: 'H
 
 describe('SettingsPage', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         localStorage.clear();
         resetNavStyleStore();
-        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
         mockIsAiEnabled.mockReturnValue(false);
         mockIsAiAutoOpenEnabled.mockReturnValue(false);
         mockIsAiChatEnabled.mockReturnValue(false);
@@ -124,7 +125,7 @@ describe('SettingsPage', () => {
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('renders a page heading and the Auto-mate section', () => {
@@ -255,7 +256,7 @@ describe('SettingsPage', () => {
     });
 
     describe('Liquid Glass', () => {
-        beforeEach(() => (isLiquidGlassSupported as jest.Mock).mockReturnValue(true));
+        beforeEach(() => (isLiquidGlassSupported as Mock).mockReturnValue(true));
 
         it('is off by default, tagged BETA, and names the browsers it works in', () => {
             renderWithMantine(<SettingsPage />);
@@ -277,7 +278,7 @@ describe('SettingsPage', () => {
         });
 
         it('is disabled and explains why in an unsupported browser', async () => {
-            (isLiquidGlassSupported as jest.Mock).mockReturnValue(false);
+            (isLiquidGlassSupported as Mock).mockReturnValue(false);
             localStorage.removeItem('dd-liquid-glass');
             const user = setupUser();
             renderWithMantine(<SettingsPage />);

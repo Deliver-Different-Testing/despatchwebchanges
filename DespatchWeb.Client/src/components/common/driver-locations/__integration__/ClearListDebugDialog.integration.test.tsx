@@ -1,5 +1,3 @@
-/** @jest-environment jest-fixed-jsdom */
-
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';

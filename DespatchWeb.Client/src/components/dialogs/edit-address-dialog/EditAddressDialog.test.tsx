@@ -4,6 +4,7 @@
  * Uses React Query hooks - tests mock the hooks to control data flow.
  */
 
+import type {MockInstance, Mocked, MockedFunction} from 'vitest';
 import React from 'react';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -16,22 +17,22 @@ import {HERE_US_ADDRESS_FIELDS} from '../../../test/utils/mockData';
 import {clearSessionContext, setSessionContext, SessionContextDto} from '../../../api/session';
 
 // Mock the React Query hooks
-jest.mock('../../../hooks/useAddressApi', () => ({
-    useAddressSearch: jest.fn(),
-    useHereMapsApiKey: jest.fn(),
+vi.mock('../../../hooks/useAddressApi', () => ({
+    useAddressSearch: vi.fn(),
+    useHereMapsApiKey: vi.fn(),
 }));
 
 // Mock the addressApi
-jest.mock('../../../api/addressApi', () => ({
+vi.mock('../../../api/addressApi', () => ({
     addressApi: {
-        getLocationDetailsById: jest.fn(),
-        fetchNearestAddress: jest.fn(),
+        getLocationDetailsById: vi.fn(),
+        fetchNearestAddress: vi.fn(),
     },
 }));
 
-const mockUseAddressSearch = useAddressSearch as jest.MockedFunction<typeof useAddressSearch>;
-const mockUseHereMapsApiKey = useHereMapsApiKey as jest.MockedFunction<typeof useHereMapsApiKey>;
-const mockAddressApi = addressApi as jest.Mocked<typeof addressApi>;
+const mockUseAddressSearch = useAddressSearch as MockedFunction<typeof useAddressSearch>;
+const mockUseHereMapsApiKey = useHereMapsApiKey as MockedFunction<typeof useHereMapsApiKey>;
+const mockAddressApi = addressApi as Mocked<typeof addressApi>;
 
 // Create a theme for testing
 
@@ -69,9 +70,9 @@ function createDefaultProps(overrides?: Partial<EditAddressDialogProps>): EditAd
         submitLabel: 'Save',
         showContactInfo: false,
         isUsTenant: true,
-        onClose: jest.fn(),
-        onSave: jest.fn(),
-        showToast: jest.fn(),
+        onClose: vi.fn(),
+        onSave: vi.fn(),
+        showToast: vi.fn(),
         ...overrides,
     };
 }
@@ -450,7 +451,7 @@ describe('EditAddressDialog', () => {
     });
 
     describe('Address Selection Field Population', () => {
-        let errorSpy: jest.SpyInstance;
+        let errorSpy: MockInstance;
         beforeEach(() => { errorSpy = suppressConsoleError('[EditAddressDialog] Error processing selected address'); });
         afterEach(() => { errorSpy.mockRestore(); });
 
@@ -685,7 +686,7 @@ describe('EditAddressDialog', () => {
             } as any);
             mockAddressApi.getLocationDetailsById.mockRejectedValue(new Error('Network error'));
 
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             const props = createDefaultProps({showToast});
             renderWithProviders(props);
 
@@ -753,7 +754,7 @@ describe('EditAddressDialog', () => {
 
     describe('Dialog Actions', () => {
         it('calls onClose via cancel and close icon buttons', () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             const props = createDefaultProps({onClose});
             renderWithProviders(props);
 
@@ -773,7 +774,7 @@ describe('EditAddressDialog', () => {
         });
 
         it('calls onSave with address data when form is valid', async () => {
-            const onSave = jest.fn();
+            const onSave = vi.fn();
             const props = createDefaultProps({
                 addressDetails: existingAddress,
                 onSave,
@@ -796,7 +797,7 @@ describe('EditAddressDialog', () => {
         });
 
         it('includes shipment details in save when showContactInfo is true', async () => {
-            const onSave = jest.fn();
+            const onSave = vi.fn();
             const props = createDefaultProps({
                 addressDetails: existingAddressWithShipment,
                 showContactInfo: true,

@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {setupUser} from '../../../test/utils/setupUser';
 import {createTestQueryClient, MantineTestProvider} from '../../../test/utils';
@@ -7,23 +8,23 @@ import {DriverComplianceTab} from './DriverComplianceTab';
 import {CourierCompliancePaginated} from '../../../types';
 import {useComplianceList, useComplianceReminderPreview, useSendComplianceReminders} from '../../../hooks/useDriverManagementApi';
 
-jest.mock('../../../hooks/useDriverManagementApi', () => ({
-    useComplianceList: jest.fn(),
-    useComplianceReminderPreview: jest.fn(),
-    useSendComplianceReminders: jest.fn(),
+vi.mock('../../../hooks/useDriverManagementApi', () => ({
+    useComplianceList: vi.fn(),
+    useComplianceReminderPreview: vi.fn(),
+    useSendComplianceReminders: vi.fn(),
 }));
 
-jest.mock('../../../api/driverManagementApi', () => ({
+vi.mock('../../../api/driverManagementApi', () => ({
     driverManagementApi: {
-        exportComplianceCsv: jest.fn(),
+        exportComplianceCsv: vi.fn(),
     },
 }));
 
-const mockUseComplianceList = useComplianceList as jest.MockedFunction<typeof useComplianceList>;
-const mockUseComplianceReminderPreview = useComplianceReminderPreview as jest.MockedFunction<typeof useComplianceReminderPreview>;
-const mockUseSendComplianceReminders = useSendComplianceReminders as jest.MockedFunction<typeof useSendComplianceReminders>;
+const mockUseComplianceList = useComplianceList as MockedFunction<typeof useComplianceList>;
+const mockUseComplianceReminderPreview = useComplianceReminderPreview as MockedFunction<typeof useComplianceReminderPreview>;
+const mockUseSendComplianceReminders = useSendComplianceReminders as MockedFunction<typeof useSendComplianceReminders>;
 
-const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text: 'Fleet A'}]) => {
+const renderWithProviders = (showToast = vi.fn(), fleetOptions = [{id: 1, text: 'Fleet A'}]) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
@@ -55,8 +56,8 @@ const emptyData = (): CourierCompliancePaginated => ({
     totalExpired: 0, totalExpiringSoon: 0, totalValid: 0, totalNotSet: 0,
 });
 
-const mutateAsync = jest.fn();
-const refetch = jest.fn();
+const mutateAsync = vi.fn();
+const refetch = vi.fn();
 
 const previewResult = (recipients: number, maxRecipients = 200) =>
     ({recipients, sent: 0, nothingDue: 0, failed: 0, failures: [], maxRecipients});
@@ -116,7 +117,7 @@ describe('DriverComplianceTab', () => {
 
     it('sends a per-row reminder for that courier only, choosing SMS, and toasts only the sent count', async () => {
         const user = setupUser();
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         setupMocks();
         mutateAsync.mockResolvedValue({...previewResult(1), sent: 1, nothingDue: 2});
         renderWithProviders(showToast);
@@ -141,7 +142,7 @@ describe('DriverComplianceTab', () => {
 
     it('previews the bulk count from the current filters, sends them, warns about failures, and shows a 400 message', async () => {
         const user = setupUser();
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         setupMocks({preview: {data: previewResult(3), isLoading: false, isError: false}});
         mutateAsync.mockResolvedValueOnce({
             ...previewResult(3), sent: 1, failed: 4,

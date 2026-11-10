@@ -1,6 +1,7 @@
-import {defineConfig} from 'vite';
+import {defineConfig, type TestProjectInlineConfiguration} from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import {VitePWA} from 'vite-plugin-pwa';
+import {fileURLToPath} from 'node:url';
 
 // Dev-only: the .NET host that serves the API and MVC endpoints (see Properties/launchSettings.json).
 const hostTarget = process.env.DESPATCH_HOST_URL ?? 'http://despatch.local.deliverdifferent.com:63277';
@@ -16,8 +17,40 @@ const controllerPrefixes = [
 const anyCase = (word: string) => word.replace(/[a-z]/gi, c => `[${c.toLowerCase()}${c.toUpperCase()}]`);
 const proxied = {target: hostTarget, changeOrigin: false};
 
+const testMock = (file: string) => fileURLToPath(new URL(`./src/test/mocks/${file}`, import.meta.url));
+
 const nodeModule = (id: string, names: string) =>
     new RegExp(`[\\\\/]node_modules[\\\\/](${names})[\\\\/]`).test(id);
+
+const testProjects: TestProjectInlineConfiguration[] = [
+    {
+        extends: true,
+        // These ESM packages are stubbed in unit tests; the integration suite renders the real ones.
+        resolve: {
+            alias: {
+                'virtual:pwa-register/react': testMock('pwaRegisterMock.ts'),
+                'react-markdown': testMock('reactMarkdownMock.tsx'),
+                'remark-gfm': testMock('remarkGfmMock.ts'),
+                'react-resizable-panels': testMock('reactResizablePanelsMock.tsx'),
+            },
+        },
+        test: {
+            name: 'unit',
+            include: ['src/**/*.{spec,test}.{ts,tsx}'],
+            exclude: ['**/node_modules/**', '**/__integration__/**'],
+            setupFiles: ['src/test/setup.ts', 'src/test/noNetwork.ts'],
+        },
+    },
+    {
+        extends: true,
+        resolve: {alias: {'virtual:pwa-register/react': testMock('pwaRegisterMock.ts')}},
+        test: {
+            name: 'integration',
+            include: ['src/**/__integration__/**/*.test.{ts,tsx}'],
+            setupFiles: ['src/test/setup.ts', 'src/test/utils/msw/setupIntegration.ts'],
+        },
+    },
+];
 
 // https://vite.dev/config/
 export default defineConfig(({command}) => ({
@@ -75,5 +108,20 @@ export default defineConfig(({command}) => ({
             [`^/(${controllerPrefixes.map(anyCase).join('|')})/`]: proxied,
             '^/(images/|favicon\\.(svg|ico)|dispmain\\.ico|health)': proxied,
         },
+    },
+    test: {
+        globals: true,
+        environment: 'jsdom',
+        clearMocks: true,
+        testTimeout: 30000,
+        hookTimeout: 30000,
+        coverage: {
+            provider: 'v8',
+            include: ['src/**/*.{ts,tsx}'],
+            exclude: ['src/**/*.d.ts', 'src/test/**'],
+            reporter: ['text', 'lcov', 'cobertura'],
+            thresholds: {branches: 10, functions: 10, lines: 15, statements: 15},
+        },
+        projects: testProjects,
     },
 }));

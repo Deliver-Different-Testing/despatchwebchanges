@@ -16,8 +16,8 @@ describe('SideNav', () => {
         userName: 'John Doe',
         isUsCustomer: false,
         currentState: 'home',
-        onClose: jest.fn(),
-        onNavigate: jest.fn(),
+        onClose: vi.fn(),
+        onNavigate: vi.fn(),
     };
 
     describe('Rendering', () => {
@@ -168,8 +168,8 @@ describe('SideNav', () => {
         });
 
         it('navigates to the settings state and closes on click', () => {
-            const onNavigate = jest.fn();
-            const onClose = jest.fn();
+            const onNavigate = vi.fn();
+            const onClose = vi.fn();
             renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} onClose={onClose} />);
 
             fireEvent.click(screen.getByRole('button', {name: 'Settings'}));
@@ -262,7 +262,7 @@ describe('SideNav', () => {
 
     describe('Interactions', () => {
         it('should call onNavigate with correct state when item is clicked', () => {
-            const onNavigate = jest.fn();
+            const onNavigate = vi.fn();
             renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} />);
 
             fireEvent.click(screen.getByText('Tasks'));
@@ -271,7 +271,7 @@ describe('SideNav', () => {
         });
 
         it('navigates straight to the dispatch and job search pages', () => {
-            const onNavigate = jest.fn();
+            const onNavigate = vi.fn();
             renderWithMantine(<SideNav {...defaultProps} onNavigate={onNavigate} />);
 
             fireEvent.click(screen.getByText('Dashboard'));
@@ -282,7 +282,7 @@ describe('SideNav', () => {
         });
 
         it('should call onClose when item is clicked', () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithMantine(<SideNav {...defaultProps} onClose={onClose} />);
 
             fireEvent.click(screen.getByText('Dashboard'));
@@ -291,8 +291,8 @@ describe('SideNav', () => {
         });
 
         it('calls onMouseEnter and onMouseLeave on the drawer panel', () => {
-            const onMouseEnter = jest.fn();
-            const onMouseLeave = jest.fn();
+            const onMouseEnter = vi.fn();
+            const onMouseLeave = vi.fn();
             renderWithMantine(
                 <SideNav {...defaultProps} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} />
             );

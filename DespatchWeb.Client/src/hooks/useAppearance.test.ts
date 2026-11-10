@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {
     getAppearanceState,
@@ -9,17 +10,17 @@ import {deletePreference, getPreference, savePreference} from '../api/preference
 import {getTenantAppearanceDefault} from '../api/tenantSettingsApi';
 import {StaffPreferenceKey} from '../types/enums/staff-preference-key.enum';
 
-jest.mock('../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
-    deletePreference: jest.fn(),
+vi.mock('../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
+    deletePreference: vi.fn(),
 }));
-jest.mock('../api/tenantSettingsApi', () => ({getTenantAppearanceDefault: jest.fn()}));
+vi.mock('../api/tenantSettingsApi', () => ({getTenantAppearanceDefault: vi.fn()}));
 
-const mockGet = getPreference as jest.Mock;
-const mockSave = savePreference as jest.Mock;
-const mockDelete = deletePreference as jest.Mock;
-const mockTenant = getTenantAppearanceDefault as jest.Mock;
+const mockGet = getPreference as Mock;
+const mockSave = savePreference as Mock;
+const mockDelete = deletePreference as Mock;
+const mockTenant = getTenantAppearanceDefault as Mock;
 const win = window as unknown as {ContactID?: number; __ddAppearanceServerSynced?: boolean};
 
 let prefersMoreContrast = false;
@@ -33,7 +34,7 @@ function setSystemContrast(more: boolean): void {
 describe('appearance preference', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockGet.mockResolvedValue(null);
         mockTenant.mockResolvedValue(null);
         mockSave.mockResolvedValue(undefined);
@@ -42,7 +43,7 @@ describe('appearance preference', () => {
         delete win.__ddAppearanceServerSynced;
         prefersMoreContrast = false;
         contrastListeners.clear();
-        window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+        window.matchMedia = vi.fn().mockImplementation((query: string) => ({
             get matches() {
                 return query === '(prefers-contrast: more)' && prefersMoreContrast;
             },
@@ -102,7 +103,7 @@ describe('appearance preference', () => {
         localStorage.setItem('dd-appearance', JSON.stringify({user: {primary: '#333333'}, tenant: {contrast: 'high'}}));
         mockGet.mockResolvedValue(JSON.stringify({primary: '#444444'}));
         mockTenant.mockRejectedValue(new Error('column missing'));
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
         await syncAppearanceFromServerOnce();
         expect(getAppearanceState()).toEqual({user: {primary: '#444444'}, tenant: {contrast: 'high'}});
     });

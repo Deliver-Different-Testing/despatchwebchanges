@@ -35,14 +35,14 @@ beforeAll(() => {
 const localStorageMock = (() => {
     let store: Record<string, string> = {};
     return {
-        getItem: jest.fn((key: string) => store[key] || null),
-        setItem: jest.fn((key: string, value: string) => {
+        getItem: vi.fn((key: string) => store[key] || null),
+        setItem: vi.fn((key: string, value: string) => {
             store[key] = value;
         }),
-        removeItem: jest.fn((key: string) => {
+        removeItem: vi.fn((key: string) => {
             delete store[key];
         }),
-        clear: jest.fn(() => {
+        clear: vi.fn(() => {
             store = {};
         }),
     };
@@ -402,7 +402,7 @@ describe('tasksService', () => {
     describe('validateTaskJobId', () => {
         it('should return true when task has jobId', () => {
             const task = {id: 1, jobId: 100};
-            const onWarning = jest.fn();
+            const onWarning = vi.fn();
 
             const result = validateTaskJobId(task, onWarning);
 
@@ -412,7 +412,7 @@ describe('tasksService', () => {
 
         it('should return false and call warning when no jobId', () => {
             const task = {id: 1, jobId: 0};
-            const onWarning = jest.fn();
+            const onWarning = vi.fn();
 
             const result = validateTaskJobId(task, onWarning);
 
@@ -422,7 +422,7 @@ describe('tasksService', () => {
 
         it('should return false for undefined jobId', () => {
             const task = {id: 1, jobId: undefined as any};
-            const onWarning = jest.fn();
+            const onWarning = vi.fn();
 
             const result = validateTaskJobId(task, onWarning);
 

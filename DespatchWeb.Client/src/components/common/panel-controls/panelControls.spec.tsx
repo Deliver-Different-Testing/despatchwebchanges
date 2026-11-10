@@ -67,7 +67,7 @@ describe('panel control tokens', () => {
 
 describe('HeaderActionIcon', () => {
     it('names itself, sits on the band, and reports clicks', async () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(
             <HeaderActionIcon label="Truck loading status" onClick={onClick}>
                 <Icon lucide={ChevronDown} size={PANEL_CONTROL_GLYPH_SIZE}/>
@@ -86,7 +86,7 @@ describe('HeaderActionIcon', () => {
         // `Menu.Target` clones this element to inject `onClick` and
         // `aria-haspopup`; a wrapper that only accepted its own named props
         // would silently swallow them and leave the kebab button inert.
-        const injected = jest.fn();
+        const injected = vi.fn();
         renderWithMantine(
             <HeaderActionIcon label="Job actions" aria-haspopup="menu" onClick={injected}>
                 <Icon lucide={ChevronDown} size={PANEL_CONTROL_GLYPH_SIZE}/>
@@ -102,7 +102,7 @@ describe('HeaderActionIcon', () => {
     });
 
     it('does not fire when disabled', async () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(
             <HeaderActionIcon label="Truck loading status" disabled onClick={onClick}>
                 <Icon lucide={ChevronDown} size={PANEL_CONTROL_GLYPH_SIZE}/>
@@ -120,7 +120,7 @@ describe('HeaderActionIcon', () => {
 
 describe('HeaderMenuButton', () => {
     it('keeps the current value in the label and reports the open request', async () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(
             <HeaderMenuButton icon={<Icon lucide={ChevronDown} size={PANEL_CONTROL_GLYPH_SIZE}/>} onClick={onClick}>
                 Trucks: On

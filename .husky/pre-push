@@ -29,15 +29,15 @@ if ! dotnet run --project DespatchWeb.Tests; then
     exit 1
 fi
 
-# Run Jest unit tests
-if ! (cd DespatchWeb.Client && npx jest --silent); then
-    echo "Jest unit tests failed. Push aborted."
+# Run Vitest unit tests
+if ! (cd DespatchWeb.Client && npx vitest run --project unit --silent); then
+    echo "Vitest unit tests failed. Push aborted."
     exit 1
 fi
 
-# Run Jest integration tests using dedicated integration config
+# Run Vitest integration tests
 echo "Running integration tests..."
-if ! (cd DespatchWeb.Client && npx jest --silent --config jest.integration.config.cjs); then
+if ! (cd DespatchWeb.Client && npx vitest run --project integration --silent); then
     echo "⚠ Some integration tests failed (non-blocking). Review output above."
 fi
 

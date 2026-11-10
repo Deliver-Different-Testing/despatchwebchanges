@@ -2,6 +2,7 @@
  * TaskCalendarView Component Tests
  */
 
+import type {MockInstance} from 'vitest';
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
@@ -23,10 +24,10 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 // Mock the date utilities
-jest.mock('../../../utils/dateUtils', () => ({
-    getIanaTimezone: jest.fn(() => 'America/New_York'),
-    getTenantTimezone: jest.fn(() => 'America/New_York'),
-    getTimezoneAbbreviation: jest.fn(() => '(EST)'),
+vi.mock('../../../utils/dateUtils', () => ({
+    getIanaTimezone: vi.fn(() => 'America/New_York'),
+    getTenantTimezone: vi.fn(() => 'America/New_York'),
+    getTimezoneAbbreviation: vi.fn(() => '(EST)'),
 }));
 
 
@@ -53,18 +54,18 @@ const createMockTask = (overrides?: Partial<Task>): Task => ({
 });
 
 const createMockTasksService = (): TasksServiceInterface => ({
-    markTaskAsClosed: jest.fn().mockResolvedValue(undefined),
+    markTaskAsClosed: vi.fn().mockResolvedValue(undefined),
 });
 
 const createDefaultProps = (overrides?: Partial<TaskCalendarViewProps>): TaskCalendarViewProps => ({
     tasks: [],
     tasksService: createMockTasksService(),
-    showSuccessToast: jest.fn(),
-    showErrorToast: jest.fn(),
-    onTaskUpdate: jest.fn(),
-    onTaskClick: jest.fn(),
-    onTaskStatusChange: jest.fn(),
-    onViewChange: jest.fn(),
+    showSuccessToast: vi.fn(),
+    showErrorToast: vi.fn(),
+    onTaskUpdate: vi.fn(),
+    onTaskClick: vi.fn(),
+    onTaskStatusChange: vi.fn(),
+    onViewChange: vi.fn(),
     ...overrides,
 });
 
@@ -228,7 +229,7 @@ describe('TaskCalendarView', () => {
     });
 
     describe('Task Interactions', () => {
-        let errorSpy: jest.SpyInstance;
+        let errorSpy: MockInstance;
         beforeEach(() => { errorSpy = suppressConsoleError("Couldn't update the task. Check your connection and try again."); });
         afterEach(() => { errorSpy.mockRestore(); });
 
@@ -286,7 +287,7 @@ describe('TaskCalendarView', () => {
             const user = setupUser();
             const task = createMockTask({closed: false});
             const tasksService = createMockTasksService();
-            tasksService.markTaskAsClosed = jest.fn().mockRejectedValue(new Error('Network error'));
+            tasksService.markTaskAsClosed = vi.fn().mockRejectedValue(new Error('Network error'));
             const props = createDefaultProps({tasks: [task], tasksService});
             renderWithProviders(<TaskCalendarView {...props} />);
 
@@ -388,7 +389,7 @@ describe('TaskCalendarView', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskCalendarView {...props} />);
 
-            jest.clearAllMocks();
+            vi.clearAllMocks();
 
             await user.click(screen.getByRole('radio', {name: /week view/i}));
 

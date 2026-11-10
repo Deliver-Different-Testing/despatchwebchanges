@@ -2,6 +2,7 @@
  * useJobApi Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {useRelatedJobs, useClientSearch} from './useJobApi';
@@ -10,14 +11,14 @@ import {RelatedJobDto, Suggestion} from '../types';
 import {createQueryWrapper} from '../test/utils';
 
 // Mock the jobApi
-jest.mock('../api/jobApi', () => ({
+vi.mock('../api/jobApi', () => ({
     jobApi: {
-        getRelatedJobsMultiSelectList: jest.fn(),
-        searchActiveClients: jest.fn(),
+        getRelatedJobsMultiSelectList: vi.fn(),
+        searchActiveClients: vi.fn(),
     },
 }));
 
-const mockJobApi = jobApi as jest.Mocked<typeof jobApi>;
+const mockJobApi = jobApi as Mocked<typeof jobApi>;
 
 describe('useRelatedJobs', () => {
     const mockRelatedJobs: RelatedJobDto[] = [

@@ -40,7 +40,7 @@ function createPreview(overrides?: Partial<SplitPricingPreview>): SplitPricingPr
 describe('SplitPricingDialog', () => {
     it('renders the shared grid in split mode with the given job number and preview', () => {
         renderWithMantine(
-            <SplitPricingDialog open jobNo="KT1314V" preview={createPreview()} onClose={jest.fn()}/>,
+            <SplitPricingDialog open jobNo="KT1314V" preview={createPreview()} onClose={vi.fn()}/>,
         );
 
         expect(screen.getByRole('heading', {name: 'Confirm split pricing'})).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('SplitPricingDialog', () => {
     });
 
     it('passes the shared grid’s result straight through to onClose', () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithMantine(
             <SplitPricingDialog open jobNo="KT1314V" preview={createPreview()} onClose={onClose}/>,
         );

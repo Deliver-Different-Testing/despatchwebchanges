@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Nationwide API Service Tests
  */
@@ -12,14 +13,14 @@ import type {FlightViewModelDto} from '../types/nationwideJobs';
 dayjs.extend(utc);
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('NationwideApiService', () => {
     describe('calculateCargoReadyTime', () => {
@@ -295,7 +296,7 @@ describe('NationwideApiService', () => {
         });
 
         it('should throw error when API throws', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockApiClient.get.mockRejectedValueOnce(new Error('API Error'));
 
             await expect(
@@ -578,7 +579,7 @@ describe('getScheduledFlightOptions paging cursor', () => {
     // The widget pages forward from the last flight returned. AngularJS's NWData
     // computed this; React dropped it, which would have left "load more" and
     // "next day" stuck on the first page.
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     const flightDto = (departureTime: string) => ({
         flightNumber: 'NZ1',
@@ -632,7 +633,7 @@ describe('NationwideApiService flight and agent operations', () => {
     // and SendAgentQuote are [HttpPost] [FromBody]; GetActiveAirlines and
     // GetNearbyAirports are GETs with query params.
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     describe('assignFlightToJob', () => {

@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import { setupUser } from '../../../test/utils/setupUser';
@@ -11,12 +12,12 @@ import {openAgentInfoDialog} from '../../dialogs/agent-info-dialog';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-jest.mock('../../dialogs/flight-details-dialog', () => ({
-    openFlightDetailsDialog: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../dialogs/flight-details-dialog', () => ({
+    openFlightDetailsDialog: vi.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../../dialogs/agent-info-dialog', () => ({
-    openAgentInfoDialog: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../dialogs/agent-info-dialog', () => ({
+    openAgentInfoDialog: vi.fn().mockResolvedValue(undefined),
 }));
 
 
@@ -132,18 +133,18 @@ const createMockProps = (overrides: Partial<FlightAgentDataTableProps> = {}): Fl
     showNotDeliveryJobMessage: false,
     showNoAgentsAvailableMessage: false,
     showAgentList: false,
-    onFlightSearchChange: jest.fn(),
-    onFilterFlightsByAirline: jest.fn(),
-    onToggleNearbyAirports: jest.fn(),
-    onOutboundAirportChange: jest.fn(),
-    onInboundAirportChange: jest.fn(),
-    onAddFlightToJob: jest.fn(),
-    onLoadMoreFlights: jest.fn(),
-    onLoadNextDayFlights: jest.fn(),
-    onAddAgentToJob: jest.fn(),
-    onSendQuoteRequest: jest.fn(),
-    onOpenAgentSearchDialog: jest.fn(),
-    onOpenRecoveryAgentDialog: jest.fn(),
+    onFlightSearchChange: vi.fn(),
+    onFilterFlightsByAirline: vi.fn(),
+    onToggleNearbyAirports: vi.fn(),
+    onOutboundAirportChange: vi.fn(),
+    onInboundAirportChange: vi.fn(),
+    onAddFlightToJob: vi.fn(),
+    onLoadMoreFlights: vi.fn(),
+    onLoadNextDayFlights: vi.fn(),
+    onAddAgentToJob: vi.fn(),
+    onSendQuoteRequest: vi.fn(),
+    onOpenAgentSearchDialog: vi.fn(),
+    onOpenRecoveryAgentDialog: vi.fn(),
     formatAirportCodeForDropdown: (text: string) => text.split(' ')[0] || text,
     getConnectionTime: () => '2h 30m',
     formatMinutesToTime: (minutes: number) => {
@@ -358,7 +359,7 @@ describe('FlightAgentDataTable', () => {
             });
 
             it('opens flight details dialog when clicking info button', () => {
-                const mockOpen = openFlightDetailsDialog as jest.Mock;
+                const mockOpen = openFlightDetailsDialog as Mock;
                 mockOpen.mockClear();
                 renderWithTheme(<FlightAgentDataTable {...createMockProps()} />);
 
@@ -643,7 +644,7 @@ describe('FlightAgentDataTable', () => {
             });
 
             it('opens agent info dialog when clicking info button', () => {
-                const mockOpen = openAgentInfoDialog as jest.Mock;
+                const mockOpen = openAgentInfoDialog as Mock;
                 mockOpen.mockClear();
                 renderWithTheme(<FlightAgentDataTable {...createMockProps(agentListProps)} />);
 

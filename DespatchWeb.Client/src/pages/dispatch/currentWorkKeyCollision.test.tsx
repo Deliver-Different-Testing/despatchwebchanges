@@ -46,7 +46,7 @@ const makeWrapper = (client: QueryClient) =>
 
 // CurrentWorkBox's infinite config, keyed by dispatch.currentWork.
 const infiniteConfig = (): FetchConfig => ({
-    fetchFn: jest.fn().mockResolvedValue(plainMapResult),
+    fetchFn: vi.fn().mockResolvedValue(plainMapResult),
     queryKeyFn: (params) => queryKeys.dispatch.currentWork(params),
     initialParams: mapParams,
 });

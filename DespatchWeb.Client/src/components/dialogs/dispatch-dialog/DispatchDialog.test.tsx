@@ -6,6 +6,7 @@
  * partner paths, and bulk-mode subtitle.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {DispatchDialog} from './DispatchDialog';
@@ -30,29 +31,29 @@ const mockNpResults: ISuggestion[] = [
     {id: 301, text: 'NetworkPartnerCo'},
 ];
 
-jest.mock('../../../api/jobDetailApi', () => ({
-    autocompleteSearch: jest.fn(),
+vi.mock('../../../api/jobDetailApi', () => ({
+    autocompleteSearch: vi.fn(),
 }));
 
-jest.mock('../../../api/client', () => ({
+vi.mock('../../../api/client', () => ({
     apiClient: {
-        get: jest.fn(),
+        get: vi.fn(),
     },
 }));
 
 // AgentEmailFields (rendered for a chosen Agent on a single job) fetches the inbound-email
 // preview via this service. Mock it so agent-email cases can drive willEmail/defaults.
-jest.mock('../../../api/dispatchExecutorApi', () => ({
-    getAgentInboundEmailPreview: jest.fn(),
+vi.mock('../../../api/dispatchExecutorApi', () => ({
+    getAgentInboundEmailPreview: vi.fn(),
 }));
 
 import {autocompleteSearch} from '../../../api/jobDetailApi';
 import {apiClient} from '../../../api/client';
 import {getAgentInboundEmailPreview} from '../../../api/dispatchExecutorApi';
 
-const mockedAutocompleteSearch = autocompleteSearch as jest.Mock;
-const mockedApiClientGet = apiClient.get as jest.Mock;
-const mockPreview = getAgentInboundEmailPreview as jest.Mock;
+const mockedAutocompleteSearch = autocompleteSearch as Mock;
+const mockedApiClientGet = apiClient.get as Mock;
+const mockPreview = getAgentInboundEmailPreview as Mock;
 
 const rateCardResponse: PartnerRateForJobResponse = {
     rateCardRate: 85.00,
@@ -78,11 +79,11 @@ function makeProps(overrides: Partial<DispatchDialogProps> = {}): DispatchDialog
     return {
         open: true,
         mode: singleStandardMode,
-        onClose: jest.fn(),
-        onDispatchCourier: jest.fn().mockResolvedValue(undefined),
-        onSendToPartner: jest.fn().mockResolvedValue(undefined),
-        fetchRate: jest.fn().mockResolvedValue(rateCardResponse),
-        getPartnerOptions: jest.fn().mockResolvedValue(mockPartners),
+        onClose: vi.fn(),
+        onDispatchCourier: vi.fn().mockResolvedValue(undefined),
+        onSendToPartner: vi.fn().mockResolvedValue(undefined),
+        fetchRate: vi.fn().mockResolvedValue(rateCardResponse),
+        getPartnerOptions: vi.fn().mockResolvedValue(mockPartners),
         ...overrides,
     };
 }
@@ -303,7 +304,7 @@ describe('DispatchDialog', () => {
         });
 
         it('shows the partner select + lazy-loads partners when DFRNT Partner is selected', async () => {
-            const getPartnerOptions = jest.fn().mockResolvedValue(mockPartners);
+            const getPartnerOptions = vi.fn().mockResolvedValue(mockPartners);
             renderWithMantine(<DispatchDialog {...makeProps({getPartnerOptions})} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
@@ -318,7 +319,7 @@ describe('DispatchDialog', () => {
 
     describe('Confirm callbacks', () => {
         it('calls onDispatchCourier with the picked courier when Confirm is clicked', async () => {
-            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+            const onDispatchCourier = vi.fn().mockResolvedValue(undefined);
             renderWithMantine(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             await pickCourierAndConfirm();
@@ -338,7 +339,7 @@ describe('DispatchDialog', () => {
         });
 
         it('surfaces an error from onDispatchCourier inline without closing the dialog', async () => {
-            const onDispatchCourier = jest.fn().mockRejectedValue(new Error('server-side failure'));
+            const onDispatchCourier = vi.fn().mockRejectedValue(new Error('server-side failure'));
             renderWithMantine(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             await pickCourierAndConfirm();
@@ -349,7 +350,7 @@ describe('DispatchDialog', () => {
         });
 
         it('calls onSendToPartner with partner + rate when DFRNT Partner Confirm is clicked', async () => {
-            const onSendToPartner = jest.fn().mockResolvedValue(undefined);
+            const onSendToPartner = vi.fn().mockResolvedValue(undefined);
             renderWithMantine(<DispatchDialog {...makeProps({onSendToPartner})} />);
 
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
@@ -374,7 +375,7 @@ describe('DispatchDialog', () => {
         });
 
         it('Cancel button calls onClose', () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithMantine(<DispatchDialog {...makeProps({onClose})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /Cancel/}));
@@ -421,7 +422,7 @@ describe('DispatchDialog', () => {
                     {...makeProps({
                         mode: recurringMode,
                         existingDestination: assignedCourier,
-                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                        onUnassignCourier: vi.fn().mockResolvedValue(undefined),
                     })}
                 />,
             );
@@ -433,7 +434,7 @@ describe('DispatchDialog', () => {
                 <DispatchDialog
                     {...makeProps({
                         mode: recurringMode,
-                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                        onUnassignCourier: vi.fn().mockResolvedValue(undefined),
                     })}
                 />,
             );
@@ -445,7 +446,7 @@ describe('DispatchDialog', () => {
                 <DispatchDialog
                     {...makeProps({
                         existingDestination: assignedCourier,
-                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                        onUnassignCourier: vi.fn().mockResolvedValue(undefined),
                     })}
                 />,
             );
@@ -458,7 +459,7 @@ describe('DispatchDialog', () => {
                     {...makeProps({
                         mode: recurringMode,
                         existingDestination: assignedCourier,
-                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                        onUnassignCourier: vi.fn().mockResolvedValue(undefined),
                     })}
                 />,
             );
@@ -472,7 +473,7 @@ describe('DispatchDialog', () => {
                     {...makeProps({
                         mode: recurringMode,
                         existingDestination: assignedCourier,
-                        onUnassignCourier: jest.fn().mockResolvedValue(undefined),
+                        onUnassignCourier: vi.fn().mockResolvedValue(undefined),
                     })}
                 />,
             );
@@ -483,7 +484,7 @@ describe('DispatchDialog', () => {
         });
 
         it('calls onUnassignCourier when the action is clicked', async () => {
-            const onUnassignCourier = jest.fn().mockResolvedValue(undefined);
+            const onUnassignCourier = vi.fn().mockResolvedValue(undefined);
             renderWithMantine(
                 <DispatchDialog
                     {...makeProps({mode: recurringMode, existingDestination: assignedCourier, onUnassignCourier})}
@@ -498,7 +499,7 @@ describe('DispatchDialog', () => {
         });
 
         it('surfaces an error from onUnassignCourier inline without closing the dialog', async () => {
-            const onUnassignCourier = jest.fn().mockRejectedValue(new Error('unassign blew up'));
+            const onUnassignCourier = vi.fn().mockRejectedValue(new Error('unassign blew up'));
             renderWithMantine(
                 <DispatchDialog
                     {...makeProps({mode: recurringMode, existingDestination: assignedCourier, onUnassignCourier})}
@@ -528,7 +529,7 @@ describe('DispatchDialog', () => {
 
         it('shows the editable Subject/Message fields seeded from defaults and forwards the edits on confirm', async () => {
             const user = setupUser();
-            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+            const onDispatchCourier = vi.fn().mockResolvedValue(undefined);
             mockPreview.mockResolvedValue({
                 status: 'Queued',
                 agentEmail: 'agent@example.com',
@@ -562,7 +563,7 @@ describe('DispatchDialog', () => {
         });
 
         it('hides the fields and forwards undefined overrides when no email will be sent', async () => {
-            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+            const onDispatchCourier = vi.fn().mockResolvedValue(undefined);
             mockPreview.mockResolvedValue({status: 'NoAgentEmail', agentEmail: null, willEmail: false});
 
             renderWithMantineProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
@@ -583,7 +584,7 @@ describe('DispatchDialog', () => {
         });
 
         it('offers the stop-job cascade only when the job actually has stop jobs, and forwards the choice', async () => {
-            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+            const onDispatchCourier = vi.fn().mockResolvedValue(undefined);
 
             const {unmount} = renderWithMantineProviders(
                 <DispatchDialog {...makeProps({onDispatchCourier, stopJobCount: 0})} />
@@ -623,7 +624,7 @@ describe('DispatchDialog', () => {
 
         it('captures an AWB alongside the assignment', async () => {
             const user = setupUser();
-            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+            const onDispatchCourier = vi.fn().mockResolvedValue(undefined);
 
             renderWithMantineProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
             await pickAgent();
@@ -679,7 +680,7 @@ describe('DispatchDialog', () => {
         };
 
         async function openPartnerTabWith(rate: unknown) {
-            renderWithMantine(<DispatchDialog {...makeProps({fetchRate: jest.fn().mockResolvedValue(rate)})} />);
+            renderWithMantine(<DispatchDialog {...makeProps({fetchRate: vi.fn().mockResolvedValue(rate)})} />);
             fireEvent.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
             // The Partner Select stays disabled until getPartnerOptions resolves.
             const select = await screen.findByRole('combobox', {name: 'Partner'});

@@ -147,12 +147,6 @@ test:backend:
       paths:
         - .npm/
       policy: pull-push
-    - key: jest-cache-${CI_COMMIT_REF_SLUG}
-      paths:
-        - DespatchWeb.Client/.jest-cache/
-      policy: pull-push
-      fallback_keys:
-        - jest-cache-master
     # tsc -b is incremental (tsconfig.app.json/tsconfig.node.json set tsBuildInfoFile), but
     # that only helps if .tsbuildinfo/ survives between CI runs.
     - key: tsbuildinfo-${CI_COMMIT_REF_SLUG}
@@ -182,7 +176,7 @@ test:frontend:unit:
   allow_failure: false
   parallel: 3
   script:
-    - npx jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=2
+    - npx vitest run --project unit --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=2
 
 test:frontend:integration:
   stage: .pre
@@ -191,4 +185,4 @@ test:frontend:integration:
     - .frontend-test-rules
   allow_failure: true
   script:
-    - npx jest --config jest.integration.config.cjs --ci --maxWorkers=2
+    - npx vitest run --project integration --maxWorkers=2

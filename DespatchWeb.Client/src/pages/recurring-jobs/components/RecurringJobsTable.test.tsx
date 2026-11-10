@@ -50,12 +50,12 @@ const defaultProps: RecurringJobsTableProps = {
     sort: {column: 'booked', direction: 'asc'},
     selectedJobId: null,
     isUsCustomer: false,
-    onPageChange: jest.fn(),
-    onPageSizeChange: jest.fn(),
-    onSortChange: jest.fn(),
-    onRowClick: jest.fn(),
-    onDeleteClick: jest.fn(),
-    onContextMenu: jest.fn(),
+    onPageChange: vi.fn(),
+    onPageSizeChange: vi.fn(),
+    onSortChange: vi.fn(),
+    onRowClick: vi.fn(),
+    onDeleteClick: vi.fn(),
+    onContextMenu: vi.fn(),
 };
 
 describe('RecurringJobsTable', () => {
@@ -100,9 +100,9 @@ describe('RecurringJobsTable', () => {
 
     describe('Row interactions', () => {
         it('should call onRowClick, onDeleteClick and onContextMenu for row actions', () => {
-            const onRowClick = jest.fn();
-            const onDeleteClick = jest.fn();
-            const onContextMenu = jest.fn();
+            const onRowClick = vi.fn();
+            const onDeleteClick = vi.fn();
+            const onContextMenu = vi.fn();
             const jobs = [createMockJob(1)];
             renderWithTheme(
                 <RecurringJobsTable
@@ -134,7 +134,7 @@ describe('RecurringJobsTable', () => {
 
     describe('Sorting', () => {
         it('should call onSortChange when clicking sortable column', () => {
-            const onSortChange = jest.fn();
+            const onSortChange = vi.fn();
             const jobs = [createMockJob(1)];
             renderWithTheme(
                 <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1} onSortChange={onSortChange}/>
@@ -146,7 +146,7 @@ describe('RecurringJobsTable', () => {
         });
 
         it('should toggle sort direction on second click', () => {
-            const onSortChange = jest.fn();
+            const onSortChange = vi.fn();
             const jobs = [createMockJob(1)];
             renderWithTheme(
                 <RecurringJobsTable
@@ -175,7 +175,7 @@ describe('RecurringJobsTable', () => {
         });
 
         it('should call onPageSizeChange when changing rows per page', () => {
-            const onPageSizeChange = jest.fn();
+            const onPageSizeChange = vi.fn();
             const jobs = [createMockJob(1)];
             renderWithTheme(
                 <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={100} onPageSizeChange={onPageSizeChange}/>

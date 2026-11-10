@@ -4,6 +4,7 @@
  * Optimised: tests sharing identical setup consolidated into single renders.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen, act, waitFor} from '@testing-library/react';
 import {UserEvent} from '@testing-library/user-event';
@@ -22,7 +23,7 @@ const mockPickedTo = dayjs('2026-08-20');
 // Mock DateRangePicker to avoid LocalizationProvider/DatePicker complexity.
 // The stub still drives the panel's local date state, so tests can verify the
 // panel hands the dates the user just picked to whichever action they trigger.
-jest.mock('../date-range-picker/DateRangePicker', () => ({
+vi.mock('../date-range-picker/DateRangePicker', () => ({
     DateRangePicker: ({onFromDateChange, onToDateChange}: {
         onFromDateChange: (d: unknown) => void;
         onToDateChange: (d: unknown) => void;
@@ -39,18 +40,18 @@ function createDefaultProps(overrides?: Partial<SearchCriteriaPanelProps>): Sear
         dateSearchRange: 'today',
         fromDate: dayjs('2024-01-01'),
         toDate: dayjs('2024-01-31'),
-        onSearchRangeChange: jest.fn(),
-        onFromDateChange: jest.fn(),
-        onToDateChange: jest.fn(),
-        onCriteriaChange: jest.fn(),
-        onSearch: jest.fn(),
-        onDownload: jest.fn(),
-        onClientReport: jest.fn(),
-        onPriceDetailReport: jest.fn(),
-        onUpload: jest.fn(),
-        onClientSearch: jest.fn().mockResolvedValue([]),
-        onCourierSearch: jest.fn().mockResolvedValue([]),
-        onSpeedSearch: jest.fn().mockResolvedValue([]),
+        onSearchRangeChange: vi.fn(),
+        onFromDateChange: vi.fn(),
+        onToDateChange: vi.fn(),
+        onCriteriaChange: vi.fn(),
+        onSearch: vi.fn(),
+        onDownload: vi.fn(),
+        onClientReport: vi.fn(),
+        onPriceDetailReport: vi.fn(),
+        onUpload: vi.fn(),
+        onClientSearch: vi.fn().mockResolvedValue([]),
+        onCourierSearch: vi.fn().mockResolvedValue([]),
+        onSpeedSearch: vi.fn().mockResolvedValue([]),
         ...overrides,
     };
 }
@@ -59,12 +60,12 @@ describe('SearchCriteriaPanel', () => {
     let user: UserEvent;
 
     beforeEach(() => {
-        jest.useFakeTimers();
-        user = setupUser({advanceTimers: jest.advanceTimersByTime});
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        user = setupUser({advanceTimers: vi.advanceTimersByTime});
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     // The button carries an explicit aria-label, so it keeps its accessible name
@@ -135,37 +136,37 @@ describe('SearchCriteriaPanel', () => {
         await user.click(jobIdInput);
         await user.paste('123');
         expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', 123);
-        (props.onCriteriaChange as jest.Mock).mockClear();
+        (props.onCriteriaChange as Mock).mockClear();
         await user.clear(jobIdInput);
         expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', undefined);
 
         // Bulk job ID
-        (props.onCriteriaChange as jest.Mock).mockClear();
+        (props.onCriteriaChange as Mock).mockClear();
         const bulkJobIdInput = screen.getByPlaceholderText('Enter bulk job ID');
         await user.click(bulkJobIdInput);
         await user.paste('456');
         expect(props.onCriteriaChange).toHaveBeenCalledWith('bulkJobId', 456);
-        (props.onCriteriaChange as jest.Mock).mockClear();
+        (props.onCriteriaChange as Mock).mockClear();
         await user.clear(bulkJobIdInput);
         expect(props.onCriteriaChange).toHaveBeenCalledWith('bulkJobId', undefined);
 
         // Job number
-        (props.onCriteriaChange as jest.Mock).mockClear();
+        (props.onCriteriaChange as Mock).mockClear();
         const jobNoInput = screen.getByPlaceholderText('Enter job number');
         await user.click(jobNoInput);
         await user.paste('JOB-001');
         expect(props.onCriteriaChange).toHaveBeenLastCalledWith('job', 'JOB-001');
-        (props.onCriteriaChange as jest.Mock).mockClear();
+        (props.onCriteriaChange as Mock).mockClear();
         await user.clear(jobNoInput);
         expect(props.onCriteriaChange).toHaveBeenCalledWith('job', undefined);
 
         // General search
-        (props.onCriteriaChange as jest.Mock).mockClear();
+        (props.onCriteriaChange as Mock).mockClear();
         const wildInput = screen.getByPlaceholderText('Address, name, reference…');
         await user.click(wildInput);
         await user.paste('test query');
         expect(props.onCriteriaChange).toHaveBeenLastCalledWith('wild', 'test query');
-        (props.onCriteriaChange as jest.Mock).mockClear();
+        (props.onCriteriaChange as Mock).mockClear();
         await user.clear(wildInput);
         expect(props.onCriteriaChange).toHaveBeenCalledWith('wild', undefined);
     });
@@ -226,7 +227,7 @@ describe('SearchCriteriaPanel', () => {
     // the previous range.
     it('passes the dates just picked to every date-driven action', async () => {
         const props = createDefaultProps({
-            onClientSearch: jest.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
+            onClientSearch: vi.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
         });
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
@@ -247,7 +248,7 @@ describe('SearchCriteriaPanel', () => {
         // Client report needs a selected client before it is enabled.
         await user.type(screen.getByPlaceholderText('Search clients…'), 'ac');
         await act(async () => {
-            jest.advanceTimersByTime(300);
+            vi.advanceTimersByTime(300);
         });
         await user.click(await screen.findByRole('option', {name: 'Acme Corp'}));
         await user.click(getClientReportButton());
@@ -261,7 +262,7 @@ describe('SearchCriteriaPanel', () => {
     // ── Client report: enabled when client selected, calls handler (single render) ─
     it('enables Client report when client selected and calls onClientReport', async () => {
         const props = createDefaultProps({
-            onClientSearch: jest.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
+            onClientSearch: vi.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
         });
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
@@ -269,7 +270,7 @@ describe('SearchCriteriaPanel', () => {
         const clientsInput = screen.getByPlaceholderText('Search clients…');
         await user.type(clientsInput, 'ac');
         await act(async () => {
-            jest.advanceTimersByTime(300);
+            vi.advanceTimersByTime(300);
         });
 
         const option = await screen.findByRole('option', {name: 'Acme Corp'});
@@ -284,7 +285,7 @@ describe('SearchCriteriaPanel', () => {
     // ── ChipsAutocomplete: search triggers and chip selection (single render) ─
     it('triggers search callbacks on autocomplete input and selects chips', async () => {
         const props = createDefaultProps({
-            onClientSearch: jest.fn().mockResolvedValue([
+            onClientSearch: vi.fn().mockResolvedValue([
                 {id: 1, text: 'Acme Corp'},
                 {id: 2, text: 'Beta Inc'},
             ]),
@@ -294,7 +295,7 @@ describe('SearchCriteriaPanel', () => {
         // Clients search + select
         await user.type(screen.getByPlaceholderText('Search clients…'), 'ac');
         await act(async () => {
-            jest.advanceTimersByTime(300);
+            vi.advanceTimersByTime(300);
         });
         expect(props.onClientSearch).toHaveBeenCalledWith('ac');
 
@@ -305,14 +306,14 @@ describe('SearchCriteriaPanel', () => {
         // Couriers search
         await user.type(screen.getByPlaceholderText('Search couriers…'), 'j');
         await act(async () => {
-            jest.advanceTimersByTime(300);
+            vi.advanceTimersByTime(300);
         });
         expect(props.onCourierSearch).toHaveBeenCalledWith('j');
 
         // Speeds search
         await user.type(screen.getByPlaceholderText('Search speeds…'), 's');
         await act(async () => {
-            jest.advanceTimersByTime(300);
+            vi.advanceTimersByTime(300);
         });
         expect(props.onSpeedSearch).toHaveBeenCalledWith('s');
     });

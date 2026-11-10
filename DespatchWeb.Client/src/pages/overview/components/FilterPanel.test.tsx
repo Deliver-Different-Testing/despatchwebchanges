@@ -11,13 +11,13 @@ import {FilterPanel} from './FilterPanel';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 import {testDialogs} from '../../../components/dialogs/testDialogRegistry';
 
-jest.mock('../../../api/overviewApi', () => ({
+vi.mock('../../../api/overviewApi', async () => ({
     overviewApi: {
-        searchCouriers: jest.fn(),
+        searchCouriers: vi.fn(),
     },
 }));
 
-jest.mock('../../../components/dialogs/dialogRegistry', () => require('../../../components/dialogs/testDialogRegistry').createDialogRegistryMock());
+vi.mock('../../../components/dialogs/dialogRegistry', async () => (await import('../../../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -49,20 +49,20 @@ const defaultProps = {
     regionsLoading: false,
     selectedRegionIds: new Set<number>(),
     allRegionsSelected: false,
-    onToggleRegion: jest.fn(),
-    onToggleAllRegions: jest.fn(),
+    onToggleRegion: vi.fn(),
+    onToggleAllRegions: vi.fn(),
     speeds: mockSpeeds,
     speedsLoading: false,
     selectedSpeedIds: new Set<number>(),
     allSpeedsSelected: false,
-    onToggleSpeed: jest.fn(),
-    onToggleAllSpeeds: jest.fn(),
+    onToggleSpeed: vi.fn(),
+    onToggleAllSpeeds: vi.fn(),
     selectedCouriers: [] as ISuggestion[],
-    onAddCourier: jest.fn(),
-    onRemoveCourier: jest.fn(),
+    onAddCourier: vi.fn(),
+    onRemoveCourier: vi.fn(),
     dateRange: {} as DateRange,
-    onDateRangeChange: jest.fn(),
-    onClearAll: jest.fn(),
+    onDateRangeChange: vi.fn(),
+    onClearAll: vi.fn(),
 };
 
 describe('FilterPanel', () => {
@@ -132,7 +132,7 @@ describe('FilterPanel', () => {
         });
 
         it('counts every applied criterion and clears them', () => {
-            const onClearAll = jest.fn();
+            const onClearAll = vi.fn();
             renderWithProviders(
                 <FilterPanel
                     {...defaultProps}
@@ -170,7 +170,7 @@ describe('FilterPanel', () => {
         });
 
         describe('opening the dialog', () => {
-            const mockOpen = jest.fn();
+            const mockOpen = vi.fn();
 
             beforeEach(() => {
                 mockOpen.mockReset();
@@ -182,7 +182,7 @@ describe('FilterPanel', () => {
                     start: new Date('2024-02-01'),
                     end: new Date('2024-02-05'),
                 });
-                const onDateRangeChange = jest.fn();
+                const onDateRangeChange = vi.fn();
                 renderWithProviders(
                     <FilterPanel {...defaultProps} onDateRangeChange={onDateRangeChange} />,
                 );
@@ -200,7 +200,7 @@ describe('FilterPanel', () => {
 
             it('does not change the range when the dialog is cancelled', async () => {
                 mockOpen.mockResolvedValue(null);
-                const onDateRangeChange = jest.fn();
+                const onDateRangeChange = vi.fn();
                 renderWithProviders(
                     <FilterPanel {...defaultProps} onDateRangeChange={onDateRangeChange} />,
                 );

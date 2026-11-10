@@ -6,7 +6,11 @@
  * and closes server after all tests complete.
  */
 
+import { File as NodeFile } from 'node:buffer';
 import { server } from './server';
+
+// MSW parses multipart bodies with Node's undici, which rejects jsdom's File (jest-fixed-jsdom used to swap it in).
+Object.assign(globalThis, { File: NodeFile });
 
 // Start server before all tests
 beforeAll(() => {

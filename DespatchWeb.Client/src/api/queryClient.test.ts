@@ -3,7 +3,7 @@
  */
 
 import {hashKey} from '@tanstack/react-query';
-import {queryClient} from './queryClient';
+import {queryClient, queryKeys} from './queryClient';
 
 describe('queryClient', () => {
     it('applies the app default options', () => {
@@ -15,9 +15,8 @@ describe('queryClient', () => {
         expect(options.mutations?.retry).toBe(0);
     });
 
-    it('is a single shared instance with a shared cache', () => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const again = require('./queryClient').queryClient;
+    it('is a single shared instance with a shared cache', async () => {
+        const again = (await import('./queryClient')).queryClient;
         expect(again).toBe(queryClient);
 
         queryClient.setQueryData(['jobs', 'detail', 42, 'standard'], {id: 42, status: 'New'});
@@ -28,14 +27,6 @@ describe('queryClient', () => {
 });
 
 describe('queryKeys', () => {
-    // Import once for key factory tests (no window dependency)
-    let queryKeys: typeof import('./queryClient')['queryKeys'];
-    beforeAll(() => {
-        jest.isolateModules(() => {
-            queryKeys = require('./queryClient').queryKeys;
-        });
-    });
-
     describe('couriers', () => {
         it('has all key', () => {
             expect(queryKeys.couriers.all).toEqual(['couriers']);

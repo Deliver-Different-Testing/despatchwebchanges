@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen} from '@testing-library/react';
 import {renderWithProviders} from '../test/utils';
@@ -13,35 +14,35 @@ import {ErrorScreen} from './error-page/ErrorScreen';
 import {getHereMapsKey} from '../api/configApi';
 import {openJobInSearch} from '../services/navigationService';
 
-const pageProps = jest.fn();
+const pageProps = vi.fn();
 const mockPage = (testId: string) => (props: unknown) => {
     pageProps(testId, props);
     return <div data-testid={testId}/>;
 };
 
-jest.mock('./overview/OverviewPage', () => ({OverviewPage: (p: unknown) => mockPage('overview')(p)}));
-jest.mock('./task-dashboard/TaskDashboardPage', () => ({TaskDashboardPage: (p: unknown) => mockPage('tasks')(p)}));
-jest.mock('./driver-management/DriverManagementPage', () => ({DriverManagementPage: (p: unknown) => mockPage('drivers')(p)}));
-jest.mock('./recurring-jobs/RecurringJobsPage', () => ({RecurringJobsPage: (p: unknown) => mockPage('recurring')(p)}));
-jest.mock('./settings/SettingsPage', () => ({SettingsPage: (p: unknown) => mockPage('settings')(p)}));
-jest.mock('./courier-map/CourierMapPage', () => ({CourierMapPage: (p: unknown) => mockPage('map')(p)}));
-jest.mock('./partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => null}));
-jest.mock('../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 3, refresh: jest.fn()})}));
-jest.mock('../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: jest.fn()})}));
-jest.mock('../api/configApi', () => ({getHereMapsKey: jest.fn()}));
-jest.mock('../services/navigationService', () => ({openJobInSearch: jest.fn(), openHubUrl: jest.fn()}));
-jest.mock('../services/toastService', () => ({toastService: {showToast: jest.fn()}}));
-jest.mock('../api/session', () => ({
+vi.mock('./overview/OverviewPage', () => ({OverviewPage: (p: unknown) => mockPage('overview')(p)}));
+vi.mock('./task-dashboard/TaskDashboardPage', () => ({TaskDashboardPage: (p: unknown) => mockPage('tasks')(p)}));
+vi.mock('./driver-management/DriverManagementPage', () => ({DriverManagementPage: (p: unknown) => mockPage('drivers')(p)}));
+vi.mock('./recurring-jobs/RecurringJobsPage', () => ({RecurringJobsPage: (p: unknown) => mockPage('recurring')(p)}));
+vi.mock('./settings/SettingsPage', () => ({SettingsPage: (p: unknown) => mockPage('settings')(p)}));
+vi.mock('./courier-map/CourierMapPage', () => ({CourierMapPage: (p: unknown) => mockPage('map')(p)}));
+vi.mock('./partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => null}));
+vi.mock('../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 3, refresh: vi.fn()})}));
+vi.mock('../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: vi.fn()})}));
+vi.mock('../api/configApi', () => ({getHereMapsKey: vi.fn()}));
+vi.mock('../services/navigationService', () => ({openJobInSearch: vi.fn(), openHubUrl: vi.fn()}));
+vi.mock('../services/toastService', () => ({toastService: {showToast: vi.fn()}}));
+vi.mock('../api/session', () => ({
     getSession: () => ({firstName: 'Jo', fullName: 'Jo Doe', isNetworkPartner: false, isUsCustomer: true, visibleFeatures: null}),
 }));
 
-const navigate = jest.fn();
+const navigate = vi.fn();
 const renderScreen = (ui: React.ReactElement, currentState = 'x') =>
     renderWithProviders(<NavigationProvider value={{navigate, currentState}}>{ui}</NavigationProvider>);
 
 const propsOf = (testId: string) => pageProps.mock.calls.filter(([id]) => id === testId).at(-1)![1] as any;
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 describe.each([
     ['OverviewScreen', <OverviewScreen/>, 'overview', 'Dashboards', 'Overview'],
@@ -77,7 +78,7 @@ describe('screen props', () => {
         renderScreen(<RecurringJobsScreen/>);
         expect(() => propsOf('recurring').onAddStop({}, true)).not.toThrow();
 
-        const onAddStop = jest.fn();
+        const onAddStop = vi.fn();
         renderScreen(<RecurringJobsScreen onAddStop={onAddStop}/>);
         expect(propsOf('recurring').onAddStop).toBe(onAddStop);
     });
@@ -85,7 +86,7 @@ describe('screen props', () => {
 
 describe('CourierMapScreen', () => {
     it('waits for the HERE key then renders the map with key and tenant centre', async () => {
-        (getHereMapsKey as jest.Mock).mockResolvedValue('key-1');
+        (getHereMapsKey as Mock).mockResolvedValue('key-1');
         renderScreen(<CourierMapScreen/>);
 
         expect(await screen.findByTestId('map')).toBeInTheDocument();
@@ -94,8 +95,8 @@ describe('CourierMapScreen', () => {
     });
 
     it('falls back to a null key when the lookup fails', async () => {
-        jest.spyOn(console, 'error').mockImplementation(() => undefined);
-        (getHereMapsKey as jest.Mock).mockRejectedValue(new Error('boom'));
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        (getHereMapsKey as Mock).mockRejectedValue(new Error('boom'));
         renderScreen(<CourierMapScreen/>);
 
         await screen.findByTestId('map');

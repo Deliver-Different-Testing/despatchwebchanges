@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Courier API Service Tests
  */
@@ -8,13 +9,13 @@ import {apiClient} from './client';
 import {createMockApiError} from '../test/utils';
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
+        get: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('courierApi', () => {
     describe('fetchDriverLocations', () => {

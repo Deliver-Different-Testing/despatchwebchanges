@@ -4,16 +4,16 @@ import {renderWithProviders} from '../../test/utils';
 import {NavigationProvider, useNavigation} from '../../routes/NavigationContext';
 import {PageFrame} from './PageFrame';
 
-jest.mock('../../pages/partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => <div data-testid="approvals"/>}));
-jest.mock('../../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 7, refresh: jest.fn()})}));
-jest.mock('../../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: jest.fn()})}));
-jest.mock('../../services/navigationService', () => ({openJobInSearch: jest.fn(), openHubUrl: jest.fn()}));
-jest.mock('../../api/session', () => ({
+vi.mock('../../pages/partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => <div data-testid="approvals"/>}));
+vi.mock('../../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 7, refresh: vi.fn()})}));
+vi.mock('../../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: vi.fn()})}));
+vi.mock('../../services/navigationService', () => ({openJobInSearch: vi.fn(), openHubUrl: vi.fn()}));
+vi.mock('../../api/session', () => ({
     getSession: () => ({firstName: 'Jo', fullName: 'Jo Doe', isNetworkPartner: false, isUsCustomer: false, visibleFeatures: null}),
 }));
 
 const wrap = (ui: React.ReactElement) =>
-    renderWithProviders(<NavigationProvider value={{navigate: jest.fn(), currentState: 'overview'}}>{ui}</NavigationProvider>);
+    renderWithProviders(<NavigationProvider value={{navigate: vi.fn(), currentState: 'overview'}}>{ui}</NavigationProvider>);
 
 describe('PageFrame', () => {
     it('wires default messages and partner approvals, body sized below the bar', () => {
@@ -26,7 +26,7 @@ describe('PageFrame', () => {
 
     it('lets a page own messages and scroll', () => {
         wrap(
-            <PageFrame title="T" scrollable toolbarActions={{messages: {unreadCount: 2, onClick: jest.fn()}}}>
+            <PageFrame title="T" scrollable toolbarActions={{messages: {unreadCount: 2, onClick: vi.fn()}}}>
                 <div data-testid="body"/>
             </PageFrame>
         );
@@ -43,7 +43,7 @@ describe('useNavigation', () => {
             useNavigation();
             return null;
         };
-        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
         expect(() => renderWithProviders(<Probe/>)).toThrow('NavigationProvider');
     });
 });

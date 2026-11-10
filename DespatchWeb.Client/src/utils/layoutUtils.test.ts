@@ -8,11 +8,11 @@ import {
 } from './layoutUtils';
 
 const createBridge = (): LayoutNameBridge => ({
-    setCurrentLayoutName: jest.fn(),
-    reloadFromStorage: jest.fn(),
-    promptSaveLayout: jest.fn().mockResolvedValue('Wide'),
-    promptDeleteLayout: jest.fn().mockResolvedValue(true),
-    promptRenameLayout: jest.fn().mockResolvedValue('Renamed'),
+    setCurrentLayoutName: vi.fn(),
+    reloadFromStorage: vi.fn(),
+    promptSaveLayout: vi.fn().mockResolvedValue('Wide'),
+    promptDeleteLayout: vi.fn().mockResolvedValue(true),
+    promptRenameLayout: vi.fn().mockResolvedValue('Renamed'),
 });
 
 describe('layoutUtils', () => {

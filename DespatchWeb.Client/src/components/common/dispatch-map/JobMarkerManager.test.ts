@@ -17,22 +17,22 @@ import {
 
 // Mock HERE Maps global H object
 const createMockMarker = (data?: any) => ({
-    getData: jest.fn(() => data),
-    setIcon: jest.fn(),
-    getGeometry: jest.fn(() => ({ lat: 40.7128, lng: -74.006 })),
+    getData: vi.fn(() => data),
+    setIcon: vi.fn(),
+    getGeometry: vi.fn(() => ({ lat: 40.7128, lng: -74.006 })),
 });
 
 const createMockMarkerGroup = () => ({
-    addObjects: jest.fn(),
-    removeAll: jest.fn(),
-    removeObjects: jest.fn(),
-    addEventListener: jest.fn(),
-    getBoundingBox: jest.fn(() => ({
+    addObjects: vi.fn(),
+    removeAll: vi.fn(),
+    removeObjects: vi.fn(),
+    addEventListener: vi.fn(),
+    getBoundingBox: vi.fn(() => ({
         getTop: () => 41,
         getBottom: () => 40,
         getLeft: () => -75,
         getRight: () => -73,
-        mergeRect: jest.fn((other) => ({
+        mergeRect: vi.fn((other) => ({
             getTop: () => Math.max(41, other.getTop()),
             getBottom: () => Math.min(40, other.getBottom()),
             getLeft: () => Math.min(-75, other.getLeft()),
@@ -42,17 +42,17 @@ const createMockMarkerGroup = () => ({
 });
 
 const createMockMap = () => ({
-    addObject: jest.fn(),
-    removeObject: jest.fn(),
-    getElement: jest.fn(() => ({
-        appendChild: jest.fn(),
+    addObject: vi.fn(),
+    removeObject: vi.fn(),
+    getElement: vi.fn(() => ({
+        appendChild: vi.fn(),
     })),
-    geoToScreen: jest.fn(() => ({ x: 100, y: 100 })),
-    getViewModel: jest.fn(() => ({
-        setLookAtData: jest.fn(),
+    geoToScreen: vi.fn(() => ({ x: 100, y: 100 })),
+    getViewModel: vi.fn(() => ({
+        setLookAtData: vi.fn(),
     })),
-    getZoom: jest.fn(() => 14),
-    setZoom: jest.fn(),
+    getZoom: vi.fn(() => 14),
+    setZoom: vi.fn(),
 });
 
 const createMockUI = () => ({});
@@ -60,13 +60,14 @@ const createMockUI = () => ({});
 // Mock H global
 const mockH = {
     map: {
-        Group: jest.fn(() => createMockMarkerGroup()),
-        Marker: jest.fn((point, options) => createMockMarker(options?.data)),
-        Icon: jest.fn((svg, options) => ({ svg, options })),
+        Group: vi.fn(function () { return createMockMarkerGroup(); }),
+        Marker: vi.fn(function (_point, options) { return createMockMarker(options?.data); }),
+        Icon: vi.fn(function (svg, options) { return { svg, options }; }),
     },
     geo: {
-        Point: jest.fn((lat, lng) => ({ lat, lng })),
-        Rect: jest.fn((top, left, bottom, right) => ({
+        Point: vi.fn(function (lat, lng) { return { lat, lng }; }),
+        Rect: vi.fn(function (top, left, bottom, right) {
+            return {
             top,
             left,
             bottom,
@@ -75,7 +76,8 @@ const mockH = {
             getBottom: () => bottom,
             getLeft: () => left,
             getRight: () => right,
-        })),
+            };
+        }),
     },
 };
 
@@ -141,7 +143,7 @@ describe('JobMarkerManager', () => {
         });
 
         it('stores onMarkerClick callback when provided', () => {
-            const callback = jest.fn();
+            const callback = vi.fn();
             const managerWithCallback = new JobMarkerManager(mockMap, mockUI, callback);
             expect(managerWithCallback).toBeDefined();
             managerWithCallback.dispose();
@@ -150,7 +152,7 @@ describe('JobMarkerManager', () => {
 
     describe('setOnMarkerClick', () => {
         it('updates the marker click callback', () => {
-            const callback = jest.fn();
+            const callback = vi.fn();
             manager.setOnMarkerClick(callback);
             // Callback is stored internally - verify it works via tap event
             expect(manager).toBeDefined();
@@ -330,7 +332,7 @@ describe('JobMarkerManager', () => {
             await manager.updateMarkers(jobs);
 
             const courierGroup = {
-                getBoundingBox: jest.fn(() => ({
+                getBoundingBox: vi.fn(() => ({
                     getTop: () => 42,
                     getBottom: () => 39,
                     getLeft: () => -76,
@@ -589,7 +591,7 @@ describe('JobMarkerManager', () => {
         });
 
         it('tap handler calls onMarkerClick with job data', async () => {
-            const onMarkerClick = jest.fn();
+            const onMarkerClick = vi.fn();
             const managerWithCallback = new JobMarkerManager(mockMap, mockUI, onMarkerClick);
 
             const jobs = [createMockJob()];
@@ -603,7 +605,7 @@ describe('JobMarkerManager', () => {
 
             // Simulate tap event
             const mockMarker = {
-                getData: jest.fn(() => ({ job: jobs[0] })),
+                getData: vi.fn(() => ({ job: jobs[0] })),
             };
             tapHandler({ target: mockMarker });
 
@@ -612,7 +614,7 @@ describe('JobMarkerManager', () => {
         });
 
         it('tap handler does nothing when marker has no data', async () => {
-            const onMarkerClick = jest.fn();
+            const onMarkerClick = vi.fn();
             const managerWithCallback = new JobMarkerManager(mockMap, mockUI, onMarkerClick);
 
             const mockGroup = mockH.map.Group.mock.results[1].value;
@@ -622,7 +624,7 @@ describe('JobMarkerManager', () => {
 
             // Simulate tap event with no data
             const mockMarker = {
-                getData: jest.fn(() => null),
+                getData: vi.fn(() => null),
             };
             tapHandler({ target: mockMarker });
 
@@ -641,13 +643,13 @@ describe('JobMarkerManager', () => {
 
             // Simulate pointerenter event with all required methods
             const mockMarker = {
-                getData: jest.fn(() => ({
+                getData: vi.fn(() => ({
                     job: jobs[0],
                     color: MARKER_COLORS.PICKUP,
                     locationType: 'Pickup',
                 })),
-                setIcon: jest.fn(),
-                getGeometry: jest.fn(() => ({ lat: 40.7128, lng: -74.006 })),
+                setIcon: vi.fn(),
+                getGeometry: vi.fn(() => ({ lat: 40.7128, lng: -74.006 })),
             };
             enterHandler({ target: mockMarker });
 
@@ -665,11 +667,11 @@ describe('JobMarkerManager', () => {
 
             // Simulate pointerleave event
             const mockMarker = {
-                getData: jest.fn(() => ({
+                getData: vi.fn(() => ({
                     job: jobs[0],
                     color: MARKER_COLORS.PICKUP,
                 })),
-                setIcon: jest.fn(),
+                setIcon: vi.fn(),
             };
             leaveHandler({ target: mockMarker });
 
@@ -719,7 +721,7 @@ describe('JobMarkerManager', () => {
             await manager.updateMarkers(jobs);
 
             const mockCourierGroup = {
-                getBoundingBox: jest.fn(() => null),
+                getBoundingBox: vi.fn(() => null),
             };
 
             // Should not throw

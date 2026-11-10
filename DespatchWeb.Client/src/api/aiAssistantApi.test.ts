@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * AI Summary API Service Tests
  *
@@ -24,15 +25,15 @@ import {
 } from './aiAssistantApi';
 import {apiClient} from './client';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
-        delete: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
+        delete: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 const structuredResponse = {
     verdict: '✅ On track',
@@ -46,7 +47,7 @@ const structuredResponse = {
 
 describe('aiAssistantApi', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     describe('summarizeJobNotes (markdown)', () => {

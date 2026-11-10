@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Notes API Service Tests
  */
@@ -9,20 +10,20 @@ import {createMockApiError} from '../test/utils';
 import dayjs from 'dayjs';
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
-        delete: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
+        delete: vi.fn(),
     },
 }));
 
 // Mock date utilities - parseDateFromApi preserves the string as a dayjs object
-jest.mock('../utils/dateUtils', () => ({
-    parseDateFromApi: jest.fn((dateStr: string) => dayjs(dateStr)),
+vi.mock('../utils/dateUtils', () => ({
+    parseDateFromApi: vi.fn((dateStr: string) => dayjs(dateStr)),
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('notesApi', () => {
     describe('getJobNotes', () => {

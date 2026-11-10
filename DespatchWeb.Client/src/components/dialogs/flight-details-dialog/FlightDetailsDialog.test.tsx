@@ -112,7 +112,7 @@ describe('FlightDetailsDialog', () => {
     it('renders all expected content for a single-segment flight', () => {
         const flight = createSingleSegmentFlight();
         renderWithTheme(
-            <FlightDetailsDialog open={true} flight={flight} onClose={jest.fn()} />
+            <FlightDetailsDialog open={true} flight={flight} onClose={vi.fn()} />
         );
 
         // Dialog is present
@@ -156,14 +156,14 @@ describe('FlightDetailsDialog', () => {
         // Not-open case
         const flight = createSingleSegmentFlight();
         const {unmount} = renderWithTheme(
-            <FlightDetailsDialog open={false} flight={flight} onClose={jest.fn()} />
+            <FlightDetailsDialog open={false} flight={flight} onClose={vi.fn()} />
         );
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         unmount();
 
         // Open but single-segment: no tabs, no itinerary
         renderWithTheme(
-            <FlightDetailsDialog open={true} flight={flight} onClose={jest.fn()} />
+            <FlightDetailsDialog open={true} flight={flight} onClose={vi.fn()} />
         );
         expect(screen.queryByRole('tab', {name: /Overview/i})).not.toBeInTheDocument();
         expect(screen.queryByText('Flight itinerary')).not.toBeInTheDocument();
@@ -178,7 +178,7 @@ describe('FlightDetailsDialog', () => {
         // Duration N/A when both elapsedTime and duration are undefined
         const flightNA = createSingleSegmentFlight({elapsedTime: undefined, duration: undefined});
         const {unmount: unmount1} = renderWithTheme(
-            <FlightDetailsDialog open={true} flight={flightNA} onClose={jest.fn()} />
+            <FlightDetailsDialog open={true} flight={flightNA} onClose={vi.fn()} />
         );
         expect(screen.getByText('N/A')).toBeInTheDocument();
         unmount1();
@@ -186,7 +186,7 @@ describe('FlightDetailsDialog', () => {
         // Duration parsed from duration string when elapsedTime is missing
         const flightParsed = createSingleSegmentFlight({elapsedTime: undefined, duration: '03:45:00'});
         const {unmount: unmount2} = renderWithTheme(
-            <FlightDetailsDialog open={true} flight={flightParsed} onClose={jest.fn()} />
+            <FlightDetailsDialog open={true} flight={flightParsed} onClose={vi.fn()} />
         );
         expect(screen.getByText('3h 45m')).toBeInTheDocument();
         unmount2();
@@ -194,7 +194,7 @@ describe('FlightDetailsDialog', () => {
         // Aircraft section hidden when aircraft is undefined
         const flightNoAircraft = createSingleSegmentFlight({aircraft: undefined});
         renderWithTheme(
-            <FlightDetailsDialog open={true} flight={flightNoAircraft} onClose={jest.fn()} />
+            <FlightDetailsDialog open={true} flight={flightNoAircraft} onClose={vi.fn()} />
         );
         expect(screen.queryByText('Aircraft')).not.toBeInTheDocument();
     });
@@ -209,7 +209,7 @@ describe('FlightDetailsDialog', () => {
     it('renders all expected content for a multi-segment flight in overview', () => {
         const flight = createMultiSegmentFlight();
         renderWithTheme(
-            <FlightDetailsDialog open={true} flight={flight} onClose={jest.fn()} />
+            <FlightDetailsDialog open={true} flight={flight} onClose={vi.fn()} />
         );
 
         // Tab navigation present
@@ -255,7 +255,7 @@ describe('FlightDetailsDialog', () => {
     it('switches to segment view when segment tab is clicked', () => {
         const flight = createMultiSegmentFlight();
         renderWithTheme(
-            <FlightDetailsDialog open={true} flight={flight} onClose={jest.fn()} />
+            <FlightDetailsDialog open={true} flight={flight} onClose={vi.fn()} />
         );
 
         // Click on Segment 1 tab
@@ -269,7 +269,7 @@ describe('FlightDetailsDialog', () => {
     it('shows segment-specific data when segment tab is selected', () => {
         const flight = createMultiSegmentFlight();
         renderWithTheme(
-            <FlightDetailsDialog open={true} flight={flight} onClose={jest.fn()} />
+            <FlightDetailsDialog open={true} flight={flight} onClose={vi.fn()} />
         );
 
         // Click on Segment 2 tab
@@ -283,7 +283,7 @@ describe('FlightDetailsDialog', () => {
     // Dialog Actions
     // ---------------------------------------------------------------
     it('calls onClose when close button is clicked', () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         const flight = createSingleSegmentFlight();
         renderWithTheme(
             <FlightDetailsDialog open={true} flight={flight} onClose={onClose} />

@@ -5,6 +5,7 @@
  * parameter state, sorting, refresh/invalidation, and infinite scroll pagination.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {renderHook, waitFor, act} from '@testing-library/react';
 import {QueryClient} from '@tanstack/react-query';
@@ -27,7 +28,7 @@ const mockResult: JobSearchResult = {
 
 function createMockFetchConfig(overrides?: Partial<FetchConfig>): FetchConfig {
     return {
-        fetchFn: jest.fn().mockResolvedValue(mockResult),
+        fetchFn: vi.fn().mockResolvedValue(mockResult),
         queryKeyFn: (params: JobListSearchParams) => ['test', 'jobs', params] as const,
         initialParams: {
             order: 'time',
@@ -70,7 +71,7 @@ describe('useJobListData', () => {
         });
 
         it('should return empty defaults while loading', () => {
-            const fetchFn = jest.fn().mockReturnValue(new Promise(() => {})); // never resolves
+            const fetchFn = vi.fn().mockReturnValue(new Promise(() => {})); // never resolves
             const config = createMockFetchConfig({fetchFn});
 
             const {result} = renderHook(
@@ -94,7 +95,7 @@ describe('useJobListData', () => {
             });
 
             // Clear initial call
-            (config.fetchFn as jest.Mock).mockClear();
+            (config.fetchFn as Mock).mockClear();
 
             act(() => {
                 result.current.updateSort('jobNo', 'desc');
@@ -105,7 +106,7 @@ describe('useJobListData', () => {
             });
 
             // Verify the fetch was called with updated sort params
-            const calledParams = (config.fetchFn as jest.Mock).mock.calls[0][0];
+            const calledParams = (config.fetchFn as Mock).mock.calls[0][0];
             expect(calledParams.order).toBe('jobNo');
             expect(calledParams.orderDirection).toBe('desc');
             expect(calledParams.sortColumn).toBe('jobNo');
@@ -136,7 +137,7 @@ describe('useJobListData', () => {
                 expect(result.current.isLoading).toBe(false);
             });
 
-            (config.fetchFn as jest.Mock).mockClear();
+            (config.fetchFn as Mock).mockClear();
 
             act(() => {
                 result.current.updateParams({searchText: 'hello'});
@@ -146,7 +147,7 @@ describe('useJobListData', () => {
                 expect(config.fetchFn).toHaveBeenCalled();
             });
 
-            const calledParams = (config.fetchFn as jest.Mock).mock.calls[0][0];
+            const calledParams = (config.fetchFn as Mock).mock.calls[0][0];
             expect(calledParams.searchText).toBe('hello');
             // pageParam overrides page to 0 (start of new infinite query)
             expect(calledParams.page).toBe(0);
@@ -219,7 +220,7 @@ describe('useJobListData', () => {
     describe('refresh', () => {
         it('should invalidate the query and refetch', async () => {
             const queryClient = createTestQueryClient();
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const config = createMockFetchConfig();
 
             const {result} = renderHook(
@@ -245,7 +246,7 @@ describe('useJobListData', () => {
 
     describe('query key generation', () => {
         it('should call queryKeyFn with current params', async () => {
-            const queryKeyFn = jest.fn((params: JobListSearchParams) => ['test', params] as const);
+            const queryKeyFn = vi.fn((params: JobListSearchParams) => ['test', params] as const);
             const config = createMockFetchConfig({queryKeyFn});
 
             const {result} = renderHook(
@@ -261,7 +262,7 @@ describe('useJobListData', () => {
         });
 
         it('should regenerate query key when params change', async () => {
-            const queryKeyFn = jest.fn((params: JobListSearchParams) => ['test', params] as const);
+            const queryKeyFn = vi.fn((params: JobListSearchParams) => ['test', params] as const);
             const config = createMockFetchConfig({queryKeyFn});
 
             const {result} = renderHook(
@@ -289,7 +290,7 @@ describe('useJobListData', () => {
         it('should handle fetch errors gracefully', async () => {
             const error = new Error('Network error');
             const config = createMockFetchConfig({
-                fetchFn: jest.fn().mockRejectedValue(error),
+                fetchFn: vi.fn().mockRejectedValue(error),
             });
 
             const {result} = renderHook(
@@ -310,7 +311,7 @@ describe('useJobListData', () => {
     describe('hasMore and infinite scroll', () => {
         it('should reflect hasMore from fetch result', async () => {
             const config = createMockFetchConfig({
-                fetchFn: jest.fn().mockResolvedValue({
+                fetchFn: vi.fn().mockResolvedValue({
                     jobs: mockJobs,
                     totalCount: 100,
                     hasMore: true,
@@ -334,7 +335,7 @@ describe('useJobListData', () => {
             const page0Jobs = [{id: 1, jobNo: 'J001'}, {id: 2, jobNo: 'J002'}] as any[];
             const page1Jobs = [{id: 3, jobNo: 'J003'}, {id: 4, jobNo: 'J004'}] as any[];
 
-            const fetchFn = jest.fn()
+            const fetchFn = vi.fn()
                 .mockResolvedValueOnce({jobs: page0Jobs, totalCount: 4, hasMore: true})
                 .mockResolvedValueOnce({jobs: page1Jobs, totalCount: 4, hasMore: false});
 
@@ -374,7 +375,7 @@ describe('useJobListData', () => {
             // The stats header describes the whole result set, so the server answers it once with
             // the first page — a later page must not blank it out.
             const counts = {total: 574, unassigned: 30, active: 560, transit: 260, done: 14};
-            const fetchFn = jest.fn()
+            const fetchFn = vi.fn()
                 .mockResolvedValueOnce({jobs: [{id: 1}] as any[], totalCount: 574, hasMore: true, statusCounts: counts})
                 .mockResolvedValueOnce({jobs: [{id: 2}] as any[], totalCount: 574, hasMore: false});
 
@@ -403,7 +404,7 @@ describe('useJobListData', () => {
             // showing the numbers it had before.
             const counts = {total: 4, unassigned: 1, active: 3, transit: 1, done: 1};
             const config = createMockFetchConfig({
-                fetchFn: jest.fn().mockResolvedValue(
+                fetchFn: vi.fn().mockResolvedValue(
                     {jobs: mockJobs, totalCount: 4, hasMore: false, statusCounts: counts}),
             });
 
@@ -433,7 +434,7 @@ describe('useJobListData', () => {
         it('keeps the first page total when a later page re-counts differently', async () => {
             // The server re-runs the count on every page fetch, so a job archived mid-scroll used
             // to make the footer total jump.
-            const fetchFn = jest.fn()
+            const fetchFn = vi.fn()
                 .mockResolvedValueOnce({jobs: [{id: 1}] as any[], totalCount: 574, hasMore: true})
                 .mockResolvedValueOnce({jobs: [{id: 2}] as any[], totalCount: 561, hasMore: false});
 
@@ -463,7 +464,7 @@ describe('useJobListData', () => {
                 resolvePage1 = res;
             });
 
-            const fetchFn = jest.fn()
+            const fetchFn = vi.fn()
                 .mockResolvedValueOnce({jobs: mockJobs, totalCount: 4, hasMore: true})
                 .mockReturnValueOnce(page1Promise);
 
@@ -506,7 +507,7 @@ describe('useJobListData', () => {
 
         it('should not fetch next page when hasMore is false', async () => {
             const config = createMockFetchConfig({
-                fetchFn: jest.fn().mockResolvedValue({
+                fetchFn: vi.fn().mockResolvedValue({
                     jobs: mockJobs,
                     totalCount: 2,
                     hasMore: false,
@@ -544,7 +545,7 @@ describe('useJobListData', () => {
 
         it('keeps the previous rows visible while a params change refetches', async () => {
             const next = deferred();
-            const fetchFn = jest.fn()
+            const fetchFn = vi.fn()
                 .mockResolvedValueOnce({jobs: mockJobs, totalCount: 2, hasMore: false})
                 .mockReturnValueOnce(next.promise);
             const {result} = renderHook(
@@ -571,7 +572,7 @@ describe('useJobListData', () => {
 
         it('does not page a list that is still showing the previous results', async () => {
             const next = deferred();
-            const fetchFn = jest.fn()
+            const fetchFn = vi.fn()
                 .mockResolvedValueOnce({jobs: mockJobs, totalCount: 4, hasMore: true})
                 .mockReturnValueOnce(next.promise);
             const {result} = renderHook(

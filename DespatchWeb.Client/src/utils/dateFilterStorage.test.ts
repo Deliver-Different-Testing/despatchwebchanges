@@ -97,7 +97,7 @@ describe('saveDateFilterTo / loadDateFilterFrom', () => {
     });
 
     it('does not throw when localStorage rejects the write', () => {
-        const setItem = jest.spyOn(Storage.prototype, 'setItem')
+        const setItem = vi.spyOn(Storage.prototype, 'setItem')
             .mockImplementation(() => { throw new Error('quota'); });
 
         expect(() => saveDateFilterTo(KEY, {

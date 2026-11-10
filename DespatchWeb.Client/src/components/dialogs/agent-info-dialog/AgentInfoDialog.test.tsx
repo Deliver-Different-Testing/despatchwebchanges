@@ -57,7 +57,7 @@ const defaultProps = {
     open: true,
     agent: mockAgent,
     isLoading: false,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
 };
 
 const createMockProps = (overrides?: Partial<typeof defaultProps>) =>

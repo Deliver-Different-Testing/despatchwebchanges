@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Dispatch Views API Service Tests
  */
@@ -6,18 +7,18 @@
 import {dispatchViewsApi, fetchPageViews} from './dispatchViewsApi';
 import {apiClient} from './client';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
+        get: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 const serverView = {id: 11, name: 'North', centerLatitude: -36.8, centerLongitude: 174.7};
 
 describe('dispatchViewsApi', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('requests the page views for the given page and marks them unselected', async () => {
         mockApiClient.get.mockResolvedValueOnce([serverView]);

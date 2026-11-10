@@ -31,9 +31,9 @@ const baseProps: EventGroupDialogProps = {
     open: true,
     events: mockEvents,
     users: [],
-    onClose: jest.fn(),
-    onSave: jest.fn(),
-    onOpenAdminManager: jest.fn(),
+    onClose: vi.fn(),
+    onSave: vi.fn(),
+    onOpenAdminManager: vi.fn(),
     timezone: 'America/New_York',
 };
 
@@ -99,7 +99,7 @@ describe('EventGroupDialog selection', () => {
     });
 
     it('explains inline, without saving, when nothing is ticked', async () => {
-        const onSave = jest.fn();
+        const onSave = vi.fn();
         const user = setupUser();
         renderDialog({onSave});
 
@@ -116,7 +116,7 @@ describe('EventGroupDialog selection', () => {
 
 describe('EventGroupDialog save', () => {
     it('labels the picked due time with the tenant zone, not the browser zone', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         const pickedAtTwo = new Date(2026, 6, 15, 14, 0, 0);
         const user = setupUser();
         renderDialog({onSave, events: [{...mockEvents[0], dueTime: pickedAtTwo}]});
@@ -127,7 +127,7 @@ describe('EventGroupDialog save', () => {
     });
 
     it('opens ready to save again after a successful save, since the dialog host keeps it mounted', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         const user = setupUser();
         const {rerender} = renderDialog({onSave});
 

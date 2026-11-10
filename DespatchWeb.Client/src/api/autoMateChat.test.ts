@@ -1,9 +1,9 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 import {streamChat} from './autoMateChat';
 import {redirectTo} from '../utils/navigation';
 import type {AutoMateStreamEvent} from '../types/autoMateChat';
 
-jest.mock('../utils/navigation', () => ({redirectTo: jest.fn()}));
+vi.mock('../utils/navigation', () => ({redirectTo: vi.fn()}));
 
 const encoder = new TextEncoder();
 
@@ -27,7 +27,7 @@ const collect = async (): Promise<AutoMateStreamEvent[]> => {
 };
 
 describe('streamChat', () => {
-    const fetchMock = jest.fn();
+    const fetchMock = vi.fn();
 
     beforeEach(() => {
         global.fetch = fetchMock;

@@ -23,8 +23,8 @@ import {
 } from './segmentedToggleTokens';
 import {headerSurfaceAccent} from '../../dialogs/shared/mantine/styles';
 
-jest.mock('../../../hooks/glassSupport', () => ({
-    ...jest.requireActual('../../../hooks/glassSupport'),
+vi.mock('../../../hooks/glassSupport', async () => ({
+    ...(await vi.importActual<typeof import('../../../hooks/glassSupport')>('../../../hooks/glassSupport')),
     isLiquidGlassSupported: () => true,
 }));
 
@@ -35,7 +35,7 @@ const SCOPE_DATA = [
 
 describe('SegmentedToggle', () => {
     it('exposes a radio group, marks the selected option, and reports changes', async () => {
-        const onChange = jest.fn();
+        const onChange = vi.fn();
         renderWithMantine(
             <SegmentedToggle
                 aria-label="Task scope"
@@ -55,7 +55,7 @@ describe('SegmentedToggle', () => {
     });
 
     it('disables an option without reporting a change, and marks it disabled to assistive tech', async () => {
-        const onChange = jest.fn();
+        const onChange = vi.fn();
         renderWithMantine(
             <SegmentedToggle
                 aria-label="Current work scope"
@@ -77,7 +77,7 @@ describe('SegmentedToggle', () => {
     });
 
     it('moves the selection with the arrow keys', async () => {
-        const onChange = jest.fn();
+        const onChange = vi.fn();
         renderWithMantine(
             <SegmentedToggle
                 aria-label="Task scope"
@@ -101,7 +101,7 @@ describe('SegmentedToggle', () => {
                 aria-label="Task scope"
                 data={SCOPE_DATA}
                 value="current"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
             />,
         );
 
@@ -120,7 +120,7 @@ describe('SegmentedToggle', () => {
                 color="orange"
                 data={SCOPE_DATA}
                 value="current"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
             />,
         );
 
@@ -138,7 +138,7 @@ describe('SegmentedToggle', () => {
                     {value: 'dense', label: 'Dense', icon: <Icon lucide={Rows4} size={SEGMENTED_TOGGLE_GLYPH_SIZE}/>},
                 ]}
                 value="dense"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
             />,
         );
 
@@ -155,7 +155,7 @@ describe('SegmentedToggle', () => {
                     {value: 'partner', label: 'DFRNT Partner', disabled: true, tooltip: 'No partner lane for this job'},
                 ]}
                 value="courier"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
             />,
         );
         const user = setupUser();
@@ -174,7 +174,7 @@ describe('SegmentedToggle', () => {
                 orientation="vertical"
                 data={SCOPE_DATA}
                 value="all"
-                onChange={jest.fn()}
+                onChange={vi.fn()}
             />,
         );
 
@@ -184,8 +184,8 @@ describe('SegmentedToggle', () => {
     it('scopes each group to its own radio name so two toggles do not fight', () => {
         renderWithMantine(
             <>
-                <SegmentedToggle aria-label="Task scope" data={SCOPE_DATA} value="current" onChange={jest.fn()}/>
-                <SegmentedToggle aria-label="Second scope" data={SCOPE_DATA} value="all" onChange={jest.fn()}/>
+                <SegmentedToggle aria-label="Task scope" data={SCOPE_DATA} value="current" onChange={vi.fn()}/>
+                <SegmentedToggle aria-label="Second scope" data={SCOPE_DATA} value="all" onChange={vi.fn()}/>
             </>,
         );
 
@@ -209,7 +209,7 @@ describe('SegmentedToggle', () => {
 
         const group = (orientation: 'horizontal' | 'vertical') => {
             renderWithMantine(
-                <SegmentedToggle aria-label="Task scope" data={SCOPE_DATA} value="current" onChange={jest.fn()} orientation={orientation}/>,
+                <SegmentedToggle aria-label="Task scope" data={SCOPE_DATA} value="current" onChange={vi.fn()} orientation={orientation}/>,
             );
             return screen.getByRole('radiogroup');
         };

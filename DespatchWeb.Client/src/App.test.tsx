@@ -7,14 +7,14 @@ import {useNavigation} from './routes/NavigationContext';
 import {getSession} from './api/session';
 import {confirmNavigationAllowed} from './routes/unsavedChangesGuard';
 
-jest.mock('./api/session', () => {
+vi.mock('./api/session', () => {
     const session = {visibleFeatures: null, isUsCustomer: false};
     return {getSession: () => session};
 });
-jest.mock('./routes/unsavedChangesGuard', () => ({confirmNavigationAllowed: jest.fn()}));
-jest.mock('./hooks/useAddStopFlow', () => ({useAddStopFlow: () => ({addRecurringJobStop: jest.fn()})}));
-jest.mock('./components/auto-mate-chat/AutoMateChatProvider', () => ({AutoMateChatProvider: ({children}: {children: React.ReactNode}) => <>{children}</>}));
-jest.mock('./components/auto-mate-chat/AutoMateChat', () => ({AutoMateChat: () => null}));
+vi.mock('./routes/unsavedChangesGuard', () => ({confirmNavigationAllowed: vi.fn()}));
+vi.mock('./hooks/useAddStopFlow', () => ({useAddStopFlow: () => ({addRecurringJobStop: vi.fn()})}));
+vi.mock('./components/auto-mate-chat/AutoMateChatProvider', () => ({AutoMateChatProvider: ({children}: {children: React.ReactNode}) => <>{children}</>}));
+vi.mock('./components/auto-mate-chat/AutoMateChat', () => ({AutoMateChat: () => null}));
 
 // jsdom has no fetch Request; the data router only needs url/signal/method from it.
 if (typeof globalThis.Request === 'undefined') {
@@ -38,16 +38,16 @@ const Probe = ({id}: {id: string}) => {
 };
 const withProps = (id: string, props: unknown) => <div data-testid={id} data-props={JSON.stringify(props)}/>;
 
-jest.mock('./pages/dispatch/DispatchScreen', () => ({DispatchScreen: (p: unknown) => withProps('dispatch', p)}));
-jest.mock('./pages/nationwide/NationwideScreen', () => ({NationwideScreen: (p: unknown) => withProps('nationwide', p)}));
-jest.mock('./pages/job-search/JobSearchScreen', () => ({JobSearchScreen: (p: unknown) => withProps('jobSearch', p)}));
-jest.mock('./pages/recurring-jobs/RecurringJobsScreen', () => ({RecurringJobsScreen: () => <div data-testid="recurring"/>}));
-jest.mock('./pages/overview/OverviewScreen', () => ({OverviewScreen: () => <Probe id="overview"/>}));
-jest.mock('./pages/task-dashboard/TaskDashboardScreen', () => ({TaskDashboardScreen: () => <div data-testid="tasks"/>}));
-jest.mock('./pages/driver-management/DriverManagementScreen', () => ({DriverManagementScreen: () => <div data-testid="drivers"/>}));
-jest.mock('./pages/courier-map/CourierMapScreen', () => ({CourierMapScreen: () => <div data-testid="map"/>}));
-jest.mock('./pages/settings/SettingsScreen', () => ({SettingsScreen: () => <div data-testid="settings"/>}));
-jest.mock('./pages/error-page/ErrorScreen', () => ({ErrorScreen: ({errorType}: {errorType: string}) => <div data-testid="error">{errorType}</div>}));
+vi.mock('./pages/dispatch/DispatchScreen', () => ({DispatchScreen: (p: unknown) => withProps('dispatch', p)}));
+vi.mock('./pages/nationwide/NationwideScreen', () => ({NationwideScreen: (p: unknown) => withProps('nationwide', p)}));
+vi.mock('./pages/job-search/JobSearchScreen', () => ({JobSearchScreen: (p: unknown) => withProps('jobSearch', p)}));
+vi.mock('./pages/recurring-jobs/RecurringJobsScreen', () => ({RecurringJobsScreen: () => <div data-testid="recurring"/>}));
+vi.mock('./pages/overview/OverviewScreen', () => ({OverviewScreen: () => <Probe id="overview"/>}));
+vi.mock('./pages/task-dashboard/TaskDashboardScreen', () => ({TaskDashboardScreen: () => <div data-testid="tasks"/>}));
+vi.mock('./pages/driver-management/DriverManagementScreen', () => ({DriverManagementScreen: () => <div data-testid="drivers"/>}));
+vi.mock('./pages/courier-map/CourierMapScreen', () => ({CourierMapScreen: () => <div data-testid="map"/>}));
+vi.mock('./pages/settings/SettingsScreen', () => ({SettingsScreen: () => <div data-testid="settings"/>}));
+vi.mock('./pages/error-page/ErrorScreen', () => ({ErrorScreen: ({errorType}: {errorType: string}) => <div data-testid="error">{errorType}</div>}));
 
 const renderAt = (path: string) => {
     const router = createMemoryRouter(spaRoutes, {initialEntries: [path]});
@@ -58,7 +58,7 @@ const propsOf = (id: string) => JSON.parse(screen.getByTestId(id).getAttribute('
 
 beforeEach(() => {
     mockSession.visibleFeatures = null;
-    jest.mocked(confirmNavigationAllowed).mockReset().mockResolvedValue(true);
+    vi.mocked(confirmNavigationAllowed).mockReset().mockResolvedValue(true);
 });
 
 describe('SPA routes', () => {
@@ -115,7 +115,7 @@ describe('SPA routes', () => {
 
     describe('unsaved changes blocker', () => {
         it('stays put when confirmNavigationAllowed refuses', async () => {
-            jest.mocked(confirmNavigationAllowed).mockResolvedValue(false);
+            vi.mocked(confirmNavigationAllowed).mockResolvedValue(false);
             const router = renderAt('/overview');
             await screen.findByTestId('overview');
 
@@ -126,7 +126,7 @@ describe('SPA routes', () => {
         });
 
         it('proceeds when confirmNavigationAllowed allows', async () => {
-            jest.mocked(confirmNavigationAllowed).mockResolvedValue(true);
+            vi.mocked(confirmNavigationAllowed).mockResolvedValue(true);
             const router = renderAt('/overview');
             await screen.findByTestId('overview');
 

@@ -3,43 +3,43 @@ import {act, render, screen, waitFor} from '@testing-library/react';
 import {NationwideScreen} from './NationwideScreen';
 import type {ToolbarActionsConfig} from '../../components/common/app-shell/ToolbarActionsView';
 import {testDialogs} from '../../components/dialogs/testDialogRegistry';
-jest.mock('../../components/dialogs/dialogRegistry', () => require('../../components/dialogs/testDialogRegistry').createDialogRegistryMock());
+vi.mock('../../components/dialogs/dialogRegistry', async () => (await import('../../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
 
 const bridge = {
-    setCurrentLayoutName: jest.fn(),
-    reloadFromStorage: jest.fn(),
-    promptSaveLayout: jest.fn(),
-    promptDeleteLayout: jest.fn(),
-    promptRenameLayout: jest.fn(),
-    resetCurrentLayout: jest.fn(),
-    registerViewsListener: jest.fn((listener: (v: unknown[]) => void) => {
+    setCurrentLayoutName: vi.fn(),
+    reloadFromStorage: vi.fn(),
+    promptSaveLayout: vi.fn(),
+    promptDeleteLayout: vi.fn(),
+    promptRenameLayout: vi.fn(),
+    resetCurrentLayout: vi.fn(),
+    registerViewsListener: vi.fn((listener: (v: unknown[]) => void) => {
         listener([{id: 1, name: 'North', selected: false}, {id: 2, name: 'South', selected: true}]);
-        return jest.fn();
+        return vi.fn();
     }),
-    setViewSelection: jest.fn(),
-    updateRefreshIntervalMs: jest.fn(),
-    updateFilters: jest.fn(),
+    setViewSelection: vi.fn(),
+    updateRefreshIntervalMs: vi.fn(),
+    updateFilters: vi.fn(),
 };
-const pageProps = jest.fn();
+const pageProps = vi.fn();
 let toolbar: ToolbarActionsConfig = {};
 
-jest.mock('./NationwidePage', () => ({
+vi.mock('./NationwidePage', () => ({
     NationwidePage: (props: {onLayoutBridgeReady: (b: unknown) => void}) => {
         pageProps(props);
         React.useEffect(() => props.onLayoutBridgeReady(bridge), [props]);
         return <div data-testid="nationwide-page"/>;
     },
 }));
-jest.mock('../../components/layout/PageFrame', () => ({
+vi.mock('../../components/layout/PageFrame', () => ({
     PageFrame: (props: {title: string; section: string; toolbarActions: ToolbarActionsConfig; children: React.ReactNode}) => {
         toolbar = props.toolbarActions;
         return <div data-testid="frame" data-title={props.title} data-section={props.section}>{props.children}</div>;
     },
 }));
-jest.mock('../../services/toastService', () => ({
-    toastService: {showToast: jest.fn(), showErrorToast: jest.fn(), showSuccessToast: jest.fn()},
+vi.mock('../../services/toastService', () => ({
+    toastService: {showToast: vi.fn(), showErrorToast: vi.fn(), showSuccessToast: vi.fn()},
 }));
-jest.mock('../../api/session', () => ({
+vi.mock('../../api/session', () => ({
     getContactId: () => 42, getTimeZone: () => 'Pacific Standard Time',
     getSession: () => ({contactId: 42, isUsCustomer: true, timeZone: 'Pacific Standard Time'}),
 }));
@@ -50,7 +50,7 @@ const renderReady = async (props = {}) => {
 };
 
 beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorage.clear();
     delete testDialogs.CustomizePanels;
     delete testDialogs.DashboardSettings;
@@ -103,7 +103,7 @@ describe('NationwideScreen', () => {
 
     it('resets the layout via the bridge after confirmation only', async () => {
         await renderReady();
-        const confirm = jest.spyOn(window, 'confirm');
+        const confirm = vi.spyOn(window, 'confirm');
 
         confirm.mockReturnValueOnce(false);
         act(() => toolbar.layouts!.onResetLayout!());
@@ -121,7 +121,7 @@ describe('NationwideScreen', () => {
         bridge.promptSaveLayout.mockResolvedValue('Mine');
         await act(() => toolbar.layouts!.onSaveLayout() as unknown as Promise<void>);
         await waitFor(() => expect(toolbar.layouts!.currentLayoutName).toBe('Mine'));
-        const open = jest.fn(async (boxes: Record<string, unknown>) => boxes);
+        const open = vi.fn(async (boxes: Record<string, unknown>) => boxes);
         testDialogs.CustomizePanels = {open};
 
         await act(() => toolbar.layouts!.onCustomizePanels!() as unknown as Promise<void>);
@@ -133,7 +133,7 @@ describe('NationwideScreen', () => {
 
     it('saves the jobs refresh interval under refreshInterval-2-<contactId> and pushes ms to the bridge', async () => {
         await renderReady();
-        const open = jest.fn().mockResolvedValue({selectedRefreshInterval: {id: 60, text: '1 min'}});
+        const open = vi.fn().mockResolvedValue({selectedRefreshInterval: {id: 60, text: '1 min'}});
         testDialogs.DashboardSettings = {open};
 
         await act(() => toolbar.settings!.onClick({} as React.MouseEvent) as unknown as Promise<void>);
@@ -146,7 +146,7 @@ describe('NationwideScreen', () => {
     it('snaps a stored interval that is no longer offered to Disabled in the settings dialog', async () => {
         await renderReady();
         localStorage.setItem('refreshInterval-2-42', '45');
-        const open = jest.fn().mockResolvedValue(null);
+        const open = vi.fn().mockResolvedValue(null);
         testDialogs.DashboardSettings = {open};
 
         await act(() => toolbar.settings!.onClick({} as React.MouseEvent) as unknown as Promise<void>);

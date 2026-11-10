@@ -1,32 +1,33 @@
+import type {Mock} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import {useAddStopFlow} from './useAddStopFlow';
 import {addStopToJob, blankAddress} from '../services/jobAddStop';
 import {toastService} from '../services/toastService';
 import {AddressType} from '../types/enums/address-type.enum';
 
-jest.mock('../services/toastService', () => ({
-    toastService: {showErrorToast: jest.fn(), showWarningToast: jest.fn()},
+vi.mock('../services/toastService', () => ({
+    toastService: {showErrorToast: vi.fn(), showWarningToast: vi.fn()},
 }));
-jest.mock('../api/session', () => ({getSession: () => ({isUsCustomer: true})}));
-jest.mock('../services/jobAddStop', () => ({
-    ...jest.requireActual('../services/jobAddStop'),
-    addStopToJob: jest.fn(),
+vi.mock('../api/session', () => ({getSession: () => ({isUsCustomer: true})}));
+vi.mock('../services/jobAddStop', async () => ({
+    ...(await vi.importActual<typeof import('../services/jobAddStop')>('../services/jobAddStop')),
+    addStopToJob: vi.fn(),
 }));
 
 const job = {id: 10, pickupAddress: blankAddress(), deliveryAddress: blankAddress()};
 
 function setup(dialogResult: unknown) {
-    const open = jest.fn().mockResolvedValue(dialogResult);
+    const open = vi.fn().mockResolvedValue(dialogResult);
     const {result} = renderHook(() => useAddStopFlow({openDialog: async () => ({open}) as never}));
     return {open, ...result.current};
 }
 
 describe('useAddStopFlow', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('pickup: opens the pickup dialog and posts the pickup address', async () => {
         const addr = {...blankAddress(), addressLine1: '1 Pickup Ln'};
-        (addStopToJob as jest.Mock).mockResolvedValue(300);
+        (addStopToJob as Mock).mockResolvedValue(300);
         const {open, addRecurringJobStop} = setup(addr);
         await expect(addRecurringJobStop(job, true)).resolves.toBe(300);
         expect(open).toHaveBeenCalledWith(expect.objectContaining({addressLine1: ''}),
@@ -36,7 +37,7 @@ describe('useAddStopFlow', () => {
 
     it('delivery: opens the delivery dialog and posts the delivery address', async () => {
         const addr = {...blankAddress(), addressLine1: '2 Delivery Ln'};
-        (addStopToJob as jest.Mock).mockResolvedValue(400);
+        (addStopToJob as Mock).mockResolvedValue(400);
         const {open, addRecurringJobStop} = setup(addr);
         await expect(addRecurringJobStop(job, false)).resolves.toBe(400);
         expect(open.mock.calls[0][1]).toBe('Add Delivery Stop');
@@ -67,8 +68,8 @@ describe('useAddStopFlow', () => {
     });
 
     it('toasts an error when the API call fails', async () => {
-        (addStopToJob as jest.Mock).mockRejectedValue(new Error('boom'));
-        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        (addStopToJob as Mock).mockRejectedValue(new Error('boom'));
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const {addRecurringJobStop} = setup(blankAddress());
         await expect(addRecurringJobStop(job, true)).resolves.toBeUndefined();
         expect(toastService.showErrorToast).toHaveBeenCalledWith('Could not add the stop. Please try again.');
@@ -76,7 +77,7 @@ describe('useAddStopFlow', () => {
 
     it('addNewStop routes by job suffix and warns for others', async () => {
         const addr = blankAddress();
-        (addStopToJob as jest.Mock).mockResolvedValue(1);
+        (addStopToJob as Mock).mockResolvedValue(1);
         const {addNewStop} = setup(addr);
         await addNewStop({...job, jobNo: 'J0013'});
         expect(addStopToJob).toHaveBeenCalledWith(10, undefined, addr);

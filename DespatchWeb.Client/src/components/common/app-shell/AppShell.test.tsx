@@ -3,14 +3,15 @@
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
 import {AppShell} from './AppShell';
 import {useNavStyle} from '../../../hooks/useNavStyle';
 
-jest.mock('../../../hooks/useNavStyle', () => ({useNavStyle: jest.fn()}));
-const mockUseNavStyle = useNavStyle as jest.Mock;
+vi.mock('../../../hooks/useNavStyle', () => ({useNavStyle: vi.fn()}));
+const mockUseNavStyle = useNavStyle as Mock;
 
 describe('AppShell', () => {
     const defaultProps = {
@@ -19,7 +20,7 @@ describe('AppShell', () => {
         fullName: 'John Doe',
         isUsCustomer: false,
         currentState: 'home',
-        onNavigate: jest.fn(),
+        onNavigate: vi.fn(),
     };
 
     /** Hovering the menu button is the shell's "open the nav" gesture. */
@@ -28,12 +29,12 @@ describe('AppShell', () => {
     };
 
     beforeEach(() => {
-        jest.useFakeTimers();
+        vi.useFakeTimers({shouldAdvanceTime: true});
         mockUseNavStyle.mockReturnValue({style: 'dispatch'});
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     describe('Navigation style', () => {
@@ -112,7 +113,7 @@ describe('AppShell', () => {
 
             // Advance past the 300ms close delay.
             act(() => {
-                jest.advanceTimersByTime(300);
+                vi.advanceTimersByTime(300);
             });
 
             await waitFor(() => {
@@ -128,13 +129,13 @@ describe('AppShell', () => {
 
             fireEvent.mouseLeave(panel);
             act(() => {
-                jest.advanceTimersByTime(100);
+                vi.advanceTimersByTime(100);
             });
 
             // Re-enter before the delay completes.
             fireEvent.mouseEnter(panel);
             act(() => {
-                jest.advanceTimersByTime(200);
+                vi.advanceTimersByTime(200);
             });
 
             expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -142,7 +143,7 @@ describe('AppShell', () => {
         });
 
         it('should call onNavigate when navigation item is clicked', async () => {
-            const onNavigate = jest.fn();
+            const onNavigate = vi.fn();
             renderWithMantine(<AppShell {...defaultProps} onNavigate={onNavigate} />);
 
             openSideNav();
@@ -155,7 +156,7 @@ describe('AppShell', () => {
 
     describe('Logo Click', () => {
         it('should call onLogoClick when logo is clicked', () => {
-            const onLogoClick = jest.fn();
+            const onLogoClick = vi.fn();
             renderWithMantine(
                 <AppShell {...defaultProps} onLogoClick={onLogoClick} />
             );

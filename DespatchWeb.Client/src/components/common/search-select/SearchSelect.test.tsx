@@ -13,7 +13,7 @@ const couriers: Courier[] = [
     {id: 2, text: 'Courier Beta'},
 ];
 
-const mockSearch = jest.fn();
+const mockSearch = vi.fn();
 
 function Harness({initial = null, onValue}: {initial?: Courier | null; onValue?: (v: Courier | null) => void}) {
     const [value, setValue] = useState<Courier | null>(initial);
@@ -45,7 +45,7 @@ function typeSearch(term: string) {
 
 async function flushDebounce() {
     await act(async () => {
-        jest.advanceTimersByTime(350);
+        vi.advanceTimersByTime(350);
     });
 }
 
@@ -58,13 +58,13 @@ function dropdownFor(input: HTMLElement): HTMLElement {
 }
 
 beforeEach(() => {
-    jest.useFakeTimers();
-    jest.clearAllMocks();
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    vi.clearAllMocks();
     mockSearch.mockResolvedValue([]);
 });
 
 afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
 });
 
 describe('SearchSelect', () => {
@@ -120,7 +120,7 @@ describe('SearchSelect', () => {
 
     it('emits the selected option object and shows its label in the input', async () => {
         mockSearch.mockResolvedValue(couriers);
-        const onValue = jest.fn();
+        const onValue = vi.fn();
         renderWithMantine(<Harness onValue={onValue} />);
 
         const input = typeSearch('Co');
@@ -134,7 +134,7 @@ describe('SearchSelect', () => {
 
     it('invalidates the previous selection as soon as the user types again', async () => {
         mockSearch.mockResolvedValue(couriers);
-        const onValue = jest.fn();
+        const onValue = vi.fn();
         renderWithMantine(<Harness onValue={onValue} />);
 
         const input = typeSearch('Co');
@@ -178,7 +178,7 @@ describe('SearchSelect', () => {
             <SearchSelect<Courier>
                 label="Courier"
                 value={null}
-                onChange={jest.fn()}
+                onChange={vi.fn()}
                 search={(term, options) => mockSearch(term, options)}
                 getOptionKey={(o) => o.id}
                 getOptionLabel={(o) => o.text}
@@ -216,7 +216,7 @@ describe('SearchSelect', () => {
                 placeholder="Search Courier..."
                 autoFocus
                 value={null}
-                onChange={jest.fn()}
+                onChange={vi.fn()}
                 search={mockSearch}
                 getOptionKey={(o) => o.id}
                 getOptionLabel={(o) => o.text}

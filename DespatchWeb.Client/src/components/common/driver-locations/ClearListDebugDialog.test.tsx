@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 
 import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
@@ -7,13 +8,13 @@ import { setupUser } from '../../../test/utils/setupUser';
 import type { IClearListDebugViewModel, IPolygonAreaMapping } from '../../../types/interfaces/job.interface';
 import { apiClient } from '../../../api/client';
 
-jest.mock('../../../api/client', () => ({
+vi.mock('../../../api/client', () => ({
     apiClient: {
-        get: jest.fn(),
+        get: vi.fn(),
     },
 }));
 
-const mockGet = apiClient.get as jest.Mock;
+const mockGet = apiClient.get as Mock;
 
 const mockMapping = (overrides?: Partial<IPolygonAreaMapping>): IPolygonAreaMapping => ({
     clearListAreaId: 1,
@@ -323,7 +324,7 @@ describe('ClearListDebugButton', () => {
     describe('Event Propagation', () => {
         it('stops click propagation when opening', async () => {
             const user = setupUser();
-            const parentClick = jest.fn();
+            const parentClick = vi.fn();
             mockGet.mockResolvedValue(mockDebugData());
 
             renderWithTheme(

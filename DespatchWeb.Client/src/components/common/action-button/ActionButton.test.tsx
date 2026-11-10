@@ -19,7 +19,7 @@ const userEvent = setupUser();
 
 describe('ActionButton', () => {
     it('renders its label, fires clicks, and sizes itself to the control band', async () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(<ActionButton onClick={onClick}>Clear</ActionButton>);
 
         const button = screen.getByRole('button', {name: 'Clear'});
@@ -83,7 +83,7 @@ describe('ActionButton', () => {
 
     it('forwards its ref and passes the rest of its props through', async () => {
         const ref = React.createRef<HTMLButtonElement>();
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(
             <ActionButton ref={ref} disabled aria-label="Restore views" onClick={onClick}>
                 Restore

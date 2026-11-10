@@ -21,11 +21,11 @@ const defaultProps: PriceBreakdownDialogProps = {
     jobId: 100,
     isPrebook: false,
     isArchived: false,
-    onClose: jest.fn(),
-    onSave: jest.fn(),
-    onAddItem: jest.fn().mockResolvedValue(4),
-    onUpdateItem: jest.fn().mockResolvedValue(undefined),
-    onDeleteItem: jest.fn().mockResolvedValue(undefined),
+    onClose: vi.fn(),
+    onSave: vi.fn(),
+    onAddItem: vi.fn().mockResolvedValue(4),
+    onUpdateItem: vi.fn().mockResolvedValue(undefined),
+    onDeleteItem: vi.fn().mockResolvedValue(undefined),
 };
 
 const createMockProps = (overrides?: Partial<PriceBreakdownDialogProps>) =>
@@ -33,7 +33,7 @@ const createMockProps = (overrides?: Partial<PriceBreakdownDialogProps>) =>
 
 describe('PriceBreakdownDialog', () => {
     beforeEach(() => {
-        window.confirm = jest.fn().mockImplementation(() => true);
+        window.confirm = vi.fn().mockImplementation(() => true);
     });
 
     // ── Read-only (locked job) ───────────────────────────────────────
@@ -103,7 +103,7 @@ describe('PriceBreakdownDialog', () => {
     // ── Read-only: split child, managed on the parent ────────────────
     describe('managedElsewhere (split child)', () => {
         it('shows a message naming the parent job and a link to it, and hides Add item', () => {
-            const onNavigateToParent = jest.fn();
+            const onNavigateToParent = vi.fn();
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({
                 readOnly: true,
                 managedElsewhere: {parentJobNumber: 'KT4071V', onNavigateToParent},
@@ -247,7 +247,7 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('calls onAddItem when form is submitted', async () => {
-            const onAddItem = jest.fn().mockResolvedValue(4);
+            const onAddItem = vi.fn().mockResolvedValue(4);
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onAddItem, priceBreakdowns: []})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add first item/i}));
@@ -287,7 +287,7 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('calls onUpdateItem when form is submitted', async () => {
-            const onUpdateItem = jest.fn().mockResolvedValue(undefined);
+            const onUpdateItem = vi.fn().mockResolvedValue(undefined);
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onUpdateItem})} />);
 
             fireEvent.click(screen.getAllByRole('button', {name: /^edit /i})[0]);
@@ -304,7 +304,7 @@ describe('PriceBreakdownDialog', () => {
     // ── Delete Item ──────────────────────────────────────────────────
     describe('Delete Item', () => {
         it('opens in-dialog confirmation and calls onDeleteItem when confirmed', async () => {
-            const onDeleteItem = jest.fn().mockResolvedValue(undefined);
+            const onDeleteItem = vi.fn().mockResolvedValue(undefined);
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onDeleteItem})} />);
 
             fireEvent.click(screen.getAllByRole('button', {name: /^delete /i})[0]);
@@ -320,7 +320,7 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('does not delete when Cancel is clicked on the confirmation', async () => {
-            const onDeleteItem = jest.fn();
+            const onDeleteItem = vi.fn();
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onDeleteItem})} />);
 
             fireEvent.click(screen.getAllByRole('button', {name: /^delete /i})[0]);
@@ -337,7 +337,7 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('passes isArchived to onDeleteItem', async () => {
-            const onDeleteItem = jest.fn().mockResolvedValue(undefined);
+            const onDeleteItem = vi.fn().mockResolvedValue(undefined);
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onDeleteItem, isArchived: true})} />);
 
             fireEvent.click(screen.getAllByRole('button', {name: /^delete /i})[0]);
@@ -352,8 +352,8 @@ describe('PriceBreakdownDialog', () => {
     // ── Toast Notifications ──────────────────────────────────────────
     describe('Toast Notifications', () => {
         it('fires success toast on delete', async () => {
-            const showToast = jest.fn();
-            const onDeleteItem = jest.fn().mockResolvedValue(undefined);
+            const showToast = vi.fn();
+            const onDeleteItem = vi.fn().mockResolvedValue(undefined);
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onDeleteItem, showToast})} />);
 
             fireEvent.click(screen.getAllByRole('button', {name: /^delete /i})[0]);
@@ -365,8 +365,8 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('fires error toast on delete failure', async () => {
-            const showToast = jest.fn();
-            const onDeleteItem = jest.fn().mockRejectedValue(new Error('boom'));
+            const showToast = vi.fn();
+            const onDeleteItem = vi.fn().mockRejectedValue(new Error('boom'));
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onDeleteItem, showToast})} />);
 
             fireEvent.click(screen.getAllByRole('button', {name: /^delete /i})[0]);
@@ -378,8 +378,8 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('fires success toast on add', async () => {
-            const showToast = jest.fn();
-            const onAddItem = jest.fn().mockResolvedValue(99);
+            const showToast = vi.fn();
+            const onAddItem = vi.fn().mockResolvedValue(99);
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onAddItem, showToast, priceBreakdowns: []})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add first item/i}));
@@ -392,8 +392,8 @@ describe('PriceBreakdownDialog', () => {
         });
 
         it('fires error toast on add failure', async () => {
-            const showToast = jest.fn();
-            const onAddItem = jest.fn().mockRejectedValue(new Error('nope'));
+            const showToast = vi.fn();
+            const onAddItem = vi.fn().mockRejectedValue(new Error('nope'));
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onAddItem, showToast, priceBreakdowns: []})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add first item/i}));
@@ -409,7 +409,7 @@ describe('PriceBreakdownDialog', () => {
     // ── Close / Save ─────────────────────────────────────────────────
     describe('Close Functionality', () => {
         it('calls onClose when close button or Cancel is clicked', async () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onClose})} />);
 
             fireEvent.click(screen.getByLabelText('Close dialog'));
@@ -423,7 +423,7 @@ describe('PriceBreakdownDialog', () => {
 
     describe('Save Functionality', () => {
         it('calls onSave with total revenue when Save & close is clicked', async () => {
-            const onSave = jest.fn();
+            const onSave = vi.fn();
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onSave})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /save & close/i}));
@@ -449,7 +449,7 @@ describe('PriceBreakdownDialog', () => {
     // ── Form Validation ──────────────────────────────────────────────
     describe('Form Validation', () => {
         it('requires only item name; cost defaults to 0', async () => {
-            const onAddItem = jest.fn().mockResolvedValue(99);
+            const onAddItem = vi.fn().mockResolvedValue(99);
             renderWithMantine(<PriceBreakdownDialog {...createMockProps({onAddItem, priceBreakdowns: []})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add first item/i}));

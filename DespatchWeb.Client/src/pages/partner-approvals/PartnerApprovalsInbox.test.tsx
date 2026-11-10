@@ -2,6 +2,7 @@
  * PartnerApprovalsInbox Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
@@ -11,15 +12,15 @@ import { confirmRejectionWithReason } from '../../test/utils/rejectionFlow';
 import {jobChangeRequestApi} from '../../api/jobChangeRequestApi';
 import type {JobChangeRequestInboxItem} from '../../types/jobChangeRequest';
 
-jest.mock('../../api/jobChangeRequestApi', () => ({
+vi.mock('../../api/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {
-        pendingForApproval: jest.fn(),
-        approve: jest.fn(),
-        reject: jest.fn(),
+        pendingForApproval: vi.fn(),
+        approve: vi.fn(),
+        reject: vi.fn(),
     },
 }));
 
-const mockApi = jobChangeRequestApi as jest.Mocked<typeof jobChangeRequestApi>;
+const mockApi = jobChangeRequestApi as Mocked<typeof jobChangeRequestApi>;
 
 function makeItem(overrides: Partial<JobChangeRequestInboxItem> = {}): JobChangeRequestInboxItem {
     return {
@@ -48,7 +49,7 @@ function makeItem(overrides: Partial<JobChangeRequestInboxItem> = {}): JobChange
 
 describe('PartnerApprovalsInbox', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('renders the inbox-zero empty state when no items are pending', async () => {
@@ -132,7 +133,7 @@ describe('PartnerApprovalsInbox', () => {
 
     it('clicking the job number invokes onOpenJob', async () => {
         const user = setupUser();
-        const onOpenJob = jest.fn();
+        const onOpenJob = vi.fn();
         mockApi.pendingForApproval.mockResolvedValueOnce([makeItem()]);
 
         renderWithMantineProviders(<PartnerApprovalsInbox onOpenJob={onOpenJob}/>);

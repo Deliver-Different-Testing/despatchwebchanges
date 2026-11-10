@@ -11,7 +11,7 @@ describe('StatsTabs', () => {
     const defaultProps = {
         statistics: {active: 10, inactive: 3, completed: 42},
         activeTab: 0,
-        onTabChange: jest.fn(),
+        onTabChange: vi.fn(),
     };
 
     it('renders all three tabs with correct labels', () => {

@@ -5,6 +5,7 @@
  * form validation, template application, and send behaviour.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
 import {ComposeEmailDialog} from './ComposeEmailDialog';
@@ -14,11 +15,11 @@ import {DriverEmail, GroupEmailData} from '../../../types';
 import {draftEmail} from '../../../api/aiAssistantApi';
 import {isAiEnabled} from '../../../utils/aiSettings';
 
-jest.mock('../../../api/aiAssistantApi', () => ({draftEmail: jest.fn()}));
-jest.mock('../../../utils/aiSettings', () => ({isAiEnabled: jest.fn()}));
+vi.mock('../../../api/aiAssistantApi', () => ({draftEmail: vi.fn()}));
+vi.mock('../../../utils/aiSettings', () => ({isAiEnabled: vi.fn()}));
 
-const mockDraftEmail = draftEmail as jest.Mock;
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
+const mockDraftEmail = draftEmail as Mock;
+const mockIsAiEnabled = isAiEnabled as Mock;
 
 const createMockCouriers = (): DriverEmail[] => [
     {courierId: 1, code: 'C01', name: 'Alice Smith', email: 'alice@test.com', phone: '111', fleet: 'Alpha'},
@@ -29,8 +30,8 @@ const createMockCouriers = (): DriverEmail[] => [
 const defaultProps = {
     open: true,
     selectedCouriers: createMockCouriers(),
-    onClose: jest.fn(),
-    onSend: jest.fn(),
+    onClose: vi.fn(),
+    onSend: vi.fn(),
 };
 
 const renderDialog = (props: Partial<typeof defaultProps> = {}) =>
@@ -392,7 +393,7 @@ describe('ComposeEmailDialog', () => {
     });
 
     describe('AI draft', () => {
-        beforeEach(() => jest.clearAllMocks());
+        beforeEach(() => vi.clearAllMocks());
 
         it('hides the Draft button when AI is disabled', () => {
             mockIsAiEnabled.mockReturnValue(false);

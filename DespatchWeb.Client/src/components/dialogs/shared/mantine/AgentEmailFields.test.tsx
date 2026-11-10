@@ -1,3 +1,4 @@
+import type {Mock, MockedFunction} from 'vitest';
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import {renderWithMantineProviders} from '../../../../test/utils';
@@ -5,11 +6,11 @@ import {setupUser} from '../../../../test/utils/setupUser';
 import {AgentEmailFields} from './AgentEmailFields';
 import {getAgentInboundEmailPreview} from '../../../../api/dispatchExecutorApi';
 
-jest.mock('../../../../api/dispatchExecutorApi', () => ({
-    getAgentInboundEmailPreview: jest.fn(),
+vi.mock('../../../../api/dispatchExecutorApi', () => ({
+    getAgentInboundEmailPreview: vi.fn(),
 }));
 
-const mockPreview = getAgentInboundEmailPreview as jest.MockedFunction<typeof getAgentInboundEmailPreview>;
+const mockPreview = getAgentInboundEmailPreview as MockedFunction<typeof getAgentInboundEmailPreview>;
 
 const DEFAULT_SUBJECT = 'New job assigned [JobNumber]';
 const DEFAULT_BODY = 'Hi [AgentName]\n\nYou have been assigned a new job [JobNumber]. [InboundUrl]';
@@ -22,15 +23,15 @@ const willEmailPreview = {
     defaultBody: DEFAULT_BODY,
 };
 
-const lastReport = (onChange: jest.Mock) => onChange.mock.calls.at(-1)?.[0];
+const lastReport = (onChange: Mock) => onChange.mock.calls.at(-1)?.[0];
 
 describe('AgentEmailFields', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('renders nothing until the preview resolves', () => {
         mockPreview.mockReturnValue(new Promise(() => { /* never resolves */ }));
 
-        renderWithMantineProviders(<AgentEmailFields agentId={1} jobId={100} onChange={jest.fn()}/>);
+        renderWithMantineProviders(<AgentEmailFields agentId={1} jobId={100} onChange={vi.fn()}/>);
 
         // MantineProvider injects a <style> element, so assert on the absence of
         // the component's own output rather than an empty container.
@@ -41,7 +42,7 @@ describe('AgentEmailFields', () => {
 
     it('shows the recipient and seeds the fields from the server defaults when a link will be emailed', async () => {
         mockPreview.mockResolvedValue(willEmailPreview);
-        const onChange = jest.fn();
+        const onChange = vi.fn();
 
         renderWithMantineProviders(<AgentEmailFields agentId={1} jobId={100} onChange={onChange}/>);
 
@@ -61,7 +62,7 @@ describe('AgentEmailFields', () => {
     it('reports the edited body up through onChange', async () => {
         const user = setupUser();
         mockPreview.mockResolvedValue(willEmailPreview);
-        const onChange = jest.fn();
+        const onChange = vi.fn();
 
         renderWithMantineProviders(<AgentEmailFields agentId={1} jobId={100} onChange={onChange}/>);
 
@@ -79,7 +80,7 @@ describe('AgentEmailFields', () => {
 
     it('warns and shows no editable fields when the agent has no email on file', async () => {
         mockPreview.mockResolvedValue({status: 'NoAgentEmail', agentEmail: null, willEmail: false});
-        const onChange = jest.fn();
+        const onChange = vi.fn();
 
         renderWithMantineProviders(<AgentEmailFields agentId={1} jobId={100} onChange={onChange}/>);
 
@@ -91,7 +92,7 @@ describe('AgentEmailFields', () => {
     it('warns when the inbound portal URL is not configured', async () => {
         mockPreview.mockResolvedValue({status: 'NoInboundUrl', agentEmail: 'agent@example.com', willEmail: false});
 
-        renderWithMantineProviders(<AgentEmailFields agentId={1} jobId={100} onChange={jest.fn()}/>);
+        renderWithMantineProviders(<AgentEmailFields agentId={1} jobId={100} onChange={vi.fn()}/>);
 
         expect(await screen.findByText(/inbound portal url isn.t configured/i)).toBeInTheDocument();
     });

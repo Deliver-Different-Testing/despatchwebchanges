@@ -6,7 +6,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 // Mock JobListPanel: expose the courierId it fetches for, and let the test
 // simulate selecting one of that driver's jobs (drives the parent's currentJob).
 let currentListCourierId: number | undefined;
-jest.mock('../../../components/job-list/JobListPanel', () => ({
+vi.mock('../../../components/job-list/JobListPanel', () => ({
     JobListPanel: ({fetchConfig, onJobSelect}: any) => {
         const cid = fetchConfig?.initialParams?.courierId;
         currentListCourierId = cid;
@@ -20,19 +20,19 @@ jest.mock('../../../components/job-list/JobListPanel', () => ({
     },
 }));
 
-jest.mock('../../../api/courierApi', () => ({
-    fetchDriverWorkOverview: jest.fn().mockResolvedValue([
+vi.mock('../../../api/courierApi', () => ({
+    fetchDriverWorkOverview: vi.fn().mockResolvedValue([
         {courierId: 7, name: 'Alice', vehicleType: 'Van', jobCount: 2, driverStatusText: 'Active'},
         {courierId: 8, name: 'Bob', vehicleType: 'Van', jobCount: 3, driverStatusText: 'Active'},
     ]),
 }));
 
-jest.mock('../../../api/jobSearchApi', () => ({
-    fetchCurrentWorkJobs: jest.fn().mockResolvedValue({jobs: [], totalCount: 0, hasMore: false}),
+vi.mock('../../../api/jobSearchApi', () => ({
+    fetchCurrentWorkJobs: vi.fn().mockResolvedValue({jobs: [], totalCount: 0, hasMore: false}),
 }));
 
-jest.mock('./CourierSearchField', () => ({CourierSearchField: () => <div />}));
-jest.mock('./TruckLoadingStatusDialog', () => ({TruckLoadingStatusDialog: () => null}));
+vi.mock('./CourierSearchField', () => ({CourierSearchField: () => <div />}));
+vi.mock('./TruckLoadingStatusDialog', () => ({TruckLoadingStatusDialog: () => null}));
 
 import {CurrentWorkBox} from './CurrentWorkBox';
 import {MantineTestProvider} from '../../../test/utils';
@@ -49,7 +49,7 @@ function Harness() {
             <button onClick={() => setCurrentJob({id: 701, courierData: {courierId: 7}})}>select-other-alice-job</button>
             <CurrentWorkBox
                 key={`currentwork-${layoutBump}`}
-                showToast={jest.fn()}
+                showToast={vi.fn()}
                 isUsCustomer
                 startDate={dayjs('2026-07-14T00:00:00')}
                 endDate={dayjs('2026-07-14T23:59:59')}

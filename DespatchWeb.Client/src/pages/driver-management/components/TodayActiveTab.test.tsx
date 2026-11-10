@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../test/utils';
@@ -7,19 +8,19 @@ import {TodayActiveTab} from './TodayActiveTab';
 import {TodayActiveDriverPaginated} from '../../../types';
 import {useTodayActiveDrivers} from '../../../hooks/useDriverManagementApi';
 
-jest.mock('../../../hooks/useDriverManagementApi', () => ({
-    useTodayActiveDrivers: jest.fn(),
+vi.mock('../../../hooks/useDriverManagementApi', () => ({
+    useTodayActiveDrivers: vi.fn(),
 }));
 
-jest.mock('../../../api/driverManagementApi', () => ({
+vi.mock('../../../api/driverManagementApi', () => ({
     driverManagementApi: {
-        exportTodayActiveDriversCsv: jest.fn(),
+        exportTodayActiveDriversCsv: vi.fn(),
     },
 }));
 
-const mockUseTodayActiveDrivers = useTodayActiveDrivers as jest.MockedFunction<typeof useTodayActiveDrivers>;
+const mockUseTodayActiveDrivers = useTodayActiveDrivers as MockedFunction<typeof useTodayActiveDrivers>;
 
-const renderWithProviders = (showToast = jest.fn(), fleetOptions = [{id: 1, text: 'Fleet A'}]) => {
+const renderWithProviders = (showToast = vi.fn(), fleetOptions = [{id: 1, text: 'Fleet A'}]) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
@@ -43,7 +44,7 @@ const createMockData = (): TodayActiveDriverPaginated => ({
     averageSessionTime: 255,
 });
 
-const refetch = jest.fn();
+const refetch = vi.fn();
 
 const setupMocks = (data?: TodayActiveDriverPaginated, isLoading = false, isError = false) => {
     mockUseTodayActiveDrivers.mockReturnValue({

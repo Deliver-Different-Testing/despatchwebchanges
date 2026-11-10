@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';
@@ -15,9 +16,9 @@ function createDefaultProps(overrides?: Partial<DateRangePickerProps>): DateRang
         dateSearchRange: 'today',
         fromDate: dayjs('2024-01-01'),
         toDate: dayjs('2024-01-31'),
-        onSearchRangeChange: jest.fn(),
-        onFromDateChange: jest.fn(),
-        onToDateChange: jest.fn(),
+        onSearchRangeChange: vi.fn(),
+        onFromDateChange: vi.fn(),
+        onToDateChange: vi.fn(),
         ...overrides,
     };
 }
@@ -94,7 +95,7 @@ describe('DateRangePicker', () => {
 
         fireEvent.change(screen.getByLabelText('To'), {target: {value: '15/06/2024'}}); // 15 June
 
-        const committed = (props.onToDateChange as jest.Mock).mock.calls[0][0] as dayjs.Dayjs;
+        const committed = (props.onToDateChange as Mock).mock.calls[0][0] as dayjs.Dayjs;
         expect(committed.format('YYYY-MM-DD')).toBe('2024-06-15');
     });
 
@@ -128,7 +129,7 @@ describe('DateRangePicker', () => {
 
             fireEvent.change(screen.getByLabelText('From'), {target: {value: '06/15/2024'}}); // June 15
 
-            const committed = (props.onFromDateChange as jest.Mock).mock.calls[0][0] as dayjs.Dayjs;
+            const committed = (props.onFromDateChange as Mock).mock.calls[0][0] as dayjs.Dayjs;
             expect(committed.format('YYYY-MM-DD')).toBe('2024-06-15');
         });
     });

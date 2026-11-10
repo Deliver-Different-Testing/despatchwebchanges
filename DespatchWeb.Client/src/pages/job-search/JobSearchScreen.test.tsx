@@ -5,52 +5,52 @@ import {NavigationProvider} from '../../routes/NavigationContext';
 import {JobSearchScreen} from './JobSearchScreen';
 import type {ToolbarActionsConfig} from '../../components/common/app-shell/ToolbarActionsView';
 import {testDialogs} from '../../components/dialogs/testDialogRegistry';
-jest.mock('../../components/dialogs/dialogRegistry', () => require('../../components/dialogs/testDialogRegistry').createDialogRegistryMock());
+vi.mock('../../components/dialogs/dialogRegistry', async () => (await import('../../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
 
 const mockBridge = {
-    setCurrentLayoutName: jest.fn(),
-    reloadFromStorage: jest.fn(),
-    promptSaveLayout: jest.fn(),
-    promptDeleteLayout: jest.fn(),
-    promptRenameLayout: jest.fn(),
-    resetCurrentLayout: jest.fn(),
-    setColumnEditMode: jest.fn(),
-    openInterCourierCharge: jest.fn(() => Promise.resolve()),
-    jobCreated: jest.fn(),
+    setCurrentLayoutName: vi.fn(),
+    reloadFromStorage: vi.fn(),
+    promptSaveLayout: vi.fn(),
+    promptDeleteLayout: vi.fn(),
+    promptRenameLayout: vi.fn(),
+    resetCurrentLayout: vi.fn(),
+    setColumnEditMode: vi.fn(),
+    openInterCourierCharge: vi.fn(() => Promise.resolve()),
+    jobCreated: vi.fn(),
 };
-const pageProps = jest.fn();
+const pageProps = vi.fn();
 let captured: ToolbarActionsConfig;
-const toolbarKeys = jest.fn();
-const customizeKeys = jest.fn();
+const toolbarKeys = vi.fn();
+const customizeKeys = vi.fn();
 const layoutHook = {
     layouts: [], currentLayoutName: 'Mine',
-    saveLayout: jest.fn(), loadLayout: jest.fn(), deleteLayout: jest.fn(), renameLayout: jest.fn(),
+    saveLayout: vi.fn(), loadLayout: vi.fn(), deleteLayout: vi.fn(), renameLayout: vi.fn(),
 };
-const openCustomizePanels = jest.fn();
+const openCustomizePanels = vi.fn();
 
-jest.mock('./JobSearchPage', () => ({
+vi.mock('./JobSearchPage', () => ({
     JobSearchPage: (props: any) => {
         pageProps(props);
         props.onLayoutBridgeReady(mockBridge);
         return <div data-testid="job-search"/>;
     },
 }));
-jest.mock('../../components/layout/PageFrame', () => {
-    const actual = jest.requireActual('../../components/layout/PageFrame');
+vi.mock('../../components/layout/PageFrame', async () => {
+    const actual = (await vi.importActual<typeof import('../../components/layout/PageFrame')>('../../components/layout/PageFrame'));
     return {PageFrame: (p: any) => { captured = p.toolbarActions; return <actual.PageFrame {...p}/>; }};
 });
-jest.mock('../../hooks/useLayoutToolbar', () => ({
+vi.mock('../../hooks/useLayoutToolbar', () => ({
     useLayoutToolbar: (p: any) => { toolbarKeys(p.storageKeys); return layoutHook; },
 }));
-jest.mock('../../hooks/useCustomizePanelsDialog', () => ({
+vi.mock('../../hooks/useCustomizePanelsDialog', () => ({
     useCustomizePanelsDialog: (p: any) => { customizeKeys(p); return {openCustomizePanels}; },
 }));
-jest.mock('../partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => null}));
-jest.mock('../../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 7, refresh: jest.fn()})}));
-jest.mock('../../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: jest.fn()})}));
-jest.mock('../../services/navigationService', () => ({openJobInSearch: jest.fn(), openHubUrl: jest.fn()}));
-jest.mock('../../services/toastService', () => ({toastService: {showToast: jest.fn(), showErrorToast: jest.fn()}}));
-jest.mock('../../api/session', () => ({
+vi.mock('../partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => null}));
+vi.mock('../../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 7, refresh: vi.fn()})}));
+vi.mock('../../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: vi.fn()})}));
+vi.mock('../../services/navigationService', () => ({openJobInSearch: vi.fn(), openHubUrl: vi.fn()}));
+vi.mock('../../services/toastService', () => ({toastService: {showToast: vi.fn(), showErrorToast: vi.fn()}}));
+vi.mock('../../api/session', () => ({
     getSession: () => ({
         contactId: 42, firstName: 'Jo', fullName: 'Jo Doe', isNetworkPartner: false,
         isUsCustomer: true, timeZone: 'Pacific Standard Time', visibleFeatures: null,
@@ -59,12 +59,12 @@ jest.mock('../../api/session', () => ({
 
 const renderScreen = (jobId?: number) =>
     renderWithProviders(
-        <NavigationProvider value={{navigate: jest.fn(), currentState: 'jobSearch'}}>
+        <NavigationProvider value={{navigate: vi.fn(), currentState: 'jobSearch'}}>
             <JobSearchScreen jobId={jobId}/>
         </NavigationProvider>,
     );
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 describe('JobSearchScreen', () => {
     it('renders the page in the frame with session props, deep link and unread badge', () => {
@@ -91,7 +91,7 @@ describe('JobSearchScreen', () => {
     });
 
     it('routes toolbar actions to the page bridge', async () => {
-        jest.spyOn(window, 'confirm').mockReturnValue(true);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
         renderScreen();
         const layouts = captured.layouts!;
 
@@ -116,7 +116,7 @@ describe('JobSearchScreen', () => {
     });
 
     it('opens the create-job dialog with the tenant flag and hands the new id to the page', async () => {
-        const open = jest.fn().mockResolvedValue(555);
+        const open = vi.fn().mockResolvedValue(555);
         testDialogs.CreateJob = {open};
         renderScreen();
 

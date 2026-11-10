@@ -5,6 +5,7 @@
  * Component rendering tests are kept minimal to avoid memory issues with mocked H global.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -14,37 +15,41 @@ import * as courierApi from '../../../api/courierApi';
 import {MantineTestProvider} from '../../../test/utils';
 
 // Mock the courier API
-jest.mock('../../../api/courierApi', () => ({
-    getAvailableCourierLocations: jest.fn(),
-    getClearListEnvelope: jest.fn(),
+vi.mock('../../../api/courierApi', () => ({
+    getAvailableCourierLocations: vi.fn(),
+    getClearListEnvelope: vi.fn(),
 }));
 
 // Mock H global for HERE Maps
 const mockH = {
     geo: {
-        Rect: jest.fn().mockImplementation((top, left, bottom, right) => ({
+        Rect: vi.fn().mockImplementation(function (top, left, bottom, right) {
+            return {
             top,
             left,
             bottom,
             right,
-        })),
+        };
+        }),
     },
     map: {
-        Group: jest.fn().mockImplementation(() => ({
-            addObject: jest.fn(),
-            removeAll: jest.fn(),
-            removeObject: jest.fn(),
-            getObjects: jest.fn(() => []),
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
-        })),
+        Group: vi.fn().mockImplementation(function () {
+            return {
+            addObject: vi.fn(),
+            removeAll: vi.fn(),
+            removeObject: vi.fn(),
+            getObjects: vi.fn(() => []),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            };
+        }),
     },
 };
 (global as any).H = mockH;
 
 // Mock useHereMap hook to avoid HERE Maps SDK dependency
-jest.mock('./useHereMap', () => ({
-    useHereMap: jest.fn(() => ({
+vi.mock('./useHereMap', () => ({
+    useHereMap: vi.fn(() => ({
         mapContainerRef: {current: null},
         map: null,
         platform: null,
@@ -56,18 +61,18 @@ jest.mock('./useHereMap', () => ({
 }));
 
 // Mock useMapPreferences hook
-jest.mock('./useMapPreferences', () => ({
-    useMapPreferences: jest.fn(() => ({
+vi.mock('./useMapPreferences', () => ({
+    useMapPreferences: vi.fn(() => ({
         controlState: {
             autoZoomEnabled: true,
             couriersOnlyEnabled: false,
             urgentArmyOnlyEnabled: false,
             couriersLargeViewEnabled: false,
         },
-        toggleAutoZoom: jest.fn(),
-        toggleCouriersOnly: jest.fn(),
-        toggleUrgentArmyOnly: jest.fn(),
-        toggleCouriersLargeView: jest.fn(),
+        toggleAutoZoom: vi.fn(),
+        toggleCouriersOnly: vi.fn(),
+        toggleUrgentArmyOnly: vi.fn(),
+        toggleCouriersLargeView: vi.fn(),
     })),
 }));
 
@@ -99,7 +104,7 @@ const createDefaultProps = (overrides?: Partial<DispatchMapProps>): DispatchMapP
     ...overrides,
 });
 
-const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+const useHereMapMock = (await import('./useHereMap')).useHereMap as Mock;
 
 // Stub useHereMap with a ready map. Pass overrides (e.g. `{map: mockMap}`) for
 // the bits a test actually cares about; everything else gets a sensible default.
@@ -130,8 +135,8 @@ function mockHereMapNotReady(overrides: Record<string, unknown> = {}): void {
 
 describe('DispatchMap Component', () => {
     beforeEach(() => {
-        (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue([]);
-        (courierApi.getClearListEnvelope as jest.Mock).mockResolvedValue({
+        (courierApi.getAvailableCourierLocations as Mock).mockResolvedValue([]);
+        (courierApi.getClearListEnvelope as Mock).mockResolvedValue({
             minimumLatitude: 33.5,
             maximumLatitude: 34.5,
             minimumLongitude: -118.5,
@@ -157,8 +162,8 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
     it('calls getClearListEnvelope when clearListId is provided and map is ready', async () => {
         // Mock useHereMap to return a ready map
         const mockMap = {
-            getViewModel: jest.fn(() => ({
-                setLookAtData: jest.fn(),
+            getViewModel: vi.fn(() => ({
+                setLookAtData: vi.fn(),
             })),
         };
 
@@ -170,9 +175,9 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
             minimumLongitude: -118.5,
             maximumLongitude: -117.5,
         };
-        (courierApi.getClearListEnvelope as jest.Mock).mockResolvedValue(mockEnvelope);
+        (courierApi.getClearListEnvelope as Mock).mockResolvedValue(mockEnvelope);
 
-        const onEnvelopeUpdate = jest.fn();
+        const onEnvelopeUpdate = vi.fn();
         const props = createDefaultProps({
             clearListId: 123,
             onEnvelopeUpdate,
@@ -205,16 +210,16 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
 
     it('handles getClearListEnvelope error gracefully', async () => {
         const mockMap = {
-            getViewModel: jest.fn(() => ({
-                setLookAtData: jest.fn(),
+            getViewModel: vi.fn(() => ({
+                setLookAtData: vi.fn(),
             })),
         };
 
         mockHereMap({map: mockMap});
 
-        (courierApi.getClearListEnvelope as jest.Mock).mockRejectedValue(new Error('API Error'));
+        (courierApi.getClearListEnvelope as Mock).mockRejectedValue(new Error('API Error'));
 
-        const onEnvelopeUpdate = jest.fn();
+        const onEnvelopeUpdate = vi.fn();
         const props = createDefaultProps({clearListId: 123, onEnvelopeUpdate});
         renderWithProviders(<DispatchMap {...props} />);
 
@@ -230,8 +235,8 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
 
     it('calls onEnvelopeUpdate when envelope is fetched successfully', async () => {
         const mockMap = {
-            getViewModel: jest.fn(() => ({
-                setLookAtData: jest.fn(),
+            getViewModel: vi.fn(() => ({
+                setLookAtData: vi.fn(),
             })),
         };
 
@@ -243,9 +248,9 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
             minimumLongitude: -118.5,
             maximumLongitude: -117.5,
         };
-        (courierApi.getClearListEnvelope as jest.Mock).mockResolvedValue(mockEnvelope);
+        (courierApi.getClearListEnvelope as Mock).mockResolvedValue(mockEnvelope);
 
-        const onEnvelopeUpdate = jest.fn();
+        const onEnvelopeUpdate = vi.fn();
         const props = createDefaultProps({
             clearListId: 123,
             onEnvelopeUpdate,
@@ -325,7 +330,7 @@ describe('DispatchMap Control Buttons', () => {
 
 describe('DispatchMap Courier Data', () => {
     beforeEach(() => {
-        (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue([]);
+        (courierApi.getAvailableCourierLocations as Mock).mockResolvedValue([]);
     });
 
     it('does not fetch couriers when showAvailableCouriers is false', () => {
@@ -340,13 +345,13 @@ describe('DispatchMap Courier Data', () => {
 
     it('fetches couriers when showAvailableCouriers is true and map is ready', async () => {
         const mockMap = {
-            getViewModel: jest.fn(() => ({
-                getLookAtData: jest.fn(() => ({
+            getViewModel: vi.fn(() => ({
+                getLookAtData: vi.fn(() => ({
                     bounds: null,
                 })),
             })),
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
         };
 
         mockHereMap({map: mockMap});
@@ -364,8 +369,8 @@ describe('DispatchMap Map Ready Callback', () => {
     it('calls onMapReady with map, platform and ui when provided', async () => {
         const mockMapElement = document.createElement('div');
         const mockMap = {
-            addObject: jest.fn(),
-            getElement: jest.fn(() => mockMapElement),
+            addObject: vi.fn(),
+            getElement: vi.fn(() => mockMapElement),
         };
         const mockPlatform = {};
         const mockUI = {};
@@ -398,7 +403,7 @@ describe('DispatchMap Default Map Center', () => {
     const originalServerConfig = (window as any).serverConfig;
 
     beforeEach(() => {
-        (courierApi.getAvailableCourierLocations as jest.Mock).mockReset().mockResolvedValue([]);
+        (courierApi.getAvailableCourierLocations as Mock).mockReset().mockResolvedValue([]);
     });
 
     afterEach(() => {
@@ -409,14 +414,14 @@ describe('DispatchMap Default Map Center', () => {
         (window as any).serverConfig = {isUSCustomer: false};
 
         const mockMap = {
-            addObject: jest.fn(),
-            getViewModel: jest.fn(() => ({
-                getLookAtData: jest.fn(() => ({
+            addObject: vi.fn(),
+            getViewModel: vi.fn(() => ({
+                getLookAtData: vi.fn(() => ({
                     bounds: null,
                 })),
             })),
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
         };
 
         mockHereMap({map: mockMap});
@@ -428,7 +433,7 @@ describe('DispatchMap Default Map Center', () => {
             expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
         });
 
-        const call = (courierApi.getAvailableCourierLocations as jest.Mock).mock.calls[0];
+        const call = (courierApi.getAvailableCourierLocations as Mock).mock.calls[0];
         const [minLng, minLat, maxLng, maxLat] = call;
         // NZ center is ~174.7762 lng, ~-41.2865 lat — bounds should be around that
         expect(minLat).toBeCloseTo(-41.7865, 1);
@@ -441,14 +446,14 @@ describe('DispatchMap Default Map Center', () => {
         (window as any).serverConfig = {isUSCustomer: true};
 
         const mockMap = {
-            addObject: jest.fn(),
-            getViewModel: jest.fn(() => ({
-                getLookAtData: jest.fn(() => ({
+            addObject: vi.fn(),
+            getViewModel: vi.fn(() => ({
+                getLookAtData: vi.fn(() => ({
                     bounds: null,
                 })),
             })),
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
         };
 
         mockHereMap({map: mockMap});
@@ -460,7 +465,7 @@ describe('DispatchMap Default Map Center', () => {
             expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
         });
 
-        const call = (courierApi.getAvailableCourierLocations as jest.Mock).mock.calls[0];
+        const call = (courierApi.getAvailableCourierLocations as Mock).mock.calls[0];
         const [minLng, minLat, maxLng, maxLat] = call;
         // US center is ~-98.5556 lng, ~39.8097 lat — bounds should be around that
         expect(minLat).toBeCloseTo(39.31, 1);

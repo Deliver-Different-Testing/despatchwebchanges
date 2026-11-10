@@ -2,8 +2,8 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
-const fetchTruckCourierStatusMock = jest.fn();
-jest.mock('../../../api/courierApi', () => ({
+const fetchTruckCourierStatusMock = vi.fn();
+vi.mock('../../../api/courierApi', () => ({
     fetchTruckCourierStatus: (...args: unknown[]) => fetchTruckCourierStatusMock(...args),
 }));
 
@@ -20,7 +20,7 @@ function renderDialog(overrides: Partial<React.ComponentProps<typeof TruckLoadin
                     courierId={42}
                     courierLabel="101 - Alice"
                     isUsCustomer={false}
-                    onClose={jest.fn()}
+                    onClose={vi.fn()}
                     {...overrides}
                 />
             </MantineTestProvider>

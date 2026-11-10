@@ -7,17 +7,17 @@ import {SearchField} from './SearchField';
 const renderSearchField = (props = {}) =>
     render(
         <MantineTestProvider>
-            <SearchField value="" onChange={jest.fn()} {...props} />
+            <SearchField value="" onChange={vi.fn()} {...props} />
         </MantineTestProvider>
     );
 
 describe('SearchField', () => {
     beforeEach(() => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     it('should render input with placeholder', () => {
@@ -42,7 +42,7 @@ describe('SearchField', () => {
     });
 
     it('should debounce onChange after 300ms', () => {
-        const onChange = jest.fn();
+        const onChange = vi.fn();
         renderSearchField({onChange});
 
         const input = screen.getByPlaceholderText('Search…');
@@ -53,7 +53,7 @@ describe('SearchField', () => {
 
         // Called after 300ms
         act(() => {
-            jest.advanceTimersByTime(300);
+            vi.advanceTimersByTime(300);
         });
 
         expect(onChange).toHaveBeenCalledWith('hello');
@@ -68,7 +68,7 @@ describe('SearchField', () => {
     });
 
     it('should clear value and call onChange immediately on clear', () => {
-        const onChange = jest.fn();
+        const onChange = vi.fn();
         renderSearchField({value: 'test', onChange});
 
         const clearButton = screen.getByRole('button');

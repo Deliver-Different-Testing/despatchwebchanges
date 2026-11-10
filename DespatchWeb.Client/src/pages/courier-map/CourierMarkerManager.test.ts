@@ -15,51 +15,51 @@ import {COURIER_FLAG_HEIGHT, HIGHLIGHT_BORDER_COLOR} from '../../components/comm
 const createMockMarker = (data?: any) => {
     let payload = data;
     return {
-        getData: jest.fn(() => payload),
-        setData: jest.fn((next: any) => {
+        getData: vi.fn(() => payload),
+        setData: vi.fn((next: any) => {
             payload = next;
         }),
-        setIcon: jest.fn(),
-        setGeometry: jest.fn(),
-        getGeometry: jest.fn(() => ({lat: -36.85, lng: 174.76})),
+        setIcon: vi.fn(),
+        setGeometry: vi.fn(),
+        getGeometry: vi.fn(() => ({lat: -36.85, lng: 174.76})),
     };
 };
 
 const createMockMarkerGroup = () => ({
-    addObjects: jest.fn(),
-    removeAll: jest.fn(),
-    removeObjects: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    getBoundingBox: jest.fn(() => ({})),
+    addObjects: vi.fn(),
+    removeAll: vi.fn(),
+    removeObjects: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getBoundingBox: vi.fn(() => ({})),
 });
 
 let mapElement: HTMLDivElement;
 
 const createMockMap = () => ({
-    addObject: jest.fn(),
-    removeObject: jest.fn(),
-    getElement: jest.fn(() => mapElement),
-    geoToScreen: jest.fn(() => ({x: 100, y: 100})),
-    setCenter: jest.fn(),
-    setZoom: jest.fn(),
-    getZoom: jest.fn(() => 8),
-    getViewModel: jest.fn(() => ({setLookAtData: jest.fn()})),
+    addObject: vi.fn(),
+    removeObject: vi.fn(),
+    getElement: vi.fn(() => mapElement),
+    geoToScreen: vi.fn(() => ({x: 100, y: 100})),
+    setCenter: vi.fn(),
+    setZoom: vi.fn(),
+    getZoom: vi.fn(() => 8),
+    getViewModel: vi.fn(() => ({setLookAtData: vi.fn()})),
 });
 
 const mockMarkerInstances: any[] = [];
 const mockH = {
     map: {
-        Group: jest.fn(() => createMockMarkerGroup()),
-        Marker: jest.fn((_point: any, options: any) => {
+        Group: vi.fn(function () { return createMockMarkerGroup(); }),
+        Marker: vi.fn(function (_point: any, options: any) {
             const marker = createMockMarker(options?.data);
             mockMarkerInstances.push(marker);
             return marker;
         }),
-        Icon: jest.fn((svg: string, options: any) => ({svg, options})),
+        Icon: vi.fn(function (svg: string, options: any) { return {svg, options}; }),
     },
     geo: {
-        Point: jest.fn((lat: number, lng: number) => ({lat, lng})),
+        Point: vi.fn(function (lat: number, lng: number) { return {lat, lng}; }),
     },
 };
 
@@ -99,7 +99,7 @@ describe('CourierMarkerManager', () => {
     }
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockMarkerInstances.length = 0;
         mapElement = document.createElement('div');
         map = createMockMap();
@@ -338,7 +338,7 @@ describe('CourierMarkerManager', () => {
 
     describe('marker tap', () => {
         it('invokes onMarkerTap with the tapped courier', () => {
-            const onMarkerTap = jest.fn();
+            const onMarkerTap = vi.fn();
             const tapManager = new CourierMarkerManager(map, MARKER_COLORS, undefined, onMarkerTap);
             tapManager.updateMarkers([driver()]);
 

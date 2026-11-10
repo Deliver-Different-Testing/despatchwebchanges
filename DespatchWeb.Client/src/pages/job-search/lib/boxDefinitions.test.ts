@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 import JobSearchBoxes from './jobSearchBoxes';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './boxDefinitions';
 

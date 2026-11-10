@@ -4,6 +4,7 @@
  * Centralized utilities to reduce duplication across test files.
  */
 
+import type {Mock, MockInstance} from 'vitest';
 import React from 'react';
 import { render, RenderOptions, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -214,7 +215,7 @@ export function createMockApiError(overrides?: Partial<typeof mockApiError>) {
  * Helper to test that API errors are propagated correctly
  */
 export async function expectErrorPropagation<T>(
-    mockFn: jest.Mock,
+    mockFn: Mock,
     apiCall: () => Promise<T>,
     error = mockApiError
 ): Promise<void> {
@@ -235,12 +236,12 @@ export function createProps<T extends object>(defaults: T, overrides?: Partial<T
  * Returns a spy that can be used for assertions on error calls.
  *
  * @example
- * let errorSpy: jest.SpyInstance;
+ * let errorSpy: MockInstance;
  * beforeEach(() => { errorSpy = suppressConsoleError(); });
  * afterEach(() => { errorSpy.mockRestore(); });
  */
-export function suppressConsoleError(...allowedPrefixes: string[]): jest.SpyInstance {
-    return jest.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+export function suppressConsoleError(...allowedPrefixes: string[]): MockInstance {
+    return vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
         if (allowedPrefixes.length === 0) return;
         const msg = typeof args[0] === 'string' ? args[0] : '';
         if (!allowedPrefixes.some(p => msg.startsWith(p))) {

@@ -3,8 +3,8 @@ import {useResetLayout} from './useResetLayout';
 
 describe('useResetLayout', () => {
     it('confirms with the layout name, resets only when confirmed, defaulting the name to Default', () => {
-        const reset = jest.fn();
-        const confirm = jest.fn().mockReturnValueOnce(false).mockReturnValue(true);
+        const reset = vi.fn();
+        const confirm = vi.fn().mockReturnValueOnce(false).mockReturnValue(true);
         const {result, rerender} = renderHook(
             ({name}: {name?: string}) => useResetLayout({currentLayoutName: name, resetCurrentLayout: reset, confirm}),
             {initialProps: {name: 'Mine'} as {name?: string}},
