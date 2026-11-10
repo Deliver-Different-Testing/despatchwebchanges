@@ -87,4 +87,13 @@ describe('streamChat', () => {
         fetchMock.mockResolvedValueOnce(new Response(null, {status: 500}));
         expect(await collect()).toEqual([{type: 'error', error: 'Request failed (500)'}]);
     });
+
+    it('passes on the error code so the chat can tell "not connected" from a failure', async () => {
+        fetchMock.mockResolvedValueOnce(
+            new Response(JSON.stringify({error: "Sorry, I'm not connected right now.", code: 'not_connected'}), {status: 503}),
+        );
+        expect(await collect()).toEqual([
+            {type: 'error', error: "Sorry, I'm not connected right now.", code: 'not_connected'},
+        ]);
+    });
 });

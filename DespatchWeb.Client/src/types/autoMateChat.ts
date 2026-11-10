@@ -9,6 +9,8 @@ export interface AutoMateStreamEvent {
     text?: string;
     toolName?: string;
     error?: string;
+    /** Set on errors the chat shows differently, e.g. `not_connected`. */
+    code?: string;
     sources?: KbSource[] | null;
 }
 

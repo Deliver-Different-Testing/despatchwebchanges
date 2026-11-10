@@ -3,13 +3,16 @@ import type {AutoMateChatRequest, AutoMateStreamEvent} from '../types/autoMateCh
 
 const CHAT_URL = '/Ai/Chat';
 
-/** The server's `{ error }` body when it failed before streaming; the rate limiter's own 429 has no body. */
-async function readErrorReason(response: Response): Promise<string | null> {
+/** The server's `{ error, code }` body when it failed before streaming; the rate limiter's own 429 has no body. */
+async function readErrorReason(response: Response): Promise<{error: string | null; code?: string}> {
     try {
-        const body = (await response.json()) as {error?: unknown};
-        return typeof body.error === 'string' && body.error ? body.error : null;
+        const body = (await response.json()) as {error?: unknown; code?: unknown};
+        return {
+            error: typeof body.error === 'string' && body.error ? body.error : null,
+            code: typeof body.code === 'string' ? body.code : undefined,
+        };
     } catch {
-        return null;
+        return {error: null};
     }
 }
 
@@ -38,7 +41,8 @@ export async function* streamChat(
             response.status === 429
                 ? 'Too many requests. Wait a moment, then try again.'
                 : `Request failed (${response.status})`;
-        yield {type: 'error', error: (await readErrorReason(response)) ?? fallback};
+        const {error, code} = await readErrorReason(response);
+        yield {type: 'error', error: error ?? fallback, code};
         return;
     }
 

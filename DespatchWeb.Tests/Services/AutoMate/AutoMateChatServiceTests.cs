@@ -15,7 +15,7 @@ using NSubstitute;
 
 namespace DespatchWeb.Tests.Services.AutoMate;
 
-public class AutoMateChatServiceTests
+public sealed class AutoMateChatServiceTests : IDisposable
 {
     private static readonly Guid TopId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
     private static readonly Guid SecondId = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000002");
@@ -23,10 +23,11 @@ public class AutoMateChatServiceTests
     private readonly SseHandler _handler = new();
     private readonly AnthropicClient _anthropic;
     private AutoMateChatOptions _options = new() { MaxToolRounds = 1, GroundingTimeoutMs = 200 };
-    private readonly AnthropicSettings _settings = new()
-    {
-        Chat = new AiModelProfile { Model = "claude-sonnet-5-5", Effort = "low", MaxTokens = 4096, TimeoutSeconds = 30 }
-    };
+    private static readonly AiModelProfile ChatProfile =
+        new() { Model = "claude-sonnet-5-5", Effort = "low", MaxTokens = 4096, TimeoutSeconds = 30 };
+
+    private readonly string _identityTokenFile = Path.GetTempFileName();
+    private AnthropicSettings _settings;
     private readonly List<IAutoMateTool> _tools = [];
     private readonly ICspKnowledgeClient _knowledge = Substitute.For<ICspKnowledgeClient>();
     private readonly KbTurnSources _kbSources = new();
@@ -35,6 +36,7 @@ public class AutoMateChatServiceTests
 
     public AutoMateChatServiceTests()
     {
+        _settings = new AnthropicSettings { Chat = ChatProfile, Federation = Federation(_identityTokenFile) };
         _anthropic = new AnthropicClient
         {
             ApiKey = "test-api-key",
@@ -42,6 +44,16 @@ public class AutoMateChatServiceTests
             MaxRetries = 0
         };
     }
+
+    public void Dispose() => File.Delete(_identityTokenFile);
+
+    private static AnthropicSettings.FederationSettings Federation(string identityTokenFile) => new()
+    {
+        RuleId = "fdrl_test",
+        OrganizationId = "00000000-0000-0000-0000-000000000001",
+        ServiceAccountId = "svac_test",
+        IdentityTokenFile = identityTokenFile
+    };
 
     private AutoMateChatService CreateSut() => new(
         _anthropic, _tools, Options.Create(_options), Options.Create(_settings), _knowledge, _kbSources, _audience, _breaker);
@@ -268,6 +280,54 @@ public class AutoMateChatServiceTests
 
         Assert.Equal(503, error.HttpStatus);
         Assert.Empty(_handler.Bodies);
+    }
+
+    [Fact]
+    public async Task WithoutFederation_SaysItIsNotConnected_WithoutCallingAnthropic()
+    {
+        _settings = new AnthropicSettings { Chat = ChatProfile };
+
+        var error = Assert.Single(await Run());
+
+        AssertNotConnected(error);
+        Assert.Empty(_handler.Bodies);
+    }
+
+    [Fact]
+    public async Task WithoutAnIdentityTokenFile_SaysItIsNotConnected_WithoutCallingAnthropic()
+    {
+        _settings = new AnthropicSettings
+        {
+            Chat = ChatProfile,
+            Federation = Federation(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")))
+        };
+
+        var error = Assert.Single(await Run());
+
+        AssertNotConnected(error);
+        Assert.Empty(_handler.Bodies);
+    }
+
+    [Fact]
+    public async Task ARejectedCredential_SaysItIsNotConnected_AndLeavesTheBreakerClosed()
+    {
+        _handler.QueueResponse(new HttpResponseMessage(HttpStatusCode.Unauthorized)
+        {
+            Content = new StringContent("""{"type":"error","error":{"type":"authentication_error","message":"detail"}}""", Encoding.UTF8, "application/json")
+        });
+
+        var error = Assert.Single(await Run());
+
+        AssertNotConnected(error);
+        Assert.False(_breaker.IsOpen);
+    }
+
+    private static void AssertNotConnected(AutoMateStreamEvent error)
+    {
+        Assert.Equal("error", error.Type);
+        Assert.Equal("not_connected", error.Code);
+        Assert.Equal("Sorry, I'm not connected right now. Please try again later.", error.Error);
+        Assert.Equal(503, error.HttpStatus);
     }
 
     [Fact]
@@ -749,7 +809,6 @@ public class AutoMateChatServiceTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.Unauthorized, 503)]
     [InlineData(HttpStatusCode.Forbidden, 503)]
     [InlineData(HttpStatusCode.NotFound, 503)]
     [InlineData(HttpStatusCode.TooManyRequests, 429)]
