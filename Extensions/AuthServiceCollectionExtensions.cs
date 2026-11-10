@@ -1,7 +1,9 @@
 using DeliverDifferent.AgentAccess;
+using DeliverDifferent.AgentAccess.Export;
 using DespatchWeb.Helpers;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Extensions;
@@ -64,6 +66,13 @@ public static class AuthServiceCollectionExtensions
         {
             authentication.AddHubOrAgentPolicyScheme(CookieScheme).AddAgentTokenAuthentication(agentAccess);
             services.AddAgentTenantConnectionStore<AgentTenantConnectionStore>();
+            services.Replace(ServiceDescriptor.Scoped<IAgentClaimsEnricher, AgentUserClaimsEnricher>());
+            services.AddAgentExport();
+        }
+        else
+        {
+            // The export endpoints name this policy; with agent access off nothing may pass it.
+            services.AddAuthorizationBuilder().AddPolicy(AgentExport.Policy, policy => policy.RequireAssertion(_ => false));
         }
 
         services.AddSession(options =>

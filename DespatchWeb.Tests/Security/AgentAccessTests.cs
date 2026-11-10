@@ -109,6 +109,7 @@ public class AgentAccessTests : IAsyncDisposable
         {
             AppName = "DespatchWeb", HubAuthority = Hub, HubApiKey = "key", SqlCredentials = "User ID=dw;"
         });
+        builder.Services.AddSingleton(Substitute.For<IAgentClaimsEnricher>());
         builder.Services.PostConfigure<JwtBearerOptions>(AgentTokenAuthentication.Scheme, o =>
         {
             var config = new OpenIdConnectConfiguration { Issuer = Hub + "/" };
