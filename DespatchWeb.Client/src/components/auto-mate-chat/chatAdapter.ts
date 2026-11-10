@@ -59,7 +59,7 @@ export function createChatAdapter(getPageContext: () => string | undefined): Cha
                         yield snapshot(statusLabel(event.toolName));
                         break;
                     case 'error':
-                        text += `${text ? '\n\n' : ''}Error: ${event.error}`;
+                        text += `${text ? '\n\n' : ''}${event.code === 'not_connected' ? '' : 'Error: '}${event.error}`;
                         yield snapshot();
                         break;
                     case 'done':

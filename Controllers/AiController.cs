@@ -615,7 +615,7 @@ public class AiController(
             {
                 last = failure;
                 Response.StatusCode = status;
-                await Response.WriteAsJsonAsync(new { error = failure.Error }, ct);
+                await Response.WriteAsJsonAsync(new { error = failure.Error, code = failure.Code }, ct);
                 return;
             }
 

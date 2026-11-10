@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Anthropic;
 using Anthropic.Core;
+using Anthropic.Credentials;
 using Anthropic.Exceptions;
 using Anthropic.Models.Messages;
 using DespatchWeb.Exceptions;
@@ -9,15 +10,16 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Ai;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace DespatchWeb.Services;
 
 public sealed class AiClientService(
-    IOptions<AnthropicSettings> settings, IAiResponseCache responseCache, AiCircuitBreaker breaker)
+    IOptions<AnthropicSettings> settings, IAiResponseCache responseCache, AiCircuitBreaker breaker, AnthropicClient client)
     : IAiClientService
 {
-    // One retry, not the SDK default of two: the per-call timeout below bounds the total wait.
-    private readonly AnthropicClient _client = new() { MaxRetries = 1 };
+    private const string NotConnectedMessage = "AI service is not connected.";
+
     private readonly AnthropicSettings _settings = settings.Value;
 
     internal const string UntrustedDataRule =
@@ -58,6 +60,12 @@ public sealed class AiClientService(
 
         var messageParams = BuildMessageParameters(
             profile, systemPrompt, messages, maxTokens, tools, forceToolName, enableCaching);
+
+        if (!_settings.IsConnected)
+        {
+            Log.Warning("Anthropic is not connected (workload identity federation not configured or no identity token)");
+            throw new AiUnavailableException(NotConnectedMessage);
+        }
 
         if (breaker.IsOpen)
         {
@@ -113,7 +121,7 @@ public sealed class AiClientService(
 
         try
         {
-            var response = await _client.Messages.Create(messageParams, timeout.Token);
+            var response = await client.Messages.Create(messageParams, timeout.Token);
             breaker.RecordSuccess();
             return response;
         }
@@ -127,7 +135,15 @@ public sealed class AiClientService(
             breaker.RecordFailure();
             throw;
         }
+        catch (Exception e) when (IsNotConnected(e))
+        {
+            Log.Warning(e, "Anthropic rejected the workload identity credentials");
+            throw new AiUnavailableException(NotConnectedMessage);
+        }
     }
+
+    internal static bool IsNotConnected(Exception e) =>
+        e is AnthropicUnauthorizedException or WorkloadIdentityException or FileNotFoundException or DirectoryNotFoundException;
 
     internal static MessageCreateParams BuildMessageParameters(
         AiModelProfile profile,

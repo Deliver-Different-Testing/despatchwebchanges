@@ -1,4 +1,7 @@
+using System.Net;
+using System.Text;
 using System.Text.Json;
+using Anthropic;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Ai;
@@ -13,16 +16,88 @@ namespace DespatchWeb.Tests.Services;
 /// <summary>
 /// Tests for AiClientService: tool-schema parsing and response-cache behavior.
 /// </summary>
-public class AiClientServiceTests
+public sealed class AiClientServiceTests : IDisposable
 {
     private readonly IAiResponseCache _responseCache = Substitute.For<IAiResponseCache>();
+    private readonly string _identityTokenFile = Path.GetTempFileName();
+    private readonly StatusHandler _handler = new();
+    private readonly AnthropicClient _client;
 
-    private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings());
+    private IOptions<AnthropicSettings> _settings;
 
     public AiClientServiceTests()
     {
-        // AnthropicClient's default constructor reads the API key from the env.
-        Environment.SetEnvironmentVariable("ANTHROPIC_API_KEY", "test-key");
+        _settings = Options.Create(new AnthropicSettings { Federation = Federation(_identityTokenFile) });
+        _client = new AnthropicClient { ApiKey = "test-key", HttpClient = new HttpClient(_handler), MaxRetries = 0 };
+    }
+
+    public void Dispose() => File.Delete(_identityTokenFile);
+
+    private static AnthropicSettings.FederationSettings Federation(string identityTokenFile) => new()
+    {
+        RuleId = "fdrl_test",
+        OrganizationId = "00000000-0000-0000-0000-000000000001",
+        ServiceAccountId = "svac_test",
+        IdentityTokenFile = identityTokenFile
+    };
+
+    private Task<AiClientResponse> Send(AiCircuitBreaker? breaker = null) =>
+        new AiClientService(_settings, _responseCache, breaker ?? new AiCircuitBreaker(), _client).SendMessageAsync(
+            AiTaskClass.Drafting, "sys", [new AiMessage { Role = "user", Content = "hi" }], 256,
+            ct: TestContext.Current.CancellationToken);
+
+    [Fact]
+    public async Task SendMessageAsync_WithoutFederation_IsUnavailableWithoutCallingTheApi()
+    {
+        _settings = Options.Create(new AnthropicSettings());
+
+        await Assert.ThrowsAsync<AiUnavailableException>(() => Send());
+
+        Assert.Equal(0, _handler.Calls);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WithoutAnIdentityTokenFile_IsUnavailableWithoutCallingTheApi()
+    {
+        _settings = Options.Create(new AnthropicSettings
+        {
+            Federation = Federation(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")))
+        });
+
+        await Assert.ThrowsAsync<AiUnavailableException>(() => Send());
+
+        Assert.Equal(0, _handler.Calls);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenTheCredentialIsRejected_IsUnavailable_AndLeavesTheBreakerClosed()
+    {
+        var breaker = new AiCircuitBreaker(new ManualTimeProvider(), failureThreshold: 1, openFor: TimeSpan.FromSeconds(30));
+        _handler.Status = HttpStatusCode.Unauthorized;
+
+        await Assert.ThrowsAsync<AiUnavailableException>(() => Send(breaker));
+
+        Assert.Equal(1, _handler.Calls);
+        Assert.False(breaker.IsOpen);
+    }
+
+    private sealed class StatusHandler : HttpMessageHandler
+    {
+        private int _calls;
+
+        public HttpStatusCode Status { get; set; } = HttpStatusCode.InternalServerError;
+
+        public int Calls => _calls;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            Interlocked.Increment(ref _calls);
+            return Task.FromResult(new HttpResponseMessage(Status)
+            {
+                Content = new StringContent(
+                    """{"type":"error","error":{"type":"authentication_error","message":"detail"}}""", Encoding.UTF8, "application/json")
+            });
+        }
     }
 
     [Fact]
@@ -41,7 +116,7 @@ public class AiClientServiceTests
             .Returns("cache-key");
         _responseCache.GetAsync("cache-key", Arg.Any<CancellationToken>()).Returns(cached);
 
-        var service = new AiClientService(_settings, _responseCache, new AiCircuitBreaker());
+        var service = new AiClientService(_settings, _responseCache, new AiCircuitBreaker(), _client);
 
         var result = await service.SendMessageAsync(
             AiTaskClass.Drafting,
@@ -229,7 +304,7 @@ public class AiClientServiceTests
         var time = new ManualTimeProvider();
         var breaker = new AiCircuitBreaker(time, failureThreshold: 1, openFor: TimeSpan.FromSeconds(30));
         breaker.RecordFailure();
-        var service = new AiClientService(_settings, _responseCache, breaker);
+        var service = new AiClientService(_settings, _responseCache, breaker, _client);
 
         await Assert.ThrowsAsync<AiUnavailableException>(() => service.SendMessageAsync(
             AiTaskClass.Drafting, "sys", [new AiMessage { Role = "user", Content = "hi" }], 256,

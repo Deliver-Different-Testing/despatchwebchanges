@@ -1,4 +1,3 @@
-using Anthropic;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.AutoMate;
@@ -28,13 +27,6 @@ public static class AutoMateServiceCollectionExtensions
         services.AddSingleton<IServiceTokenProvider, CspTokenProvider>();
         services.AddHttpClient(CspTokenProvider.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
         services.AddHttpClient<ICspKnowledgeClient, CspKnowledgeClient>(c => c.Timeout = TimeSpan.FromSeconds(10));
-
-        // The SDK reads ANTHROPIC_API_KEY from the environment, like AiClientService's client.
-        services.AddSingleton(sp => new AnthropicClient
-        {
-            MaxRetries = 1,
-            Timeout = TimeSpan.FromSeconds(sp.GetRequiredService<IOptions<AnthropicSettings>>().Value.Chat.TimeoutSeconds)
-        });
 
         services.AddScoped<AutoMateAudience>();
         services.AddScoped<KbTurnSources>();

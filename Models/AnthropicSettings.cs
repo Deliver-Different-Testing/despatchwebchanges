@@ -32,10 +32,32 @@ public sealed class AnthropicSettings
     // insights) via a short-lived response cache. 0 disables it.
     public int ResponseCacheSeconds { get; init; }
 
+    /// <summary>
+    /// Workload identity federation: the pod's projected service-account token is exchanged for a short-lived
+    /// Anthropic token. There is no API key; without the token file the AI features report they are not connected.
+    /// </summary>
+    public FederationSettings Federation { get; init; } = new();
+
+    public bool IsConnected => Federation.IsConfigured && File.Exists(Federation.IdentityTokenFile);
+
     public AiModelProfile For(AiTaskClass taskClass) => taskClass switch
     {
         AiTaskClass.Judgment => Judgment,
         AiTaskClass.Chat => Chat,
         _ => Drafting
     };
+
+    public sealed class FederationSettings
+    {
+        public string RuleId { get; init; }
+        public string OrganizationId { get; init; }
+        public string ServiceAccountId { get; init; }
+        public string WorkspaceId { get; init; }
+        public string IdentityTokenFile { get; init; } = "/var/run/secrets/anthropic.com/token";
+
+        public bool IsConfigured =>
+            !string.IsNullOrWhiteSpace(RuleId)
+            && !string.IsNullOrWhiteSpace(OrganizationId)
+            && !string.IsNullOrWhiteSpace(ServiceAccountId);
+    }
 }
