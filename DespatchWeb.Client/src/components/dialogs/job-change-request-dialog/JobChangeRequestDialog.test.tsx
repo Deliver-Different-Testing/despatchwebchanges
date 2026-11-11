@@ -42,6 +42,19 @@ function renderDialog(overrides: Partial<JobChangeRequestDialogProps> = {}) {
     return {...result, props: defaultProps};
 }
 
+/** Submits a PickupAddress request, awaits its toast so it can't leak into the next test, and returns the parsed payload. */
+async function submitAndReadAddressPayload(user: ReturnType<typeof setupUser>) {
+    await user.click(screen.getByRole('button', {name: /Submit/}));
+
+    await waitFor(() => {
+        expect(mockCreate).toHaveBeenCalledTimes(1);
+    });
+    const call = mockCreate.mock.calls[0][0];
+    expect(call.fieldName).toBe('PickupAddress');
+    expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
+    return JSON.parse(call.requestedValue);
+}
+
 describe('JobChangeRequestDialog', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -190,14 +203,7 @@ describe('JobChangeRequestDialog', () => {
 
                 expect(screen.queryByLabelText(/^State$/i)).not.toBeInTheDocument();
 
-                await user.click(screen.getByRole('button', {name: /Submit/}));
-
-                await waitFor(() => {
-                    expect(mockCreate).toHaveBeenCalledTimes(1);
-                });
-                const call = mockCreate.mock.calls[0][0];
-                expect(call.fieldName).toBe('PickupAddress');
-                const payload = JSON.parse(call.requestedValue);
+                const payload = await submitAndReadAddressPayload(user);
                 expect(payload.addressLine1).toBe('123 Cuba St');
                 expect(payload.addressLine3).toBe('Te Aro');
                 expect(payload.addressLine4).toBe('Wellington');
@@ -205,8 +211,6 @@ describe('JobChangeRequestDialog', () => {
                 // fullAddress is derived from the joined non-empty lines.
                 expect(payload.fullAddress).toContain('123 Cuba St');
                 expect(payload.fullAddress).toContain('Wellington');
-                // Await the resulting toast so it doesn't leak into the next test.
-                expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
             });
 
             it('rejects submission when all address lines are empty', async () => {
@@ -267,20 +271,11 @@ describe('JobChangeRequestDialog', () => {
                 await user.click(screen.getByLabelText(/ZIP code/i));
                 await user.paste('97201');
 
-                await user.click(screen.getByRole('button', {name: /Submit/}));
-
-                await waitFor(() => {
-                    expect(mockCreate).toHaveBeenCalledTimes(1);
-                });
-                const call = mockCreate.mock.calls[0][0];
-                expect(call.fieldName).toBe('PickupAddress');
-                const payload = JSON.parse(call.requestedValue);
+                const payload = await submitAndReadAddressPayload(user);
                 expect(payload.addressLine1).toBe('123 Main St');
                 expect(payload.addressLine4).toBe('Portland');
                 expect(payload.addressLine5).toBe('OR');
                 expect(payload.addressLine6).toBe('97201');
-                // Await the resulting toast so it doesn't leak into the next test.
-                expect(await screen.findByText(/Change request sent to the partner/)).toBeInTheDocument();
             });
         });
     });

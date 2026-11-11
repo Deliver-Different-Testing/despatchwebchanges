@@ -9,6 +9,7 @@ import React from 'react';
 import {Avatar, Badge, Box, Divider, Group, Image, NavLink, ScrollArea, Stack, Text, Tooltip, UnstyledButton} from '@mantine/core';
 import {ColorModeSwitcher} from '../side-nav/ColorModeSwitcher';
 import type {NavItem} from '../side-nav/SideNav.types';
+import {getInitials, rowStyle} from '../side-nav/navRow';
 import {onBrandScrim, sideMenuColors as shell} from '../../../theme/dfrntMantineTheme';
 import {APP_BLURB, APP_ICON_SRC, APP_NAME} from '../../../constants/app';
 import classes from './Sidebar.module.css';
@@ -32,24 +33,6 @@ export interface SidebarProps {
     companyName?: string;
     isNetworkPartner?: boolean;
 }
-
-const getInitials = (name: string): string =>
-    name
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((word) => word.charAt(0).toUpperCase())
-        .join('');
-
-/** Rows read the shell tokens, never the theme primary. Active = inset accent bar + 600 weight, no fill. */
-const rowStyle = (active: boolean): React.CSSProperties => ({
-    color: active ? shell.textPrimary : shell.textSecondary,
-    fontWeight: active ? 600 : 500,
-    boxShadow: active ? `inset 3px 0 0 ${shell.activeAccent}` : undefined,
-    '--nl-bg': shell.hoverBg,
-    '--nl-hover': shell.hoverBg,
-    '--nl-color': shell.textPrimary,
-} as React.CSSProperties);
 
 export const Sidebar: React.FC<SidebarProps> = ({
     groups,

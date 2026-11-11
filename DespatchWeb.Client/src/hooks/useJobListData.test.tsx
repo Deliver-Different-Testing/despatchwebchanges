@@ -245,7 +245,7 @@ describe('useJobListData', () => {
     });
 
     describe('query key generation', () => {
-        it('should call queryKeyFn with current params', async () => {
+        it('should call queryKeyFn with current params and regenerate when they change', async () => {
             const queryKeyFn = vi.fn((params: JobListSearchParams) => ['test', params] as const);
             const config = createMockFetchConfig({queryKeyFn});
 
@@ -259,20 +259,6 @@ describe('useJobListData', () => {
             });
 
             expect(queryKeyFn).toHaveBeenCalledWith(config.initialParams);
-        });
-
-        it('should regenerate query key when params change', async () => {
-            const queryKeyFn = vi.fn((params: JobListSearchParams) => ['test', params] as const);
-            const config = createMockFetchConfig({queryKeyFn});
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createQueryWrapper()},
-            );
-
-            await waitFor(() => {
-                expect(result.current.isLoading).toBe(false);
-            });
 
             queryKeyFn.mockClear();
 
@@ -543,10 +529,10 @@ describe('useJobListData', () => {
             return {promise, resolve};
         }
 
-        it('keeps the previous rows visible while a params change refetches', async () => {
+        async function renderWithPendingRefetch(firstPage: JobSearchResult) {
             const next = deferred();
             const fetchFn = vi.fn()
-                .mockResolvedValueOnce({jobs: mockJobs, totalCount: 2, hasMore: false})
+                .mockResolvedValueOnce(firstPage)
                 .mockReturnValueOnce(next.promise);
             const {result} = renderHook(
                 () => useJobListData(createMockFetchConfig({fetchFn})),
@@ -557,8 +543,14 @@ describe('useJobListData', () => {
             act(() => {
                 result.current.updateParams({despatchViewIds: [2]});
             });
-
             await waitFor(() => expect(result.current.isFetching).toBe(true));
+
+            return {result, next, fetchFn};
+        }
+
+        it('keeps the previous rows visible while a params change refetches', async () => {
+            const {result, next} = await renderWithPendingRefetch({jobs: mockJobs, totalCount: 2, hasMore: false});
+
             expect(result.current.jobs).toEqual(mockJobs);
             expect(result.current.isLoading).toBe(false);
 
@@ -571,20 +563,7 @@ describe('useJobListData', () => {
         });
 
         it('does not page a list that is still showing the previous results', async () => {
-            const next = deferred();
-            const fetchFn = vi.fn()
-                .mockResolvedValueOnce({jobs: mockJobs, totalCount: 4, hasMore: true})
-                .mockReturnValueOnce(next.promise);
-            const {result} = renderHook(
-                () => useJobListData(createMockFetchConfig({fetchFn})),
-                {wrapper: createQueryWrapper()},
-            );
-            await waitFor(() => expect(result.current.jobs).toEqual(mockJobs));
-
-            act(() => {
-                result.current.updateParams({despatchViewIds: [2]});
-            });
-            await waitFor(() => expect(result.current.isFetching).toBe(true));
+            const {result, fetchFn} = await renderWithPendingRefetch({jobs: mockJobs, totalCount: 4, hasMore: true});
 
             act(() => {
                 result.current.fetchNextPage();

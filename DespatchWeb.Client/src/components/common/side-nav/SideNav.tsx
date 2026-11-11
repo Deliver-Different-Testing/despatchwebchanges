@@ -14,6 +14,7 @@ import dayjs from 'dayjs';
 import {Icon} from '../icon/Icon';
 import {NavItem, SideNavProps} from "./SideNav.types";
 import {ColorModeSwitcher} from './ColorModeSwitcher';
+import {getInitials, rowStyle} from './navRow';
 import {useNavItems} from '../../../hooks/useNavItems';
 import {onBrandScrim, sideMenuColors as shell} from '../../../theme/dfrntMantineTheme';
 import {APP_BLURB} from '../../../constants/app';
@@ -23,28 +24,6 @@ const drawerWidth = 264;
 
 /** Below this the panel goes full-bleed, matching the toolbar's compact breakpoint. */
 const COMPACT_QUERY = `(max-width: ${em(768)})`;
-
-const getInitials = (name: string): string =>
-    name
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((word) => word.charAt(0).toUpperCase())
-        .join('');
-
-/**
- * Rows read the shell tokens, never the theme primary, so a tenant's Branding primary
- * can't leak into the menu. Active = inset accent bar + 600 weight, no fill; the hover
- * tint lives in `SideNav.module.css` because Mantine only applies `--nl-hover` to the active row.
- */
-const rowStyle = (active: boolean): React.CSSProperties => ({
-    color: active ? shell.textPrimary : shell.textSecondary,
-    fontWeight: active ? 600 : 500,
-    boxShadow: active ? `inset 3px 0 0 ${shell.activeAccent}` : undefined,
-    '--nl-bg': shell.hoverBg,
-    '--nl-hover': shell.hoverBg,
-    '--nl-color': shell.textPrimary,
-} as React.CSSProperties);
 
 export const SideNav: React.FC<SideNavProps> = ({
     open,

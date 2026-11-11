@@ -892,7 +892,7 @@ describe('useJobActions — handleVoidClick', () => {
 });
 
 describe('useJobActions — handlePricingClick on a partner job', () => {
-    it('captures the new rate via the main edit dialog, then opens the change-request dialog with the field + value locked', async () => {
+    async function startPartnerPricingClick() {
         const mockShowToast = vi.fn();
         const mockOnRequestPartnerChange = vi.fn();
         const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
@@ -906,11 +906,16 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
             }),
         );
 
-        // Step 1 — clicking Pricing opens the main edit dialog to capture a new rate.
         let pendingPricingClick: Promise<void> | undefined;
         await act(async () => {
             pendingPricingClick = result.current.handlePricingClick();
         });
+        return {result, mockShowToast, mockOnRequestPartnerChange, pendingPricingClick};
+    }
+
+    it('captures the new rate via the main edit dialog, then opens the change-request dialog with the field + value locked', async () => {
+        // Step 1 — clicking Pricing opens the main edit dialog to capture a new rate.
+        const {result, mockShowToast, mockOnRequestPartnerChange, pendingPricingClick} = await startPartnerPricingClick();
         expect(result.current.textDialog.open).toBe(true);
         expect(result.current.textDialog.field).toBe('PartnerAgreedRate');
         // Change-request dialog must not have been opened yet — we still need a value.
@@ -929,23 +934,7 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
     });
 
     it('aborts cleanly when the dispatcher cancels the rate dialog', async () => {
-        const mockShowToast = vi.fn();
-        const mockOnRequestPartnerChange = vi.fn();
-        const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
-
-        const {result} = renderHook(() =>
-            useJobActions({
-                ...jobActionsDefaults(),
-                job,
-                showToast: mockShowToast,
-                onRequestPartnerChange: mockOnRequestPartnerChange,
-            }),
-        );
-
-        let pendingPricingClick: Promise<void> | undefined;
-        await act(async () => {
-            pendingPricingClick = result.current.handlePricingClick();
-        });
+        const {result, mockShowToast, mockOnRequestPartnerChange, pendingPricingClick} = await startPartnerPricingClick();
         await act(async () => {
             result.current.handleTextDialogCancel();
             await pendingPricingClick;

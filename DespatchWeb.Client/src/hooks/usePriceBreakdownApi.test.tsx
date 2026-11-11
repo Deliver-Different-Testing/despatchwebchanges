@@ -14,6 +14,7 @@ import {
 } from './usePriceBreakdownApi';
 import {pricingBreakdownApi} from '../api/pricingBreakdownApi';
 import {createQueryWrapper} from '../test/utils';
+import {expectQueryHookEmptyData, expectQueryHookError} from '../test/utils/queryHookCaseHelpers';
 
 // Mock the pricingBreakdownApi
 vi.mock('../api/pricingBreakdownApi', () => ({
@@ -91,26 +92,14 @@ describe('usePriceBreakdowns', () => {
     it('should handle empty results', async () => {
         mockPricingApi.getPriceBreakdowns.mockResolvedValueOnce([]);
 
-        const {result} = renderHook(() => usePriceBreakdowns(100, false, false), {wrapper: createQueryWrapper()});
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true);
-        });
-
-        expect(result.current.data).toEqual([]);
+        await expectQueryHookEmptyData(() => usePriceBreakdowns(100, false, false));
     });
 
     it('should handle errors', async () => {
         const error = new Error('Failed to fetch breakdowns');
         mockPricingApi.getPriceBreakdowns.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => usePriceBreakdowns(100, false, false), {wrapper: createQueryWrapper()});
-
-        await waitFor(() => {
-            expect(result.current.isError).toBe(true);
-        });
-
-        expect(result.current.error).toEqual(error);
+        await expectQueryHookError(() => usePriceBreakdowns(100, false, false), error);
     });
 });
 

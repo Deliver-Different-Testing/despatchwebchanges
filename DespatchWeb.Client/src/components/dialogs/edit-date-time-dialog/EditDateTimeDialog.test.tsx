@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import { setupUser } from '../../../test/utils/setupUser';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
@@ -16,6 +17,19 @@ dayjs.extend(timezone);
 // so none of the `muiDatePickerMocks` indirection is involved any more.
 function renderWithProviders(props: EditDateTimeDialogProps) {
     return renderWithMantine(<EditDateTimeDialog {...props} />);
+}
+
+type SubmittedResult = Parameters<EditDateTimeDialogProps['onSubmit']>[0];
+
+async function saveAndExpectResult(
+    user: ReturnType<typeof setupUser>,
+    onSubmit: Mock,
+    assertResult: (result: SubmittedResult) => void
+) {
+    await user.click(screen.getByRole('button', {name: /Save/i}));
+    await waitFor(() => {
+        assertResult(onSubmit.mock.calls[0][0]);
+    });
 }
 
 function createDefaultProps(overrides?: Partial<EditDateTimeDialogProps>): EditDateTimeDialogProps {
@@ -292,10 +306,7 @@ describe('EditDateTimeDialog', () => {
             // Date-only
             const {unmount} = renderWithProviders(createDefaultProps({showDate: true, showTime: false, onSubmit}));
             fireEvent.change(screen.getByLabelText('Date'), {target: {value: '2026-01-01'}});
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.year()).toBe(2026);
                 expect(result.value.month()).toBe(0);
                 expect(result.value.date()).toBe(1);
@@ -307,10 +318,7 @@ describe('EditDateTimeDialog', () => {
             renderWithProviders(createDefaultProps({showDate: false, showTime: true, onSubmit}));
             fireEvent.change(screen.getByLabelText('Hours'), {target: {value: '16'}});
             fireEvent.change(screen.getByLabelText('Minutes'), {target: {value: '30'}});
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.hour()).toBe(16);
                 expect(result.value.minute()).toBe(30);
             });
@@ -324,10 +332,7 @@ describe('EditDateTimeDialog', () => {
             const onSubmit = vi.fn();
             renderWithProviders(createDefaultProps({showDate: true, showTime: false, onSubmit}));
 
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.hour()).toBe(0);
                 expect(result.value.minute()).toBe(0);
             });
@@ -338,10 +343,7 @@ describe('EditDateTimeDialog', () => {
             const onSubmit = vi.fn();
             renderWithProviders(createDefaultProps({showDate: false, showTime: true, onSubmit}));
 
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.year()).toBe(1900);
                 expect(result.value.hour()).toBe(14);
                 expect(result.value.minute()).toBe(30);
@@ -357,10 +359,7 @@ describe('EditDateTimeDialog', () => {
             renderWithProviders(createDefaultProps({onSubmit}));
 
             fireEvent.change(screen.getByLabelText('Date'), {target: {value: '2024-07-20'}});
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.hour()).toBe(14);
                 expect(result.value.minute()).toBe(30);
             });
@@ -372,10 +371,7 @@ describe('EditDateTimeDialog', () => {
             renderWithProviders(createDefaultProps({onSubmit}));
 
             fireEvent.change(screen.getByLabelText('Time (24-hour)'), {target: {value: '09:15'}});
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.year()).toBe(2024);
                 expect(result.value.month()).toBe(2);
                 expect(result.value.date()).toBe(15);
@@ -390,10 +386,7 @@ describe('EditDateTimeDialog', () => {
             // Invalid intermediate date
             await user.clear(screen.getByLabelText('Date'));
             await user.type(screen.getByLabelText('Date'), '2024-');
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.hour()).toBe(14);
                 expect(result.value.minute()).toBe(30);
             });
@@ -410,10 +403,7 @@ describe('EditDateTimeDialog', () => {
             expect(dateInput).toHaveValue('2024-03-15');
             await user.keyboard('45');
             expect(dateInput).toHaveValue('2024-03-15');
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.format('YYYY-MM-DD HH:mm')).toBe('2024-03-15 09:45');
             });
         });
@@ -431,10 +421,7 @@ describe('EditDateTimeDialog', () => {
 
             await user.click(screen.getByLabelText('Hours'));
             await user.keyboard('0730');
-            await user.click(screen.getByRole('button', {name: /Save/i}));
-
-            await waitFor(() => {
-                const result = onSubmit.mock.calls[0][0];
+            await saveAndExpectResult(user, onSubmit, (result) => {
                 expect(result.value.format('YYYY-MM-DD HH:mm')).toBe('2024-03-15 07:30');
             });
         });

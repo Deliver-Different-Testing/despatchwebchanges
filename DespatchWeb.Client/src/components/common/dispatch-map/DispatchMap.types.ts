@@ -179,10 +179,7 @@ export const PREFERENCE_KEYS = {
  */
 export const ICON_CACHE_LIMIT = 200;
 
-/**
- * Position threshold (degrees) - don't update if moved less than this
- */
-export const POSITION_THRESHOLD = 0.0001;
+export {MARKER_POSITION_THRESHOLD as POSITION_THRESHOLD} from '../here-map/HereMap.types';
 
 /**
  * SVG path for marker pin

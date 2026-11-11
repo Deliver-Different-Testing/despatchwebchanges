@@ -2,6 +2,7 @@ import React from 'react';
 import {screen} from '@testing-library/react';
 import {DeleteLayoutDialog} from './DeleteLayoutDialog';
 import { renderWithMantine } from '../../../test/utils';
+import { itClosesWithoutConfirmingOnCancel } from '../shared/cancelClosesOnly.testHelpers';
 import { setupUser } from '../../../test/utils/setupUser';
 
 function setup(overrides: Partial<React.ComponentProps<typeof DeleteLayoutDialog>> = {}) {
@@ -37,13 +38,5 @@ describe('DeleteLayoutDialog', () => {
         expect(onClose).not.toHaveBeenCalled();
     });
 
-    it('calls onClose when Cancel is clicked', async () => {
-        const user = setupUser();
-        const {onClose, onConfirm} = setup();
-
-        await user.click(screen.getByRole('button', {name: /cancel/i}));
-
-        expect(onClose).toHaveBeenCalledTimes(1);
-        expect(onConfirm).not.toHaveBeenCalled();
-    });
+    itClosesWithoutConfirmingOnCancel(setup);
 });

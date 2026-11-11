@@ -20,6 +20,7 @@ import {
     POSITION_THRESHOLD,
     PREFERENCE_KEYS,
 } from './DispatchMap.types';
+import {MARKER_POSITION_THRESHOLD} from '../here-map/HereMap.types';
 import {AddressType} from '../../../types/enums/address-type.enum';
 
 describe('DispatchMap Constants', () => {
@@ -177,15 +178,8 @@ describe('DispatchMap Constants', () => {
         });
     });
 
-    describe('POSITION_THRESHOLD', () => {
-        it('should be 0.0001 degrees', () => {
-            expect(POSITION_THRESHOLD).toBe(0.0001);
-        });
-
-        it('should be a small value for position comparison', () => {
-            expect(POSITION_THRESHOLD).toBeGreaterThan(0);
-            expect(POSITION_THRESHOLD).toBeLessThan(0.01);
-        });
+    it('re-exports the shared marker position threshold', () => {
+        expect(POSITION_THRESHOLD).toBe(MARKER_POSITION_THRESHOLD);
     });
 
     describe('MARKER_PIN_PATH', () => {

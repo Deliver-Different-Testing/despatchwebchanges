@@ -138,10 +138,6 @@ vi.mock('./components/OpenJobsBox', () => ({
     },
 }));
 
-const serverViews = [
-    {id: 11, name: 'Auckland', centerLatitude: -36.85, centerLongitude: 174.76, selected: false},
-    {id: 22, name: 'Airport', centerLatitude: -37.0, centerLongitude: 174.79, selected: false},
-];
 const fetchPageViewsMock = vi.fn().mockResolvedValue(serverViews);
 vi.mock('../../api/dispatchViewsApi', () => ({
     fetchPageViews: (...a: unknown[]) => fetchPageViewsMock(...a),
@@ -240,6 +236,7 @@ import dayjs from 'dayjs';
 import {SELECTED_VIEWS_KEY} from './lib/dispatchFilters';
 import {AppPage as LegacyAppPage} from '../../types/enums/app-pages.enum';
 import {MantineTestProvider} from '../../test/utils';
+import {serverViews} from './dispatchPageViews.fixtures';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof DispatchPage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});

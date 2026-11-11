@@ -1,4 +1,6 @@
 import {refreshJobDetails} from '../../components/common/job-details/jobDetailsRefresh';
+import {useViewsListener} from '../../hooks/useViewsListener';
+import {runSharedJobAction} from '../jobActionDialogs';
 import {getSession} from '../../api/session';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
@@ -35,9 +37,7 @@ import {
     getActivePartnerOptions,
     getPartnerRateForJob,
     sendToPartner,
-    setJobLocked,
 } from '../../api/jobListApi';
-import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 import {executeAddStopFlow} from '../../utils/addStopFlow';
 import {
     NationwideJobActionsMenu,
@@ -77,7 +77,6 @@ import {
 import {useDashboardViews} from '../../hooks/useDashboardViews';
 import type {DfrntPageViewModel} from '../../types/interfaces/dfrnt-page-view-model.interface';
 import type {NationwidePageProps} from './NationwidePageProps';
-import {loadDialog} from '../../components/dialogs/dialogRegistry';
 
 /**
  * V1's Nationwide controller used a bespoke "NW" abbreviation for this key
@@ -208,30 +207,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         ));
     }, []);
 
-    // The host toolbar's Views menu mirrors this selection; it registers a
-    // listener and pushes its own changes back through `setViewSelection`.
-    const decoratedViews = useMemo<DfrntPageViewModel[]>(
-        () => (pageViews ?? []).map(v => ({...v, selected: selectedViewIds.includes(v.id)})),
-        [pageViews, selectedViewIds],
-    );
-    const decoratedViewsRef = useRef(decoratedViews);
-    const viewsListenerRef = useRef<((views: DfrntPageViewModel[]) => void) | null>(null);
-    // Hold the first notification until the list has actually loaded, so the
-    // toolbar menu keeps its spinner instead of flashing "No views yet".
-    const viewsLoadedRef = useRef(false);
-    viewsLoadedRef.current = !viewsLoading;
-    useEffect(() => {
-        decoratedViewsRef.current = decoratedViews;
-        if (!viewsLoading) viewsListenerRef.current?.(decoratedViews);
-    }, [decoratedViews, viewsLoading]);
-
-    const registerViewsListener = useCallback((listener: (views: DfrntPageViewModel[]) => void) => {
-        viewsListenerRef.current = listener;
-        if (viewsLoadedRef.current) listener(decoratedViewsRef.current);
-        return () => {
-            if (viewsListenerRef.current === listener) viewsListenerRef.current = null;
-        };
-    }, []);
+    const registerViewsListener = useViewsListener(pageViews, selectedViewIds, viewsLoading);
 
     useEffect(() => {
         onLayoutBridgeReady?.({
@@ -567,44 +543,8 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                     return;
                 }
 
-                case 'accessorialCharges':
-                    if (!job.accessorialChargeGroupId) return;
-                    await (await loadDialog('AccessorialCharges')).open({
-                        job: {
-                            id: job.id,
-                            accessorialChargeGroupId: job.accessorialChargeGroupId,
-                            amount: job.amount,
-                            weight: job.weight,
-                            quantity: job.quantity,
-                        },
-                        toastService: {showToast},
-                    });
-                    refreshDetail();
-                    return;
-
-                case 'attachments':
-                    await (await loadDialog('JobFileUpload')).open(job.id);
-                    refreshDetail();
-                    return;
-
-                case 'addTask':
-                    await openAddEventDialog({
-                        job: {id: job.id, jobNo: job.jobNo, client: job.client ?? '', clientId: job.clientId},
-                        toastService: {showToast},
-                    });
-                    return;
-
-                case 'lock':
-                case 'unlock': {
-                    const locked = actionId === 'lock';
-                    await setJobLocked(job.id, locked, !!job.preBook);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
-                    refreshLists();
-                    refreshDetail();
-                    return;
-                }
-
                 default:
+                    await runSharedJobAction(actionId, job, {showToast, refreshDetail, refreshLists});
                     return;
             }
         } catch (error) {

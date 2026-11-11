@@ -13,6 +13,7 @@ import {AfterHoursTab} from './AfterHoursTab';
 import {AfterHoursPaginated} from '../../../types';
 import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks/useDriverManagementApi';
 import {testDialogs} from '../../../components/dialogs/testDialogRegistry';
+import {itShowsLoadingIndicator, itShowsRetryableErrorState} from './driverTabLoadStates.testHelpers';
 vi.mock('../../../components/dialogs/dialogRegistry', async () => (await import('../../../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
 
 vi.mock('../../../hooks/useDriverManagementApi', () => ({
@@ -143,12 +144,7 @@ describe('AfterHoursTab', () => {
     });
 
     describe('Loading state', () => {
-        it('should show loading indicator when isLoading is true', () => {
-            setupMocks(undefined, true);
-            renderWithProviders();
-
-            expect(screen.getByText('Loading…')).toBeInTheDocument();
-        });
+        itShowsLoadingIndicator(setupMocks, renderWithProviders);
     });
 
     describe('Empty state', () => {
@@ -163,13 +159,6 @@ describe('AfterHoursTab', () => {
             expect(screen.getByText('Add a schedule to roster drivers outside normal hours.')).toBeInTheDocument();
         });
 
-        it('should show a retryable error state when the load fails', () => {
-            setupMocks(undefined, false, true);
-            renderWithProviders();
-
-            expect(screen.getByText("Couldn't load schedules")).toBeInTheDocument();
-            fireEvent.click(screen.getByRole('button', {name: 'Try again'}));
-            expect(refetch).toHaveBeenCalled();
-        });
+        itShowsRetryableErrorState(setupMocks, renderWithProviders, refetch, "Couldn't load schedules");
     });
 });

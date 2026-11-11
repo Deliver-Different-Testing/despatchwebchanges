@@ -429,7 +429,7 @@ describe('BulkPriceUploadDialog', () => {
             });
         });
 
-        it('should show error toast on failure', async () => {
+        it('should show error toast and return to mode-select state on failure', async () => {
             const props = createMockProps({
                 onSubmit: vi.fn().mockRejectedValue(new Error('Upload failed')),
             });
@@ -445,6 +445,7 @@ describe('BulkPriceUploadDialog', () => {
                     'error'
                 );
             });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         });
 
         it('should not report a failure when the response body is malformed', async () => {
@@ -462,19 +463,6 @@ describe('BulkPriceUploadDialog', () => {
 
             expect(await screen.findByText('Prices updated')).toBeInTheDocument();
             expect(props.showToast).not.toHaveBeenCalledWith(expect.anything(), 'error');
-        });
-
-        it('should return to mode-select state on error', async () => {
-            const props = createMockProps({
-                onSubmit: vi.fn().mockRejectedValue(new Error('Upload failed')),
-            });
-            renderWithTheme(<BulkPriceUploadDialog {...props} />);
-            await uploadFileAndGoToModeSelect();
-
-            const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
-            await userEvent.click(applyButton);
-
-            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         });
     });
 

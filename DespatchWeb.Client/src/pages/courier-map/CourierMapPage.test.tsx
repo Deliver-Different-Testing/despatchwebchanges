@@ -77,6 +77,19 @@ const createDefaultProps = (overrides?: Partial<CourierMapPageInternalProps>): C
     ...overrides,
 });
 
+async function mockCourierMapReady(overrides: Record<string, unknown> = {}): Promise<void> {
+    const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
+    useCourierMapMock.mockReturnValue({
+        mapContainerRef: {current: document.createElement('div')},
+        isInitialized: true,
+        updateCouriers: vi.fn(),
+        centerOnCourier: vi.fn(),
+        setSelectedDriver: vi.fn(),
+        returnToOverview: vi.fn(),
+        ...overrides,
+    });
+}
+
 const mockCouriers = [
     {
         courierId: 1,
@@ -176,17 +189,10 @@ describe('CourierMapPage Component', () => {
         });
 
         it('renders the shared zoom/layer rail once the map is ready', async () => {
-            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
-            useCourierMapMock.mockReturnValue({
-                mapContainerRef: {current: document.createElement('div')},
-                isInitialized: true,
+            await mockCourierMapReady({
                 map: {getZoom: vi.fn(() => 5), setZoom: vi.fn()},
                 platform: {},
                 defaultLayers: {},
-                updateCouriers: vi.fn(),
-                centerOnCourier: vi.fn(),
-                setSelectedDriver: vi.fn(),
-                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -350,15 +356,7 @@ describe('CourierMapPage Component', () => {
 
         it('narrows the map markers to search matches, hiding the rest', async () => {
             const mockUpdateCouriers = vi.fn();
-            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
-            useCourierMapMock.mockReturnValue({
-                mapContainerRef: {current: document.createElement('div')},
-                isInitialized: true,
-                updateCouriers: mockUpdateCouriers,
-                centerOnCourier: vi.fn(),
-                setSelectedDriver: vi.fn(),
-                returnToOverview: vi.fn(),
-            });
+            await mockCourierMapReady({updateCouriers: mockUpdateCouriers});
 
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);
@@ -377,14 +375,9 @@ describe('CourierMapPage Component', () => {
         it('auto-selects and zooms to the courier once search uniquely matches them', async () => {
             const mockCenterOnCourier = vi.fn();
             const mockSetSelectedDriver = vi.fn();
-            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
-            useCourierMapMock.mockReturnValue({
-                mapContainerRef: {current: document.createElement('div')},
-                isInitialized: true,
-                updateCouriers: vi.fn(),
+            await mockCourierMapReady({
                 centerOnCourier: mockCenterOnCourier,
                 setSelectedDriver: mockSetSelectedDriver,
-                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -404,14 +397,9 @@ describe('CourierMapPage Component', () => {
         it('does not auto-select or zoom when the search matches more than one courier', async () => {
             const mockUpdateCouriers = vi.fn();
             const mockCenterOnCourier = vi.fn();
-            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
-            useCourierMapMock.mockReturnValue({
-                mapContainerRef: {current: document.createElement('div')},
-                isInitialized: true,
+            await mockCourierMapReady({
                 updateCouriers: mockUpdateCouriers,
                 centerOnCourier: mockCenterOnCourier,
-                setSelectedDriver: vi.fn(),
-                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -433,13 +421,7 @@ describe('CourierMapPage Component', () => {
     describe('Map Controls Interaction', () => {
         it('calls returnToOverview when fit-all button is clicked', async () => {
             const mockReturnToOverview = vi.fn();
-            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
-            useCourierMapMock.mockReturnValue({
-                mapContainerRef: {current: document.createElement('div')},
-                isInitialized: true,
-                updateCouriers: vi.fn(),
-                centerOnCourier: vi.fn(),
-                setSelectedDriver: vi.fn(),
+            await mockCourierMapReady({
                 returnToOverview: mockReturnToOverview,
             });
 
@@ -472,14 +454,8 @@ describe('CourierMapPage Component', () => {
     describe('Driver Click Handling', () => {
         it('calls centerOnCourier when a driver is clicked', async () => {
             const mockCenterOnCourier = vi.fn();
-            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
-            useCourierMapMock.mockReturnValue({
-                mapContainerRef: {current: document.createElement('div')},
-                isInitialized: true,
-                updateCouriers: vi.fn(),
+            await mockCourierMapReady({
                 centerOnCourier: mockCenterOnCourier,
-                setSelectedDriver: vi.fn(),
-                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -498,14 +474,8 @@ describe('CourierMapPage Component', () => {
 
         it('highlights the clicked driver in the list and tells the map to select it', async () => {
             const mockSetSelectedDriver = vi.fn();
-            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
-            useCourierMapMock.mockReturnValue({
-                mapContainerRef: {current: document.createElement('div')},
-                isInitialized: true,
-                updateCouriers: vi.fn(),
-                centerOnCourier: vi.fn(),
+            await mockCourierMapReady({
                 setSelectedDriver: mockSetSelectedDriver,
-                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -636,15 +606,7 @@ describe('CourierMapPage Component', () => {
             );
 
             const mockUpdateCouriers = vi.fn();
-            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
-            useCourierMapMock.mockReturnValue({
-                mapContainerRef: {current: document.createElement('div')},
-                isInitialized: true,
-                updateCouriers: mockUpdateCouriers,
-                centerOnCourier: vi.fn(),
-                setSelectedDriver: vi.fn(),
-                returnToOverview: vi.fn(),
-            });
+            await mockCourierMapReady({updateCouriers: mockUpdateCouriers});
 
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);

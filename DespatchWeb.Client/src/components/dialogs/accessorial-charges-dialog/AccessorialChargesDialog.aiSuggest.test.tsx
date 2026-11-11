@@ -11,16 +11,9 @@ import {isAiEnabled} from '../../../utils/aiSettings';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-vi.mock('../../../api/accessorialChargesApi', () => ({
-    accessorialChargesApi: {
-        getAvailableCharges: vi.fn(),
-        getAppliedCharges: vi.fn(),
-        getJobAmount: vi.fn(),
-        addCharges: vi.fn(),
-        updateCharge: vi.fn(),
-        deleteCharge: vi.fn(),
-    },
-}));
+vi.mock('../../../api/accessorialChargesApi', async () =>
+    (await import('./accessorialChargesApiMock.testHelpers')).createAccessorialChargesApiMock(),
+);
 vi.mock('../../../api/aiAssistantApi', () => ({analyzePricing: vi.fn(), recordPricingOutcome: vi.fn()}));
 vi.mock('../../../utils/aiSettings', () => ({isAiEnabled: vi.fn()}));
 

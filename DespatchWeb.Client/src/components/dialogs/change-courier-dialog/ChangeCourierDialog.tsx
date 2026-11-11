@@ -19,24 +19,7 @@ import {Icon} from '../../common/icon/Icon';
 import {SearchSelect} from '../../common/search-select/SearchSelect';
 import type {ShowToastFn} from '../../../services/toastService';
 import type {ISuggestion} from '../../../types/interfaces/job.interface';
-import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
-
-/** The outgoing and incoming couriers, shown side by side in the confirm step. */
-const CourierChip: React.FC<{label: string; value: string}> = ({label, value}) => (
-    <Box
-        p="sm"
-        ta="center"
-        style={{
-            flex: 1,
-            borderRadius: 'var(--mantine-radius-sm)',
-            backgroundColor: 'var(--mantine-color-brand-light)',
-            border: '1px solid var(--mantine-color-brand-3)',
-        }}
-    >
-        <Text fz="xs" c="dimmed">{label}</Text>
-        <Text fz="lg" fw={700} c="var(--mantine-color-brand-light-color)">{value}</Text>
-    </Box>
-);
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps, ValueChip} from '../shared/mantine';
 
 export interface ChangeCourierDialogProps {
     open: boolean;
@@ -156,9 +139,9 @@ export function ChangeCourierDialog({
                             Are you sure you want to change which courier is invoiced for this work?
                         </Text>
                         <Group gap="md" align="center" wrap="nowrap">
-                            <CourierChip label="Current courier" value={currentCourierName ?? 'Unassigned'}/>
+                            <ValueChip label="Current courier" value={currentCourierName ?? 'Unassigned'}/>
                             <Icon lucide={ArrowRight} size={28} color="var(--mantine-color-dimmed)"/>
-                            <CourierChip label="New courier" value={newCourier?.text ?? ''}/>
+                            <ValueChip label="New courier" value={newCourier?.text ?? ''}/>
                         </Group>
                     </Paper>
                 )}

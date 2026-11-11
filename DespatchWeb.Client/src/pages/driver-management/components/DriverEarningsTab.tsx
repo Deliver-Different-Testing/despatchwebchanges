@@ -3,12 +3,12 @@ import React, {useState} from 'react';
 import {useDriverEarnings} from '../../../hooks/useDriverManagementApi';
 import {CourierDailyEarnings, PaginatedRequest} from '../../../types';
 import {driverManagementApi} from '../../../api/driverManagementApi';
-import {DollarSign, Download, RefreshCw, TrendingUp, Truck, Users} from 'lucide-react';
+import {DollarSign, TrendingUp, Truck, Users} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
-import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
-import {DataTable, DataTableColumn, FilterToolbar, formatMinutes, ListEmptyState, SearchField, SortState, StatCard} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, formatMinutes, ListEmptyState, SortState, StatCard} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import {formatCurrency} from '../../../utils/currencyUtils';
+import {QuerySearchField, RefreshExportActions} from './DriverFilterControls';
 import {dataTablePagingProps} from './dataTablePaging';
 
 interface DriverEarningsTabProps {
@@ -64,23 +64,8 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
             </Group>
 
             {/* Filters */}
-            <FilterToolbar
-                actions={
-                    <>
-                        <HeaderActionIcon label="Refresh" onClick={() => refetch()}>
-                            <Icon lucide={RefreshCw} size={PANEL_CONTROL_GLYPH_SIZE}/>
-                        </HeaderActionIcon>
-                        <HeaderActionIcon label="Export CSV" onClick={handleExport}>
-                            <Icon lucide={Download} size={PANEL_CONTROL_GLYPH_SIZE}/>
-                        </HeaderActionIcon>
-                    </>
-                }
-            >
-                <SearchField
-                    value={query.searchTerm ?? ''}
-                    onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
-                    placeholder="Search earnings…"
-                />
+            <FilterToolbar actions={<RefreshExportActions onRefresh={() => refetch()} onExport={handleExport}/>}>
+                <QuerySearchField query={query} setQuery={setQuery} placeholder="Search earnings…"/>
             </FilterToolbar>
 
             {/* Table */}

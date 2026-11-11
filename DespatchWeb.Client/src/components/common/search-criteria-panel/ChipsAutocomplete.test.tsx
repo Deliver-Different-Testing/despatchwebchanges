@@ -48,6 +48,16 @@ describe('ChipsAutocomplete', () => {
     // Helper: get the combobox input element
     const getInput = () => screen.getByRole('combobox');
 
+    const searchFor = async (text: string, overrides: Partial<ChipsAutocompleteProps>) => {
+        const props = createChipsProps(overrides);
+        renderWithTheme(<ChipsAutocomplete {...props} />);
+        await user.type(getInput(), text);
+        await act(async () => {
+            vi.advanceTimersByTime(300);
+        });
+        return props;
+    };
+
     describe('Rendering', () => {
         it('renders with placeholder when no value selected', () => {
             renderWithTheme(<ChipsAutocomplete {...createChipsProps()} />);
@@ -120,15 +130,9 @@ describe('ChipsAutocomplete', () => {
             const searchPromise = new Promise<ISuggestion[]>(resolve => {
                 resolveSearch = resolve;
             });
-            const props = createChipsProps({
+            const props = await searchFor('ac', {
                 minInputLength: 2,
                 onSearch: vi.fn().mockReturnValue(searchPromise),
-            });
-            renderWithTheme(<ChipsAutocomplete {...props} />);
-
-            await user.type(getInput(), 'ac');
-            await act(async () => {
-                vi.advanceTimersByTime(300);
             });
 
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -140,15 +144,9 @@ describe('ChipsAutocomplete', () => {
         });
 
         it('displays search results as options', async () => {
-            const props = createChipsProps({
+            const props = await searchFor('ac', {
                 minInputLength: 2,
                 onSearch: vi.fn().mockResolvedValue(mockResults),
-            });
-            renderWithTheme(<ChipsAutocomplete {...props} />);
-
-            await user.type(getInput(), 'ac');
-            await act(async () => {
-                vi.advanceTimersByTime(300);
             });
 
             const listbox = await screen.findByRole('listbox');
@@ -160,31 +158,19 @@ describe('ChipsAutocomplete', () => {
         });
 
         it('shows "No {label} found" when search returns empty', async () => {
-            const props = createChipsProps({
+            const props = await searchFor('zz', {
                 minInputLength: 2,
                 onSearch: vi.fn().mockResolvedValue([]),
-            });
-            renderWithTheme(<ChipsAutocomplete {...props} />);
-
-            await user.type(getInput(), 'zz');
-            await act(async () => {
-                vi.advanceTimersByTime(300);
             });
 
             expect(await screen.findByText('No clients found')).toBeInTheDocument();
         });
 
         it('filters out already-selected items from results', async () => {
-            const props = createChipsProps({
+            const props = await searchFor('ac', {
                 minInputLength: 2,
                 value: [{id: 1, text: 'Acme Corp'}],
                 onSearch: vi.fn().mockResolvedValue(mockResults),
-            });
-            renderWithTheme(<ChipsAutocomplete {...props} />);
-
-            await user.type(getInput(), 'ac');
-            await act(async () => {
-                vi.advanceTimersByTime(300);
             });
 
             const listbox = await screen.findByRole('listbox');
@@ -198,15 +184,9 @@ describe('ChipsAutocomplete', () => {
 
     describe('Selection', () => {
         it('calls onChange with new items when option selected', async () => {
-            const props = createChipsProps({
+            const props = await searchFor('ac', {
                 minInputLength: 2,
                 onSearch: vi.fn().mockResolvedValue(mockResults),
-            });
-            renderWithTheme(<ChipsAutocomplete {...props} />);
-
-            await user.type(getInput(), 'ac');
-            await act(async () => {
-                vi.advanceTimersByTime(300);
             });
 
             const option = await screen.findByRole('option', {name: 'Acme Corp'});
