@@ -78,7 +78,6 @@ export function CourierMapPage({
             })
             .catch((err) => console.error('[CourierMapPage] failed to load display settings preference:', err));
         return () => { cancelled = true; };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded once on mount
     }, []);
 
     const handleDisplaySettingsChange = useCallback((next: CourierMapDisplaySettings) => {

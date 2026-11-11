@@ -245,7 +245,6 @@ export function suppressConsoleError(...allowedPrefixes: string[]): MockInstance
         if (allowedPrefixes.length === 0) return;
         const msg = typeof args[0] === 'string' ? args[0] : '';
         if (!allowedPrefixes.some(p => msg.startsWith(p))) {
-            // eslint-disable-next-line no-console
             console.warn('[unexpected console.error]', ...args);
         }
     });

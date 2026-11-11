@@ -94,7 +94,6 @@ describe('PartnerApprovalsInbox', () => {
         // The customer with overdue items appears first in the DOM.
         const acmeIdx = screen.getByText('Acme Logistics').compareDocumentPosition(screen.getByText('Beta Couriers'));
         // Acme comes AFTER Beta because Beta has the overdue item.
-        // eslint-disable-next-line no-bitwise
         expect(acmeIdx & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
     });
 
