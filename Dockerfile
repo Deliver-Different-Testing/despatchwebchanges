@@ -1,5 +1,5 @@
 # -- Stage 1: build the Vite SPA (DespatchWeb.Client -> wwwroot/dist) --
-FROM node:20-alpine AS frontend-build
+FROM node:24-alpine AS frontend-build
 WORKDIR /frontend/DespatchWeb.Client
 
 # Every dependency comes from npmjs.org except @deliver-different/glass, which comes from the GitLab
