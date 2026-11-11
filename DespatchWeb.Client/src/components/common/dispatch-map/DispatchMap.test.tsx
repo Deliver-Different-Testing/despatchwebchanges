@@ -393,13 +393,13 @@ describe('DispatchMap Default Map Center', () => {
         {
             region: 'NZ center for courier fallback bounds when non-US customer',
             isUSCustomer: false,
-            // NZ center is ~174.7762 lng, ~-41.2865 lat — bounds should be around that
+            // NZ center is ~174.7762 lng, ~-41.2865 lat â€” bounds should be around that
             expected: {minLat: -41.7865, maxLat: -40.7865, minLng: 174.2762, maxLng: 175.2762},
         },
         {
             region: 'US center for courier fallback bounds when US customer',
             isUSCustomer: true,
-            // US center is ~-98.5556 lng, ~39.8097 lat — bounds should be around that
+            // US center is ~-98.5556 lng, ~39.8097 lat â€” bounds should be around that
             expected: {minLat: 39.31, maxLat: 40.31, minLng: -99.06, maxLng: -98.06},
         },
     ])('uses $region', async ({isUSCustomer, expected}) => {
