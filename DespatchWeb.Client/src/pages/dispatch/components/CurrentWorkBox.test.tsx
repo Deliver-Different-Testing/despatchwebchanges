@@ -1,10 +1,11 @@
+import type {Mock} from 'vitest';
 import React, {act} from 'react';
 import {render, screen, waitFor, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // Stub the heavy children so the test exercises CurrentWorkBox's own wiring.
 const jobListPanelProps: {fetchConfig?: any; defaultCategory?: string; hiddenCategories?: string[]; selectedJobId?: number | null} = {};
-jest.mock('../../../components/job-list/JobListPanel', () => ({
+vi.mock('../../../components/job-list/JobListPanel', () => ({
     JobListPanel: ({storagePrefix, fetchConfig, defaultCategory, hiddenCategories, selectedJobId}: {storagePrefix: string; fetchConfig: any; defaultCategory?: string; hiddenCategories?: string[]; selectedJobId?: number | null}) => {
         jobListPanelProps.fetchConfig = fetchConfig;
         jobListPanelProps.defaultCategory = defaultCategory;
@@ -16,7 +17,7 @@ jest.mock('../../../components/job-list/JobListPanel', () => ({
 
 type MockDriver = {courierId: number; name?: string; driverStatusText?: string};
 const mockOverview: {onDriverSelect?: (d: MockDriver) => void; drivers?: MockDriver[]} = {};
-jest.mock('../../../components/common/current-work-all-drivers', () => ({
+vi.mock('../../../components/common/current-work-all-drivers', () => ({
     CurrentWorkAllDrivers: ({drivers, onDriverSelect}: {drivers: MockDriver[]; onDriverSelect: (d: MockDriver) => void}) => {
         mockOverview.onDriverSelect = onDriverSelect;
         mockOverview.drivers = drivers;
@@ -24,24 +25,24 @@ jest.mock('../../../components/common/current-work-all-drivers', () => ({
     },
 }));
 
-jest.mock('../../../api/courierApi', () => ({
-    fetchDriverWorkOverview: jest.fn().mockResolvedValue([]),
+vi.mock('../../../api/courierApi', () => ({
+    fetchDriverWorkOverview: vi.fn().mockResolvedValue([]),
 }));
 
-jest.mock('../../../api/jobSearchApi', () => ({
-    fetchCurrentWorkJobs: jest.fn().mockResolvedValue({jobs: [], totalCount: 0, hasMore: false}),
+vi.mock('../../../api/jobSearchApi', () => ({
+    fetchCurrentWorkJobs: vi.fn().mockResolvedValue({jobs: [], totalCount: 0, hasMore: false}),
 }));
 
 // Stub the courier search so CurrentWorkBox doesn't hit the courier API.
 const courierSearchSelectRef: {fn?: (c: {id: number; text: string}) => void} = {};
-jest.mock('./CourierSearchField', () => ({
+vi.mock('./CourierSearchField', () => ({
     CourierSearchField: ({onSelect}: {onSelect: (c: {id: number; text: string}) => void}) => {
         courierSearchSelectRef.fn = onSelect;
         return <button onClick={() => onSelect({id: 99, text: 'Courier 99'})}>pick-courier</button>;
     },
 }));
 
-jest.mock('./TruckLoadingStatusDialog', () => ({
+vi.mock('./TruckLoadingStatusDialog', () => ({
     TruckLoadingStatusDialog: ({open}: {open: boolean}) =>
         open ? <div data-testid="mock-truck-status" /> : null,
 }));
@@ -60,7 +61,7 @@ function renderBox(overrides: Partial<React.ComponentProps<typeof CurrentWorkBox
         <QueryClientProvider client={queryClient}>
             <MantineTestProvider>
                 <CurrentWorkBox
-                    showToast={jest.fn()}
+                    showToast={vi.fn()}
                     isUsCustomer={false}
                     startDate={defaultStart}
                     endDate={defaultEnd}
@@ -80,7 +81,7 @@ describe('CurrentWorkBox', () => {
         jobListPanelProps.hiddenCategories = undefined;
         jobListPanelProps.selectedJobId = undefined;
         sessionStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     describe('non-US tenant', () => {
@@ -168,7 +169,7 @@ describe('CurrentWorkBox', () => {
         });
 
         it('shows only active drivers when the Active Drivers scope is selected', async () => {
-            (fetchDriverWorkOverview as jest.Mock).mockResolvedValue([
+            (fetchDriverWorkOverview as Mock).mockResolvedValue([
                 {courierId: 1, name: 'Active Amy', driverStatusText: 'Active'},
                 {courierId: 2, name: 'Idle Ian', driverStatusText: 'Inactive'},
                 {courierId: 3, name: 'Active Al', driverStatusText: 'Active'},

@@ -15,19 +15,19 @@ const defaultLayout: ILayout = {
 
 function makeBridge() {
     return {
-        setCurrentLayoutName: jest.fn(),
-        reloadLayoutsFromStorage: jest.fn(),
-        promptSaveLayout: jest.fn<Promise<string | null>, []>().mockResolvedValue(null),
-        promptDeleteLayout: jest.fn<Promise<boolean>, [string]>().mockResolvedValue(false),
-        promptRenameLayout: jest.fn<Promise<string | null>, [string]>().mockResolvedValue(null),
+        setCurrentLayoutName: vi.fn(),
+        reloadLayoutsFromStorage: vi.fn(),
+        promptSaveLayout: vi.fn<() => Promise<string | null>>().mockResolvedValue(null),
+        promptDeleteLayout: vi.fn<(name: string) => Promise<boolean>>().mockResolvedValue(false),
+        promptRenameLayout: vi.fn<(name: string) => Promise<string | null>>().mockResolvedValue(null),
     };
 }
 
 function makeToastr() {
     return {
-        showSuccessToast: jest.fn(),
-        showErrorToast: jest.fn(),
-        showInfoToast: jest.fn(),
+        showSuccessToast: vi.fn(),
+        showErrorToast: vi.fn(),
+        showInfoToast: vi.fn(),
     };
 }
 

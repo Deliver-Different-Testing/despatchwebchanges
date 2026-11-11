@@ -30,8 +30,8 @@ const jobListParamPushes: Record<string, unknown>[] = [];
 let jobDetailsMounts = 0;
 let jobDetailsMountEvents = 0;
 const jobDetailsProps: Array<{jobId?: number}> = [];
-jest.mock('../../components/common/job-details/JobDetails', () => {
-    const R = require('react');
+vi.mock('../../components/common/job-details/JobDetails', async () => {
+    const R = (await import('react'));
     return {
         JobDetails: ({config}: {config: {jobId?: number}}) => {
             R.useEffect(() => {
@@ -47,7 +47,7 @@ jest.mock('../../components/common/job-details/JobDetails', () => {
     };
 });
 
-jest.mock('../../components/job-list/JobListPanel', () => ({
+vi.mock('../../components/job-list/JobListPanel', () => ({
     JobListPanel: ({storagePrefix, onJobSelect, selectedJobId, onJobsLoaded, topSlot, fetchConfig, forcedCategory, setUpdateSearchParamsCallback}: {
         storagePrefix: string;
         onJobSelect?: (j: unknown) => void;
@@ -86,20 +86,20 @@ const boxProps: {
     openJobs?: {refetchIntervalMs?: number | false; despatchViewIds?: number[]};
 } = {};
 let selectArea: ((id: number) => void) | undefined;
-jest.mock('./components/DriverLocationsBox', () => ({
+vi.mock('./components/DriverLocationsBox', () => ({
     DriverLocationsBox: (props: {refetchIntervalMs?: number | false; activeAreaId?: number; onAreaSelect?: (id: number) => void}) => {
         boxProps.driverLocations = {refetchIntervalMs: props.refetchIntervalMs, activeAreaId: props.activeAreaId};
         selectArea = props.onAreaSelect;
         return <div data-testid="mock-driver-locations"/>;
     },
 }));
-jest.mock('../../components/common/tasks-box/TasksBox', () => ({
+vi.mock('../../components/common/tasks-box/TasksBox', () => ({
     TasksBox: (props: {refetchIntervalMs?: number | false}) => {
         boxProps.supports = {refetchIntervalMs: props.refetchIntervalMs};
         return <div data-testid="mock-supports"/>;
     },
 }));
-jest.mock('./components/CurrentWorkBox', () => ({
+vi.mock('./components/CurrentWorkBox', () => ({
     CurrentWorkBox: (props: {refetchIntervalMs?: number | false; courierDisplayMode?: string; selectedJobCourierNumber?: string; selectedJobId?: number | null; onJobSelect?: (j: unknown) => void}) => {
         boxProps.currentWork = {
             refetchIntervalMs: props.refetchIntervalMs,
@@ -115,13 +115,13 @@ jest.mock('./components/CurrentWorkBox', () => ({
     },
 }));
 
-const getPreferenceMock = jest.fn().mockResolvedValue(null);
-const savePreferenceMock = jest.fn().mockResolvedValue(undefined);
-jest.mock('../../api/preferencesApi', () => ({
+const getPreferenceMock = vi.fn().mockResolvedValue(null);
+const savePreferenceMock = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../api/preferencesApi', () => ({
     getPreference: (...a: unknown[]) => getPreferenceMock(...a),
     savePreference: (...a: unknown[]) => savePreferenceMock(...a),
 }));
-jest.mock('./components/OverviewDeliveriesBox', () => ({
+vi.mock('./components/OverviewDeliveriesBox', () => ({
     OverviewDeliveriesBox: (props: {refetchIntervalMs?: number | false; despatchViewIds?: number[]; onSelectJob: (id: number) => void}) => {
         boxProps.overviewDeliveries = {refetchIntervalMs: props.refetchIntervalMs, despatchViewIds: props.despatchViewIds};
         return (
@@ -131,7 +131,7 @@ jest.mock('./components/OverviewDeliveriesBox', () => ({
         );
     },
 }));
-jest.mock('./components/OpenJobsBox', () => ({
+vi.mock('./components/OpenJobsBox', () => ({
     OpenJobsBox: (props: {refetchIntervalMs?: number | false; despatchViewIds?: number[]}) => {
         boxProps.openJobs = {refetchIntervalMs: props.refetchIntervalMs, despatchViewIds: props.despatchViewIds};
         return <div data-testid="mock-open-jobs"/>;
@@ -142,8 +142,8 @@ const serverViews = [
     {id: 11, name: 'Auckland', centerLatitude: -36.85, centerLongitude: 174.76, selected: false},
     {id: 22, name: 'Airport', centerLatitude: -37.0, centerLongitude: 174.79, selected: false},
 ];
-const fetchPageViewsMock = jest.fn().mockResolvedValue(serverViews);
-jest.mock('../../api/dispatchViewsApi', () => ({
+const fetchPageViewsMock = vi.fn().mockResolvedValue(serverViews);
+vi.mock('../../api/dispatchViewsApi', () => ({
     fetchPageViews: (...a: unknown[]) => fetchPageViewsMock(...a),
 }));
 
@@ -155,11 +155,11 @@ const dispatchMapProps: {
     preferenceScope?: string | number;
     courierFlagLastDelivery?: string;
 } = {};
-const tenantFlagDefaultMock = jest.fn().mockResolvedValue(null);
-jest.mock('../../api/tenantSettingsApi', () => ({
+const tenantFlagDefaultMock = vi.fn().mockResolvedValue(null);
+vi.mock('../../api/tenantSettingsApi', () => ({
     getTenantCourierFlagLastDeliveryDefault: () => tenantFlagDefaultMock(),
 }));
-jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
+vi.mock('../../components/common/dispatch-map/DispatchMap', () => ({
     DispatchMap: (props: {
         onMarkerClick?: (item: {jobId: number}) => void;
         showAvailableCouriers?: boolean;
@@ -184,41 +184,41 @@ jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
 }));
 
 // Without this the real layout sync fires a live XHR at DispatchLayout/GetLayouts.
-jest.mock('../../api/dispatchLayoutApi', () => ({
-    getLayouts: jest.fn().mockResolvedValue([]),
-    saveLayouts: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../api/dispatchLayoutApi', () => ({
+    getLayouts: vi.fn().mockResolvedValue([]),
+    saveLayouts: vi.fn().mockResolvedValue(undefined),
 }));
-const getDispatchJobDetailMock = jest.fn().mockResolvedValue({id: 55, jobNo: 'JOB-55'});
-jest.mock('../../api/dispatchExecutorApi', () => ({
+const getDispatchJobDetailMock = vi.fn().mockResolvedValue({id: 55, jobNo: 'JOB-55'});
+vi.mock('../../api/dispatchExecutorApi', () => ({
     getDispatchJobDetail: (...a: unknown[]) => getDispatchJobDetailMock(...a),
 }));
 
-const allocateJobsMock = jest.fn().mockResolvedValue(undefined);
-const reAllocateJobsMock = jest.fn().mockResolvedValue(undefined);
-jest.mock('../../api/jobListApi', () => ({
+const allocateJobsMock = vi.fn().mockResolvedValue(undefined);
+const reAllocateJobsMock = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../api/jobListApi', () => ({
     allocateJobs: (...a: unknown[]) => allocateJobsMock(...a),
     reAllocateJobs: (...a: unknown[]) => reAllocateJobsMock(...a),
-    sendToPartner: jest.fn().mockResolvedValue({success: true, trackingNumber: 'T1'}),
-    getActivePartnerOptions: jest.fn().mockResolvedValue([]),
-    getPartnerRateForJob: jest.fn().mockResolvedValue({}),
+    sendToPartner: vi.fn().mockResolvedValue({success: true, trackingNumber: 'T1'}),
+    getActivePartnerOptions: vi.fn().mockResolvedValue([]),
+    getPartnerRateForJob: vi.fn().mockResolvedValue({}),
 }));
 
 // Stub the dialog modules; they open real Mantine dialogs.
-jest.mock('../../components/dialogs/add-event-dialog', () => ({
-    openAddEventDialog: jest.fn().mockResolvedValue(true),
+vi.mock('../../components/dialogs/add-event-dialog', () => ({
+    openAddEventDialog: vi.fn().mockResolvedValue(true),
 }));
 
-jest.mock('../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module', () => ({
-    openInterCourierChargeDialog: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module', () => ({
+    openInterCourierChargeDialog: vi.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
-    openEditAddressDialog: jest.fn().mockResolvedValue(null),
+vi.mock('../../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
+    openEditAddressDialog: vi.fn().mockResolvedValue(null),
 }));
 
 // Stub the DispatchDialog: when open, expose a button that fires the courier
 // dispatch callback so we can assert the page's allocate wiring.
-jest.mock('../../components/dialogs/dispatch-dialog', () => ({
+vi.mock('../../components/dialogs/dispatch-dialog', () => ({
     DispatchDialog: ({open, onDispatchCourier}: {
         open: boolean;
         onDispatchCourier: (c: {type: string; destination: {id: number; text: string}}) => void;
@@ -247,7 +247,7 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof DispatchPage>
         <QueryClientProvider client={queryClient}>
             <MantineTestProvider>
                 <DispatchPage
-                    showToast={jest.fn()}
+                    showToast={vi.fn()}
                     isUsCustomer={false}
                     timeZone="New Zealand Standard Time"
                     {...overrides}
@@ -306,7 +306,7 @@ describe('DispatchPage', () => {
         });
 
         it('applies a new mode pushed through the layout bridge, without a reload', async () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady, isUsCustomer: true});
             await waitFor(() => expect(boxProps.currentWork?.courierDisplayMode).toBe('off'));
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
@@ -409,7 +409,7 @@ describe('DispatchPage', () => {
     });
 
     it('exposes a layout bridge to the host on mount', () => {
-        const onLayoutBridgeReady = jest.fn();
+        const onLayoutBridgeReady = vi.fn();
         renderPage({onLayoutBridgeReady});
         expect(onLayoutBridgeReady).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -576,7 +576,7 @@ describe('DispatchPage', () => {
         // The host toolbar hands over a fresh dayjs on every push, so an unchanged
         // range must not restart the query underneath the operator.
         it('ignores a filter push that repeats the current date range', async () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             await screen.findByRole('button', {name: 'Auckland', pressed: true});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
@@ -603,11 +603,11 @@ describe('DispatchPage', () => {
         });
 
         it('holds the first host notification until the views have loaded', async () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
-            const listener = jest.fn();
+            const listener = vi.fn();
             bridge.registerViewsListener(listener);
             // Still loading — the toolbar keeps its spinner rather than
             // flashing "No views available".
@@ -619,11 +619,11 @@ describe('DispatchPage', () => {
 
         it('keeps the host toolbar in sync in both directions', async () => {
             const user = setupUser();
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
-            const listener = jest.fn();
+            const listener = vi.fn();
             const unregister = bridge.registerViewsListener(listener);
             await screen.findByRole('button', {name: 'Auckland', pressed: true});
 
@@ -747,7 +747,7 @@ describe('DispatchPage', () => {
          * doing nothing at all.
          */
         it('refreshes the overview queries, not the dispatch ones', async () => {
-            const invalidate = jest.spyOn(QueryClient.prototype, 'invalidateQueries');
+            const invalidate = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
             enableOverviewPanels();
             const user = setupUser();
             renderPage();

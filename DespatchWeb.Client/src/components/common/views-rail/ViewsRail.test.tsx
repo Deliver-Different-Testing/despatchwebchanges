@@ -19,8 +19,8 @@ const view = (id: number, name: string): DfrntPageViewModel => ({
 const views = [view(11, 'Auckland'), view(22, 'North Shore'), view(33, 'Airport')];
 
 function renderRail(props: Partial<React.ComponentProps<typeof ViewsRail>> = {}) {
-    const onToggle = jest.fn();
-    const onClearAll = jest.fn();
+    const onToggle = vi.fn();
+    const onClearAll = vi.fn();
     render(
         <MantineTestProvider>
             <ViewsRail
@@ -83,7 +83,7 @@ describe('ViewsRail', () => {
     it('renders nothing when the tenant has no views configured', () => {
         render(
             <MantineTestProvider>
-                <ViewsRail views={[]} selectedIds={[]} onToggle={jest.fn()} onClearAll={jest.fn()}/>
+                <ViewsRail views={[]} selectedIds={[]} onToggle={vi.fn()} onClearAll={vi.fn()}/>
             </MantineTestProvider>,
         );
 

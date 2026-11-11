@@ -3,16 +3,16 @@ import {fireEvent, screen} from '@testing-library/react';
 import {DialogShell, DialogHeader, DialogFooter} from './index';
 import {renderWithMantine} from '../../../../test/utils';
 
-const mockUseGlassAllowed = jest.fn();
-jest.mock('../../../../hooks/useGlassStrategy', () => ({useGlassAllowed: () => mockUseGlassAllowed()}));
-jest.mock('./DialogGlass.module.css', () => ({__esModule: true, default: {bar: 'bar', header: 'header', footer: 'footer'}}));
+const mockUseGlassAllowed = vi.fn();
+vi.mock('../../../../hooks/useGlassStrategy', () => ({useGlassAllowed: () => mockUseGlassAllowed()}));
+vi.mock('./DialogGlass.module.css', () => ({__esModule: true, default: {bar: 'bar', header: 'header', footer: 'footer'}}));
 
 function renderDialog() {
     return renderWithMantine(
-        <DialogShell opened onClose={jest.fn()}>
-            <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+        <DialogShell opened onClose={vi.fn()}>
+            <DialogHeader icon={<span/>} title="Edit price" onClose={vi.fn()}/>
             <div>Body</div>
-            <DialogFooter onCancel={jest.fn()} onConfirm={jest.fn()} confirmLabel="Save"/>
+            <DialogFooter onCancel={vi.fn()} onConfirm={vi.fn()} confirmLabel="Save"/>
         </DialogShell>,
     );
 }

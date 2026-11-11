@@ -11,8 +11,8 @@ describe('openMessagingDialog', () => {
     afterEach(() => clearSessionContext());
 
     it('opens for a signed-in session and only errors when there is no contact', async () => {
-        const error = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-        const showToast = jest.fn();
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const showToast = vi.fn();
 
         setSessionContext(context(42));
         void openMessagingDialog({toastService: {showToast}} as never);

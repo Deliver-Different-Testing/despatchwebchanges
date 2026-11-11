@@ -4,8 +4,8 @@ import {MantineTestProvider} from '../../../test/utils';
 import {OpenJobsList, OpenJobsListProps} from './OpenJobsList';
 import type {IOpenJobResponse} from './OpenJobsList.types';
 
-jest.mock('../../../utils/dateUtils', () => ({
-    formatMins: jest.fn((s: string) => s),
+vi.mock('../../../utils/dateUtils', () => ({
+    formatMins: vi.fn((s: string) => s),
 }));
 
 function createMockOpenJob(overrides: Partial<IOpenJobResponse> = {}): IOpenJobResponse {
@@ -36,11 +36,11 @@ const baseProps: OpenJobsListProps = {
     isLoading: false,
     viewMode: 'table',
     sort: {column: 'reference', direction: 'asc'},
-    onSort: jest.fn(),
+    onSort: vi.fn(),
     page: 1,
     limit: 5,
-    onPageChange: jest.fn(),
-    onLimitChange: jest.fn(),
+    onPageChange: vi.fn(),
+    onLimitChange: vi.fn(),
 };
 
 const renderList = (props: Partial<OpenJobsListProps> = {}) =>
@@ -53,7 +53,7 @@ const renderList = (props: Partial<OpenJobsListProps> = {}) =>
 describe('OpenJobsList', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     /*
@@ -101,7 +101,7 @@ describe('OpenJobsList', () => {
      * list must report and never own them.
      */
     it('reports a sort change instead of sorting itself', () => {
-        const onSort = jest.fn();
+        const onSort = vi.fn();
         renderList({openJobs: [createMockOpenJob()], onSort});
 
         fireEvent.click(screen.getByRole('button', {name: /Driver/}));
@@ -110,7 +110,7 @@ describe('OpenJobsList', () => {
     });
 
     it('flips the direction when the active column is re-picked', () => {
-        const onSort = jest.fn();
+        const onSort = vi.fn();
         renderList({
             openJobs: [createMockOpenJob()],
             sort: {column: 'reference', direction: 'asc'},
@@ -150,7 +150,7 @@ describe('OpenJobsList', () => {
     });
 
     it('writes nothing to localStorage', () => {
-        const setItem = jest.spyOn(Storage.prototype, 'setItem');
+        const setItem = vi.spyOn(Storage.prototype, 'setItem');
         renderList({openJobs: [createMockOpenJob()]});
 
         expect(setItem).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe('OpenJobsList', () => {
     });
 
     it('selects a job from a table row when a handler is supplied', () => {
-        const onSelectJob = jest.fn();
+        const onSelectJob = vi.fn();
         renderList({openJobs: [createMockOpenJob({jobId: 42})], onSelectJob});
 
         fireEvent.click(screen.getByRole('button', {name: /Open job JOB-001/}));

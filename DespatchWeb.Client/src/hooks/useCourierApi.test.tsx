@@ -2,6 +2,7 @@
  * useCourierApi Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {useCourierSearch, useTimeZoneOptions} from './useCourierApi';
@@ -10,14 +11,14 @@ import {CourierSuggestion, TimeZoneOption} from '../types';
 import {createQueryWrapper} from '../test/utils';
 
 // Mock the courierApi
-jest.mock('../api/courierApi', () => ({
+vi.mock('../api/courierApi', () => ({
     courierApi: {
-        searchActiveCouriers: jest.fn(),
-        getTimeZoneOptions: jest.fn(),
+        searchActiveCouriers: vi.fn(),
+        getTimeZoneOptions: vi.fn(),
     },
 }));
 
-const mockCourierApi = courierApi as jest.Mocked<typeof courierApi>;
+const mockCourierApi = courierApi as Mocked<typeof courierApi>;
 
 describe('useCourierSearch', () => {
     const mockCouriers: CourierSuggestion[] = [

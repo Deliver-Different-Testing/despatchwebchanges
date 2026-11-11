@@ -2,32 +2,33 @@
  * API Client Tests
  */
 
+import type {Mock, Mocked} from 'vitest';
 import axios from 'axios';
 import ApiClient, {apiClient} from './client';
 
 // Mock axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+vi.mock('axios');
+const mockedAxios = axios as Mocked<typeof axios>;
 
 describe('ApiClient', () => {
     let client: ApiClient;
-    let mockAxiosInstance: jest.Mocked<ReturnType<typeof axios.create>>;
-    let mockResponseInterceptorUse: jest.Mock;
+    let mockAxiosInstance: Mocked<ReturnType<typeof axios.create>>;
+    let mockResponseInterceptorUse: Mock;
 
     beforeEach(() => {
-        mockResponseInterceptorUse = jest.fn();
+        mockResponseInterceptorUse = vi.fn();
 
         // Create a mock axios instance
         mockAxiosInstance = {
-            get: jest.fn(),
-            post: jest.fn(),
-            put: jest.fn(),
-            delete: jest.fn(),
+            get: vi.fn(),
+            post: vi.fn(),
+            put: vi.fn(),
+            delete: vi.fn(),
             interceptors: {
-                request: {use: jest.fn()},
+                request: {use: vi.fn()},
                 response: {use: mockResponseInterceptorUse},
             },
-        } as unknown as jest.Mocked<ReturnType<typeof axios.create>>;
+        } as unknown as Mocked<ReturnType<typeof axios.create>>;
 
         mockedAxios.create.mockReturnValue(mockAxiosInstance);
         mockedAxios.isCancel.mockReturnValue(false);
@@ -35,7 +36,7 @@ describe('ApiClient', () => {
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     describe('Configuration', () => {

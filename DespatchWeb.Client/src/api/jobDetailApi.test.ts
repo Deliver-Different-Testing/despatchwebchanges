@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mock, Mocked} from 'vitest';
 /**
  * Job Detail API Service Tests
  *
@@ -48,24 +49,24 @@ import {formatDateForApi} from '../utils/dateUtils';
 import {createMockApiError} from '../test/utils';
 import dayjs from 'dayjs';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
-        delete: jest.fn(),
-        uploadFormData: jest.fn(),
-        postForBlob: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
+        delete: vi.fn(),
+        uploadFormData: vi.fn(),
+        postForBlob: vi.fn(),
     },
-    downloadBlob: jest.fn(),
+    downloadBlob: vi.fn(),
 }));
 
-jest.mock('../utils/dateUtils', () => ({
-    formatDateForApi: jest.fn(() => '2026-03-31T00:00:00-05:00'),
+vi.mock('../utils/dateUtils', () => ({
+    formatDateForApi: vi.fn(() => '2026-03-31T00:00:00-05:00'),
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
-const mockDownloadBlob = downloadBlob as jest.Mock;
-const mockFormatDateForApi = formatDateForApi as jest.Mock;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
+const mockDownloadBlob = downloadBlob as Mock;
+const mockFormatDateForApi = formatDateForApi as Mock;
 
 describe('jobDetailApi', () => {
     // ── Job Detail Fetching ─────────────────────────────────────────
@@ -434,7 +435,7 @@ describe('jobDetailApi', () => {
         it('uploadJobFile builds FormData with correct fields', async () => {
             mockApiClient.uploadFormData.mockResolvedValueOnce(undefined);
             const file = new File(['test content'], 'report.pdf', {type: 'application/pdf'});
-            const onProgress = jest.fn();
+            const onProgress = vi.fn();
 
             await uploadJobFile(123, file, onProgress);
 

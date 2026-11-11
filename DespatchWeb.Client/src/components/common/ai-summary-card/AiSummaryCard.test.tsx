@@ -39,7 +39,7 @@ function buildSummary(overrides: Partial<StructuredSummaryResponse> = {}): Struc
 
 describe('AiSummaryCard', () => {
     it('auto-fetches and renders verdict + key facts + attention + timeline', async () => {
-        const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+        const mockFetch = vi.fn().mockResolvedValue(buildSummary());
 
         renderWithTheme(<AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} />);
 
@@ -55,7 +55,7 @@ describe('AiSummaryCard', () => {
     });
 
     it('hides Needs Attention section when attention list is empty', async () => {
-        const mockFetch = jest.fn().mockResolvedValue(
+        const mockFetch = vi.fn().mockResolvedValue(
             buildSummary({attention: [], severity: 'Ok', verdict: '✅ On track'})
         );
 
@@ -66,7 +66,7 @@ describe('AiSummaryCard', () => {
     });
 
     it('hides Timeline when empty (e.g. operations summary)', async () => {
-        const mockFetch = jest.fn().mockResolvedValue(
+        const mockFetch = vi.fn().mockResolvedValue(
             buildSummary({timeline: [], highlights: []})
         );
 
@@ -77,7 +77,7 @@ describe('AiSummaryCard', () => {
     });
 
     it('refresh button re-invokes fetchSummary', async () => {
-        const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+        const mockFetch = vi.fn().mockResolvedValue(buildSummary());
 
         renderWithTheme(<AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} />);
 
@@ -89,7 +89,7 @@ describe('AiSummaryCard', () => {
     });
 
     it('renders error message when fetch rejects', async () => {
-        const mockFetch = jest.fn().mockRejectedValue(new Error('boom'));
+        const mockFetch = vi.fn().mockRejectedValue(new Error('boom'));
 
         renderWithTheme(<AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} />);
 
@@ -97,12 +97,12 @@ describe('AiSummaryCard', () => {
     });
 
     it('copies a plain-text representation when copy button is clicked', async () => {
-        const writeText = jest.fn().mockResolvedValue(undefined);
+        const writeText = vi.fn().mockResolvedValue(undefined);
         Object.assign(navigator, {
             clipboard: {writeText},
         });
 
-        const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+        const mockFetch = vi.fn().mockResolvedValue(buildSummary());
 
         renderWithTheme(<AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} />);
 
@@ -117,7 +117,7 @@ describe('AiSummaryCard', () => {
     });
 
     it('reveals highlights when the toggle is activated', async () => {
-        const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+        const mockFetch = vi.fn().mockResolvedValue(buildSummary());
 
         renderWithTheme(<AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} />);
 
@@ -130,7 +130,7 @@ describe('AiSummaryCard', () => {
 
     describe('collapsible mode', () => {
         it('starts collapsed and defers the fetch until first expansion', async () => {
-            const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+            const mockFetch = vi.fn().mockResolvedValue(buildSummary());
 
             renderWithTheme(
                 <AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} collapsible />
@@ -147,7 +147,7 @@ describe('AiSummaryCard', () => {
         });
 
         it('does not refetch when collapsing and re-expanding', async () => {
-            const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+            const mockFetch = vi.fn().mockResolvedValue(buildSummary());
 
             renderWithTheme(
                 <AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} collapsible />
@@ -165,7 +165,7 @@ describe('AiSummaryCard', () => {
         });
 
         it('starts expanded and fetches on mount when autoOpen is set', async () => {
-            const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+            const mockFetch = vi.fn().mockResolvedValue(buildSummary());
 
             renderWithTheme(
                 <AiSummaryCard title="Auto-mate Job Briefing" fetchSummary={mockFetch} collapsible autoOpen />
@@ -180,7 +180,7 @@ describe('AiSummaryCard', () => {
 
     it('shows a stop button while loading and clears it on success', async () => {
         let resolveFetch: (value: StructuredSummaryResponse) => void = () => {};
-        const mockFetch = jest.fn(() => new Promise<StructuredSummaryResponse>((resolve) => {
+        const mockFetch = vi.fn(() => new Promise<StructuredSummaryResponse>((resolve) => {
             resolveFetch = resolve;
         }));
 

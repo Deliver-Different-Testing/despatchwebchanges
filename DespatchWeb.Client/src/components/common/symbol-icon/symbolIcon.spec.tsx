@@ -26,7 +26,7 @@ describe('SymbolIcon', () => {
     });
 
     it('falls back to a rendered icon and warns for an unknown name', () => {
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const {container} = render(<SymbolIcon name="not_a_real_glyph" />);
 
         expect(container.querySelector('svg')).toBeInTheDocument();

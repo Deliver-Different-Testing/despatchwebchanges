@@ -11,6 +11,8 @@ import React from 'react';
 import {render} from '@testing-library/react';
 import {MUI_ICON_MAP} from './iconMap';
 import {Icon} from './Icon';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 const entries = Object.entries(MUI_ICON_MAP);
 
@@ -56,8 +58,6 @@ describe('MUI_ICON_MAP is reference-only', () => {
     // one runtime importer bundles all ~209 glyphs (+178 KB across dist, measured).
     // Type-only imports are erased and therefore fine.
     it('has no runtime importers anywhere in the app', () => {
-        const fs = require('fs') as typeof import('fs');
-        const path = require('path') as typeof import('path');
         const root = path.resolve(__dirname, '../../..');
 
         const walk = (dir: string): string[] =>

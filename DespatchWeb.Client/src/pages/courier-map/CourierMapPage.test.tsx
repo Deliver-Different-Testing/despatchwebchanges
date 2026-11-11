@@ -4,6 +4,7 @@
  * Tests for the CourierMapPage React component.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
 import {QueryClient} from '@tanstack/react-query';
@@ -17,35 +18,35 @@ import {renderWithMantine} from '../../test/utils';
 import {setupUser} from '../../test/utils/setupUser';
 
 // Mock the courier API
-jest.mock('../../api/courierApi', () => ({
-    getAvailableCourierLocations: jest.fn(),
-    getAllFleetOptions: jest.fn(),
+vi.mock('../../api/courierApi', () => ({
+    getAvailableCourierLocations: vi.fn(),
+    getAllFleetOptions: vi.fn(),
 }));
 
 // Mock the StaffPreference API — the display-settings load/save round trip isn't this
 // file's concern, and letting it hit the network trips the test setup's unmocked-request guard.
-jest.mock('../../api/preferencesApi', () => ({
-    getPreference: jest.fn(() => Promise.resolve(null)),
-    savePreference: jest.fn(() => Promise.resolve()),
+vi.mock('../../api/preferencesApi', () => ({
+    getPreference: vi.fn(() => Promise.resolve(null)),
+    savePreference: vi.fn(() => Promise.resolve()),
 }));
 
-const mockTenantFlagDefault = jest.fn(() => Promise.resolve<string | null>(null));
-jest.mock('../../api/tenantSettingsApi', () => ({
+const mockTenantFlagDefault = vi.fn(() => Promise.resolve<string | null>(null));
+vi.mock('../../api/tenantSettingsApi', () => ({
     getTenantCourierFlagLastDeliveryDefault: () => mockTenantFlagDefault(),
 }));
 
 // Mock useCourierMap hook
-jest.mock('./useCourierMap', () => ({
-    useCourierMap: jest.fn(() => ({
+vi.mock('./useCourierMap', () => ({
+    useCourierMap: vi.fn(() => ({
         mapContainerRef: {current: document.createElement('div')},
         isInitialized: true,
         map: null,
         platform: null,
         defaultLayers: null,
-        updateCouriers: jest.fn(),
-        centerOnCourier: jest.fn(),
-        setSelectedDriver: jest.fn(),
-        returnToOverview: jest.fn(),
+        updateCouriers: vi.fn(),
+        centerOnCourier: vi.fn(),
+        setSelectedDriver: vi.fn(),
+        returnToOverview: vi.fn(),
     })),
 }));
 
@@ -116,8 +117,8 @@ const mockFleetOptions = [
 
 describe('CourierMapPage Component', () => {
     beforeEach(() => {
-        (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue(mockCouriers);
-        (courierApi.getAllFleetOptions as jest.Mock).mockResolvedValue(mockFleetOptions);
+        (courierApi.getAvailableCourierLocations as Mock).mockResolvedValue(mockCouriers);
+        (courierApi.getAllFleetOptions as Mock).mockResolvedValue(mockFleetOptions);
     });
 
     describe('Rendering', () => {
@@ -174,18 +175,18 @@ describe('CourierMapPage Component', () => {
             expect(screen.getByTestId('courier-map-container')).toHaveStyle({isolation: 'isolate'});
         });
 
-        it('renders the shared zoom/layer rail once the map is ready', () => {
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+        it('renders the shared zoom/layer rail once the map is ready', async () => {
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockReturnValue({
                 mapContainerRef: {current: document.createElement('div')},
                 isInitialized: true,
-                map: {getZoom: jest.fn(() => 5), setZoom: jest.fn()},
+                map: {getZoom: vi.fn(() => 5), setZoom: vi.fn()},
                 platform: {},
                 defaultLayers: {},
-                updateCouriers: jest.fn(),
-                centerOnCourier: jest.fn(),
-                setSelectedDriver: jest.fn(),
-                returnToOverview: jest.fn(),
+                updateCouriers: vi.fn(),
+                centerOnCourier: vi.fn(),
+                setSelectedDriver: vi.fn(),
+                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -200,13 +201,13 @@ describe('CourierMapPage Component', () => {
     describe('Display Settings', () => {
         it('flags the last delivery the way the shared courier flag setting resolves', async () => {
             mockTenantFlagDefault.mockResolvedValueOnce('time');
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
 
             renderWithProviders(<CourierMapPage {...createDefaultProps({isUsCustomer: true})} />);
 
-            expect(useCourierMapMock.mock.calls.at(-1)[0].displaySettings.lastDelivery).toBe('locality');
+            expect(useCourierMapMock.mock.calls.at(-1)![0].displaySettings.lastDelivery).toBe('locality');
             await waitFor(() =>
-                expect(useCourierMapMock.mock.calls.at(-1)[0].displaySettings.lastDelivery).toBe('time'));
+                expect(useCourierMapMock.mock.calls.at(-1)![0].displaySettings.lastDelivery).toBe('time'));
         });
 
         it('renders the display-settings control alongside fit-all and refresh', () => {
@@ -217,7 +218,7 @@ describe('CourierMapPage Component', () => {
         });
 
         it('loads a saved display-settings preference on mount without re-saving it', async () => {
-            (preferencesApi.getPreference as jest.Mock).mockResolvedValueOnce(JSON.stringify(CLASSIC_TEMPLATE));
+            (preferencesApi.getPreference as Mock).mockResolvedValueOnce(JSON.stringify(CLASSIC_TEMPLATE));
 
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);
@@ -348,15 +349,15 @@ describe('CourierMapPage Component', () => {
         });
 
         it('narrows the map markers to search matches, hiding the rest', async () => {
-            const mockUpdateCouriers = jest.fn();
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const mockUpdateCouriers = vi.fn();
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockReturnValue({
                 mapContainerRef: {current: document.createElement('div')},
                 isInitialized: true,
                 updateCouriers: mockUpdateCouriers,
-                centerOnCourier: jest.fn(),
-                setSelectedDriver: jest.fn(),
-                returnToOverview: jest.fn(),
+                centerOnCourier: vi.fn(),
+                setSelectedDriver: vi.fn(),
+                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -374,16 +375,16 @@ describe('CourierMapPage Component', () => {
         });
 
         it('auto-selects and zooms to the courier once search uniquely matches them', async () => {
-            const mockCenterOnCourier = jest.fn();
-            const mockSetSelectedDriver = jest.fn();
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const mockCenterOnCourier = vi.fn();
+            const mockSetSelectedDriver = vi.fn();
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockReturnValue({
                 mapContainerRef: {current: document.createElement('div')},
                 isInitialized: true,
-                updateCouriers: jest.fn(),
+                updateCouriers: vi.fn(),
                 centerOnCourier: mockCenterOnCourier,
                 setSelectedDriver: mockSetSelectedDriver,
-                returnToOverview: jest.fn(),
+                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -396,21 +397,21 @@ describe('CourierMapPage Component', () => {
 
             await waitFor(() => {
                 expect(mockCenterOnCourier).toHaveBeenCalledWith(expect.objectContaining({courierId: 1}));
+                expect(mockSetSelectedDriver).toHaveBeenCalledWith(1);
             });
-            expect(mockSetSelectedDriver).toHaveBeenCalledWith(1);
         });
 
         it('does not auto-select or zoom when the search matches more than one courier', async () => {
-            const mockUpdateCouriers = jest.fn();
-            const mockCenterOnCourier = jest.fn();
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const mockUpdateCouriers = vi.fn();
+            const mockCenterOnCourier = vi.fn();
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockReturnValue({
                 mapContainerRef: {current: document.createElement('div')},
                 isInitialized: true,
                 updateCouriers: mockUpdateCouriers,
                 centerOnCourier: mockCenterOnCourier,
-                setSelectedDriver: jest.fn(),
-                returnToOverview: jest.fn(),
+                setSelectedDriver: vi.fn(),
+                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -431,14 +432,14 @@ describe('CourierMapPage Component', () => {
 
     describe('Map Controls Interaction', () => {
         it('calls returnToOverview when fit-all button is clicked', async () => {
-            const mockReturnToOverview = jest.fn();
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const mockReturnToOverview = vi.fn();
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockReturnValue({
                 mapContainerRef: {current: document.createElement('div')},
                 isInitialized: true,
-                updateCouriers: jest.fn(),
-                centerOnCourier: jest.fn(),
-                setSelectedDriver: jest.fn(),
+                updateCouriers: vi.fn(),
+                centerOnCourier: vi.fn(),
+                setSelectedDriver: vi.fn(),
                 returnToOverview: mockReturnToOverview,
             });
 
@@ -470,15 +471,15 @@ describe('CourierMapPage Component', () => {
 
     describe('Driver Click Handling', () => {
         it('calls centerOnCourier when a driver is clicked', async () => {
-            const mockCenterOnCourier = jest.fn();
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const mockCenterOnCourier = vi.fn();
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockReturnValue({
                 mapContainerRef: {current: document.createElement('div')},
                 isInitialized: true,
-                updateCouriers: jest.fn(),
+                updateCouriers: vi.fn(),
                 centerOnCourier: mockCenterOnCourier,
-                setSelectedDriver: jest.fn(),
-                returnToOverview: jest.fn(),
+                setSelectedDriver: vi.fn(),
+                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -496,15 +497,15 @@ describe('CourierMapPage Component', () => {
         });
 
         it('highlights the clicked driver in the list and tells the map to select it', async () => {
-            const mockSetSelectedDriver = jest.fn();
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const mockSetSelectedDriver = vi.fn();
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockReturnValue({
                 mapContainerRef: {current: document.createElement('div')},
                 isInitialized: true,
-                updateCouriers: jest.fn(),
-                centerOnCourier: jest.fn(),
+                updateCouriers: vi.fn(),
+                centerOnCourier: vi.fn(),
                 setSelectedDriver: mockSetSelectedDriver,
-                returnToOverview: jest.fn(),
+                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();
@@ -520,19 +521,19 @@ describe('CourierMapPage Component', () => {
         });
 
         it('tapping a marker on the map runs the same select-and-zoom path as a list click', async () => {
-            const mockCenterOnCourier = jest.fn();
-            const mockSetSelectedDriver = jest.fn();
+            const mockCenterOnCourier = vi.fn();
+            const mockSetSelectedDriver = vi.fn();
             let capturedOnMarkerTap: ((driver: {courierId: number}) => void) | undefined;
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockImplementation((options: {onMarkerTap?: (driver: {courierId: number}) => void}) => {
                 capturedOnMarkerTap = options.onMarkerTap;
                 return {
                     mapContainerRef: {current: document.createElement('div')},
                     isInitialized: true,
-                    updateCouriers: jest.fn(),
+                    updateCouriers: vi.fn(),
                     centerOnCourier: mockCenterOnCourier,
                     setSelectedDriver: mockSetSelectedDriver,
-                    returnToOverview: jest.fn(),
+                    returnToOverview: vi.fn(),
                 };
             });
 
@@ -630,19 +631,19 @@ describe('CourierMapPage Component', () => {
                     isUrgentArmy: false,
                 },
             ];
-            (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue(
+            (courierApi.getAvailableCourierLocations as Mock).mockResolvedValue(
                 couriersWithInvalid
             );
 
-            const mockUpdateCouriers = jest.fn();
-            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            const mockUpdateCouriers = vi.fn();
+            const useCourierMapMock = (await import('./useCourierMap')).useCourierMap as Mock;
             useCourierMapMock.mockReturnValue({
                 mapContainerRef: {current: document.createElement('div')},
                 isInitialized: true,
                 updateCouriers: mockUpdateCouriers,
-                centerOnCourier: jest.fn(),
-                setSelectedDriver: jest.fn(),
-                returnToOverview: jest.fn(),
+                centerOnCourier: vi.fn(),
+                setSelectedDriver: vi.fn(),
+                returnToOverview: vi.fn(),
             });
 
             const props = createDefaultProps();

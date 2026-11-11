@@ -7,7 +7,7 @@ const Probe = () => <span data-testid="n">{useJobDetailsRefreshNonce()}</span>;
 
 describe('jobDetailsRefresh', () => {
     it('bumps the nonce for subscribers and invalidates photo and price-breakdown queries', async () => {
-        const spy = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue();
+        const spy = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue();
         const {getByTestId} = render(<Probe/>);
         const before = Number(getByTestId('n').textContent);
 

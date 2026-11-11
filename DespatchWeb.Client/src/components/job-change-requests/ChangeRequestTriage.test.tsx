@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen} from '@testing-library/react';
 import { setupUser } from '../../test/utils/setupUser';
@@ -9,14 +10,14 @@ import {isAiEnabled} from '../../utils/aiSettings';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-jest.mock('../../api/aiAssistantApi', () => ({triageChangeRequest: jest.fn()}));
-jest.mock('../../utils/aiSettings', () => ({isAiEnabled: jest.fn()}));
+vi.mock('../../api/aiAssistantApi', () => ({triageChangeRequest: vi.fn()}));
+vi.mock('../../utils/aiSettings', () => ({isAiEnabled: vi.fn()}));
 
-const mockTriage = triageChangeRequest as jest.Mock;
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
+const mockTriage = triageChangeRequest as Mock;
+const mockIsAiEnabled = isAiEnabled as Mock;
 
 describe('ChangeRequestTriage', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('renders no trigger when AI is disabled', () => {
         mockIsAiEnabled.mockReturnValue(false);

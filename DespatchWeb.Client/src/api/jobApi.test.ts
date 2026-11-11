@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Job API Service Tests
  */
@@ -20,14 +21,14 @@ import {apiClient} from './client';
 import {createMockApiError} from '../test/utils';
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('jobApi', () => {
     describe('getRelatedJobsMultiSelectList', () => {

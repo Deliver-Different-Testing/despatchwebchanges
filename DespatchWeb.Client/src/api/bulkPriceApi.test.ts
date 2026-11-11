@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Bulk Price API Service Tests
  */
@@ -9,13 +10,13 @@ import { createMockApiError } from '../test/utils';
 import { BulkPricePreviewResponse } from '../components/dialogs/bulk-price-upload-dialog';
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        postFormData: jest.fn(),
+        postFormData: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('BulkPriceApiService', () => {
     describe('applyBulkPriceUpdate', () => {

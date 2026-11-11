@@ -41,7 +41,7 @@ describe('MetricCard', () => {
     });
 
     it('renders a clickable button when onClick is provided and not disabled', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithTheme(<MetricCard label="Ready" value="09:00 NZDT" onClick={onClick} />);
 
         const button = screen.getByRole('button');
@@ -50,7 +50,7 @@ describe('MetricCard', () => {
     });
 
     it('does not render a button when disabled or no onClick handler', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         const {unmount} = renderWithTheme(<MetricCard label="Ready" value="09:00" onClick={onClick} disabled />);
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
         unmount();
@@ -72,7 +72,7 @@ describe('MetricCard', () => {
         });
 
         it('remains clickable in dense mode', () => {
-            const onClick = jest.fn();
+            const onClick = vi.fn();
             renderWithTheme(<MetricCard label="Ready" value="09:00" onClick={onClick} dense />);
             fireEvent.click(screen.getByRole('button'));
             expect(onClick).toHaveBeenCalledTimes(1);

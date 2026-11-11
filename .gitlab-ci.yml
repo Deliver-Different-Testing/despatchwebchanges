@@ -119,14 +119,14 @@ test:backend:
 
 # Frontend base configuration
 .frontend-base:
-  image: node:20-alpine
+  image: node:24-alpine
   interruptible: true
   retry:
     max: 2
     when: runner_system_failure
   variables:
     NODE_OPTIONS: "--max-old-space-size=4096"
-    # Jest's --maxWorkers=50% reads the node's full core count (os.cpus()), not the
+    # A percentage --maxWorkers reads the node's full core count (os.cpus()), not the
     # pod's cgroup CPU quota, so it can oversubscribe and throttle on a constrained
     # K8s runner. Pin the pod to a known size and match --maxWorkers to it below,
     # mirroring test:backend's KUBERNETES_* fix for the same class of bug.
@@ -147,12 +147,6 @@ test:backend:
       paths:
         - .npm/
       policy: pull-push
-    - key: jest-cache-${CI_COMMIT_REF_SLUG}
-      paths:
-        - DespatchWeb.Client/.jest-cache/
-      policy: pull-push
-      fallback_keys:
-        - jest-cache-master
     # tsc -b is incremental (tsconfig.app.json/tsconfig.node.json set tsBuildInfoFile), but
     # that only helps if .tsbuildinfo/ survives between CI runs.
     - key: tsbuildinfo-${CI_COMMIT_REF_SLUG}
@@ -182,7 +176,7 @@ test:frontend:unit:
   allow_failure: false
   parallel: 3
   script:
-    - npx jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=2
+    - npx vitest run --project unit --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --maxWorkers=2
 
 test:frontend:integration:
   stage: .pre
@@ -191,4 +185,4 @@ test:frontend:integration:
     - .frontend-test-rules
   allow_failure: true
   script:
-    - npx jest --config jest.integration.config.cjs --ci --maxWorkers=2
+    - npx vitest run --project integration --maxWorkers=2

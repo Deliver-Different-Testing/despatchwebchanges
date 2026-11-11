@@ -5,6 +5,7 @@
  * initialization and lifecycle.
  */
 
+import type {Mock} from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -14,24 +15,24 @@ import { US_MAP_CENTER, NZ_MAP_CENTER } from '../here-map/HereMap.types';
 import * as configApi from '../../../api/configApi';
 
 // Mock the config API
-jest.mock('../../../api/configApi', () => ({
-    getHereMapsKey: jest.fn(),
+vi.mock('../../../api/configApi', () => ({
+    getHereMapsKey: vi.fn(),
 }));
 
 // Mock HERE Maps global H object
 const createMockMap = () => ({
-    setCenter: jest.fn(),
-    setZoom: jest.fn(),
-    getViewPort: jest.fn(() => ({
-        resize: jest.fn(),
+    setCenter: vi.fn(),
+    setZoom: vi.fn(),
+    getViewPort: vi.fn(() => ({
+        resize: vi.fn(),
     })),
-    getViewModel: jest.fn(() => ({
-        setLookAtData: jest.fn(),
+    getViewModel: vi.fn(() => ({
+        setLookAtData: vi.fn(),
     })),
 });
 
 const createMockPlatform = () => ({
-    createDefaultLayers: jest.fn(() => ({
+    createDefaultLayers: vi.fn(() => ({
         raster: {
             normal: {
                 base: {},
@@ -41,12 +42,12 @@ const createMockPlatform = () => ({
 });
 
 const createMockUI = () => ({
-    removeControl: jest.fn(),
-    addControl: jest.fn(),
+    removeControl: vi.fn(),
+    addControl: vi.fn(),
 });
 
 const createMockBehavior = () => ({
-    disable: jest.fn(),
+    disable: vi.fn(),
 });
 
 let mockMapInstance: ReturnType<typeof createMockMap>;
@@ -55,30 +56,30 @@ let mockUIInstance: ReturnType<typeof createMockUI>;
 
 const mockH = {
     service: {
-        Platform: jest.fn(() => {
+        Platform: vi.fn(() => {
             mockPlatformInstance = createMockPlatform();
             return mockPlatformInstance;
         }),
     },
-    Map: jest.fn(() => {
+    Map: vi.fn(() => {
         mockMapInstance = createMockMap();
         return mockMapInstance;
     }),
     mapevents: {
-        Behavior: jest.fn(() => createMockBehavior()),
-        MapEvents: jest.fn(),
+        Behavior: vi.fn(() => createMockBehavior()),
+        MapEvents: vi.fn(),
         Feature: {
             FRACTIONAL_ZOOM: 'FRACTIONAL_ZOOM',
         },
     },
     ui: {
         UI: {
-            createDefault: jest.fn(() => {
+            createDefault: vi.fn(() => {
                 mockUIInstance = createMockUI();
                 return mockUIInstance;
             }),
         },
-        ZoomControl: jest.fn(),
+        ZoomControl: vi.fn(),
         LayoutAlignment: {
             RIGHT_TOP: 'RIGHT_TOP',
         },
@@ -108,7 +109,7 @@ function createWrapper() {
 
 describe('useHereMap', () => {
     beforeEach(() => {
-        (configApi.getHereMapsKey as jest.Mock).mockResolvedValue('test-api-key');
+        (configApi.getHereMapsKey as Mock).mockResolvedValue('test-api-key');
     });
 
     describe('Initial State', () => {
@@ -183,7 +184,7 @@ describe('useHereMap', () => {
         });
 
         it('accepts onMapReady callback option', () => {
-            const onMapReady = jest.fn();
+            const onMapReady = vi.fn();
             const { result } = renderHook(() => useHereMap({ onMapReady }), {
                 wrapper: createWrapper(),
             });
@@ -320,7 +321,7 @@ describe('useHereMap', () => {
     describe('Loading State Calculation', () => {
         it('isLoading is true when API key is being fetched', () => {
             // Keep the promise pending so loading state stays true
-            (configApi.getHereMapsKey as jest.Mock).mockImplementation(
+            (configApi.getHereMapsKey as Mock).mockImplementation(
                 () => new Promise(() => {})
             );
 
@@ -403,15 +404,15 @@ describe('useHereMap', () => {
             expect(NZ_MAP_CENTER.lat).toBeCloseTo(-41.29, 0);
         });
 
-        it('uses getDefaultMapCenter which returns NZ for non-US customer', () => {
+        it('uses getDefaultMapCenter which returns NZ for non-US customer', async () => {
             (window as any).serverConfig = {isUSCustomer: false};
-            const { getDefaultMapCenter } = require('../here-map/HereMap.types');
+            const { getDefaultMapCenter } = (await import('../here-map/HereMap.types'));
             expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);
         });
 
-        it('uses getDefaultMapCenter which returns US for US customer', () => {
+        it('uses getDefaultMapCenter which returns US for US customer', async () => {
             (window as any).serverConfig = {isUSCustomer: true};
-            const { getDefaultMapCenter } = require('../here-map/HereMap.types');
+            const { getDefaultMapCenter } = (await import('../here-map/HereMap.types'));
             expect(getDefaultMapCenter()).toEqual(US_MAP_CENTER);
         });
     });

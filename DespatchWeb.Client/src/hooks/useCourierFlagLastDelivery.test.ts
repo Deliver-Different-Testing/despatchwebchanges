@@ -1,19 +1,20 @@
+import type {Mock} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {useCourierFlagLastDelivery} from './useCourierFlagLastDelivery';
 import {loadLastDeliverySettings, saveLastDeliveryOverride} from '../services/courierFlagLastDeliveryPreference';
 
-jest.mock('../services/courierFlagLastDeliveryPreference', () => ({
-    ...jest.requireActual('../services/courierFlagLastDeliveryPreference'),
-    loadLastDeliverySettings: jest.fn(),
-    saveLastDeliveryOverride: jest.fn(),
+vi.mock('../services/courierFlagLastDeliveryPreference', async () => ({
+    ...(await vi.importActual<typeof import('../services/courierFlagLastDeliveryPreference')>('../services/courierFlagLastDeliveryPreference')),
+    loadLastDeliverySettings: vi.fn(),
+    saveLastDeliveryOverride: vi.fn(),
 }));
 
-const mockLoad = loadLastDeliverySettings as jest.Mock;
-const mockSave = saveLastDeliveryOverride as jest.Mock;
+const mockLoad = loadLastDeliverySettings as Mock;
+const mockSave = saveLastDeliveryOverride as Mock;
 
 describe('useCourierFlagLastDelivery', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockSave.mockResolvedValue(undefined);
     });
 

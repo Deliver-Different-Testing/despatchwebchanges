@@ -27,9 +27,9 @@ function createDefaultProps(overrides?: Partial<SelectDialogProps>): SelectDialo
         fieldName: 'SpeedID',
         items: sampleItems,
         initialValue: null,
-        onClose: jest.fn(),
-        onSubmit: jest.fn(),
-        showToast: jest.fn(),
+        onClose: vi.fn(),
+        onSubmit: vi.fn(),
+        showToast: vi.fn(),
         ...overrides,
     };
 }
@@ -117,7 +117,7 @@ describe('SelectDialog', () => {
         });
 
         it('includes checkbox value in result when checked', async () => {
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             const props = createDefaultProps({
                 showCheckbox: true,
                 checkboxLabel: 'DG Documentation',
@@ -142,7 +142,7 @@ describe('SelectDialog', () => {
 
     describe('Submit', () => {
         it('returns correct result shape on submit', async () => {
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             const props = createDefaultProps({
                 fieldName: 'SpeedID',
                 initialValue: 2,
@@ -179,7 +179,7 @@ describe('SelectDialog', () => {
 
     describe('Cancel', () => {
         it('calls onClose from the Cancel button and the header close button', () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             const props = createDefaultProps({ onClose });
             renderWithProviders(props);
 
@@ -194,7 +194,7 @@ describe('SelectDialog', () => {
     describe('Loading State', () => {
         it('shows loading state during submit', async () => {
             const user = setupUser();
-            const onSubmit = jest.fn(() => new Promise<void>(() => {})); // Never resolves
+            const onSubmit = vi.fn(() => new Promise<void>(() => {})); // Never resolves
             const props = createDefaultProps({ initialValue: 1, onSubmit });
             renderWithProviders(props);
 

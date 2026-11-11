@@ -1,10 +1,11 @@
+import type {Mock} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
 
 // Control the remote sync so the mount effect's promise can settle on demand.
-jest.mock('./layoutSync', () => ({
-    loadRemoteIntoLocal: jest.fn(),
-    queueRemotePush: jest.fn(),
-    readLocalRows: jest.fn(() => []),
+vi.mock('./layoutSync', () => ({
+    loadRemoteIntoLocal: vi.fn(),
+    queueRemotePush: vi.fn(),
+    readLocalRows: vi.fn(() => []),
 }));
 
 import * as layoutSync from './layoutSync';
@@ -17,8 +18,8 @@ import {
     saveBoxVisibility,
 } from './layoutPersistence';
 
-const mockLoadRemoteIntoLocal = layoutSync.loadRemoteIntoLocal as jest.Mock;
-const mockReadLocalRows = layoutSync.readLocalRows as jest.Mock;
+const mockLoadRemoteIntoLocal = layoutSync.loadRemoteIntoLocal as Mock;
+const mockReadLocalRows = layoutSync.readLocalRows as Mock;
 
 const storageKeys = {
     layoutsKey: 'testLayouts',
@@ -66,7 +67,7 @@ describe('useBoxLayout remote sync', () => {
     });
 
     it('does not log after the component unmounts before the remote load settles', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const remote = deferred<boolean>();
         mockLoadRemoteIntoLocal.mockReturnValue(remote.promise);
 
@@ -118,7 +119,7 @@ describe('useBoxLayout remote sync', () => {
     });
 
     it('logs the failure while the component is still mounted', async () => {
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const remote = deferred<boolean>();
         mockLoadRemoteIntoLocal.mockReturnValue(remote.promise);
 

@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * Extracted from `NationwideControl.initRefreshIntervalOptions` (2003),
  * `formatDuration` (2023) and `loadSavedRefreshInterval` (739).

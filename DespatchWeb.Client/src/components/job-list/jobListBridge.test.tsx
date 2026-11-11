@@ -13,11 +13,11 @@ import {createJobListBridge} from './jobListBridge';
 
 const panelProps: Record<string, unknown>[] = [];
 
-jest.mock('./JobListPanel', () => ({
+vi.mock('./JobListPanel', () => ({
     JobListPanel: (props: Record<string, unknown>) => {
         panelProps.push(props);
-        (props.setJobsCallback as (cb: unknown) => void)?.(jest.fn());
-        (props.setRefreshCallback as (cb: unknown) => void)?.(jest.fn());
+        (props.setJobsCallback as (cb: unknown) => void)?.(vi.fn());
+        (props.setRefreshCallback as (cb: unknown) => void)?.(vi.fn());
         return <div data-testid="panel">{String(props.appPage)}</div>;
     },
 }));
@@ -37,14 +37,14 @@ describe('createJobListBridge', () => {
     beforeEach(() => {
         panelProps.length = 0;
         document.body.innerHTML = '';
-        jest.spyOn(console, 'log').mockImplementation(() => undefined);
-        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
         bridge = createJobListBridge({logName: 'ProbeList', defaultAppPage: 3});
     });
 
     afterEach(() => {
         act(() => bridge.unmountAll());
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('mounts an instance and falls back to the configured app page', () => {

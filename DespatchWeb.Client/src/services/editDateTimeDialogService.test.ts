@@ -11,13 +11,13 @@ import {
     editDateTimeDialogService,
 } from './editDateTimeDialogService';
 import {testDialogs} from '../components/dialogs/testDialogRegistry';
-jest.mock('../components/dialogs/dialogRegistry', () => require('../components/dialogs/testDialogRegistry').createDialogRegistryMock());
+vi.mock('../components/dialogs/dialogRegistry', async () => (await import('../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
 
 // Mock the EditDateTime dialog via the registry
-const mockShowEditTimeDialog = jest.fn();
-const mockShowEditDateDialog = jest.fn();
-const mockShowEditDateAndTimeDialog = jest.fn();
-const mockSetToastService = jest.fn();
+const mockShowEditTimeDialog = vi.fn();
+const mockShowEditDateDialog = vi.fn();
+const mockShowEditDateAndTimeDialog = vi.fn();
+const mockSetToastService = vi.fn();
 
 beforeEach(() => {
     // Register the mock dialog
@@ -172,7 +172,7 @@ describe('editDateTimeDialogService', () => {
 
     describe('setToastService', () => {
         it('should set the toast service on the dialog manager', async () => {
-            const mockShowToast = jest.fn();
+            const mockShowToast = vi.fn();
 
             await setToastService(mockShowToast);
 

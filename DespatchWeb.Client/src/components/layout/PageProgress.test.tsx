@@ -6,8 +6,8 @@ import {PageProgress} from './PageProgress';
 import {PAGE_TRANSITION_DELAY_MS} from './PageTransition';
 
 describe('PageProgress', () => {
-    beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
 
     it('shows only for loads slower than the delay, and clears when they settle', async () => {
         renderWithProviders(<PageProgress/>);
@@ -20,7 +20,7 @@ describe('PageProgress', () => {
         expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
 
         act(() => {
-            jest.advanceTimersByTime(PAGE_TRANSITION_DELAY_MS);
+            vi.advanceTimersByTime(PAGE_TRANSITION_DELAY_MS);
         });
         expect(screen.getByRole('progressbar', {name: 'Loading page'})).toBeInTheDocument();
 
@@ -36,7 +36,7 @@ describe('PageProgress', () => {
 
         await act(async () => {
             await trackPageLoad(() => Promise.resolve());
-            jest.advanceTimersByTime(PAGE_TRANSITION_DELAY_MS * 2);
+            vi.advanceTimersByTime(PAGE_TRANSITION_DELAY_MS * 2);
         });
 
         expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();

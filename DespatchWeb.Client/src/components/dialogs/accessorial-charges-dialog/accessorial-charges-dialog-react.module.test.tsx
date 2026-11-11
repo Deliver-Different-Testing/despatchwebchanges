@@ -6,25 +6,25 @@
  */
 
 // Mock React DOM to prevent actual rendering
-jest.mock('react-dom/client', () => ({
-    createRoot: jest.fn(() => ({
-        render: jest.fn(),
-        unmount: jest.fn(),
+vi.mock('react-dom/client', async () => ({
+    createRoot: vi.fn(() => ({
+        render: vi.fn(),
+        unmount: vi.fn(),
     })),
 }));
 
 // Mock the theme
 
 // Mock ReactQueryProvider
-jest.mock('../../../api', () => ({
+vi.mock('../../../api', async () => ({
     ReactQueryProvider: ({ children }: any) => children,
 }));
 
 // Use require() instead of import to load the module after the mocks are installed
 let openAccessorialChargesDialog: typeof import('./accessorial-charges-dialog-react.module').openAccessorialChargesDialog;
 
-beforeAll(() => {
-    openAccessorialChargesDialog = require('./accessorial-charges-dialog-react.module').openAccessorialChargesDialog;
+beforeAll(async () => {
+    openAccessorialChargesDialog = (await import('./accessorial-charges-dialog-react.module')).openAccessorialChargesDialog;
 });
 
 describe('AccessorialChargesDialogManager', () => {
@@ -66,7 +66,7 @@ describe('AccessorialChargesDialogManager', () => {
             await Promise.resolve();
 
             // Validation passed and rendering was attempted
-            const { createRoot } = require('react-dom/client');
+            const { createRoot } = (await import('react-dom/client'));
             expect(createRoot).toHaveBeenCalled();
         });
     });

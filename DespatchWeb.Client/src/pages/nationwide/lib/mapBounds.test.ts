@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * The zoom ladder is the kind of tuned behaviour that vanishes in a rewrite, so
  * it gets pinned here before the React page consumes it. Extracted from

@@ -9,7 +9,7 @@ type SetupOptions = Parameters<typeof userEvent.setup>[0];
  * ~9 per click). Pointer-events checking is left at its default so disabled
  * elements still correctly reject interaction.
  *
- * Fake-timer files pass `{advanceTimers: jest.advanceTimersByTime}`, which
+ * Fake-timer files pass `{advanceTimers: vi.advanceTimersByTime}`, which
  * flows through `...options`.
  *
  * Lives in its own module (not the shared `test/utils/index`) because

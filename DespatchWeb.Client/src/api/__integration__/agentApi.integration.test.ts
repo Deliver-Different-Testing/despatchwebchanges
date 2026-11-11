@@ -1,4 +1,3 @@
-/** @jest-environment jest-fixed-jsdom */
 /**
  * Agent API Integration Tests
  *

@@ -1,6 +1,7 @@
 /**
  * RateAcceptanceBanner tests.
  */
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import { setupUser } from '../../../../test/utils/setupUser';
 import {render, screen, waitFor, within, fireEvent} from '@testing-library/react';
@@ -12,19 +13,19 @@ import type {
     PartnerInboundJobActionResponse,
 } from '../../../../api/jobListApi';
 
-jest.mock('../../../../api/jobListApi', () => ({
+vi.mock('../../../../api/jobListApi', () => ({
     __esModule: true,
-    getPartnerInboundRateAcceptance: jest.fn(),
-    acceptPartnerRate: jest.fn(),
-    rejectPartnerRate: jest.fn(),
+    getPartnerInboundRateAcceptance: vi.fn(),
+    acceptPartnerRate: vi.fn(),
+    rejectPartnerRate: vi.fn(),
 }));
 
-const api = jest.requireMock('../../../../api/jobListApi') as {
-    getPartnerInboundRateAcceptance: jest.MockedFunction<
+const api = (await import('../../../../api/jobListApi')) as unknown as {
+    getPartnerInboundRateAcceptance: MockedFunction<
         (jobId: number) => Promise<PartnerInboundJobAcceptanceState>
     >;
-    acceptPartnerRate: jest.MockedFunction<(jobId: number) => Promise<PartnerInboundJobActionResponse>>;
-    rejectPartnerRate: jest.MockedFunction<
+    acceptPartnerRate: MockedFunction<(jobId: number) => Promise<PartnerInboundJobActionResponse>>;
+    rejectPartnerRate: MockedFunction<
         (jobId: number, reason: string) => Promise<PartnerInboundJobActionResponse>
     >;
 };
@@ -41,7 +42,7 @@ function renderBanner(jobId = 42) {
 }
 
 afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 });
 
 describe('RateAcceptanceBanner', () => {

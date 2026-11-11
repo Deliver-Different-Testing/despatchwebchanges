@@ -13,7 +13,7 @@ describe('useLiquidGlassSupport', () => {
   });
 
   function stubCssSupports(result: boolean) {
-    Object.defineProperty(CSS, 'supports', { value: jest.fn().mockReturnValue(result), configurable: true });
+    Object.defineProperty(CSS, 'supports', { value: vi.fn().mockReturnValue(result), configurable: true });
   }
 
   it('falls back to false in jsdom (no userAgentData, no CSS.supports)', () => {

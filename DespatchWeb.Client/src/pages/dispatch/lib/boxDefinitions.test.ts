@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 import DispatchBoxes from './dispatchBoxes';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './boxDefinitions';
 

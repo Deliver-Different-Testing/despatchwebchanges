@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 import dayjs from 'dayjs';
 import {MAX_OVERVIEW_PANEL_DAYS, clampOverviewPanelRange} from './overviewPanelRange';
 

@@ -1,3 +1,4 @@
+import type {MockInstance} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../test/utils';
@@ -17,10 +18,10 @@ const ThrowingComponent = ({shouldThrow, message = 'Test error'}: {shouldThrow: 
 };
 
 describe('ErrorBoundary', () => {
-    let consoleErrorSpy: jest.SpyInstance;
+    let consoleErrorSpy: MockInstance;
 
     beforeEach(() => {
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
     afterEach(() => {
@@ -89,7 +90,7 @@ describe('ErrorBoundary', () => {
     });
 
     it('calls onReset when "Try again" is clicked', () => {
-        const onReset = jest.fn();
+        const onReset = vi.fn();
         renderWithTheme(
             <ErrorBoundary onReset={onReset}>
                 <ThrowingComponent shouldThrow={true} />

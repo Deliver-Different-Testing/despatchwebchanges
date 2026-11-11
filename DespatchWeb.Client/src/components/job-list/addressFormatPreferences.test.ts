@@ -1,24 +1,25 @@
+import type {Mock} from 'vitest';
 import {loadEffectiveAddressFormat} from './addressFormatPreferences';
 import {getPreference} from '../../api/preferencesApi';
 import {getTenantAddressFormatDefault} from '../../api/tenantSettingsApi';
 
-jest.mock('../../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
+vi.mock('../../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
 }));
-jest.mock('../../api/tenantSettingsApi', () => ({
-    getTenantAddressFormatDefault: jest.fn(),
+vi.mock('../../api/tenantSettingsApi', () => ({
+    getTenantAddressFormatDefault: vi.fn(),
 }));
 
-const mockedGetPreference = getPreference as jest.Mock;
-const mockedGetTenantDefault = getTenantAddressFormatDefault as jest.Mock;
+const mockedGetPreference = getPreference as Mock;
+const mockedGetTenantDefault = getTenantAddressFormatDefault as Mock;
 
 describe('loadEffectiveAddressFormat', () => {
     beforeEach(() => {
-        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('prefers the user override over the tenant default, per side', async () => {

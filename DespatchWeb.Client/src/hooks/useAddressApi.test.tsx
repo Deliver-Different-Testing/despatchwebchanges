@@ -2,6 +2,7 @@
  * useAddressApi Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {useAddressSearch, useLocationDetails, useHereMapsApiKey} from './useAddressApi';
@@ -10,15 +11,15 @@ import {HereMapsLocationResult, HereMapsLookupResponse} from '../types';
 import {createQueryWrapper} from '../test/utils';
 
 // Mock the addressApi
-jest.mock('../api/addressApi', () => ({
+vi.mock('../api/addressApi', () => ({
     addressApi: {
-        autocompleteSearch: jest.fn(),
-        getLocationDetailsById: jest.fn(),
-        getHereMapsKey: jest.fn(),
+        autocompleteSearch: vi.fn(),
+        getLocationDetailsById: vi.fn(),
+        getHereMapsKey: vi.fn(),
     },
 }));
 
-const mockAddressApi = addressApi as jest.Mocked<typeof addressApi>;
+const mockAddressApi = addressApi as Mocked<typeof addressApi>;
 
 describe('useAddressSearch', () => {
     const mockAddressResults: HereMapsLocationResult[] = [

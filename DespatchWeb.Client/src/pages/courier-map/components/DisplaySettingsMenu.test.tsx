@@ -6,7 +6,7 @@ import {DisplaySettingsMenu} from './DisplaySettingsMenu';
 import {CLASSIC_TEMPLATE, LIVE_TEMPLATE} from '../CourierMapDisplaySettings';
 import type {CourierMapDisplaySettings} from '../CourierMapDisplaySettings';
 
-function renderMenu(settings: CourierMapDisplaySettings, onChange = jest.fn()) {
+function renderMenu(settings: CourierMapDisplaySettings, onChange = vi.fn()) {
     renderWithTheme(<DisplaySettingsMenu settings={settings} onChange={onChange}/>);
     return {onChange};
 }

@@ -2,6 +2,7 @@
  * useDriverManagementApi Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {renderHook, waitFor, act} from '@testing-library/react';
 import {
@@ -23,25 +24,25 @@ import {
 import {driverManagementApi} from '../api/driverManagementApi';
 import {createQueryWrapper} from '../test/utils';
 
-jest.mock('../api/driverManagementApi', () => ({
+vi.mock('../api/driverManagementApi', () => ({
     driverManagementApi: {
-        searchAllCouriers: jest.fn(),
-        getCourierDetailsForDashboard: jest.fn(),
-        getAllFleetOptions: jest.fn(),
-        getTodayActiveDrivers: jest.fn(),
-        getCourierComplianceList: jest.fn(),
-        getAfterHoursSchedule: jest.fn(),
-        getDriverEmails: jest.fn(),
-        getDriverDailyEarnings: jest.fn(),
-        createAfterHoursSchedule: jest.fn(),
-        updateAfterHoursSchedule: jest.fn(),
-        deleteAfterHoursSchedule: jest.fn(),
-        sendComplianceReminders: jest.fn(),
-        sendEmailToCouriers: jest.fn(),
+        searchAllCouriers: vi.fn(),
+        getCourierDetailsForDashboard: vi.fn(),
+        getAllFleetOptions: vi.fn(),
+        getTodayActiveDrivers: vi.fn(),
+        getCourierComplianceList: vi.fn(),
+        getAfterHoursSchedule: vi.fn(),
+        getDriverEmails: vi.fn(),
+        getDriverDailyEarnings: vi.fn(),
+        createAfterHoursSchedule: vi.fn(),
+        updateAfterHoursSchedule: vi.fn(),
+        deleteAfterHoursSchedule: vi.fn(),
+        sendComplianceReminders: vi.fn(),
+        sendEmailToCouriers: vi.fn(),
     },
 }));
 
-const mockApi = driverManagementApi as jest.Mocked<typeof driverManagementApi>;
+const mockApi = driverManagementApi as Mocked<typeof driverManagementApi>;
 
 // --- Query hooks ---
 

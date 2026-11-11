@@ -1,3 +1,4 @@
+import type {Mocked, MockedFunction} from 'vitest';
 import React from 'react';
 import {act, fireEvent, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
 import {renderWithMantine} from '../../test/utils';
@@ -7,7 +8,7 @@ import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse
 import dayjs from 'dayjs';
 
 // Mock JobDetails to avoid AngularJS dependency chain
-jest.mock('../../components/common/job-details/JobDetails', () => ({
+vi.mock('../../components/common/job-details/JobDetails', () => ({
     JobDetails: ({config}: { config: { jobId?: number; isRecurringJob: boolean } }) => (
         <div data-testid="job-details" data-job-id={config.jobId ?? ''} data-is-recurring={String(config.isRecurringJob)}>
             JobDetails Mock
@@ -16,35 +17,35 @@ jest.mock('../../components/common/job-details/JobDetails', () => ({
 }));
 
 // Mock the hooks
-jest.mock('../../hooks/useRecurringJobsApi', () => ({
-    useRecurringJobsList: jest.fn(),
-    useSpeedList: jest.fn(),
-    useRouteList: jest.fn(),
-    useRecurringJobDeliveryJourney: jest.fn(() => ({
+vi.mock('../../hooks/useRecurringJobsApi', () => ({
+    useRecurringJobsList: vi.fn(),
+    useSpeedList: vi.fn(),
+    useRouteList: vi.fn(),
+    useRecurringJobDeliveryJourney: vi.fn(() => ({
         data: undefined,
         isLoading: false,
         isError: false,
         error: null,
-        refetch: jest.fn(),
+        refetch: vi.fn(),
         isFetching: false,
     })),
 }));
 
-jest.mock('../../hooks/useCourierApi', () => ({
-    useCourierSearch: jest.fn(),
+vi.mock('../../hooks/useCourierApi', () => ({
+    useCourierSearch: vi.fn(),
 }));
 
 // Mock the API
-jest.mock('../../api/recurringJobsApi', () => ({
+vi.mock('../../api/recurringJobsApi', () => ({
     recurringJobsApi: {
-        exportToCsv: jest.fn(),
+        exportToCsv: vi.fn(),
     },
 }));
 
 // Deactivate routes through updateJobDetail (same path the context-menu
 // "Deactivate" already uses) — mock it so we can assert the call.
-jest.mock('../../api/jobListApi', () => ({
-    updateJobDetail: jest.fn(),
+vi.mock('../../api/jobListApi', () => ({
+    updateJobDetail: vi.fn(),
 }));
 
 import {useRecurringJobsList, useRouteList, useSpeedList} from '../../hooks/useRecurringJobsApi';
@@ -52,12 +53,12 @@ import {useCourierSearch} from '../../hooks/useCourierApi';
 import {recurringJobsApi} from '../../api/recurringJobsApi';
 import {updateJobDetail} from '../../api/jobListApi';
 
-const mockUseRecurringJobsList = useRecurringJobsList as jest.MockedFunction<typeof useRecurringJobsList>;
-const mockUseSpeedList = useSpeedList as jest.MockedFunction<typeof useSpeedList>;
-const mockUseRouteList = useRouteList as jest.MockedFunction<typeof useRouteList>;
-const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
-const mockRecurringJobsApi = recurringJobsApi as jest.Mocked<typeof recurringJobsApi>;
-const mockUpdateJobDetail = updateJobDetail as jest.MockedFunction<typeof updateJobDetail>;
+const mockUseRecurringJobsList = useRecurringJobsList as MockedFunction<typeof useRecurringJobsList>;
+const mockUseSpeedList = useSpeedList as MockedFunction<typeof useSpeedList>;
+const mockUseRouteList = useRouteList as MockedFunction<typeof useRouteList>;
+const mockUseCourierSearch = useCourierSearch as MockedFunction<typeof useCourierSearch>;
+const mockRecurringJobsApi = recurringJobsApi as Mocked<typeof recurringJobsApi>;
+const mockUpdateJobDetail = updateJobDetail as MockedFunction<typeof updateJobDetail>;
 
 
 const createTestQueryClient = () =>
@@ -108,10 +109,10 @@ const createMockResponse = (jobs: PrebookListModel[], total: number = jobs.lengt
 });
 
 const createDefaultProps = (overrides?: Partial<RecurringJobsPageProps>): RecurringJobsPageProps => ({
-    showToast: jest.fn(),
+    showToast: vi.fn(),
     isUsCustomer: false,
-    onAddStop: jest.fn(),
-    setRefreshCallback: jest.fn(),
+    onAddStop: vi.fn(),
+    setRefreshCallback: vi.fn(),
     ...overrides,
 });
 
@@ -122,7 +123,7 @@ describe('RecurringJobsPage', () => {
             data: createMockResponse([]),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         mockUseSpeedList.mockReturnValue({
@@ -152,9 +153,9 @@ describe('RecurringJobsPage', () => {
 
     // ── Initial render: toolbar, empty state, refresh callback, speed filter, export, refresh (single render) ─
     it('renders toolbar, empty state, speed filter, registers callback, and supports export/refresh', async () => {
-        const showToast = jest.fn();
-        const setRefreshCallback = jest.fn();
-        const refetch = jest.fn();
+        const showToast = vi.fn();
+        const setRefreshCallback = vi.fn();
+        const refetch = vi.fn();
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse([]),
             isLoading: false,
@@ -215,7 +216,7 @@ describe('RecurringJobsPage', () => {
             isLoading: false,
             isFetching: true,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         renderWithProviders(createDefaultProps());
@@ -234,7 +235,7 @@ describe('RecurringJobsPage', () => {
             data: undefined,
             isLoading: true,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         renderWithProviders(createDefaultProps());
@@ -249,7 +250,7 @@ describe('RecurringJobsPage', () => {
             data: createMockResponse(jobs),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         renderWithProviders(createDefaultProps());
@@ -271,8 +272,8 @@ describe('RecurringJobsPage', () => {
     // = Inactive (0) — the same path the right-click context-menu
     // "Deactivate" uses.
     it('opens deactivate dialog, cancels with No, then on Yes calls updateJobDetail', async () => {
-        const showToast = jest.fn();
-        const refetch = jest.fn();
+        const showToast = vi.fn();
+        const refetch = vi.fn();
         const jobs = [createMockJob(1)];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
@@ -308,21 +309,21 @@ describe('RecurringJobsPage', () => {
 
     // ── Search ──────────────────────────────────────────────────────
     it('should update query when search text changes', async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         renderWithProviders(createDefaultProps());
 
         const searchInput = screen.getByPlaceholderText('Search jobs…');
         fireEvent.change(searchInput, {target: {value: 'test search'}});
 
         act(() => {
-            jest.advanceTimersByTime(350);
+            vi.advanceTimersByTime(350);
         });
 
         const calls = mockUseRecurringJobsList.mock.calls;
         const lastCallWithSearch = calls.find(call => call[0]?.searchText === 'test search');
         expect(lastCallWithSearch).toBeDefined();
 
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     // ── Pagination ──────────────────────────────────────────────────
@@ -332,7 +333,7 @@ describe('RecurringJobsPage', () => {
             data: createMockResponse(jobs, 100),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         renderWithProviders(createDefaultProps());
@@ -352,7 +353,7 @@ describe('RecurringJobsPage', () => {
             data: createMockResponse(jobs),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         renderWithProviders(createDefaultProps());
@@ -374,13 +375,13 @@ describe('RecurringJobsPage', () => {
 
     // ── Context menu: open + click item (single render) ─────────────
     it('opens context menu on right-click and calls onAddStop', () => {
-        const onAddStop = jest.fn();
+        const onAddStop = vi.fn();
         const jobs = [createMockJob(1)];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         renderWithProviders(createDefaultProps({onAddStop}));
@@ -402,7 +403,7 @@ describe('RecurringJobsPage', () => {
             data: createMockResponse(jobs),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         renderWithProviders(createDefaultProps());
@@ -426,7 +427,7 @@ describe('RecurringJobsPage', () => {
             data: createMockResponse(jobs),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         renderWithProviders(createDefaultProps());
@@ -442,7 +443,7 @@ describe('RecurringJobsPage', () => {
             data: createMockResponse([createMockJob(1)]),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         } as any);
 
         // RecurringJobsPageProps no longer includes onJobSelect

@@ -5,33 +5,33 @@
  */
 
 // Mock React DOM to prevent actual rendering
-jest.mock('react-dom/client', () => ({
-    createRoot: jest.fn(() => ({
-        render: jest.fn(),
-        unmount: jest.fn(),
+vi.mock('react-dom/client', () => ({
+    createRoot: vi.fn(() => ({
+        render: vi.fn(),
+        unmount: vi.fn(),
     })),
 }));
 
 // Mock the theme
 
 // Mock the API service
-jest.mock('../../../api/bulkPriceApi', () => ({
+vi.mock('../../../api/bulkPriceApi', async () => ({
     bulkPriceApi: {
-        applyBulkPriceUpdate: jest.fn(),
+        applyBulkPriceUpdate: vi.fn(),
     },
 }));
 
 describe('BulkPriceUploadDialogManager', () => {
     let openBulkPriceUploadDialog: typeof import('./bulk-price-upload-dialog-react.module').openBulkPriceUploadDialog;
 
-    beforeAll(() => {
+    beforeAll(async () => {
 
-        const module = require('./bulk-price-upload-dialog-react.module');
+        const module = (await import('./bulk-price-upload-dialog-react.module'));
         openBulkPriceUploadDialog = module.openBulkPriceUploadDialog;
     });
 
     const createMockToastService = () => ({
-        showToast: jest.fn(),
+        showToast: vi.fn(),
     });
 
     describe('Open Dialog', () => {

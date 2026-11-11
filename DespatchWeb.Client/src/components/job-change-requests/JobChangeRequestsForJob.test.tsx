@@ -2,6 +2,7 @@
  * JobChangeRequestsForJob Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
 import {JobChangeRequestsForJob} from './JobChangeRequestsForJob';
@@ -14,16 +15,16 @@ import type {JobChangeRequestDto} from '../../types/jobChangeRequest';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-jest.mock('../../api/jobChangeRequestApi', () => ({
+vi.mock('../../api/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {
-        forJob: jest.fn(),
-        approve: jest.fn(),
-        reject: jest.fn(),
-        cancel: jest.fn(),
+        forJob: vi.fn(),
+        approve: vi.fn(),
+        reject: vi.fn(),
+        cancel: vi.fn(),
     },
 }));
 
-const mockApi = jobChangeRequestApi as jest.Mocked<typeof jobChangeRequestApi>;
+const mockApi = jobChangeRequestApi as Mocked<typeof jobChangeRequestApi>;
 
 const baseRow: JobChangeRequestDto = {
     id: 1,
@@ -77,7 +78,7 @@ const openRejectInput = (props: PanelProps = {}) => renderAndClick(/^Reject$/, p
 
 describe('JobChangeRequestsForJob', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('renders empty state when no requests exist for the job', async () => {
@@ -156,7 +157,7 @@ describe('JobChangeRequestsForJob', () => {
 
     it('clicking Approve calls the API, reloads, and fires onChanged', async () => {
         const user = setupUser();
-        const onChanged = jest.fn();
+        const onChanged = vi.fn();
         mockApi.forJob.mockResolvedValueOnce([baseRow]).mockResolvedValueOnce([]);
         mockApi.approve.mockResolvedValueOnce({success: true});
 
@@ -208,7 +209,7 @@ describe('JobChangeRequestsForJob', () => {
     describe('modify own pending request', () => {
         it('cancels the existing row and invokes onModifyRequest with the field + value', async () => {
             const user = setupUser();
-            const onModifyRequest = jest.fn();
+            const onModifyRequest = vi.fn();
             mockApi.forJob.mockResolvedValueOnce([localPendingRow]).mockResolvedValueOnce([]);
             mockApi.cancel.mockResolvedValueOnce({success: true});
 
@@ -254,7 +255,7 @@ describe('JobChangeRequestsForJob', () => {
         });
 
         it('Confirm cancel calls the API, refetches, fires onChanged, and surfaces a success banner', async () => {
-            const onChanged = jest.fn();
+            const onChanged = vi.fn();
             mockApi.forJob.mockResolvedValueOnce([localPendingRow]).mockResolvedValueOnce([
                 {...localPendingRow, status: 'Cancelled'},
             ]);

@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import {screen, waitFor} from '@testing-library/react';
 import {apiClient} from '../../../api/client';
 import {clearSessionContext, SessionContextDto} from '../../../api/session';
@@ -5,12 +6,12 @@ import {renderWithProviders} from '../../../test/utils';
 import {redirectTo} from '../../../utils/navigation';
 import {SessionGate} from './SessionGate';
 
-jest.mock('../../../utils/navigation', () => ({redirectTo: jest.fn()}));
-jest.mock('../../../api/client', () => ({apiClient: {get: jest.fn()}}));
+vi.mock('../../../utils/navigation', () => ({redirectTo: vi.fn()}));
+vi.mock('../../../api/client', () => ({apiClient: {get: vi.fn()}}));
 
-const get = apiClient.get as jest.Mock;
+const get = apiClient.get as Mock;
 const dto = {contactId: 5} as SessionContextDto;
-const redirect = redirectTo as jest.Mock;
+const redirect = redirectTo as Mock;
 
 beforeEach(() => {
     get.mockReset();

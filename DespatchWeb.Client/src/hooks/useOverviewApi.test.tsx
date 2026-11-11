@@ -1,3 +1,4 @@
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {
@@ -11,19 +12,19 @@ import {
 import {overviewApi} from '../api/overviewApi';
 import {createQueryWrapper} from '../test/utils';
 
-jest.mock('../api/overviewApi', () => ({
+vi.mock('../api/overviewApi', () => ({
     overviewApi: {
-        getAllJobs: jest.fn(),
-        getAllRegions: jest.fn(),
-        getAllSpeeds: jest.fn(),
-        getStats: jest.fn(),
-        getOpenJobs: jest.fn(),
-        searchCouriers: jest.fn(),
-        getParentJobMap: jest.fn(),
+        getAllJobs: vi.fn(),
+        getAllRegions: vi.fn(),
+        getAllSpeeds: vi.fn(),
+        getStats: vi.fn(),
+        getOpenJobs: vi.fn(),
+        searchCouriers: vi.fn(),
+        getParentJobMap: vi.fn(),
     },
 }));
 
-const mockOverviewApi = overviewApi as jest.Mocked<typeof overviewApi>;
+const mockOverviewApi = overviewApi as Mocked<typeof overviewApi>;
 
 describe('useOverviewApi hooks', () => {
     describe('useOverviewJobs', () => {

@@ -16,13 +16,13 @@ import {setupUser} from '../../../test/utils/setupUser';
 const userEvent = setupUser();
 
 // Mock the dateUtils module
-jest.mock('../../../utils/dateUtils', () => ({
-    getTimezoneAbbreviation: jest.fn(() => '(PST)'),
+vi.mock('../../../utils/dateUtils', () => ({
+    getTimezoneAbbreviation: vi.fn(() => '(PST)'),
 }));
 
 // Mock useNoteHistory hook used by the component
-jest.mock('../../../hooks/useNotesApi', () => ({
-    useNoteHistory: jest.fn(() => ({
+vi.mock('../../../hooks/useNotesApi', () => ({
+    useNoteHistory: vi.fn(() => ({
         data: [],
         isLoading: false,
         isError: false,
@@ -56,13 +56,13 @@ const mockNote: JobNote = {
 const createMockProps = (overrides: Partial<NoteManagementDialogProps> = {}): NoteManagementDialogProps => ({
     open: true,
     note: null,
-    onClose: jest.fn(),
-    onSave: jest.fn(),
-    onLoadNoteTypes: jest.fn().mockResolvedValue(mockNoteTypes),
-    onCreateNote: jest.fn().mockResolvedValue({noteId: 1, noteText: 'Test'}),
-    onUpdateNote: jest.fn().mockResolvedValue(undefined),
-    onCreateNoteType: jest.fn().mockResolvedValue({id: 4, text: 'New Type', isPublic: false}),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onSave: vi.fn(),
+    onLoadNoteTypes: vi.fn().mockResolvedValue(mockNoteTypes),
+    onCreateNote: vi.fn().mockResolvedValue({noteId: 1, noteText: 'Test'}),
+    onUpdateNote: vi.fn().mockResolvedValue(undefined),
+    onCreateNoteType: vi.fn().mockResolvedValue({id: 4, text: 'New Type', isPublic: false}),
+    showToast: vi.fn(),
     ...overrides,
 });
 
@@ -309,7 +309,7 @@ describe('NoteManagementDialog', () => {
     it('should handle save errors gracefully', async () => {
         const props = createMockProps({
             note: mockNote,
-            onUpdateNote: jest.fn().mockRejectedValue(new Error('Network error')),
+            onUpdateNote: vi.fn().mockRejectedValue(new Error('Network error')),
         });
         await act(async () => {
             renderWithTheme(<NoteManagementDialog {...props} />);

@@ -13,11 +13,11 @@ import type {DensityMode} from '../../types/dispatchJob';
 function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobListViewOptions>>) {
     return {
         densityMode: 'dense' as DensityMode,
-        onDensityModeChange: jest.fn(),
-        onResetColumns: jest.fn(),
-        onEditColumns: jest.fn(),
+        onDensityModeChange: vi.fn(),
+        onResetColumns: vi.fn(),
+        onEditColumns: vi.fn(),
         loggedInCouriersOnly: false,
-        onLoggedInCouriersOnlyChange: jest.fn(),
+        onLoggedInCouriersOnlyChange: vi.fn(),
         showLoggedInSwitch: true,
         ...overrides,
     };

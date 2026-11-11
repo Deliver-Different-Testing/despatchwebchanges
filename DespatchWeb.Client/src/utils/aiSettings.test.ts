@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import {
     isAiEnabled,
     setAiEnabled,
@@ -10,18 +11,18 @@ import {
 } from './aiSettings';
 import {getPreference, savePreference} from '../api/preferencesApi';
 
-jest.mock('../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
+vi.mock('../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
 }));
 
-const mockGetPreference = getPreference as jest.MockedFunction<typeof getPreference>;
-const mockSavePreference = savePreference as jest.MockedFunction<typeof savePreference>;
+const mockGetPreference = getPreference as MockedFunction<typeof getPreference>;
+const mockSavePreference = savePreference as MockedFunction<typeof savePreference>;
 
 describe('aiSettings', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockSavePreference.mockResolvedValue(undefined);
     });
 
@@ -54,7 +55,7 @@ describe('aiSettings', () => {
 
     describe('setAiChatEnabled', () => {
         it('defaults to true, persists locally, notifies listeners and syncs chatEnabled to the server', () => {
-            const listener = jest.fn();
+            const listener = vi.fn();
             window.addEventListener(AI_CHAT_CHANGED_EVENT, listener);
             expect(isAiChatEnabled()).toBe(true);
 
@@ -112,7 +113,7 @@ describe('aiSettings', () => {
         });
 
         it('logs and keeps local values when the server payload is malformed', async () => {
-            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockGetPreference.mockResolvedValue('not-json');
             setAiEnabled(true);
             mockSavePreference.mockClear();

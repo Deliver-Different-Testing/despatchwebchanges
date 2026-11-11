@@ -6,29 +6,29 @@ import {NavigationProvider} from '../../routes/NavigationContext';
 import {DispatchScreen} from './DispatchScreen';
 import {createDefaultDispatchLayout} from './lib/boxDefinitions';
 import {testDialogs} from '../../components/dialogs/testDialogRegistry';
-jest.mock('../../components/dialogs/dialogRegistry', () => require('../../components/dialogs/testDialogRegistry').createDialogRegistryMock());
+vi.mock('../../components/dialogs/dialogRegistry', async () => (await import('../../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
 
-const pageProps = jest.fn();
+const pageProps = vi.fn();
 const bridge = {
-    setCurrentLayoutName: jest.fn(),
-    reloadFromStorage: jest.fn(),
-    promptSaveLayout: jest.fn(),
-    promptDeleteLayout: jest.fn(),
-    promptRenameLayout: jest.fn(),
-    updateFilters: jest.fn(),
-    registerViewsListener: jest.fn(),
-    setViewSelection: jest.fn(),
-    updateRefreshIntervals: jest.fn(),
-    updateCourierDisplayMode: jest.fn(),
-    resetCurrentLayout: jest.fn(),
-    setColumnEditMode: jest.fn(),
-    openInterCourierCharge: jest.fn(),
-    jobCreated: jest.fn(),
+    setCurrentLayoutName: vi.fn(),
+    reloadFromStorage: vi.fn(),
+    promptSaveLayout: vi.fn(),
+    promptDeleteLayout: vi.fn(),
+    promptRenameLayout: vi.fn(),
+    updateFilters: vi.fn(),
+    registerViewsListener: vi.fn(),
+    setViewSelection: vi.fn(),
+    updateRefreshIntervals: vi.fn(),
+    updateCourierDisplayMode: vi.fn(),
+    resetCurrentLayout: vi.fn(),
+    setColumnEditMode: vi.fn(),
+    openInterCourierCharge: vi.fn(),
+    jobCreated: vi.fn(),
 };
 let viewsListener: (views: unknown[]) => void;
 
-jest.mock('./DispatchPage', () => {
-    const {useEffect} = jest.requireActual('react');
+vi.mock('./DispatchPage', async () => {
+    const {useEffect} = (await vi.importActual<typeof import('react')>('react'));
     return {
         DispatchPage: (props: {onLayoutBridgeReady: (b: unknown) => void}) => {
             pageProps(props);
@@ -37,15 +37,15 @@ jest.mock('./DispatchPage', () => {
         },
     };
 });
-jest.mock('../partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => null}));
-jest.mock('../../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 4, refresh: jest.fn()})}));
-jest.mock('../../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: jest.fn()})}));
-jest.mock('../../api/preferencesApi', () => ({getPreference: jest.fn().mockResolvedValue(null), savePreference: jest.fn()}));
-jest.mock('../../services/navigationService', () => ({openJobInSearch: jest.fn(), openHubUrl: jest.fn()}));
-jest.mock('../../services/toastService', () => ({
-    toastService: {showToast: jest.fn(), showErrorToast: jest.fn(), showSuccessToast: jest.fn()},
+vi.mock('../partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => null}));
+vi.mock('../../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 4, refresh: vi.fn()})}));
+vi.mock('../../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: vi.fn()})}));
+vi.mock('../../api/preferencesApi', () => ({getPreference: vi.fn().mockResolvedValue(null), savePreference: vi.fn()}));
+vi.mock('../../services/navigationService', () => ({openJobInSearch: vi.fn(), openHubUrl: vi.fn()}));
+vi.mock('../../services/toastService', () => ({
+    toastService: {showToast: vi.fn(), showErrorToast: vi.fn(), showSuccessToast: vi.fn()},
 }));
-jest.mock('../../api/session', () => ({
+vi.mock('../../api/session', () => ({
     getContactId: () => 7, getTimeZone: () => '',
     getSession: () => ({
         contactId: 7, firstName: 'Jo', fullName: 'Jo Doe', isNetworkPartner: false,
@@ -54,7 +54,7 @@ jest.mock('../../api/session', () => ({
 }));
 
 const renderScreen = (ui: React.ReactElement = <DispatchScreen/>) =>
-    renderWithProviders(<NavigationProvider value={{navigate: jest.fn(), currentState: 'dispatch'}}>{ui}</NavigationProvider>);
+    renderWithProviders(<NavigationProvider value={{navigate: vi.fn(), currentState: 'dispatch'}}>{ui}</NavigationProvider>);
 
 const seedCustomLayout = () => {
     localStorage.setItem('layoutV2-7', JSON.stringify([{name: 'Mine', layout: createDefaultDispatchLayout().layout}]));
@@ -66,11 +66,11 @@ const openLayouts = async (user: ReturnType<typeof setupUser>) => {
 };
 
 beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     localStorage.clear();
     bridge.registerViewsListener.mockImplementation((l: (v: unknown[]) => void) => {
         viewsListener = l;
-        return jest.fn();
+        return vi.fn();
     });
     delete testDialogs.CreateJob;
     delete testDialogs.DashboardSettings;
@@ -114,7 +114,7 @@ describe('DispatchScreen', () => {
     });
 
     it('opens the create-job dialog with the tenant flag and reports the new job to the bridge', async () => {
-        const open = jest.fn().mockResolvedValue(321);
+        const open = vi.fn().mockResolvedValue(321);
         testDialogs.CreateJob = {open};
         const user = setupUser();
         renderScreen();
@@ -131,7 +131,7 @@ describe('DispatchScreen', () => {
     });
 
     it('does not notify the bridge when job creation is cancelled', async () => {
-        testDialogs.CreateJob = {open: jest.fn().mockResolvedValue(null)};
+        testDialogs.CreateJob = {open: vi.fn().mockResolvedValue(null)};
         const user = setupUser();
         renderScreen();
 
@@ -159,7 +159,7 @@ describe('DispatchScreen', () => {
     it('toggles column edit mode and resets the layout after confirmation', async () => {
         seedCustomLayout();
         const user = setupUser();
-        const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true);
+        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
         renderScreen();
 
         await openLayouts(user);
@@ -184,7 +184,7 @@ describe('DispatchScreen', () => {
 
     it('persists customised panel visibility under the V2 key and reloads the page layout', async () => {
         seedCustomLayout();
-        const open = jest.fn().mockImplementation(async (boxes: Record<string, {visible?: boolean}>) => boxes);
+        const open = vi.fn().mockImplementation(async (boxes: Record<string, {visible?: boolean}>) => boxes);
         testDialogs.CustomizePanels = {open};
         const user = setupUser();
         renderScreen();
@@ -198,7 +198,7 @@ describe('DispatchScreen', () => {
     });
 
     it('opens the Dispatch settings dialog and pushes refresh intervals to the bridge', async () => {
-        const open = jest.fn().mockResolvedValue({
+        const open = vi.fn().mockResolvedValue({
             selectedRefreshInterval: {id: 30, text: ''},
             selectedDriverLocationRefreshInterval: {id: 0, text: ''},
             selectedTaskRefreshInterval: {id: 60, text: ''},

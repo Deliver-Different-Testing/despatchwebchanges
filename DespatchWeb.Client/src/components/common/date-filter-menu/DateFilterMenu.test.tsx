@@ -40,7 +40,7 @@ describe('DateFilterMenu', () => {
 
     const defaultProps = {
         dateFilterData: mockDateFilterData,
-        onRefreshData: jest.fn(),
+        onRefreshData: vi.fn(),
     };
 
     beforeEach(() => {
@@ -210,7 +210,7 @@ describe('DateFilterMenu', () => {
 
     describe('Interactions', () => {
         it('should call onRefreshData when Apply is clicked', async () => {
-            const onRefreshData = jest.fn();
+            const onRefreshData = vi.fn();
             renderWithProviders(
                 <DateFilterMenu {...defaultProps} onRefreshData={onRefreshData} />
             );
@@ -222,7 +222,7 @@ describe('DateFilterMenu', () => {
         });
 
         it('should call onRefreshData when Reset is clicked', async () => {
-            const onRefreshData = jest.fn();
+            const onRefreshData = vi.fn();
             renderWithProviders(
                 <DateFilterMenu {...defaultProps} onRefreshData={onRefreshData} />
             );
@@ -234,7 +234,7 @@ describe('DateFilterMenu', () => {
         });
 
         it('should call onShowToast when Apply is clicked with valid dates', async () => {
-            const onShowToast = jest.fn();
+            const onShowToast = vi.fn();
             renderWithProviders(
                 <DateFilterMenu {...defaultProps} onShowToast={onShowToast} />
             );
@@ -249,7 +249,7 @@ describe('DateFilterMenu', () => {
         });
 
         it('should call onShowToast with today message when Today is selected', async () => {
-            const onShowToast = jest.fn();
+            const onShowToast = vi.fn();
             renderWithProviders(
                 <DateFilterMenu {...defaultProps} onShowToast={onShowToast} />
             );
@@ -390,7 +390,7 @@ describe('DateFilterMenu', () => {
 
     describe('Mount-time initialization', () => {
         it('should call onRefreshData on mount with all_time dates when no saved option', () => {
-            const onRefreshData = jest.fn();
+            const onRefreshData = vi.fn();
             renderWithProviders(
                 <DateFilterMenu
                     dateFilterData={null}
@@ -409,7 +409,7 @@ describe('DateFilterMenu', () => {
 
         it('should call onRefreshData on mount with today dates when saved option is today', () => {
             localStorage.setItem(optionKey('initToday'), 'today');
-            const onRefreshData = jest.fn();
+            const onRefreshData = vi.fn();
 
             renderWithProviders(
                 <DateFilterMenu
@@ -430,7 +430,7 @@ describe('DateFilterMenu', () => {
 
         it('should call onRefreshData on mount with useTime when saved option is custom_minutes', () => {
             localStorage.setItem(optionKey('initMins'), 'custom_minutes');
-            const onRefreshData = jest.fn();
+            const onRefreshData = vi.fn();
 
             renderWithProviders(
                 <DateFilterMenu
@@ -450,7 +450,7 @@ describe('DateFilterMenu', () => {
 
         it('should keep the persisted custom range on mount and show it when opened', async () => {
             localStorage.setItem(optionKey('initCustom'), 'custom_date');
-            const onRefreshData = jest.fn();
+            const onRefreshData = vi.fn();
             const persisted: DateFilterData = {
                 startDate: dayjs('2026-10-01'),
                 endDate: dayjs('2026-10-15'),
@@ -476,7 +476,7 @@ describe('DateFilterMenu', () => {
 
         it('should fall back to All time when the saved option is custom_date but no range is stored', async () => {
             localStorage.setItem(optionKey('initCustomAllTime'), 'custom_date');
-            const onRefreshData = jest.fn();
+            const onRefreshData = vi.fn();
 
             renderWithProviders(
                 <DateFilterMenu
@@ -532,7 +532,7 @@ describe('DateFilterMenu', () => {
         });
 
         it('should only call onRefreshData once on mount (not on re-renders)', () => {
-            const onRefreshData = jest.fn();
+            const onRefreshData = vi.fn();
             const {rerender} = renderWithProviders(
                 <DateFilterMenu
                     dateFilterData={null}

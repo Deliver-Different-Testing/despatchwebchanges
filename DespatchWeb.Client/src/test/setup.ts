@@ -1,11 +1,11 @@
 /**
- * Jest test setup (runs before each test file)
+ * Vitest test setup (runs before each test file)
  *
  * Configures jest-dom matchers, browser API mocks, and global variables.
  * Keep this file minimal — it runs 155+ times per test run.
  */
 
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import {configure} from '@testing-library/react';
 import {installLegacySessionGlobals} from './legacySessionGlobals';
 
@@ -13,19 +13,27 @@ import {installLegacySessionGlobals} from './legacySessionGlobals';
 // state transitions on a loaded/GC-starved CI worker (a mocked-promise resolution
 // that settles in ~13ms locally can exceed 1s under load, flaking isSuccess/isError
 // assertions — see useAddressApi.test.tsx, 2026-07-03). Genuine hangs are still
-// bounded by jest.config.js testTimeout (30s).
+// bounded by the vite.config.ts testTimeout (30s).
 configure({asyncUtilTimeout: 5000});
+
+// The vmThreads pool's jsdom context doesn't carry Node's web-stream globals (assistant-ui streams chat responses).
+if (typeof globalThis.TransformStream === 'undefined') {
+    const webStreams = await import('node:stream/web');
+    for (const name of ['ReadableStream', 'WritableStream', 'TransformStream'] as const) {
+        globalThis[name] ??= webStreams[name] as never;
+    }
+}
 
 // DOM mocks — only run in jsdom environment (skipped for node-only tests)
 if (typeof window !== 'undefined') {
     // Mock window.history for navigation tests
     Object.defineProperty(window, 'history', {
         value: {
-            back: jest.fn(),
-            forward: jest.fn(),
-            go: jest.fn(),
-            pushState: jest.fn(),
-            replaceState: jest.fn(),
+            back: vi.fn(),
+            forward: vi.fn(),
+            go: vi.fn(),
+            pushState: vi.fn(),
+            replaceState: vi.fn(),
             length: 1,
             state: null,
             scrollRestoration: 'auto'
@@ -36,33 +44,41 @@ if (typeof window !== 'undefined') {
     // Mock window.matchMedia for MUI components
     Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: jest.fn().mockImplementation(query => ({
+        value: vi.fn().mockImplementation(query => ({
             matches: false,
             media: query,
             onchange: null,
-            addListener: jest.fn(),
-            removeListener: jest.fn(),
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
-            dispatchEvent: jest.fn(),
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
         })),
     });
 
-    // Mock ResizeObserver for MUI components
-    global.ResizeObserver = jest.fn().mockImplementation(() => ({
-        observe: jest.fn(),
-        unobserve: jest.fn(),
-        disconnect: jest.fn(),
-    }));
+    // Mantine's Autosize and ScrollArea construct one with `new`; Vitest mocks need a class to support that.
+    global.ResizeObserver = class {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+    } as unknown as typeof ResizeObserver;
+
+    // jsdom 30 has no document.fonts; Mantine's Autosize (Textarea autosize) subscribes to it on mount.
+    if (!document.fonts) {
+        Object.defineProperty(document, 'fonts', {
+            configurable: true,
+            value: { addEventListener: vi.fn(), removeEventListener: vi.fn() },
+        });
+    }
 
     // Mock scrollTo
-    window.scrollTo = jest.fn();
+    window.scrollTo = vi.fn();
 
     // jsdom does not implement scrollIntoView, and Mantine's Combobox (Select,
     // MultiSelect, Autocomplete, SearchSelect) calls it when it moves the active
     // option — without this every dropdown interaction throws.
     if (!Element.prototype.scrollIntoView) {
-        Element.prototype.scrollIntoView = jest.fn();
+        Element.prototype.scrollIntoView = vi.fn();
     }
 }
 
@@ -71,7 +87,7 @@ installLegacySessionGlobals();
 
 // Suppress unavoidable framework warnings only.
 // Application-level errors should be suppressed per-test using
-// jest.spyOn(console, 'error').mockImplementation() — see suppressConsoleError
+// vi.spyOn(console, 'error').mockImplementation(() => {}) — see suppressConsoleError
 // in test/utils/index.tsx for a convenient helper.
 const suppressedErrorPrefixes = new Set([
     'Warning: ReactDOM.render is no longer supported',
@@ -88,23 +104,3 @@ console.error = (...args: unknown[]) => {
     }
     originalError.call(console, ...args);
 };
-
-// jsdom omits TextEncoder/TextDecoder, which react-router needs at import time.
-if (typeof globalThis.TextEncoder === 'undefined') {
-    const {TextEncoder, TextDecoder} = require('util');
-    Object.assign(globalThis, {TextEncoder, TextDecoder});
-}
-
-// assistant-stream builds TransformStreams and subclasses Response at import time; jsdom omits both.
-if (typeof window !== 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const webStreams = require('node:stream/web') as Record<string, unknown>;
-    for (const name of ['ReadableStream', 'WritableStream', 'TransformStream'] as const) {
-        const target = globalThis as Record<string, unknown>;
-        if (typeof target[name] === 'undefined') target[name] = webStreams[name];
-    }
-    if (typeof globalThis.Response === 'undefined') {
-        // Import-time base class only; tests that need a working Response run under the node environment.
-        globalThis.Response = class {} as unknown as typeof Response;
-    }
-}

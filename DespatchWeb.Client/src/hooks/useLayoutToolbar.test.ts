@@ -3,8 +3,8 @@ import type {ILayout} from '../types/interfaces/layout.interfaces';
 import {useLayoutToolbar} from './useLayoutToolbar';
 import {toastService} from '../services/toastService';
 
-jest.mock('../services/toastService', () => ({
-    toastService: {showSuccessToast: jest.fn(), showErrorToast: jest.fn(), showInfoToast: jest.fn()},
+vi.mock('../services/toastService', () => ({
+    toastService: {showSuccessToast: vi.fn(), showErrorToast: vi.fn(), showInfoToast: vi.fn()},
 }));
 
 const storageKeys = {
@@ -19,18 +19,18 @@ const defaultLayout: ILayout = {
 
 function makeBridge() {
     return {
-        setCurrentLayoutName: jest.fn(),
-        reloadLayoutsFromStorage: jest.fn(),
-        promptSaveLayout: jest.fn().mockResolvedValue('Mine'),
-        promptDeleteLayout: jest.fn().mockResolvedValue(true),
-        promptRenameLayout: jest.fn().mockResolvedValue('Renamed'),
+        setCurrentLayoutName: vi.fn(),
+        reloadLayoutsFromStorage: vi.fn(),
+        promptSaveLayout: vi.fn().mockResolvedValue('Mine'),
+        promptDeleteLayout: vi.fn().mockResolvedValue(true),
+        promptRenameLayout: vi.fn().mockResolvedValue('Renamed'),
     };
 }
 
 describe('useLayoutToolbar', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('seeds from storage then re-renders through save, load, rename and delete', async () => {

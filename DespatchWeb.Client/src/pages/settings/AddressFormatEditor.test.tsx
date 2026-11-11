@@ -7,7 +7,7 @@ import type {AddressLineFormat} from '../../types/address';
 
 const userEvent = setupUser();
 
-function renderEditor(value: AddressLineFormat, onChange = jest.fn()) {
+function renderEditor(value: AddressLineFormat, onChange = vi.fn()) {
     renderWithMantine(<AddressFormatEditor value={value} onChange={onChange} />);
     return onChange;
 }

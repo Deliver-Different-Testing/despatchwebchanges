@@ -19,9 +19,9 @@ const defaultProps: AutoCompleteDialogProps = {
     open: true,
     title: 'Select Courier',
     placeholder: 'Search for a courier...',
-    onClose: jest.fn(),
-    onSubmit: jest.fn(),
-    onSearch: jest.fn().mockResolvedValue(mockSuggestions),
+    onClose: vi.fn(),
+    onSubmit: vi.fn(),
+    onSearch: vi.fn().mockResolvedValue(mockSuggestions),
 };
 
 const createMockProps = (overrides?: Partial<AutoCompleteDialogProps>) =>
@@ -92,7 +92,7 @@ describe('AutoCompleteDialog', () => {
     describe('Search Functionality', () => {
         it('does not search when input is less than minInputLength', async () => {
             const user = setupUser();
-            const onSearch = jest.fn().mockResolvedValue([]);
+            const onSearch = vi.fn().mockResolvedValue([]);
             const props = createMockProps({onSearch, minInputLength: 3});
             renderWithMantine(<AutoCompleteDialog {...props} />);
 
@@ -107,7 +107,7 @@ describe('AutoCompleteDialog', () => {
 
         it('searches when input reaches minInputLength', async () => {
             const user = setupUser();
-            const onSearch = jest.fn().mockResolvedValue(mockSuggestions);
+            const onSearch = vi.fn().mockResolvedValue(mockSuggestions);
             const props = createMockProps({onSearch, minInputLength: 2});
             renderWithMantine(<AutoCompleteDialog {...props} />);
 
@@ -123,7 +123,7 @@ describe('AutoCompleteDialog', () => {
         it('displays loading indicator during search', async () => {
             const user = setupUser();
             let resolveSearch: (value: Suggestion[]) => void;
-            const onSearch = jest.fn().mockImplementation(() =>
+            const onSearch = vi.fn().mockImplementation(() =>
                 new Promise<Suggestion[]>(resolve => {
                     resolveSearch = resolve;
                 })
@@ -142,7 +142,7 @@ describe('AutoCompleteDialog', () => {
 
         it('displays no options text when search returns empty', async () => {
             const user = setupUser();
-            const onSearch = jest.fn().mockResolvedValue([]);
+            const onSearch = vi.fn().mockResolvedValue([]);
             const props = createMockProps({onSearch, minInputLength: 2});
             renderWithMantine(<AutoCompleteDialog {...props} />);
 
@@ -159,7 +159,7 @@ describe('AutoCompleteDialog', () => {
 
     describe('Close Functionality', () => {
         it('calls onClose when close icon or Cancel button is clicked', () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             const props = createMockProps({onClose});
             renderWithMantine(<AutoCompleteDialog {...props} />);
 
@@ -176,7 +176,7 @@ describe('AutoCompleteDialog', () => {
     describe('Submit Functionality', () => {
         it('calls onSubmit with selected item when Save is clicked', async () => {
             const user = setupUser();
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({onSubmit, existingItem});
             renderWithMantine(<AutoCompleteDialog {...props} />);
@@ -191,7 +191,7 @@ describe('AutoCompleteDialog', () => {
 
         it('calls onSubmit with shouldRerate true when checkbox is checked', async () => {
             const user = setupUser();
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({onSubmit, existingItem, showRerateOption: true});
             renderWithMantine(<AutoCompleteDialog {...props} />);
@@ -203,7 +203,7 @@ describe('AutoCompleteDialog', () => {
         });
 
         it('does not call onSubmit when no item is selected', () => {
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             const props = createMockProps({onSubmit});
             renderWithMantine(<AutoCompleteDialog {...props} />);
 

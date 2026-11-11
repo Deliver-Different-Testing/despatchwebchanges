@@ -88,9 +88,9 @@ const mockNoneUpdatedResponse: BulkPricePreviewResponse = {
 
 const createMockProps = (overrides = {}) => ({
     open: true,
-    onClose: jest.fn(),
-    onSubmit: jest.fn().mockResolvedValue(mockResponse),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onSubmit: vi.fn().mockResolvedValue(mockResponse),
+    showToast: vi.fn(),
     ...overrides,
 });
 
@@ -360,7 +360,7 @@ describe('BulkPriceUploadDialog', () => {
         it('should show loading state while applying', async () => {
             let resolveSubmit!: (value: typeof mockResponse) => void;
             const props = createMockProps({
-                onSubmit: jest.fn().mockImplementation(
+                onSubmit: vi.fn().mockImplementation(
                     () => new Promise(resolve => { resolveSubmit = resolve; })
                 ),
             });
@@ -395,7 +395,7 @@ describe('BulkPriceUploadDialog', () => {
 
         it('should show a warning toast when some jobs are skipped', async () => {
             const props = createMockProps({
-                onSubmit: jest.fn().mockResolvedValue(mockPartialResponse),
+                onSubmit: vi.fn().mockResolvedValue(mockPartialResponse),
             });
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
@@ -413,7 +413,7 @@ describe('BulkPriceUploadDialog', () => {
 
         it('should show an error toast when no jobs are updated', async () => {
             const props = createMockProps({
-                onSubmit: jest.fn().mockResolvedValue(mockNoneUpdatedResponse),
+                onSubmit: vi.fn().mockResolvedValue(mockNoneUpdatedResponse),
             });
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
@@ -431,7 +431,7 @@ describe('BulkPriceUploadDialog', () => {
 
         it('should show error toast on failure', async () => {
             const props = createMockProps({
-                onSubmit: jest.fn().mockRejectedValue(new Error('Upload failed')),
+                onSubmit: vi.fn().mockRejectedValue(new Error('Upload failed')),
             });
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
@@ -453,7 +453,7 @@ describe('BulkPriceUploadDialog', () => {
             // (the reported bug) is wrong. Reading the response defensively keeps us on the result
             // screen and out of the error toast.
             const props = createMockProps({
-                onSubmit: jest.fn().mockResolvedValue({} as BulkPricePreviewResponse),
+                onSubmit: vi.fn().mockResolvedValue({} as BulkPricePreviewResponse),
             });
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
@@ -466,7 +466,7 @@ describe('BulkPriceUploadDialog', () => {
 
         it('should return to mode-select state on error', async () => {
             const props = createMockProps({
-                onSubmit: jest.fn().mockRejectedValue(new Error('Upload failed')),
+                onSubmit: vi.fn().mockRejectedValue(new Error('Upload failed')),
             });
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
             await uploadFileAndGoToModeSelect();
@@ -503,7 +503,7 @@ describe('BulkPriceUploadDialog', () => {
 
         it('should show a "Partially updated" header and the skip reason when some jobs are skipped', async () => {
             const props = createMockProps({
-                onSubmit: jest.fn().mockResolvedValue(mockPartialResponse),
+                onSubmit: vi.fn().mockResolvedValue(mockPartialResponse),
             });
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
 

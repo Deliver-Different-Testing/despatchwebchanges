@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen} from '@testing-library/react';
 import { setupUser } from '../../../../test/utils/setupUser';
@@ -8,26 +9,26 @@ import {isAiEnabled} from '../../../../utils/aiSettings';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-jest.mock('../../../../utils/aiSettings', () => ({
-    isAiEnabled: jest.fn(),
+vi.mock('../../../../utils/aiSettings', () => ({
+    isAiEnabled: vi.fn(),
 }));
 
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
+const mockIsAiEnabled = isAiEnabled as Mock;
 
 describe('AiDraftButton (Mantine)', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('renders nothing when AI is disabled', () => {
         mockIsAiEnabled.mockReturnValue(false);
 
-        renderWithMantine(<AiDraftButton onClick={jest.fn()} isDrafting={false} />);
+        renderWithMantine(<AiDraftButton onClick={vi.fn()} isDrafting={false} />);
 
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
 
     it('renders and fires onClick when AI is enabled', async () => {
         mockIsAiEnabled.mockReturnValue(true);
-        const onClick = jest.fn();
+        const onClick = vi.fn();
 
         renderWithMantine(<AiDraftButton onClick={onClick} isDrafting={false} />);
         await userEvent.click(screen.getByRole('button', {name: /draft/i}));
@@ -38,7 +39,7 @@ describe('AiDraftButton (Mantine)', () => {
     it('is disabled and shows the loader while drafting', () => {
         mockIsAiEnabled.mockReturnValue(true);
 
-        renderWithMantine(<AiDraftButton onClick={jest.fn()} isDrafting={true} />);
+        renderWithMantine(<AiDraftButton onClick={vi.fn()} isDrafting={true} />);
 
         expect(screen.getByRole('button')).toHaveAttribute('data-loading', 'true');
         expect(screen.getByText('Drafting…')).toBeInTheDocument();
@@ -47,7 +48,7 @@ describe('AiDraftButton (Mantine)', () => {
     it('respects the disabled prop', () => {
         mockIsAiEnabled.mockReturnValue(true);
 
-        renderWithMantine(<AiDraftButton onClick={jest.fn()} isDrafting={false} disabled />);
+        renderWithMantine(<AiDraftButton onClick={vi.fn()} isDrafting={false} disabled />);
 
         expect(screen.getByRole('button')).toBeDisabled();
     });

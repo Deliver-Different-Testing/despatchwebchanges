@@ -11,11 +11,11 @@ const defaultProps: JobListColumnEditorProps = {
     columns: availableColumns(false, true),
     hiddenColumns: [],
     columnWidths: {...DEFAULT_COLUMN_WIDTHS},
-    onOrderChange: jest.fn(),
-    onHiddenChange: jest.fn(),
-    onColumnWidthsChange: jest.fn(),
-    onReset: jest.fn(),
-    onDone: jest.fn(),
+    onOrderChange: vi.fn(),
+    onHiddenChange: vi.fn(),
+    onColumnWidthsChange: vi.fn(),
+    onReset: vi.fn(),
+    onDone: vi.fn(),
 };
 
 const createMockProps = (overrides?: Partial<JobListColumnEditorProps>) =>
@@ -32,7 +32,7 @@ describe('JobListColumnEditor', () => {
     });
 
     it('reflects hidden columns and toggles them back on', async () => {
-        const onHiddenChange = jest.fn();
+        const onHiddenChange = vi.fn();
         renderWithMantine(
             <JobListColumnEditor {...createMockProps({hiddenColumns: ['client'], onHiddenChange})} />,
         );
@@ -44,7 +44,7 @@ describe('JobListColumnEditor', () => {
     });
 
     it('hides a visible column', async () => {
-        const onHiddenChange = jest.fn();
+        const onHiddenChange = vi.fn();
         renderWithMantine(<JobListColumnEditor {...createMockProps({onHiddenChange})} />);
 
         await userEvent.click(screen.getByLabelText('Show Speed'));
@@ -53,7 +53,7 @@ describe('JobListColumnEditor', () => {
     });
 
     it('reorders with the arrow keys, keeping the locked column leading', () => {
-        const onOrderChange = jest.fn();
+        const onOrderChange = vi.fn();
         renderWithMantine(<JobListColumnEditor {...createMockProps({onOrderChange})} />);
 
         // 'Time' is the second configurable column; move it up past 'Date'.
@@ -65,7 +65,7 @@ describe('JobListColumnEditor', () => {
     });
 
     it('does not reorder past the ends of the list', () => {
-        const onOrderChange = jest.fn();
+        const onOrderChange = vi.fn();
         renderWithMantine(<JobListColumnEditor {...createMockProps({onOrderChange})} />);
 
         fireEvent.keyDown(screen.getByRole('button', {name: /Reorder Date/}), {key: 'ArrowUp'});
@@ -75,7 +75,7 @@ describe('JobListColumnEditor', () => {
     });
 
     it('sets a width and clamps it to the resize minimum', async () => {
-        const onColumnWidthsChange = jest.fn();
+        const onColumnWidthsChange = vi.fn();
         renderWithMantine(<JobListColumnEditor {...createMockProps({onColumnWidthsChange})} />);
 
         const width = screen.getByLabelText('Delivery width');
@@ -91,8 +91,8 @@ describe('JobListColumnEditor', () => {
     });
 
     it('exposes Reset to defaults and Done', async () => {
-        const onReset = jest.fn();
-        const onDone = jest.fn();
+        const onReset = vi.fn();
+        const onDone = vi.fn();
         renderWithMantine(<JobListColumnEditor {...createMockProps({onReset, onDone})} />);
 
         await userEvent.click(screen.getByRole('button', {name: /reset to defaults/i}));

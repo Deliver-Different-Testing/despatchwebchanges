@@ -230,7 +230,7 @@ describe('FlightItinerary', () => {
 
         it('calls getConnectionTime with correct segment pairs', () => {
             const segments = createTwoSegments();
-            const mockGetConnectionTime = jest.fn().mockReturnValue('2h 00m');
+            const mockGetConnectionTime = vi.fn().mockReturnValue('2h 00m');
 
             renderWithTheme(
                 <FlightItinerary segments={segments} getConnectionTime={mockGetConnectionTime} />
@@ -242,7 +242,7 @@ describe('FlightItinerary', () => {
 
         it('does not call getConnectionTime for single segment', () => {
             const segments = [createSegment()];
-            const mockGetConnectionTime = jest.fn();
+            const mockGetConnectionTime = vi.fn();
 
             renderWithTheme(
                 <FlightItinerary segments={segments} getConnectionTime={mockGetConnectionTime} />

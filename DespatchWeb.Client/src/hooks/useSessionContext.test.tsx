@@ -1,17 +1,18 @@
+import type {Mock} from 'vitest';
 import {renderHook, waitFor} from '@testing-library/react';
 import {apiClient} from '../api/client';
 import {clearSessionContext, getSession, SessionContextDto} from '../api/session';
 import {createQueryWrapper, createTestQueryClient} from '../test/utils';
 import {useSessionContext} from './useSessionContext';
 
-jest.mock('../api/client', () => ({apiClient: {get: jest.fn()}}));
+vi.mock('../api/client', () => ({apiClient: {get: vi.fn()}}));
 
 const dto = {contactId: 5, firstName: 'Jane', currencyCode: 'USD'} as SessionContextDto;
 
 afterEach(() => clearSessionContext());
 
 it('fetches /api/context once, no retry, and publishes it to getSession()', async () => {
-    (apiClient.get as jest.Mock).mockResolvedValue(dto);
+    (apiClient.get as Mock).mockResolvedValue(dto);
     const client = createTestQueryClient();
     const {result} = renderHook(() => useSessionContext(), {wrapper: createQueryWrapper(client)});
 
@@ -23,7 +24,7 @@ it('fetches /api/context once, no retry, and publishes it to getSession()', asyn
 });
 
 it('does not retry a failure', async () => {
-    (apiClient.get as jest.Mock).mockClear().mockRejectedValue({status: 500, message: 'x'});
+    (apiClient.get as Mock).mockClear().mockRejectedValue({status: 500, message: 'x'});
     const {result} = renderHook(() => useSessionContext(), {wrapper: createQueryWrapper(createTestQueryClient())});
 
     await waitFor(() => expect(result.current.isError).toBe(true));

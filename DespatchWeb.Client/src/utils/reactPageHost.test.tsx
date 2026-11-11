@@ -20,13 +20,13 @@ describe('createPageHost', () => {
             logName: 'ProbePage',
             render: config => <div data-testid="page">{config.label}</div>,
         });
-        jest.spyOn(console, 'log').mockImplementation(() => undefined);
-        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
     });
 
     afterEach(() => {
         act(() => host.unmount());
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('renders into an existing container', () => {

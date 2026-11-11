@@ -10,8 +10,8 @@ import {PodPhoto, PodPhotoViewerProps} from "./pod-photo-viewer.types";
 import PodPhotoViewer from "./PodPhotoViewer";
 
 // Mock the dateUtils module
-jest.mock('../../../utils/dateUtils', () => ({
-    getTimezoneAbbreviation: jest.fn((tz: string) => {
+vi.mock('../../../utils/dateUtils', () => ({
+    getTimezoneAbbreviation: vi.fn((tz: string) => {
         if (tz === 'Pacific/Auckland') return '';
         if (tz === 'America/Los_Angeles') return '(PST)';
         if (tz === 'America/New_York') return '(EST)';
@@ -49,7 +49,7 @@ const createMockProps = (overrides: Partial<PodPhotoViewerProps> = {}): PodPhoto
     isOpen: true,
     initialPhotoIndex: 0,
     timeZone: 'America/Los_Angeles',
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     ...overrides,
 });
 

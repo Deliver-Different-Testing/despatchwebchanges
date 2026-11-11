@@ -118,7 +118,6 @@ export interface SymbolIconProps {
 export const SymbolIcon: React.FC<SymbolIconProps> = ({name, ...rest}) => {
     const entry = SYMBOL_MAP[name as keyof typeof SYMBOL_MAP];
     if (!entry && process.env.NODE_ENV !== 'production') {
-        // eslint-disable-next-line no-console
         console.warn(`[SymbolIcon] Unknown glyph "${name}" — add it to SYMBOL_MAP.`);
     }
     const {lib, component} = entry ?? FALLBACK;

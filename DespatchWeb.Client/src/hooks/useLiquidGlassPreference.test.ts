@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {
     isLiquidGlassEnabled,
@@ -9,21 +10,21 @@ import {isLiquidGlassSupported} from './glassSupport';
 import {getPreference, savePreference} from '../api/preferencesApi';
 import {StaffPreferenceKey} from '../types/enums/staff-preference-key.enum';
 
-jest.mock('./glassSupport', () => ({isLiquidGlassSupported: jest.fn()}));
-jest.mock('../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
+vi.mock('./glassSupport', () => ({isLiquidGlassSupported: vi.fn()}));
+vi.mock('../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
 }));
 
-const mockSupported = isLiquidGlassSupported as jest.Mock;
-const mockGet = getPreference as jest.Mock;
-const mockSave = savePreference as jest.Mock;
+const mockSupported = isLiquidGlassSupported as Mock;
+const mockGet = getPreference as Mock;
+const mockSave = savePreference as Mock;
 const win = window as unknown as {ContactID?: number; __ddLiquidGlassServerSynced?: boolean};
 
 describe('liquid glass preference', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockSupported.mockReturnValue(true);
         mockSave.mockResolvedValue(undefined);
         mockGet.mockResolvedValue(null);

@@ -15,15 +15,15 @@ function createDefaultProps(overrides?: Record<string, any>) {
         viewDensityLabel: 'Normal',
         isEditMode: false,
         routes: [],
-        onToggleDensity: jest.fn(),
-        onToggleEditMode: jest.fn(),
-        onResetFieldVisibility: jest.fn(),
-        onStatusClick: jest.fn(),
-        onPodReport: jest.fn(),
-        onPodSpreadsheet: jest.fn(),
-        onSendPodEmail: jest.fn(),
-        onLockToggle: jest.fn(),
-        onRouteChange: jest.fn(),
+        onToggleDensity: vi.fn(),
+        onToggleEditMode: vi.fn(),
+        onResetFieldVisibility: vi.fn(),
+        onStatusClick: vi.fn(),
+        onPodReport: vi.fn(),
+        onPodSpreadsheet: vi.fn(),
+        onSendPodEmail: vi.fn(),
+        onLockToggle: vi.fn(),
+        onRouteChange: vi.fn(),
         ...overrides,
     };
 }
@@ -63,15 +63,15 @@ describe('JobDetailHeader', () => {
     });
 
     it('calls onStatusClick when status chip is clicked', () => {
-        const onStatusClick = jest.fn();
+        const onStatusClick = vi.fn();
         renderWithTheme(<JobDetailHeader {...createDefaultProps({onStatusClick})} />);
         fireEvent.click(screen.getByText('Dispatched'));
         expect(onStatusClick).toHaveBeenCalledTimes(1);
     });
 
     it('calls toolbar button handlers for density and edit mode', () => {
-        const onToggleDensity = jest.fn();
-        const onToggleEditMode = jest.fn();
+        const onToggleDensity = vi.fn();
+        const onToggleEditMode = vi.fn();
         renderWithTheme(<JobDetailHeader {...createDefaultProps({onToggleDensity, onToggleEditMode})} />);
         fireEvent.click(screen.getByLabelText('Compact view'));
         expect(onToggleDensity).toHaveBeenCalledTimes(1);
@@ -103,7 +103,7 @@ describe('JobDetailHeader', () => {
     });
 
     it('calls onResetFieldVisibility when reset button clicked', () => {
-        const onResetFieldVisibility = jest.fn();
+        const onResetFieldVisibility = vi.fn();
         renderWithTheme(
             <JobDetailHeader {...createDefaultProps({isEditMode: true, onResetFieldVisibility})} />
         );
@@ -126,9 +126,9 @@ describe('JobDetailHeader', () => {
     });
 
     it('disables POD options and ignores clicks until the job is completed', () => {
-        const onPodReport = jest.fn();
-        const onPodSpreadsheet = jest.fn();
-        const onSendPodEmail = jest.fn();
+        const onPodReport = vi.fn();
+        const onPodSpreadsheet = vi.fn();
+        const onSendPodEmail = vi.fn();
         const incompleteJob = createMockJob({done: false});
         renderWithTheme(
             <JobDetailHeader {...createDefaultProps({job: incompleteJob, onPodReport, onPodSpreadsheet, onSendPodEmail})} />
@@ -156,9 +156,9 @@ describe('JobDetailHeader', () => {
     });
 
     it('enables POD options and triggers actions on a completed job', () => {
-        const onPodReport = jest.fn();
-        const onPodSpreadsheet = jest.fn();
-        const onSendPodEmail = jest.fn();
+        const onPodReport = vi.fn();
+        const onPodSpreadsheet = vi.fn();
+        const onSendPodEmail = vi.fn();
         const job = createMockJob({done: true, preBook: false});
         renderWithTheme(
             <JobDetailHeader {...createDefaultProps({job, onPodReport, onPodSpreadsheet, onSendPodEmail})} />
@@ -173,7 +173,7 @@ describe('JobDetailHeader', () => {
         const doneJob = () => createMockJob({done: true, preBook: false});
 
         it('calls onOverlayMenuOpen when the POD menu is opened', () => {
-            const onOverlayMenuOpen = jest.fn();
+            const onOverlayMenuOpen = vi.fn();
             renderWithTheme(
                 <JobDetailHeader {...createDefaultProps({job: doneJob(), onOverlayMenuOpen})} />
             );
@@ -192,7 +192,7 @@ describe('JobDetailHeader', () => {
         });
 
         it('renders an available document and triggers download on click', () => {
-            const onDownloadOverlay = jest.fn();
+            const onDownloadOverlay = vi.fn();
             const overlayDocuments = [{documentType: 'Invoice', displayName: 'Customer Invoice', available: true}];
             renderWithTheme(
                 <JobDetailHeader
@@ -205,7 +205,7 @@ describe('JobDetailHeader', () => {
         });
 
         it('renders an unavailable document disabled and does not trigger download', () => {
-            const onDownloadOverlay = jest.fn();
+            const onDownloadOverlay = vi.fn();
             const overlayDocuments = [{documentType: 'Manifest', displayName: 'Delivery Manifest', available: false}];
             renderWithTheme(
                 <JobDetailHeader
@@ -220,7 +220,7 @@ describe('JobDetailHeader', () => {
         });
 
         it('still offers overlay documents on a job that is not completed', () => {
-            const onDownloadOverlay = jest.fn();
+            const onDownloadOverlay = vi.fn();
             const overlayDocuments = [{documentType: 'Invoice', displayName: 'Customer Invoice', available: true}];
             renderWithTheme(
                 <JobDetailHeader
@@ -241,8 +241,8 @@ describe('JobDetailHeader', () => {
         });
 
         it('toolbar buttons still work in dense mode', () => {
-            const onToggleDensity = jest.fn();
-            const onToggleEditMode = jest.fn();
+            const onToggleDensity = vi.fn();
+            const onToggleEditMode = vi.fn();
             renderWithTheme(
                 <JobDetailHeader {...createDefaultProps({dense: true, viewDensityLabel: 'Dense', onToggleDensity, onToggleEditMode})} />
             );
@@ -253,7 +253,7 @@ describe('JobDetailHeader', () => {
         });
 
         it('POD menu still works in dense mode', () => {
-            const onPodReport = jest.fn();
+            const onPodReport = vi.fn();
             const job = createMockJob({done: true, preBook: false});
             renderWithTheme(
                 <JobDetailHeader {...createDefaultProps({dense: true, viewDensityLabel: 'Dense', job, onPodReport})} />
@@ -279,7 +279,7 @@ describe('JobDetailHeader', () => {
         });
 
         it('calls onLockToggle when lock button is clicked', () => {
-            const onLockToggle = jest.fn();
+            const onLockToggle = vi.fn();
             renderWithTheme(<JobDetailHeader {...createDefaultProps({onLockToggle})} />);
             const lockBtn = screen.getByLabelText('Lock job').querySelector('button')
                 ?? screen.getByLabelText('Lock job');

@@ -2,22 +2,23 @@
  * Driver management API Service Tests
  */
 
+import type {Mocked, MockedFunction} from 'vitest';
 import {driverManagementApi} from './driverManagementApi';
 import {apiClient, downloadBlob} from './client';
 import {createMockApiError} from '../test/utils';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
-        delete: jest.fn(),
-        postForBlob: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
+        delete: vi.fn(),
+        postForBlob: vi.fn(),
     },
-    downloadBlob: jest.fn(),
+    downloadBlob: vi.fn(),
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
-const mockDownloadBlob = downloadBlob as jest.MockedFunction<typeof downloadBlob>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
+const mockDownloadBlob = downloadBlob as MockedFunction<typeof downloadBlob>;
 
 describe('driverManagementApi', () => {
     describe('searchAllCouriers', () => {

@@ -20,12 +20,12 @@ import {
 
 describe('Shell icon buttons', () => {
     it.each([
-        ['Settings', <SettingsButton key="s" onClick={jest.fn()} />],
-        ['Refresh', <RefreshButton key="r" onClick={jest.fn()} />],
-        ['Layouts', <LayoutsMenu key="l" layouts={[]} onSaveLayout={jest.fn()} onLoadLayout={jest.fn()} onDeleteLayout={jest.fn()} />],
-        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={jest.fn()} />],
-        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={jest.fn()} onClearAll={jest.fn()} />],
-        ['Custom', <ToolbarIconButton key="c" icon={<span />} tooltip="Custom" onClick={jest.fn()} />],
+        ['Settings', <SettingsButton key="s" onClick={vi.fn()} />],
+        ['Refresh', <RefreshButton key="r" onClick={vi.fn()} />],
+        ['Layouts', <LayoutsMenu key="l" layouts={[]} onSaveLayout={vi.fn()} onLoadLayout={vi.fn()} onDeleteLayout={vi.fn()} />],
+        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={vi.fn()} />],
+        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={vi.fn()} onClearAll={vi.fn()} />],
+        ['Custom', <ToolbarIconButton key="c" icon={<span />} tooltip="Custom" onClick={vi.fn()} />],
     ])('%s takes its glyph colour from the shell variables', (name, element) => {
         // The on-colour differs per tenant (Ink on gold, white on Ink), so the button
         // defers to the var the theme resolver publishes rather than baking it in.
@@ -40,8 +40,8 @@ describe('Shell icon buttons', () => {
     });
 
     it.each([
-        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={jest.fn()} />],
-        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={jest.fn()} onClearAll={jest.fn()} />],
+        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={vi.fn()} />],
+        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={vi.fn()} onClearAll={vi.fn()} />],
     ])('does not let %s repaint its glyph on the way down from the button', (name, element) => {
         // A count badge is an Indicator wrapping the glyph, and Mantine resolves style
         // props like `c` to inline styles on the Indicator ROOT — which is the glyph's
@@ -62,8 +62,8 @@ describe('Shell icon buttons', () => {
     });
 
     it.each([
-        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={jest.fn()} />],
-        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={jest.fn()} onClearAll={jest.fn()} />],
+        ['Messages', <MessagesButton key="m" unreadCount={5} onClick={vi.fn()} />],
+        ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={vi.fn()} onClearAll={vi.fn()} />],
     ])('lets the %s count badge escape the round button instead of clipping it', (name, element) => {
         // ActionIcon's root clips its children. That was invisible while the buttons
         // were square, but the circular border now cuts through an Indicator sitting
@@ -77,11 +77,11 @@ describe('Shell icon buttons', () => {
 describe('MessagesButton', () => {
     const defaultProps = {
         unreadCount: 0,
-        onClick: jest.fn(),
+        onClick: vi.fn(),
     };
 
     it('should render without badge and call onClick when clicked', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(<MessagesButton {...defaultProps} onClick={onClick} />);
 
         const button = screen.getByRole('button');
@@ -105,11 +105,11 @@ describe('MessagesButton', () => {
 
 describe('RefreshButton', () => {
     const defaultProps = {
-        onClick: jest.fn(),
+        onClick: vi.fn(),
     };
 
     it('should render enabled refresh button and call onClick when clicked', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(<RefreshButton {...defaultProps} onClick={onClick} />);
 
         const button = screen.getByRole('button');
@@ -120,7 +120,7 @@ describe('RefreshButton', () => {
     });
 
     it('should show loading spinner and not call onClick when loading', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(<RefreshButton {...defaultProps} onClick={onClick} loading={true} />);
 
         const button = screen.getByRole('button');
@@ -134,7 +134,7 @@ describe('RefreshButton', () => {
 
 describe('SettingsButton', () => {
     it('should render settings button and call onClick when clicked', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(<SettingsButton onClick={onClick} />);
 
         expect(screen.getByRole('button')).toBeInTheDocument();
@@ -153,8 +153,8 @@ describe('ViewsMenu', () => {
 
     const defaultProps = {
         views: mockViews,
-        onToggleView: jest.fn(),
-        onClearAll: jest.fn(),
+        onToggleView: vi.fn(),
+        onClearAll: vi.fn(),
     };
 
     it('should render menu button with selected count badge', () => {
@@ -168,8 +168,8 @@ describe('ViewsMenu', () => {
     });
 
     it('should open menu with views and a selection header that clears', async () => {
-        const onClearAll = jest.fn();
-        const onToggleView = jest.fn();
+        const onClearAll = vi.fn();
+        const onToggleView = vi.fn();
         renderWithMantine(
             <ViewsMenu {...defaultProps} onClearAll={onClearAll} onToggleView={onToggleView} />
         );
@@ -198,7 +198,7 @@ describe('ViewsMenu', () => {
     });
 
     it('should call onToggleView when a view is clicked', async () => {
-        const onToggleView = jest.fn();
+        const onToggleView = vi.fn();
         renderWithMantine(<ViewsMenu {...defaultProps} onToggleView={onToggleView} />);
 
         fireEvent.click(screen.getByRole('button'));
@@ -230,7 +230,7 @@ describe('ViewsMenu', () => {
     });
 
     it('should not produce Fragment children warning when menu is open with views', async () => {
-        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         renderWithMantine(<ViewsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
@@ -254,9 +254,9 @@ describe('LayoutsMenu', () => {
 
     const defaultProps = {
         layouts: mockLayouts,
-        onSaveLayout: jest.fn(),
-        onLoadLayout: jest.fn(),
-        onDeleteLayout: jest.fn(),
+        onSaveLayout: vi.fn(),
+        onLoadLayout: vi.fn(),
+        onDeleteLayout: vi.fn(),
     };
 
     it('should render menu button and open menu when clicked', async () => {
@@ -273,7 +273,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should call onSaveLayout when Add layout is clicked', async () => {
-        const onSaveLayout = jest.fn();
+        const onSaveLayout = vi.fn();
         renderWithMantine(<LayoutsMenu {...defaultProps} onSaveLayout={onSaveLayout} />);
 
         fireEvent.click(screen.getByRole('button'));
@@ -284,7 +284,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should call onLoadLayout with index when layout is clicked', async () => {
-        const onLoadLayout = jest.fn();
+        const onLoadLayout = vi.fn();
         renderWithMantine(<LayoutsMenu {...defaultProps} onLoadLayout={onLoadLayout} />);
 
         fireEvent.click(screen.getByRole('button'));
@@ -316,8 +316,8 @@ describe('LayoutsMenu', () => {
     });
 
     it('should call onDeleteLayout with index when the trailing delete is clicked', async () => {
-        const onDeleteLayout = jest.fn();
-        const onLoadLayout = jest.fn();
+        const onDeleteLayout = vi.fn();
+        const onLoadLayout = vi.fn();
         renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
@@ -336,7 +336,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should expose a rename control for custom layouts but not Default', async () => {
-        renderWithMantine(<LayoutsMenu {...defaultProps} onRenameLayout={jest.fn()} />);
+        renderWithMantine(<LayoutsMenu {...defaultProps} onRenameLayout={vi.fn()} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -345,8 +345,8 @@ describe('LayoutsMenu', () => {
     });
 
     it('should call onRenameLayout with index without loading the row', async () => {
-        const onRenameLayout = jest.fn();
-        const onLoadLayout = jest.fn();
+        const onRenameLayout = vi.fn();
+        const onLoadLayout = vi.fn();
         renderWithMantine(
             <LayoutsMenu {...defaultProps} onRenameLayout={onRenameLayout} onLoadLayout={onLoadLayout} />
         );
@@ -375,7 +375,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should call onCustomizePanels when clicked on a custom layout', async () => {
-        const onCustomizePanels = jest.fn();
+        const onCustomizePanels = vi.fn();
         renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
@@ -391,7 +391,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should offer Show/Hide Panels on a user-created layout', async () => {
-        const onCustomizePanels = jest.fn();
+        const onCustomizePanels = vi.fn();
         renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
@@ -407,8 +407,8 @@ describe('LayoutsMenu', () => {
     });
 
     it('should disable the editing entries on the read-only Default layout', async () => {
-        const onCustomizePanels = jest.fn();
-        const onToggleColumnEditMode = jest.fn();
+        const onCustomizePanels = vi.fn();
+        const onToggleColumnEditMode = vi.fn();
         renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
@@ -439,7 +439,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should toggle the Edit columns bar and reflect the current mode', async () => {
-        const onToggleColumnEditMode = jest.fn();
+        const onToggleColumnEditMode = vi.fn();
         const {unmount} = renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
@@ -457,7 +457,7 @@ describe('LayoutsMenu', () => {
                 {...defaultProps}
                 currentLayoutName="Custom Layout 1"
                 columnEditMode
-                onToggleColumnEditMode={jest.fn()}
+                onToggleColumnEditMode={vi.fn()}
             />,
         );
         fireEvent.click(screen.getByRole('button'));
@@ -472,7 +472,7 @@ describe('LayoutsMenu', () => {
     });
 
     it('should call onResetLayout from a user-created layout', async () => {
-        const onResetLayout = jest.fn();
+        const onResetLayout = vi.fn();
         renderWithMantine(
             <LayoutsMenu
                 {...defaultProps}
@@ -488,7 +488,7 @@ describe('LayoutsMenu', () => {
     it('should not offer Reset layout on the Default layout', async () => {
         // The Default is regenerated from code, so there is nothing to reset it from.
         renderWithMantine(
-            <LayoutsMenu {...defaultProps} currentLayoutName="Default" onResetLayout={jest.fn()} />,
+            <LayoutsMenu {...defaultProps} currentLayoutName="Default" onResetLayout={vi.fn()} />,
         );
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Switch layout')).toBeInTheDocument();
@@ -500,11 +500,11 @@ describe('ToolbarIconButton', () => {
     const defaultProps = {
         icon: <span data-testid="test-icon">Icon</span>,
         tooltip: 'Test Tooltip',
-        onClick: jest.fn(),
+        onClick: vi.fn(),
     };
 
     it('should render with icon and call onClick when clicked', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(<ToolbarIconButton {...defaultProps} onClick={onClick} />);
 
         expect(screen.getByTestId('test-icon')).toBeInTheDocument();
@@ -514,7 +514,7 @@ describe('ToolbarIconButton', () => {
     });
 
     it('should be disabled and not call onClick when disabled', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(
             <ToolbarIconButton {...defaultProps} onClick={onClick} disabled={true} />
         );

@@ -38,11 +38,11 @@ function courier(overrides: Partial<IAvailableCourierPosition> = {}): IAvailable
 }
 
 beforeEach(() => {
-    jest.useFakeTimers().setSystemTime(NOW);
+    vi.useFakeTimers().setSystemTime(NOW);
 });
 
 afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
 });
 
 const NAME_WITH_COUNT = {markerLabel: 'name' as const, showJobCount: true};

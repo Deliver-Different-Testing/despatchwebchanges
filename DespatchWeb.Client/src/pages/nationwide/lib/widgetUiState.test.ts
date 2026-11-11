@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * Extracted from `NationwideControl.updateUIState` (1787) + `resetAllFlags`.
  * The AngularJS controller delegates to this, so its existing

@@ -6,18 +6,18 @@
  */
 
 // Mock React DOM to prevent actual rendering
-const mockRender = jest.fn();
-const mockCreateRoot = jest.fn(() => ({
+const mockRender = vi.fn();
+const mockCreateRoot = vi.fn(() => ({
     render: mockRender,
-    unmount: jest.fn(),
+    unmount: vi.fn(),
 }));
-jest.mock('react-dom/client', () => ({
+vi.mock('react-dom/client', async () => ({
     createRoot: mockCreateRoot,
 }));
 
 // Mock the provider stack — this test is about the module's mount/open plumbing,
 // not the theme.
-jest.mock('../../../theme/DfrntMantineProvider', () => ({
+vi.mock('../../../theme/DfrntMantineProvider', async () => ({
     DfrntMantineProvider: ({children}: {children: React.ReactNode}) => children,
     islandTree: (node: React.ReactNode) => node,
 }));
@@ -25,8 +25,8 @@ jest.mock('../../../theme/DfrntMantineProvider', () => ({
 // Use require() instead of import to load the module after the mocks are installed
 let openComposeEmailDialog: typeof import('./compose-email-dialog-react.module').openComposeEmailDialog;
 
-beforeAll(() => {
-    openComposeEmailDialog = require('./compose-email-dialog-react.module').openComposeEmailDialog;
+beforeAll(async () => {
+    openComposeEmailDialog = (await import('./compose-email-dialog-react.module')).openComposeEmailDialog;
 });
 
 describe('ComposeEmailDialogModule', () => {

@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Tasks API Service Tests
  */
@@ -20,24 +21,24 @@ import {TaskApiResponse, StaffSuggestion, EventTypeSuggestion} from '../types';
 import {DeliveryJourneyDto} from '../components/common/task-history/TaskHistory.interfaces';
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
     },
 }));
 
 // Mock date utilities
-jest.mock('../utils/dateUtils', () => ({
-    formatDateForApi: jest.fn((date) => date.toISOString()),
-    parseDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
-    formatRelativeDateTime: jest.fn((dateStr) => dateStr),
-    formatLongDate: jest.fn((date) => date.format('MMM/DD/YYYY')),
-    formatTime: jest.fn((date) => date.format('HH:mm')),
-    getTenantTimezone: jest.fn(() => 'New Zealand Standard Time'),
+vi.mock('../utils/dateUtils', () => ({
+    formatDateForApi: vi.fn((date) => date.toISOString()),
+    parseDateFromApi: vi.fn((dateStr) => dayjs(dateStr)),
+    formatRelativeDateTime: vi.fn((dateStr) => dateStr),
+    formatLongDate: vi.fn((date) => date.format('MMM/DD/YYYY')),
+    formatTime: vi.fn((date) => date.format('HH:mm')),
+    getTenantTimezone: vi.fn(() => 'New Zealand Standard Time'),
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('tasksApi', () => {
     describe('getAllTasks', () => {

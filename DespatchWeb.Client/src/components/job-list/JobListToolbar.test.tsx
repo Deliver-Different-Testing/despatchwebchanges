@@ -2,6 +2,7 @@
  * JobListToolbar Tests
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen} from '@testing-library/react';
 import { renderWithMantine } from '../../test/utils';
@@ -12,29 +13,29 @@ import {AppPage} from '../../types/dispatchJob';
 
 function createDefaultProps(overrides?: Partial<{
     selectedCategory: JobCategory;
-    onCategoryChange: jest.Mock;
+    onCategoryChange: Mock;
     searchQuery: string;
-    onSearchChange: jest.Mock;
+    onSearchChange: Mock;
     loggedInCouriersOnly: boolean;
-    onLoggedInCouriersOnlyChange: jest.Mock;
+    onLoggedInCouriersOnlyChange: Mock;
     densityMode: DensityMode;
-    onDensityModeChange: jest.Mock;
-    onResetColumns: jest.Mock;
-    onEditColumns: jest.Mock;
+    onDensityModeChange: Mock;
+    onResetColumns: Mock;
+    onEditColumns: Mock;
     appPage: number;
     showLoggedInSwitch: boolean;
 }>) {
     return {
         selectedCategory: 'all' as JobCategory,
-        onCategoryChange: jest.fn(),
+        onCategoryChange: vi.fn(),
         searchQuery: '',
-        onSearchChange: jest.fn(),
+        onSearchChange: vi.fn(),
         loggedInCouriersOnly: false,
-        onLoggedInCouriersOnlyChange: jest.fn(),
+        onLoggedInCouriersOnlyChange: vi.fn(),
         densityMode: 'dense' as DensityMode,
-        onDensityModeChange: jest.fn(),
-        onResetColumns: jest.fn(),
-        onEditColumns: jest.fn(),
+        onDensityModeChange: vi.fn(),
+        onResetColumns: vi.fn(),
+        onEditColumns: vi.fn(),
         appPage: AppPage.Dispatch,
         showLoggedInSwitch: true,
         ...overrides,

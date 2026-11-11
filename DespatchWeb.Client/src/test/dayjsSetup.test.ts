@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * dayjs plugin contract test.
  *

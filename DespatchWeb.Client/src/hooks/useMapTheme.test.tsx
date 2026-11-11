@@ -16,7 +16,7 @@ const Probe: React.FC<{label?: string}> = ({label = 'p'}) => {
 };
 
 const inApp = (appMode: 'light' | 'dark', ui: React.ReactElement) => (
-    <ColorModeContext.Provider value={{mode: appMode, preference: appMode, setPreference: jest.fn()}}>{ui}</ColorModeContext.Provider>
+    <ColorModeContext.Provider value={{mode: appMode, preference: appMode, setPreference: vi.fn()}}>{ui}</ColorModeContext.Provider>
 );
 
 describe('useMapTheme', () => {

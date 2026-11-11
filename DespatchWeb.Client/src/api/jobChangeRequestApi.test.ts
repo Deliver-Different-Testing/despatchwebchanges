@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Job Change Request API Service Tests
  */
@@ -6,20 +7,20 @@
 import {JobChangeRequestApiService, jobChangeRequestApi} from './jobChangeRequestApi';
 import {apiClient} from './client';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('JobChangeRequestApiService', () => {
     let service: JobChangeRequestApiService;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         service = new JobChangeRequestApiService();
     });
 

@@ -89,13 +89,13 @@ describe('FilterToolbar', () => {
         });
 
         it('stays in place but is disabled when nothing is applied', () => {
-            renderFilterToolbar({activeFilterCount: 0, onClearAll: jest.fn()});
+            renderFilterToolbar({activeFilterCount: 0, onClearAll: vi.fn()});
 
             expect(screen.getByRole('button', {name: 'Clear all'})).toBeDisabled();
         });
 
         it('counts what it would clear, and clears it', () => {
-            const onClearAll = jest.fn();
+            const onClearAll = vi.fn();
             renderFilterToolbar({activeFilterCount: 3, onClearAll});
 
             const clearAll = screen.getByRole('button', {name: 'Clear all (3)'});

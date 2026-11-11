@@ -7,7 +7,7 @@
 import {renderHook, act} from '@testing-library/react';
 import {PREFERENCE_KEYS} from './DispatchMap.types';
 
-jest.mock('../../../api/session', () => ({
+vi.mock('../../../api/session', () => ({
     getContactId: () => 12345,
 }));
 
@@ -25,14 +25,14 @@ describe('useMapPreferences', () => {
         // Mock localStorage
         Object.defineProperty(window, 'localStorage', {
             value: {
-                getItem: jest.fn((key: string) => mockLocalStorage[key] || null),
-                setItem: jest.fn((key: string, value: string) => {
+                getItem: vi.fn((key: string) => mockLocalStorage[key] || null),
+                setItem: vi.fn((key: string, value: string) => {
                     mockLocalStorage[key] = value;
                 }),
-                removeItem: jest.fn((key: string) => {
+                removeItem: vi.fn((key: string) => {
                     delete mockLocalStorage[key];
                 }),
-                clear: jest.fn(() => {
+                clear: vi.fn(() => {
                     mockLocalStorage = {};
                 }),
             },
@@ -41,7 +41,7 @@ describe('useMapPreferences', () => {
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     describe('Initial State', () => {
@@ -311,10 +311,10 @@ describe('useMapPreferences', () => {
 
     describe('LocalStorage Error Handling', () => {
         it('handles localStorage.getItem errors gracefully', () => {
-            jest.spyOn(window.localStorage, 'getItem').mockImplementation(() => {
+            vi.spyOn(window.localStorage, 'getItem').mockImplementation(() => {
                 throw new Error('Storage error');
             });
-            jest.spyOn(console, 'error').mockImplementation(() => {});
+            vi.spyOn(console, 'error').mockImplementation(() => {});
 
             const {result} = renderHook(() => useMapPreferences());
 
@@ -323,10 +323,10 @@ describe('useMapPreferences', () => {
         });
 
         it('handles localStorage.setItem errors gracefully', () => {
-            jest.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+            vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
                 throw new Error('Storage full');
             });
-            jest.spyOn(console, 'error').mockImplementation(() => {});
+            vi.spyOn(console, 'error').mockImplementation(() => {});
 
             const {result} = renderHook(() => useMapPreferences());
 
@@ -341,7 +341,7 @@ describe('useMapPreferences', () => {
         it('handles invalid JSON in localStorage gracefully', () => {
             const key = `${PREFERENCE_KEYS.AUTO_ZOOM}-${mockContactId}`;
             mockLocalStorage[key] = 'invalid json';
-            jest.spyOn(console, 'error').mockImplementation(() => {});
+            vi.spyOn(console, 'error').mockImplementation(() => {});
 
             const {result} = renderHook(() => useMapPreferences());
 
