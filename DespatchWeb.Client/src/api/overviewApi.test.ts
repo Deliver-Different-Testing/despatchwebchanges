@@ -1,22 +1,23 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 import {overviewApi} from './overviewApi';
 import {apiClient} from './client';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
-        delete: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
+        delete: vi.fn(),
     },
 }));
 
-jest.mock('../utils/dateUtils', () => ({
-    formatDateForApiWithTzs: jest.fn((d: Date) => d.toISOString()),
-    parseDateFromApi: jest.fn((s: string) => `parsed:${s}`),
-    formatLongDateTime: jest.fn((s: string) => `formatted:${s}`),
+vi.mock('../utils/dateUtils', () => ({
+    formatDateForApiWithTzs: vi.fn((d: Date) => d.toISOString()),
+    parseDateFromApi: vi.fn((s: string) => `parsed:${s}`),
+    formatLongDateTime: vi.fn((s: string) => `formatted:${s}`),
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('overviewApi', () => {
     describe('getAllJobs', () => {

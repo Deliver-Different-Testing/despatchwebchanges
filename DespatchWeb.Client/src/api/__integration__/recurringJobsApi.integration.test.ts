@@ -1,4 +1,3 @@
-/** @jest-environment jest-fixed-jsdom */
 /**
  * Recurring jobs API Integration Tests
  *
@@ -104,11 +103,11 @@ describe('recurringJobsApi integration', () => {
             let capturedBody: unknown = null;
 
             // Mock DOM methods for download
-            const createElementSpy = jest.spyOn(document, 'createElement');
-            const appendChildSpy = jest.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
-            const removeChildSpy = jest.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
-            const createObjectURLSpy = jest.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
-            const revokeObjectURLSpy = jest.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+            const createElementSpy = vi.spyOn(document, 'createElement');
+            const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
+            const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
+            const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
+            const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 
             server.use(
                 http.post('*/job/RecurringJobsExportCsv', async ({ request }) => {

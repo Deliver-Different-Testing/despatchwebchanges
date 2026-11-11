@@ -3,7 +3,7 @@ import {getPriceDetailReportDownloadUrl} from './priceDetailExport';
 
 // Format dates predictably so assertions focus on URL structure, not tenant-tz formatting
 // (which dateUtils owns and tests separately) — mirrors exportUrls.test.ts.
-jest.mock('../../../utils/dateUtils', () => ({
+vi.mock('../../../utils/dateUtils', () => ({
     formatDateForApiWithTzs: (d: {format: (f: string) => string}) => d.format('YYYY-MM-DD'),
 }));
 

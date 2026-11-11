@@ -2,35 +2,36 @@
  * useJobDetail Hook Tests
  */
 
+import type {MockInstance, MockedFunction} from 'vitest';
 import {renderHook, waitFor, act} from '@testing-library/react';
 import {QueryClient} from '@tanstack/react-query';
 import {useJobDetail} from './useJobDetail';
 import {createTestQueryClient, createWrapper, suppressConsoleError} from '../../../../test/utils';
 
 // Mock API services
-jest.mock('../../../../api/jobDetailApi', () => ({
-    getJobDetail: jest.fn(),
-    getRecurringJobDetail: jest.fn(),
-    getBulkJobDetail: jest.fn(),
+vi.mock('../../../../api/jobDetailApi', () => ({
+    getJobDetail: vi.fn(),
+    getRecurringJobDetail: vi.fn(),
+    getBulkJobDetail: vi.fn(),
 }));
 
-jest.mock('../../../../utils/dtoMappings', () => ({
-    transformJobGroupDTO: jest.fn(),
+vi.mock('../../../../utils/dtoMappings', () => ({
+    transformJobGroupDTO: vi.fn(),
 }));
 
-jest.mock('../../../../utils/dateUtils', () => ({
-    isUsCustomer: jest.fn(),
+vi.mock('../../../../utils/dateUtils', () => ({
+    isUsCustomer: vi.fn(),
 }));
 
 import {getJobDetail, getRecurringJobDetail, getBulkJobDetail} from '../../../../api/jobDetailApi';
 import {transformJobGroupDTO} from '../../../../utils/dtoMappings';
 import {isUsCustomer} from '../../../../utils/dateUtils';
 
-const mockGetJobDetail = getJobDetail as jest.MockedFunction<typeof getJobDetail>;
-const mockGetRecurringJobDetail = getRecurringJobDetail as jest.MockedFunction<typeof getRecurringJobDetail>;
-const mockGetBulkJobDetail = getBulkJobDetail as jest.MockedFunction<typeof getBulkJobDetail>;
-const mockTransformJobGroupDTO = transformJobGroupDTO as jest.MockedFunction<typeof transformJobGroupDTO>;
-const mockIsUsCustomer = isUsCustomer as jest.MockedFunction<typeof isUsCustomer>;
+const mockGetJobDetail = getJobDetail as MockedFunction<typeof getJobDetail>;
+const mockGetRecurringJobDetail = getRecurringJobDetail as MockedFunction<typeof getRecurringJobDetail>;
+const mockGetBulkJobDetail = getBulkJobDetail as MockedFunction<typeof getBulkJobDetail>;
+const mockTransformJobGroupDTO = transformJobGroupDTO as MockedFunction<typeof transformJobGroupDTO>;
+const mockIsUsCustomer = isUsCustomer as MockedFunction<typeof isUsCustomer>;
 
 // ── Test Helpers ──────────────────────────────────────────────────────
 
@@ -47,11 +48,11 @@ const mockDto = {some: 'dto'};
 
 describe('useJobDetail', () => {
     let queryClient: QueryClient;
-    let errorSpy: jest.SpyInstance;
+    let errorSpy: MockInstance;
 
     beforeEach(() => {
         queryClient = createTestQueryClient();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockIsUsCustomer.mockReturnValue(false);
         errorSpy = suppressConsoleError();
     });

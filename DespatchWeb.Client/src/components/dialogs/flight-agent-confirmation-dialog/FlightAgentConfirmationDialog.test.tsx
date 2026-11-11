@@ -2,6 +2,7 @@
  * Tests for FlightAgentConfirmationDialog React component
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import { setupUser } from '../../../test/utils/setupUser';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
@@ -14,12 +15,12 @@ import {AgentSuggestion, FlightCargoProcessing, FlightSegment, FlightViewModel} 
 // The agent-mode pre-flight notice fetches an inbound-email preview via react-query.
 // Keep it inert here (never resolves → renders nothing) so these tests stay focused on
 // the dialog's own content; the notice has its own dedicated tests.
-jest.mock('../../../api/dispatchExecutorApi', () => ({
-    getAgentInboundEmailPreview: jest.fn(() => new Promise(() => { /* never resolves */ })),
+vi.mock('../../../api/dispatchExecutorApi', () => ({
+    getAgentInboundEmailPreview: vi.fn(() => new Promise(() => { /* never resolves */ })),
 }));
 
 import {getAgentInboundEmailPreview} from '../../../api/dispatchExecutorApi';
-const mockPreview = getAgentInboundEmailPreview as jest.Mock;
+const mockPreview = getAgentInboundEmailPreview as Mock;
 const neverResolves = () => new Promise(() => { /* never resolves */ });
 
 // Create a theme for testing
@@ -99,14 +100,14 @@ const defaultProps = {
     jobId: 123,
     jobNumber: 'JOB-001',
     timezone: 'Pacific/Auckland',
-    onClose: jest.fn(),
-    onConfirm: jest.fn(),
-    onCalculateCargoTimes: jest.fn().mockResolvedValue(createCargoProcessing()),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onConfirm: vi.fn(),
+    onCalculateCargoTimes: vi.fn().mockResolvedValue(createCargoProcessing()),
+    showToast: vi.fn(),
 };
 
 /** The flight-mode render every cargo-time test starts from. */
-function renderFlightWithCargoTimes(onCalculateCargoTimes: jest.Mock) {
+function renderFlightWithCargoTimes(onCalculateCargoTimes: Mock) {
     return renderWithTheme(
         <FlightAgentConfirmationDialog
             {...defaultProps}
@@ -178,7 +179,7 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('calls onCalculateCargoTimes when flight is provided', async () => {
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(createCargoProcessing());
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(createCargoProcessing());
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
@@ -421,7 +422,7 @@ describe('FlightAgentConfirmationDialog', () => {
     describe('Dialog Actions', () => {
         it('calls onClose when Cancel button is clicked', async () => {
             const user = setupUser();
-            const onClose = jest.fn();
+            const onClose = vi.fn();
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -439,7 +440,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
         it('calls onConfirm with correct data when Confirm button is clicked', async () => {
             const user = setupUser();
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -472,7 +473,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
         it('includes stop jobs flag when checkbox is checked', async () => {
             const user = setupUser();
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -508,7 +509,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs('2024-03-15T22:00:00'),
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(lateCargoProcessing);
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
@@ -522,7 +523,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs('2024-03-15T22:00:00'),
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(lateCargoProcessing);
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
@@ -536,7 +537,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs('2024-03-15T22:00:00'),
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(lateCargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(lateCargoProcessing);
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
@@ -563,7 +564,7 @@ describe('FlightAgentConfirmationDialog', () => {
                     {...defaultProps}
                     mode="flight"
                     flight={createFlight()}
-                    onCalculateCargoTimes={jest.fn().mockResolvedValue(cargoProcessing)}
+                    onCalculateCargoTimes={vi.fn().mockResolvedValue(cargoProcessing)}
                 />
             );
 
@@ -575,7 +576,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
     describe('Error Handling', () => {
         it('shows error toast when no flight segments available', async () => {
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             const flightWithNoSegments = createFlight({ flightSegments: [] });
 
             renderWithTheme(
@@ -593,8 +594,8 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('shows error when cargo calculation fails', async () => {
-            const showToast = jest.fn();
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(null);
+            const showToast = vi.fn();
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(null);
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -617,7 +618,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
     describe('Multi-Segment Flights', () => {
         it('uses last segment for cargo calculation', async () => {
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(createCargoProcessing());
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(createCargoProcessing());
 
             const multiSegmentFlight = createFlight({
                 flightSegments: [
@@ -662,7 +663,7 @@ describe('FlightAgentConfirmationDialog', () => {
     describe('Issue #3: Package Ready Time Calculation', () => {
         it('calculates packageReadyTime as arrival + processing time', async () => {
             const user = setupUser();
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
 
             // Arrival at 10:30, processing time 90 mins = ready at 12:00
             const cargoProcessing = createCargoProcessing({
@@ -672,7 +673,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs('2024-03-15T22:00:00'),
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(cargoProcessing);
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -707,7 +708,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
         it('uses cargo opening time if arrival + processing is before opening', async () => {
             const user = setupUser();
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
 
             // Arrival at 04:00, processing time 60 mins = 05:00 (before cargo opens at 06:00)
             const cargoProcessing = createCargoProcessing({
@@ -717,7 +718,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs('2024-03-15T22:00:00'),
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(cargoProcessing);
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -750,7 +751,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs(null), // Invalid Dayjs object
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(invalidCargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(invalidCargoProcessing);
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
@@ -764,7 +765,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs('2024-03-15T22:00:00'),
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(validCargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(validCargoProcessing);
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
@@ -781,7 +782,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs('2024-03-15T23:00:00'),
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoWithTimezone);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(cargoWithTimezone);
 
             renderFlightWithCargoTimes(onCalculateCargoTimes);
 
@@ -819,7 +820,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
         it('passes the edited subject and body to onConfirm', async () => {
             const user = setupUser();
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
             mockPreview.mockResolvedValue(willEmailPreview);
 
             renderWithTheme(
@@ -848,7 +849,7 @@ describe('FlightAgentConfirmationDialog', () => {
 
         it('hides the email fields and omits the template when no email will be sent', async () => {
             const user = setupUser();
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
             mockPreview.mockResolvedValue({
                 status: 'NoAgentEmail',
                 agentEmail: null,
@@ -881,13 +882,13 @@ describe('FlightAgentConfirmationDialog', () => {
     describe('Issue #4: Delivery By Time', () => {
         it('includes deliverByTime from API response in confirmation result', async () => {
             const user = setupUser();
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
 
             const cargoProcessing = createCargoProcessing({
                 deliverByTime: dayjs('2024-03-15T18:00:00'),
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(cargoProcessing);
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog
@@ -910,14 +911,14 @@ describe('FlightAgentConfirmationDialog', () => {
 
         it('does not include deliverByTime when not provided by API', async () => {
             const user = setupUser();
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
 
             // No deliverByTime in the response
             const cargoProcessing = createCargoProcessing({
                 deliverByTime: undefined,
             });
 
-            const onCalculateCargoTimes = jest.fn().mockResolvedValue(cargoProcessing);
+            const onCalculateCargoTimes = vi.fn().mockResolvedValue(cargoProcessing);
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog

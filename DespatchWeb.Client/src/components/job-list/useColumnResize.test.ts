@@ -30,7 +30,7 @@ describe('useColumnResize', () => {
         const {result} = renderHook(() =>
             useColumnResize({
                 columnWidths: {jobNo: 130},
-                onColumnWidthsChange: jest.fn(),
+                onColumnWidthsChange: vi.fn(),
                 tableRef: {current: null},
             }),
         );
@@ -43,15 +43,15 @@ describe('useColumnResize', () => {
         const {result} = renderHook(() =>
             useColumnResize({
                 columnWidths: {jobNo: 130},
-                onColumnWidthsChange: jest.fn(),
+                onColumnWidthsChange: vi.fn(),
                 tableRef,
             }),
         );
 
         const fakeEvent = {
             clientX: 200,
-            preventDefault: jest.fn(),
-            stopPropagation: jest.fn(),
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
         } as unknown as React.MouseEvent;
 
         act(() => {
@@ -64,7 +64,7 @@ describe('useColumnResize', () => {
 
     it('restores cursor after mouseup', () => {
         const tableRef = createMockTableRef('jobNo', 130);
-        const onColumnWidthsChange = jest.fn();
+        const onColumnWidthsChange = vi.fn();
         const {result} = renderHook(() =>
             useColumnResize({
                 columnWidths: {jobNo: 130},
@@ -75,8 +75,8 @@ describe('useColumnResize', () => {
 
         const fakeEvent = {
             clientX: 200,
-            preventDefault: jest.fn(),
-            stopPropagation: jest.fn(),
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
         } as unknown as React.MouseEvent;
 
         act(() => {
@@ -95,12 +95,12 @@ describe('useColumnResize', () => {
 
     it('removes event listeners on unmount', () => {
         const tableRef = createMockTableRef('jobNo', 130);
-        const removeSpy = jest.spyOn(document, 'removeEventListener');
+        const removeSpy = vi.spyOn(document, 'removeEventListener');
 
         const {unmount} = renderHook(() =>
             useColumnResize({
                 columnWidths: {jobNo: 130},
-                onColumnWidthsChange: jest.fn(),
+                onColumnWidthsChange: vi.fn(),
                 tableRef,
             }),
         );
@@ -119,15 +119,15 @@ describe('useColumnResize', () => {
         const {result} = renderHook(() =>
             useColumnResize({
                 columnWidths: {jobNo: 130},
-                onColumnWidthsChange: jest.fn(),
+                onColumnWidthsChange: vi.fn(),
                 tableRef,
             }),
         );
 
         const fakeEvent = {
             clientX: 200,
-            preventDefault: jest.fn(),
-            stopPropagation: jest.fn(),
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
         } as unknown as React.MouseEvent;
 
         act(() => {
@@ -144,7 +144,7 @@ describe('useColumnResize', () => {
 
     it('calls onColumnWidthsChange with correct width on mouseup', () => {
         const tableRef = createMockTableRef('jobNo', 130);
-        const onColumnWidthsChange = jest.fn();
+        const onColumnWidthsChange = vi.fn();
         const {result} = renderHook(() =>
             useColumnResize({
                 columnWidths: {jobNo: 130},
@@ -155,8 +155,8 @@ describe('useColumnResize', () => {
 
         const fakeEvent = {
             clientX: 200,
-            preventDefault: jest.fn(),
-            stopPropagation: jest.fn(),
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
         } as unknown as React.MouseEvent;
 
         act(() => {
@@ -174,7 +174,7 @@ describe('useColumnResize', () => {
 
     it('enforces minimum width of 50px', () => {
         const tableRef = createMockTableRef('jobNo', 80);
-        const onColumnWidthsChange = jest.fn();
+        const onColumnWidthsChange = vi.fn();
         const {result} = renderHook(() =>
             useColumnResize({
                 columnWidths: {jobNo: 80},
@@ -185,8 +185,8 @@ describe('useColumnResize', () => {
 
         const fakeEvent = {
             clientX: 200,
-            preventDefault: jest.fn(),
-            stopPropagation: jest.fn(),
+            preventDefault: vi.fn(),
+            stopPropagation: vi.fn(),
         } as unknown as React.MouseEvent;
 
         act(() => {

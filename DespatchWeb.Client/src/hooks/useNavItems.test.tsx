@@ -1,14 +1,15 @@
+import type {Mock} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import {useNavItems} from './useNavItems';
 import {navRoutes} from '../routes/routeTable';
 import {isDashboardVisible} from '../services/featureVisibility';
 
-jest.mock('../services/featureVisibility', () => ({
-    ...jest.requireActual('../services/featureVisibility'),
-    isDashboardVisible: jest.fn(),
+vi.mock('../services/featureVisibility', async () => ({
+    ...(await vi.importActual<typeof import('../services/featureVisibility')>('../services/featureVisibility')),
+    isDashboardVisible: vi.fn(),
 }));
 
-const mockVisible = isDashboardVisible as jest.Mock;
+const mockVisible = isDashboardVisible as Mock;
 
 describe('useNavItems', () => {
     beforeEach(() => mockVisible.mockReturnValue(true));

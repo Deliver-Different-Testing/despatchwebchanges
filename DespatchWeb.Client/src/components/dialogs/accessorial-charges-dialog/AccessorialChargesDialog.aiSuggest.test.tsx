@@ -1,3 +1,4 @@
+import type {Mock, Mocked} from 'vitest';
 import React from 'react';
 import {screen, within} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
@@ -10,40 +11,40 @@ import {isAiEnabled} from '../../../utils/aiSettings';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-jest.mock('../../../api/accessorialChargesApi', () => ({
+vi.mock('../../../api/accessorialChargesApi', () => ({
     accessorialChargesApi: {
-        getAvailableCharges: jest.fn(),
-        getAppliedCharges: jest.fn(),
-        getJobAmount: jest.fn(),
-        addCharges: jest.fn(),
-        updateCharge: jest.fn(),
-        deleteCharge: jest.fn(),
+        getAvailableCharges: vi.fn(),
+        getAppliedCharges: vi.fn(),
+        getJobAmount: vi.fn(),
+        addCharges: vi.fn(),
+        updateCharge: vi.fn(),
+        deleteCharge: vi.fn(),
     },
 }));
-jest.mock('../../../api/aiAssistantApi', () => ({analyzePricing: jest.fn(), recordPricingOutcome: jest.fn()}));
-jest.mock('../../../utils/aiSettings', () => ({isAiEnabled: jest.fn()}));
+vi.mock('../../../api/aiAssistantApi', () => ({analyzePricing: vi.fn(), recordPricingOutcome: vi.fn()}));
+vi.mock('../../../utils/aiSettings', () => ({isAiEnabled: vi.fn()}));
 
-const api = accessorialChargesApi as jest.Mocked<typeof accessorialChargesApi>;
-const mockAnalyze = analyzePricing as jest.Mock;
-const mockRecordOutcome = recordPricingOutcome as jest.Mock;
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
+const api = accessorialChargesApi as Mocked<typeof accessorialChargesApi>;
+const mockAnalyze = analyzePricing as Mock;
+const mockRecordOutcome = recordPricingOutcome as Mock;
+const mockIsAiEnabled = isAiEnabled as Mock;
 
 const job = {id: 123, accessorialChargeGroupId: 5, amount: 100, weight: 10, quantity: 1};
 
 function renderDialog() {
     return renderWithMantine(
-        <AccessorialChargesDialog open job={job as never} onClose={jest.fn()} showToast={jest.fn()} />,
+        <AccessorialChargesDialog open job={job as never} onClose={vi.fn()} showToast={vi.fn()} />,
     );
 }
 
 describe('AccessorialChargesDialog — Auto-Mate suggest', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([
+        vi.clearAllMocks();
+        (api.getAvailableCharges as Mock).mockResolvedValue([
             {accessorialChargeId: 5, name: 'Tail-lift', description: 'Tail lift', chargeType: 'flat', baseRate: 25, calculationOrder: 1, alreadyApplied: false},
         ]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([]);
-        (api.getJobAmount as jest.Mock).mockResolvedValue(100);
+        (api.getAppliedCharges as Mock).mockResolvedValue([]);
+        (api.getJobAmount as Mock).mockResolvedValue(100);
     });
 
     it('hides the Suggest button when AI is disabled', async () => {
@@ -83,7 +84,7 @@ describe('AccessorialChargesDialog — Auto-Mate suggest', () => {
             suggestions: [{accessorialChargeId: 5, name: 'Tail-lift', reason: 'tail-lift flag', suggestedInputValue: null}],
             usage: {inputTokens: 1, outputTokens: 1},
         });
-        (api.addCharges as jest.Mock).mockResolvedValue([]);
+        (api.addCharges as Mock).mockResolvedValue([]);
         mockRecordOutcome.mockResolvedValue({recorded: true});
 
         renderDialog();

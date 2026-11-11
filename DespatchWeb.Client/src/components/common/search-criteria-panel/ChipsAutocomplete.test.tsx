@@ -19,8 +19,8 @@ function createChipsProps(overrides?: Partial<ChipsAutocompleteProps>): ChipsAut
         placeholder: 'Search clients...',
         value: [],
         minInputLength: 2,
-        onSearch: jest.fn().mockResolvedValue([]),
-        onChange: jest.fn(),
+        onSearch: vi.fn().mockResolvedValue([]),
+        onChange: vi.fn(),
         ...overrides,
     };
 }
@@ -37,12 +37,12 @@ describe('ChipsAutocomplete', () => {
     let user: UserEvent;
 
     beforeEach(() => {
-        jest.useFakeTimers();
-        user = setupUser({advanceTimers: jest.advanceTimersByTime});
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        user = setupUser({advanceTimers: vi.advanceTimersByTime});
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     // Helper: get the combobox input element
@@ -70,7 +70,7 @@ describe('ChipsAutocomplete', () => {
 
             await user.type(getInput(), 'a');
             await act(async () => {
-                jest.advanceTimersByTime(300);
+                vi.advanceTimersByTime(300);
             });
 
             expect(props.onSearch).not.toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe('ChipsAutocomplete', () => {
         it('calls onSearch after 300ms debounce when input meets minInputLength', async () => {
             const props = createChipsProps({
                 minInputLength: 2,
-                onSearch: jest.fn().mockResolvedValue(mockResults),
+                onSearch: vi.fn().mockResolvedValue(mockResults),
             });
             renderWithTheme(<ChipsAutocomplete {...props} />);
 
@@ -108,7 +108,7 @@ describe('ChipsAutocomplete', () => {
             expect(props.onSearch).not.toHaveBeenCalled();
 
             await act(async () => {
-                jest.advanceTimersByTime(300);
+                vi.advanceTimersByTime(300);
             });
 
             expect(props.onSearch).toHaveBeenCalledWith('ac');
@@ -122,13 +122,13 @@ describe('ChipsAutocomplete', () => {
             });
             const props = createChipsProps({
                 minInputLength: 2,
-                onSearch: jest.fn().mockReturnValue(searchPromise),
+                onSearch: vi.fn().mockReturnValue(searchPromise),
             });
             renderWithTheme(<ChipsAutocomplete {...props} />);
 
             await user.type(getInput(), 'ac');
             await act(async () => {
-                jest.advanceTimersByTime(300);
+                vi.advanceTimersByTime(300);
             });
 
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -142,13 +142,13 @@ describe('ChipsAutocomplete', () => {
         it('displays search results as options', async () => {
             const props = createChipsProps({
                 minInputLength: 2,
-                onSearch: jest.fn().mockResolvedValue(mockResults),
+                onSearch: vi.fn().mockResolvedValue(mockResults),
             });
             renderWithTheme(<ChipsAutocomplete {...props} />);
 
             await user.type(getInput(), 'ac');
             await act(async () => {
-                jest.advanceTimersByTime(300);
+                vi.advanceTimersByTime(300);
             });
 
             const listbox = await screen.findByRole('listbox');
@@ -162,13 +162,13 @@ describe('ChipsAutocomplete', () => {
         it('shows "No {label} found" when search returns empty', async () => {
             const props = createChipsProps({
                 minInputLength: 2,
-                onSearch: jest.fn().mockResolvedValue([]),
+                onSearch: vi.fn().mockResolvedValue([]),
             });
             renderWithTheme(<ChipsAutocomplete {...props} />);
 
             await user.type(getInput(), 'zz');
             await act(async () => {
-                jest.advanceTimersByTime(300);
+                vi.advanceTimersByTime(300);
             });
 
             expect(await screen.findByText('No clients found')).toBeInTheDocument();
@@ -178,13 +178,13 @@ describe('ChipsAutocomplete', () => {
             const props = createChipsProps({
                 minInputLength: 2,
                 value: [{id: 1, text: 'Acme Corp'}],
-                onSearch: jest.fn().mockResolvedValue(mockResults),
+                onSearch: vi.fn().mockResolvedValue(mockResults),
             });
             renderWithTheme(<ChipsAutocomplete {...props} />);
 
             await user.type(getInput(), 'ac');
             await act(async () => {
-                jest.advanceTimersByTime(300);
+                vi.advanceTimersByTime(300);
             });
 
             const listbox = await screen.findByRole('listbox');
@@ -200,13 +200,13 @@ describe('ChipsAutocomplete', () => {
         it('calls onChange with new items when option selected', async () => {
             const props = createChipsProps({
                 minInputLength: 2,
-                onSearch: jest.fn().mockResolvedValue(mockResults),
+                onSearch: vi.fn().mockResolvedValue(mockResults),
             });
             renderWithTheme(<ChipsAutocomplete {...props} />);
 
             await user.type(getInput(), 'ac');
             await act(async () => {
-                jest.advanceTimersByTime(300);
+                vi.advanceTimersByTime(300);
             });
 
             const option = await screen.findByRole('option', {name: 'Acme Corp'});

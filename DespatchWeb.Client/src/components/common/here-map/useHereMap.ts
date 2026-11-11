@@ -810,7 +810,6 @@ export function useHereMap({
                 }
             }
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup-only effect; runs on unmount
     }, []);
 
     return {

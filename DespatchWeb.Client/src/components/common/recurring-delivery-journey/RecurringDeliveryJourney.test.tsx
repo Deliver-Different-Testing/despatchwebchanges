@@ -11,20 +11,20 @@ import dayjs from 'dayjs';
 import {RecurringDeliveryJourney} from './RecurringDeliveryJourney';
 import type {RecurringJourney} from './RecurringDeliveryJourney.types';
 
-jest.mock('../../../utils/dateUtils', () => ({
-    getTenantTimezone: jest.fn(() => 'America/New_York'),
-    getTimezoneAbbreviation: jest.fn(() => 'EST'),
+vi.mock('../../../utils/dateUtils', () => ({
+    getTenantTimezone: vi.fn(() => 'America/New_York'),
+    getTimezoneAbbreviation: vi.fn(() => 'EST'),
 }));
 
-const mockGetDeliveryJourney = jest.fn();
-jest.mock('../../../api/recurringJobsApi', () => ({
+const mockGetDeliveryJourney = vi.fn();
+vi.mock('../../../api/recurringJobsApi', () => ({
     recurringJobsApi: {
         getDeliveryJourney: (...args: unknown[]) => mockGetDeliveryJourney(...args),
     },
 }));
 
-const mockOpenJobInSearch = jest.fn();
-jest.mock('../../../services/navigationService', () => ({
+const mockOpenJobInSearch = vi.fn();
+vi.mock('../../../services/navigationService', () => ({
     openJobInSearch: (...args: unknown[]) => mockOpenJobInSearch(...args),
 }));
 

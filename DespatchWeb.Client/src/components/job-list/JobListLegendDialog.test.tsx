@@ -6,7 +6,7 @@ import {JobListLegendDialog} from './JobListLegendDialog';
 
 describe('JobListLegendDialog', () => {
     it('explains that one marker shows per row and groups markers by precedence', () => {
-        renderWithMantine(<JobListLegendDialog open onClose={jest.fn()}/>);
+        renderWithMantine(<JobListLegendDialog open onClose={vi.fn()}/>);
 
         expect(screen.getByText('Column legend')).toBeInTheDocument();
         expect(screen.getByText(/single marker here — the highest-priority one/i)).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('JobListLegendDialog', () => {
     });
 
     it('consolidates the flight legs into one row instead of four', () => {
-        renderWithMantine(<JobListLegendDialog open onClose={jest.fn()}/>);
+        renderWithMantine(<JobListLegendDialog open onClose={vi.fn()}/>);
 
         // The single "Flight" row lists the legs...
         expect(screen.getByText('Pickup leg')).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('JobListLegendDialog', () => {
     });
 
     it('calls onClose from the Close button and the header close button', async () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithMantine(<JobListLegendDialog open onClose={onClose}/>);
         const user = setupUser();
 
@@ -54,7 +54,7 @@ describe('JobListLegendDialog', () => {
     });
 
     it('renders nothing when closed', () => {
-        renderWithMantine(<JobListLegendDialog open={false} onClose={jest.fn()}/>);
+        renderWithMantine(<JobListLegendDialog open={false} onClose={vi.fn()}/>);
         expect(screen.queryByText('Column legend')).not.toBeInTheDocument();
     });
 });

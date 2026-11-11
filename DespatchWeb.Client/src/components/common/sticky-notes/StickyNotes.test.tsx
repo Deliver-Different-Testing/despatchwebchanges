@@ -3,6 +3,7 @@
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
+import type {Mocked, MockedFunction} from 'vitest';
 import React from 'react';
 import { setupUser } from '../../../test/utils/setupUser';
 import {render, screen, waitFor, within, fireEvent} from '@testing-library/react';
@@ -17,12 +18,12 @@ import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/not
 import {MantineTestProvider} from '../../../test/utils';
 
 // Mock the notesApi module
-jest.mock('../../../api/notesApi');
-jest.mock('../../dialogs/note-management-dialog/note-management-dialog-react.module', () => ({
-    openNoteManagementDialog: jest.fn(),
+vi.mock('../../../api/notesApi');
+vi.mock('../../dialogs/note-management-dialog/note-management-dialog-react.module', () => ({
+    openNoteManagementDialog: vi.fn(),
 }));
-const mockedOpenNoteManagementDialog = openNoteManagementDialog as jest.MockedFunction<typeof openNoteManagementDialog>;
-const mockedNotesApi = notesApi as jest.Mocked<typeof notesApi>;
+const mockedOpenNoteManagementDialog = openNoteManagementDialog as MockedFunction<typeof openNoteManagementDialog>;
+const mockedNotesApi = notesApi as Mocked<typeof notesApi>;
 
 function createTestQueryClient() {
     return new QueryClient({
@@ -87,9 +88,9 @@ const createMockNoteTypes = (): NoteType[] => [
 const createDefaultProps = (overrides?: Partial<StickyNotesProps>): StickyNotesProps => {
     return {
         jobId: 123,
-        showSuccessToast: jest.fn(),
-        showErrorToast: jest.fn(),
-        showInfoToast: jest.fn(),
+        showSuccessToast: vi.fn(),
+        showErrorToast: vi.fn(),
+        showInfoToast: vi.fn(),
         ...overrides,
     };
 };
@@ -212,7 +213,7 @@ describe('StickyNotes', () => {
         });
 
         it('does not produce Fragment children warning when category menu is open', async () => {
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
@@ -352,7 +353,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
 
             // Mock window.confirm
-            const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
             renderWithProviders(<StickyNotes {...props} />);
 
@@ -376,7 +377,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
 
             // Mock window.confirm to return false
-            const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
             renderWithProviders(<StickyNotes {...props} />);
 

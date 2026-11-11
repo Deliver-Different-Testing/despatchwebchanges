@@ -3,7 +3,7 @@
  * assignments (the pre-SPA Razor globals) while production code reads only getSession().
  * resets everything to the defaults and runs before every test.
  */
-import type {SessionContextDto} from '../api/session';
+import {setSessionContext, type SessionContextDto} from '../api/session';
 
 const DEFAULTS: SessionContextDto = {
     contactId: 0, staffId: null, firstName: 'Test', fullName: null, email: null, dispatcher: null,
@@ -43,7 +43,7 @@ const FIELDS: Record<string, Field> = {
 export function installLegacySessionGlobals(): void {
     if (typeof window === 'undefined') return;
     let context = {...DEFAULTS};
-    const publish = () => require('../api/session').setSessionContext?.(context);
+    const publish = () => setSessionContext(context);
     publish();
     for (const [name, f] of Object.entries(FIELDS)) {
         Object.defineProperty(window, name, {

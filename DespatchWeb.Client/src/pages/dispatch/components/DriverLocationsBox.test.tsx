@@ -4,13 +4,13 @@ import { setupUser } from '../../../test/utils/setupUser';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 
-const fetchDriverLocationsMock = jest.fn();
-jest.mock('../../../api/courierApi', () => ({
+const fetchDriverLocationsMock = vi.fn();
+vi.mock('../../../api/courierApi', () => ({
     fetchDriverLocations: (...args: unknown[]) => fetchDriverLocationsMock(...args),
 }));
 
 // Stub the presentational component, surfacing the props the box drives.
-jest.mock('../../../components/common/driver-locations', () => ({
+vi.mock('../../../components/common/driver-locations', () => ({
     DriverLocations: ({showNoData, showData, activeAreaId, truckMode, onAreaClick}: any) => (
         <div>
             {showNoData && <div data-testid="dl-no-data" />}
@@ -104,7 +104,7 @@ describe('DriverLocationsBox', () => {
     });
 
     it('reports the clicked area id and reflects the active area', async () => {
-        const onAreaSelect = jest.fn();
+        const onAreaSelect = vi.fn();
 
         renderBox({despatchViewIds: [11], onAreaSelect, activeAreaId: 7});
 

@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Job search API Service Tests
  *
@@ -24,22 +25,22 @@ import type {IJobSearchResultDto} from '../types/interfaces/job.interface';
 import type {JobListSearchParams} from '../types/dispatchJob';
 import dayjs from 'dayjs';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
+        get: vi.fn(),
     },
 }));
 
-jest.mock('../utils/dtoMappings', () => ({
-    transformDispatchJobDTO: jest.fn((dto: any) => ({...dto, _transformed: true})),
+vi.mock('../utils/dtoMappings', () => ({
+    transformDispatchJobDTO: vi.fn((dto: any) => ({...dto, _transformed: true})),
 }));
 
-jest.mock('../utils/dateUtils', () => ({
-    formatDateForApiWithTzs: jest.fn((d: any) => `formatted-${d}`),
-    getIanaTimezone: jest.fn(() => 'Pacific/Auckland'),
+vi.mock('../utils/dateUtils', () => ({
+    formatDateForApiWithTzs: vi.fn((d: any) => `formatted-${d}`),
+    getIanaTimezone: vi.fn(() => 'Pacific/Auckland'),
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 // ── Helpers ──────────────────────────────────────────────────────────
 

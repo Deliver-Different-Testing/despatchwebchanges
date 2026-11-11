@@ -24,7 +24,7 @@ describe('EditableField', () => {
     });
 
     it('renders as clickable when onClick is provided', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithTheme(<EditableField label="Speed" value="Standard" onClick={onClick} />);
 
         fireEvent.click(screen.getByText('Standard'));
@@ -32,7 +32,7 @@ describe('EditableField', () => {
     });
 
     it('does not call onClick when disabled', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithTheme(<EditableField label="Speed" value="Standard" onClick={onClick} disabled />);
 
         // Should render as non-clickable ListItem
@@ -47,7 +47,7 @@ describe('EditableField', () => {
         unmount();
 
         renderWithTheme(
-            <EditableField label="Speed" value="Standard" onClick={jest.fn()} isVisible={false} />
+            <EditableField label="Speed" value="Standard" onClick={vi.fn()} isVisible={false} />
         );
         expect(screen.queryByText('Standard')).not.toBeInTheDocument();
     });
@@ -60,13 +60,13 @@ describe('EditableField', () => {
         unmount();
 
         renderWithTheme(
-            <EditableField label="Speed" value="Standard" onClick={jest.fn()} isVisible={true} />
+            <EditableField label="Speed" value="Standard" onClick={vi.fn()} isVisible={true} />
         );
         expect(screen.getByText('Standard')).toBeInTheDocument();
     });
 
     it('renders visibility toggle in edit mode', () => {
-        const onToggleVisibility = jest.fn();
+        const onToggleVisibility = vi.fn();
         renderWithTheme(
             <EditableField
                 label="Speed"
@@ -89,7 +89,7 @@ describe('EditableField', () => {
                 value="Value"
                 isEditMode={true}
                 isVisible={false}
-                onToggleVisibility={jest.fn()}
+                onToggleVisibility={vi.fn()}
             />
         );
         expect(screen.getByText('Hidden Field')).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('EditableField', () => {
             unmount();
 
             renderWithTheme(
-                <EditableField label="Speed" value="Standard" icon="speed" dense onClick={jest.fn()} />
+                <EditableField label="Speed" value="Standard" icon="speed" dense onClick={vi.fn()} />
             );
             expect(screen.queryByTestId('field-icon')).not.toBeInTheDocument();
         });

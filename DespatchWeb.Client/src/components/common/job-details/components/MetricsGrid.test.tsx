@@ -24,13 +24,13 @@ function createDefaultProps(overrides?: Record<string, any>) {
             dispatchTime: dayjs('2026-03-23T09:15:00'),
             completedTime: dayjs('2026-03-23T11:45:00'),
         }),
-        showToast: jest.fn(),
-        onEditDateAndTime: jest.fn(),
-        onEditPodName: jest.fn(),
-        onEditCompletedTime: jest.fn(),
-        onClientClick: jest.fn(),
-        onPricingClick: jest.fn(),
-        onInternalStatusClick: jest.fn(),
+        showToast: vi.fn(),
+        onEditDateAndTime: vi.fn(),
+        onEditPodName: vi.fn(),
+        onEditCompletedTime: vi.fn(),
+        onClientClick: vi.fn(),
+        onPricingClick: vi.fn(),
+        onInternalStatusClick: vi.fn(),
         ...overrides,
     };
 }
@@ -72,8 +72,8 @@ describe('MetricsGrid', () => {
     });
 
     it('calls click handlers for editable cards', () => {
-        const onPricingClick = jest.fn();
-        const onClientClick = jest.fn();
+        const onPricingClick = vi.fn();
+        const onClientClick = vi.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({onPricingClick, onClientClick})} />);
 
         const pricingButton = screen.getByText('Pricing').closest('button');
@@ -86,7 +86,7 @@ describe('MetricsGrid', () => {
     });
 
     it('shows toast for non-editable fields', () => {
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({showToast})} />);
 
         const dispatchButton = screen.getByText('Dispatched').closest('button');
@@ -95,7 +95,7 @@ describe('MetricsGrid', () => {
     });
 
     it('calls onEditPodName when POD name card is clicked', () => {
-        const onEditPodName = jest.fn();
+        const onEditPodName = vi.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({onEditPodName})} />);
 
         const podButton = screen.getByText('POD name').closest('button');
@@ -104,7 +104,7 @@ describe('MetricsGrid', () => {
     });
 
     it('calls onEditCompletedTime when POD time card is clicked', () => {
-        const onEditCompletedTime = jest.fn();
+        const onEditCompletedTime = vi.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({onEditCompletedTime})} />);
 
         const podTimeButton = screen.getByText('POD time').closest('button');
@@ -129,8 +129,8 @@ describe('MetricsGrid', () => {
 
     it('keeps in-scope cards clickable when locked (they open read-only) but not out-of-scope cards', () => {
         const job = createMockJob({locked: true});
-        const onPricingClick = jest.fn();
-        const onEditDateAndTime = jest.fn();
+        const onPricingClick = vi.fn();
+        const onEditDateAndTime = vi.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({job, onPricingClick, onEditDateAndTime})} />);
 
         // Pricing + date/time cards stay clickable so the dialog can open read-only.
@@ -152,7 +152,7 @@ describe('MetricsGrid', () => {
 
     describe('dense mode', () => {
         it('renders all 11 metric cards and click handlers work in dense mode', () => {
-            const onPricingClick = jest.fn();
+            const onPricingClick = vi.fn();
             renderWithTheme(<MetricsGrid {...createDefaultProps({dense: true, onPricingClick})} />);
             expect(screen.getByText('Pricing')).toBeInTheDocument();
             expect(screen.queryByText('Created')).not.toBeInTheDocument();

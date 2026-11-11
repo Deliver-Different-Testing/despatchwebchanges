@@ -38,9 +38,9 @@ const mockJob: PrebookListModel = {
 const defaultProps: RecurringJobsContextMenuProps = {
     anchorPosition: {x: 100, y: 200},
     job: mockJob,
-    onClose: jest.fn(),
-    onAddPickupStop: jest.fn(),
-    onAddDeliveryStop: jest.fn(),
+    onClose: vi.fn(),
+    onAddPickupStop: vi.fn(),
+    onAddDeliveryStop: vi.fn(),
 };
 
 const createMockProps = (overrides?: Partial<RecurringJobsContextMenuProps>) =>
@@ -103,8 +103,8 @@ describe('RecurringJobsContextMenu', () => {
     describe('Add pickup stop', () => {
         it('calls onAddPickupStop with job and then onClose when clicked', () => {
             const callOrder: string[] = [];
-            const onAddPickupStop = jest.fn(() => callOrder.push('pickup'));
-            const onClose = jest.fn(() => callOrder.push('close'));
+            const onAddPickupStop = vi.fn(() => callOrder.push('pickup'));
+            const onClose = vi.fn(() => callOrder.push('close'));
             const props = createMockProps({onAddPickupStop, onClose});
             renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
@@ -119,8 +119,8 @@ describe('RecurringJobsContextMenu', () => {
     describe('Add delivery stop', () => {
         it('calls onAddDeliveryStop with job and then onClose when clicked', () => {
             const callOrder: string[] = [];
-            const onAddDeliveryStop = jest.fn(() => callOrder.push('delivery'));
-            const onClose = jest.fn(() => callOrder.push('close'));
+            const onAddDeliveryStop = vi.fn(() => callOrder.push('delivery'));
+            const onClose = vi.fn(() => callOrder.push('close'));
             const props = createMockProps({onAddDeliveryStop, onClose});
             renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
@@ -134,7 +134,7 @@ describe('RecurringJobsContextMenu', () => {
 
     describe('Close Functionality', () => {
         it('calls onClose when menu is dismissed', async () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             const props = createMockProps({onClose});
             renderWithMantine(<RecurringJobsContextMenu {...props} />);
 
@@ -147,7 +147,7 @@ describe('RecurringJobsContextMenu', () => {
 
     describe('Different Jobs', () => {
         it('passes correct job to onAddPickupStop and onAddDeliveryStop for different jobs', () => {
-            const onAddPickupStop = jest.fn();
+            const onAddPickupStop = vi.fn();
             const pickupJob: PrebookListModel = {
                 ...mockJob,
                 id: 999,
@@ -162,7 +162,7 @@ describe('RecurringJobsContextMenu', () => {
             expect(onAddPickupStop).toHaveBeenCalledWith(pickupJob);
             unmount();
 
-            const onAddDeliveryStop = jest.fn();
+            const onAddDeliveryStop = vi.fn();
             const deliveryJob: PrebookListModel = {
                 ...mockJob,
                 id: 888,

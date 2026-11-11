@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {screen} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
@@ -5,9 +6,9 @@ import {ScanList} from './ScanList';
 import {useScanDetail} from '../hooks/useScanDetail';
 import type {ScanDetailRecord} from '../../../api/jobSearchApi';
 
-jest.mock('../hooks/useScanDetail');
+vi.mock('../hooks/useScanDetail');
 
-const mockUseScanDetail = useScanDetail as jest.MockedFunction<typeof useScanDetail>;
+const mockUseScanDetail = useScanDetail as MockedFunction<typeof useScanDetail>;
 
 
 const scan: ScanDetailRecord = {
@@ -28,13 +29,13 @@ describe('ScanList date format', () => {
             scans: [scan],
             isLoading: false,
             isError: false,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
         });
     });
 
     afterEach(() => {
         (window as any).serverConfig = originalServerConfig;
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('renders US month-first format for US tenants', () => {

@@ -2,13 +2,13 @@ import React from 'react';
 import { setupUser } from '../../../test/utils/setupUser';
 import {render, screen, waitFor} from '@testing-library/react';
 
-const useCourierSearchMock = jest.fn();
-jest.mock('../../../hooks/useCourierApi', () => ({
+const useCourierSearchMock = vi.fn();
+vi.mock('../../../hooks/useCourierApi', () => ({
     useCourierSearch: (...args: unknown[]) => useCourierSearchMock(...args),
 }));
 
-const getExactCourierByCodeMock = jest.fn();
-jest.mock('../../../api/courierApi', () => ({
+const getExactCourierByCodeMock = vi.fn();
+vi.mock('../../../api/courierApi', () => ({
     getExactCourierByCode: (...args: unknown[]) => getExactCourierByCodeMock(...args),
 }));
 
@@ -16,8 +16,8 @@ import {CourierSearchField} from './CourierSearchField';
 import {MantineTestProvider} from '../../../test/utils';
 
 function renderField(overrides: Partial<React.ComponentProps<typeof CourierSearchField>> = {}) {
-    const onSelect = jest.fn();
-    const showToast = jest.fn();
+    const onSelect = vi.fn();
+    const showToast = vi.fn();
     render(
         <MantineTestProvider>
             <CourierSearchField onSelect={onSelect} showToast={showToast} {...overrides} />

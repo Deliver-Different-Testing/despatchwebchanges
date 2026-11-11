@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import { setupUser } from '../../../test/utils/setupUser';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
@@ -7,21 +8,21 @@ import {RecurringJobsToolbar, RecurringJobsToolbarProps, RecurringJobsFilters} f
 import {RecurringMode} from '../../../types';
 
 // Mock the hooks
-jest.mock('../../../hooks/useRecurringJobsApi', () => ({
-    useSpeedList: jest.fn(),
-    useRouteList: jest.fn(),
+vi.mock('../../../hooks/useRecurringJobsApi', () => ({
+    useSpeedList: vi.fn(),
+    useRouteList: vi.fn(),
 }));
 
-jest.mock('../../../hooks/useCourierApi', () => ({
-    useCourierSearch: jest.fn(),
+vi.mock('../../../hooks/useCourierApi', () => ({
+    useCourierSearch: vi.fn(),
 }));
 
 import {useRouteList, useSpeedList} from '../../../hooks/useRecurringJobsApi';
 import {useCourierSearch} from '../../../hooks/useCourierApi';
 
-const mockUseSpeedList = useSpeedList as jest.MockedFunction<typeof useSpeedList>;
-const mockUseRouteList = useRouteList as jest.MockedFunction<typeof useRouteList>;
-const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
+const mockUseSpeedList = useSpeedList as MockedFunction<typeof useSpeedList>;
+const mockUseRouteList = useRouteList as MockedFunction<typeof useRouteList>;
+const mockUseCourierSearch = useCourierSearch as MockedFunction<typeof useCourierSearch>;
 
 
 const createTestQueryClient = () =>
@@ -55,11 +56,11 @@ const createDefaultProps = (overrides?: Partial<RecurringJobsToolbarProps>): Rec
     isRefreshing: false,
     isExporting: false,
     filters: defaultFilters,
-    onSearchChange: jest.fn(),
-    onRecurringModeChange: jest.fn(),
-    onFiltersChange: jest.fn(),
-    onRefresh: jest.fn(),
-    onExport: jest.fn(),
+    onSearchChange: vi.fn(),
+    onRecurringModeChange: vi.fn(),
+    onFiltersChange: vi.fn(),
+    onRefresh: vi.fn(),
+    onExport: vi.fn(),
     ...overrides,
 });
 
@@ -147,7 +148,7 @@ describe('RecurringJobsToolbar', () => {
         });
 
         it('should call onSearchChange after debounce', async () => {
-            const onSearchChange = jest.fn();
+            const onSearchChange = vi.fn();
             renderWithProviders(createDefaultProps({onSearchChange}));
 
             const searchInput = screen.getByPlaceholderText('Search jobs…');
@@ -161,7 +162,7 @@ describe('RecurringJobsToolbar', () => {
         });
 
         it('should clear search when clear button is clicked', () => {
-            const onSearchChange = jest.fn();
+            const onSearchChange = vi.fn();
             renderWithProviders(createDefaultProps({searchText: 'test', onSearchChange}));
 
             const clearButtons = screen.getAllByRole('button');
@@ -189,7 +190,7 @@ describe('RecurringJobsToolbar', () => {
         });
 
         it('should call onRecurringModeChange with Manual when Manual clicked', () => {
-            const onRecurringModeChange = jest.fn();
+            const onRecurringModeChange = vi.fn();
             renderWithProviders(createDefaultProps({
                 recurringMode: RecurringMode.Active,
                 onRecurringModeChange,
@@ -201,7 +202,7 @@ describe('RecurringJobsToolbar', () => {
         });
 
         it('should call onRecurringModeChange with Inactive when Inactive clicked', () => {
-            const onRecurringModeChange = jest.fn();
+            const onRecurringModeChange = vi.fn();
             renderWithProviders(createDefaultProps({
                 recurringMode: RecurringMode.Active,
                 onRecurringModeChange,
@@ -247,7 +248,7 @@ describe('RecurringJobsToolbar', () => {
 
     describe('Days of week filter', () => {
         it('should call onFiltersChange when day is toggled', () => {
-            const onFiltersChange = jest.fn();
+            const onFiltersChange = vi.fn();
             renderWithProviders(createDefaultProps({onFiltersChange}));
 
             fireEvent.click(screen.getByText('M'));
@@ -258,7 +259,7 @@ describe('RecurringJobsToolbar', () => {
         });
 
         it('should toggle additional days on', () => {
-            const onFiltersChange = jest.fn();
+            const onFiltersChange = vi.fn();
             // Start with Monday (1) selected
             renderWithProviders(createDefaultProps({
                 filters: {...defaultFilters, daysOfWeek: 1},
@@ -275,7 +276,7 @@ describe('RecurringJobsToolbar', () => {
         });
 
         it('should clear last day when toggled off', () => {
-            const onFiltersChange = jest.fn();
+            const onFiltersChange = vi.fn();
             renderWithProviders(createDefaultProps({
                 filters: {...defaultFilters, daysOfWeek: 1}, // Monday selected
                 onFiltersChange,
@@ -320,7 +321,7 @@ describe('RecurringJobsToolbar', () => {
         });
 
         it('should clear all filters when clicked', () => {
-            const onFiltersChange = jest.fn();
+            const onFiltersChange = vi.fn();
             renderWithProviders(createDefaultProps({
                 filters: {speedId: 1, courierId: 2, daysOfWeek: 3},
                 onFiltersChange,
@@ -338,7 +339,7 @@ describe('RecurringJobsToolbar', () => {
 
     describe('Refresh button', () => {
         it('should call onRefresh when clicked', () => {
-            const onRefresh = jest.fn();
+            const onRefresh = vi.fn();
             renderWithProviders(createDefaultProps({onRefresh}));
 
             const refreshButton = screen.getByRole('button', {name: 'Refresh'});
@@ -362,7 +363,7 @@ describe('RecurringJobsToolbar', () => {
 
     describe('Export button', () => {
         it('should call onExport when clicked', () => {
-            const onExport = jest.fn();
+            const onExport = vi.fn();
             renderWithProviders(createDefaultProps({onExport}));
 
             const exportButton = screen.getByRole('button', {name: 'Export to CSV'});

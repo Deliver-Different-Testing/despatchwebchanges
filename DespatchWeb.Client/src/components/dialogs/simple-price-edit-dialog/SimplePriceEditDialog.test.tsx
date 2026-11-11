@@ -23,20 +23,20 @@ function createDefaultProps(overrides?: Partial<SimplePriceEditDialogProps>): Si
         jobNumber: 'JOB-100',
         currentCharge: 150.00,
         isPrebook: false,
-        onClose: jest.fn(),
-        onSubmit: jest.fn().mockResolvedValue(175.00),
-        showToast: jest.fn(),
+        onClose: vi.fn(),
+        onSubmit: vi.fn().mockResolvedValue(175.00),
+        showToast: vi.fn(),
         ...overrides,
     };
 }
 
 describe('SimplePriceEditDialog', () => {
     beforeEach(() => {
-        jest.spyOn(console, 'error').mockImplementation();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     describe('Read-only mode', () => {
@@ -254,7 +254,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('is disabled during loading', async () => {
-            const onSubmit = jest.fn(() => new Promise<number>(() => {})); // Never resolves
+            const onSubmit = vi.fn(() => new Promise<number>(() => {})); // Never resolves
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
@@ -268,7 +268,7 @@ describe('SimplePriceEditDialog', () => {
 
     describe('Submit Flow', () => {
         it('calls onSubmit with mode and amount', async () => {
-            const onSubmit = jest.fn().mockResolvedValue(200);
+            const onSubmit = vi.fn().mockResolvedValue(200);
             const props = createDefaultProps({ onSubmit, currentCharge: 150 });
             renderWithProviders(props);
 
@@ -281,7 +281,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('calls onSubmit with recalculate mode', async () => {
-            const onSubmit = jest.fn().mockResolvedValue(175);
+            const onSubmit = vi.fn().mockResolvedValue(175);
             const props = createDefaultProps({ onSubmit, currentCharge: 150 });
             renderWithProviders(props);
 
@@ -293,7 +293,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('shows loading spinner during submit', async () => {
-            const onSubmit = jest.fn(() => new Promise<number>(() => {})); // Never resolves
+            const onSubmit = vi.fn(() => new Promise<number>(() => {})); // Never resolves
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
@@ -304,7 +304,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('transitions to success state after submit resolves', async () => {
-            const onSubmit = jest.fn().mockResolvedValue(175.00);
+            const onSubmit = vi.fn().mockResolvedValue(175.00);
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
@@ -316,7 +316,7 @@ describe('SimplePriceEditDialog', () => {
 
     describe('Success State', () => {
         async function submitAndWaitForSuccess(overrides?: Partial<SimplePriceEditDialogProps>) {
-            const onSubmit = jest.fn().mockResolvedValue(175.00);
+            const onSubmit = vi.fn().mockResolvedValue(175.00);
             const props = createDefaultProps({ onSubmit, currentCharge: 150.00, ...overrides });
             const result = renderWithProviders(props);
 
@@ -350,7 +350,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('shows correct mode subtitle for base', async () => {
-            const onSubmit = jest.fn().mockResolvedValue(200.00);
+            const onSubmit = vi.fn().mockResolvedValue(200.00);
             const props = createDefaultProps({ onSubmit, currentCharge: 150.00 });
             renderWithProviders(props);
 
@@ -362,7 +362,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('shows correct mode subtitle for gross', async () => {
-            const onSubmit = jest.fn().mockResolvedValue(300.00);
+            const onSubmit = vi.fn().mockResolvedValue(300.00);
             const props = createDefaultProps({ onSubmit, currentCharge: 150.00 });
             renderWithProviders(props);
 
@@ -384,8 +384,8 @@ describe('SimplePriceEditDialog', () => {
 
     describe('Error Handling', () => {
         it('shows error toast on submit failure', async () => {
-            const onSubmit = jest.fn().mockRejectedValue(new Error('Network error'));
-            const showToast = jest.fn();
+            const onSubmit = vi.fn().mockRejectedValue(new Error('Network error'));
+            const showToast = vi.fn();
             const props = createDefaultProps({ onSubmit, showToast });
             renderWithProviders(props);
 
@@ -397,7 +397,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('stays in edit state on failure', async () => {
-            const onSubmit = jest.fn().mockRejectedValue(new Error('Server error'));
+            const onSubmit = vi.fn().mockRejectedValue(new Error('Server error'));
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
@@ -412,7 +412,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('shows inline error message on failure', async () => {
-            const onSubmit = jest.fn().mockRejectedValue(new Error('Price update failed'));
+            const onSubmit = vi.fn().mockRejectedValue(new Error('Price update failed'));
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
@@ -422,8 +422,8 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('uses fallback message when error has no message', async () => {
-            const onSubmit = jest.fn().mockRejectedValue({});
-            const showToast = jest.fn();
+            const onSubmit = vi.fn().mockRejectedValue({});
+            const showToast = vi.fn();
             const props = createDefaultProps({ onSubmit, showToast });
             renderWithProviders(props);
 
@@ -440,7 +440,7 @@ describe('SimplePriceEditDialog', () => {
 
     describe('Cancel and Close', () => {
         it('calls onClose when Cancel button is clicked', async () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             const props = createDefaultProps({ onClose });
             renderWithProviders(props);
 
@@ -449,7 +449,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('calls onClose when close icon is clicked', async () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             const props = createDefaultProps({ onClose });
             renderWithProviders(props);
 
@@ -465,7 +465,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('disables close icon during loading', async () => {
-            const onSubmit = jest.fn(() => new Promise<number>(() => {}));
+            const onSubmit = vi.fn(() => new Promise<number>(() => {}));
             const props = createDefaultProps({ onSubmit });
             renderWithProviders(props);
 
@@ -515,7 +515,7 @@ describe('SimplePriceEditDialog', () => {
         });
 
         it('resets success state when dialog reopens', async () => {
-            const onSubmit = jest.fn().mockResolvedValue(200.00);
+            const onSubmit = vi.fn().mockResolvedValue(200.00);
             const props = createDefaultProps({ onSubmit });
             const { rerender } = renderWithProviders(props);
 

@@ -13,22 +13,22 @@ import {TaskHistory} from './TaskHistory';
 import {DeliveryJourney, DensityMode, TaskHistoryProps} from './TaskHistory.interfaces';
 
 // Mock the date utilities
-jest.mock('../../../utils/dateUtils', () => ({
-    getIanaTimezone: jest.fn(() => 'America/New_York'),
-    getTenantTimezone: jest.fn(() => 'America/New_York'),
-    getTimezoneAbbreviation: jest.fn(() => '(EST)'),
+vi.mock('../../../utils/dateUtils', () => ({
+    getIanaTimezone: vi.fn(() => 'America/New_York'),
+    getTenantTimezone: vi.fn(() => 'America/New_York'),
+    getTimezoneAbbreviation: vi.fn(() => '(EST)'),
 }));
 
 // Mock tasksApi (used by useDeliveryJourney hook)
-const mockGetDeliveryJourney = jest.fn();
-jest.mock('../../../api/tasksApi', () => ({
+const mockGetDeliveryJourney = vi.fn();
+vi.mock('../../../api/tasksApi', () => ({
     tasksApi: {
         getDeliveryJourney: (...args: unknown[]) => mockGetDeliveryJourney(...args),
     },
 }));
 
 // Mock formatCurrency to avoid depending on window.CurrencyCode in the test env
-jest.mock('../../../utils/currencyUtils', () => ({
+vi.mock('../../../utils/currencyUtils', () => ({
     formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
 }));
 
@@ -103,10 +103,10 @@ const createDefaultProps = (overrides?: Partial<TaskHistoryProps>): TaskHistoryP
     return {
         jobId: 123,
         config: {},
-        onDeliveryEventClick: jest.fn(),
-        showSuccessToast: jest.fn(),
-        showErrorToast: jest.fn(),
-        showInfoToast: jest.fn(),
+        onDeliveryEventClick: vi.fn(),
+        showSuccessToast: vi.fn(),
+        showErrorToast: vi.fn(),
+        showInfoToast: vi.fn(),
         isUsCustomer: true,
         ...overrides,
     };
@@ -114,12 +114,12 @@ const createDefaultProps = (overrides?: Partial<TaskHistoryProps>): TaskHistoryP
 
 describe('TaskHistory', () => {
     beforeEach(() => {
-        jest.useFakeTimers();
+        vi.useFakeTimers({shouldAdvanceTime: true});
         mockGetDeliveryJourney.mockResolvedValue(createMockDeliveryEvents());
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
         mockGetDeliveryJourney.mockReset();
     });
 
@@ -188,7 +188,7 @@ describe('TaskHistory', () => {
 
     describe('Density Modes', () => {
         it('cycles through density modes when toggle is clicked', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -211,7 +211,7 @@ describe('TaskHistory', () => {
 
     describe('Refresh Functionality', () => {
         it('calls showInfoToast when refresh is clicked', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -226,7 +226,7 @@ describe('TaskHistory', () => {
         });
 
         it('calls tasksApi.getDeliveryJourney on refresh', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -241,7 +241,7 @@ describe('TaskHistory', () => {
             await user.click(refreshButton);
 
             // Advance timers for the refresh delay
-            jest.advanceTimersByTime(300);
+            vi.advanceTimersByTime(300);
 
             await waitFor(() => {
                 expect(mockGetDeliveryJourney).toHaveBeenCalled();
@@ -251,7 +251,7 @@ describe('TaskHistory', () => {
 
     describe('Event Click', () => {
         it('calls onDeliveryEventClick and opens the details dialog when an event is clicked', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -274,7 +274,7 @@ describe('TaskHistory', () => {
         });
 
         it('opens the details dialog even when no onDeliveryEventClick callback is provided', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps({onDeliveryEventClick: undefined});
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -285,7 +285,7 @@ describe('TaskHistory', () => {
         });
 
         it('closes the details dialog when Close is clicked', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -393,7 +393,7 @@ describe('TaskHistory', () => {
         ];
 
         it('renders Total chip only on events with grandTotalAfter and hides it in UltraDense', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             mockGetDeliveryJourney.mockResolvedValue(eventsWithGrandTotal);
             const props = createDefaultProps({jobId: 999});
             renderWithProviders(<TaskHistory {...props} />);
@@ -474,7 +474,7 @@ describe('TaskHistory', () => {
 
     describe('Notes visibility by density', () => {
         it('shows notes in Normal density and hides them in Dense / UltraDense', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -494,7 +494,7 @@ describe('TaskHistory', () => {
 
     describe('Performed by', () => {
         it('shows the actor under the title only for events that have one, and hides it in UltraDense', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
@@ -518,7 +518,7 @@ describe('TaskHistory', () => {
         });
 
         it('shows the actor in the details dialog subtitle', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 

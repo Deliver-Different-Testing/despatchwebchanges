@@ -1,11 +1,11 @@
-/** @jest-environment node */
-const openEditAddressDialogMock = jest.fn();
-const addStopToJobMock = jest.fn();
+/** @vitest-environment node */
+const openEditAddressDialogMock = vi.fn();
+const addStopToJobMock = vi.fn();
 
-jest.mock('../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
+vi.mock('../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
     openEditAddressDialog: (...args: unknown[]) => openEditAddressDialogMock(...args),
 }));
-jest.mock('../api/jobListApi', () => ({
+vi.mock('../api/jobListApi', () => ({
     addStopToJob: (...args: unknown[]) => addStopToJobMock(...args),
 }));
 
@@ -22,21 +22,21 @@ describe('executeAddStopFlow', () => {
     });
 
     it('adds a pick-up stop for a "1"-suffixed job', async () => {
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         const result = await executeAddStopFlow({job: makeJob('JOB1'), isUsCustomer: false, showToast});
         expect(result).toBe(99);
         expect(addStopToJobMock).toHaveBeenCalledWith(5, address, undefined);
     });
 
     it('adds a delivery stop for a "3"-suffixed job', async () => {
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         const result = await executeAddStopFlow({job: makeJob('JOB3'), isUsCustomer: false, showToast});
         expect(result).toBe(99);
         expect(addStopToJobMock).toHaveBeenCalledWith(5, undefined, address);
     });
 
     it('warns and skips for a non-pickup/delivery suffix', async () => {
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         const result = await executeAddStopFlow({job: makeJob('JOB2'), isUsCustomer: false, showToast});
         expect(result).toBeUndefined();
         expect(showToast).toHaveBeenCalledWith("Stops can't be added to this job.", 'warning');
@@ -45,7 +45,7 @@ describe('executeAddStopFlow', () => {
 
     it('returns undefined when the address dialog is cancelled', async () => {
         openEditAddressDialogMock.mockResolvedValue(null);
-        const result = await executeAddStopFlow({job: makeJob('JOB1'), isUsCustomer: false, showToast: jest.fn()});
+        const result = await executeAddStopFlow({job: makeJob('JOB1'), isUsCustomer: false, showToast: vi.fn()});
         expect(result).toBeUndefined();
         expect(addStopToJobMock).not.toHaveBeenCalled();
     });

@@ -22,10 +22,10 @@ const createDefaultControlState = (overrides?: Partial<MapControlState>): MapCon
 
 const createDefaultProps = (overrides?: Partial<MapControlButtonsProps>): MapControlButtonsProps => ({
     controlState: createDefaultControlState(),
-    onToggleAutoZoom: jest.fn(),
-    onToggleCouriersOnly: jest.fn(),
-    onToggleUrgentArmyOnly: jest.fn(),
-    onToggleCouriersLargeView: jest.fn(),
+    onToggleAutoZoom: vi.fn(),
+    onToggleCouriersOnly: vi.fn(),
+    onToggleUrgentArmyOnly: vi.fn(),
+    onToggleCouriersLargeView: vi.fn(),
     ...overrides,
 });
 
@@ -62,7 +62,7 @@ describe('MapControlButtons Component', () => {
 
     describe('Button Click Handlers', () => {
         it('calls onToggleAutoZoom when auto zoom button is clicked', () => {
-            const onToggleAutoZoom = jest.fn();
+            const onToggleAutoZoom = vi.fn();
             const props = createDefaultProps({onToggleAutoZoom});
             renderWithTheme(<MapControlButtons {...props} />);
 
@@ -72,7 +72,7 @@ describe('MapControlButtons Component', () => {
         });
 
         it('calls onToggleCouriersOnly when couriers only button is clicked', () => {
-            const onToggleCouriersOnly = jest.fn();
+            const onToggleCouriersOnly = vi.fn();
             const props = createDefaultProps({onToggleCouriersOnly});
             renderWithTheme(<MapControlButtons {...props} />);
 
@@ -82,7 +82,7 @@ describe('MapControlButtons Component', () => {
         });
 
         it('calls onToggleUrgentArmyOnly when urgent army button is clicked', () => {
-            const onToggleUrgentArmyOnly = jest.fn();
+            const onToggleUrgentArmyOnly = vi.fn();
             const props = createDefaultProps({onToggleUrgentArmyOnly});
             renderWithTheme(<MapControlButtons {...props} />);
 
@@ -92,7 +92,7 @@ describe('MapControlButtons Component', () => {
         });
 
         it('calls onToggleCouriersLargeView when large view button is clicked', () => {
-            const onToggleCouriersLargeView = jest.fn();
+            const onToggleCouriersLargeView = vi.fn();
             const props = createDefaultProps({onToggleCouriersLargeView});
             renderWithTheme(<MapControlButtons {...props} />);
 

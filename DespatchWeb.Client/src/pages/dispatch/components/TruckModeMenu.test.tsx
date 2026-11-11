@@ -7,7 +7,7 @@ import {MantineTestProvider} from '../../../test/utils';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-function renderMenu(value: 'On' | 'Off' | 'Only' = 'On', onChange = jest.fn()) {
+function renderMenu(value: 'On' | 'Off' | 'Only' = 'On', onChange = vi.fn()) {
     render(
         <MantineTestProvider>
             <TruckModeMenu value={value} onChange={onChange} />

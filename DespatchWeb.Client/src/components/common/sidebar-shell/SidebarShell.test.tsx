@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
@@ -13,11 +14,11 @@ describe('SidebarShell', () => {
         fullName: 'John Doe',
         isUsCustomer: false,
         currentState: 'dispatch',
-        onNavigate: jest.fn(),
+        onNavigate: vi.fn(),
     };
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         localStorage.clear();
     });
 
@@ -111,7 +112,7 @@ describe('SidebarShell', () => {
 
     it('keeps only the logo in the rail header, labelled as the app home', () => {
         localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, '1');
-        renderWithMantine(<SidebarShell {...defaultProps} onLogoClick={jest.fn()} />);
+        renderWithMantine(<SidebarShell {...defaultProps} onLogoClick={vi.fn()} />);
 
         const header = screen.getByTestId('sidebar-header');
         expect(header).not.toHaveTextContent(APP_BLURB);
@@ -129,24 +130,24 @@ describe('SidebarShell', () => {
 
     describe('on small screens', () => {
         beforeEach(() => {
-            (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({
+            (window.matchMedia as Mock).mockImplementation((query: string) => ({
                 matches: true,
                 media: query,
-                addListener: jest.fn(),
-                removeListener: jest.fn(),
-                addEventListener: jest.fn(),
-                removeEventListener: jest.fn(),
+                addListener: vi.fn(),
+                removeListener: vi.fn(),
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
             }));
         });
 
         afterEach(() => {
-            (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({
+            (window.matchMedia as Mock).mockImplementation((query: string) => ({
                 matches: false,
                 media: query,
-                addListener: jest.fn(),
-                removeListener: jest.fn(),
-                addEventListener: jest.fn(),
-                removeEventListener: jest.fn(),
+                addListener: vi.fn(),
+                removeListener: vi.fn(),
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
             }));
         });
 

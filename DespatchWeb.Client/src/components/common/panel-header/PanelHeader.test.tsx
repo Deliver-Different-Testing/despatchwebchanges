@@ -47,7 +47,7 @@ describe('PanelHeader', () => {
 
     it('renders the action slot and fires its handler', async () => {
         const user = setupUser();
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderPanel(
             <PanelHeader
                 icon={tune}
@@ -95,7 +95,7 @@ describe('PanelHeader', () => {
         expect(container.querySelector('.mantine-ThemeIcon-root')).toBeNull();
 
         const glyphWrapper = screen.getByTestId('panel-header-icon');
-        expect(glyphWrapper).toHaveStyle({color: 'inherit'});
+        expect(glyphWrapper.style.color).toBe('inherit');
         expect(glyphWrapper.style.backgroundColor).toBe('');
         expect(glyphWrapper.querySelector('svg')).toBeInTheDocument();
     });

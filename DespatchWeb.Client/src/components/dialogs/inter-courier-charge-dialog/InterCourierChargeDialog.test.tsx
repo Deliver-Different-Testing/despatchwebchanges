@@ -10,19 +10,19 @@ import { setupUser } from '../../../test/utils/setupUser';
 
 // ── Mocks ──────────────────────────────────────────────────────────
 
-const mockSearchActiveCouriers = jest.fn();
-const mockSearchActiveClients = jest.fn();
-const mockCreateInterCourierCharge = jest.fn();
+const mockSearchActiveCouriers = vi.fn();
+const mockSearchActiveClients = vi.fn();
+const mockCreateInterCourierCharge = vi.fn();
 
-jest.mock('../../../api/courierApi', () => ({
+vi.mock('../../../api/courierApi', () => ({
     searchActiveCouriers: (...args: unknown[]) => mockSearchActiveCouriers(...args),
 }));
 
-jest.mock('../../../api/jobApi', () => ({
+vi.mock('../../../api/jobApi', () => ({
     searchActiveClients: (...args: unknown[]) => mockSearchActiveClients(...args),
 }));
 
-jest.mock('../../../api/dispatchExecutorApi', () => ({
+vi.mock('../../../api/dispatchExecutorApi', () => ({
     createInterCourierCharge: (...args: unknown[]) => mockCreateInterCourierCharge(...args),
 }));
 
@@ -40,8 +40,8 @@ const clientSuggestions = [
 
 const defaultProps: InterCourierChargeDialogProps = {
     open: true,
-    onClose: jest.fn(),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    showToast: vi.fn(),
 };
 
 const createMockProps = (overrides?: Partial<InterCourierChargeDialogProps>) =>
@@ -59,7 +59,7 @@ async function fillAutocomplete(label: string, searchText: string, optionText: s
 
     // Flush the 300ms debounce timer so the search fires
     await act(async () => {
-        jest.advanceTimersByTime(350);
+        vi.advanceTimersByTime(350);
     });
 
     // Several fields search the same list, so scope the option lookup to this
@@ -89,15 +89,15 @@ async function fillForm() {
 
 describe('InterCourierChargeDialog', () => {
     beforeEach(() => {
-        jest.useFakeTimers();
-        jest.clearAllMocks();
+        vi.useFakeTimers({shouldAdvanceTime: true});
+        vi.clearAllMocks();
         mockSearchActiveCouriers.mockResolvedValue([]);
         mockSearchActiveClients.mockResolvedValue([]);
         mockCreateInterCourierCharge.mockResolvedValue(undefined);
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     describe('Rendering', () => {
@@ -126,7 +126,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Close Functionality', () => {
         it('calls onClose when Cancel button is clicked', async () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithMantine(<InterCourierChargeDialog {...createMockProps({onClose})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /cancel/i}));
@@ -135,7 +135,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('calls onClose when close icon button is clicked', () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithMantine(<InterCourierChargeDialog {...createMockProps({onClose})} />);
 
             fireEvent.click(screen.getByLabelText('Close dialog'));
@@ -154,7 +154,7 @@ describe('InterCourierChargeDialog', () => {
             fireEvent.change(input, {target: {value: 'Co'}});
 
             await act(async () => {
-                jest.advanceTimersByTime(350);
+                vi.advanceTimersByTime(350);
             });
 
             expect(mockSearchActiveCouriers).toHaveBeenCalledWith('Co', expect.objectContaining({signal: expect.any(AbortSignal)}));
@@ -170,7 +170,7 @@ describe('InterCourierChargeDialog', () => {
             fireEvent.change(input, {target: {value: 'C'}});
 
             await act(async () => {
-                jest.advanceTimersByTime(350);
+                vi.advanceTimersByTime(350);
             });
 
             expect(mockSearchActiveCouriers).not.toHaveBeenCalled();
@@ -187,7 +187,7 @@ describe('InterCourierChargeDialog', () => {
             fireEvent.change(input, {target: {value: 'Cl'}});
 
             await act(async () => {
-                jest.advanceTimersByTime(350);
+                vi.advanceTimersByTime(350);
             });
 
             expect(mockSearchActiveClients).toHaveBeenCalledWith('Cl', expect.objectContaining({signal: expect.any(AbortSignal)}));
@@ -231,7 +231,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Validation', () => {
         it('names each gap inline, moves focus to the first, and blocks submit', () => {
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             renderWithMantine(<InterCourierChargeDialog {...createMockProps({showToast})} />);
 
             fireEvent.click(screen.getByRole('button', {name: /add charge/i}));
@@ -323,8 +323,8 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Successful Submission', () => {
         it('submits form data and shows success toast', async () => {
-            const onClose = jest.fn();
-            const showToast = jest.fn();
+            const onClose = vi.fn();
+            const showToast = vi.fn();
             renderWithMantine(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
 
             await fillForm();
@@ -349,8 +349,8 @@ describe('InterCourierChargeDialog', () => {
     describe('Failed Submission', () => {
         it('shows error toast and does not close on API failure', async () => {
             const errorSpy = suppressConsoleError();
-            const onClose = jest.fn();
-            const showToast = jest.fn();
+            const onClose = vi.fn();
+            const showToast = vi.fn();
             mockCreateInterCourierCharge.mockRejectedValueOnce(new Error('Server error'));
             renderWithMantine(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
 
@@ -394,7 +394,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Submit Guard', () => {
         it('disables Cancel and Add charge buttons while submitting', async () => {
-            const user = setupUser({advanceTimers: jest.advanceTimersByTime});
+            const user = setupUser({advanceTimers: vi.advanceTimersByTime});
             let resolveSubmit: () => void;
             mockCreateInterCourierCharge.mockImplementation(() =>
                 new Promise<void>(resolve => { resolveSubmit = resolve; })

@@ -82,7 +82,7 @@ describe('NoData', () => {
         });
 
         it('calls onAction when action button is clicked', () => {
-            const onAction = jest.fn();
+            const onAction = vi.fn();
             const props = createDefaultProps({ showAction: true, onAction });
             renderWithProviders(<NoData {...props} />);
 
@@ -120,7 +120,7 @@ describe('NoData', () => {
 
     describe('Full Configuration', () => {
         it('renders with all props configured', () => {
-            const onAction = jest.fn();
+            const onAction = vi.fn();
             const props = createDefaultProps({
                 title: 'No Results Found',
                 message: 'Try adjusting your search criteria.',

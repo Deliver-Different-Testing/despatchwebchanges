@@ -34,11 +34,11 @@ const candidate = (overrides: Partial<SwapPodCandidate> = {}): SwapPodCandidate 
 const createMockProps = (overrides: Partial<SwapPodsDialogProps> = {}): SwapPodsDialogProps => ({
     open: true,
     jobNo: 'JOB-001',
-    onClose: jest.fn(),
-    onValidate: jest.fn().mockResolvedValue(true),
-    onSearch: jest.fn().mockResolvedValue([candidate()]),
-    onSwap: jest.fn().mockResolvedValue(undefined),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onValidate: vi.fn().mockResolvedValue(true),
+    onSearch: vi.fn().mockResolvedValue([candidate()]),
+    onSwap: vi.fn().mockResolvedValue(undefined),
+    showToast: vi.fn(),
     ...overrides,
 });
 
@@ -76,7 +76,7 @@ describe('SwapPodsDialog', () => {
 
     it('searches with the default date, excludes the current job, and renders rich option rows', async () => {
         const props = createMockProps({
-            onSearch: jest.fn().mockResolvedValue([candidate({hasPod: true, statusName: 'Completed', statusId: 6})]),
+            onSearch: vi.fn().mockResolvedValue([candidate({hasPod: true, statusName: 'Completed', statusId: 6})]),
         });
         renderWithTheme(<SwapPodsDialog {...props} />);
         await userEvent.click(screen.getByLabelText(/Second job/i));
@@ -110,7 +110,7 @@ describe('SwapPodsDialog', () => {
     });
 
     it('validates the selected candidate, shows a failure, and a text edit drops the pick', async () => {
-        const props = createMockProps({onValidate: jest.fn().mockResolvedValue(false)});
+        const props = createMockProps({onValidate: vi.fn().mockResolvedValue(false)});
         renderWithTheme(<SwapPodsDialog {...props} />);
         await pickCandidate();
         expect(screen.getByLabelText(/Second job/i)).toHaveValue('JOB-002');
@@ -125,7 +125,7 @@ describe('SwapPodsDialog', () => {
     });
 
     it('shows a network error message when onValidate throws', async () => {
-        const props = createMockProps({onValidate: jest.fn().mockRejectedValue(new Error('Network error'))});
+        const props = createMockProps({onValidate: vi.fn().mockRejectedValue(new Error('Network error'))});
         renderWithTheme(<SwapPodsDialog {...props} />);
         await pickCandidate();
         await userEvent.click(screen.getByRole('button', {name: /validate/i}));
@@ -135,7 +135,7 @@ describe('SwapPodsDialog', () => {
     it('shows loading state while validating', async () => {
         let resolveValidation!: (value: boolean) => void;
         const props = createMockProps({
-            onValidate: jest.fn().mockImplementation(() => new Promise<boolean>(resolve => { resolveValidation = resolve; })),
+            onValidate: vi.fn().mockImplementation(() => new Promise<boolean>(resolve => { resolveValidation = resolve; })),
         });
         renderWithTheme(<SwapPodsDialog {...props} />);
         await pickCandidate();
@@ -157,12 +157,12 @@ describe('SwapPodsDialog', () => {
     });
 
     it('describes a two-sided exchange when the chosen job already has a POD', async () => {
-        await advanceToPhase2(createMockProps({onSearch: jest.fn().mockResolvedValue([candidate({hasPod: true})])}));
+        await advanceToPhase2(createMockProps({onSearch: vi.fn().mockResolvedValue([candidate({hasPod: true})])}));
         expect(screen.getByText('PODs are exchanged between JOB-001 and JOB-002.')).toBeInTheDocument();
     });
 
     it('calls onSwap, shows a success toast, and closes on successful swap', async () => {
-        const props = createMockProps({onSwap: jest.fn().mockResolvedValue({movedPhotos: 2, failedPhotos: 0})});
+        const props = createMockProps({onSwap: vi.fn().mockResolvedValue({movedPhotos: 2, failedPhotos: 0})});
         await advanceToPhase2(props);
         await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
 
@@ -174,7 +174,7 @@ describe('SwapPodsDialog', () => {
     });
 
     it('shows a warning toast instead of success when photos failed to move', async () => {
-        const props = createMockProps({onSwap: jest.fn().mockResolvedValue({movedPhotos: 1, failedPhotos: 2})});
+        const props = createMockProps({onSwap: vi.fn().mockResolvedValue({movedPhotos: 1, failedPhotos: 2})});
         await advanceToPhase2(props);
         await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
 
@@ -188,7 +188,7 @@ describe('SwapPodsDialog', () => {
     it('shows loading state while the swap is in progress', async () => {
         let resolveSwap!: () => void;
         const props = createMockProps({
-            onSwap: jest.fn().mockImplementation(() => new Promise<void>(resolve => { resolveSwap = resolve; })),
+            onSwap: vi.fn().mockImplementation(() => new Promise<void>(resolve => { resolveSwap = resolve; })),
         });
         await advanceToPhase2(props);
         await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
@@ -197,7 +197,7 @@ describe('SwapPodsDialog', () => {
     });
 
     it('shows error toast, does not close, and re-enables button on swap failure', async () => {
-        const props = createMockProps({onSwap: jest.fn().mockRejectedValue(new Error('API error'))});
+        const props = createMockProps({onSwap: vi.fn().mockRejectedValue(new Error('API error'))});
         await advanceToPhase2(props);
         await userEvent.click(screen.getByRole('button', {name: /confirm swap/i}));
 

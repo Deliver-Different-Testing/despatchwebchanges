@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {setupUser} from '../test/utils/setupUser';
@@ -5,13 +6,13 @@ import {ColorModeProvider, useColorMode, COLOR_MODE_STORAGE_KEY} from './useColo
 import {getPreference, savePreference} from '../api/preferencesApi';
 import {StaffPreferenceKey} from '../types/enums/staff-preference-key.enum';
 
-jest.mock('../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
+vi.mock('../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
 }));
 
-const mockGetPreference = getPreference as jest.Mock;
-const mockSavePreference = savePreference as jest.Mock;
+const mockGetPreference = getPreference as Mock;
+const mockSavePreference = savePreference as Mock;
 
 const Probe: React.FC<{label?: string}> = ({label = 'probe'}) => {
     const {mode, preference, setPreference} = useColorMode();
@@ -25,7 +26,7 @@ const Probe: React.FC<{label?: string}> = ({label = 'probe'}) => {
 
 function mockMatchMedia(matches: boolean) {
     const listeners = new Set<(e: MediaQueryListEvent) => void>();
-    window.matchMedia = jest.fn().mockImplementation(() => ({
+    window.matchMedia = vi.fn().mockImplementation(() => ({
         matches,
         addEventListener: (_: string, cb: (e: MediaQueryListEvent) => void) => listeners.add(cb),
         removeEventListener: (_: string, cb: (e: MediaQueryListEvent) => void) => listeners.delete(cb),
@@ -37,7 +38,7 @@ describe('ColorModeProvider', () => {
     const win = window as unknown as {ContactID: number};
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         window.localStorage.clear();
         win.ContactID = 0;
         delete (window as unknown as Record<string, unknown>).__ddColorModeServerSynced;

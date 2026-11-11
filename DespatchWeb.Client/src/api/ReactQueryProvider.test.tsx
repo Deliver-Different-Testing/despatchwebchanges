@@ -134,7 +134,7 @@ describe('ReactQueryProvider', () => {
         it('does not crash with error in child', () => {
             // Suppress console.error for this test
             const originalError = console.error;
-            console.error = jest.fn();
+            console.error = vi.fn();
 
             const ErrorComponent: React.FC = () => {
                 throw new Error('Test error');

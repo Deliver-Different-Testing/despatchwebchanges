@@ -5,6 +5,7 @@
  * jobs, so the counts, the opt-out, and the locked/partner exclusions are all load-bearing.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen} from '@testing-library/react';
 import {renderWithMantine as render} from '../../../test/utils';
@@ -29,12 +30,12 @@ function member(overrides: Partial<DateCascadeFamilyMember> & {jobId: number}): 
 
 function renderDialog(overrides?: {
     members?: DateCascadeFamilyMember[];
-    onChoose?: jest.Mock;
-    onCancel?: jest.Mock;
+    onChoose?: Mock;
+    onCancel?: Mock;
     submitting?: boolean;
 }) {
-    const onChoose = overrides?.onChoose ?? jest.fn();
-    const onCancel = overrides?.onCancel ?? jest.fn();
+    const onChoose = overrides?.onChoose ?? vi.fn();
+    const onCancel = overrides?.onCancel ?? vi.fn();
     render(
             <CascadeDateConfirmDialog
                 open

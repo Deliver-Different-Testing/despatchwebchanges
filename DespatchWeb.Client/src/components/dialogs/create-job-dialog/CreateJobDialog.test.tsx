@@ -2,6 +2,7 @@
  * CreateJobDialog Component Tests
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {CreateJobDialog, CreateJobDialogProps} from './CreateJobDialog';
@@ -17,62 +18,62 @@ import {jobApi} from '../../../api/jobApi';
 import type {HereMapsLookupResponse} from '../../../types';
 
 // Mock the hooks - must match the import paths used by the component
-const mockUseClientSearch = jest.fn(() => ({data: [] as any[], isFetching: false}));
-const mockUseVehicleSizes = jest.fn(() => ({
+const mockUseClientSearch = vi.fn(() => ({data: [] as any[], isFetching: false}));
+const mockUseVehicleSizes = vi.fn(() => ({
     data: [
         {id: 1, text: 'Car'},
         {id: 2, text: 'Van'},
     ],
 }));
-const mockUseCourierSearch = jest.fn(() => ({data: [] as any[], isFetching: false}));
-const mockUseAddressSearch = jest.fn(() => ({data: [] as any[], isFetching: false}));
-const mockUseSpeedList = jest.fn(() => ({
+const mockUseCourierSearch = vi.fn(() => ({data: [] as any[], isFetching: false}));
+const mockUseAddressSearch = vi.fn(() => ({data: [] as any[], isFetching: false}));
+const mockUseSpeedList = vi.fn(() => ({
     data: [
         {id: 1, text: 'Standard'},
         {id: 2, text: 'Express'},
     ],
 }));
 
-jest.mock('../../../hooks/useJobApi', () => ({
+vi.mock('../../../hooks/useJobApi', () => ({
     useClientSearch: (...args: any[]) => mockUseClientSearch(...(args as [])),
     useVehicleSizes: (...args: any[]) => mockUseVehicleSizes(...(args as [])),
 }));
-jest.mock('../../../hooks/useCourierApi', () => ({
+vi.mock('../../../hooks/useCourierApi', () => ({
     useCourierSearch: (...args: any[]) => mockUseCourierSearch(...(args as [])),
 }));
-jest.mock('../../../hooks/useAddressApi', () => ({
+vi.mock('../../../hooks/useAddressApi', () => ({
     useAddressSearch: (...args: any[]) => mockUseAddressSearch(...(args as [])),
 }));
-jest.mock('../../../hooks/useRecurringJobsApi', () => ({
+vi.mock('../../../hooks/useRecurringJobsApi', () => ({
     useSpeedList: (...args: any[]) => mockUseSpeedList(...(args as [])),
 }));
 
 // Mock the API services (for submit flow)
-jest.mock('../../../api/addressApi', () => ({
+vi.mock('../../../api/addressApi', () => ({
     addressApi: {
-        getLocationDetailsById: jest.fn(),
+        getLocationDetailsById: vi.fn(),
     },
 }));
 
-jest.mock('../../../api/jobApi', () => ({
+vi.mock('../../../api/jobApi', () => ({
     jobApi: {
-        quickCreateJob: jest.fn(),
-        allocateJobToCourier: jest.fn(),
+        quickCreateJob: vi.fn(),
+        allocateJobToCourier: vi.fn(),
     },
 }));
 
 // Mock date utils — dayjs needs tz plugin to work in the component
-jest.mock('../../../utils/dateUtils', () => {
-    const actualDayjs = jest.requireActual('dayjs');
-    const utc = jest.requireActual('dayjs/plugin/utc');
-    const timezone = jest.requireActual('dayjs/plugin/timezone');
+vi.mock('../../../utils/dateUtils', async () => {
+    const actualDayjs = (await vi.importActual<{default: typeof import('dayjs')}>('dayjs')).default;
+    const utc = (await vi.importActual<{default: typeof import('dayjs/plugin/utc')}>('dayjs/plugin/utc')).default;
+    const timezone = (await vi.importActual<{default: typeof import('dayjs/plugin/timezone')}>('dayjs/plugin/timezone')).default;
     actualDayjs.extend(utc);
     actualDayjs.extend(timezone);
     return {
-        formatDateForApi: jest.fn(() => '2026-03-05T00:00:00-05:00'),
-        getIanaTimezone: jest.fn(() => 'America/New_York'),
+        formatDateForApi: vi.fn(() => '2026-03-05T00:00:00-05:00'),
+        getIanaTimezone: vi.fn(() => 'America/New_York'),
         // The Mantine date field asks for the tenant's input order.
-        getInputDateFormat: jest.fn(() => 'MM/DD/YYYY'),
+        getInputDateFormat: vi.fn(() => 'MM/DD/YYYY'),
         dayjs: actualDayjs,
     };
 });
@@ -80,9 +81,9 @@ jest.mock('../../../utils/dateUtils', () => {
 const defaultProps: CreateJobDialogProps = {
     open: true,
     isUsTenant: true,
-    onClose: jest.fn(),
-    onSubmit: jest.fn(),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onSubmit: vi.fn(),
+    showToast: vi.fn(),
 };
 
 const createMockProps = (overrides?: Partial<CreateJobDialogProps>) =>
@@ -147,7 +148,7 @@ describe('CreateJobDialog', () => {
     describe('Close Functionality', () => {
         it('calls onClose via close icon and cancel button', async () => {
             const user = setupUser();
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             const props = createMockProps({onClose});
             renderWithAllProviders(<CreateJobDialog {...props} />);
 
@@ -165,8 +166,8 @@ describe('CreateJobDialog', () => {
     describe('Validation', () => {
         it('summarises every incomplete field, marks them inline, and blocks submit', async () => {
             const user = setupUser();
-            const showToast = jest.fn();
-            const onSubmit = jest.fn();
+            const showToast = vi.fn();
+            const onSubmit = vi.fn();
             const props = createMockProps({showToast, onSubmit});
             renderWithAllProviders(<CreateJobDialog {...props} />);
 
@@ -380,13 +381,13 @@ describe('CreateJobDialog', () => {
             await selectAutocomplete(screen.getByRole('combobox', {name: /speed/i}), '', /Standard/);
         }
 
-        function mockClipboard(writeText: jest.Mock) {
+        function mockClipboard(writeText: Mock) {
             Object.defineProperty(navigator, 'clipboard', {value: {writeText}, configurable: true});
         }
 
         it('submits with US-tenant Lb weight, copies the job number and names it in the toast', async () => {
-            const onSubmit = jest.fn();
-            const showToast = jest.fn();
+            const onSubmit = vi.fn();
+            const showToast = vi.fn();
 
             // Configure mocks to return selectable options
             mockUseClientSearch.mockReturnValue({
@@ -398,9 +399,9 @@ describe('CreateJobDialog', () => {
                 isFetching: false,
             });
 
-            (addressApi.getLocationDetailsById as jest.Mock).mockResolvedValue(mockLookupResponse);
-            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
-            const writeText = jest.fn().mockResolvedValue(undefined);
+            (addressApi.getLocationDetailsById as Mock).mockResolvedValue(mockLookupResponse);
+            (jobApi.quickCreateJob as Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            const writeText = vi.fn().mockResolvedValue(undefined);
             mockClipboard(writeText);
 
             const props = createMockProps({onSubmit, showToast, isUsTenant: true});
@@ -416,7 +417,7 @@ describe('CreateJobDialog', () => {
                 expect(jobApi.quickCreateJob).toHaveBeenCalledTimes(1);
             }, {timeout: 3000});
 
-            const submittedJob = (jobApi.quickCreateJob as jest.Mock).mock.calls[0][0];
+            const submittedJob = (jobApi.quickCreateJob as Mock).mock.calls[0][0];
             expect(submittedJob.pickUpAddress.addressLine8).toBe('United States');
             expect(submittedJob.deliveryAddress.addressLine8).toBe('United States');
             expect(submittedJob.weightLb).toBe(12);
@@ -439,14 +440,14 @@ describe('CreateJobDialog', () => {
         }, 30000);
 
         it('still creates the job when the clipboard copy is refused', async () => {
-            const onSubmit = jest.fn();
-            const showToast = jest.fn();
+            const onSubmit = vi.fn();
+            const showToast = vi.fn();
 
             mockUseClientSearch.mockReturnValue({data: [{id: 1, text: 'Test Client'}], isFetching: false});
             mockUseAddressSearch.mockReturnValue({data: [mockAddressOption], isFetching: false});
-            (addressApi.getLocationDetailsById as jest.Mock).mockResolvedValue(mockLookupResponse);
-            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
-            mockClipboard(jest.fn().mockRejectedValue(new Error('not allowed')));
+            (addressApi.getLocationDetailsById as Mock).mockResolvedValue(mockLookupResponse);
+            (jobApi.quickCreateJob as Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            mockClipboard(vi.fn().mockRejectedValue(new Error('not allowed')));
 
             const props = createMockProps({onSubmit, showToast, isUsTenant: true});
             renderWithAllProviders(<CreateJobDialog {...props} />);
@@ -473,9 +474,9 @@ describe('CreateJobDialog', () => {
                 isFetching: false,
             });
 
-            (addressApi.getLocationDetailsById as jest.Mock).mockResolvedValue(mockLookupResponse);
-            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
-            mockClipboard(jest.fn().mockResolvedValue(undefined));
+            (addressApi.getLocationDetailsById as Mock).mockResolvedValue(mockLookupResponse);
+            (jobApi.quickCreateJob as Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            mockClipboard(vi.fn().mockResolvedValue(undefined));
 
             const props = createMockProps({isUsTenant: false});
             renderWithAllProviders(<CreateJobDialog {...props} />);
@@ -491,7 +492,7 @@ describe('CreateJobDialog', () => {
                 expect(jobApi.quickCreateJob).toHaveBeenCalledTimes(1);
             }, {timeout: 3000});
 
-            const submittedJob = (jobApi.quickCreateJob as jest.Mock).mock.calls[0][0];
+            const submittedJob = (jobApi.quickCreateJob as Mock).mock.calls[0][0];
             expect(submittedJob.weightKg).toBe(12);
             expect(submittedJob.weightLb).toBeNull();
         }, 30000);

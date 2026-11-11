@@ -1,20 +1,21 @@
+import type {Mock} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {resetNavStyleStore, useNavStyle} from './useNavStyle';
 import {loadNavStyleSettings, NAV_STYLE_STORAGE_KEY, saveNavStyleOverride} from '../services/navStylePreference';
 import {toastService} from '../services/toastService';
 
-jest.mock('../services/navStylePreference', () => ({
-    ...jest.requireActual('../services/navStylePreference'),
-    loadNavStyleSettings: jest.fn(),
-    saveNavStyleOverride: jest.fn(),
+vi.mock('../services/navStylePreference', async () => ({
+    ...(await vi.importActual<typeof import('../services/navStylePreference')>('../services/navStylePreference')),
+    loadNavStyleSettings: vi.fn(),
+    saveNavStyleOverride: vi.fn(),
 }));
-jest.mock('../services/toastService', () => ({
-    toastService: {showErrorToast: jest.fn(), showSuccessToast: jest.fn()},
+vi.mock('../services/toastService', () => ({
+    toastService: {showErrorToast: vi.fn(), showSuccessToast: vi.fn()},
 }));
 
-const mockLoad = loadNavStyleSettings as jest.Mock;
-const mockSave = saveNavStyleOverride as jest.Mock;
-const mockToast = toastService.showErrorToast as jest.Mock;
+const mockLoad = loadNavStyleSettings as Mock;
+const mockSave = saveNavStyleOverride as Mock;
+const mockToast = toastService.showErrorToast as Mock;
 
 const loaded = (over: object = {}) => ({
     userOverride: null, tenantDefault: null, userFailed: false, tenantFailed: false, ...over,
@@ -22,14 +23,14 @@ const loaded = (over: object = {}) => ({
 
 describe('useNavStyle', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         localStorage.clear();
         resetNavStyleStore();
         mockSave.mockResolvedValue(undefined);
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => vi.restoreAllMocks());
 
     it('starts on the cached style, then applies the loaded one and refreshes the cache', async () => {
         localStorage.setItem(NAV_STYLE_STORAGE_KEY, 'dfrnt');

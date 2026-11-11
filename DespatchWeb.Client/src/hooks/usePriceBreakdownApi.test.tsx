@@ -2,6 +2,7 @@
  * usePriceBreakdownApi Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {renderHook, waitFor, act} from '@testing-library/react';
 import {
@@ -15,16 +16,16 @@ import {pricingBreakdownApi} from '../api/pricingBreakdownApi';
 import {createQueryWrapper} from '../test/utils';
 
 // Mock the pricingBreakdownApi
-jest.mock('../api/pricingBreakdownApi', () => ({
+vi.mock('../api/pricingBreakdownApi', () => ({
     pricingBreakdownApi: {
-        getPriceBreakdowns: jest.fn(),
-        addPriceBreakdown: jest.fn(),
-        updatePriceBreakdown: jest.fn(),
-        deletePriceBreakdown: jest.fn(),
+        getPriceBreakdowns: vi.fn(),
+        addPriceBreakdown: vi.fn(),
+        updatePriceBreakdown: vi.fn(),
+        deletePriceBreakdown: vi.fn(),
     },
 }));
 
-const mockPricingApi = pricingBreakdownApi as jest.Mocked<typeof pricingBreakdownApi>;
+const mockPricingApi = pricingBreakdownApi as Mocked<typeof pricingBreakdownApi>;
 
 // Sample test data
 const mockBreakdowns: PriceBreakdown[] = [

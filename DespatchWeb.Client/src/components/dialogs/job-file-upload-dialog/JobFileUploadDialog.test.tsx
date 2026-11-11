@@ -6,6 +6,7 @@
  * text, role or label — no MUI class names — so they survive the swap.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {act, screen, waitFor, within, fireEvent} from '@testing-library/react';
 import {JobFileUploadDialog} from './JobFileUploadDialog';
@@ -22,23 +23,23 @@ import {
     downloadFile,
 } from '../../../api/jobDetailApi';
 
-jest.mock('../../../api/jobDetailApi', () => ({
-    getAttachedFiles: jest.fn(),
-    getJobDeliveryPhotos: jest.fn(),
-    uploadJobFile: jest.fn(),
-    uploadJobDeliveryPhotoOrSignature: jest.fn(),
-    deleteJobFile: jest.fn(),
-    deleteJobDeliveryPhotoOrSignature: jest.fn(),
-    downloadFile: jest.fn(),
+vi.mock('../../../api/jobDetailApi', () => ({
+    getAttachedFiles: vi.fn(),
+    getJobDeliveryPhotos: vi.fn(),
+    uploadJobFile: vi.fn(),
+    uploadJobDeliveryPhotoOrSignature: vi.fn(),
+    deleteJobFile: vi.fn(),
+    deleteJobDeliveryPhotoOrSignature: vi.fn(),
+    downloadFile: vi.fn(),
 }));
 
-const mockGetAttachedFiles = getAttachedFiles as jest.Mock;
-const mockGetJobDeliveryPhotos = getJobDeliveryPhotos as jest.Mock;
-const mockUploadJobFile = uploadJobFile as jest.Mock;
-const mockUploadPod = uploadJobDeliveryPhotoOrSignature as jest.Mock;
-const mockDeleteJobFile = deleteJobFile as jest.Mock;
-const mockDeletePod = deleteJobDeliveryPhotoOrSignature as jest.Mock;
-const mockDownloadFile = downloadFile as jest.Mock;
+const mockGetAttachedFiles = getAttachedFiles as Mock;
+const mockGetJobDeliveryPhotos = getJobDeliveryPhotos as Mock;
+const mockUploadJobFile = uploadJobFile as Mock;
+const mockUploadPod = uploadJobDeliveryPhotoOrSignature as Mock;
+const mockDeleteJobFile = deleteJobFile as Mock;
+const mockDeletePod = deleteJobDeliveryPhotoOrSignature as Mock;
+const mockDownloadFile = downloadFile as Mock;
 
 const normalFile: JobFile = {
     fileName: 'invoice.pdf',
@@ -64,8 +65,8 @@ function renderDialog(overrides: Partial<JobFileUploadDialogProps> = {}) {
         open: true,
         jobId: 1,
         initialUploadType: 'normal',
-        onClose: jest.fn(),
-        showToast: jest.fn(),
+        onClose: vi.fn(),
+        showToast: vi.fn(),
         ...overrides,
     };
     return {props, ...renderWithMantine(<JobFileUploadDialog {...props} />)};
@@ -88,7 +89,7 @@ function makeFile(name: string, type: string, size: number): File {
 }
 
 beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockGetAttachedFiles.mockResolvedValue([]);
     mockGetJobDeliveryPhotos.mockResolvedValue([]);
     mockUploadJobFile.mockResolvedValue(undefined);

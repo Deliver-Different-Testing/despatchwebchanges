@@ -7,8 +7,8 @@ import type {MountJobDetailsConfig} from './JobDetails.types';
 let mounts = 0;
 let configs: MountJobDetailsConfig[] = [];
 
-jest.mock('./JobDetails', () => {
-    const R = require('react');
+vi.mock('./JobDetails', async () => {
+    const R = (await import('react'));
     return {
         JobDetails: ({config}: {config: MountJobDetailsConfig}) => {
             R.useEffect(() => {
@@ -28,7 +28,7 @@ describe('JobDetailsMount', () => {
         jobId: 1,
         containerId: 'test-detail',
         isUsCustomer: false,
-        showToast: jest.fn(),
+        showToast: vi.fn(),
     };
     const lastConfig = () => configs[configs.length - 1];
 
@@ -69,8 +69,8 @@ describe('JobDetailsMount', () => {
     });
 
     it('always calls through to the latest callbacks and tolerates none', () => {
-        const first = jest.fn();
-        const second = jest.fn();
+        const first = vi.fn();
+        const second = vi.fn();
         const {rerender} = render(<JobDetailsMount {...props} onRelatedJobChange={first}/>);
         rerender(<JobDetailsMount {...props} onRelatedJobChange={second}/>);
         lastConfig().onRelatedJobChange?.(99);

@@ -5,8 +5,8 @@ import {OpenJobsWidget} from './OpenJobsWidget';
 import type {IOpenJobResponse} from '../OverviewPage.interfaces';
 
 // Mock formatMins
-jest.mock('../../../utils/dateUtils', () => ({
-    formatMins: jest.fn((s: string) => s),
+vi.mock('../../../utils/dateUtils', () => ({
+    formatMins: vi.fn((s: string) => s),
 }));
 
 

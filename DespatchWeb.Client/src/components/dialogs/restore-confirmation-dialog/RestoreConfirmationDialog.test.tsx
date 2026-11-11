@@ -6,14 +6,14 @@ import {setupUser} from '../../../test/utils/setupUser';
 
 const defaultProps = {
     open: true,
-    onConfirm: jest.fn(),
-    onClose: jest.fn(),
+    onConfirm: vi.fn(),
+    onClose: vi.fn(),
 };
 
 const noPod = {jobsWithPodName: 0, imageCount: 0};
 
 describe('RestoreConfirmationDialog', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     describe('completed-job copy', () => {
         it('shows singular copy for a single completed job', () => {
@@ -80,8 +80,8 @@ describe('RestoreConfirmationDialog', () => {
 
     describe('Swap POD', () => {
         it('offers Swap POD as an alternative to losing the POD', async () => {
-            const onSwapPod = jest.fn();
-            const onConfirm = jest.fn();
+            const onSwapPod = vi.fn();
+            const onConfirm = vi.fn();
             const user = setupUser();
             renderWithMantine(
                 <RestoreConfirmationDialog
@@ -107,7 +107,7 @@ describe('RestoreConfirmationDialog', () => {
 
         it('disables Swap POD while the restore is submitting', () => {
             renderWithMantine(
-                <RestoreConfirmationDialog {...defaultProps} count={1} onSwapPod={jest.fn()} submitting />,
+                <RestoreConfirmationDialog {...defaultProps} count={1} onSwapPod={vi.fn()} submitting />,
             );
 
             expect(screen.getByRole('button', {name: 'Swap POD'})).toBeDisabled();
@@ -148,7 +148,7 @@ describe('RestoreConfirmationDialog', () => {
         });
 
         it('leaves the checkbox off by default and confirms with false', async () => {
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
             const user = setupUser();
             renderWithMantine(<RestoreConfirmationDialog {...defaultProps} count={1} onConfirm={onConfirm} />);
 
@@ -163,7 +163,7 @@ describe('RestoreConfirmationDialog', () => {
         });
 
         it('confirms with true when the checkbox is ticked', async () => {
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
             const user = setupUser();
             renderWithMantine(<RestoreConfirmationDialog {...defaultProps} count={1} onConfirm={onConfirm} />);
 
@@ -176,7 +176,7 @@ describe('RestoreConfirmationDialog', () => {
         });
 
         it('confirms with false when there is no checkbox to tick', async () => {
-            const onConfirm = jest.fn();
+            const onConfirm = vi.fn();
             const user = setupUser();
             renderWithMantine(
                 <RestoreConfirmationDialog
@@ -194,7 +194,7 @@ describe('RestoreConfirmationDialog', () => {
     });
 
     it('calls onClose when Cancel is clicked', async () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         const user = setupUser();
         renderWithMantine(<RestoreConfirmationDialog {...defaultProps} count={1} onClose={onClose} />);
 

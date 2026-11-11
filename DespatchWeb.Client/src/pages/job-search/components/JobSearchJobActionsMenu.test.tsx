@@ -28,7 +28,7 @@ const makeJob = (overrides: Partial<DispatchJob> = {}): DispatchJob => ({
 function renderMenu(overrides: Partial<React.ComponentProps<typeof JobSearchJobActionsMenu>> = {}) {
     return render(
         <MantineTestProvider>
-            <JobSearchJobActionsMenu currentJob={makeJob()} onAction={jest.fn()} {...overrides} />
+            <JobSearchJobActionsMenu currentJob={makeJob()} onAction={vi.fn()} {...overrides} />
         </MantineTestProvider>,
     );
 }
@@ -47,7 +47,7 @@ describe('JobSearchJobActionsMenu', () => {
 
     it('opens the available actions and fires onAction with the action id and job', async () => {
         const user = setupUser();
-        const onAction = jest.fn();
+        const onAction = vi.fn();
         const job = makeJob();
         renderMenu({currentJob: job, onAction});
 

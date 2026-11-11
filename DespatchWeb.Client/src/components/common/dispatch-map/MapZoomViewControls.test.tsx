@@ -9,11 +9,11 @@ import {ColorModeContext} from '../../../hooks/useColorMode';
 
 function createMockMap() {
     return {
-        getZoom: jest.fn(() => 10),
-        setZoom: jest.fn(),
-        setBaseLayer: jest.fn(),
-        addLayer: jest.fn(),
-        removeLayer: jest.fn(),
+        getZoom: vi.fn(() => 10),
+        setZoom: vi.fn(),
+        setBaseLayer: vi.fn(),
+        addLayer: vi.fn(),
+        removeLayer: vi.fn(),
     };
 }
 
@@ -30,7 +30,7 @@ function createMockLayers(opts: {includeTraffic?: boolean} = {}) {
 }
 
 const inMode = (mode: 'light' | 'dark', ui: React.ReactElement) => (
-    <ColorModeContext.Provider value={{mode, preference: mode, setPreference: jest.fn()}}>{ui}</ColorModeContext.Provider>
+    <ColorModeContext.Provider value={{mode, preference: mode, setPreference: vi.fn()}}>{ui}</ColorModeContext.Provider>
 );
 
 describe('MapZoomViewControls', () => {
@@ -41,7 +41,7 @@ describe('MapZoomViewControls', () => {
             const user = setupUser();
             const el = document.createElement('div');
             const map = {...createMockMap(), getElement: () => el};
-            renderWithTheme(<ColorModeContext.Provider value={{mode: 'light', preference: 'light', setPreference: jest.fn()}}>
+            renderWithTheme(<ColorModeContext.Provider value={{mode: 'light', preference: 'light', setPreference: vi.fn()}}>
                 <MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers()}/>
             </ColorModeContext.Provider>);
             expect(el.dataset.mapTheme).toBe('light');
@@ -58,7 +58,7 @@ describe('MapZoomViewControls', () => {
         it('pins the map light while the app is dark, and can return to matching the app', async () => {
             const user = setupUser();
             const map = createMockMap();
-            renderWithTheme(<ColorModeContext.Provider value={{mode: 'dark', preference: 'dark', setPreference: jest.fn()}}>
+            renderWithTheme(<ColorModeContext.Provider value={{mode: 'dark', preference: 'dark', setPreference: vi.fn()}}>
                 <MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers()}/>
             </ColorModeContext.Provider>);
 
@@ -197,7 +197,7 @@ describe('MapZoomViewControls', () => {
     });
 
     it('does not offer a separate incidents toggle, and warns when the SDK has no traffic layer', () => {
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         const map = createMockMap();
         renderWithTheme(<MapZoomViewControls map={map} platform={null} defaultLayers={createMockLayers({includeTraffic: false})}/>);
 

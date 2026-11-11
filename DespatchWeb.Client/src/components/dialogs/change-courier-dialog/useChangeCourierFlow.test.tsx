@@ -5,6 +5,7 @@
  * or show the "already invoiced / settled" acknowledge popup instead.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import {setupUser} from '../../../test/utils/setupUser';
@@ -12,21 +13,21 @@ import {renderWithMantine} from '../../../test/utils';
 import {useChangeCourierFlow} from './useChangeCourierFlow';
 import {changeArchivedJobCourier, getCourierChangeEligibility} from '../../../api/jobListApi';
 
-jest.mock('../../../api/jobListApi', () => ({
-    getCourierChangeEligibility: jest.fn(),
-    changeArchivedJobCourier: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../../api/jobListApi', () => ({
+    getCourierChangeEligibility: vi.fn(),
+    changeArchivedJobCourier: vi.fn().mockResolvedValue(undefined),
 }));
-jest.mock('../../../api/jobDetailApi', () => ({
-    autocompleteSearch: jest.fn().mockResolvedValue([]),
+vi.mock('../../../api/jobDetailApi', () => ({
+    autocompleteSearch: vi.fn().mockResolvedValue([]),
 }));
 
-const mockedEligibility = getCourierChangeEligibility as jest.Mock;
-const mockedChange = changeArchivedJobCourier as jest.Mock;
+const mockedEligibility = getCourierChangeEligibility as Mock;
+const mockedChange = changeArchivedJobCourier as Mock;
 
 const userEvent = setupUser();
 
-const showToast = jest.fn();
-const onChanged = jest.fn();
+const showToast = vi.fn();
+const onChanged = vi.fn();
 
 const Harness: React.FC = () => {
     const {openChangeCourier, changeCourierDialogs} = useChangeCourierFlow({showToast, onChanged});
@@ -40,7 +41,7 @@ const Harness: React.FC = () => {
 
 describe('useChangeCourierFlow', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('opens the change dialog with the current courier when the job is eligible', async () => {
@@ -97,7 +98,7 @@ describe('useChangeCourierFlow', () => {
         mockedEligibility.mockResolvedValue({
             canChange: true, reason: null, currentCourierId: 10, currentCourierName: 'Olive Old',
         });
-        const {autocompleteSearch} = jest.requireMock('../../../api/jobDetailApi');
+        const {autocompleteSearch} = vi.mocked(await import('../../../api/jobDetailApi'));
         autocompleteSearch.mockResolvedValue([{id: 101, text: 'Nina New'}]);
 
         renderWithMantine(<Harness/>);

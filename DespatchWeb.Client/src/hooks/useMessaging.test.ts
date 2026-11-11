@@ -2,6 +2,7 @@
  * Messaging Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {
     CONVERSATIONS_REFRESH_MS,
@@ -18,14 +19,14 @@ import messagingApi from "../api/messagingApi";
 import {DEFAULT_QUICK_RESPONSES, OtherMessagePartyType} from "../components/dialogs/messaging-dialog/types";
 
 // Mock the messagingApi
-jest.mock('../api/messagingApi', () => {
+vi.mock('../api/messagingApi', () => {
     const methods = {
-        getRecentList: jest.fn(),
-        getMessages: jest.fn(),
-        getQuickResponses: jest.fn(),
-        addQuickResponse: jest.fn(),
-        deleteQuickResponse: jest.fn(),
-        getMessageContactOptions: jest.fn(),
+        getRecentList: vi.fn(),
+        getMessages: vi.fn(),
+        getQuickResponses: vi.fn(),
+        addQuickResponse: vi.fn(),
+        deleteQuickResponse: vi.fn(),
+        getMessageContactOptions: vi.fn(),
     };
     return {
         __esModule: true,
@@ -34,7 +35,7 @@ jest.mock('../api/messagingApi', () => {
     };
 });
 
-const mockMessagingApi = messagingApi as jest.Mocked<typeof messagingApi>;
+const mockMessagingApi = messagingApi as Mocked<typeof messagingApi>;
 
 describe('useConversations', () => {
     const mockConversations = [
@@ -78,7 +79,7 @@ describe('useConversations', () => {
     }
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     it('loads only while open, with an abort signal and a timeout shorter than the default', async () => {
@@ -110,14 +111,14 @@ describe('useConversations', () => {
     });
 
     it('flags a slow first load after the hint delay', async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers({shouldAdvanceTime: true});
         const pending = deferredRecentList();
 
         const {result} = renderConversations();
         await waitFor(() => expect(result.current.isLoading).toBe(true));
         expect(result.current.isSlow).toBe(false);
 
-        act(() => { jest.advanceTimersByTime(SLOW_LOAD_HINT_MS); });
+        act(() => { vi.advanceTimersByTime(SLOW_LOAD_HINT_MS); });
         expect(result.current.isSlow).toBe(true);
 
         await act(async () => { pending.resolve(); });
@@ -165,12 +166,12 @@ describe('useConversations', () => {
     });
 
     it('polls while open', async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers({shouldAdvanceTime: true});
         mockMessagingApi.getRecentList.mockResolvedValue(mockConversations);
         const {result} = renderConversations();
         await waitFor(() => expect(result.current.conversations).toEqual(mockConversations));
 
-        await act(async () => { jest.advanceTimersByTime(CONVERSATIONS_REFRESH_MS); });
+        await act(async () => { vi.advanceTimersByTime(CONVERSATIONS_REFRESH_MS); });
 
         await waitFor(() => expect(mockMessagingApi.getRecentList).toHaveBeenCalledTimes(2));
     });
@@ -427,11 +428,11 @@ describe('useQuickResponses', () => {
 
 describe('useContactSearch', () => {
     beforeEach(() => {
-        jest.useFakeTimers();
+        vi.useFakeTimers({shouldAdvanceTime: true});
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     const mockContacts = [
@@ -477,7 +478,7 @@ describe('useContactSearch', () => {
 
         // Fast-forward debounce timer
         await act(async () => {
-            jest.advanceTimersByTime(300);
+            vi.advanceTimersByTime(300);
         });
 
         await waitFor(() => {
@@ -503,47 +504,47 @@ describe('useContactSearch', () => {
 
 describe('useAutoRefresh', () => {
     beforeEach(() => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     it('should call callback at specified interval when enabled', async () => {
-        const callback = jest.fn().mockResolvedValue(undefined);
+        const callback = vi.fn().mockResolvedValue(undefined);
 
         renderHook(() => useAutoRefresh(callback, 1000, true));
 
         expect(callback).not.toHaveBeenCalled();
 
         await act(async () => {
-            jest.advanceTimersByTime(1000);
+            vi.advanceTimersByTime(1000);
         });
 
         expect(callback).toHaveBeenCalledTimes(1);
 
         await act(async () => {
-            jest.advanceTimersByTime(1000);
+            vi.advanceTimersByTime(1000);
         });
 
         expect(callback).toHaveBeenCalledTimes(2);
     });
 
     it('should not call callback when disabled', async () => {
-        const callback = jest.fn().mockResolvedValue(undefined);
+        const callback = vi.fn().mockResolvedValue(undefined);
 
         renderHook(() => useAutoRefresh(callback, 1000, false));
 
         await act(async () => {
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
         });
 
         expect(callback).not.toHaveBeenCalled();
     });
 
     it('should stop calling when disabled after being enabled', async () => {
-        const callback = jest.fn().mockResolvedValue(undefined);
+        const callback = vi.fn().mockResolvedValue(undefined);
 
         const { rerender } = renderHook(
             ({ enabled }) => useAutoRefresh(callback, 1000, enabled),
@@ -551,7 +552,7 @@ describe('useAutoRefresh', () => {
         );
 
         await act(async () => {
-            jest.advanceTimersByTime(1000);
+            vi.advanceTimersByTime(1000);
         });
 
         expect(callback).toHaveBeenCalledTimes(1);
@@ -559,14 +560,14 @@ describe('useAutoRefresh', () => {
         rerender({ enabled: false });
 
         await act(async () => {
-            jest.advanceTimersByTime(2000);
+            vi.advanceTimersByTime(2000);
         });
 
         expect(callback).toHaveBeenCalledTimes(1);
     });
 
     it('should provide manual trigger function', async () => {
-        const callback = jest.fn().mockResolvedValue(undefined);
+        const callback = vi.fn().mockResolvedValue(undefined);
 
         const { result } = renderHook(() => useAutoRefresh(callback, 10000, true));
 
@@ -578,14 +579,14 @@ describe('useAutoRefresh', () => {
     });
 
     it('should cleanup interval on unmount', () => {
-        const callback = jest.fn().mockResolvedValue(undefined);
+        const callback = vi.fn().mockResolvedValue(undefined);
 
         const { unmount } = renderHook(() => useAutoRefresh(callback, 1000, true));
 
         unmount();
 
         act(() => {
-            jest.advanceTimersByTime(3000);
+            vi.advanceTimersByTime(3000);
         });
 
         expect(callback).not.toHaveBeenCalled();

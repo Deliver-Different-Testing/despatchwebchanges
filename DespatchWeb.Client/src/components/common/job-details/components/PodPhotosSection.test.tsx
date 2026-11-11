@@ -2,6 +2,7 @@
  * PodPhotosSection Component Tests
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen, fireEvent, waitFor} from '@testing-library/react';
 import {PodPhotosSection} from './PodPhotosSection';
@@ -9,12 +10,12 @@ import {deleteJobDeliveryPhotoOrSignature} from '../../../../api/jobDetailApi';
 import type {PodPhoto} from '../JobDetails.types';
 import {renderWithMantine} from '../../../../test/utils';
 
-jest.mock('../../../../api/jobDetailApi', () => ({
-    downloadFile: jest.fn(),
-    deleteJobDeliveryPhotoOrSignature: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../../../api/jobDetailApi', () => ({
+    downloadFile: vi.fn(),
+    deleteJobDeliveryPhotoOrSignature: vi.fn().mockResolvedValue(undefined),
 }));
 
-const mockDeletePhoto = deleteJobDeliveryPhotoOrSignature as jest.Mock;
+const mockDeletePhoto = deleteJobDeliveryPhotoOrSignature as Mock;
 
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -39,9 +40,9 @@ function createDefaultProps(overrides?: Record<string, any>) {
         imageOnlyDeliveryPhotos: [] as PodPhoto[],
         imageOnlyPickupPhotos: [] as PodPhoto[],
         isLoading: false,
-        showToast: jest.fn(),
-        onUploadPhotos: jest.fn(),
-        onSendPod: jest.fn(),
+        showToast: vi.fn(),
+        onUploadPhotos: vi.fn(),
+        onSendPod: vi.fn(),
         ...overrides,
     };
 }
@@ -89,8 +90,8 @@ describe('PodPhotosSection', () => {
     });
 
     it('renders action buttons and handles clicks', () => {
-        const onUploadPhotos = jest.fn();
-        const onSendPod = jest.fn();
+        const onUploadPhotos = vi.fn();
+        const onSendPod = vi.fn();
         const deliveryPhotos = [createMockPhoto()];
         renderWithTheme(
             <PodPhotosSection {...createDefaultProps({
@@ -195,8 +196,8 @@ describe('PodPhotosSection', () => {
         });
 
         it('confirms then soft-deletes the photo and notifies the caller', async () => {
-            const onPhotoDeleted = jest.fn();
-            const showToast = jest.fn();
+            const onPhotoDeleted = vi.fn();
+            const showToast = vi.fn();
             const deliveryPhotos = [createMockPhoto({s3Key})];
             renderWithTheme(
                 <PodPhotosSection {...createDefaultProps({

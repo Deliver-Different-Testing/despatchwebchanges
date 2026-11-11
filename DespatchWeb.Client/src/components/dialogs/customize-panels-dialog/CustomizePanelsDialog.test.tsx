@@ -16,8 +16,8 @@ const mockBoxes: Record<string, DashboardBox> = {
 const defaultProps: CustomizePanelsDialogProps = {
     open: true,
     boxes: mockBoxes,
-    onClose: jest.fn(),
-    onSave: jest.fn(),
+    onClose: vi.fn(),
+    onSave: vi.fn(),
 };
 
 const createMockProps = (overrides?: Partial<CustomizePanelsDialogProps>) =>
@@ -48,7 +48,7 @@ describe('CustomizePanelsDialog', () => {
     });
 
     it('toggles a panel and returns the updated boxes on Save', async () => {
-        const onSave = jest.fn();
+        const onSave = vi.fn();
         renderWithMantine(<CustomizePanelsDialog {...createMockProps({onSave})} />);
 
         await userEvent.click(screen.getByLabelText('Map'));
@@ -68,7 +68,7 @@ describe('CustomizePanelsDialog', () => {
     });
 
     it('calls onClose from Cancel', async () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithMantine(<CustomizePanelsDialog {...createMockProps({onClose})} />);
 
         await userEvent.click(screen.getByRole('button', {name: /cancel/i}));

@@ -31,17 +31,17 @@ function driver(overrides: Partial<IAvailableCourierPosition> = {}): IAvailableC
 
 describe('DriverListItem', () => {
     it('has no persistent background when not selected', () => {
-        renderWithMantine(<DriverListItem driver={driver()} onClick={jest.fn()} isSelected={false} />);
+        renderWithMantine(<DriverListItem driver={driver()} onClick={vi.fn()} isSelected={false} />);
         expect(screen.getByRole('button').style.backgroundColor).toBe('');
     });
 
     it('gets a persistent tinted background when selected', () => {
-        renderWithMantine(<DriverListItem driver={driver()} onClick={jest.fn()} isSelected={true} />);
+        renderWithMantine(<DriverListItem driver={driver()} onClick={vi.fn()} isSelected={true} />);
         expect(screen.getByRole('button').style.backgroundColor).not.toBe('');
     });
 
     it('calls onClick when clicked', async () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(<DriverListItem driver={driver()} onClick={onClick} isSelected={false} />);
 
         screen.getByRole('button').click();

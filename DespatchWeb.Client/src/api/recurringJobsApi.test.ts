@@ -2,6 +2,7 @@
  * Recurring jobs API Service Tests
  */
 
+import type {Mock, Mocked} from 'vitest';
 import {recurringJobsApi} from './recurringJobsApi';
 import {apiClient, downloadBlob} from './client';
 import {
@@ -12,17 +13,17 @@ import {
 import dayjs from 'dayjs';
 
 // Mock the apiClient (including postForBlob and downloadBlob)
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
-        postForBlob: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
+        postForBlob: vi.fn(),
     },
-    downloadBlob: jest.fn(),
+    downloadBlob: vi.fn(),
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
-const mockDownloadBlob = downloadBlob as jest.Mock;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
+const mockDownloadBlob = downloadBlob as Mock;
 
 describe('recurringJobsApi', () => {
     describe('getPreBookJobs', () => {

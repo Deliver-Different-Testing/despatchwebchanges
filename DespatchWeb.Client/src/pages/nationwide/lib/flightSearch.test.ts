@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * Extracted from `NationwideControl.loadFlights` (1135) and
  * `loadNextDayFlights`. The guard order and the departure-date priority chain

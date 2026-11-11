@@ -19,23 +19,23 @@ import {COURIER_FLAG_HEIGHT, COURIER_FLAG_LARGE_HEIGHT} from '../here-map/courie
 const createMockMarker = (data?: any) => {
     let payload = data;
     return {
-        getData: jest.fn(() => payload),
-        setData: jest.fn((next: any) => {
+        getData: vi.fn(() => payload),
+        setData: vi.fn((next: any) => {
             payload = next;
         }),
-        setIcon: jest.fn(),
-        setGeometry: jest.fn(),
-        getGeometry: jest.fn(() => ({ lat: 40.7128, lng: -74.006 })),
+        setIcon: vi.fn(),
+        setGeometry: vi.fn(),
+        getGeometry: vi.fn(() => ({ lat: 40.7128, lng: -74.006 })),
     };
 };
 
 const createMockMarkerGroup = () => ({
-    addObjects: jest.fn(),
-    removeAll: jest.fn(),
-    removeObjects: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    getBoundingBox: jest.fn(() => ({
+    addObjects: vi.fn(),
+    removeAll: vi.fn(),
+    removeObjects: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getBoundingBox: vi.fn(() => ({
         getTop: () => 41,
         getBottom: () => 40,
         getLeft: () => -75,
@@ -44,14 +44,14 @@ const createMockMarkerGroup = () => ({
 });
 
 const createMockMap = () => ({
-    addObject: jest.fn(),
-    removeObject: jest.fn(),
+    addObject: vi.fn(),
+    removeObject: vi.fn(),
     // A real node, so the tooltip the manager appends can be read back and asserted on.
-    getElement: jest.fn(() => mapElement),
-    geoToScreen: jest.fn(() => ({ x: 100, y: 100 })),
-    setCenter: jest.fn(),
-    setZoom: jest.fn(),
-    getZoom: jest.fn(() => 14),
+    getElement: vi.fn(() => mapElement),
+    geoToScreen: vi.fn(() => ({ x: 100, y: 100 })),
+    setCenter: vi.fn(),
+    setZoom: vi.fn(),
+    getZoom: vi.fn(() => 14),
 });
 
 const createMockUI = () => ({});
@@ -62,16 +62,16 @@ let mapElement: HTMLDivElement = document.createElement('div');
 const mockMarkerInstances: any[] = [];
 const mockH = {
     map: {
-        Group: jest.fn(() => createMockMarkerGroup()),
-        Marker: jest.fn((_point, options) => {
+        Group: vi.fn(function () { return createMockMarkerGroup(); }),
+        Marker: vi.fn(function (_point, options) {
             const marker = createMockMarker(options?.data);
             mockMarkerInstances.push(marker);
             return marker;
         }),
-        Icon: jest.fn((svg, options) => ({ svg, options })),
+        Icon: vi.fn(function (svg, options) { return { svg, options }; }),
     },
     geo: {
-        Point: jest.fn((lat, lng) => ({ lat, lng })),
+        Point: vi.fn(function (lat, lng) { return { lat, lng }; }),
     },
 };
 
@@ -757,7 +757,7 @@ describe('DispatchCourierMarkerManager', () => {
 
             // Simulate tap event
             const mockMarker = {
-                getData: jest.fn(() => couriers[0]),
+                getData: vi.fn(() => couriers[0]),
             };
             tapHandler({ target: mockMarker });
 
@@ -778,7 +778,7 @@ describe('DispatchCourierMarkerManager', () => {
             )[1];
 
             const mockMarker = {
-                getData: jest.fn(() => couriers[0]),
+                getData: vi.fn(() => couriers[0]),
             };
             tapHandler({ target: mockMarker });
 
@@ -798,7 +798,7 @@ describe('DispatchCourierMarkerManager', () => {
             )[1];
 
             const mockMarker = {
-                getData: jest.fn(() => couriers[0]),
+                getData: vi.fn(() => couriers[0]),
             };
             tapHandler({ target: mockMarker });
 
@@ -816,7 +816,7 @@ describe('DispatchCourierMarkerManager', () => {
 
             // Courier with no coordinates
             const mockMarker = {
-                getData: jest.fn(() => ({ ...couriers[0], latitude: null, longitude: null })),
+                getData: vi.fn(() => ({ ...couriers[0], latitude: null, longitude: null })),
             };
 
             // Should not throw
@@ -833,7 +833,7 @@ describe('DispatchCourierMarkerManager', () => {
             )[1];
 
             const mockMarker = {
-                getData: jest.fn(() => couriers[0]),
+                getData: vi.fn(() => couriers[0]),
             };
 
             // Should not throw, and no tooltip shown

@@ -15,14 +15,14 @@ function createDefaultProps(overrides?: Record<string, any>) {
         dense: false,
         isEditMode: false,
         isFieldVisible: () => true,
-        onToggleField: jest.fn(),
-        onToggleProperty: jest.fn(),
-        onVoidClick: jest.fn(),
-        onActiveClick: jest.fn(),
-        onTailLiftPickupClick: jest.fn(),
-        onTailLiftDropOffClick: jest.fn(),
-        onDeliverToPrivateResChanged: jest.fn(),
-        onDoneClick: jest.fn(),
+        onToggleField: vi.fn(),
+        onToggleProperty: vi.fn(),
+        onVoidClick: vi.fn(),
+        onActiveClick: vi.fn(),
+        onTailLiftPickupClick: vi.fn(),
+        onTailLiftDropOffClick: vi.fn(),
+        onDeliverToPrivateResChanged: vi.fn(),
+        onDoneClick: vi.fn(),
         ...overrides,
     };
 }
@@ -68,7 +68,7 @@ describe('ToggleProperties', () => {
     });
 
     it('calls onToggleProperty when a checkbox is clicked', () => {
-        const onToggleProperty = jest.fn();
+        const onToggleProperty = vi.fn();
         renderWithTheme(
             <ToggleProperties {...createDefaultProps({onToggleProperty})} />
         );
@@ -78,7 +78,7 @@ describe('ToggleProperties', () => {
     });
 
     it('calls onVoidClick when Void checkbox is clicked', () => {
-        const onVoidClick = jest.fn();
+        const onVoidClick = vi.fn();
         renderWithTheme(
             <ToggleProperties {...createDefaultProps({onVoidClick})} />
         );
@@ -152,8 +152,8 @@ describe('ToggleProperties', () => {
 
     describe('dense mode', () => {
         it('renders all checkboxes and click handlers work in dense mode', () => {
-            const onToggleProperty = jest.fn();
-            const onVoidClick = jest.fn();
+            const onToggleProperty = vi.fn();
+            const onVoidClick = vi.fn();
             renderWithTheme(
                 <ToggleProperties {...createDefaultProps({dense: true, onToggleProperty, onVoidClick})} />
             );

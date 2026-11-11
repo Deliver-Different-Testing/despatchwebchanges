@@ -38,7 +38,7 @@ describe('SectionHeader', () => {
     });
 
     it('renders the endAction slot and forwards clicks', () => {
-        const onClick = jest.fn();
+        const onClick = vi.fn();
         renderWithMantine(
             <SectionHeader
                 lucide={Repeat}

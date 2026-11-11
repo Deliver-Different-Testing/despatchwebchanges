@@ -22,7 +22,7 @@ describe('SettingRadioGroup', () => {
 
 describe('SettingRow', () => {
     const renderRow = (disabled = false) => {
-        const onToggle = jest.fn();
+        const onToggle = vi.fn();
         const {container} = renderWithMantine(
             <SettingRow title="Hide button" description="Explains it" checked={false} disabled={disabled} onToggle={onToggle}/>,
         );

@@ -2,6 +2,7 @@
  * PartnerApprovalsBadge Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import {PartnerApprovalsBadge} from './PartnerApprovalsBadge';
@@ -10,16 +11,16 @@ import { setupUser } from '../../test/utils/setupUser';
 import {jobChangeRequestApi} from '../../api/jobChangeRequestApi';
 import type {JobChangeRequestInboxItem} from '../../types/jobChangeRequest';
 
-jest.mock('../../api/jobChangeRequestApi', () => ({
+vi.mock('../../api/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {
-        pendingForApproval: jest.fn(),
-        hasActivePartners: jest.fn(),
-        approve: jest.fn(),
-        reject: jest.fn(),
+        pendingForApproval: vi.fn(),
+        hasActivePartners: vi.fn(),
+        approve: vi.fn(),
+        reject: vi.fn(),
     },
 }));
 
-const mockApi = jobChangeRequestApi as jest.Mocked<typeof jobChangeRequestApi>;
+const mockApi = jobChangeRequestApi as Mocked<typeof jobChangeRequestApi>;
 
 function makeItem(hoursOld: number, id: number): JobChangeRequestInboxItem {
     return {
@@ -45,7 +46,7 @@ function makeItem(hoursOld: number, id: number): JobChangeRequestInboxItem {
 
 describe('PartnerApprovalsBadge', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         // Default: tenant has active partners. Individual tests override.
         mockApi.hasActivePartners.mockResolvedValue(true);
     });

@@ -2,6 +2,7 @@
  * usePodPhotos Hook Tests
  */
 
+import type {MockedFunction} from 'vitest';
 import {renderHook, waitFor, act} from '@testing-library/react';
 import {QueryClient} from '@tanstack/react-query';
 import {usePodPhotos} from './usePodPhotos';
@@ -10,20 +11,20 @@ import {JobStatus} from '../../../../types/enums/job-status.enum';
 import dayjs from 'dayjs';
 
 // Mock API services
-jest.mock('../../../../api/jobDetailApi', () => ({
-    getJobDeliveryPhotos: jest.fn(),
-    getJobPickupPhotos: jest.fn(),
+vi.mock('../../../../api/jobDetailApi', () => ({
+    getJobDeliveryPhotos: vi.fn(),
+    getJobPickupPhotos: vi.fn(),
 }));
 
-jest.mock('../../../../utils/dateUtils', () => ({
-    formatLongDateTime: jest.fn(() => '2024-06-15 10:30 AM'),
-    isUsCustomer: jest.fn(() => false),
+vi.mock('../../../../utils/dateUtils', () => ({
+    formatLongDateTime: vi.fn(() => '2024-06-15 10:30 AM'),
+    isUsCustomer: vi.fn(() => false),
 }));
 
 import {getJobDeliveryPhotos, getJobPickupPhotos} from '../../../../api/jobDetailApi';
 
-const mockGetDeliveryPhotos = getJobDeliveryPhotos as jest.MockedFunction<typeof getJobDeliveryPhotos>;
-const mockGetPickupPhotos = getJobPickupPhotos as jest.MockedFunction<typeof getJobPickupPhotos>;
+const mockGetDeliveryPhotos = getJobDeliveryPhotos as MockedFunction<typeof getJobDeliveryPhotos>;
+const mockGetPickupPhotos = getJobPickupPhotos as MockedFunction<typeof getJobPickupPhotos>;
 
 // ── Test Helpers ──────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ describe('usePodPhotos', () => {
 
     beforeEach(() => {
         queryClient = createTestQueryClient();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     function renderUsePodPhotos(options: {job: any; isRecurringJob: boolean}) {

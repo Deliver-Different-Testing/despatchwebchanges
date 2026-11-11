@@ -2,6 +2,7 @@
  * useJobUpdate Hook Tests
  */
 
+import type {Mock, MockInstance, MockedFunction} from 'vitest';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {QueryClient} from '@tanstack/react-query';
 import {useJobUpdate, type UseJobUpdateOptions} from './useJobUpdate';
@@ -9,20 +10,20 @@ import {JobProperty} from '../../../../types/enums/job-property.enum';
 import {createTestQueryClient, createWrapper, suppressConsoleError} from '../../../../test/utils';
 
 // Mock API services
-jest.mock('../../../../api/jobDetailApi', () => ({
-    updateJobDetail: jest.fn(),
-    updateBulkJobDetail: jest.fn(),
-    updatePickupAddress: jest.fn(),
-    updateDeliveryAddress: jest.fn(),
-    updateBulkJobAddress: jest.fn(),
-    updatePodDetails: jest.fn(),
-    updateJobReadStatus: jest.fn(),
-    restoreJobs: jest.fn(),
-    allocateJob: jest.fn(),
-    getCourierById: jest.fn(),
-    previewJobRate: jest.fn(),
-    previewJobRates: jest.fn(),
-    applyJobRate: jest.fn(),
+vi.mock('../../../../api/jobDetailApi', () => ({
+    updateJobDetail: vi.fn(),
+    updateBulkJobDetail: vi.fn(),
+    updatePickupAddress: vi.fn(),
+    updateDeliveryAddress: vi.fn(),
+    updateBulkJobAddress: vi.fn(),
+    updatePodDetails: vi.fn(),
+    updateJobReadStatus: vi.fn(),
+    restoreJobs: vi.fn(),
+    allocateJob: vi.fn(),
+    getCourierById: vi.fn(),
+    previewJobRate: vi.fn(),
+    previewJobRates: vi.fn(),
+    applyJobRate: vi.fn(),
 }));
 
 import {
@@ -40,17 +41,17 @@ import {
     applyJobRate,
 } from '../../../../api/jobDetailApi';
 
-const mockUpdateJobDetail = updateJobDetail as jest.MockedFunction<typeof updateJobDetail>;
-const mockUpdateBulkJobDetail = updateBulkJobDetail as jest.MockedFunction<typeof updateBulkJobDetail>;
-const mockUpdatePickupAddress = updatePickupAddress as jest.MockedFunction<typeof updatePickupAddress>;
-const mockUpdateDeliveryAddress = updateDeliveryAddress as jest.MockedFunction<typeof updateDeliveryAddress>;
-const mockUpdatePodDetails = updatePodDetails as jest.MockedFunction<typeof updatePodDetails>;
-const mockUpdateJobReadStatus = updateJobReadStatus as jest.MockedFunction<typeof updateJobReadStatus>;
-const mockRestoreJobs = restoreJobs as jest.MockedFunction<typeof restoreJobs>;
-const mockAllocateJob = allocateJob as jest.MockedFunction<typeof allocateJob>;
-const mockGetCourierById = getCourierById as jest.MockedFunction<typeof getCourierById>;
-const mockPreviewJobRates = previewJobRates as jest.MockedFunction<typeof previewJobRates>;
-const mockApplyJobRate = applyJobRate as jest.MockedFunction<typeof applyJobRate>;
+const mockUpdateJobDetail = updateJobDetail as MockedFunction<typeof updateJobDetail>;
+const mockUpdateBulkJobDetail = updateBulkJobDetail as MockedFunction<typeof updateBulkJobDetail>;
+const mockUpdatePickupAddress = updatePickupAddress as MockedFunction<typeof updatePickupAddress>;
+const mockUpdateDeliveryAddress = updateDeliveryAddress as MockedFunction<typeof updateDeliveryAddress>;
+const mockUpdatePodDetails = updatePodDetails as MockedFunction<typeof updatePodDetails>;
+const mockUpdateJobReadStatus = updateJobReadStatus as MockedFunction<typeof updateJobReadStatus>;
+const mockRestoreJobs = restoreJobs as MockedFunction<typeof restoreJobs>;
+const mockAllocateJob = allocateJob as MockedFunction<typeof allocateJob>;
+const mockGetCourierById = getCourierById as MockedFunction<typeof getCourierById>;
+const mockPreviewJobRates = previewJobRates as MockedFunction<typeof previewJobRates>;
+const mockApplyJobRate = applyJobRate as MockedFunction<typeof applyJobRate>;
 
 function ratePreview(jobId: number, currentAmount: number, rate: number, overrides?: Record<string, unknown>) {
     return {
@@ -84,13 +85,13 @@ function createMockJob(overrides?: Record<string, unknown>) {
 
 describe('useJobUpdate', () => {
     let queryClient: QueryClient;
-    let mockShowToast: jest.Mock;
-    let errorSpy: jest.SpyInstance;
+    let mockShowToast: Mock;
+    let errorSpy: MockInstance;
 
     beforeEach(() => {
         queryClient = createTestQueryClient();
-        mockShowToast = jest.fn();
-        jest.clearAllMocks();
+        mockShowToast = vi.fn();
+        vi.clearAllMocks();
         errorSpy = suppressConsoleError();
     });
 
@@ -199,7 +200,7 @@ describe('useJobUpdate', () => {
                     statusText: 'Bad Request',
                     message: 'PartnerAgreedRate cannot be edited on a partner job in this version',
                 });
-                const onPartnerJobBlocked = jest.fn();
+                const onPartnerJobBlocked = vi.fn();
                 const {result} = renderUseJobUpdate({onPartnerJobBlocked});
                 const job = createMockJob({isPartnerJob: true});
 
@@ -218,7 +219,7 @@ describe('useJobUpdate', () => {
             });
 
             it('maps SpeedID → Speed and Items → Quantity', async () => {
-                const onPartnerJobBlocked = jest.fn();
+                const onPartnerJobBlocked = vi.fn();
                 const job = createMockJob({isPartnerJob: true});
 
                 mockUpdateJobDetail.mockRejectedValueOnce({status: 400, message: 'gated'});
@@ -244,7 +245,7 @@ describe('useJobUpdate', () => {
 
             it('does NOT fire the callback for non-mappable fields — falls back to toast', async () => {
                 mockUpdateJobDetail.mockRejectedValueOnce({status: 400, message: 'managed by partner'});
-                const onPartnerJobBlocked = jest.fn();
+                const onPartnerJobBlocked = vi.fn();
                 const {result} = renderUseJobUpdate({onPartnerJobBlocked});
                 const job = createMockJob({isPartnerJob: true});
 
@@ -260,7 +261,7 @@ describe('useJobUpdate', () => {
 
             it('does NOT fire the callback for non-partner jobs — falls back to toast', async () => {
                 mockUpdateJobDetail.mockRejectedValueOnce({status: 400, message: 'bad value'});
-                const onPartnerJobBlocked = jest.fn();
+                const onPartnerJobBlocked = vi.fn();
                 const {result} = renderUseJobUpdate({onPartnerJobBlocked});
                 const job = createMockJob({isPartnerJob: false});
 
@@ -276,7 +277,7 @@ describe('useJobUpdate', () => {
 
             it('does NOT fire the callback for non-400 errors on partner jobs — falls back to toast', async () => {
                 mockUpdateJobDetail.mockRejectedValueOnce({status: 500, message: 'server boom'});
-                const onPartnerJobBlocked = jest.fn();
+                const onPartnerJobBlocked = vi.fn();
                 const {result} = renderUseJobUpdate({onPartnerJobBlocked});
                 const job = createMockJob({isPartnerJob: true});
 
@@ -294,7 +295,7 @@ describe('useJobUpdate', () => {
 
     describe('updateAddress', () => {
         it.each([[true], [false]])('routes a bulk job to the bulk endpoint (isDelivery=%s)', async (isDelivery) => {
-            (updateBulkJobAddress as jest.Mock).mockResolvedValueOnce(undefined);
+            (updateBulkJobAddress as Mock).mockResolvedValueOnce(undefined);
             const {result} = renderUseJobUpdate();
             const job = createMockJob({isBulkJob: true, jobNo: 'B200'});
             const address = {line1: '1 Bulk Rd'} as any;
@@ -341,7 +342,7 @@ describe('useJobUpdate', () => {
 
         it('shows "awaiting partner approval" toast when an address edit files a Pending change request', async () => {
             mockUpdateDeliveryAddress.mockResolvedValueOnce({pending: true, requestId: 77});
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
             const job = createMockJob({isPartnerJob: true});
             const address = {line1: '789 Pine Rd'} as any;
@@ -392,7 +393,7 @@ describe('useJobUpdate', () => {
     describe('toggleReadStatus', () => {
         it('calls updateJobReadStatus and invalidates queries on success', async () => {
             mockUpdateJobReadStatus.mockResolvedValueOnce(undefined);
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -516,7 +517,7 @@ describe('useJobUpdate', () => {
         it('invalidates job queries on successful dispatch', async () => {
             mockAllocateJob.mockResolvedValueOnce(undefined);
             mockGetCourierById.mockResolvedValueOnce({id: 'C1', name: 'Courier'});
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
             const job = createMockJob();
 
@@ -531,7 +532,7 @@ describe('useJobUpdate', () => {
     describe('updatePod', () => {
         it('calls updatePodDetails and invalidates on success', async () => {
             mockUpdatePodDetails.mockResolvedValueOnce(undefined);
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
             const podData = {jobId: 1, name: 'Signer'} as any;
 
@@ -579,7 +580,7 @@ describe('useJobUpdate', () => {
 
         it('invalidates job list caches after a successful field update', async () => {
             mockUpdateJobDetail.mockResolvedValueOnce({});
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -593,7 +594,7 @@ describe('useJobUpdate', () => {
 
         it('invalidates job list caches after a successful address update', async () => {
             mockUpdateDeliveryAddress.mockResolvedValueOnce({});
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -608,7 +609,7 @@ describe('useJobUpdate', () => {
         it('invalidates job list caches after a successful dispatch', async () => {
             mockAllocateJob.mockResolvedValueOnce(undefined);
             mockGetCourierById.mockResolvedValueOnce({id: 'C1', name: 'Courier'});
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -622,7 +623,7 @@ describe('useJobUpdate', () => {
 
         it('invalidates job list caches after a successful POD update', async () => {
             mockUpdatePodDetails.mockResolvedValueOnce(undefined);
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -636,7 +637,7 @@ describe('useJobUpdate', () => {
 
         it('does NOT invalidate job list caches for read status toggles', async () => {
             mockUpdateJobReadStatus.mockResolvedValueOnce(undefined);
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -651,7 +652,7 @@ describe('useJobUpdate', () => {
         it('invalidates job detail cache after a successful dispatch', async () => {
             mockAllocateJob.mockResolvedValueOnce(undefined);
             mockGetCourierById.mockResolvedValueOnce({id: 'C1', name: 'Courier'});
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -663,7 +664,7 @@ describe('useJobUpdate', () => {
 
         it('invalidates job detail cache after a successful POD update', async () => {
             mockUpdatePodDetails.mockResolvedValueOnce(undefined);
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -675,7 +676,7 @@ describe('useJobUpdate', () => {
 
         it('does NOT invalidate job list caches when field update fails', async () => {
             mockUpdateJobDetail.mockRejectedValueOnce(new Error('fail'));
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {
@@ -694,7 +695,7 @@ describe('useJobUpdate', () => {
         const listPrefixes = [['dispatch'], ['jobSearch'], ['nationwide']];
 
         it('is exposed and invalidates all job list caches when called directly', async () => {
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
             await act(async () => {

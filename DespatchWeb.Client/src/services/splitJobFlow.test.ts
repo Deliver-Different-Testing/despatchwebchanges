@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mock} from 'vitest';
 /**
  * splitJobFlow Tests
  *
@@ -13,15 +14,15 @@ import dayjs from 'dayjs';
 
 // ── Mocks ──────────────────────────────────────────────────────────────
 
-jest.mock('../api/splitJobApi');
-jest.mock('../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
-    openEditAddressDialog: jest.fn(),
+vi.mock('../api/splitJobApi');
+vi.mock('../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
+    openEditAddressDialog: vi.fn(),
 }));
-jest.mock('../components/dialogs/split-job-courier-dialog/openSplitJobCourierDialog', () => ({
-    openSplitJobCourierDialog: jest.fn(),
+vi.mock('../components/dialogs/split-job-courier-dialog/openSplitJobCourierDialog', () => ({
+    openSplitJobCourierDialog: vi.fn(),
 }));
-jest.mock('../components/dialogs/split-pricing-dialog/openSplitPricingDialog', () => ({
-    openSplitPricingDialog: jest.fn(),
+vi.mock('../components/dialogs/split-pricing-dialog/openSplitPricingDialog', () => ({
+    openSplitPricingDialog: vi.fn(),
 }));
 
 import {previewSplitPricing, splitJob} from '../api/splitJobApi';
@@ -29,11 +30,11 @@ import {openEditAddressDialog} from '../components/dialogs/edit-address-dialog/e
 import {openSplitJobCourierDialog} from '../components/dialogs/split-job-courier-dialog/openSplitJobCourierDialog';
 import {openSplitPricingDialog} from '../components/dialogs/split-pricing-dialog/openSplitPricingDialog';
 
-const mockedSplitJob = splitJob as jest.Mock;
-const mockedPreviewSplitPricing = previewSplitPricing as jest.Mock;
-const mockedOpenEditAddressDialog = openEditAddressDialog as jest.Mock;
-const mockedOpenSplitJobCourierDialog = openSplitJobCourierDialog as jest.Mock;
-const mockedOpenSplitPricingDialog = openSplitPricingDialog as jest.Mock;
+const mockedSplitJob = splitJob as Mock;
+const mockedPreviewSplitPricing = previewSplitPricing as Mock;
+const mockedOpenEditAddressDialog = openEditAddressDialog as Mock;
+const mockedOpenSplitJobCourierDialog = openSplitJobCourierDialog as Mock;
+const mockedOpenSplitPricingDialog = openSplitPricingDialog as Mock;
 
 const CONFIRMED_ALLOCATION = [
     {sequence: 1, sharePercent: 70},
@@ -83,9 +84,9 @@ function createMockJob(overrides?: Partial<DispatchJob>): DispatchJob {
 function createOptions(overrides?: Partial<SplitJobFlowOptions>): SplitJobFlowOptions {
     return {
         job: createMockJob(),
-        showToast: jest.fn() as ShowToastFn,
-        onComplete: jest.fn(),
-        setLoading: jest.fn(),
+        showToast: vi.fn() as ShowToastFn,
+        onComplete: vi.fn(),
+        setLoading: vi.fn(),
         ...overrides,
     };
 }

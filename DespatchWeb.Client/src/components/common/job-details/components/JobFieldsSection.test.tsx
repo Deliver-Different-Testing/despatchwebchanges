@@ -20,25 +20,25 @@ function createDefaultProps(overrides?: Record<string, any>) {
         isUsCustomer: false,
         isEditMode: false,
         isFieldVisible: () => true,
-        onToggleField: jest.fn(),
-        onSpeedClick: jest.fn(),
-        onJobTypeClick: jest.fn(),
-        onSizeClick: jest.fn(),
-        onEditRefA: jest.fn(),
-        onEditRefB: jest.fn(),
-        onEditOurRef: jest.fn(),
-        onEditConNote: jest.fn(),
-        onDgClassClick: jest.fn(),
-        onLeaveClick: jest.fn(),
-        onTrackingMethodClick: jest.fn(),
-        onEditTrackingMobile: jest.fn(),
-        onEditTrackingEmail: jest.fn(),
-        onCourierClick: jest.fn(),
-        onContactClick: jest.fn(),
-        onClientClick: jest.fn(),
-        onEditCustomJobName: jest.fn(),
-        onEditDimensions: jest.fn(),
-        onInActiveByClick: jest.fn(),
+        onToggleField: vi.fn(),
+        onSpeedClick: vi.fn(),
+        onJobTypeClick: vi.fn(),
+        onSizeClick: vi.fn(),
+        onEditRefA: vi.fn(),
+        onEditRefB: vi.fn(),
+        onEditOurRef: vi.fn(),
+        onEditConNote: vi.fn(),
+        onDgClassClick: vi.fn(),
+        onLeaveClick: vi.fn(),
+        onTrackingMethodClick: vi.fn(),
+        onEditTrackingMobile: vi.fn(),
+        onEditTrackingEmail: vi.fn(),
+        onCourierClick: vi.fn(),
+        onContactClick: vi.fn(),
+        onClientClick: vi.fn(),
+        onEditCustomJobName: vi.fn(),
+        onEditDimensions: vi.fn(),
+        onInActiveByClick: vi.fn(),
         ...overrides,
     };
 }
@@ -172,9 +172,9 @@ describe('JobFieldsSection', () => {
         });
 
         it('calls field click handlers', () => {
-            const onSpeedClick = jest.fn();
-            const onEditRefA = jest.fn();
-            const onSizeClick = jest.fn();
+            const onSpeedClick = vi.fn();
+            const onEditRefA = vi.fn();
+            const onSizeClick = vi.fn();
             renderWithTheme(<JobFieldsSection {...createDefaultProps({onSpeedClick, onEditRefA, onSizeClick})} />);
             fireEvent.click(screen.getByText('Standard'));
             expect(onSpeedClick).toHaveBeenCalledTimes(1);
@@ -196,7 +196,7 @@ describe('JobFieldsSection', () => {
         });
 
         it('calls onCourierClick when courier field is clicked', () => {
-            const onCourierClick = jest.fn();
+            const onCourierClick = vi.fn();
             renderWithTheme(<JobFieldsSection {...createDefaultProps({onCourierClick})} />);
             fireEvent.click(screen.getByText('Test Courier'));
             expect(onCourierClick).toHaveBeenCalledTimes(1);
@@ -220,7 +220,7 @@ describe('JobFieldsSection', () => {
         });
 
         it('calls onTrackingMethodClick when method field is clicked', () => {
-            const onTrackingMethodClick = jest.fn();
+            const onTrackingMethodClick = vi.fn();
             const job = createMockJob({trackingMethod: 2});
             renderWithTheme(<JobFieldsSection {...createDefaultProps({onTrackingMethodClick, job})} />);
             const mobileElements = screen.getAllByText('Mobile');
@@ -236,7 +236,7 @@ describe('JobFieldsSection', () => {
         });
 
         it('calls onClientClick when client field is clicked', () => {
-            const onClientClick = jest.fn();
+            const onClientClick = vi.fn();
             renderWithTheme(<JobFieldsSection {...createDefaultProps({onClientClick})} />);
             fireEvent.click(screen.getByText('Test Client Ltd'));
             expect(onClientClick).toHaveBeenCalledTimes(1);
@@ -302,7 +302,7 @@ describe('JobFieldsSection', () => {
         });
 
         it('calls onToggleField when section visibility toggle is clicked in edit mode', () => {
-            const onToggleField = jest.fn();
+            const onToggleField = vi.fn();
             renderWithTheme(
                 <JobFieldsSection {...createDefaultProps({isEditMode: true, onToggleField})} />
             );
@@ -317,8 +317,8 @@ describe('JobFieldsSection', () => {
 
     describe('Locked state', () => {
         it('keeps the dimensions field clickable when locked (opens read-only) but not select fields', () => {
-            const onEditDimensions = jest.fn();
-            const onSpeedClick = jest.fn();
+            const onEditDimensions = vi.fn();
+            const onSpeedClick = vi.fn();
             const job = createMockJob({locked: true});
             renderWithTheme(
                 <JobFieldsSection {...createDefaultProps({job, onEditDimensions, onSpeedClick})} />
@@ -336,8 +336,8 @@ describe('JobFieldsSection', () => {
 
     describe('dense mode', () => {
         it('renders all sections, field values, and click handlers work in dense mode', () => {
-            const onSpeedClick = jest.fn();
-            const onCourierClick = jest.fn();
+            const onSpeedClick = vi.fn();
+            const onCourierClick = vi.fn();
             renderWithTheme(
                 <JobFieldsSection {...createDefaultProps({dense: true, onSpeedClick, onCourierClick})} />
             );

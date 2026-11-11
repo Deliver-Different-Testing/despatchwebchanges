@@ -2,19 +2,19 @@ import {act, renderHook} from '@testing-library/react';
 import {useMessagingDialog} from './useMessagingDialog';
 import {toastService} from '../services/toastService';
 
-jest.mock('../services/toastService', () => ({
-    toastService: {showSuccessToast: jest.fn(), showErrorToast: jest.fn(), showInfoToast: jest.fn()},
+vi.mock('../services/toastService', () => ({
+    toastService: {showSuccessToast: vi.fn(), showErrorToast: vi.fn(), showInfoToast: vi.fn()},
 }));
 
 describe('useMessagingDialog', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('refreshes the unread count after the dialog closes', async () => {
         const order: string[] = [];
-        const open = jest.fn().mockImplementation(async () => {
+        const open = vi.fn().mockImplementation(async () => {
             order.push('open');
         });
-        const refresh = jest.fn().mockImplementation(() => {
+        const refresh = vi.fn().mockImplementation(() => {
             order.push('refresh');
         });
         const {result} = renderHook(() => useMessagingDialog({
@@ -27,7 +27,7 @@ describe('useMessagingDialog', () => {
     });
 
     it('toasts and skips the refresh when the bundle is missing', async () => {
-        const refresh = jest.fn();
+        const refresh = vi.fn();
         const {result} = renderHook(() => useMessagingDialog({refreshUnreadCount: refresh, openDialog: () => Promise.reject(new Error('bundle missing'))}));
 
         await act(() => result.current.openMessaging());

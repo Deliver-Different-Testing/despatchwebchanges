@@ -1,10 +1,11 @@
+import type {MockInstance} from 'vitest';
 import {openJobDetail, openJobInSearch} from './navigationService';
 
 describe('navigationService', () => {
-    let windowOpenSpy: jest.SpyInstance;
+    let windowOpenSpy: MockInstance;
 
     beforeEach(() => {
-        windowOpenSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+        windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     });
 
     afterEach(() => {

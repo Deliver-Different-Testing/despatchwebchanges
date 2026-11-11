@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mock} from 'vitest';
 /**
  * jobListApi Tests
  *
@@ -26,15 +27,15 @@ import {
 } from './jobListApi';
 import {apiClient} from './client';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
     },
 }));
 
-const mockedGet = apiClient.get as jest.Mock;
-const mockedPost = apiClient.post as jest.Mock;
+const mockedGet = apiClient.get as Mock;
+const mockedPost = apiClient.post as Mock;
 
 describe('jobListApi', () => {
     beforeEach(() => {

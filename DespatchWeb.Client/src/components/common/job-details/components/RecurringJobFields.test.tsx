@@ -21,15 +21,15 @@ function createDefaultProps(overrides?: Record<string, any>) {
         job: createMockJob({preBook: true, frequency: Frequency.Weekly}),
         daysOfWeekArray: [DaysOfWeek.Monday, DaysOfWeek.Wednesday, DaysOfWeek.Friday],
         dense: false,
-        onDaysOfWeekChange: jest.fn(),
-        onFrequencyChange: jest.fn(),
-        onHolidayOptionChange: jest.fn(),
-        onEditFirstDue: jest.fn(),
-        onEditStopDate: jest.fn(),
-        onEditRestartDate: jest.fn(),
-        onEditSavedFlight: jest.fn(),
-        onAddFlight: jest.fn(),
-        onInitialDaysChange: jest.fn(),
+        onDaysOfWeekChange: vi.fn(),
+        onFrequencyChange: vi.fn(),
+        onHolidayOptionChange: vi.fn(),
+        onEditFirstDue: vi.fn(),
+        onEditStopDate: vi.fn(),
+        onEditRestartDate: vi.fn(),
+        onEditSavedFlight: vi.fn(),
+        onAddFlight: vi.fn(),
+        onInitialDaysChange: vi.fn(),
         ...overrides,
     };
 }
@@ -69,7 +69,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('calls onDaysOfWeekChange when a day chip is clicked to add', () => {
-        const onDaysOfWeekChange = jest.fn();
+        const onDaysOfWeekChange = vi.fn();
         renderWithTheme(
             <RecurringJobFields {...createDefaultProps({onDaysOfWeekChange})} />
         );
@@ -80,7 +80,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('calls onDaysOfWeekChange when a day chip is clicked to remove', () => {
-        const onDaysOfWeekChange = jest.fn();
+        const onDaysOfWeekChange = vi.fn();
         renderWithTheme(
             <RecurringJobFields {...createDefaultProps({onDaysOfWeekChange})} />
         );
@@ -95,7 +95,7 @@ describe('RecurringJobFields', () => {
 
     it('renders schedule fields and the full holiday-option set, firing onHolidayOptionChange with the enum value', async () => {
         const user = setupUser();
-        const onHolidayOptionChange = jest.fn();
+        const onHolidayOptionChange = vi.fn();
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onHolidayOptionChange})} />);
         expect(screen.getByText('Recurring schedule')).toBeInTheDocument();
         expect(screen.getByText('Schedule dates')).toBeInTheDocument();
@@ -125,7 +125,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('calls onEditFirstDue when First due is clicked', () => {
-        const onEditFirstDue = jest.fn();
+        const onEditFirstDue = vi.fn();
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onEditFirstDue})} />);
 
         const firstDueRow = screen.getByText('First due').closest('button');
@@ -134,7 +134,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('calls onEditStopDate when Stop date is clicked', () => {
-        const onEditStopDate = jest.fn();
+        const onEditStopDate = vi.fn();
         const job = createMockJob({preBook: true, _stopDateStr: '2026-04-01'});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({onEditStopDate, job})} />);
 
@@ -178,7 +178,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('renders an Add-flight card (not the saved-flight editor) for a flight job with no route yet and fires onAddFlight', () => {
-        const onAddFlight = jest.fn();
+        const onAddFlight = vi.fn();
         const job = createMockJob({preBook: true, isFlightJob: true, fromAirportId: undefined, toAirportId: undefined});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onAddFlight})} />);
 
@@ -198,7 +198,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('shows "Not set" and fires onEditSavedFlight when the Flight card is clicked', () => {
-        const onEditSavedFlight = jest.fn();
+        const onEditSavedFlight = vi.fn();
         const job = createMockJob({preBook: true, isFlightJob: true, fromAirportId: 1, toAirportId: 2, savedFlightNumber: undefined});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onEditSavedFlight})} />);
 
@@ -235,7 +235,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('fires onInitialDaysChange on blur with the new value when it differs', () => {
-        const onInitialDaysChange = jest.fn();
+        const onInitialDaysChange = vi.fn();
         const job = createMockJob({preBook: true, recurringInitialDays: 0});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
         const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
@@ -245,7 +245,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('does not fire onInitialDaysChange when the value is unchanged on blur', () => {
-        const onInitialDaysChange = jest.fn();
+        const onInitialDaysChange = vi.fn();
         const job = createMockJob({preBook: true, recurringInitialDays: 2});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
         const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
@@ -255,7 +255,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('clamps values above the max (30) before firing onInitialDaysChange', () => {
-        const onInitialDaysChange = jest.fn();
+        const onInitialDaysChange = vi.fn();
         const job = createMockJob({preBook: true, recurringInitialDays: 0});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
         const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
@@ -266,7 +266,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('clamps negative values to 0 before firing onInitialDaysChange', () => {
-        const onInitialDaysChange = jest.fn();
+        const onInitialDaysChange = vi.fn();
         const job = createMockJob({preBook: true, recurringInitialDays: 2});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
         const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
@@ -277,7 +277,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('rolls the draft back to the last-saved value when the input is garbage', () => {
-        const onInitialDaysChange = jest.fn();
+        const onInitialDaysChange = vi.fn();
         const job = createMockJob({preBook: true, recurringInitialDays: 5});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
         const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
@@ -288,7 +288,7 @@ describe('RecurringJobFields', () => {
     });
 
     it('commits the value when Enter is pressed', () => {
-        const onInitialDaysChange = jest.fn();
+        const onInitialDaysChange = vi.fn();
         const job = createMockJob({preBook: true, recurringInitialDays: 0});
         renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
         const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;

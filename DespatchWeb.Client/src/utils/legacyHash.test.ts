@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import {applyLegacyHashRedirect, normalizeLegacyHash} from './legacyHash';
 
 describe('normalizeLegacyHash', () => {
@@ -13,7 +14,7 @@ describe('normalizeLegacyHash', () => {
 });
 
 describe('applyLegacyHashRedirect', () => {
-    const replaceState = window.history.replaceState as jest.Mock;
+    const replaceState = window.history.replaceState as Mock;
     beforeEach(() => replaceState.mockClear());
 
     it('replaces a legacy hash and leaves a current one alone', () => {

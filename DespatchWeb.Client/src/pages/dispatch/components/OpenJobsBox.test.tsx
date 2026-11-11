@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import dayjs from 'dayjs';
@@ -5,17 +6,17 @@ import {MantineTestProvider} from '../../../test/utils';
 import {OpenJobsBox} from './OpenJobsBox';
 import {MAX_OVERVIEW_PANEL_DAYS} from '../lib/overviewPanelRange';
 
-jest.mock('../../../hooks/useOverviewApi', () => ({
-    useOverviewOpenJobs: jest.fn(),
+vi.mock('../../../hooks/useOverviewApi', () => ({
+    useOverviewOpenJobs: vi.fn(),
 }));
 
-jest.mock('../../../utils/dateUtils', () => ({
-    formatMins: jest.fn((s: string) => s),
+vi.mock('../../../utils/dateUtils', () => ({
+    formatMins: vi.fn((s: string) => s),
 }));
 
 import {useOverviewOpenJobs} from '../../../hooks/useOverviewApi';
 
-const mockUseOpenJobs = useOverviewOpenJobs as jest.MockedFunction<typeof useOverviewOpenJobs>;
+const mockUseOpenJobs = useOverviewOpenJobs as MockedFunction<typeof useOverviewOpenJobs>;
 
 // ContactID is 0 in setup.ts
 const VIEW_MODE_KEY = 'dispatchOpenJobsViewMode-0';
@@ -57,7 +58,7 @@ const lastParams = () => mockUseOpenJobs.mock.calls.at(-1)?.[0] as any;
 describe('OpenJobsBox', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockUseOpenJobs.mockReturnValue({data: [openJob], isLoading: false} as any);
     });
 
@@ -127,7 +128,7 @@ describe('OpenJobsBox', () => {
     });
 
     it('selects a job into the detail panel when a handler is supplied', () => {
-        const onSelectJob = jest.fn();
+        const onSelectJob = vi.fn();
         renderBox({onSelectJob});
 
         fireEvent.click(screen.getByRole('button', {name: 'Open job JOB-077'}));

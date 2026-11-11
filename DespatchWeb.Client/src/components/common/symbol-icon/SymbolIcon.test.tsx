@@ -17,7 +17,7 @@ describe('SymbolIcon', () => {
     });
 
     it('falls back to a neutral glyph and warns for an unknown name', () => {
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const {container} = render(<SymbolIcon name="definitely_not_a_glyph" />);
         expect(container.querySelector('svg')).toBeInTheDocument();
         expect(warn).toHaveBeenCalledWith(

@@ -199,7 +199,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             sortColumn,
             sortDirection,
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId, sortColumn, sortDirection]);
 
     const fetchConfigBulk = useMemo(() => ({
@@ -217,7 +216,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             job: searchCriteria.criteria.job,
             bulkJobId: searchCriteria.criteria.bulkJobId,
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.bulkJobId]);
 
     // The panel hands us the dates it flushed in this same click, because the

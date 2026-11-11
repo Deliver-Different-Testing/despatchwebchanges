@@ -1,19 +1,20 @@
+import type {MockedFunction} from 'vitest';
 import {renderHook, waitFor} from '@testing-library/react';
 import {usePanelHideButtonSetting} from './usePanelHideButtonSetting';
 import {getPreference, savePreference} from '../../../api/preferencesApi';
 
-jest.mock('../../../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
+vi.mock('../../../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
 }));
 
-const mockGetPreference = getPreference as jest.MockedFunction<typeof getPreference>;
-const mockSavePreference = savePreference as jest.MockedFunction<typeof savePreference>;
+const mockGetPreference = getPreference as MockedFunction<typeof getPreference>;
+const mockSavePreference = savePreference as MockedFunction<typeof savePreference>;
 
 describe('usePanelHideButtonSetting', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockSavePreference.mockResolvedValue(undefined);
     });
 

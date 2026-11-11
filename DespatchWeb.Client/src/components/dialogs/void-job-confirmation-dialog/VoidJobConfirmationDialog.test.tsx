@@ -38,12 +38,12 @@ const mockRelatedJobs: RelatedJob[] = [
 const createMockProps = (overrides = {}) => ({
     open: true,
     job: mockJob,
-    onClose: jest.fn(),
-    onConfirm: jest.fn(),
-    onLoadRelatedJobs: jest.fn().mockResolvedValue(mockRelatedJobs),
-    onVoidJob: jest.fn().mockResolvedValue(undefined),
-    onVoidBulkJob: jest.fn().mockResolvedValue(undefined),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onConfirm: vi.fn(),
+    onLoadRelatedJobs: vi.fn().mockResolvedValue(mockRelatedJobs),
+    onVoidJob: vi.fn().mockResolvedValue(undefined),
+    onVoidBulkJob: vi.fn().mockResolvedValue(undefined),
+    showToast: vi.fn(),
     ...overrides,
 });
 
@@ -99,7 +99,7 @@ describe('VoidJobConfirmationDialog', () => {
         const voidPromise = new Promise<void>(resolve => { resolveVoid = resolve; });
 
         const props = createMockProps({
-            onVoidJob: jest.fn().mockReturnValue(voidPromise),
+            onVoidJob: vi.fn().mockReturnValue(voidPromise),
         });
         renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
@@ -128,7 +128,7 @@ describe('VoidJobConfirmationDialog', () => {
         ];
         const props = createMockProps({
             job: mockBulkJob,
-            onLoadRelatedJobs: jest.fn().mockResolvedValue(bulkRelatedJobs),
+            onLoadRelatedJobs: vi.fn().mockResolvedValue(bulkRelatedJobs),
         });
         renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
@@ -212,7 +212,7 @@ describe('VoidJobConfirmationDialog', () => {
             resolveLoad = resolve;
         });
 
-        const props = createMockProps({onLoadRelatedJobs: jest.fn().mockReturnValue(loadPromise)});
+        const props = createMockProps({onLoadRelatedJobs: vi.fn().mockReturnValue(loadPromise)});
         renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
         await userEvent.click(screen.getByRole('switch'));
@@ -230,7 +230,7 @@ describe('VoidJobConfirmationDialog', () => {
     // ── No jobs selected → disabled ─────────────────────────────────
     it('disables confirm when no jobs are selected', async () => {
         const props = createMockProps({
-            onLoadRelatedJobs: jest.fn().mockResolvedValue([
+            onLoadRelatedJobs: vi.fn().mockResolvedValue([
                 {id: 123, text: 'JOB-001', selected: false},
                 {id: 124, text: 'JOB-002', selected: false},
             ]),
@@ -248,7 +248,7 @@ describe('VoidJobConfirmationDialog', () => {
     // ── Multi-void confirm ──────────────────────────────────────────
     it('calls onVoidJob with selected job IDs and shows plural success message', async () => {
         const props = createMockProps({
-            onLoadRelatedJobs: jest.fn().mockResolvedValue([
+            onLoadRelatedJobs: vi.fn().mockResolvedValue([
                 {id: 123, text: 'JOB-001', selected: true},
                 {id: 124, text: 'JOB-002', selected: true},
                 {id: 125, text: 'JOB-003', selected: false},
@@ -305,7 +305,7 @@ describe('VoidJobConfirmationDialog', () => {
             {id: 101, text: 'ARCH-002 - Child', selected: false, isArchived: true},
         ];
         const props = createMockProps({
-            onLoadRelatedJobs: jest.fn().mockResolvedValue(archivedRelatedJobs),
+            onLoadRelatedJobs: vi.fn().mockResolvedValue(archivedRelatedJobs),
         });
         renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 

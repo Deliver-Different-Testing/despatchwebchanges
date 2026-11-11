@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../test/utils';
@@ -8,13 +9,13 @@ import {DriverDetailsTab} from './DriverDetailsTab';
 import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
 import type {CourierDataDashboard} from '../../../types';
 
-jest.mock('../../../hooks/useDriverManagementApi', () => ({
-    useDriverSearch: jest.fn(),
-    useCourierDetails: jest.fn(),
+vi.mock('../../../hooks/useDriverManagementApi', () => ({
+    useDriverSearch: vi.fn(),
+    useCourierDetails: vi.fn(),
 }));
 
-const mockUseDriverSearch = useDriverSearch as jest.MockedFunction<typeof useDriverSearch>;
-const mockUseCourierDetails = useCourierDetails as jest.MockedFunction<typeof useCourierDetails>;
+const mockUseDriverSearch = useDriverSearch as MockedFunction<typeof useDriverSearch>;
+const mockUseCourierDetails = useCourierDetails as MockedFunction<typeof useCourierDetails>;
 
 const renderWithProviders = () => {
     const queryClient = createTestQueryClient();
@@ -37,8 +38,8 @@ const mockDriverData: CourierDataDashboard = {
     additionalInformation: {contactSignDate: '2023-01-15', mobileInsurence: 50, notes: 'Reliable driver'},
 };
 
-const refetchDetails = jest.fn();
-const refetchSearch = jest.fn();
+const refetchDetails = vi.fn();
+const refetchSearch = vi.fn();
 
 const setupMocks = (options: {driver?: CourierDataDashboard | undefined; isLoadingDetails?: boolean; searchResults?: any[]; isSearching?: boolean; detailsError?: boolean; searchError?: boolean} = {}) => {
     mockUseDriverSearch.mockReturnValue({

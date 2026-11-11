@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {MockedFunction} from 'vitest';
 /**
  * saveTasks Tests
  */
@@ -8,17 +9,17 @@ import {addTasks} from '../../../api/tasksApi';
 import {queryClient, queryKeys} from '../../../api';
 import {EventGroupViewModel} from '../../../types';
 
-jest.mock('../../../api/tasksApi', () => ({
-    addTasks: jest.fn(),
+vi.mock('../../../api/tasksApi', () => ({
+    addTasks: vi.fn(),
 }));
 
-jest.mock('../../../api', () => ({
-    queryClient: {invalidateQueries: jest.fn()},
+vi.mock('../../../api', () => ({
+    queryClient: {invalidateQueries: vi.fn()},
     queryKeys: {tasks: {all: ['tasks']}},
 }));
 
-const mockAddTasks = addTasks as jest.MockedFunction<typeof addTasks>;
-const mockInvalidateQueries = queryClient.invalidateQueries as jest.MockedFunction<
+const mockAddTasks = addTasks as MockedFunction<typeof addTasks>;
+const mockInvalidateQueries = queryClient.invalidateQueries as MockedFunction<
     typeof queryClient.invalidateQueries
 >;
 
@@ -26,7 +27,7 @@ const events = [{id: 1}, {id: 2}] as unknown as EventGroupViewModel[];
 
 describe('saveTasks', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockAddTasks.mockResolvedValue(undefined as never);
     });
 

@@ -7,8 +7,8 @@ import {renderWithMantine} from '../../../test/utils';
 const createProps = (overrides: Partial<React.ComponentProps<typeof SendToLiveConfirmationDialog>> = {}) => ({
     open: true,
     jobNo: 'JOB-001',
-    onClose: jest.fn(),
-    onConfirm: jest.fn().mockResolvedValue(undefined),
+    onClose: vi.fn(),
+    onConfirm: vi.fn().mockResolvedValue(undefined),
     ...overrides,
 });
 
@@ -62,7 +62,7 @@ describe('SendToLiveConfirmationDialog', () => {
     it('shows loading state and disables buttons while submitting', async () => {
         const user = setupUser();
         let resolveConfirm!: () => void;
-        const onConfirm = jest.fn(() => new Promise<void>((resolve) => {
+        const onConfirm = vi.fn(() => new Promise<void>((resolve) => {
             resolveConfirm = resolve;
         }));
         const props = createProps({onConfirm});
@@ -79,7 +79,7 @@ describe('SendToLiveConfirmationDialog', () => {
 
     it('still calls onClose if onConfirm rejects', async () => {
         const user = setupUser();
-        const onConfirm = jest.fn().mockRejectedValue(new Error('api failed'));
+        const onConfirm = vi.fn().mockRejectedValue(new Error('api failed'));
         const props = createProps({onConfirm});
         renderWithMantine(<SendToLiveConfirmationDialog {...props} />);
 

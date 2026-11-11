@@ -2,7 +2,7 @@ import {getPendingPageLoads, subscribePageLoads, trackPageLoad} from './pageLoad
 
 describe('pageLoadTracker', () => {
     it('counts a load as pending until it settles, notifying subscribers', async () => {
-        const listener = jest.fn();
+        const listener = vi.fn();
         const unsubscribe = subscribePageLoads(listener);
         let resolve!: (v: string) => void;
 
