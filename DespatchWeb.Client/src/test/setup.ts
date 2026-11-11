@@ -16,6 +16,14 @@ import {installLegacySessionGlobals} from './legacySessionGlobals';
 // bounded by the vite.config.ts testTimeout (30s).
 configure({asyncUtilTimeout: 5000});
 
+// The vmThreads pool's jsdom context doesn't carry Node's web-stream globals (assistant-ui streams chat responses).
+if (typeof globalThis.TransformStream === 'undefined') {
+    const webStreams = await import('node:stream/web');
+    for (const name of ['ReadableStream', 'WritableStream', 'TransformStream'] as const) {
+        globalThis[name] ??= webStreams[name] as never;
+    }
+}
+
 // DOM mocks — only run in jsdom environment (skipped for node-only tests)
 if (typeof window !== 'undefined') {
     // Mock window.history for navigation tests

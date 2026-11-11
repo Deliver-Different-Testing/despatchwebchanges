@@ -36,6 +36,8 @@ const testProjects: TestProjectInlineConfiguration[] = [
         },
         test: {
             name: 'unit',
+            // Reuses one jsdom per worker while keeping a fresh module context per file; ~2x faster than forks here.
+            pool: 'vmThreads',
             include: ['src/**/*.{spec,test}.{ts,tsx}'],
             exclude: ['**/node_modules/**', '**/__integration__/**'],
             setupFiles: ['src/test/setup.ts', 'src/test/noNetwork.ts'],
