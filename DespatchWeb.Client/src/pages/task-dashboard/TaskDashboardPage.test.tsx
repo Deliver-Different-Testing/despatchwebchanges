@@ -4,6 +4,7 @@
  * Optimised: tests sharing identical setup consolidated into single renders.
  */
 
+import type {Mock, Mocked} from 'vitest';
 import React from 'react';
 import { renderWithMantine } from '../../test/utils';
 import { setupUser } from '../../test/utils/setupUser';
@@ -20,14 +21,14 @@ import {tenantNow} from '../../utils/dateUtils';
 // Control the compact/expanded breakpoint deterministically. Defaults to
 // expanded (false) in beforeEach; the compact-layout test flips it to true.
 // Only useMediaQuery is replaced — the rest of @mantine/hooks stays real.
-jest.mock('@mantine/hooks', () => ({
-    ...jest.requireActual('@mantine/hooks'),
-    useMediaQuery: jest.fn(),
+vi.mock('@mantine/hooks', async () => ({
+    ...(await vi.importActual<typeof import('@mantine/hooks')>('@mantine/hooks')),
+    useMediaQuery: vi.fn(),
 }));
-const mockUseMediaQuery = useMediaQuery as jest.Mock;
+const mockUseMediaQuery = useMediaQuery as Mock;
 
 // Mock JobDetails to avoid AngularJS dependency chain
-jest.mock('../../components/common/job-details/JobDetails', () => ({
+vi.mock('../../components/common/job-details/JobDetails', () => ({
     JobDetails: ({config}: { config: { jobId?: number } }) => (
         <div data-testid="job-details" data-job-id={config.jobId ?? ''}>
             JobDetails Mock
@@ -36,42 +37,42 @@ jest.mock('../../components/common/job-details/JobDetails', () => ({
 }));
 
 // Mock the tasksApi
-jest.mock('../../api/tasksApi', () => ({
+vi.mock('../../api/tasksApi', () => ({
     tasksApi: {
-        getAllTasks: jest.fn(),
-        getActiveStaff: jest.fn(),
-        getEventTypes: jest.fn(),
-        getDeliveryJourney: jest.fn(),
-        markTaskAsClosed: jest.fn(),
-        updateTaskDate: jest.fn(),
-        updateTaskTime: jest.fn(),
-        reassignTaskToStaff: jest.fn(),
-        unassignTask: jest.fn(),
+        getAllTasks: vi.fn(),
+        getActiveStaff: vi.fn(),
+        getEventTypes: vi.fn(),
+        getDeliveryJourney: vi.fn(),
+        markTaskAsClosed: vi.fn(),
+        updateTaskDate: vi.fn(),
+        updateTaskTime: vi.fn(),
+        reassignTaskToStaff: vi.fn(),
+        unassignTask: vi.fn(),
     },
 }));
 
 // Mock the date utilities
-jest.mock('../../utils/dateUtils', () => ({
-    ...jest.requireActual('../../utils/dateUtils'),
-    formatDateForApi: jest.fn((date) => date.toISOString()),
-    parseDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
-    formatRelativeDateTime: jest.fn((dateStr) => dateStr),
-    getIanaTimezone: jest.fn(() => 'America/New_York'),
-    getTenantTimezone: jest.fn(() => 'America/New_York'),
-    getTimezoneAbbreviation: jest.fn(() => '(EST)'),
+vi.mock('../../utils/dateUtils', async () => ({
+    ...(await vi.importActual<typeof import('../../utils/dateUtils')>('../../utils/dateUtils')),
+    formatDateForApi: vi.fn((date) => date.toISOString()),
+    parseDateFromApi: vi.fn((dateStr) => dayjs(dateStr)),
+    formatRelativeDateTime: vi.fn((dateStr) => dateStr),
+    getIanaTimezone: vi.fn(() => 'America/New_York'),
+    getTenantTimezone: vi.fn(() => 'America/New_York'),
+    getTimezoneAbbreviation: vi.fn(() => '(EST)'),
 }));
 
 // Mock localStorage
 const localStorageStore: Record<string, string> = {};
 const localStorageMock = {
-    getItem: jest.fn((key: string) => localStorageStore[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: vi.fn((key: string) => localStorageStore[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
         localStorageStore[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: vi.fn((key: string) => {
         delete localStorageStore[key];
     }),
-    clear: jest.fn(() => {
+    clear: vi.fn(() => {
         Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
     }),
     setStore: (newStore: Record<string, string>) => {
@@ -84,7 +85,7 @@ Object.defineProperty(window, 'localStorage', {value: localStorageMock});
 // Mock window.ContactID
 (window as any).ContactID = 1;
 
-const mockTasksApi = tasksApi as jest.Mocked<typeof tasksApi>;
+const mockTasksApi = tasksApi as Mocked<typeof tasksApi>;
 
 // Create a fresh QueryClient for each test
 const createTestQueryClient = () =>
@@ -155,9 +156,9 @@ const mockEventTypes = [
 ];
 
 const createDefaultProps = (overrides?: Partial<TaskDashboardPageProps>): TaskDashboardPageProps => ({
-    showToast: jest.fn(),
+    showToast: vi.fn(),
     isUsCustomer: true,
-    setRefreshCallback: jest.fn(),
+    setRefreshCallback: vi.fn(),
     ...overrides,
 });
 
@@ -175,7 +176,7 @@ describe('TaskDashboardPage', () => {
 
     // ── Default render assertions (single render) ───────────────────
     it('renders page with all expected elements, stat counts, date groups, API calls, and refresh callback', async () => {
-        const setRefreshCallback = jest.fn();
+        const setRefreshCallback = vi.fn();
         const props = createDefaultProps({setRefreshCallback});
         renderWithProviders(<TaskDashboardPage {...props} />);
 
@@ -186,9 +187,9 @@ describe('TaskDashboardPage', () => {
         // The status filter mirrors the time-to-action buckets with their counts
         // (mock data: 1 overdue, 0 due today, 1 upcoming/tomorrow, 1 done).
         expect(await screen.findByRole('radio', {name: /Overdue 1/})).toBeInTheDocument();
-        expect(screen.getByRole('radio', {name: /Today \(0\)/})).toBeInTheDocument();
-        expect(screen.getByRole('radio', {name: /Upcoming \(1\)/})).toBeInTheDocument();
-        expect(screen.getByRole('radio', {name: /Done \(1\)/})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: /Today\s*\(0\)/})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: /Upcoming\s*\(1\)/})).toBeInTheDocument();
+        expect(screen.getByRole('radio', {name: /Done\s*\(1\)/})).toBeInTheDocument();
 
         // Tasks rendered after loading
         expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
@@ -243,7 +244,7 @@ describe('TaskDashboardPage', () => {
     });
 
     it('rolls the list window forward at the tenant midnight without a reload', async () => {
-        jest.useFakeTimers({now: tenantNow().endOf('day').subtract(10, 'second').toDate()});
+        vi.useFakeTimers({now: tenantNow().endOf('day').subtract(10, 'second').toDate(), shouldAdvanceTime: true});
         try {
             const today = tenantNow();
             renderWithProviders(<TaskDashboardPage {...createDefaultProps()} />);
@@ -252,7 +253,7 @@ describe('TaskDashboardPage', () => {
                 .toBe(today.subtract(1, 'day').startOf('day').toISOString());
 
             act(() => {
-                jest.advanceTimersByTime(30_000);
+                vi.advanceTimersByTime(30_000);
             });
 
             const tomorrow = today.add(1, 'day');
@@ -262,7 +263,7 @@ describe('TaskDashboardPage', () => {
                 expect(latest?.endDate).toBe(tomorrow.add(7, 'days').endOf('day').toISOString());
             });
         } finally {
-            jest.useRealTimers();
+            vi.useRealTimers();
         }
     });
 
@@ -298,7 +299,7 @@ describe('TaskDashboardPage', () => {
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         const overdue = await screen.findByRole('radio', {name: /Overdue 1/});
-        const upcoming = screen.getByRole('radio', {name: /Upcoming \(1\)/});
+        const upcoming = screen.getByRole('radio', {name: /Upcoming\s*\(1\)/});
         const all = screen.getByRole('radio', {name: 'All'});
 
         // Default is "All", which is now an option rather than an absence.

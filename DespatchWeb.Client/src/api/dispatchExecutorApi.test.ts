@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Dispatch Executor API Service Tests
  */
@@ -25,21 +26,21 @@ import {
 } from './dispatchExecutorApi';
 import {apiClient} from './client';
 
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
     },
 }));
 
-jest.mock('../utils/dtoMappings', () => ({
-    transformDispatchJobDTO: jest.fn((dto: any) => ({...dto, _transformed: true})),
+vi.mock('../utils/dtoMappings', () => ({
+    transformDispatchJobDTO: vi.fn((dto: any) => ({...dto, _transformed: true})),
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('dispatchExecutorApi', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     describe('getCourierById', () => {
         const mockCourier = {

@@ -2,67 +2,71 @@
  * useJobActions Hook Tests — Guided POD Collection (markJobAsDone) Flow
  */
 
+import type {Mock, MockInstance} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import {useJobActions} from './useJobActions';
 import {JobProperty} from '../../../../types/enums/job-property.enum';
 import JobRelationshipType from '../../../../types/enums/job-relationship-type.enum';
 import dayjs from 'dayjs';
 import {testDialogs} from '../../../dialogs/testDialogRegistry';
-jest.mock('../../../dialogs/dialogRegistry', () => require('../../../dialogs/testDialogRegistry').createDialogRegistryMock());
+import * as dispatchExecutorApi from '../../../../api/dispatchExecutorApi';
+import * as jobDetailApi from '../../../../api/jobDetailApi';
+import * as toastServiceModule from '../../../../services/toastService';
+vi.mock('../../../dialogs/dialogRegistry', async () => (await import('../../../dialogs/testDialogRegistry')).createDialogRegistryMock());
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
 // Mock dateUtils — formatDateForApi returns a predictable string
-jest.mock('../../../../utils/dateUtils', () => ({
-    formatDateForApi: jest.fn((_date: unknown, _tz?: string) => '2026-03-23T11:45:00+13:00'),
-    formatLongDate: jest.fn((_date: unknown, _isUs?: boolean) => '23 March 2026'),
+vi.mock('../../../../utils/dateUtils', () => ({
+    formatDateForApi: vi.fn((_date: unknown, _tz?: string) => '2026-03-23T11:45:00+13:00'),
+    formatLongDate: vi.fn((_date: unknown, _isUs?: boolean) => '23 March 2026'),
 }));
 
 // Mock pricingBreakdownApi
-jest.mock('../../../../api/pricingBreakdownApi', () => ({
-    getPriceBreakdowns: jest.fn().mockResolvedValue([]),
+vi.mock('../../../../api/pricingBreakdownApi', () => ({
+    getPriceBreakdowns: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock splitPriceBreakdownApi — defaults to null (no allocation rows yet), the "not a
 // live split parent with a derivable grid" signal that falls back to the flat dialog.
-jest.mock('../../../../api/splitPriceBreakdownApi', () => ({
-    getSplitPricingBreakdown: jest.fn().mockResolvedValue(null),
+vi.mock('../../../../api/splitPriceBreakdownApi', () => ({
+    getSplitPricingBreakdown: vi.fn().mockResolvedValue(null),
 }));
 
 // Mock jobDetailApi so dynamic imports inside editDateAndTime resolve
-jest.mock('../../../../api/jobDetailApi', () => ({
-    getSpeedList: jest.fn(),
-    getVehicleSizes: jest.fn(),
-    getLeaveList: jest.fn(),
-    getContactList: jest.fn(),
-    getStatusList: jest.fn(),
-    getActiveStaff: jest.fn(),
-    getUndeliverableList: jest.fn(),
-    getInternalStatusList: jest.fn(),
-    autocompleteSearch: jest.fn(),
-    getPodReportUrl: jest.fn(),
-    getPodSpreadsheetUrl: jest.fn(),
-    getOverlayDocumentUrl: jest.fn(),
-    getJobOverlayDocuments: jest.fn().mockResolvedValue([]),
-    saveRecurringFlight: jest.fn().mockResolvedValue(undefined),
-    updateJobDetail: jest.fn().mockResolvedValue(undefined),
-    updateBulkJobDetail: jest.fn().mockResolvedValue(undefined),
-    getFamilyForDateChange: jest.fn().mockResolvedValue({relationshipTypeId: null, members: []}),
+vi.mock('../../../../api/jobDetailApi', () => ({
+    getSpeedList: vi.fn(),
+    getVehicleSizes: vi.fn(),
+    getLeaveList: vi.fn(),
+    getContactList: vi.fn(),
+    getStatusList: vi.fn(),
+    getActiveStaff: vi.fn(),
+    getUndeliverableList: vi.fn(),
+    getInternalStatusList: vi.fn(),
+    autocompleteSearch: vi.fn(),
+    getPodReportUrl: vi.fn(),
+    getPodSpreadsheetUrl: vi.fn(),
+    getOverlayDocumentUrl: vi.fn(),
+    getJobOverlayDocuments: vi.fn().mockResolvedValue([]),
+    saveRecurringFlight: vi.fn().mockResolvedValue(undefined),
+    updateJobDetail: vi.fn().mockResolvedValue(undefined),
+    updateBulkJobDetail: vi.fn().mockResolvedValue(undefined),
+    getFamilyForDateChange: vi.fn().mockResolvedValue({relationshipTypeId: null, members: []}),
 }));
 
-jest.mock('../../../../services/toastService', () => ({
+vi.mock('../../../../services/toastService', () => ({
     toastService: {
-        showSuccessToast: jest.fn(),
-        showWarningToast: jest.fn(),
-        showErrorToast: jest.fn(),
-        showLoadingToast: jest.fn(() => ({update: jest.fn()})),
+        showSuccessToast: vi.fn(),
+        showWarningToast: vi.fn(),
+        showErrorToast: vi.fn(),
+        showLoadingToast: vi.fn(() => ({update: vi.fn()})),
     },
 }));
 
-jest.mock('../../../../api/dispatchExecutorApi', () => ({
-    canAssignAgentToJob: jest.fn().mockResolvedValue(true),
-    assignAgentToJob: jest.fn().mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true}),
-    assignNpAgentToJob: jest.fn().mockResolvedValue({success: true}),
+vi.mock('../../../../api/dispatchExecutorApi', () => ({
+    canAssignAgentToJob: vi.fn().mockResolvedValue(true),
+    assignAgentToJob: vi.fn().mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true}),
+    assignNpAgentToJob: vi.fn().mockResolvedValue({success: true}),
 }));
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -88,15 +92,15 @@ interface SetupOptions {
 }
 
 function setup(opts: SetupOptions = {}) {
-    const mockShowToast = jest.fn();
-    const mockUpdateField = jest.fn().mockResolvedValue(undefined);
-    const mockUpdateAddress = jest.fn().mockResolvedValue(undefined);
-    const mockUpdatePod = jest.fn().mockResolvedValue(undefined);
-    const mockDispatchJob = jest.fn().mockResolvedValue(undefined);
-    const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
-    const mockInvalidateJobLists = jest.fn().mockResolvedValue([]);
-    const mockInvalidatePhotos = jest.fn().mockResolvedValue(undefined);
-    const mockCheckForRateChanges = jest.fn().mockResolvedValue(undefined);
+    const mockShowToast = vi.fn();
+    const mockUpdateField = vi.fn().mockResolvedValue(undefined);
+    const mockUpdateAddress = vi.fn().mockResolvedValue(undefined);
+    const mockUpdatePod = vi.fn().mockResolvedValue(undefined);
+    const mockDispatchJob = vi.fn().mockResolvedValue(undefined);
+    const mockRefreshAndNotify = vi.fn().mockResolvedValue(undefined);
+    const mockInvalidateJobLists = vi.fn().mockResolvedValue([]);
+    const mockInvalidatePhotos = vi.fn().mockResolvedValue(undefined);
+    const mockCheckForRateChanges = vi.fn().mockResolvedValue(undefined);
 
     const {result} = renderHook(() =>
         useJobActions({
@@ -131,7 +135,7 @@ function setup(opts: SetupOptions = {}) {
 
 function mockDateTimeDialog(returnValue: {value: unknown; fieldName: string; timezone: string} | null) {
     testDialogs.EditDateTime = {
-        showEditDateAndTimeDialog: jest.fn().mockResolvedValue(returnValue),
+        showEditDateAndTimeDialog: vi.fn().mockResolvedValue(returnValue),
     };
 }
 
@@ -147,7 +151,7 @@ function mockPodTimeDialog(value = dayjs('2026-03-23T11:45:00')) {
 }
 
 /** Stub the POD photo dialog and return its open spy. */
-function mockPhotoDialog(open: jest.Mock = jest.fn().mockResolvedValue(undefined)) {
+function mockPhotoDialog(open: Mock = vi.fn().mockResolvedValue(undefined)) {
     testDialogs.JobFileUpload = {open};
     return open;
 }
@@ -166,17 +170,17 @@ function jobActionsDefaults(): Omit<Parameters<typeof useJobActions>[0], 'job'> 
     return {
         isRecurringJob: false,
         isUsCustomer: false,
-        showToast: jest.fn(),
-        updateField: jest.fn().mockResolvedValue(undefined),
-        updateAddress: jest.fn().mockResolvedValue(undefined),
-        updatePod: jest.fn().mockResolvedValue(undefined),
-        dispatchJob: jest.fn().mockResolvedValue(undefined),
-        refreshAndNotify: jest.fn().mockResolvedValue(undefined),
-        invalidateJobLists: jest.fn().mockResolvedValue([]),
-        invalidatePhotos: jest.fn().mockResolvedValue(undefined),
-        checkForRateChange: jest.fn().mockResolvedValue(undefined),
-        checkForRateChanges: jest.fn().mockResolvedValue(undefined),
-        invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
+        showToast: vi.fn(),
+        updateField: vi.fn().mockResolvedValue(undefined),
+        updateAddress: vi.fn().mockResolvedValue(undefined),
+        updatePod: vi.fn().mockResolvedValue(undefined),
+        dispatchJob: vi.fn().mockResolvedValue(undefined),
+        refreshAndNotify: vi.fn().mockResolvedValue(undefined),
+        invalidateJobLists: vi.fn().mockResolvedValue([]),
+        invalidatePhotos: vi.fn().mockResolvedValue(undefined),
+        checkForRateChange: vi.fn().mockResolvedValue(undefined),
+        checkForRateChanges: vi.fn().mockResolvedValue(undefined),
+        invalidateAllJobDetails: vi.fn().mockResolvedValue(undefined),
         relatedJobs: [],
     };
 }
@@ -184,7 +188,7 @@ function jobActionsDefaults(): Omit<Parameters<typeof useJobActions>[0], 'job'> 
 describe('useJobActions — markJobAsDone / handleDoneClick', () => {
     afterEach(() => {
         clearWindowDialogs();
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     describe('handleDoneClick — uncompleting a job', () => {
@@ -367,7 +371,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             mockPodTimeDialog();
             // Escape and backdrop clicks are blocked on that dialog, so its promise can
             // stay pending forever — completion must not depend on it resolving.
-            mockPhotoDialog(jest.fn(() => new Promise<void>(() => {})));
+            mockPhotoDialog(vi.fn(() => new Promise<void>(() => {})));
             const job = createMockJob({completedTime: null, podName: 'Bob Smith'});
             const {result, mockUpdatePod, mockShowToast} = setup({job});
 
@@ -527,8 +531,8 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
         });
 
         it('does nothing when job is undefined', async () => {
-            const mockShowToast = jest.fn();
-            const mockUpdatePod = jest.fn();
+            const mockShowToast = vi.fn();
+            const mockUpdatePod = vi.fn();
             const {result} = renderHook(() =>
                 useJobActions({
                     ...jobActionsDefaults(),
@@ -594,8 +598,8 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
         });
 
         it('offers Clear and clears the POD time when the dialog signals cleared', async () => {
-            const {updateJobDetail} = jest.requireMock('../../../../api/jobDetailApi');
-            (updateJobDetail as jest.Mock).mockClear();
+            const {updateJobDetail} = vi.mocked(jobDetailApi);
+            (updateJobDetail as Mock).mockClear();
 
             const job = createMockJob({
                 done: true,
@@ -603,7 +607,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                 podName: 'Bob',
             });
             testDialogs.EditDateTime = {
-                showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
+                showEditDateAndTimeDialog: vi.fn().mockResolvedValue({
                     value: dayjs('2026-03-23T11:45:00'),
                     fieldName: JobProperty.CompletedTime,
                     timezone: 'Pacific/Auckland',
@@ -803,12 +807,12 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 describe('useJobActions — handleVoidClick', () => {
     afterEach(() => {
         delete testDialogs.VoidJobConfirmation;
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('calls refreshAndNotify and invalidateJobLists after successful void', async () => {
         testDialogs.VoidJobConfirmation = {
-            open: jest.fn().mockResolvedValue({success: true, voidedCount: 1}),
+            open: vi.fn().mockResolvedValue({success: true, voidedCount: 1}),
         };
 
         const {result, mockRefreshAndNotify, mockInvalidateJobLists} = setup({
@@ -831,7 +835,7 @@ describe('useJobActions — handleVoidClick', () => {
 
     it('does not refresh or invalidate when void dialog is cancelled', async () => {
         testDialogs.VoidJobConfirmation = {
-            open: jest.fn().mockResolvedValue(null),
+            open: vi.fn().mockResolvedValue(null),
         };
 
         const {result, mockRefreshAndNotify, mockInvalidateJobLists} = setup({
@@ -863,11 +867,11 @@ describe('useJobActions — handleVoidClick', () => {
 
     it('does nothing when job is undefined', async () => {
         testDialogs.VoidJobConfirmation = {
-            open: jest.fn(),
+            open: vi.fn(),
         };
 
-        const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
-        const mockInvalidateJobLists = jest.fn().mockResolvedValue([]);
+        const mockRefreshAndNotify = vi.fn().mockResolvedValue(undefined);
+        const mockInvalidateJobLists = vi.fn().mockResolvedValue([]);
         const {result} = renderHook(() =>
             useJobActions({
                 ...jobActionsDefaults(),
@@ -889,8 +893,8 @@ describe('useJobActions — handleVoidClick', () => {
 
 describe('useJobActions — handlePricingClick on a partner job', () => {
     it('captures the new rate via the main edit dialog, then opens the change-request dialog with the field + value locked', async () => {
-        const mockShowToast = jest.fn();
-        const mockOnRequestPartnerChange = jest.fn();
+        const mockShowToast = vi.fn();
+        const mockOnRequestPartnerChange = vi.fn();
         const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
 
         const {result} = renderHook(() =>
@@ -925,8 +929,8 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
     });
 
     it('aborts cleanly when the dispatcher cancels the rate dialog', async () => {
-        const mockShowToast = jest.fn();
-        const mockOnRequestPartnerChange = jest.fn();
+        const mockShowToast = vi.fn();
+        const mockOnRequestPartnerChange = vi.fn();
         const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
 
         const {result} = renderHook(() =>
@@ -952,7 +956,7 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
     });
 
     it('falls back to the legacy toast when onRequestPartnerChange is not supplied', async () => {
-        const mockShowToast = jest.fn();
+        const mockShowToast = vi.fn();
         const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
 
         const {result} = renderHook(() =>
@@ -978,22 +982,22 @@ describe('useJobActions — handlePricingClick as a network partner', () => {
     afterEach(() => {
         delete testDialogs.SplitPricingBreakdown;
         delete testDialogs.PriceBreakdown;
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     function armDialogs() {
-        const openMock = jest.fn().mockResolvedValue(null);
-        testDialogs.PriceBreakdown = {open: openMock, setToastService: jest.fn()};
-        const splitOpenMock = jest.fn().mockResolvedValue(null);
-        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
+        const openMock = vi.fn().mockResolvedValue(null);
+        testDialogs.PriceBreakdown = {open: openMock, setToastService: vi.fn()};
+        const splitOpenMock = vi.fn().mockResolvedValue(null);
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: vi.fn()};
         return {openMock, splitOpenMock};
     }
 
     it('opens the flat dialog in partner view, read-only, with the server-substituted pay lines', async () => {
         const {openMock} = armDialogs();
-        const {getPriceBreakdowns} = jest.requireMock('../../../../api/pricingBreakdownApi');
+        const {getPriceBreakdowns} = vi.mocked(await import('../../../../api/pricingBreakdownApi'));
         const payLines = [{chargeId: -1, name: 'Base', amount: 57}, {chargeId: -2, name: 'Fuel', amount: 8.5}];
-        (getPriceBreakdowns as jest.Mock).mockResolvedValueOnce(payLines);
+        (getPriceBreakdowns as Mock).mockResolvedValueOnce(payLines);
         const job = createMockJob({id: 700, jobNo: 'NP700', locked: false, isArchived: false, preBook: false});
 
         const {result} = renderHook(() =>
@@ -1011,7 +1015,7 @@ describe('useJobActions — handlePricingClick as a network partner', () => {
 
     it('never asks for the split grid, even on a split child', async () => {
         const {openMock, splitOpenMock} = armDialogs();
-        const {getSplitPricingBreakdown} = jest.requireMock('../../../../api/splitPriceBreakdownApi');
+        const {getSplitPricingBreakdown} = vi.mocked(await import('../../../../api/splitPriceBreakdownApi'));
         const parentJob = createMockJob({id: 500, jobNo: 'KT4071V'});
         const job = createMockJob({
             id: 501,
@@ -1035,7 +1039,7 @@ describe('useJobActions — handlePricingClick as a network partner', () => {
 
     it('still shows the pay view on an invoiced job instead of the invoiced warning', async () => {
         const {openMock} = armDialogs();
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         const job = createMockJob({id: 701, jobNo: 'NP701', isInvoiced: true});
 
         const {result} = renderHook(() =>
@@ -1054,16 +1058,16 @@ describe('useJobActions — handlePricingClick on a split child', () => {
     afterEach(() => {
         delete testDialogs.SplitPricingBreakdown;
         delete testDialogs.PriceBreakdown;
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('opens the same split pricing grid as the parent — fetched via the parent, editable, with its own leg highlighted', async () => {
-        const {getSplitPricingBreakdown} = jest.requireMock('../../../../api/splitPriceBreakdownApi');
+        const {getSplitPricingBreakdown} = vi.mocked(await import('../../../../api/splitPriceBreakdownApi'));
         const breakdown = {jobId: 500, totalRevenue: 100, items: [], legs: [], locks: {}};
-        (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
+        (getSplitPricingBreakdown as Mock).mockResolvedValueOnce(breakdown);
 
-        const splitOpenMock = jest.fn().mockResolvedValue(null);
-        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
+        const splitOpenMock = vi.fn().mockResolvedValue(null);
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: vi.fn()};
 
         const parentJob = createMockJob({id: 500, jobNo: 'KT4071V'});
         const job = createMockJob({
@@ -1088,12 +1092,12 @@ describe('useJobActions — handlePricingClick on a split child', () => {
     });
 
     it('opens the grid read-only from a split child whose parent is locked', async () => {
-        const {getSplitPricingBreakdown} = jest.requireMock('../../../../api/splitPriceBreakdownApi');
+        const {getSplitPricingBreakdown} = vi.mocked(await import('../../../../api/splitPriceBreakdownApi'));
         const breakdown = {jobId: 500, totalRevenue: 100, items: [], legs: [], locks: {}};
-        (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
+        (getSplitPricingBreakdown as Mock).mockResolvedValueOnce(breakdown);
 
-        const splitOpenMock = jest.fn().mockResolvedValue(null);
-        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
+        const splitOpenMock = vi.fn().mockResolvedValue(null);
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: vi.fn()};
 
         const parentJob = createMockJob({id: 500, jobNo: 'KT4071V', locked: true});
         const job = createMockJob({
@@ -1116,13 +1120,13 @@ describe('useJobActions — handlePricingClick on a split child', () => {
     });
 
     it('falls back to the flat dialog, forced read-only, when the parent has no derivable split breakdown', async () => {
-        const openMock = jest.fn().mockResolvedValue(null);
+        const openMock = vi.fn().mockResolvedValue(null);
         testDialogs.PriceBreakdown = {
             open: openMock,
-            setToastService: jest.fn(),
+            setToastService: vi.fn(),
         };
-        const {getPriceBreakdowns} = jest.requireMock('../../../../api/pricingBreakdownApi');
-        (getPriceBreakdowns as jest.Mock).mockResolvedValueOnce([{chargeId: 1, name: 'Base', amount: 10}]);
+        const {getPriceBreakdowns} = vi.mocked(await import('../../../../api/pricingBreakdownApi'));
+        (getPriceBreakdowns as Mock).mockResolvedValueOnce([{chargeId: 1, name: 'Base', amount: 10}]);
 
         const parentJob = createMockJob({id: 500, jobNo: 'KT4071V'});
         const job = createMockJob({
@@ -1133,7 +1137,7 @@ describe('useJobActions — handlePricingClick on a split child', () => {
             rootParentId: 500,
             jobRelationshipTypeId: JobRelationshipType.SplitChild,
         });
-        const onNavigateToJob = jest.fn();
+        const onNavigateToJob = vi.fn();
 
         const {result} = renderHook(() =>
             useJobActions({
@@ -1163,18 +1167,18 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
     afterEach(() => {
         delete testDialogs.SplitPricingBreakdown;
         delete testDialogs.PriceBreakdown;
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('opens the split pricing grid instead of the flat dialog, fully editable', async () => {
-        const {getSplitPricingBreakdown} = jest.requireMock('../../../../api/splitPriceBreakdownApi');
+        const {getSplitPricingBreakdown} = vi.mocked(await import('../../../../api/splitPriceBreakdownApi'));
         const breakdown = {jobId: 503, totalRevenue: 100, items: [], legs: [], locks: {}};
-        (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
+        (getSplitPricingBreakdown as Mock).mockResolvedValueOnce(breakdown);
 
-        const flatOpenMock = jest.fn();
-        const splitOpenMock = jest.fn().mockResolvedValue(null);
-        testDialogs.PriceBreakdown = {open: flatOpenMock, setToastService: jest.fn()};
-        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
+        const flatOpenMock = vi.fn();
+        const splitOpenMock = vi.fn().mockResolvedValue(null);
+        testDialogs.PriceBreakdown = {open: flatOpenMock, setToastService: vi.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: vi.fn()};
 
         const job = createMockJob({
             id: 503,
@@ -1194,12 +1198,12 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
     });
 
     it('opens the split pricing grid editable when the split parent is archived but not locked', async () => {
-        const {getSplitPricingBreakdown} = jest.requireMock('../../../../api/splitPriceBreakdownApi');
+        const {getSplitPricingBreakdown} = vi.mocked(await import('../../../../api/splitPriceBreakdownApi'));
         const breakdown = {jobId: 505, totalRevenue: 100, items: [], legs: [], locks: {}};
-        (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
+        (getSplitPricingBreakdown as Mock).mockResolvedValueOnce(breakdown);
 
-        const splitOpenMock = jest.fn().mockResolvedValue(null);
-        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
+        const splitOpenMock = vi.fn().mockResolvedValue(null);
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: vi.fn()};
 
         const job = createMockJob({
             id: 505,
@@ -1219,12 +1223,12 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
     });
 
     it('opens the split pricing grid read-only when the archived split parent is locked', async () => {
-        const {getSplitPricingBreakdown} = jest.requireMock('../../../../api/splitPriceBreakdownApi');
+        const {getSplitPricingBreakdown} = vi.mocked(await import('../../../../api/splitPriceBreakdownApi'));
         const breakdown = {jobId: 506, totalRevenue: 100, items: [], legs: [], locks: {}};
-        (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(breakdown);
+        (getSplitPricingBreakdown as Mock).mockResolvedValueOnce(breakdown);
 
-        const splitOpenMock = jest.fn().mockResolvedValue(null);
-        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
+        const splitOpenMock = vi.fn().mockResolvedValue(null);
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: vi.fn()};
 
         const job = createMockJob({
             id: 506,
@@ -1244,15 +1248,15 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
     });
 
     it('falls back to the flat dialog, fully editable, when the split breakdown has nothing to show at all', async () => {
-        const {getSplitPricingBreakdown} = jest.requireMock('../../../../api/splitPriceBreakdownApi');
-        (getSplitPricingBreakdown as jest.Mock).mockResolvedValueOnce(null);
-        const {getPriceBreakdowns} = jest.requireMock('../../../../api/pricingBreakdownApi');
-        (getPriceBreakdowns as jest.Mock).mockResolvedValueOnce([{chargeId: 1, name: 'Base', amount: 10}]);
+        const {getSplitPricingBreakdown} = vi.mocked(await import('../../../../api/splitPriceBreakdownApi'));
+        (getSplitPricingBreakdown as Mock).mockResolvedValueOnce(null);
+        const {getPriceBreakdowns} = vi.mocked(await import('../../../../api/pricingBreakdownApi'));
+        (getPriceBreakdowns as Mock).mockResolvedValueOnce([{chargeId: 1, name: 'Base', amount: 10}]);
 
-        const flatOpenMock = jest.fn().mockResolvedValue(null);
-        const splitOpenMock = jest.fn();
-        testDialogs.PriceBreakdown = {open: flatOpenMock, setToastService: jest.fn()};
-        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: jest.fn()};
+        const flatOpenMock = vi.fn().mockResolvedValue(null);
+        const splitOpenMock = vi.fn();
+        testDialogs.PriceBreakdown = {open: flatOpenMock, setToastService: vi.fn()};
+        testDialogs.SplitPricingBreakdown = {open: splitOpenMock, setToastService: vi.fn()};
 
         const job = createMockJob({
             id: 504,
@@ -1276,11 +1280,11 @@ describe('useJobActions — handlePricingClick on a split parent', () => {
 describe('useJobActions — partner-job gating (no local save)', () => {
     /** Spin up a hook with onRequestPartnerChange wired in. */
     function setupPartnerHook(job: ReturnType<typeof createMockJob>) {
-        const mockShowToast = jest.fn();
-        const mockUpdateField = jest.fn().mockResolvedValue(undefined);
-        const mockUpdateAddress = jest.fn().mockResolvedValue(undefined);
-        const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
-        const mockOnRequestPartnerChange = jest.fn();
+        const mockShowToast = vi.fn();
+        const mockUpdateField = vi.fn().mockResolvedValue(undefined);
+        const mockUpdateAddress = vi.fn().mockResolvedValue(undefined);
+        const mockRefreshAndNotify = vi.fn().mockResolvedValue(undefined);
+        const mockOnRequestPartnerChange = vi.fn();
 
         const {result} = renderHook(() =>
             useJobActions({
@@ -1301,17 +1305,17 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         delete testDialogs.EditDateTime;
         delete testDialogs.EditAddress;
         delete testDialogs.Select;
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('handleSpeedClick on a partner job routes to change-request locked and skips updateField', async () => {
-        const {getSpeedList} = require('../../../../api/jobDetailApi');
-        (getSpeedList as jest.Mock).mockResolvedValue([
+        const {getSpeedList} = vi.mocked(jobDetailApi);
+        (getSpeedList as Mock).mockResolvedValue([
             {id: 1, text: 'Standard'},
             {id: 2, text: 'Express'},
         ]);
         testDialogs.Select = {
-            showSelectDialog: jest.fn().mockResolvedValue({value: 2, text: 'Express', fieldName: JobProperty.SpeedID}),
+            showSelectDialog: vi.fn().mockResolvedValue({value: 2, text: 'Express', fieldName: JobProperty.SpeedID}),
         };
 
         const job = createMockJob({isPartnerJob: true, speedName: 'Standard'});
@@ -1327,13 +1331,13 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     it('handleSpeedClick on a non-partner job still saves via updateField', async () => {
-        const {getSpeedList} = require('../../../../api/jobDetailApi');
-        (getSpeedList as jest.Mock).mockResolvedValue([
+        const {getSpeedList} = vi.mocked(jobDetailApi);
+        (getSpeedList as Mock).mockResolvedValue([
             {id: 1, text: 'Standard'},
             {id: 2, text: 'Express'},
         ]);
         testDialogs.Select = {
-            showSelectDialog: jest.fn().mockResolvedValue({value: 2, text: 'Express', fieldName: JobProperty.SpeedID}),
+            showSelectDialog: vi.fn().mockResolvedValue({value: 2, text: 'Express', fieldName: JobProperty.SpeedID}),
         };
 
         const job = createMockJob({isPartnerJob: false, speedName: 'Standard'});
@@ -1350,13 +1354,13 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     it('handleContactClick (Booked By dropdown) saves the picked contact name, not its id', async () => {
-        const {getContactList} = require('../../../../api/jobDetailApi');
-        (getContactList as jest.Mock).mockResolvedValue([
+        const {getContactList} = vi.mocked(jobDetailApi);
+        (getContactList as Mock).mockResolvedValue([
             {id: 12, text: 'Jane Admin'},
             {id: 34, text: 'Sam Booker'},
         ]);
         testDialogs.Select = {
-            showSelectDialog: jest.fn().mockResolvedValue({
+            showSelectDialog: vi.fn().mockResolvedValue({
                 value: 34,
                 text: 'Sam Booker',
                 fieldName: JobProperty.FromContactName,
@@ -1377,13 +1381,13 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     it('handleContactClick on a partner job forwards the contact name to change-request locked', async () => {
-        const {getContactList} = require('../../../../api/jobDetailApi');
-        (getContactList as jest.Mock).mockResolvedValue([
+        const {getContactList} = vi.mocked(jobDetailApi);
+        (getContactList as Mock).mockResolvedValue([
             {id: 12, text: 'Jane Admin'},
             {id: 34, text: 'Sam Booker'},
         ]);
         testDialogs.Select = {
-            showSelectDialog: jest.fn().mockResolvedValue({
+            showSelectDialog: vi.fn().mockResolvedValue({
                 value: 34,
                 text: 'Sam Booker',
                 fieldName: JobProperty.FromContactName,
@@ -1402,13 +1406,13 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     it('handleContactClick on a recurring job saves the contact name (not id) and routes to UpdateRecurringJob', async () => {
-        const {getContactList} = require('../../../../api/jobDetailApi');
-        (getContactList as jest.Mock).mockResolvedValue([
+        const {getContactList} = vi.mocked(jobDetailApi);
+        (getContactList as Mock).mockResolvedValue([
             {id: 12, text: 'Jane Admin'},
             {id: 34, text: 'Sam Booker'},
         ]);
         testDialogs.Select = {
-            showSelectDialog: jest.fn().mockResolvedValue({
+            showSelectDialog: vi.fn().mockResolvedValue({
                 value: 34,
                 text: 'Sam Booker',
                 fieldName: JobProperty.FromContactName,
@@ -1485,7 +1489,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             fullAddress: '99 Lambton Quay, Te Aro, Wellington 6011',
         };
         testDialogs.EditAddress = {
-            open: jest.fn().mockResolvedValue(pickedAddress),
+            open: vi.fn().mockResolvedValue(pickedAddress),
         };
 
         const job = createMockJob({isPartnerJob: true, pickupAddress: {}, deliveryAddress: {}});
@@ -1509,7 +1513,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
     it('handleEditDeliveryAddress on a partner job uses the DeliveryAddress field name', async () => {
         testDialogs.EditAddress = {
-            open: jest.fn().mockResolvedValue({
+            open: vi.fn().mockResolvedValue({
                 addressLine1: '1 Quay St',
                 addressLine2: '', addressLine3: '', addressLine4: 'Auckland',
                 addressLine5: '', addressLine6: '', addressLine7: '', addressLine8: '',
@@ -1534,7 +1538,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     it('editDateAndTime on a partner job serialises the picked datetime and routes to change-request locked', async () => {
         const dialogValue = dayjs('2026-04-15T09:00:00');
         testDialogs.EditDateTime = {
-            showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
+            showEditDateAndTimeDialog: vi.fn().mockResolvedValue({
                 value: dialogValue,
                 fieldName: JobProperty.PuTime,
                 timezone: 'Pacific/Auckland',
@@ -1562,14 +1566,14 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     it('editDateAndTime on a partner job for non-gated fields (e.g. CompletedTime) still saves locally', async () => {
         const dialogValue = dayjs('2026-04-15T09:00:00');
         testDialogs.EditDateTime = {
-            showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
+            showEditDateAndTimeDialog: vi.fn().mockResolvedValue({
                 value: dialogValue,
                 fieldName: JobProperty.CompletedTime,
                 timezone: 'Pacific/Auckland',
             }),
         };
-        const {updateJobDetail} = require('../../../../api/jobDetailApi');
-        (updateJobDetail as jest.Mock).mockClear();
+        const {updateJobDetail} = vi.mocked(jobDetailApi);
+        (updateJobDetail as Mock).mockClear();
 
         const job = createMockJob({isPartnerJob: true});
         const {result, mockOnRequestPartnerChange} = setupPartnerHook(job);
@@ -1612,12 +1616,12 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         const capturedParcels = [
             {itemName: 'Box', weight: 5, length: 10, depth: 5, height: 3, dimensions: '10 × 5 × 3 cm'},
         ];
-        const showDialogMock = jest.fn().mockResolvedValue({
+        const showDialogMock = vi.fn().mockResolvedValue({
             parcels: capturedParcels,
             totalWeight: 5,
         });
         testDialogs.EditParcelDimensions = {
-            setToastService: jest.fn(),
+            setToastService: vi.fn(),
             showEditParcelDimensionsDialog: showDialogMock,
         };
 
@@ -1654,12 +1658,12 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     it('handleEditDimensions on a non-partner job opens the dialog normally and refreshes after save', async () => {
-        const showDialogMock = jest.fn().mockResolvedValue({
+        const showDialogMock = vi.fn().mockResolvedValue({
             parcels: [{itemName: 'Box', weight: 5, dimensions: '10 × 5 × 3 cm'}],
             totalWeight: 5,
         });
         testDialogs.EditParcelDimensions = {
-            setToastService: jest.fn(),
+            setToastService: vi.fn(),
             showEditParcelDimensionsDialog: showDialogMock,
         };
 
@@ -1681,12 +1685,12 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     it('handleEditDimensions on a partner bulk job stays on the direct path (bulk jobs have no partner pairing)', async () => {
-        const showDialogMock = jest.fn().mockResolvedValue({
+        const showDialogMock = vi.fn().mockResolvedValue({
             parcels: [{itemName: 'Box', weight: 5, dimensions: '10 × 5 × 3 cm'}],
             totalWeight: 5,
         });
         testDialogs.EditParcelDimensions = {
-            setToastService: jest.fn(),
+            setToastService: vi.fn(),
             showEditParcelDimensionsDialog: showDialogMock,
         };
 
@@ -1707,10 +1711,10 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     describe('dispatchDialogConfirmCourier — network partner', () => {
-        const {assignNpAgentToJob} = require('../../../../api/dispatchExecutorApi');
+        const {assignNpAgentToJob} = vi.mocked(dispatchExecutorApi);
 
         beforeEach(() => {
-            (assignNpAgentToJob as jest.Mock).mockClear();
+            (assignNpAgentToJob as Mock).mockClear();
         });
 
         it('sends a live job down the dedicated NP endpoint, not a field write', async () => {
@@ -1755,17 +1759,17 @@ describe('useJobActions — partner-job gating (no local save)', () => {
     });
 
     describe('dispatchDialogConfirmCourier — agent extras', () => {
-        const {assignAgentToJob} = require('../../../../api/dispatchExecutorApi');
-        const {updateJobDetail} = require('../../../../api/jobDetailApi');
+        const {assignAgentToJob} = vi.mocked(dispatchExecutorApi);
+        const {updateJobDetail} = vi.mocked(jobDetailApi);
 
-        const {toastService} = require('../../../../services/toastService');
+        const {toastService} = vi.mocked(toastServiceModule, true);
 
         beforeEach(() => {
-            (assignAgentToJob as jest.Mock).mockClear();
-            (assignAgentToJob as jest.Mock).mockResolvedValue({
+            (assignAgentToJob as Mock).mockClear();
+            (assignAgentToJob as Mock).mockResolvedValue({
                 status: 'Queued', agentEmail: 'a@b.c', willEmail: true,
             });
-            (updateJobDetail as jest.Mock).mockClear();
+            (updateJobDetail as Mock).mockClear();
             toastService.showSuccessToast.mockClear();
             toastService.showWarningToast.mockClear();
         });
@@ -1792,7 +1796,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         it('warns rather than reports success when the agent could not be emailed the link', async () => {
             // The assignment landed but the agent has no way into the job, so this must
             // not read as a clean success.
-            (assignAgentToJob as jest.Mock).mockResolvedValue({
+            (assignAgentToJob as Mock).mockResolvedValue({
                 status: 'NoAgentEmail', agentEmail: null, willEmail: false,
             });
             const {result} = setup({job: createMockJob()});
@@ -1857,7 +1861,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 });
 
 describe('useJobActions — date cascade', () => {
-    const {updateJobDetail, getFamilyForDateChange} = require('../../../../api/jobDetailApi');
+    const {updateJobDetail, getFamilyForDateChange} = vi.mocked(jobDetailApi);
 
     function mockBookedDateDialog() {
         mockDateTimeDialog({
@@ -1868,7 +1872,7 @@ describe('useJobActions — date cascade', () => {
     }
 
     function mockFamily(members: Array<Record<string, unknown>>) {
-        getFamilyForDateChange.mockResolvedValueOnce({relationshipTypeId: 19, members});
+        getFamilyForDateChange.mockResolvedValueOnce({relationshipTypeId: 19, members} as never);
     }
 
     const cascadableLeg = (jobId: number) => ({
@@ -1878,7 +1882,7 @@ describe('useJobActions — date cascade', () => {
 
     afterEach(() => {
         clearWindowDialogs();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('opens the confirm dialog when the job has cascadable linked jobs', async () => {
@@ -2014,7 +2018,7 @@ describe('useJobActions — date cascade', () => {
 
     it('routes a partner job to the change-request dialog without touching the family', async () => {
         mockBookedDateDialog();
-        const onRequestPartnerChange = jest.fn();
+        const onRequestPartnerChange = vi.fn();
         const {result} = renderHook(() =>
             useJobActions({
                 ...jobActionsDefaults(),
@@ -2039,15 +2043,15 @@ describe('useJobActions — POD & document actions on bulk (scheduled) jobs', ()
         getPodSpreadsheetUrl,
         getOverlayDocumentUrl,
         getJobOverlayDocuments,
-    } = require('../../../../api/jobDetailApi');
+    } = vi.mocked(jobDetailApi);
 
     /** A schedule row: its own id is a BulkJobId, the live tucJob is on linkedJobId. */
     const bulkJob = () => createMockJob({id: 500, linkedJobId: 987654, isBulkJob: true, done: true});
 
-    let openSpy: jest.SpyInstance;
+    let openSpy: MockInstance;
 
     beforeEach(() => {
-        openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+        openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
         getPodReportUrl.mockImplementation((id: number) => `/job/PodReport?jobId=${id}`);
         getPodSpreadsheetUrl.mockImplementation((id: number) => `/job/PodSpreadsheet?jobId=${id}`);
         getOverlayDocumentUrl.mockImplementation((id: number, type: string) => `/job/OverlayDocument?jobId=${id}&documentType=${type}`);
@@ -2057,13 +2061,13 @@ describe('useJobActions — POD & document actions on bulk (scheduled) jobs', ()
     afterEach(() => {
         clearWindowDialogs();
         delete testDialogs.SendPod;
-        jest.restoreAllMocks();
-        jest.clearAllMocks();
+        vi.restoreAllMocks();
+        vi.clearAllMocks();
     });
 
     it('sends the linked live job id to every POD and document action', async () => {
         const uploadOpen = mockPhotoDialog();
-        const sendPodOpen = jest.fn().mockResolvedValue(undefined);
+        const sendPodOpen = vi.fn().mockResolvedValue(undefined);
         testDialogs.SendPod = {open: sendPodOpen};
         const {result} = setup({job: bulkJob()});
 

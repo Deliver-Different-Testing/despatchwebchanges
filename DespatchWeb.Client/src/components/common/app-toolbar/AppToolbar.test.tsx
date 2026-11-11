@@ -35,10 +35,14 @@ describe('AppToolbar', () => {
                     breadcrumbs={[{label: 'Dashboards'}, {label: 'Recurring jobs'}]}
                 />
             );
-            expect(screen.getByRole('heading', {level: 1, name: 'Recurring jobs'}))
-                .toHaveStyle({fontWeight: 600, fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.95)'});
-            expect(screen.getByText('Dashboards'))
-                .toHaveStyle({fontWeight: 400, fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)'});
+            const page = screen.getByRole('heading', {level: 1, name: 'Recurring jobs'});
+            expect(page).toHaveStyle({color: 'rgba(255, 255, 255, 0.95)'});
+            expect(page.style.fontWeight).toBe('600');
+            expect(page.style.fontSize).toBe('0.875rem');
+            const ancestor = screen.getByText('Dashboards');
+            expect(ancestor).toHaveStyle({color: 'rgba(255, 255, 255, 0.6)'});
+            expect(ancestor.style.fontWeight).toBe('400');
+            expect(ancestor.style.fontSize).toBe('0.875rem');
         });
 
         it('should render section + page when breadcrumbs are provided', () => {
@@ -136,7 +140,7 @@ describe('AppToolbar', () => {
 
     describe('Sidebar toggle', () => {
         it('leads the bar with the toggle, keeps the logo and crumbs, and drops the menu button', () => {
-            const onToggle = jest.fn();
+            const onToggle = vi.fn();
             const {rerender} = renderWithMantine(
                 <AppToolbar {...defaultProps} title={undefined} breadcrumbs={[{label: 'Dashboards'}, {label: 'Search'}]} sidebarToggle={{open: true, onToggle}}>
                     <button>Action</button>
@@ -173,7 +177,7 @@ describe('AppToolbar', () => {
 
     describe('Interactions', () => {
         it('should call onLogoClick when logo is clicked', () => {
-            const onLogoClick = jest.fn();
+            const onLogoClick = vi.fn();
             renderWithMantine(
                 <AppToolbar {...defaultProps} onLogoClick={onLogoClick} />
             );
@@ -191,7 +195,7 @@ describe('AppToolbar', () => {
         });
 
         it('should call onMenuHover when avatar is hovered', () => {
-            const onMenuHover = jest.fn();
+            const onMenuHover = vi.fn();
             renderWithMantine(
                 <AppToolbar {...defaultProps} onMenuHover={onMenuHover} />
             );
@@ -203,7 +207,7 @@ describe('AppToolbar', () => {
         });
 
         it('should call onMenuClick when the menu button is tapped (touch-accessible path)', () => {
-            const onMenuClick = jest.fn();
+            const onMenuClick = vi.fn();
             renderWithMantine(
                 <AppToolbar {...defaultProps} onMenuClick={onMenuClick} />
             );

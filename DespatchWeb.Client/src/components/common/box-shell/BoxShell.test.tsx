@@ -5,8 +5,8 @@ import {BoxShell, BoxShellProps} from './BoxShell';
 import {setLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import {ILayout} from '../../../types/interfaces/layout.interfaces';
 
-jest.mock('../../../hooks/glassSupport', () => ({
-    ...jest.requireActual('../../../hooks/glassSupport'),
+vi.mock('../../../hooks/glassSupport', async () => ({
+    ...(await vi.importActual<typeof import('../../../hooks/glassSupport')>('../../../hooks/glassSupport')),
     isLiquidGlassSupported: () => true,
 }));
 
@@ -25,7 +25,7 @@ const baseProps: BoxShellProps = {
     layoutVersion: 0,
     boxes: {jobList: {name: 'jobList', title: 'Live Job Data', visible: true}},
     renderBoxContent: (name) => <div>{`content-${name}`}</div>,
-    onRefreshBox: jest.fn(),
+    onRefreshBox: vi.fn(),
 };
 
 const renderShell = (props: Partial<BoxShellProps> = {}) =>
@@ -55,7 +55,7 @@ const twoBoxBoxes = {
 
 describe('BoxShell layout affordances', () => {
     it('offers reorder on a custom layout without needing Edit columns mode', () => {
-        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
+        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: vi.fn()});
 
         expect(screen.getByRole('button', {name: /Reorder/})).toBeInTheDocument();
         expect(screen.getByText('Live Job Data')).toBeInTheDocument();
@@ -77,7 +77,7 @@ describe('BoxShell layout affordances', () => {
                 jobList: {name: 'jobList', title: 'Live Job Data', visible: true},
                 map: {name: 'map', title: 'Map', visible: true},
             },
-            onMoveBox: jest.fn(),
+            onMoveBox: vi.fn(),
             isDefaultLayout: true,
         });
 
@@ -86,8 +86,8 @@ describe('BoxShell layout affordances', () => {
     });
 
     it('offers a hide button alongside reorder on a custom layout', () => {
-        const onHideBox = jest.fn();
-        renderShell({onMoveBox: jest.fn(), onHideBox});
+        const onHideBox = vi.fn();
+        renderShell({onMoveBox: vi.fn(), onHideBox});
 
         fireEvent.click(screen.getByRole('button', {name: /Hide/}));
 
@@ -95,26 +95,26 @@ describe('BoxShell layout affordances', () => {
     });
 
     it('offers no hide button on the Default layout', () => {
-        renderShell({onMoveBox: jest.fn(), onHideBox: jest.fn(), isDefaultLayout: true});
+        renderShell({onMoveBox: vi.fn(), onHideBox: vi.fn(), isDefaultLayout: true});
 
         expect(screen.queryByRole('button', {name: /Hide/})).not.toBeInTheDocument();
     });
 
     it('hides the hide button when the user has turned it off, without affecting reorder', () => {
-        renderShell({onMoveBox: jest.fn(), onHideBox: jest.fn(), hideButtonEnabled: false});
+        renderShell({onMoveBox: vi.fn(), onHideBox: vi.fn(), hideButtonEnabled: false});
 
         expect(screen.queryByRole('button', {name: /Hide/})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: /Reorder/})).toBeInTheDocument();
     });
 
     it('has no collapse control', () => {
-        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
+        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: vi.fn()});
 
         expect(screen.queryByRole('button', {name: /Collapse|Expand/})).not.toBeInTheDocument();
     });
 
     it('hides the columns bar until "Edit columns" mode is on', () => {
-        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: jest.fn()});
+        renderShell({layout: {...layout, name: 'My Layout'}, onMoveBox: vi.fn()});
 
         expect(screen.queryByText('Editing columns')).not.toBeInTheDocument();
         expect(screen.queryByRole('group', {name: /number of columns/i})).not.toBeInTheDocument();
@@ -180,8 +180,8 @@ describe('BoxShell columns bar', () => {
     const editing = (props: Partial<BoxShellProps> = {}) => renderShell({
         columnEditMode: true,
         layout: multiCol('My Layout', 2),
-        onAddColumn: jest.fn(),
-        onRemoveColumn: jest.fn(),
+        onAddColumn: vi.fn(),
+        onRemoveColumn: vi.fn(),
         ...props,
     });
 
@@ -193,8 +193,8 @@ describe('BoxShell columns bar', () => {
     });
 
     it('adds and removes columns', () => {
-        const onAddColumn = jest.fn();
-        const onRemoveColumn = jest.fn();
+        const onAddColumn = vi.fn();
+        const onRemoveColumn = vi.fn();
         editing({onAddColumn, onRemoveColumn});
 
         fireEvent.click(screen.getByRole('button', {name: /add column/i}));
@@ -216,7 +216,7 @@ describe('BoxShell columns bar', () => {
     });
 
     it('leaves the mode from Done', () => {
-        const onExitColumnEditMode = jest.fn();
+        const onExitColumnEditMode = vi.fn();
         editing({onExitColumnEditMode});
 
         fireEvent.click(screen.getByRole('button', {name: /^done$/i}));
@@ -257,14 +257,14 @@ describe('BoxShell resize persistence', () => {
     });
 
     it('ignores the layout emitted on mount so a fresh load persists nothing', () => {
-        const onColumnSizes = jest.fn();
+        const onColumnSizes = vi.fn();
         renderShell({layout: multiCol('Default'), boxes: multiColBoxes, onColumnSizes});
 
         expect(onColumnSizes).not.toHaveBeenCalled();
     });
 
     it('persists a genuine resize once the group has settled', () => {
-        const onColumnSizes = jest.fn();
+        const onColumnSizes = vi.fn();
         const {rerender} = renderShell({
             layout: multiCol('Default'),
             boxes: multiColBoxes,
@@ -331,7 +331,7 @@ describe('BoxShell box card chrome', () => {
 
 describe('BoxShell pointer reorder', () => {
     it('tags cards and columns so a drag can resolve its drop target, and moves on drop', () => {
-        const onMoveBox = jest.fn();
+        const onMoveBox = vi.fn();
         const {container} = renderShell({
             layout: {
                 name: 'Mine',
@@ -356,7 +356,7 @@ describe('BoxShell pointer reorder', () => {
         expect(cards).toHaveLength(2);
         expect(cards[1]).toHaveAttribute('data-box-index', '1');
 
-        document.elementFromPoint = jest.fn(() => cards[1]);
+        document.elementFromPoint = vi.fn(() => cards[1]);
         cards.forEach(card => {
             card.getBoundingClientRect = () => ({left: 0, top: 0, width: 300, height: 200, x: 0, y: 0, right: 300, bottom: 200, toJSON: () => ({})});
         });

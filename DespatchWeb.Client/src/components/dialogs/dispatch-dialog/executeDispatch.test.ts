@@ -5,17 +5,18 @@
  * different endpoint, so this is where that mapping is pinned down.
  */
 
-jest.mock('../../../api/dispatchExecutorApi', () => ({
-    canAssignAgentToJob: jest.fn(),
-    assignAgentToJob: jest.fn(),
-    assignNpAgentToJob: jest.fn(),
+import type {Mock} from 'vitest';
+vi.mock('../../../api/dispatchExecutorApi', () => ({
+    canAssignAgentToJob: vi.fn(),
+    assignAgentToJob: vi.fn(),
+    assignNpAgentToJob: vi.fn(),
 }));
-jest.mock('../../../api/jobListApi', () => ({
-    allocateJobs: jest.fn(),
-    reAllocateJobs: jest.fn(),
+vi.mock('../../../api/jobListApi', () => ({
+    allocateJobs: vi.fn(),
+    reAllocateJobs: vi.fn(),
 }));
-jest.mock('../../../api/jobDetailApi', () => ({
-    updateJobDetail: jest.fn(),
+vi.mock('../../../api/jobDetailApi', () => ({
+    updateJobDetail: vi.fn(),
 }));
 
 import {executeDispatchConfirmation, FLIGHT_REQUIRED_MESSAGE} from './executeDispatch';
@@ -28,12 +29,12 @@ import {allocateJobs, reAllocateJobs} from '../../../api/jobListApi';
 import {updateJobDetail} from '../../../api/jobDetailApi';
 import {JobProperty} from '../../../types/enums/job-property.enum';
 
-const mockCanAssign = canAssignAgentToJob as jest.Mock;
-const mockAssignAgent = assignAgentToJob as jest.Mock;
-const mockAssignNp = assignNpAgentToJob as jest.Mock;
-const mockAllocate = allocateJobs as jest.Mock;
-const mockReAllocate = reAllocateJobs as jest.Mock;
-const mockUpdateJobDetail = updateJobDetail as jest.Mock;
+const mockCanAssign = canAssignAgentToJob as Mock;
+const mockAssignAgent = assignAgentToJob as Mock;
+const mockAssignNp = assignNpAgentToJob as Mock;
+const mockAllocate = allocateJobs as Mock;
+const mockReAllocate = reAllocateJobs as Mock;
+const mockUpdateJobDetail = updateJobDetail as Mock;
 
 const job = {id: 42, jobNo: 'J042'};
 const courier = {id: 101, text: 'ABC Couriers'};
@@ -41,7 +42,7 @@ const agent = {id: 201, text: 'AgentOne'};
 const partner = {id: 301, text: 'PartnerCo'};
 
 beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockCanAssign.mockResolvedValue(true);
     mockAssignAgent.mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true});
     mockAssignNp.mockResolvedValue({success: true});

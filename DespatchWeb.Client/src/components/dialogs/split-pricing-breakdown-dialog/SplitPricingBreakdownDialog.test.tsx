@@ -49,10 +49,10 @@ const defaultProps: EditModeProps = {
     mode: 'edit',
     open: true,
     breakdown: workedExample,
-    onClose: jest.fn(),
-    onSave: jest.fn().mockResolvedValue(undefined),
-    onAddItem: jest.fn().mockResolvedValue(workedExample),
-    onDeleteItem: jest.fn().mockResolvedValue(workedExample),
+    onClose: vi.fn(),
+    onSave: vi.fn().mockResolvedValue(undefined),
+    onAddItem: vi.fn().mockResolvedValue(workedExample),
+    onDeleteItem: vi.fn().mockResolvedValue(workedExample),
 };
 
 const createMockProps = (overrides?: Partial<EditModeProps>) =>
@@ -137,7 +137,7 @@ describe('SplitPricingBreakdownDialog', () => {
     });
 
     it('saving an archived parent sends isArchived so the server writes the archive tables', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         renderWithMantine(<SplitPricingBreakdownDialog
             {...createMockProps({onSave, breakdown: {...workedExample, isArchived: true}})}
         />);
@@ -155,7 +155,7 @@ describe('SplitPricingBreakdownDialog', () => {
     });
 
     it('editing an item revenue sends the new amount on save', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
 
         fireEvent.change(screen.getByLabelText('Revenue for Base'), {target: {value: '200'}});
@@ -169,7 +169,7 @@ describe('SplitPricingBreakdownDialog', () => {
     });
 
     it('overriding a leg cost shows "was X" with a reset, and reset clears it', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
 
         fireEvent.change(screen.getByLabelText('Cost for Base, leg 201'), {target: {value: '5'}});
@@ -189,7 +189,7 @@ describe('SplitPricingBreakdownDialog', () => {
     });
 
     it('saves a cost override without a reset when never reset', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
 
         fireEvent.change(screen.getByLabelText('Cost for Base, leg 201'), {target: {value: '5'}});
@@ -202,7 +202,7 @@ describe('SplitPricingBreakdownDialog', () => {
     });
 
     it('editing a share renormalizes the other leg to sum to 100 and sends every leg', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
 
         fireEvent.click(screen.getAllByRole('button', {name: '80 / 20'})[0]); // Base row
@@ -293,7 +293,7 @@ describe('SplitPricingBreakdownDialog', () => {
     });
 
     it('renaming an item sends the new name on save', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
 
         fireEvent.change(screen.getByLabelText('Name for Base'), {target: {value: 'Freight'}});
@@ -306,7 +306,7 @@ describe('SplitPricingBreakdownDialog', () => {
     });
 
     it('editing a leg\'s overall share rebalances its sibling and defaults every untouched item on save', async () => {
-        const onSave = jest.fn().mockResolvedValue(undefined);
+        const onSave = vi.fn().mockResolvedValue(undefined);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onSave})} />);
 
         fireEvent.change(screen.getByLabelText('Share % for KT4071VA'), {target: {value: '60'}});
@@ -363,7 +363,7 @@ describe('SplitPricingBreakdownDialog', () => {
                 ],
             }],
         };
-        const onAddItem = jest.fn().mockResolvedValue(refreshed);
+        const onAddItem = vi.fn().mockResolvedValue(refreshed);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onAddItem})} />);
 
         fireEvent.click(screen.getByRole('button', {name: /add item/i}));
@@ -377,7 +377,7 @@ describe('SplitPricingBreakdownDialog', () => {
 
     it('deletes an item via confirm and refreshes the grid', async () => {
         const refreshed: SplitPriceBreakdown = {...workedExample, items: [workedExample.items[0]]};
-        const onDeleteItem = jest.fn().mockResolvedValue(refreshed);
+        const onDeleteItem = vi.fn().mockResolvedValue(refreshed);
         renderWithMantine(<SplitPricingBreakdownDialog {...createMockProps({onDeleteItem})} />);
 
         fireEvent.click(screen.getByRole('button', {name: 'Delete Congestion'}));
@@ -430,7 +430,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
 
     const splitProps = (
         preview: SplitPricingPreview,
-        onClose = jest.fn(),
+        onClose = vi.fn(),
         legCourierNames?: (string | null)[],
     ): SplitModeProps =>
         ({mode: 'split', open: true, jobNo: 'KT1314V', preview, legCourierNames, onClose});
@@ -462,7 +462,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
     });
 
     it('confirms with the previewed shares and no line overrides', () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
 
         fireEvent.click(screen.getByRole('button', {name: /confirm & split/i}));
@@ -478,7 +478,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
     });
 
     it('cancels with {action: "cancel"}', () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
 
         fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
@@ -487,7 +487,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
     });
 
     it('gives a single line its own share, sending both legs’ shares for that line only', () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
 
         fireEvent.click(screen.getAllByRole('button', {name: '70 / 30'})[1]); // Congestion
@@ -513,7 +513,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
     });
 
     it('sets a per-leg cost override at split time and carries the synced share in the Confirm & split payload', () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
 
         fireEvent.change(screen.getByLabelText('Cost for Base, leg 1'), {target: {value: '5'}});
@@ -533,7 +533,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
     });
 
     it('editing the leg-card overall share rebalances the sibling and is sent as the confirmed split', () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithMantine(<SplitPricingBreakdownDialog {...splitProps(createPreview(), onClose)} />);
 
         fireEvent.change(screen.getByLabelText('Share % for Leg A'), {target: {value: '90'}});
@@ -553,7 +553,7 @@ describe('SplitPricingBreakdownDialog — split mode', () => {
 
     it('shows the courier next to road distance, and "Unassigned" when none is assigned', () => {
         renderWithMantine(
-            <SplitPricingBreakdownDialog {...splitProps(createPreview(), jest.fn(), ['Sam Driver', null])} />,
+            <SplitPricingBreakdownDialog {...splitProps(createPreview(), vi.fn(), ['Sam Driver', null])} />,
         );
 
         expect(screen.getAllByText(/road distance 5\.6 mi.*Sam Driver/).length).toBeGreaterThan(0);

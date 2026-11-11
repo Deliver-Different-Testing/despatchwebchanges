@@ -13,8 +13,8 @@ import dayjs from 'dayjs';
 
 const defaultProps: DateRangeDialogProps = {
     open: true,
-    onClose: jest.fn(),
-    onApply: jest.fn(),
+    onClose: vi.fn(),
+    onApply: vi.fn(),
 };
 
 const createMockProps = (overrides?: Partial<DateRangeDialogProps>) =>
@@ -73,7 +73,7 @@ describe('DateRangeDialog', () => {
     describe('Actions', () => {
         it('calls onClose from both the header close button and Cancel', async () => {
             const user = setupUser();
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithMantine(<DateRangeDialog {...createMockProps({onClose})} />);
 
             await user.click(screen.getByRole('button', {name: 'Close dialog'}));
@@ -85,7 +85,7 @@ describe('DateRangeDialog', () => {
 
         it('calls onApply with the picked range', async () => {
             const user = setupUser();
-            const onApply = jest.fn();
+            const onApply = vi.fn();
             const initialRange = {start: new Date(2024, 0, 15), end: new Date(2024, 0, 20)};
             renderWithMantine(<DateRangeDialog {...createMockProps({onApply, initialRange})} />);
 

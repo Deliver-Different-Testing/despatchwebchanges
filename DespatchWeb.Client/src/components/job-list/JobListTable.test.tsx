@@ -4,6 +4,7 @@
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {act, screen, waitFor} from '@testing-library/react';
 import { renderWithMantine } from '../../test/utils';
@@ -17,11 +18,11 @@ import {searchActiveCouriersExtended} from '../../api/courierApi';
 import {createMockDispatchJob, STALE_ADDRESS_DEVICE, STALE_ADDRESS_LINES} from '../../test/utils/mockData';
 import {isNetworkPartnerSession} from '../dialogs/dispatch-dialog/dispatchSession';
 
-jest.mock('../../api/courierApi', () => ({
-    searchActiveCouriersExtended: jest.fn(),
+vi.mock('../../api/courierApi', () => ({
+    searchActiveCouriersExtended: vi.fn(),
 }));
 // Mock @tanstack/react-virtual so rows render in jsdom (zero-height containers)
-jest.mock('@tanstack/react-virtual', () => ({
+vi.mock('@tanstack/react-virtual', () => ({
     useVirtualizer: ({count}: {count: number}) => ({
         getVirtualItems: () =>
             Array.from({length: count}, (_, i) => ({
@@ -36,16 +37,16 @@ jest.mock('@tanstack/react-virtual', () => ({
     }),
 }));
 
-jest.mock('../../utils/dateUtils', () =>
-    require('../../test/mocks/dateUtilsMock').nzDateUtilsMock());
+vi.mock('../../utils/dateUtils', async () =>
+    (await import('../../test/mocks/dateUtilsMock')).nzDateUtilsMock());
 
-jest.mock('../dialogs/dispatch-dialog/dispatchSession', () => ({
-    ...jest.requireActual('../dialogs/dispatch-dialog/dispatchSession'),
-    isNetworkPartnerSession: jest.fn(() => false),
+vi.mock('../dialogs/dispatch-dialog/dispatchSession', async () => ({
+    ...(await vi.importActual<typeof import('../dialogs/dispatch-dialog/dispatchSession')>('../dialogs/dispatch-dialog/dispatchSession')),
+    isNetworkPartnerSession: vi.fn(() => false),
 }));
 
-const mockedSearch = searchActiveCouriersExtended as jest.Mock;
-const mockedIsNetworkPartnerSession = isNetworkPartnerSession as jest.Mock;
+const mockedSearch = searchActiveCouriersExtended as Mock;
+const mockedIsNetworkPartnerSession = isNetworkPartnerSession as Mock;
 
 function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobListTable>>) {
     const resolved = {isUsCustomer: false, isJobSearchPage: false, ...overrides};
@@ -55,12 +56,12 @@ function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobL
         selectedJobId: null,
         relatedJobIds: new Set<number>(),
         multiSelectedIds: new Set<number>(),
-        onJobClick: jest.fn(),
-        onContextMenu: jest.fn(),
-        onJobDispatch: jest.fn(),
-        onColumnWidthsChange: jest.fn(),
+        onJobClick: vi.fn(),
+        onContextMenu: vi.fn(),
+        onJobDispatch: vi.fn(),
+        onColumnWidthsChange: vi.fn(),
         sortState: {column: null, direction: null} as JobListSort,
-        onSortChange: jest.fn(),
+        onSortChange: vi.fn(),
         densityMode: 'dense' as DensityMode,
         columnWidths: {},
         isUsCustomer: false,
@@ -573,7 +574,7 @@ describe('JobListTable', () => {
     // ── Dispatch confirmation flash ────────────────────────────────────
     describe('Dispatch confirmation flash', () => {
         it('flashes the row when a job gains a courier, then clears the flash', () => {
-            jest.useFakeTimers();
+            vi.useFakeTimers();
             try {
                 const job = createMockDispatchJob({id: 1, jobNo: 'J100', assignedCourier: undefined});
                 const {rerender} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
@@ -588,11 +589,11 @@ describe('JobListTable', () => {
                 expect(row).toHaveAttribute('data-dispatched', 'true');
 
                 act(() => {
-                    jest.advanceTimersByTime(1500);
+                    vi.advanceTimersByTime(1500);
                 });
                 expect(row).not.toHaveAttribute('data-dispatched');
             } finally {
-                jest.useRealTimers();
+                vi.useRealTimers();
             }
         });
 

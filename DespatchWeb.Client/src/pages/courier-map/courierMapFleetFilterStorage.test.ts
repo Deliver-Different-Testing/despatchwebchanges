@@ -23,7 +23,7 @@ describe('courierMapFleetFilterStorage', () => {
     });
 
     it('defaults to [] when localStorage is unavailable', () => {
-        const getItem = jest.spyOn(Storage.prototype, 'getItem')
+        const getItem = vi.spyOn(Storage.prototype, 'getItem')
             .mockImplementation(() => { throw new Error('blocked'); });
 
         expect(loadSelectedFleetIds()).toEqual([]);
@@ -40,7 +40,7 @@ describe('courierMapFleetFilterStorage', () => {
     });
 
     it('does not throw when localStorage rejects the write', () => {
-        const setItem = jest.spyOn(Storage.prototype, 'setItem')
+        const setItem = vi.spyOn(Storage.prototype, 'setItem')
             .mockImplementation(() => { throw new Error('quota'); });
 
         expect(() => saveSelectedFleetIds([32])).not.toThrow();

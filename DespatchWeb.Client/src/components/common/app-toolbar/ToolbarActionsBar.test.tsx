@@ -6,7 +6,7 @@ import {ToolbarActionsBar, ToolbarActionItem} from './ToolbarActionsBar';
 const renderBar = (props: {actions: ToolbarActionItem[]; compact?: boolean}) =>
     renderWithMantine(<ToolbarActionsBar {...props} />);
 
-const makeActions = (onRefresh = jest.fn()): ToolbarActionItem[] => [
+const makeActions = (onRefresh = vi.fn()): ToolbarActionItem[] => [
     {key: 'views', node: <button>Views</button>},
     {
         key: 'refresh',
@@ -38,7 +38,7 @@ describe('ToolbarActionsBar', () => {
     });
 
     it('invokes the overflow onSelect and closes the menu', () => {
-        const onRefresh = jest.fn();
+        const onRefresh = vi.fn();
         renderBar({actions: makeActions(onRefresh), compact: true});
 
         fireEvent.click(screen.getByLabelText('More actions'));

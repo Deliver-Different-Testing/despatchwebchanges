@@ -162,7 +162,7 @@ describe('DriverLocations', () => {
         });
 
         it('calls onClearFilter when clear button is clicked', () => {
-            const onClearFilter = jest.fn();
+            const onClearFilter = vi.fn();
             const props = createDefaultProps({ activeAreaId: 1, onClearFilter });
             renderWithProviders(<DriverLocations {...props} />);
 
@@ -173,7 +173,7 @@ describe('DriverLocations', () => {
 
     describe('Area Click', () => {
         it('calls onAreaClick when area title is clicked', () => {
-            const onAreaClick = jest.fn();
+            const onAreaClick = vi.fn();
             const props = createDefaultProps({ onAreaClick });
             renderWithProviders(<DriverLocations {...props} />);
 
@@ -187,7 +187,7 @@ describe('DriverLocations', () => {
 
     describe('Courier Click', () => {
         it('calls onCourierClick with full courier data including courierId when row is clicked', () => {
-            const onCourierClick = jest.fn();
+            const onCourierClick = vi.fn();
             const props = createDefaultProps({ onCourierClick });
             renderWithProviders(<DriverLocations {...props} />);
 
@@ -206,7 +206,7 @@ describe('DriverLocations', () => {
         });
 
         it('does not call onCourierClick when courierData is missing', () => {
-            const onCourierClick = jest.fn();
+            const onCourierClick = vi.fn();
             const driverLocations: IClearListViewModelWithColumns = {
                 areas: [],
                 columns: [

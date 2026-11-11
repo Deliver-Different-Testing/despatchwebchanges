@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import { renderWithMantine } from '../../../test/utils';
 import { setupUser } from '../../../test/utils/setupUser';
@@ -9,15 +10,15 @@ import {InsertRecurringToLiveResult, InsertToLiveScope, PrebookListModel} from '
 import {insertScopeColors} from '../../../theme/designTokens';
 import {AddressViewModel} from '../../../types/address';
 
-jest.mock('../../../api/recurringJobsApi', () => ({
+vi.mock('../../../api/recurringJobsApi', () => ({
     recurringJobsApi: {
-        insertToLive: jest.fn(),
+        insertToLive: vi.fn(),
     },
 }));
 
 import {recurringJobsApi} from '../../../api/recurringJobsApi';
 
-const mockInsertToLive = recurringJobsApi.insertToLive as jest.MockedFunction<
+const mockInsertToLive = recurringJobsApi.insertToLive as MockedFunction<
     typeof recurringJobsApi.insertToLive
 >;
 
@@ -65,9 +66,9 @@ function createProps(overrides?: Partial<InsertToLiveDialogProps>): InsertToLive
     return {
         open: true,
         job: createJob(),
-        onClose: jest.fn(),
-        onSuccess: jest.fn(),
-        showToast: jest.fn(),
+        onClose: vi.fn(),
+        onSuccess: vi.fn(),
+        showToast: vi.fn(),
         ...overrides,
     };
 }
@@ -80,7 +81,7 @@ function renderDialog(props: InsertToLiveDialogProps) {
 
 describe('InsertToLiveDialog', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('renders the title, booking identity, scope options and info guidance', () => {
@@ -115,7 +116,7 @@ describe('InsertToLiveDialog', () => {
 
     it('calls onClose when Cancel is clicked', async () => {
         const user = setupUser();
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderDialog(createProps({onClose}));
 
         await user.click(screen.getByRole('button', {name: /Cancel/i}));
@@ -124,8 +125,8 @@ describe('InsertToLiveDialog', () => {
 
     it('inserts with the default date and Group scope, then reports success', async () => {
         const user = setupUser();
-        const onSuccess = jest.fn();
-        const showToast = jest.fn();
+        const onSuccess = vi.fn();
+        const showToast = vi.fn();
         const result = createResult();
         mockInsertToLive.mockResolvedValue(result);
 
@@ -163,7 +164,7 @@ describe('InsertToLiveDialog', () => {
 
     it('warns when saved flights could not be matched', async () => {
         const user = setupUser();
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         mockInsertToLive.mockResolvedValue(createResult({flightsUnmatched: 2}));
 
         renderDialog(createProps({showToast}));
@@ -180,10 +181,10 @@ describe('InsertToLiveDialog', () => {
 
     it('surfaces the backend error message on failure', async () => {
         const user = setupUser();
-        const showToast = jest.fn();
-        const onSuccess = jest.fn();
+        const showToast = vi.fn();
+        const onSuccess = vi.fn();
         mockInsertToLive.mockRejectedValue({response: {data: 'Booking is not in Manual mode.'}});
-        const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         renderDialog(createProps({showToast, onSuccess}));
 

@@ -4,13 +4,13 @@ import {renderWithProviders} from '../../test/utils';
 import {NavigationProvider} from '../../routes/NavigationContext';
 import {NationwideScreen} from './NationwideScreen';
 
-jest.mock('./NationwidePage', () => ({NationwidePage: () => <div data-testid="nationwide-page"/>}));
-jest.mock('../partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => null}));
-jest.mock('../../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 7, refresh: jest.fn()})}));
-jest.mock('../../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: jest.fn()})}));
-jest.mock('../../services/navigationService', () => ({openJobInSearch: jest.fn(), openHubUrl: jest.fn()}));
-jest.mock('../../services/toastService', () => ({toastService: {showToast: jest.fn()}}));
-jest.mock('../../api/session', () => ({
+vi.mock('./NationwidePage', () => ({NationwidePage: () => <div data-testid="nationwide-page"/>}));
+vi.mock('../partner-approvals/PartnerApprovalsBadge', () => ({PartnerApprovalsBadge: () => null}));
+vi.mock('../../hooks/useUnreadMessageCount', () => ({useUnreadMessageCount: () => ({count: 7, refresh: vi.fn()})}));
+vi.mock('../../hooks/useMessagingDialog', () => ({useMessagingDialog: () => ({openMessaging: vi.fn()})}));
+vi.mock('../../services/navigationService', () => ({openJobInSearch: vi.fn(), openHubUrl: vi.fn()}));
+vi.mock('../../services/toastService', () => ({toastService: {showToast: vi.fn()}}));
+vi.mock('../../api/session', () => ({
     getContactId: () => 42, getTimeZone: () => '',
     getSession: () => ({contactId: 42, firstName: 'Jo', fullName: 'Jo Doe', isNetworkPartner: false, isUsCustomer: false, timeZone: '', visibleFeatures: null}),
 }));
@@ -18,7 +18,7 @@ jest.mock('../../api/session', () => ({
 describe('NationwideScreen frame', () => {
     it('shows the Nationwide heading, the page and the unread messages badge', () => {
         renderWithProviders(
-            <NavigationProvider value={{navigate: jest.fn(), currentState: 'nationwide'}}>
+            <NavigationProvider value={{navigate: vi.fn(), currentState: 'nationwide'}}>
                 <NationwideScreen/>
             </NavigationProvider>,
         );

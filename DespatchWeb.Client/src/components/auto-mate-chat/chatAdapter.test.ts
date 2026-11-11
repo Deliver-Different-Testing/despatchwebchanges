@@ -1,10 +1,11 @@
+import type {MockedFunction} from 'vitest';
 import {createChatAdapter} from './chatAdapter';
 import {streamChat} from '../../api/autoMateChat';
 import type {AutoMateStreamEvent} from '../../types/autoMateChat';
 
-jest.mock('../../api/autoMateChat', () => ({streamChat: jest.fn()}));
+vi.mock('../../api/autoMateChat', () => ({streamChat: vi.fn()}));
 
-const mockStreamChat = streamChat as jest.MockedFunction<typeof streamChat>;
+const mockStreamChat = streamChat as MockedFunction<typeof streamChat>;
 
 const stream = (events: AutoMateStreamEvent[]) =>
     mockStreamChat.mockImplementation(async function* () {

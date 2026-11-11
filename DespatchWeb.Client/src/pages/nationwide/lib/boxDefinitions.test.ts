@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * Extracted from `NationwideControl.initializeBoxes` (603),
  * `getBoxVisibilityKey` (672), `saveBoxVisibility` (676) and

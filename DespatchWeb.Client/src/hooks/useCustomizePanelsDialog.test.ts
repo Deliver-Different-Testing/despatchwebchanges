@@ -3,16 +3,16 @@ import type {IBox} from '../types/interfaces/layout.interfaces';
 import {useCustomizePanelsDialog} from './useCustomizePanelsDialog';
 import {boxVisibilityKey, loadBoxVisibility} from '../components/common/box-shell/layoutPersistence';
 
-jest.mock('../services/toastService', () => ({
-    toastService: {showSuccessToast: jest.fn(), showErrorToast: jest.fn(), showInfoToast: jest.fn()},
+vi.mock('../services/toastService', () => ({
+    toastService: {showSuccessToast: vi.fn(), showErrorToast: vi.fn(), showInfoToast: vi.fn()},
 }));
 
 const storageKeys = {layoutsKey: 'l', lastActiveLayoutKey: 'a', boxVisibilityKeyBase: 'boxVisCustomize-1'};
 const createBoxes = (): Record<string, IBox> => ({jobList: {name: 'jobList', title: 'Jobs', visible: true} as unknown as IBox});
 
 function setup(layoutName: string | undefined, result: Record<string, IBox> | null) {
-    const open = jest.fn().mockResolvedValue(result);
-    const onVisibilityChanged = jest.fn();
+    const open = vi.fn().mockResolvedValue(result);
+    const onVisibilityChanged = vi.fn();
     const hook = renderHook(() => useCustomizePanelsDialog({
         storageKeys, createBoxes, currentLayoutName: layoutName, onVisibilityChanged,
         openDialog: async () => ({open}) as never,

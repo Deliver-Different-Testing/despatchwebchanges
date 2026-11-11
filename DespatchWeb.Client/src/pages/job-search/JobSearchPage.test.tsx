@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React, {act} from 'react';
 import {render, screen, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -16,11 +17,11 @@ const mockPanel: {
     onBackendFilter?: (column: string, direction: string) => void;
     onCourierSearch?: (text: string) => Promise<unknown[]>;
     onSpeedSearch?: (text: string) => Promise<unknown[]>;
-    updateParams: Record<string, jest.Mock>;
+    updateParams: Record<string, Mock>;
     onJobSelect: Record<string, (job: unknown) => void>;
 } = {updateParams: {}, onJobSelect: {}};
 
-jest.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', () => ({
+vi.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', () => ({
     SearchCriteriaPanel: ({onSearch, onCriteriaChange, onFromDateChange, onToDateChange, onDownload, onClientReport, onCourierSearch, onSpeedSearch}: {
         onSearch: (dates?: SearchActionDates) => void;
         onCriteriaChange: (f: string, v: unknown) => void;
@@ -43,14 +44,14 @@ jest.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', (
     },
 }));
 
-jest.mock('../../components/job-list/JobListPanel', () => ({
+vi.mock('../../components/job-list/JobListPanel', () => ({
     JobListPanel: ({storagePrefix, setUpdateSearchParamsCallback, onBackendFilter, onJobSelect}: {
         storagePrefix: string;
-        setUpdateSearchParamsCallback?: (cb: jest.Mock) => void;
+        setUpdateSearchParamsCallback?: (cb: Mock) => void;
         onBackendFilter?: (column: string, direction: string) => void;
         onJobSelect?: (job: unknown) => void;
     }) => {
-        const fn = mockPanel.updateParams[storagePrefix] ?? (mockPanel.updateParams[storagePrefix] = jest.fn());
+        const fn = mockPanel.updateParams[storagePrefix] ?? (mockPanel.updateParams[storagePrefix] = vi.fn());
         setUpdateSearchParamsCallback?.(fn);
         if (onBackendFilter) mockPanel.onBackendFilter = onBackendFilter;
         if (onJobSelect) mockPanel.onJobSelect[storagePrefix] = onJobSelect;
@@ -58,36 +59,36 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
     },
 }));
 
-jest.mock('../../api/dispatchExecutorApi', () => ({
-    ...jest.requireActual('../../api/dispatchExecutorApi'),
-    getDispatchJobDetail: jest.fn(() => new Promise(() => {})),
-    searchSpeedOptions: jest.fn(),
+vi.mock('../../api/dispatchExecutorApi', async () => ({
+    ...(await vi.importActual<typeof import('../../api/dispatchExecutorApi')>('../../api/dispatchExecutorApi')),
+    getDispatchJobDetail: vi.fn(() => new Promise(() => {})),
+    searchSpeedOptions: vi.fn(),
 }));
 
-jest.mock('../../api/courierApi', () => ({
-    ...jest.requireActual('../../api/courierApi'),
-    searchActiveCouriers: jest.fn(),
+vi.mock('../../api/courierApi', async () => ({
+    ...(await vi.importActual<typeof import('../../api/courierApi')>('../../api/courierApi')),
+    searchActiveCouriers: vi.fn(),
 }));
 
-jest.mock('../../api/preferencesApi', () => ({
-    getPreference: jest.fn().mockResolvedValue(null),
-    savePreference: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../api/preferencesApi', () => ({
+    getPreference: vi.fn().mockResolvedValue(null),
+    savePreference: vi.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../../components/common/task-history/TaskHistory', () => ({
+vi.mock('../../components/common/task-history/TaskHistory', () => ({
     TaskHistory: () => <div data-testid="mock-task-history" />,
 }));
 
-jest.mock('./components/ScanList', () => ({
+vi.mock('./components/ScanList', () => ({
     ScanList: () => <div data-testid="mock-scan-list" />,
 }));
 
-jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
+vi.mock('../../components/common/dispatch-map/DispatchMap', () => ({
     DispatchMap: () => <div data-testid="mock-dispatch-map" />,
 }));
 
-jest.mock('./hooks/useScanDetail', () => ({
-    useScanDetail: () => ({scans: [], isLoading: false, isError: false, refetch: jest.fn()}),
+vi.mock('./hooks/useScanDetail', () => ({
+    useScanDetail: () => ({scans: [], isLoading: false, isError: false, refetch: vi.fn()}),
 }));
 
 import {JobSearchPage} from './JobSearchPage';
@@ -102,7 +103,7 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof JobSearchPage
         <QueryClientProvider client={queryClient}>
             <MantineTestProvider>
                 <JobSearchPage
-                    showToast={jest.fn()}
+                    showToast={vi.fn()}
                     isUsCustomer={false}
                     timeZone="New Zealand Standard Time"
                     {...overrides}
@@ -143,7 +144,7 @@ describe('JobSearchPage', () => {
     });
 
     it('opens a newly created job in the detail panel via the layout bridge', async () => {
-        (getDispatchJobDetail as jest.Mock).mockResolvedValueOnce({id: 42, jobNo: 'J42'});
+        (getDispatchJobDetail as Mock).mockResolvedValueOnce({id: 42, jobNo: 'J42'});
         let bridge: JobSearchLayoutBridge | undefined;
         renderPage({onLayoutBridgeReady: b => { bridge = b; }});
 
@@ -211,7 +212,7 @@ describe('JobSearchPage', () => {
     });
 
     it('downloads via the real PodSearchDownload endpoint in a new tab', () => {
-        const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+        const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
         renderPage();
         act(() => {
             mockPanel.onDownload?.();
@@ -223,7 +224,7 @@ describe('JobSearchPage', () => {
     });
 
     it('opens the client jobs report via the real ClientJobsReportDownload endpoint', () => {
-        const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+        const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
         renderPage();
         act(() => {
             mockPanel.onClientReport?.();
@@ -261,7 +262,7 @@ describe('JobSearchPage', () => {
         });
 
         it('exports the just-flushed dates on download and client report', () => {
-            const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+            const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
             renderPage();
 
             flushDatesAnd(dates => mockPanel.onDownload?.(dates));
@@ -294,22 +295,22 @@ describe('JobSearchPage', () => {
 describe('JobSearchPage error feedback', () => {
     // These three paths used to fail with nothing but a console.error, so an
     // operator saw a spinner stop or an empty dropdown and no explanation.
-    const suppress = () => jest.spyOn(console, 'error').mockImplementation(() => {});
+    const suppress = () => vi.spyOn(console, 'error').mockImplementation(() => {});
 
     beforeEach(() => {
         mockPanel.onCourierSearch = undefined;
         mockPanel.onSpeedSearch = undefined;
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('toasts when the full job detail fails to load', async () => {
         suppress();
-        (getDispatchJobDetail as jest.Mock).mockRejectedValue(new Error('boom'));
-        const showToast = jest.fn();
+        (getDispatchJobDetail as Mock).mockRejectedValue(new Error('boom'));
+        const showToast = vi.fn();
         renderPage({showToast});
 
         await act(async () => {
@@ -321,8 +322,8 @@ describe('JobSearchPage error feedback', () => {
 
     it('toasts when the courier search fails', async () => {
         suppress();
-        (searchActiveCouriers as jest.Mock).mockRejectedValue(new Error('boom'));
-        const showToast = jest.fn();
+        (searchActiveCouriers as Mock).mockRejectedValue(new Error('boom'));
+        const showToast = vi.fn();
         renderPage({showToast});
 
         await act(async () => {
@@ -334,8 +335,8 @@ describe('JobSearchPage error feedback', () => {
 
     it('toasts when the speed search fails', async () => {
         suppress();
-        (searchSpeedOptions as jest.Mock).mockRejectedValue(new Error('boom'));
-        const showToast = jest.fn();
+        (searchSpeedOptions as Mock).mockRejectedValue(new Error('boom'));
+        const showToast = vi.fn();
         renderPage({showToast});
 
         await act(async () => {

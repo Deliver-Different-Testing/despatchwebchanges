@@ -6,7 +6,7 @@ import {ColorModeSwitcher} from './ColorModeSwitcher';
 import {SideNav} from './SideNav';
 import {createDfrntTheme, onBrandScrim} from '../../../theme/dfrntMantineTheme';
 
-const setPreference = jest.fn();
+const setPreference = vi.fn();
 
 const renderSwitcher = (preference: 'system' | 'light' | 'dark' = 'system') =>
     renderWithMantine(
@@ -17,7 +17,7 @@ const renderSwitcher = (preference: 'system' | 'light' | 'dark' = 'system') =>
 
 describe('ColorModeSwitcher', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('offers system, light and dark, checks the current preference, and applies a pick', () => {
@@ -33,7 +33,7 @@ describe('ColorModeSwitcher', () => {
 
     it('sits in the side nav on the Ink scrim, whatever the tenant primary', () => {
         renderWithMantine(
-            <SideNav open userName="John Doe" isUsCustomer={false} currentState="home" onClose={jest.fn()} onNavigate={jest.fn()} />,
+            <SideNav open userName="John Doe" isUsCustomer={false} currentState="home" onClose={vi.fn()} onNavigate={vi.fn()} />,
             {theme: createDfrntTheme({highContrast: false, primary: '#f4c430'})},
         );
 

@@ -1,4 +1,3 @@
-/** @jest-environment jest-fixed-jsdom */
 /**
  * Messaging API Integration Tests
  *
@@ -7,8 +6,8 @@
  */
 
 // Mock the messaging dialog module (opens a real dialog)
-jest.mock('../../components/dialogs/messaging-dialog/messaging-dialog-react.module', () => ({
-    openMessagingDialog: jest.fn(),
+vi.mock('../../components/dialogs/messaging-dialog/messaging-dialog-react.module', () => ({
+    openMessagingDialog: vi.fn(),
 }));
 
 import {server} from '../../test/utils/msw/setupIntegration';

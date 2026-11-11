@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import dayjs from 'dayjs';
@@ -5,13 +6,13 @@ import {MantineTestProvider} from '../../../test/utils';
 import {OverviewDeliveriesBox} from './OverviewDeliveriesBox';
 import {MAX_OVERVIEW_PANEL_DAYS} from '../lib/overviewPanelRange';
 
-jest.mock('../../../hooks/useOverviewApi', () => ({
-    useOverviewJobs: jest.fn(),
+vi.mock('../../../hooks/useOverviewApi', () => ({
+    useOverviewJobs: vi.fn(),
 }));
 
 import {useOverviewJobs} from '../../../hooks/useOverviewApi';
 
-const mockUseOverviewJobs = useOverviewJobs as jest.MockedFunction<typeof useOverviewJobs>;
+const mockUseOverviewJobs = useOverviewJobs as MockedFunction<typeof useOverviewJobs>;
 
 // ContactID is 0 in setup.ts
 const STATUS_KEY = 'dispatchOverviewStatus-0';
@@ -41,7 +42,7 @@ const renderBox = (props: Partial<React.ComponentProps<typeof OverviewDeliveries
                 despatchViewIds={[]}
                 startDate={startDate}
                 endDate={endDate}
-                onSelectJob={jest.fn()}
+                onSelectJob={vi.fn()}
                 {...props}
             />
         </MantineTestProvider>,
@@ -53,7 +54,7 @@ describe('OverviewDeliveriesBox', () => {
     beforeEach(() => {
         localStorage.clear();
         sessionStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockUseOverviewJobs.mockReturnValue({
             data: {items: [delivery], total: 1, page: 1, pages: 1},
             isLoading: false,
@@ -121,7 +122,7 @@ describe('OverviewDeliveriesBox', () => {
     });
 
     it('debounces the search box into the query', () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         try {
             renderBox();
 
@@ -131,11 +132,11 @@ describe('OverviewDeliveriesBox', () => {
             expect(lastParams().search).toBeUndefined();
 
             act(() => {
-                jest.advanceTimersByTime(400);
+                vi.advanceTimersByTime(400);
             });
             expect(lastParams().search).toBe('acme');
         } finally {
-            jest.useRealTimers();
+            vi.useRealTimers();
         }
     });
 
@@ -170,7 +171,7 @@ describe('OverviewDeliveriesBox', () => {
     /* The Dispatch board has a Job Detail panel, so a row selects rather than
      * navigating — no confirmation step, and no per-row map action either. */
     it('selects the job straight into the detail panel, with no confirm step', () => {
-        const onSelectJob = jest.fn();
+        const onSelectJob = vi.fn();
         renderBox({onSelectJob});
 
         fireEvent.click(screen.getByRole('button', {name: 'View job details'}));

@@ -4,6 +4,7 @@
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import { setupUser } from '../../../test/utils/setupUser';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
@@ -12,13 +13,13 @@ import {EditAfterhoursDialog, EditAfterhoursDialogProps} from './EditAfterhoursD
 import {AfterHoursCourierSchedule, CourierSuggestion, TimeZoneOption} from '../../../types';
 import {useCourierSearch, useTimeZoneOptions} from '../../../hooks/useCourierApi';
 
-jest.mock('../../../hooks/useCourierApi', () => ({
-    useCourierSearch: jest.fn(),
-    useTimeZoneOptions: jest.fn(),
+vi.mock('../../../hooks/useCourierApi', () => ({
+    useCourierSearch: vi.fn(),
+    useTimeZoneOptions: vi.fn(),
 }));
 
-const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
-const mockUseTimeZoneOptions = useTimeZoneOptions as jest.MockedFunction<typeof useTimeZoneOptions>;
+const mockUseCourierSearch = useCourierSearch as MockedFunction<typeof useCourierSearch>;
+const mockUseTimeZoneOptions = useTimeZoneOptions as MockedFunction<typeof useTimeZoneOptions>;
 
 function renderWithProviders(props: EditAfterhoursDialogProps) {
     return renderWithMantineProviders(<EditAfterhoursDialog {...props} />);
@@ -29,9 +30,9 @@ function createDefaultProps(overrides?: Partial<EditAfterhoursDialogProps>): Edi
         open: true,
         schedule: null,
         isUsTenant: false,
-        onClose: jest.fn(),
-        onSave: jest.fn(),
-        showToast: jest.fn(),
+        onClose: vi.fn(),
+        onSave: vi.fn(),
+        showToast: vi.fn(),
         ...overrides,
     };
 }
@@ -117,7 +118,7 @@ describe('EditAfterhoursDialog', () => {
         });
 
         it('shows error toast when timezone loading fails', async () => {
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             mockUseTimeZoneOptions.mockReturnValue({data: [], isLoading: false, error: new Error('Failed')} as any);
             renderWithProviders(createDefaultProps({isUsTenant: true, showToast}));
 
@@ -164,7 +165,7 @@ describe('EditAfterhoursDialog', () => {
         });
 
         it('displays error toast when search fails', async () => {
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             mockUseCourierSearch.mockReturnValue({
                 data: [],
                 isFetching: false,
@@ -226,7 +227,7 @@ describe('EditAfterhoursDialog', () => {
     describe('Dialog Actions', () => {
         it('calls onClose when Cancel is clicked', async () => {
             const user = setupUser();
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithProviders(createDefaultProps({onClose}));
 
             await user.click(screen.getByRole('button', {name: 'Cancel'}));
@@ -235,7 +236,7 @@ describe('EditAfterhoursDialog', () => {
 
         it('calls onSave with schedule data preserving schedule ID', async () => {
             const user = setupUser();
-            const onSave = jest.fn();
+            const onSave = vi.fn();
             renderWithProviders(createDefaultProps({schedule: existingSchedule, onSave, isUsTenant: false}));
 
             await waitFor(() => {

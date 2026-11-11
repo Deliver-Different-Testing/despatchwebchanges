@@ -7,8 +7,8 @@ import {MapZoomViewControls} from '../../../components/common/dispatch-map/MapZo
 import {MapControlButtons} from '../../../components/common/dispatch-map/MapControlButtons';
 import type {DriversPanelProps, MapControlsProps} from '../CourierMapPage.types';
 
-jest.mock('../../../hooks/glassSupport', () => ({
-    ...jest.requireActual('../../../hooks/glassSupport'),
+vi.mock('../../../hooks/glassSupport', async () => ({
+    ...(await vi.importActual<typeof import('../../../hooks/glassSupport')>('../../../hooks/glassSupport')),
     isLiquidGlassSupported: () => true,
 }));
 
@@ -18,22 +18,22 @@ const panelProps = {
     isLoading: false,
     searchInputValue: '',
     searchTerm: '',
-    onSearchChange: jest.fn(),
-    onDriverClick: jest.fn(),
+    onSearchChange: vi.fn(),
+    onDriverClick: vi.fn(),
     isPanelHidden: false,
-    onTogglePanel: jest.fn(),
+    onTogglePanel: vi.fn(),
     fleetOptions: [],
     isFleetOptionsLoading: false,
     selectedFleetIds: [],
-    onSelectedFleetIdsChange: jest.fn(),
+    onSelectedFleetIdsChange: vi.fn(),
 } as unknown as DriversPanelProps;
 
 const controlsProps = {
-    onFitAll: jest.fn(),
-    onRefresh: jest.fn(),
+    onFitAll: vi.fn(),
+    onRefresh: vi.fn(),
     isLoading: false,
     displaySettings: {},
-    onDisplaySettingsChange: jest.fn(),
+    onDisplaySettingsChange: vi.fn(),
 } as unknown as MapControlsProps;
 
 describe('Courier map liquid glass', () => {
@@ -51,10 +51,10 @@ describe('Courier map liquid glass', () => {
                 <MapZoomViewControls map={null} platform={null} defaultLayers={null}/>
                 <MapControlButtons
                     controlState={{autoZoomEnabled: false, couriersOnlyEnabled: false, urgentArmyOnlyEnabled: false, couriersLargeViewEnabled: false}}
-                    onToggleAutoZoom={jest.fn()}
-                    onToggleCouriersOnly={jest.fn()}
-                    onToggleUrgentArmyOnly={jest.fn()}
-                    onToggleCouriersLargeView={jest.fn()}
+                    onToggleAutoZoom={vi.fn()}
+                    onToggleCouriersOnly={vi.fn()}
+                    onToggleUrgentArmyOnly={vi.fn()}
+                    onToggleCouriersLargeView={vi.fn()}
                 />
             </>,
         );

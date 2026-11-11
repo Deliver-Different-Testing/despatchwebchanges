@@ -288,7 +288,6 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             })
             .catch((err) => console.error('[DispatchPage] failed to load courier display mode preference:', err));
         return () => { cancelled = true; };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- loaded once on mount
     }, []);
 
     const {mode: courierFlagLastDelivery} = useCourierFlagLastDelivery(isUsCustomer);
@@ -436,7 +435,6 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             initialParams: baseParams,
             refetchInterval: refreshIntervals.jobsMs,
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refreshIntervals.jobsMs, clearListId, filters.startDate, filters.endDate, filters.useTime, filters.despatchViewIds]);
 
     const handleRefreshBox = useCallback((boxName: string) => {

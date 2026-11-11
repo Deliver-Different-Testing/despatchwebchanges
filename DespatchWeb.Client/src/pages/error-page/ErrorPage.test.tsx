@@ -97,7 +97,7 @@ describe('ErrorPage', () => {
 
     describe('Interactions', () => {
         it('should call onGoBack when Go back button is clicked', () => {
-            const onGoBack = jest.fn();
+            const onGoBack = vi.fn();
             renderWithTheme(<ErrorPage onGoBack={onGoBack} />);
 
             fireEvent.click(screen.getByRole('button', {name: /go back/i}));
@@ -106,7 +106,7 @@ describe('ErrorPage', () => {
         });
 
         it('should call onGoHome when Go home button is clicked', () => {
-            const onGoHome = jest.fn();
+            const onGoHome = vi.fn();
             renderWithTheme(<ErrorPage onGoHome={onGoHome} />);
 
             fireEvent.click(screen.getByRole('button', {name: /go home/i}));
@@ -115,7 +115,7 @@ describe('ErrorPage', () => {
         });
 
         it('should call window.history.back when Go back is clicked without onGoBack handler', () => {
-            const historyBackSpy = jest.spyOn(window.history, 'back').mockImplementation(() => {});
+            const historyBackSpy = vi.spyOn(window.history, 'back').mockImplementation(() => {});
             renderWithTheme(<ErrorPage />);
 
             fireEvent.click(screen.getByRole('button', {name: /go back/i}));

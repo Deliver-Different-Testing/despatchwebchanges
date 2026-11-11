@@ -27,16 +27,16 @@ const mockEventTypes: EventType[] = [
 const createMockProps = (overrides = {}) => ({
     open: true,
     job: mockJob,
-    onClose: jest.fn(),
-    onSubmit: jest.fn().mockResolvedValue(undefined),
-    onLoadEventTypes: jest.fn().mockResolvedValue(mockEventTypes),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onSubmit: vi.fn().mockResolvedValue(undefined),
+    onLoadEventTypes: vi.fn().mockResolvedValue(mockEventTypes),
+    showToast: vi.fn(),
     timezone: 'Pacific/Auckland',
     ...overrides,
 });
 
 /** Never resolves, so the loading state is guaranteed for as long as the test needs it. */
-const neverResolves = () => jest.fn().mockImplementation(() => new Promise(() => {}));
+const neverResolves = () => vi.fn().mockImplementation(() => new Promise(() => {}));
 
 describe('AddEventDialog', () => {
     describe('Rendering', () => {

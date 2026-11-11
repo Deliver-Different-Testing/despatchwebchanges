@@ -73,7 +73,7 @@ describe('toastService', () => {
 
     describe('action button', () => {
         it('renders the action button, invokes onClick, and dismisses the toast', async () => {
-            const onClick = jest.fn();
+            const onClick = vi.fn();
             await show(() => toastService.showToast('Job sent', 'success', {label: 'Open', onClick}));
 
             const actionButton = await screen.findByRole('button', {name: 'Open'});
@@ -160,9 +160,9 @@ describe('toastService', () => {
     describe('console logging', () => {
         // Toasts are transient, so the console is the only trail of what was shown.
         it('logs each toast type at the matching console level', async () => {
-            const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
             await show(() => toastService.showSuccessToast('Test success'));
             expect(logSpy).toHaveBeenCalledWith('[Toast SUCCESS]', 'Test success');
@@ -182,9 +182,9 @@ describe('toastService', () => {
         });
 
         it('routes showToast to the right console level for each type', async () => {
-            const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
             await show(() => toastService.showToast('Success', 'success'));
             expect(logSpy).toHaveBeenCalledWith('[Toast SUCCESS]', 'Success');

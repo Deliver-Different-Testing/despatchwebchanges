@@ -18,7 +18,7 @@ const renderTh = (props: Partial<React.ComponentProps<typeof SortableTh>> = {}) 
         <Table>
             <Table.Thead>
                 <Table.Tr>
-                    <SortableTh active={false} direction="asc" onSort={jest.fn()} {...props}>
+                    <SortableTh active={false} direction="asc" onSort={vi.fn()} {...props}>
                         Job No
                     </SortableTh>
                 </Table.Tr>
@@ -35,7 +35,7 @@ describe('SortableTh', () => {
             <Table>
                 <Table.Thead>
                     <Table.Tr>
-                        <SortableTh active direction="desc" onSort={jest.fn()}>Job No</SortableTh>
+                        <SortableTh active direction="desc" onSort={vi.fn()}>Job No</SortableTh>
                     </Table.Tr>
                 </Table.Thead>
             </Table>,
@@ -44,7 +44,7 @@ describe('SortableTh', () => {
     });
 
     it('is a real button, so the sort is reachable by keyboard', async () => {
-        const onSort = jest.fn();
+        const onSort = vi.fn();
         renderTh({onSort});
 
         const button = screen.getByRole('button', {name: /Job No/});
@@ -67,11 +67,11 @@ describe('TablePager', () => {
         totalCount: 50,
         page: 1,
         pageSize: 20,
-        onPageChange: jest.fn(),
-        onPageSizeChange: jest.fn(),
+        onPageChange: vi.fn(),
+        onPageSizeChange: vi.fn(),
     };
 
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('renders the range text the tables assert on', () => {
         renderWithMantine(<TablePager {...pagerProps} />);

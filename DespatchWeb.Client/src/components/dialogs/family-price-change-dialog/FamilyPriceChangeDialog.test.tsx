@@ -24,10 +24,10 @@ function renderDialog(overrides?: {
     isApplying?: boolean;
 }) {
     const handlers = {
-        onToggle: jest.fn(),
-        onToggleAll: jest.fn(),
-        onAcceptSelected: jest.fn(),
-        onKeepAll: jest.fn(),
+        onToggle: vi.fn(),
+        onToggleAll: vi.fn(),
+        onAcceptSelected: vi.fn(),
+        onKeepAll: vi.fn(),
     };
     render(
             <FamilyPriceChangeDialog

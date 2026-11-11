@@ -3,10 +3,10 @@ import { setupUser } from '../../../test/utils/setupUser';
 import {render, screen} from '@testing-library/react';
 
 // Capture the args useTasks is called with so we can assert filter wiring.
-const useTasksMock = jest.fn();
-const noopMutation = () => ({mutateAsync: jest.fn().mockResolvedValue(undefined)});
+const useTasksMock = vi.fn();
+const noopMutation = () => ({mutateAsync: vi.fn().mockResolvedValue(undefined)});
 
-jest.mock('../../../hooks/useTasksApi', () => ({
+vi.mock('../../../hooks/useTasksApi', () => ({
     useTasks: (...args: unknown[]) => useTasksMock(...args),
     useActiveStaff: () => ({data: [{id: 7, text: 'Alice'}]}),
     useEventTypes: () => ({data: [{id: 3, text: 'Callback'}]}),
@@ -18,11 +18,11 @@ jest.mock('../../../hooks/useTasksApi', () => ({
     useTaskComponentServices: () => ({tasksService: {}, dispatchService: {}}),
 }));
 
-jest.mock('../../../api/tasksApi', () => ({
-    tasksApi: {getActiveStaff: jest.fn(), getDeliveryJourney: jest.fn()},
+vi.mock('../../../api/tasksApi', () => ({
+    tasksApi: {getActiveStaff: vi.fn(), getDeliveryJourney: vi.fn()},
 }));
 
-jest.mock('../task-item/TaskItem', () => ({
+vi.mock('../task-item/TaskItem', () => ({
     TaskItem: ({task, onTaskClick, config}: {
         task: {id: number; title: string; jobId?: number};
         onTaskClick?: (t: {id: number; jobId?: number}) => void;
@@ -40,7 +40,7 @@ import {MantineTestProvider} from '../../../test/utils';
 function renderBox(overrides: Partial<React.ComponentProps<typeof TasksBox>> = {}) {
     return render(
         <MantineTestProvider>
-            <TasksBox appPage={1 as never} showToast={jest.fn()} {...overrides} />
+            <TasksBox appPage={1 as never} showToast={vi.fn()} {...overrides} />
         </MantineTestProvider>,
     );
 }
@@ -53,7 +53,7 @@ const sampleTasks = [
 describe('TasksBox', () => {
     beforeEach(() => {
         useTasksMock.mockReset();
-        useTasksMock.mockReturnValue({data: [], isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: [], isLoading: false, refetch: vi.fn()});
     });
 
     it('prompts to select a job when none is provided and does not enable the query', () => {
@@ -67,7 +67,7 @@ describe('TasksBox', () => {
 
     it('renders a TaskItem per task and exposes the status filters in the Filters menu', async () => {
         const user = setupUser();
-        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: vi.fn()});
         renderBox({jobId: 42});
 
         expect(screen.getByTestId('mock-task-1')).toBeInTheDocument();
@@ -80,7 +80,7 @@ describe('TasksBox', () => {
     });
 
     it('shows an empty message when the job has no tasks', () => {
-        useTasksMock.mockReturnValue({data: [], isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: [], isLoading: false, refetch: vi.fn()});
         renderBox({jobId: 42});
         expect(screen.getByRole('heading', {name: /no tasks/i})).toBeInTheDocument();
         expect(screen.getByText(/no tasks matching your filter/i)).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe('TasksBox', () => {
 
     it('rebuilds the filter request when a status filter is selected', async () => {
         const user = setupUser();
-        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: vi.fn()});
         renderBox({jobId: 42});
 
         await user.click(screen.getByRole('button', {name: /Filters/}));
@@ -101,8 +101,8 @@ describe('TasksBox', () => {
 
     it('selects the task\'s job when a task is clicked', async () => {
         const user = setupUser();
-        const onSelectJob = jest.fn();
-        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        const onSelectJob = vi.fn();
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: vi.fn()});
         renderBox({jobId: 42, onSelectJob});
 
         await user.click(screen.getByRole('button', {name: 'Task One'}));
@@ -111,7 +111,7 @@ describe('TasksBox', () => {
 
     it('applies the staff filter to the task request', async () => {
         const user = setupUser();
-        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: vi.fn()});
         renderBox({jobId: 42});
 
         await user.click(screen.getByRole('button', {name: /Filters/}));
@@ -123,7 +123,7 @@ describe('TasksBox', () => {
     });
 
     it('scopes the request to the current job by default', () => {
-        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: vi.fn()});
         renderBox({jobId: 42});
 
         const lastCall = useTasksMock.mock.calls.at(-1)!;
@@ -134,7 +134,7 @@ describe('TasksBox', () => {
 
     it('drops the jobId and shows job ids when switched to All tasks', async () => {
         const user = setupUser();
-        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: vi.fn()});
         renderBox({jobId: 42});
 
         await user.click(screen.getByRole('radio', {name: 'All tasks'}));
@@ -146,7 +146,7 @@ describe('TasksBox', () => {
 
     it('loads tasks in All tasks mode even when no job is selected', async () => {
         const user = setupUser();
-        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: vi.fn()});
         renderBox();
 
         // With no job, current mode prompts to select one and keeps the query disabled.
@@ -163,7 +163,7 @@ describe('TasksBox', () => {
 
     it('keeps the scope when the active toggle button is clicked again', async () => {
         const user = setupUser();
-        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: jest.fn()});
+        useTasksMock.mockReturnValue({data: sampleTasks, isLoading: false, refetch: vi.fn()});
         renderBox({jobId: 42});
 
         await user.click(screen.getByRole('radio', {name: 'This job'}));

@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import {
     lastDeliveryChoiceOptions,
     loadLastDeliverySettings,
@@ -8,27 +9,27 @@ import {deletePreference, getPreference, savePreference} from '../api/preference
 import {getTenantCourierFlagLastDeliveryDefault} from '../api/tenantSettingsApi';
 import {StaffPreferenceKey} from '../types/enums/staff-preference-key.enum';
 
-jest.mock('../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
-    deletePreference: jest.fn(),
+vi.mock('../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
+    deletePreference: vi.fn(),
 }));
-jest.mock('../api/tenantSettingsApi', () => ({
-    getTenantCourierFlagLastDeliveryDefault: jest.fn(),
+vi.mock('../api/tenantSettingsApi', () => ({
+    getTenantCourierFlagLastDeliveryDefault: vi.fn(),
 }));
 
-const mockGet = getPreference as jest.Mock;
-const mockSave = savePreference as jest.Mock;
-const mockDelete = deletePreference as jest.Mock;
-const mockTenant = getTenantCourierFlagLastDeliveryDefault as jest.Mock;
+const mockGet = getPreference as Mock;
+const mockSave = savePreference as Mock;
+const mockDelete = deletePreference as Mock;
+const mockTenant = getTenantCourierFlagLastDeliveryDefault as Mock;
 
 describe('courier flag last delivery preference', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+        vi.clearAllMocks();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => vi.restoreAllMocks());
 
     it('resolves the user override first, then the tenant default, then the country default', () => {
         expect(resolveLastDeliveryMode({userOverride: 'time', tenantDefault: 'region'}, true)).toBe('time');

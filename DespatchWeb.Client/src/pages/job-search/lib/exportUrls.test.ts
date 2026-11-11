@@ -3,7 +3,7 @@ import {getClientJobsReportDownloadUrl, getPodJobsDownloadUrl} from './exportUrl
 
 // Format dates predictably so the assertions focus on URL structure, not the
 // tenant-timezone formatting (which dateUtils owns and tests separately).
-jest.mock('../../../utils/dateUtils', () => ({
+vi.mock('../../../utils/dateUtils', () => ({
     formatDateForApiWithTzs: (d: {format: (f: string) => string}) => d.format('YYYY-MM-DD'),
 }));
 

@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MantineTestProvider} from '../../../test/utils';
@@ -8,23 +9,23 @@ import {DriverEmail, PaginatedResponse} from '../../../types';
 import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks/useDriverManagementApi';
 
 // Mock the hooks
-jest.mock('../../../hooks/useDriverManagementApi', () => ({
-    useDriverEmails: jest.fn(),
-    useSendEmailToCouriers: jest.fn(),
+vi.mock('../../../hooks/useDriverManagementApi', () => ({
+    useDriverEmails: vi.fn(),
+    useSendEmailToCouriers: vi.fn(),
 }));
 
 // Mock the API
-jest.mock('../../../api/driverManagementApi', () => ({
+vi.mock('../../../api/driverManagementApi', () => ({
     driverManagementApi: {
-        exportDriverEmailsCsv: jest.fn(),
+        exportDriverEmailsCsv: vi.fn(),
     },
 }));
 
-const mockUseDriverEmails = useDriverEmails as jest.MockedFunction<typeof useDriverEmails>;
-const mockUseSendEmailToCouriers = useSendEmailToCouriers as jest.MockedFunction<typeof useSendEmailToCouriers>;
+const mockUseDriverEmails = useDriverEmails as MockedFunction<typeof useDriverEmails>;
+const mockUseSendEmailToCouriers = useSendEmailToCouriers as MockedFunction<typeof useSendEmailToCouriers>;
 
 
-const renderWithProviders = (showToast = jest.fn()) => {
+const renderWithProviders = (showToast = vi.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
@@ -45,7 +46,7 @@ const createMockData = (): PaginatedResponse<DriverEmail> => ({
     pages: 1,
 });
 
-const refetch = jest.fn();
+const refetch = vi.fn();
 
 const setupMocks = (data?: PaginatedResponse<DriverEmail>, isLoading = false, isError = false) => {
     mockUseDriverEmails.mockReturnValue({
@@ -57,7 +58,7 @@ const setupMocks = (data?: PaginatedResponse<DriverEmail>, isLoading = false, is
     } as any);
 
     mockUseSendEmailToCouriers.mockReturnValue({
-        mutateAsync: jest.fn(),
+        mutateAsync: vi.fn(),
         isPending: false,
     } as any);
 };

@@ -2,26 +2,27 @@
  * Messaging API Service Tests
  */
 
+import type {Mocked} from 'vitest';
 import {messagingApi, MessagingApiService} from './messagingApi';
 import {apiClient} from './client';
 import {createMockApiError} from '../test/utils';
 import {MessageDeliveryType, OtherMessagePartyType,} from '../components/dialogs/messaging-dialog/types';
 
 // Mock the messaging dialog module (opens a real dialog)
-jest.mock('../components/dialogs/messaging-dialog/messaging-dialog-react.module', () => ({
-    openMessagingDialog: jest.fn(),
+vi.mock('../components/dialogs/messaging-dialog/messaging-dialog-react.module', () => ({
+    openMessagingDialog: vi.fn(),
 }));
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
-        delete: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
+        delete: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('MessagingApiService', () => {
     describe('getUnreadMessageCount', () => {

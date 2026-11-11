@@ -9,11 +9,11 @@ describe('ConfirmDialog', () => {
         opened: true,
         title: 'Send Quote Request',
         message: 'Send a quote request to Acme Air for job ABC123?',
-        onClose: jest.fn(),
-        onConfirm: jest.fn(),
+        onClose: vi.fn(),
+        onConfirm: vi.fn(),
     };
 
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('shows the title and message', () => {
         renderWithMantine(<ConfirmDialog {...props}/>);
@@ -71,7 +71,7 @@ describe('ConfirmDialog', () => {
 
         it('closes from OK', async () => {
             const user = setupUser();
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithMantine(
                 <ConfirmDialog opened title="Heads up" message="Noted." onClose={onClose}/>,
             );

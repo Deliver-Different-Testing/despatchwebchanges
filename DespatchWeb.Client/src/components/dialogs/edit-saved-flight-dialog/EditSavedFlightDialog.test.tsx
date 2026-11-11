@@ -2,6 +2,7 @@
  * EditSavedFlightDialog Component Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import dayjs from 'dayjs';
@@ -10,11 +11,11 @@ import { setupUser } from '../../../test/utils/setupUser';
 import {nationwideApi} from '../../../api/nationwideApi';
 import {renderWithMantine as renderWithTheme} from '../../../test/utils';
 
-jest.mock('../../../api/nationwideApi', () => ({
-    nationwideApi: {getRecurringFlightOptions: jest.fn(), getAllActiveAirportSuggestions: jest.fn()},
+vi.mock('../../../api/nationwideApi', () => ({
+    nationwideApi: {getRecurringFlightOptions: vi.fn(), getAllActiveAirportSuggestions: vi.fn()},
 }));
 
-const mockedApi = nationwideApi as jest.Mocked<typeof nationwideApi>;
+const mockedApi = nationwideApi as Mocked<typeof nationwideApi>;
 
 function flight(carrier: string, number: string, dep: string, arr: string, time: string) {
     return {
@@ -36,14 +37,14 @@ function defaultProps(overrides?: Record<string, any>) {
         toAirportId: 2,
         currentValue: undefined,
         departureDate: dayjs('2026-07-08'),
-        onClose: jest.fn(),
-        onSubmit: jest.fn(),
+        onClose: vi.fn(),
+        onSubmit: vi.fn(),
         ...overrides,
     };
 }
 
 beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockedApi.getRecurringFlightOptions.mockResolvedValue({
         flights: [
             flight('NZ', '123', 'AKL', 'WLG', '2026-07-08T08:00:00'),
@@ -59,7 +60,7 @@ beforeEach(() => {
 describe('EditSavedFlightDialog', () => {
     it('searches the route on open and submits the picked flight number', async () => {
         const user = setupUser();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithTheme(<EditSavedFlightDialog {...defaultProps({onSubmit})} />);
 
         await waitFor(() =>
@@ -78,7 +79,7 @@ describe('EditSavedFlightDialog', () => {
 
     it('warns on a custom flight number not on the route but still saves it', async () => {
         const user = setupUser();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithTheme(<EditSavedFlightDialog {...defaultProps({onSubmit})} />);
 
         await waitFor(() => expect(mockedApi.getRecurringFlightOptions).toHaveBeenCalled());
@@ -93,7 +94,7 @@ describe('EditSavedFlightDialog', () => {
 
     it('pre-fills the current saved flight and can clear it to an empty value', async () => {
         const user = setupUser();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithTheme(<EditSavedFlightDialog {...defaultProps({currentValue: 'NZ123', onSubmit})} />);
 
         const input = screen.getByRole('combobox') as HTMLInputElement;
@@ -112,7 +113,7 @@ describe('EditSavedFlightDialog', () => {
             ],
         });
         const user = setupUser();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithTheme(<EditSavedFlightDialog {...defaultProps({onSubmit})} />);
 
         await waitFor(() => expect(mockedApi.getRecurringFlightOptions).toHaveBeenCalled());
@@ -128,7 +129,7 @@ describe('EditSavedFlightDialog', () => {
 
     it('lets the operator enter a flight number when the route has no airports', async () => {
         const user = setupUser();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithTheme(
             <EditSavedFlightDialog {...defaultProps({fromAirportId: undefined, toAirportId: undefined, onSubmit})} />
         );
@@ -142,7 +143,7 @@ describe('EditSavedFlightDialog', () => {
     describe('add-flight mode (showAirportPickers)', () => {
         it('picks airports, searches that route, and submits flight + airports', async () => {
             const user = setupUser();
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             renderWithTheme(
                 <EditSavedFlightDialog
                     {...defaultProps({

@@ -4,12 +4,12 @@
  * Tests for the module's openInterCourierChargeDialog() function.
  */
 
-const mockRender = jest.fn();
+const mockRender = vi.fn();
 
-jest.mock('react-dom/client', () => ({
-    createRoot: jest.fn(() => ({
+vi.mock('react-dom/client', () => ({
+    createRoot: vi.fn(() => ({
         render: mockRender,
-        unmount: jest.fn(),
+        unmount: vi.fn(),
     })),
 }));
 
@@ -32,7 +32,7 @@ describe('InterCourierChargeDialogReactModule', () => {
     });
 
     it('accepts optional toastService parameter', () => {
-        const mockToast = {showToast: jest.fn()};
+        const mockToast = {showToast: vi.fn()};
         const result = openInterCourierChargeDialog(mockToast);
         expect(result).toBeInstanceOf(Promise);
     });

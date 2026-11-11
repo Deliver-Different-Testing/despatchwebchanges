@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * CourierMapPage Types and Constants Tests
  *
@@ -345,11 +345,11 @@ describe('CourierMapPage Type Definitions', () => {
     describe('MapControlsProps', () => {
         it('should accept valid props', () => {
             const props: MapControlsProps = {
-                onFitAll: jest.fn(),
-                onRefresh: jest.fn(),
+                onFitAll: vi.fn(),
+                onRefresh: vi.fn(),
                 isLoading: false,
                 displaySettings: LIVE_TEMPLATE,
-                onDisplaySettingsChange: jest.fn(),
+                onDisplaySettingsChange: vi.fn(),
             };
 
             expect(props.onFitAll).toBeDefined();
@@ -359,11 +359,11 @@ describe('CourierMapPage Type Definitions', () => {
 
         it('should accept loading state', () => {
             const props: MapControlsProps = {
-                onFitAll: jest.fn(),
-                onRefresh: jest.fn(),
+                onFitAll: vi.fn(),
+                onRefresh: vi.fn(),
                 isLoading: true,
                 displaySettings: LIVE_TEMPLATE,
-                onDisplaySettingsChange: jest.fn(),
+                onDisplaySettingsChange: vi.fn(),
             };
 
             expect(props.isLoading).toBe(true);
@@ -378,10 +378,10 @@ describe('CourierMapPage Type Definitions', () => {
                 map: null,
                 platform: null,
                 defaultLayers: null,
-                updateCouriers: jest.fn(),
-                centerOnCourier: jest.fn(),
-                setSelectedDriver: jest.fn(),
-                returnToOverview: jest.fn(),
+                updateCouriers: vi.fn(),
+                centerOnCourier: vi.fn(),
+                setSelectedDriver: vi.fn(),
+                returnToOverview: vi.fn(),
             };
 
             expect(returnValue).toHaveProperty('mapContainerRef');

@@ -1,16 +1,17 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mock} from 'vitest';
 import {addStopToJob, blankAddress, hasBothAddresses, stopKindForJob} from './jobAddStop';
 import {apiClient} from '../api/client';
 import {toastService} from './toastService';
 
-jest.mock('../api/client', () => ({apiClient: {post: jest.fn()}}));
-jest.mock('./toastService', () => ({toastService: {showWarningToast: jest.fn()}}));
+vi.mock('../api/client', () => ({apiClient: {post: vi.fn()}}));
+vi.mock('./toastService', () => ({toastService: {showWarningToast: vi.fn()}}));
 
 describe('jobAddStop', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('posts the pickup stop and returns the new job id', async () => {
-        (apiClient.post as jest.Mock).mockResolvedValue(300);
+        (apiClient.post as Mock).mockResolvedValue(300);
         const a = {...blankAddress(), addressLine1: '1 Pickup Ln'};
         await expect(addStopToJob(10, a, undefined)).resolves.toBe(300);
         expect(apiClient.post).toHaveBeenCalledWith('job/AddStopToJob',
@@ -19,7 +20,7 @@ describe('jobAddStop', () => {
 
     it('posts the delivery stop and propagates failures', async () => {
         const a = blankAddress();
-        (apiClient.post as jest.Mock).mockResolvedValueOnce(400).mockRejectedValueOnce(new Error('boom'));
+        (apiClient.post as Mock).mockResolvedValueOnce(400).mockRejectedValueOnce(new Error('boom'));
         await expect(addStopToJob(10, undefined, a)).resolves.toBe(400);
         expect(apiClient.post).toHaveBeenCalledWith('job/AddStopToJob',
             {jobId: 10, pickUpAddress: undefined, deliveryAddress: a});

@@ -1,8 +1,9 @@
+import type {Mock} from 'vitest';
 import {startBoxPointerDrag} from './boxPointerDrag';
 import {LIQUID_GLASS_STORAGE_KEY} from '../../../hooks/useLiquidGlassPreference';
 
-jest.mock('../../../hooks/glassSupport', () => ({
-    ...jest.requireActual('../../../hooks/glassSupport'),
+vi.mock('../../../hooks/glassSupport', async () => ({
+    ...(await vi.importActual<typeof import('../../../hooks/glassSupport')>('../../../hooks/glassSupport')),
     isLiquidGlassSupported: () => true,
 }));
 
@@ -41,10 +42,10 @@ const mouse = (type: string, x: number, y: number) =>
     window.dispatchEvent(new MouseEvent(type, {clientX: x, clientY: y, bubbles: true}));
 
 const hoverOver = (el: Element | null) => {
-    document.elementFromPoint = jest.fn(() => el);
+    document.elementFromPoint = vi.fn(() => el);
 };
 
-const grab = (handle: HTMLElement, source: {columnId: string; index: number}, onMove: jest.Mock) =>
+const grab = (handle: HTMLElement, source: {columnId: string; index: number}, onMove: Mock) =>
     startBoxPointerDrag(
         {clientX: 10, clientY: 10, button: 0, currentTarget: handle},
         source,
@@ -53,11 +54,11 @@ const grab = (handle: HTMLElement, source: {columnId: string; index: number}, on
 
 describe('startBoxPointerDrag', () => {
     let col1: ReturnType<typeof buildColumn>;
-    let onMove: jest.Mock;
+    let onMove: Mock;
 
     beforeEach(() => {
         col1 = buildColumn('col1', 3, 0);
-        onMove = jest.fn();
+        onMove = vi.fn();
     });
 
     afterEach(() => {

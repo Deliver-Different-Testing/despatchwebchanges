@@ -4,8 +4,8 @@ import {renderWithProviders} from '../../test/utils';
 import {PageTransition, PAGE_TRANSITION_DELAY_MS} from './PageTransition';
 
 describe('PageTransition', () => {
-    beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
 
     it('stays hidden for fast navigations, then announces the switch', () => {
         renderWithProviders(<PageTransition/>);
@@ -13,7 +13,7 @@ describe('PageTransition', () => {
         expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
         act(() => {
-            jest.advanceTimersByTime(PAGE_TRANSITION_DELAY_MS);
+            vi.advanceTimersByTime(PAGE_TRANSITION_DELAY_MS);
         });
 
         expect(screen.getByRole('status')).toHaveTextContent('Loading Despatch');
@@ -24,7 +24,7 @@ describe('PageTransition', () => {
         unmount();
 
         act(() => {
-            jest.advanceTimersByTime(PAGE_TRANSITION_DELAY_MS * 2);
+            vi.advanceTimersByTime(PAGE_TRANSITION_DELAY_MS * 2);
         });
 
         expect(screen.queryByRole('status')).not.toBeInTheDocument();

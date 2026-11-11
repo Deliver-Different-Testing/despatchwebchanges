@@ -1,3 +1,4 @@
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {render, screen, fireEvent, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -7,24 +8,24 @@ import {overviewApi} from '../../../api/overviewApi';
 import {configApi} from '../../../api/configApi';
 import type {OverviewTableParentJob} from '../OverviewPage.interfaces';
 
-jest.mock('../../../api/overviewApi', () => ({
+vi.mock('../../../api/overviewApi', () => ({
     overviewApi: {
-        getParentJobMap: jest.fn(),
+        getParentJobMap: vi.fn(),
     },
 }));
 
-jest.mock('../../../api/configApi', () => ({
+vi.mock('../../../api/configApi', () => ({
     configApi: {
-        getHereMapsKey: jest.fn(),
+        getHereMapsKey: vi.fn(),
     },
 }));
 
-jest.mock('../../../components/common/here-map/HereMap', () => ({
+vi.mock('../../../components/common/here-map/HereMap', () => ({
     HereMap: ({mapId}: {mapId: string}) => <div data-testid={mapId}>HereMap Mock</div>,
 }));
 
-const mockOverviewApi = overviewApi as jest.Mocked<typeof overviewApi>;
-const mockConfigApi = configApi as jest.Mocked<typeof configApi>;
+const mockOverviewApi = overviewApi as Mocked<typeof overviewApi>;
+const mockConfigApi = configApi as Mocked<typeof configApi>;
 
 const createTestQueryClient = () =>
     new QueryClient({
@@ -67,7 +68,7 @@ describe('MapDialog', () => {
     describe('when closed', () => {
         it('renders nothing when not open', () => {
             renderWithProviders(
-                <MapDialog open={false} onClose={jest.fn()} delivery={null} />,
+                <MapDialog open={false} onClose={vi.fn()} delivery={null} />,
             );
 
             expect(screen.queryByText('Map')).not.toBeInTheDocument();
@@ -82,7 +83,7 @@ describe('MapDialog', () => {
             const delivery = createMockDelivery();
 
             renderWithProviders(
-                <MapDialog open onClose={jest.fn()} delivery={delivery} />,
+                <MapDialog open onClose={vi.fn()} delivery={delivery} />,
             );
 
             expect(screen.getByText('J-100 Map')).toBeInTheDocument();
@@ -93,7 +94,7 @@ describe('MapDialog', () => {
             mockOverviewApi.getParentJobMap.mockReturnValue(new Promise(() => {}));
 
             renderWithProviders(
-                <MapDialog open onClose={jest.fn()} delivery={createMockDelivery()} />,
+                <MapDialog open onClose={vi.fn()} delivery={createMockDelivery()} />,
             );
 
             expect(screen.getByText('Loading map data…')).toBeInTheDocument();
@@ -104,7 +105,7 @@ describe('MapDialog', () => {
             mockOverviewApi.getParentJobMap.mockResolvedValueOnce(mockMapConfig);
 
             renderWithProviders(
-                <MapDialog open onClose={jest.fn()} delivery={createMockDelivery()} />,
+                <MapDialog open onClose={vi.fn()} delivery={createMockDelivery()} />,
             );
 
             expect(await screen.findByTestId('overviewMapContainer')).toBeInTheDocument();
@@ -114,7 +115,7 @@ describe('MapDialog', () => {
             mockConfigApi.getHereMapsKey.mockResolvedValueOnce('test-api-key');
             mockOverviewApi.getParentJobMap.mockResolvedValueOnce(mockMapConfig);
 
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithProviders(
                 <MapDialog open onClose={onClose} delivery={createMockDelivery()} />,
             );
@@ -131,7 +132,7 @@ describe('MapDialog', () => {
             mockOverviewApi.getParentJobMap.mockResolvedValueOnce(mockMapConfig);
 
             renderWithProviders(
-                <MapDialog open onClose={jest.fn()} delivery={createMockDelivery()} />,
+                <MapDialog open onClose={vi.fn()} delivery={createMockDelivery()} />,
             );
 
             expect(await screen.findByText('Origin')).toBeInTheDocument();
@@ -151,7 +152,7 @@ describe('MapDialog', () => {
             });
 
             renderWithProviders(
-                <MapDialog open onClose={jest.fn()} delivery={delivery} />,
+                <MapDialog open onClose={vi.fn()} delivery={delivery} />,
             );
 
             expect(await screen.findByText('Stop 1')).toBeInTheDocument();
@@ -171,7 +172,7 @@ describe('MapDialog', () => {
             });
 
             renderWithProviders(
-                <MapDialog open onClose={jest.fn()} delivery={delivery} />,
+                <MapDialog open onClose={vi.fn()} delivery={delivery} />,
             );
 
             expect(await screen.findByText('Stop 1')).toBeInTheDocument();
@@ -187,7 +188,7 @@ describe('MapDialog', () => {
     describe('API fetching', () => {
         it('does not fetch when dialog is closed', () => {
             renderWithProviders(
-                <MapDialog open={false} onClose={jest.fn()} delivery={createMockDelivery()} />,
+                <MapDialog open={false} onClose={vi.fn()} delivery={createMockDelivery()} />,
             );
 
             expect(mockConfigApi.getHereMapsKey).not.toHaveBeenCalled();
@@ -198,7 +199,7 @@ describe('MapDialog', () => {
             mockConfigApi.getHereMapsKey.mockResolvedValueOnce('test-api-key');
 
             renderWithProviders(
-                <MapDialog open onClose={jest.fn()} delivery={null} />,
+                <MapDialog open onClose={vi.fn()} delivery={null} />,
             );
 
             expect(mockOverviewApi.getParentJobMap).not.toHaveBeenCalled();

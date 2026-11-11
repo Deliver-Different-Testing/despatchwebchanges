@@ -8,8 +8,8 @@ describe('unsavedChangesGuard', () => {
     it('allows navigation when the registered guard is not dirty', async () => {
         const unregister = registerUnsavedChangesGuard({
             isDirty: () => false,
-            promptToLeave: jest.fn(),
-            save: jest.fn(),
+            promptToLeave: vi.fn(),
+            save: vi.fn(),
         });
 
         expect(await confirmNavigationAllowed()).toBe(true);
@@ -17,8 +17,8 @@ describe('unsavedChangesGuard', () => {
     });
 
     it('prompts when dirty, and blocks navigation on "stay"', async () => {
-        const promptToLeave = jest.fn().mockResolvedValue('stay');
-        const save = jest.fn();
+        const promptToLeave = vi.fn().mockResolvedValue('stay');
+        const save = vi.fn();
         const unregister = registerUnsavedChangesGuard({isDirty: () => true, promptToLeave, save});
 
         expect(await confirmNavigationAllowed()).toBe(false);
@@ -28,10 +28,10 @@ describe('unsavedChangesGuard', () => {
     });
 
     it('discards and allows navigation on "discard"', async () => {
-        const save = jest.fn();
+        const save = vi.fn();
         const unregister = registerUnsavedChangesGuard({
             isDirty: () => true,
-            promptToLeave: jest.fn().mockResolvedValue('discard'),
+            promptToLeave: vi.fn().mockResolvedValue('discard'),
             save,
         });
 
@@ -41,10 +41,10 @@ describe('unsavedChangesGuard', () => {
     });
 
     it('saves then allows navigation on "save-and-leave"', async () => {
-        const save = jest.fn().mockResolvedValue(undefined);
+        const save = vi.fn().mockResolvedValue(undefined);
         const unregister = registerUnsavedChangesGuard({
             isDirty: () => true,
-            promptToLeave: jest.fn().mockResolvedValue('save-and-leave'),
+            promptToLeave: vi.fn().mockResolvedValue('save-and-leave'),
             save,
         });
 
@@ -54,8 +54,8 @@ describe('unsavedChangesGuard', () => {
     });
 
     it('stops checking a guard once unregistered', async () => {
-        const promptToLeave = jest.fn();
-        const unregister = registerUnsavedChangesGuard({isDirty: () => true, promptToLeave, save: jest.fn()});
+        const promptToLeave = vi.fn();
+        const unregister = registerUnsavedChangesGuard({isDirty: () => true, promptToLeave, save: vi.fn()});
         unregister();
 
         expect(await confirmNavigationAllowed()).toBe(true);
@@ -63,10 +63,10 @@ describe('unsavedChangesGuard', () => {
     });
 
     it('a later registration replaces the earlier one', async () => {
-        const firstPrompt = jest.fn();
-        registerUnsavedChangesGuard({isDirty: () => true, promptToLeave: firstPrompt, save: jest.fn()});
-        const secondPrompt = jest.fn().mockResolvedValue('discard');
-        registerUnsavedChangesGuard({isDirty: () => true, promptToLeave: secondPrompt, save: jest.fn()});
+        const firstPrompt = vi.fn();
+        registerUnsavedChangesGuard({isDirty: () => true, promptToLeave: firstPrompt, save: vi.fn()});
+        const secondPrompt = vi.fn().mockResolvedValue('discard');
+        registerUnsavedChangesGuard({isDirty: () => true, promptToLeave: secondPrompt, save: vi.fn()});
 
         expect(await confirmNavigationAllowed()).toBe(true);
         expect(firstPrompt).not.toHaveBeenCalled();

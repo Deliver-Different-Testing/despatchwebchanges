@@ -24,8 +24,8 @@ describe('BoxHeader drag handle', () => {
     });
 
     it('calls onMoveUp / onMoveDown on arrow keys', () => {
-        const onMoveUp = jest.fn();
-        const onMoveDown = jest.fn();
+        const onMoveUp = vi.fn();
+        const onMoveDown = vi.fn();
         renderHeader({showDragHandle: true, onMoveUp, onMoveDown});
 
         const handle = screen.getByLabelText(/Reorder Filters/);
@@ -43,7 +43,7 @@ describe('BoxHeader drag handle', () => {
     });
 
     it('re-focuses the handle and notifies when focusHandleOnMount is set', () => {
-        const onHandleFocused = jest.fn();
+        const onHandleFocused = vi.fn();
         renderHeader({showDragHandle: true, focusHandleOnMount: true, onHandleFocused});
 
         const handle = screen.getByLabelText(/Reorder Filters/);
@@ -54,14 +54,14 @@ describe('BoxHeader drag handle', () => {
 
 describe('BoxHeader drag scope', () => {
     it('is not natively draggable, so the browser never paints its own drag image', () => {
-        renderHeader({showDragHandle: true, onGrab: jest.fn()});
+        renderHeader({showDragHandle: true, onGrab: vi.fn()});
 
         expect(screen.getByLabelText(/Reorder Filters/)).not.toHaveAttribute('draggable');
     });
 
     it('only starts a drag from the drag handle, not the title or refresh button', () => {
-        const onGrab = jest.fn();
-        renderHeader({showDragHandle: true, onGrab, showRefresh: true, onRefresh: jest.fn()});
+        const onGrab = vi.fn();
+        renderHeader({showDragHandle: true, onGrab, showRefresh: true, onRefresh: vi.fn()});
 
         fireEvent.pointerDown(screen.getByText('Filters'));
         fireEvent.pointerDown(screen.getByLabelText('Refresh'));
@@ -74,17 +74,17 @@ describe('BoxHeader drag scope', () => {
 
 describe('BoxHeader hide button', () => {
     it('does not render a hide button when showHideButton is false', () => {
-        renderHeader({showHideButton: false, onHide: jest.fn()});
+        renderHeader({showHideButton: false, onHide: vi.fn()});
         expect(screen.queryByLabelText(/Hide Filters/)).not.toBeInTheDocument();
     });
 
     it('renders the hide button when enabled', () => {
-        renderHeader({showHideButton: true, onHide: jest.fn()});
+        renderHeader({showHideButton: true, onHide: vi.fn()});
         expect(screen.getByLabelText(/Hide Filters/)).toBeInTheDocument();
     });
 
     it('calls onHide when clicked', () => {
-        const onHide = jest.fn();
+        const onHide = vi.fn();
         renderHeader({showHideButton: true, onHide});
 
         fireEvent.click(screen.getByLabelText(/Hide Filters/));

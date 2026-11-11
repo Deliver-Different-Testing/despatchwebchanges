@@ -28,11 +28,11 @@ const defaultProps = {
     rowKey: (row: MockRow) => row.id,
     isLoading: false,
     sort: {column: 'name', direction: 'asc'} as SortState,
-    onSortChange: jest.fn(),
+    onSortChange: vi.fn(),
     page: 1,
     pageSize: 10,
-    onPageChange: jest.fn(),
-    onPageSizeChange: jest.fn(),
+    onPageChange: vi.fn(),
+    onPageSizeChange: vi.fn(),
 };
 
 const renderTable = (props = {}) =>
@@ -73,7 +73,7 @@ describe('DataTable', () => {
 
     describe('Sorting', () => {
         it('should call onSortChange when sortable header is clicked', () => {
-            const onSortChange = jest.fn();
+            const onSortChange = vi.fn();
             renderTable({onSortChange});
 
             fireEvent.click(screen.getByText('ID'));
@@ -82,7 +82,7 @@ describe('DataTable', () => {
         });
 
         it('should toggle direction when active sort column is clicked', () => {
-            const onSortChange = jest.fn();
+            const onSortChange = vi.fn();
             renderTable({onSortChange, sort: {column: 'name', direction: 'asc'}});
 
             fireEvent.click(screen.getByText('Name'));
@@ -131,7 +131,7 @@ describe('DataTable', () => {
 
     describe('Row click', () => {
         it('should call onRowClick when row is clicked', () => {
-            const onRowClick = jest.fn();
+            const onRowClick = vi.fn();
             renderTable({onRowClick});
 
             fireEvent.click(screen.getByText('Alice'));
@@ -146,7 +146,7 @@ describe('DataTable', () => {
                 checkboxSelection: true,
                 allSelected: false,
                 someSelected: false,
-                onSelectAll: jest.fn(),
+                onSelectAll: vi.fn(),
                 renderCheckbox: (row: MockRow) => <input type="checkbox" data-testid={`check-${row.id}`} />,
             });
 

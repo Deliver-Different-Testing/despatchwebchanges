@@ -57,8 +57,8 @@ function renderPanel(overrides: Partial<PartnerRatePanelProps> = {}) {
     const defaultProps: PartnerRatePanelProps = {
         partnerId: 1,
         jobId: 42,
-        fetchRate: jest.fn().mockResolvedValue(rateCardResponse),
-        onRateChange: jest.fn(),
+        fetchRate: vi.fn().mockResolvedValue(rateCardResponse),
+        onRateChange: vi.fn(),
         ...overrides,
     };
     renderWithMantine(<PartnerRatePanel {...defaultProps} />);
@@ -67,7 +67,7 @@ function renderPanel(overrides: Partial<PartnerRatePanelProps> = {}) {
 
 describe('PartnerRatePanel', () => {
     it('shows loading state while fetching rate', () => {
-        renderPanel({fetchRate: jest.fn().mockReturnValue(new Promise(() => {}))});
+        renderPanel({fetchRate: vi.fn().mockReturnValue(new Promise(() => {}))});
         expect(screen.getByText(/Looking up rate/)).toBeInTheDocument();
     });
 
@@ -82,7 +82,7 @@ describe('PartnerRatePanel', () => {
     });
 
     it('emits the parsed rate + validity through onRateChange after pre-fill', async () => {
-        const onRateChange = jest.fn();
+        const onRateChange = vi.fn();
         renderPanel({onRateChange});
 
         await waitFor(() => {
@@ -91,7 +91,7 @@ describe('PartnerRatePanel', () => {
     });
 
     it('shows live quotes as a radio group with the first quote pre-selected', async () => {
-        renderPanel({fetchRate: jest.fn().mockResolvedValue(liveQuoteResponse)});
+        renderPanel({fetchRate: vi.fn().mockResolvedValue(liveQuoteResponse)});
 
         expect(await screen.findByText(/Live quote/)).toBeInTheDocument();
         expect(screen.getByText(/Standard Delivery/)).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('PartnerRatePanel', () => {
 
     it('lets the operator switch live quotes by clicking another row', async () => {
         const user = setupUser();
-        renderPanel({fetchRate: jest.fn().mockResolvedValue(liveQuoteResponse)});
+        renderPanel({fetchRate: vi.fn().mockResolvedValue(liveQuoteResponse)});
 
         expect(await screen.findByText(/Express Delivery/)).toBeInTheDocument();
         await user.click(screen.getByText(/Express Delivery/));
@@ -113,7 +113,7 @@ describe('PartnerRatePanel', () => {
     });
 
     it('shows the percentage hint and pre-fills with the derived rate (Mode 2)', async () => {
-        renderPanel({fetchRate: jest.fn().mockResolvedValue(percentageResponse)});
+        renderPanel({fetchRate: vi.fn().mockResolvedValue(percentageResponse)});
 
         expect(await screen.findByText(/Percentage/)).toBeInTheDocument();
         expect(screen.getByText(/60% of the job amount/)).toBeInTheDocument();
@@ -124,7 +124,7 @@ describe('PartnerRatePanel', () => {
     });
 
     it('shows the cost-plus hint and pre-fills with the partner quote (Mode 3)', async () => {
-        renderPanel({fetchRate: jest.fn().mockResolvedValue(costPlusResponse)});
+        renderPanel({fetchRate: vi.fn().mockResolvedValue(costPlusResponse)});
 
         expect(await screen.findByText(/Cost plus/)).toBeInTheDocument();
         expect(screen.getByText(/margin 25%/)).toBeInTheDocument();
@@ -135,14 +135,14 @@ describe('PartnerRatePanel', () => {
     });
 
     it('shows the manual-entry message when source is none', async () => {
-        renderPanel({fetchRate: jest.fn().mockResolvedValue(noRateResponse)});
+        renderPanel({fetchRate: vi.fn().mockResolvedValue(noRateResponse)});
 
         expect(await screen.findByText(/No pre-agreed rate/)).toBeInTheDocument();
     });
 
     it('renders the server message verbatim when source is none and a message was provided', async () => {
         renderPanel({
-            fetchRate: jest.fn().mockResolvedValue({
+            fetchRate: vi.fn().mockResolvedValue({
                 rateCardRate: null,
                 liveQuotes: [],
                 source: 'none',
@@ -154,7 +154,7 @@ describe('PartnerRatePanel', () => {
     });
 
     it('reports rate=0/valid=false when the input is cleared', async () => {
-        const onRateChange = jest.fn();
+        const onRateChange = vi.fn();
         const user = setupUser();
         renderPanel({onRateChange});
 
@@ -169,7 +169,7 @@ describe('PartnerRatePanel', () => {
     });
 
     it('falls back to a "none" response when fetchRate rejects', async () => {
-        renderPanel({fetchRate: jest.fn().mockRejectedValue(new Error('network down'))});
+        renderPanel({fetchRate: vi.fn().mockRejectedValue(new Error('network down'))});
 
         expect(await screen.findByText(/No pre-agreed rate/)).toBeInTheDocument();
     });
@@ -189,7 +189,7 @@ describe('PartnerRatePanel', () => {
         };
 
         it('warns and lists what the partner can carry when the lane is unserviceable', async () => {
-            renderPanel({fetchRate: jest.fn().mockResolvedValue(unserviceable)});
+            renderPanel({fetchRate: vi.fn().mockResolvedValue(unserviceable)});
 
             expect(await screen.findByText(/not available on this route/i)).toBeInTheDocument();
             expect(screen.getByText(/OVERNIGHT/)).toBeInTheDocument();
@@ -197,7 +197,7 @@ describe('PartnerRatePanel', () => {
         });
 
         it('still shows the derived pricing alongside the warning', async () => {
-            renderPanel({fetchRate: jest.fn().mockResolvedValue(unserviceable)});
+            renderPanel({fetchRate: vi.fn().mockResolvedValue(unserviceable)});
 
             await screen.findByText(/not available on this route/i);
             expect(screen.getByDisplayValue('60.00')).toBeInTheDocument();
@@ -205,7 +205,7 @@ describe('PartnerRatePanel', () => {
 
         it('says nothing when the partner could not be asked', async () => {
             renderPanel({
-                fetchRate: jest.fn().mockResolvedValue({
+                fetchRate: vi.fn().mockResolvedValue({
                     ...unserviceable,
                     serviceAvailable: null,
                     serviceabilityMessage: 'Partner API error: ServiceUnavailable',
@@ -220,7 +220,7 @@ describe('PartnerRatePanel', () => {
 
         it('says nothing when the lane is serviceable', async () => {
             renderPanel({
-                fetchRate: jest.fn().mockResolvedValue({...unserviceable, serviceAvailable: true, alternatives: []}),
+                fetchRate: vi.fn().mockResolvedValue({...unserviceable, serviceAvailable: true, alternatives: []}),
             });
 
             await screen.findByDisplayValue('60.00');

@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {screen, waitFor, act} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
@@ -11,23 +12,23 @@ import {AI_CHAT_CHANGED_EVENT, isAiChatEnabled, loadAutoMateFromServer} from '..
 import {streamChat} from '../../api/autoMateChat';
 import type {AutoMateStreamEvent} from '../../types/autoMateChat';
 
-jest.mock('../../api/autoMateChat', () => ({streamChat: jest.fn()}));
-jest.mock('../../utils/aiSettings', () => ({
+vi.mock('../../api/autoMateChat', () => ({streamChat: vi.fn()}));
+vi.mock('../../utils/aiSettings', () => ({
     AI_CHAT_CHANGED_EVENT: 'automate-chat-enabled-changed',
-    isAiChatEnabled: jest.fn(),
-    setAiChatEnabled: jest.fn(),
-    loadAutoMateFromServer: jest.fn(),
+    isAiChatEnabled: vi.fn(),
+    setAiChatEnabled: vi.fn(),
+    loadAutoMateFromServer: vi.fn(),
 }));
 
-const mockStreamChat = streamChat as jest.MockedFunction<typeof streamChat>;
-const mockIsAiChatEnabled = isAiChatEnabled as jest.MockedFunction<typeof isAiChatEnabled>;
-const mockLoad = loadAutoMateFromServer as jest.MockedFunction<typeof loadAutoMateFromServer>;
+const mockStreamChat = streamChat as MockedFunction<typeof streamChat>;
+const mockIsAiChatEnabled = isAiChatEnabled as MockedFunction<typeof isAiChatEnabled>;
+const mockLoad = loadAutoMateFromServer as MockedFunction<typeof loadAutoMateFromServer>;
 
 const renderChat = (enabled: boolean, route = '/dispatch') => {
     mockIsAiChatEnabled.mockReturnValue(enabled);
     return renderWithMantine(
         <MemoryRouter initialEntries={[route]}>
-            <NavigationProvider value={{navigate: jest.fn(), currentState: 'dispatch'}}>
+            <NavigationProvider value={{navigate: vi.fn(), currentState: 'dispatch'}}>
                 <AutoMateChatProvider>
                     <AutoMateChatButton/>
                     <AutoMateChatPanel/>

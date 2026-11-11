@@ -1,3 +1,4 @@
+import type {Mock, Mocked} from 'vitest';
 import React from 'react';
 import {fireEvent, screen, waitFor, act} from '@testing-library/react';
 import { renderWithMantine } from '../../test/utils';
@@ -8,22 +9,22 @@ import {AppPage as AppPageEnum} from '../../types/dispatchJob';
 
 // ── Mocks ─────────────────────────────────────────────────────────────
 
-jest.mock('../../api/jobListApi');
-jest.mock('../../services/splitJobFlow', () => ({
-    executeSplitJobFlow: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../api/jobListApi');
+vi.mock('../../services/splitJobFlow', () => ({
+    executeSplitJobFlow: vi.fn().mockResolvedValue(undefined),
 }));
-jest.mock('../dialogs/add-event-dialog', () => ({
-    openAddEventDialog: jest.fn().mockResolvedValue(true),
+vi.mock('../dialogs/add-event-dialog', () => ({
+    openAddEventDialog: vi.fn().mockResolvedValue(true),
 }));
-jest.mock('../dialogs/event-group-dialog', () => ({
-    openEventGroupDialog: jest.fn().mockResolvedValue(true),
+vi.mock('../dialogs/event-group-dialog', () => ({
+    openEventGroupDialog: vi.fn().mockResolvedValue(true),
 }));
 
 // Stub the universal dispatch dialog so tests can drive the two confirm callbacks
 // directly without going through the dialog's internal radio/dropdown/rate flow
 // (the dialog's own behavior is covered by DispatchDialog.test.tsx).
-jest.mock('../dialogs/dispatch-dialog', () => ({
-    DispatchDialog: jest.fn(({open, initialType, onDispatchCourier, onSendToPartner}: {
+vi.mock('../dialogs/dispatch-dialog', () => ({
+    DispatchDialog: vi.fn(({open, initialType, onDispatchCourier, onSendToPartner}: {
         open: boolean;
         initialType: string;
         onDispatchCourier: (confirmation: {
@@ -53,15 +54,15 @@ jest.mock('../dialogs/dispatch-dialog', () => ({
         ) : null,
     ),
 }));
-jest.mock('../../api/dispatchExecutorApi', () => ({
-    canAssignAgentToJob: jest.fn().mockResolvedValue(true),
-    assignAgentToJob: jest.fn().mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true}),
-    assignNpAgentToJob: jest.fn().mockResolvedValue({success: true}),
+vi.mock('../../api/dispatchExecutorApi', () => ({
+    canAssignAgentToJob: vi.fn().mockResolvedValue(true),
+    assignAgentToJob: vi.fn().mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true}),
+    assignNpAgentToJob: vi.fn().mockResolvedValue({success: true}),
 }));
-jest.mock('../../services/navigationService', () => ({
-    openJobInSearch: jest.fn(),
-    openJobDetail: jest.fn(),
-    openHubUrl: jest.fn(),
+vi.mock('../../services/navigationService', () => ({
+    openJobInSearch: vi.fn(),
+    openJobDetail: vi.fn(),
+    openHubUrl: vi.fn(),
 }));
 
 import * as api from '../../api/jobListApi';
@@ -71,27 +72,27 @@ import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {openJobInSearch} from '../../services/navigationService';
 import {createMockDispatchJob} from '../../test/utils/mockData';
 import {testDialogs} from '../dialogs/testDialogRegistry';
-jest.mock('../dialogs/dialogRegistry', () => require('../dialogs/testDialogRegistry').createDialogRegistryMock());
+vi.mock('../dialogs/dialogRegistry', async () => (await import('../dialogs/testDialogRegistry')).createDialogRegistryMock());
 
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-const mockedApi = api as jest.Mocked<typeof api>;
-const mockedExecuteSplitJobFlow = executeSplitJobFlow as jest.Mock;
-const mockedOpenAddEventDialog = openAddEventDialog as jest.Mock;
-const mockedOpenEventGroupDialog = openEventGroupDialog as jest.Mock;
-const mockedOpenJobInSearch = openJobInSearch as jest.Mock;
+const mockedApi = api as Mocked<typeof api>;
+const mockedExecuteSplitJobFlow = executeSplitJobFlow as Mock;
+const mockedOpenAddEventDialog = openAddEventDialog as Mock;
+const mockedOpenEventGroupDialog = openEventGroupDialog as Mock;
+const mockedOpenJobInSearch = openJobInSearch as Mock;
 
 
 function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobListContextMenu>>) {
     return {
         job: createMockDispatchJob(),
         position: {mouseX: 100, mouseY: 200},
-        onClose: jest.fn(),
+        onClose: vi.fn(),
         appPage: AppPageEnum.Dispatch as AppPage,
-        showToast: jest.fn(),
-        onRefresh: jest.fn(),
-        onAddStop: jest.fn(),
+        showToast: vi.fn(),
+        onRefresh: vi.fn(),
+        onAddStop: vi.fn(),
         ...overrides,
     };
 }
@@ -124,9 +125,9 @@ beforeEach(() => {
     mockedOpenEventGroupDialog.mockResolvedValue(true);
 
     // Window globals
-    testDialogs.PriceBreakdown = {open: jest.fn().mockResolvedValue(undefined)};
-    testDialogs.VoidJobConfirmation = {open: jest.fn().mockResolvedValue({success: true})};
-    testDialogs.SwapPods = {open: jest.fn().mockResolvedValue(true)};
+    testDialogs.PriceBreakdown = {open: vi.fn().mockResolvedValue(undefined)};
+    testDialogs.VoidJobConfirmation = {open: vi.fn().mockResolvedValue({success: true})};
+    testDialogs.SwapPods = {open: vi.fn().mockResolvedValue(true)};
 });
 
 afterEach(() => {
@@ -457,7 +458,7 @@ describe('JobListContextMenu', () => {
 
         it('Re-Dispatch confirm invalidates job detail cache so detail panel refreshes', async () => {
             const {queryClient: qc} = await import('../../api/queryClient');
-            const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps({
                 job: createMockDispatchJob({assignedCourier: {id: 5, text: 'Courier A'}}),
             });
@@ -474,7 +475,7 @@ describe('JobListContextMenu', () => {
 
         it('Restore (non-completed job) restores directly, logs the audit event, invalidates job detail, and refreshes', async () => {
             const {queryClient: qc} = await import('../../api/queryClient');
-            const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps();
             renderWithMantine(<JobListContextMenu {...props} />);
 
@@ -978,7 +979,7 @@ describe('JobListContextMenu', () => {
 
         it('Void job invalidates job list cache so list refreshes after void', async () => {
             const {queryClient: qc} = await import('../../api/queryClient');
-            const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps();
             renderWithMantine(<JobListContextMenu {...props} />);
 
@@ -991,9 +992,9 @@ describe('JobListContextMenu', () => {
         });
 
         it('Void job does not refresh or invalidate when dialog is cancelled', async () => {
-            testDialogs.VoidJobConfirmation = {open: jest.fn().mockResolvedValue(null)};
+            testDialogs.VoidJobConfirmation = {open: vi.fn().mockResolvedValue(null)};
             const {queryClient: qc} = await import('../../api/queryClient');
-            const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
             const props = createDefaultProps();
             renderWithMantine(<JobListContextMenu {...props} />);
 
@@ -1086,7 +1087,7 @@ describe('JobListContextMenu', () => {
         });
 
         it('copies the job number, surfaces an Open toast action, and opens the job in search when clicked', async () => {
-            const writeTextMock = jest.fn().mockResolvedValue(undefined);
+            const writeTextMock = vi.fn().mockResolvedValue(undefined);
             Object.defineProperty(navigator, 'clipboard', {
                 value: {writeText: writeTextMock},
                 configurable: true,
@@ -1119,7 +1120,7 @@ describe('JobListContextMenu', () => {
                 'success',
                 expect.objectContaining({label: 'Open', onClick: expect.any(Function)}),
             );
-            const toastCall = (props.showToast as jest.Mock).mock.calls.find(
+            const toastCall = (props.showToast as Mock).mock.calls.find(
                 ([msg]) => typeof msg === 'string' && msg.includes('J042'),
             );
             const action = toastCall?.[2] as {label: string; onClick: () => void};
@@ -1203,7 +1204,7 @@ describe('JobListContextMenu', () => {
             // This path used to throw "not yet wired from the job list — use the
             // job-details panel", which was a dead end because the panel's field
             // write was rejected by the server too.
-            const {assignNpAgentToJob} = require('../../api/dispatchExecutorApi');
+            const {assignNpAgentToJob} = vi.mocked(await import('../../api/dispatchExecutorApi'));
             const props = createDefaultProps({
                 job: createMockDispatchJob({id: 33, jobNo: 'J033'}),
             });

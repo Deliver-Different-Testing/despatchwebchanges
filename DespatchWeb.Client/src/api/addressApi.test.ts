@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Address API Service Tests
  */
@@ -9,13 +10,13 @@ import {createMockApiError} from '../test/utils';
 import {HERE_US_ADDRESS_FIELDS} from '../test/utils/mockData';
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
+        get: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('addressApi', () => {
     describe('autocompleteSearch', () => {

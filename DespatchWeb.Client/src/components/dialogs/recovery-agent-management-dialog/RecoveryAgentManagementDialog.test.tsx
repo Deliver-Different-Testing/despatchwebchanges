@@ -67,14 +67,14 @@ const createMockProps = (
 ): RecoveryAgentManagementDialogProps => ({
     open: true,
     job: mockJob,
-    onClose: jest.fn(),
-    onLoadAirports: jest.fn().mockResolvedValue(mockAirports),
-    onLoadAgentsForAirport: jest.fn().mockResolvedValue(mockAgents),
-    onAddAgent: jest.fn().mockResolvedValue(undefined),
-    onUpdateAgent: jest.fn().mockResolvedValue(undefined),
-    onRemoveAgent: jest.fn().mockResolvedValue(undefined),
-    onRefresh: jest.fn().mockResolvedValue(mockJob),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    onLoadAirports: vi.fn().mockResolvedValue(mockAirports),
+    onLoadAgentsForAirport: vi.fn().mockResolvedValue(mockAgents),
+    onAddAgent: vi.fn().mockResolvedValue(undefined),
+    onUpdateAgent: vi.fn().mockResolvedValue(undefined),
+    onRemoveAgent: vi.fn().mockResolvedValue(undefined),
+    onRefresh: vi.fn().mockResolvedValue(mockJob),
+    showToast: vi.fn(),
     ...overrides,
 });
 
@@ -249,7 +249,7 @@ describe('RecoveryAgentManagementDialog', () => {
     });
 
     it('removes an agent after confirmation', async () => {
-        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
         try {
             const props = createMockProps();
             await act(async () => {
@@ -276,7 +276,7 @@ describe('RecoveryAgentManagementDialog', () => {
     });
 
     it('skips removal when the user cancels the confirmation', async () => {
-        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
         try {
             const props = createMockProps();
             await act(async () => {
@@ -295,10 +295,10 @@ describe('RecoveryAgentManagementDialog', () => {
     });
 
     it('surfaces a toast when assign fails', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         try {
             const props = createMockProps({
-                onAddAgent: jest.fn().mockRejectedValue(new Error('network')),
+                onAddAgent: vi.fn().mockRejectedValue(new Error('network')),
             });
             await act(async () => {
                 renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
@@ -364,7 +364,7 @@ describe('RecoveryAgentManagementDialog', () => {
     });
 
     it('warns about unsaved changes before closing while assign form is dirty', async () => {
-        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
         try {
             const props = createMockProps();
             await act(async () => {

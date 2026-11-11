@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {MantineTestProvider} from '../../test/utils';
 import {fireEvent, render, screen} from '@testing-library/react';
@@ -5,35 +6,35 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverManagementPage} from './DriverManagementPage';
 import {useFleetOptions} from '../../hooks/useDriverManagementApi';
 
-jest.mock('../../hooks/useDriverManagementApi', () => ({
-    useFleetOptions: jest.fn(),
+vi.mock('../../hooks/useDriverManagementApi', () => ({
+    useFleetOptions: vi.fn(),
 }));
 
 // Mock child tabs to keep tests focused
-jest.mock('./components/DriverDetailsTab', () => ({
+vi.mock('./components/DriverDetailsTab', () => ({
     DriverDetailsTab: ({showToast}: any) => <div data-testid="driver-details-tab">DriverDetailsTab</div>,
 }));
-jest.mock('./components/TodayActiveTab', () => ({
+vi.mock('./components/TodayActiveTab', () => ({
     TodayActiveTab: ({showToast, fleetOptions}: any) => <div data-testid="today-active-tab">TodayActiveTab</div>,
 }));
-jest.mock('./components/DriverComplianceTab', () => ({
+vi.mock('./components/DriverComplianceTab', () => ({
     DriverComplianceTab: ({showToast, fleetOptions}: any) => <div data-testid="compliance-tab">DriverComplianceTab</div>,
 }));
-jest.mock('./components/AfterHoursTab', () => ({
+vi.mock('./components/AfterHoursTab', () => ({
     AfterHoursTab: ({showToast}: any) => <div data-testid="after-hours-tab">AfterHoursTab</div>,
 }));
-jest.mock('./components/DriverEmailsTab', () => ({
+vi.mock('./components/DriverEmailsTab', () => ({
     DriverEmailsTab: ({showToast}: any) => <div data-testid="emails-tab">DriverEmailsTab</div>,
 }));
-jest.mock('./components/DriverEarningsTab', () => ({
+vi.mock('./components/DriverEarningsTab', () => ({
     DriverEarningsTab: ({showToast}: any) => <div data-testid="earnings-tab">DriverEarningsTab</div>,
 }));
 
-const mockUseFleetOptions = useFleetOptions as jest.MockedFunction<typeof useFleetOptions>;
+const mockUseFleetOptions = useFleetOptions as MockedFunction<typeof useFleetOptions>;
 
 const createTestQueryClient = () => new QueryClient({defaultOptions: {queries: {retry: false}}});
 
-const renderPage = (showToast = jest.fn()) => {
+const renderPage = (showToast = vi.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
@@ -70,7 +71,7 @@ describe('DriverManagementPage', () => {
 
     describe('Fleet options', () => {
         it('shows a retryable notice when the fleet options fail to load', () => {
-            const refetch = jest.fn();
+            const refetch = vi.fn();
             mockUseFleetOptions.mockReturnValue({data: undefined, isLoading: false, isError: true, error: null, refetch} as any);
             renderPage();
 

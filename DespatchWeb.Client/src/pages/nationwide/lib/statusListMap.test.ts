@@ -1,4 +1,4 @@
-/** @jest-environment node */
+/** @vitest-environment node */
 /**
  * Extracted from `NationwideControl`'s `STATUS_TO_LIST_MAP` (306) and the
  * refresh-set derivation inside `handleStatusChange` (897).

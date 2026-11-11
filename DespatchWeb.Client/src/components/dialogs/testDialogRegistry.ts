@@ -7,9 +7,9 @@ export function resetTestDialogs(): void {
     for (const key of Object.keys(testDialogs)) delete testDialogs[key as DialogName];
 }
 
-/** Factory for `jest.mock('…/dialogRegistry', () => require('…/testDialogRegistry').createDialogRegistryMock())`. */
-export function createDialogRegistryMock() {
-    const actual = jest.requireActual('./dialogRegistry');
+/** Factory for `vi.mock('…/dialogRegistry', async () => (await import('…/testDialogRegistry')).createDialogRegistryMock())`. */
+export async function createDialogRegistryMock() {
+    const actual = (await vi.importActual<typeof import('./dialogRegistry')>('./dialogRegistry'));
     const loadDialog = async (name: DialogName) => {
         const dialog = testDialogs[name];
         if (!dialog) throw new Error(`${name} dialog not registered in test`);

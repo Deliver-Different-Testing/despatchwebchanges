@@ -30,7 +30,7 @@ interface Handlers {
 }
 
 function renderDialog(h: Handlers = {}) {
-    const onClose = h.onClose ?? jest.fn();
+    const onClose = h.onClose ?? vi.fn();
     return renderWithMantine(
         <DialogShell opened onClose={onClose}>
             <DialogHeader
@@ -40,8 +40,8 @@ function renderDialog(h: Handlers = {}) {
                 onClose={onClose}
             />
             <DialogFooter
-                onCancel={h.onCancel ?? jest.fn()}
-                onConfirm={h.onConfirm ?? jest.fn()}
+                onCancel={h.onCancel ?? vi.fn()}
+                onConfirm={h.onConfirm ?? vi.fn()}
                 confirmLabel="Save"
                 submitting={h.submitting}
             />
@@ -60,15 +60,15 @@ describe('Mantine dialog primitives', () => {
     });
 
     it('fires onClose from the header close button', async () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderDialog({onClose});
         await userEvent.click(screen.getByRole('button', {name: 'Close dialog'}));
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
     it('fires the footer callbacks', async () => {
-        const onCancel = jest.fn();
-        const onConfirm = jest.fn();
+        const onCancel = vi.fn();
+        const onConfirm = vi.fn();
         renderDialog({onCancel, onConfirm});
         await userEvent.click(screen.getByRole('button', {name: 'Save'}));
         await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
@@ -92,8 +92,8 @@ describe('Mantine dialog primitives', () => {
 
     it('lets a dialog override the overlay defaults', () => {
         const {container} = renderWithMantine(
-            <DialogShell opened onClose={jest.fn()} overlayProps={{backgroundOpacity: 0.8, blur: 4}}>
-                <DialogHeader icon={<span/>} title="Photo" onClose={jest.fn()}/>
+            <DialogShell opened onClose={vi.fn()} overlayProps={{backgroundOpacity: 0.8, blur: 4}}>
+                <DialogHeader icon={<span/>} title="Photo" onClose={vi.fn()}/>
             </DialogShell>,
         );
         const overlay = container.querySelector('.mantine-Modal-overlay') as HTMLElement;
@@ -111,10 +111,10 @@ describe('Mantine dialog primitives', () => {
 describe('DialogShell scrolling', () => {
     it('scrolls the body alone, leaving the shell itself clipped', () => {
         renderWithMantine(
-            <DialogShell opened onClose={jest.fn()}>
-                <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+            <DialogShell opened onClose={vi.fn()}>
+                <DialogHeader icon={<span/>} title="Edit price" onClose={vi.fn()}/>
                 <div data-testid="dialog-body">Body</div>
-                <DialogFooter onCancel={jest.fn()} onConfirm={jest.fn()} confirmLabel="Save"/>
+                <DialogFooter onCancel={vi.fn()} onConfirm={vi.fn()} confirmLabel="Save"/>
             </DialogShell>,
         );
 
@@ -124,15 +124,17 @@ describe('DialogShell scrolling', () => {
         // Read off the inline style: jsdom's computed style drops `overflow-y`.
         const scrollRegion = screen.getByRole('dialog').querySelector<HTMLElement>('[data-dialog-scroll]')!;
         expect(scrollRegion).toContainElement(screen.getByTestId('dialog-body'));
-        expect(scrollRegion.style).toMatchObject({overflowY: 'auto', minHeight: '0', flex: '1 1 auto'});
+        expect(scrollRegion.style.overflowY).toBe('auto');
+        expect(scrollRegion.style.minHeight).toBe('0px');
+        expect(scrollRegion.style.flex).toBe('1 1 auto');
         expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Close dialog'}));
         expect(scrollRegion).not.toContainElement(screen.getByRole('button', {name: 'Cancel'}));
     });
 
     it('still lets a caller override the shell styles', () => {
         renderWithMantine(
-            <DialogShell opened onClose={jest.fn()} styles={{content: {overflowY: 'scroll'}}}>
-                <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+            <DialogShell opened onClose={vi.fn()} styles={{content: {overflowY: 'scroll'}}}>
+                <DialogHeader icon={<span/>} title="Edit price" onClose={vi.fn()}/>
             </DialogShell>,
         );
         // …without losing the column layout the scrolling body depends on.
@@ -161,11 +163,11 @@ describe('DialogShell scrolling', () => {
      * transition that never runs never reports anything either way.
      */
     it('does not report a transition for a dialog that mounts already open', async () => {
-        const onEntered = jest.fn();
+        const onEntered = vi.fn();
 
         renderWithMantine(
-            <DialogShell opened onClose={jest.fn()} transitionProps={{onEntered}}>
-                <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+            <DialogShell opened onClose={vi.fn()} transitionProps={{onEntered}}>
+                <DialogHeader icon={<span/>} title="Edit price" onClose={vi.fn()}/>
             </DialogShell>,
             {env: 'default'},
         );
@@ -175,10 +177,10 @@ describe('DialogShell scrolling', () => {
     });
 
     it('does forward the callback once a mounted dialog is opened', async () => {
-        const onEntered = jest.fn();
+        const onEntered = vi.fn();
         const shell = (opened: boolean) => (
-            <DialogShell opened={opened} onClose={jest.fn()} transitionProps={{onEntered}}>
-                <DialogHeader icon={<span/>} title="Edit price" onClose={jest.fn()}/>
+            <DialogShell opened={opened} onClose={vi.fn()} transitionProps={{onEntered}}>
+                <DialogHeader icon={<span/>} title="Edit price" onClose={vi.fn()}/>
             </DialogShell>
         );
 
@@ -198,7 +200,7 @@ describe('DialogShell scrolling', () => {
 
 describe('DialogFooter options', () => {
     it('stacks the actions full-width, primary on top, below the xs breakpoint', () => {
-        renderWithMantine(<DialogFooter onCancel={jest.fn()} onConfirm={jest.fn()} confirmLabel="Save"/>);
+        renderWithMantine(<DialogFooter onCancel={vi.fn()} onConfirm={vi.fn()} confirmLabel="Save"/>);
 
         const css = Array.from(document.querySelectorAll('style')).map(tag => tag.textContent).join(' ');
         const footerCss = css.slice(css.indexOf('column-reverse'));
@@ -208,7 +210,7 @@ describe('DialogFooter options', () => {
 
     it('drops the confirm button for view-only dialogs', () => {
         renderWithMantine(
-            <DialogFooter onCancel={jest.fn()} onConfirm={jest.fn()} confirmLabel="Save" hideConfirm/>,
+            <DialogFooter onCancel={vi.fn()} onConfirm={vi.fn()} confirmLabel="Save" hideConfirm/>,
         );
         expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Save'})).not.toBeInTheDocument();
@@ -217,8 +219,8 @@ describe('DialogFooter options', () => {
     it('renders a secondary action between Cancel and Confirm', () => {
         renderWithMantine(
             <DialogFooter
-                onCancel={jest.fn()}
-                onConfirm={jest.fn()}
+                onCancel={vi.fn()}
+                onConfirm={vi.fn()}
                 confirmLabel="Save"
                 secondaryAction={<button>Reset</button>}
             />,

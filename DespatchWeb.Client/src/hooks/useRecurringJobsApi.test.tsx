@@ -2,6 +2,7 @@
  * useRecurringJobsApi Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import dayjs from 'dayjs';
 import {renderHook, waitFor} from '@testing-library/react';
@@ -15,14 +16,14 @@ import {
 import {createQueryWrapper} from '../test/utils';
 
 // Mock the recurringJobsApi
-jest.mock('../api/recurringJobsApi', () => ({
+vi.mock('../api/recurringJobsApi', () => ({
     recurringJobsApi: {
-        getPreBookJobs: jest.fn(),
-        getSpeedList: jest.fn(),
+        getPreBookJobs: vi.fn(),
+        getSpeedList: vi.fn(),
     },
 }));
 
-const mockRecurringJobsApi = recurringJobsApi as jest.Mocked<typeof recurringJobsApi>;
+const mockRecurringJobsApi = recurringJobsApi as Mocked<typeof recurringJobsApi>;
 
 // Sample test data
 const mockQuery: RecurringJobQuery = {

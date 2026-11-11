@@ -6,9 +6,9 @@ import {ListEmptyState, ListEmptyStateProps} from './ListEmptyState';
 const baseProps = (overrides: Partial<ListEmptyStateProps> = {}): ListEmptyStateProps => ({
     noun: 'drivers',
     isError: false,
-    onRetry: jest.fn(),
+    onRetry: vi.fn(),
     isFiltered: false,
-    onClearFilters: jest.fn(),
+    onClearFilters: vi.fn(),
     emptyTitle: 'No drivers',
     emptyMessage: 'Nothing here yet.',
     emptyIcon: <span/>,

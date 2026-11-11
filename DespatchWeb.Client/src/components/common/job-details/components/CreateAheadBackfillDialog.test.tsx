@@ -7,6 +7,7 @@
  * the wire payload matches what the operator ticked in the checklist.
  */
 
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {screen, waitFor, fireEvent} from '@testing-library/react';
 import {renderWithMantine} from '../../../../test/utils';
@@ -18,17 +19,17 @@ import {
     PreviewCreateAheadBackfillResult,
 } from '../../../../types';
 
-jest.mock('../../../../api/recurringJobsApi', () => ({
+vi.mock('../../../../api/recurringJobsApi', () => ({
     recurringJobsApi: {
-        previewCreateAheadBackfill: jest.fn(),
-        createCreateAheadBackfill: jest.fn(),
+        previewCreateAheadBackfill: vi.fn(),
+        createCreateAheadBackfill: vi.fn(),
     },
 }));
 
 import {recurringJobsApi} from '../../../../api/recurringJobsApi';
 
-const mockPreview = recurringJobsApi.previewCreateAheadBackfill as jest.MockedFunction<typeof recurringJobsApi.previewCreateAheadBackfill>;
-const mockCreate = recurringJobsApi.createCreateAheadBackfill as jest.MockedFunction<typeof recurringJobsApi.createCreateAheadBackfill>;
+const mockPreview = recurringJobsApi.previewCreateAheadBackfill as MockedFunction<typeof recurringJobsApi.previewCreateAheadBackfill>;
+const mockCreate = recurringJobsApi.createCreateAheadBackfill as MockedFunction<typeof recurringJobsApi.createCreateAheadBackfill>;
 
 function createPreview(
     overrides?: Partial<PreviewCreateAheadBackfillResult>
@@ -64,9 +65,9 @@ function createProps(
         jobId: 42,
         oldValue: 0,
         newValue: 2,
-        onClose: jest.fn(),
-        onSuccess: jest.fn(),
-        showToast: jest.fn(),
+        onClose: vi.fn(),
+        onSuccess: vi.fn(),
+        showToast: vi.fn(),
         ...overrides,
     };
 }
@@ -159,8 +160,8 @@ describe('CreateAheadBackfillDialog', () => {
     it('posts the operator-selected dates and fires onSuccess + toast on success', async () => {
         mockPreview.mockResolvedValue(createPreview());
         mockCreate.mockResolvedValue(createResult());
-        const onSuccess = jest.fn();
-        const showToast = jest.fn();
+        const onSuccess = vi.fn();
+        const showToast = vi.fn();
         renderDialog(createProps({jobId: 42, onSuccess, showToast}));
 
         await waitFor(() => screen.getByRole('button', {name: /Create 2 bookings/}));
@@ -184,7 +185,7 @@ describe('CreateAheadBackfillDialog', () => {
     it('reports duplicatesSkipped in the toast when the second push races the cron', async () => {
         mockPreview.mockResolvedValue(createPreview());
         mockCreate.mockResolvedValue(createResult({jobsCreated: 2, duplicatesSkipped: 1}));
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         renderDialog(createProps({showToast}));
         await waitFor(() => screen.getByRole('button', {name: /Create 2 bookings/}));
         fireEvent.click(screen.getByRole('button', {name: /Create 2 bookings/}));
@@ -203,7 +204,7 @@ describe('CreateAheadBackfillDialog', () => {
             createdDates: ['2024-06-17'],
             errors: [{serviceDate: '2024-06-18', message: 'Push failed'}],
         }));
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         renderDialog(createProps({showToast}));
         await waitFor(() => screen.getByRole('button', {name: /Create 2 bookings/}));
         fireEvent.click(screen.getByRole('button', {name: /Create 2 bookings/}));
@@ -218,7 +219,7 @@ describe('CreateAheadBackfillDialog', () => {
     it('surfaces a create-endpoint failure as an error toast', async () => {
         mockPreview.mockResolvedValue(createPreview());
         mockCreate.mockRejectedValue(new Error('SP crashed'));
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         renderDialog(createProps({showToast}));
         await waitFor(() => screen.getByRole('button', {name: /Create 2 bookings/}));
         fireEvent.click(screen.getByRole('button', {name: /Create 2 bookings/}));

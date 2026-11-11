@@ -38,8 +38,8 @@ const defaultProps: DashboardSettingsDialogProps = {
     selectedRefreshInterval: mockRefreshOptions[1],
     selectedDriverLocationRefreshInterval: mockRefreshOptions[2],
     refreshOptions: mockRefreshOptions,
-    onClose: jest.fn(),
-    onSave: jest.fn(),
+    onClose: vi.fn(),
+    onSave: vi.fn(),
 };
 
 const createMockProps = (overrides?: Partial<DashboardSettingsDialogProps>) =>
@@ -174,7 +174,7 @@ describe('DashboardSettingsDialog', () => {
 
         it('renders its own dropdown and emits selectedTaskRefreshInterval on save', async () => {
             const user = setupUser();
-            const onSave = jest.fn();
+            const onSave = vi.fn();
             renderWithTheme(
                 <DashboardSettingsDialog
                     {...createMockProps({
@@ -206,7 +206,7 @@ describe('DashboardSettingsDialog', () => {
     describe('Close Functionality', () => {
         it('calls onClose when close button or Cancel is clicked', async () => {
             const user = setupUser();
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onClose})} />);
 
             await user.click(screen.getByRole('button', {name: /close dialog/i}));
@@ -221,7 +221,7 @@ describe('DashboardSettingsDialog', () => {
     describe('Save Functionality', () => {
         it('calls onSave with the current settings and no boxes', async () => {
             const user = setupUser();
-            const onSave = jest.fn();
+            const onSave = vi.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onSave})} />);
 
             await user.click(screen.getByRole('button', {name: /save/i}));
@@ -270,7 +270,7 @@ describe('DashboardSettingsDialog', () => {
 
         it('emits the newly-picked mode on save', async () => {
             const user = setupUser();
-            const onSave = jest.fn();
+            const onSave = vi.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({
                 config: {...mockConfig, showCourierDisplayMode: true},
                 selectedCourierDisplayMode: 'off',
@@ -287,7 +287,7 @@ describe('DashboardSettingsDialog', () => {
 
         it('omits courierDisplayMode from the save result when the section is not shown', async () => {
             const user = setupUser();
-            const onSave = jest.fn();
+            const onSave = vi.fn();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({onSave})} />);
 
             await user.click(screen.getByRole('button', {name: /save/i}));

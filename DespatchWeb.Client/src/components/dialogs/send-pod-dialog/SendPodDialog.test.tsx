@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen} from '@testing-library/react';
 import {SendPodDialog, SendPodJobData} from './SendPodDialog';
@@ -9,11 +10,11 @@ import {isAiEnabled} from '../../../utils/aiSettings';
 // Shared fast userEvent instance (see setupUser).
 const userEvent = setupUser();
 
-jest.mock('../../../api/aiAssistantApi', () => ({draftPodEmail: jest.fn()}));
-jest.mock('../../../utils/aiSettings', () => ({isAiEnabled: jest.fn()}));
+vi.mock('../../../api/aiAssistantApi', () => ({draftPodEmail: vi.fn()}));
+vi.mock('../../../utils/aiSettings', () => ({isAiEnabled: vi.fn()}));
 
-const mockDraftPodEmail = draftPodEmail as jest.Mock;
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
+const mockDraftPodEmail = draftPodEmail as Mock;
+const mockIsAiEnabled = isAiEnabled as Mock;
 
 const jobData: SendPodJobData = {
     jobId: 1,
@@ -27,8 +28,8 @@ const jobData: SendPodJobData = {
 const defaultProps = {
     open: true,
     jobData,
-    onClose: jest.fn(),
-    onSend: jest.fn(),
+    onClose: vi.fn(),
+    onSend: vi.fn(),
     sending: false,
     sent: false,
 };
@@ -37,7 +38,7 @@ const renderDialog = (props: Partial<typeof defaultProps> = {}) =>
     renderWithMantine(<SendPodDialog {...defaultProps} {...props} />);
 
 describe('SendPodDialog — AI draft', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => vi.clearAllMocks());
 
     it('seeds an editable body from the template', () => {
         mockIsAiEnabled.mockReturnValue(false);
@@ -74,12 +75,12 @@ describe('SendPodDialog — AI draft', () => {
 
 describe('SendPodDialog — recipients and sending', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockIsAiEnabled.mockReturnValue(false);
     });
 
     it('closes via the shared header close button', async () => {
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderDialog({onClose});
 
         await userEvent.click(screen.getByRole('button', {name: /close dialog/i}));
@@ -88,7 +89,7 @@ describe('SendPodDialog — recipients and sending', () => {
     });
 
     it('disables Send until a recipient is added, then sends subject and body', async () => {
-        const onSend = jest.fn();
+        const onSend = vi.fn();
         renderDialog({onSend});
 
         const sendButton = screen.getByRole('button', {name: /send pod pdf/i});
@@ -131,7 +132,7 @@ describe('SendPodDialog — recipients and sending', () => {
 
 describe('SendPodDialog — send failures', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockIsAiEnabled.mockReturnValue(false);
     });
 

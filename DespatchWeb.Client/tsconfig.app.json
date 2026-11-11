@@ -13,7 +13,7 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "noEmit": true,
-    "types": ["jest", "node", "vite/client", "vite-plugin-pwa/react"]
+    "types": ["vitest/globals", "node", "vite/client", "vite-plugin-pwa/react"]
   },
   "include": ["src"]
 }

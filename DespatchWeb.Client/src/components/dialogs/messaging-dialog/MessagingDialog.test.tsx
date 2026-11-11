@@ -4,6 +4,7 @@
  * Optimised: read-only tests consolidated; fireEvent for simple clicks.
  */
 
+import type {MockInstance, Mocked} from 'vitest';
 import React from 'react';
 import {act, screen, waitFor} from '@testing-library/react';
 import {MessagingDialog, isNearBottom} from './MessagingDialog';
@@ -15,17 +16,17 @@ import {SLOW_LOAD_HINT_MS} from '../../../hooks/useMessaging';
 import { setupUser } from '../../../test/utils/setupUser';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
 
-jest.mock('../../../api/messagingApi', () => {
+vi.mock('../../../api/messagingApi', () => {
     const methods = {
-        getRecentList: jest.fn(),
-        getMessages: jest.fn(),
-        sendMessage: jest.fn(),
-        sendMultiMessage: jest.fn(),
-        markMessagesAsRead: jest.fn(),
-        getQuickResponses: jest.fn(),
-        addQuickResponse: jest.fn(),
-        deleteQuickResponse: jest.fn(),
-        getMessageContactOptions: jest.fn(),
+        getRecentList: vi.fn(),
+        getMessages: vi.fn(),
+        sendMessage: vi.fn(),
+        sendMultiMessage: vi.fn(),
+        markMessagesAsRead: vi.fn(),
+        getQuickResponses: vi.fn(),
+        addQuickResponse: vi.fn(),
+        deleteQuickResponse: vi.fn(),
+        getMessageContactOptions: vi.fn(),
     };
     return {
         __esModule: true,
@@ -34,12 +35,12 @@ jest.mock('../../../api/messagingApi', () => {
     };
 });
 
-const mockApi = messagingApi as jest.Mocked<typeof messagingApi>;
+const mockApi = messagingApi as Mocked<typeof messagingApi>;
 const renderWithTheme = (ui: React.ReactElement) => renderWithMantine(ui, {withQueryClient: true});
 const defaultProps = {
     open: true,
-    onClose: jest.fn(),
-    showToast: jest.fn(),
+    onClose: vi.fn(),
+    showToast: vi.fn(),
     currentStaffId: 42,
     currentStaffName: 'Test Staff',
     timeZone: 'Europe/London',
@@ -84,14 +85,14 @@ function setupApiDefaults(conversations: RecentConversation[] = []) {
 }
 
 // jsdom doesn't implement scrollIntoView
-Element.prototype.scrollIntoView = jest.fn();
+Element.prototype.scrollIntoView = vi.fn();
 
 describe('MessagingDialog', () => {
     // ── Rendering + close (single render) ───────────────────────────
     it('renders drawer with title, conversations panel, and calls onClose on close button', async () => {
         const user = setupUser();
         setupApiDefaults();
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithTheme(<MessagingDialog {...defaultProps} onClose={onClose} />);
 
         expect(await screen.findByText('Message center')).toBeInTheDocument();
@@ -105,7 +106,7 @@ describe('MessagingDialog', () => {
     it('stays open on backdrop (outside) click but closes on the close button', async () => {
         const user = setupUser();
         setupApiDefaults();
-        const onClose = jest.fn();
+        const onClose = vi.fn();
         renderWithTheme(<MessagingDialog {...defaultProps} onClose={onClose} />);
 
         expect(await screen.findByText('Message center')).toBeInTheDocument();
@@ -238,7 +239,7 @@ describe('MessagingDialog', () => {
 
     // ── Slow first load ─────────────────────────────────────────────
     it('tells the user a slow first load is still in progress', async () => {
-        jest.useFakeTimers();
+        vi.useFakeTimers({shouldAdvanceTime: true});
         try {
             setupApiDefaults();
             mockApi.getRecentList.mockReturnValue(new Promise(() => {}));
@@ -247,11 +248,11 @@ describe('MessagingDialog', () => {
             expect(await screen.findByLabelText('Loading conversations')).toBeInTheDocument();
             expect(screen.queryByText('Still loading conversations…')).not.toBeInTheDocument();
 
-            act(() => { jest.advanceTimersByTime(SLOW_LOAD_HINT_MS); });
+            act(() => { vi.advanceTimersByTime(SLOW_LOAD_HINT_MS); });
 
             expect(screen.getByRole('status')).toHaveTextContent('Still loading conversations…');
         } finally {
-            jest.useRealTimers();
+            vi.useRealTimers();
         }
     });
 
@@ -259,7 +260,7 @@ describe('MessagingDialog', () => {
     it('keeps the list and shows a toast when a manual refresh fails', async () => {
         const user = setupUser();
         setupApiDefaults([createConversation({otherPartyName: 'Still Here'})]);
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast} />);
         expect(await screen.findByText('Still Here')).toBeInTheDocument();
 
@@ -335,13 +336,13 @@ describe('MessagingDialog', () => {
 
     // ── Sending messages + empty check (single render) ──────────────
     describe('Sending Messages', () => {
-        let errorSpy: jest.SpyInstance;
+        let errorSpy: MockInstance;
         beforeEach(() => { errorSpy = suppressConsoleError('Failed to send message'); });
         afterEach(() => { errorSpy.mockRestore(); });
 
         it('disables send for empty input, sends message, and shows success toast', async () => {
             const user = setupUser();
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             setupApiDefaults([createConversation({otherPartyId: 10})]);
             renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast}/>);
 
@@ -373,7 +374,7 @@ describe('MessagingDialog', () => {
 
         it('shows error toast when sending fails', async () => {
             const user = setupUser();
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             setupApiDefaults([createConversation({otherPartyId: 10})]);
             mockApi.sendMessage.mockRejectedValueOnce(new Error('Send failed'));
             renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast} />);

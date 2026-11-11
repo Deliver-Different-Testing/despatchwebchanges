@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import {renderWithMantine} from '../../test/utils';
@@ -8,21 +9,21 @@ import {deletePreference, savePreference} from '../../api/preferencesApi';
 import {StaffPreferenceKey} from '../../types/enums/staff-preference-key.enum';
 import {toastService} from '../../services/toastService';
 
-jest.mock('../../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
-    deletePreference: jest.fn(),
+vi.mock('../../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
+    deletePreference: vi.fn(),
 }));
-jest.mock('../../api/tenantSettingsApi', () => ({getTenantAppearanceDefault: jest.fn()}));
-jest.mock('../../hooks/useColorMode', () => ({
-    useColorMode: () => ({mode: 'light', preference: 'light', setPreference: jest.fn()}),
+vi.mock('../../api/tenantSettingsApi', () => ({getTenantAppearanceDefault: vi.fn()}));
+vi.mock('../../hooks/useColorMode', () => ({
+    useColorMode: () => ({mode: 'light', preference: 'light', setPreference: vi.fn()}),
 }));
-jest.mock('../../services/toastService', () => ({
-    toastService: {showSuccessToast: jest.fn(), showErrorToast: jest.fn()},
+vi.mock('../../services/toastService', () => ({
+    toastService: {showSuccessToast: vi.fn(), showErrorToast: vi.fn()},
 }));
 
-const mockSave = savePreference as jest.Mock;
-const mockDelete = deletePreference as jest.Mock;
+const mockSave = savePreference as Mock;
+const mockDelete = deletePreference as Mock;
 const win = window as unknown as {__ddAppearanceServerSynced?: boolean};
 
 function seed(state: {user?: object | null; tenant?: object | null}): void {
@@ -32,7 +33,7 @@ function seed(state: {user?: object | null; tenant?: object | null}): void {
 describe('AppearanceSettingsSection', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockSave.mockResolvedValue(undefined);
         mockDelete.mockResolvedValue(undefined);
         win.__ddAppearanceServerSynced = true;

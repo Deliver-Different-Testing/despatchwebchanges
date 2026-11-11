@@ -275,7 +275,6 @@ export function JobDetails({config}: JobDetailsProps) {
     // bypassing React Query's cache invalidation path which can fail to trigger a network
     // request in some scenarios. refetch/rqClient are stable refs and intentionally omitted.
     const refreshNonce = config._refreshNonce;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (!refreshNonce) return;
         void refetch();

@@ -1,8 +1,8 @@
 import {DIALOG_LABELS, DIALOG_LOADERS, loadDialog, requireDialog, type DialogName} from './dialogRegistry';
 import {toastService} from '../../services/toastService';
 
-jest.mock('../../services/toastService', () => ({
-    toastService: {showErrorToast: jest.fn()},
+vi.mock('../../services/toastService', () => ({
+    toastService: {showErrorToast: vi.fn()},
 }));
 
 const EXPECTED_FUNCTIONS: Record<DialogName, string[]> = {
@@ -55,22 +55,22 @@ describe('dialogRegistry', () => {
     });
 
     describe('requireDialog', () => {
-        beforeEach(() => jest.clearAllMocks());
+        beforeEach(() => vi.clearAllMocks());
 
         it('resolves the dialog without toasting', async () => {
-            const dialog = {open: jest.fn()};
+            const dialog = {open: vi.fn()};
             await expect(requireDialog('Messaging', async () => dialog as never)).resolves.toBe(dialog);
             expect(toastService.showErrorToast).not.toHaveBeenCalled();
         });
 
         it('toasts and resolves undefined when the import fails', async () => {
-            jest.spyOn(console, 'error').mockImplementation(() => undefined);
+            vi.spyOn(console, 'error').mockImplementation(() => undefined);
             await expect(requireDialog('Messaging', () => Promise.reject(new Error('chunk failed')))).resolves.toBeUndefined();
             expect(toastService.showErrorToast).toHaveBeenCalledWith('Messaging dialog is not loaded.');
         });
 
         it('toasts when the name is unknown', async () => {
-            jest.spyOn(console, 'error').mockImplementation(() => undefined);
+            vi.spyOn(console, 'error').mockImplementation(() => undefined);
             await expect(requireDialog('Nope' as DialogName)).resolves.toBeUndefined();
             expect(toastService.showErrorToast).toHaveBeenCalled();
         });

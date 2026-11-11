@@ -6,6 +6,7 @@
  * visible text, roles and placeholders so they survive the port.
  */
 
+import type {Mock, Mocked} from 'vitest';
 import React from 'react';
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {renderWithMantine} from '../../../test/utils';
@@ -20,21 +21,21 @@ import type {
     JobAccessorialChargeDto,
 } from './types';
 
-jest.mock('../../../api/accessorialChargesApi', () => ({
+vi.mock('../../../api/accessorialChargesApi', () => ({
     accessorialChargesApi: {
-        getAvailableCharges: jest.fn(),
-        getAppliedCharges: jest.fn(),
-        getJobAmount: jest.fn(),
-        addCharges: jest.fn(),
-        updateCharge: jest.fn(),
-        deleteCharge: jest.fn(),
+        getAvailableCharges: vi.fn(),
+        getAppliedCharges: vi.fn(),
+        getJobAmount: vi.fn(),
+        addCharges: vi.fn(),
+        updateCharge: vi.fn(),
+        deleteCharge: vi.fn(),
     },
 }));
-jest.mock('../../../api/aiAssistantApi', () => ({analyzePricing: jest.fn()}));
-jest.mock('../../../utils/aiSettings', () => ({isAiEnabled: jest.fn()}));
+vi.mock('../../../api/aiAssistantApi', () => ({analyzePricing: vi.fn()}));
+vi.mock('../../../utils/aiSettings', () => ({isAiEnabled: vi.fn()}));
 
-const api = accessorialChargesApi as jest.Mocked<typeof accessorialChargesApi>;
-const mockIsAiEnabled = isAiEnabled as jest.Mock;
+const api = accessorialChargesApi as Mocked<typeof accessorialChargesApi>;
+const mockIsAiEnabled = isAiEnabled as Mock;
 
 const job: AccessorialChargesJob = {id: 123, accessorialChargeGroupId: 5, amount: 100, weight: 10, quantity: 1};
 
@@ -88,8 +89,8 @@ function renderDialog(overrides: Partial<AccessorialChargesDialogProps> = {}) {
     const props: AccessorialChargesDialogProps = {
         open: true,
         job,
-        onClose: jest.fn(),
-        showToast: jest.fn(),
+        onClose: vi.fn(),
+        showToast: vi.fn(),
         ...overrides,
     };
     return {props, ...renderWithMantine(<AccessorialChargesDialog {...props} />)};
@@ -102,15 +103,15 @@ async function appliedRow(name: string): Promise<HTMLElement> {
 }
 
 beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockIsAiEnabled.mockReturnValue(false);
-    (api.getAvailableCharges as jest.Mock).mockResolvedValue([flatCharge, perUnitCharge]);
-    (api.getAppliedCharges as jest.Mock).mockResolvedValue([]);
-    (api.getJobAmount as jest.Mock).mockResolvedValue(100);
-    (api.addCharges as jest.Mock).mockResolvedValue(undefined);
-    (api.updateCharge as jest.Mock).mockImplementation((jobAccessorialChargeId: number, data: object) =>
+    (api.getAvailableCharges as Mock).mockResolvedValue([flatCharge, perUnitCharge]);
+    (api.getAppliedCharges as Mock).mockResolvedValue([]);
+    (api.getJobAmount as Mock).mockResolvedValue(100);
+    (api.addCharges as Mock).mockResolvedValue(undefined);
+    (api.updateCharge as Mock).mockImplementation((jobAccessorialChargeId: number, data: object) =>
         Promise.resolve({...appliedFlat, jobAccessorialChargeId, ...data}));
-    (api.deleteCharge as jest.Mock).mockResolvedValue(undefined);
+    (api.deleteCharge as Mock).mockResolvedValue(undefined);
 });
 
 describe('AccessorialChargesDialog — chrome and loading', () => {
@@ -131,7 +132,7 @@ describe('AccessorialChargesDialog — chrome and loading', () => {
     });
 
     it('shows both empty states when the job has no applied or available charges', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
         renderDialog();
 
         expect(await screen.findByText('No charges have been applied to this job.')).toBeInTheDocument();
@@ -169,8 +170,8 @@ describe('AccessorialChargesDialog — chrome and loading', () => {
 
 describe('AccessorialChargesDialog — applied charges', () => {
     it('lists applied charges with their stage, amount and total', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([appliedFlat, appliedAlways]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([appliedFlat, appliedAlways]);
         renderDialog();
 
         const row = await appliedRow('Tail-lift');
@@ -184,7 +185,7 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('marks an always-applied charge and blocks its removal', async () => {
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([appliedAlways]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([appliedAlways]);
         renderDialog();
 
         const row = await appliedRow('Admin Fee');
@@ -193,8 +194,8 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('reveals Save once a row is edited and sends the update', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([appliedFlat]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([appliedFlat]);
         const {props} = renderDialog();
 
         const row = await appliedRow('Tail-lift');
@@ -213,8 +214,8 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('sends an override amount when one is entered', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([appliedFlat]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([appliedFlat]);
         renderDialog();
 
         const row = await appliedRow('Tail-lift');
@@ -228,8 +229,8 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('shows the driver amount for an applied charge', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([{...appliedFlat, driverCalculatedAmount: 8}]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([{...appliedFlat, driverCalculatedAmount: 8}]);
         renderDialog();
 
         const row = await appliedRow('Tail-lift');
@@ -237,8 +238,8 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('shows the driver override instead of the calculated driver amount when one is set', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([
             {...appliedFlat, driverCalculatedAmount: 8, driverOverrideAmount: 6},
         ]);
         renderDialog();
@@ -249,8 +250,8 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('sends a driver override amount when one is entered, without touching the customer override', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([appliedFlat]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([appliedFlat]);
         renderDialog();
 
         const row = await appliedRow('Tail-lift');
@@ -264,8 +265,8 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('keeps an existing driver override when only the customer override is changed', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([{...appliedFlat, driverOverrideAmount: 6}]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([{...appliedFlat, driverOverrideAmount: 6}]);
         renderDialog();
 
         const row = await appliedRow('Tail-lift');
@@ -279,8 +280,8 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('removes an applied charge', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([appliedFlat]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([appliedFlat]);
         const {props} = renderDialog();
 
         const row = await appliedRow('Tail-lift');
@@ -291,9 +292,9 @@ describe('AccessorialChargesDialog — applied charges', () => {
     });
 
     it('reports a delete failure through the toast', async () => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([appliedFlat]);
-        (api.deleteCharge as jest.Mock).mockRejectedValue(new Error('nope'));
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([appliedFlat]);
+        (api.deleteCharge as Mock).mockRejectedValue(new Error('nope'));
         const {props} = renderDialog();
 
         const row = await appliedRow('Tail-lift');
@@ -367,7 +368,7 @@ describe('AccessorialChargesDialog — adding charges', () => {
     });
 
     it('reports an add failure through the toast', async () => {
-        (api.addCharges as jest.Mock).mockRejectedValue(new Error('nope'));
+        (api.addCharges as Mock).mockRejectedValue(new Error('nope'));
         const {props} = renderDialog();
         await screen.findByText('Add charges');
 
@@ -424,8 +425,8 @@ describe('AccessorialChargesDialog — driver pay by tenant country', () => {
     });
 
     beforeEach(() => {
-        (api.getAvailableCharges as jest.Mock).mockResolvedValue([]);
-        (api.getAppliedCharges as jest.Mock).mockResolvedValue([{...appliedFlat, driverCalculatedAmount: 8}]);
+        (api.getAvailableCharges as Mock).mockResolvedValue([]);
+        (api.getAppliedCharges as Mock).mockResolvedValue([{...appliedFlat, driverCalculatedAmount: 8}]);
     });
 
     afterEach(() => clearSessionContext());

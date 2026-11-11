@@ -3,6 +3,7 @@
  * Optimised: read-only tests consolidated to reduce render count.
  */
 
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {MantineTestProvider} from '../../../test/utils';
@@ -12,27 +13,27 @@ import {AfterHoursTab} from './AfterHoursTab';
 import {AfterHoursPaginated} from '../../../types';
 import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks/useDriverManagementApi';
 import {testDialogs} from '../../../components/dialogs/testDialogRegistry';
-jest.mock('../../../components/dialogs/dialogRegistry', () => require('../../../components/dialogs/testDialogRegistry').createDialogRegistryMock());
+vi.mock('../../../components/dialogs/dialogRegistry', async () => (await import('../../../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
 
-jest.mock('../../../hooks/useDriverManagementApi', () => ({
-    useAfterHoursSchedule: jest.fn(),
-    useCreateAfterHoursSchedule: jest.fn(),
-    useUpdateAfterHoursSchedule: jest.fn(),
-    useDeleteAfterHoursSchedule: jest.fn(),
+vi.mock('../../../hooks/useDriverManagementApi', () => ({
+    useAfterHoursSchedule: vi.fn(),
+    useCreateAfterHoursSchedule: vi.fn(),
+    useUpdateAfterHoursSchedule: vi.fn(),
+    useDeleteAfterHoursSchedule: vi.fn(),
 }));
 
-jest.mock('../../../api/driverManagementApi', () => ({
+vi.mock('../../../api/driverManagementApi', () => ({
     driverManagementApi: {
-        exportAfterHoursScheduleCsv: jest.fn(),
+        exportAfterHoursScheduleCsv: vi.fn(),
     },
 }));
 
-const mockUseAfterHoursSchedule = useAfterHoursSchedule as jest.MockedFunction<typeof useAfterHoursSchedule>;
-const mockUseCreateAfterHoursSchedule = useCreateAfterHoursSchedule as jest.MockedFunction<typeof useCreateAfterHoursSchedule>;
-const mockUseUpdateAfterHoursSchedule = useUpdateAfterHoursSchedule as jest.MockedFunction<typeof useUpdateAfterHoursSchedule>;
-const mockUseDeleteAfterHoursSchedule = useDeleteAfterHoursSchedule as jest.MockedFunction<typeof useDeleteAfterHoursSchedule>;
+const mockUseAfterHoursSchedule = useAfterHoursSchedule as MockedFunction<typeof useAfterHoursSchedule>;
+const mockUseCreateAfterHoursSchedule = useCreateAfterHoursSchedule as MockedFunction<typeof useCreateAfterHoursSchedule>;
+const mockUseUpdateAfterHoursSchedule = useUpdateAfterHoursSchedule as MockedFunction<typeof useUpdateAfterHoursSchedule>;
+const mockUseDeleteAfterHoursSchedule = useDeleteAfterHoursSchedule as MockedFunction<typeof useDeleteAfterHoursSchedule>;
 
-const renderWithProviders = (showToast = jest.fn()) => {
+const renderWithProviders = (showToast = vi.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
@@ -54,7 +55,7 @@ const createMockData = (): AfterHoursPaginated => ({
     totalActiveDrivers: 2,
 });
 
-const refetch = jest.fn();
+const refetch = vi.fn();
 
 const setupMocks = (data?: AfterHoursPaginated, isLoading = false, isError = false) => {
     mockUseAfterHoursSchedule.mockReturnValue({
@@ -65,22 +66,22 @@ const setupMocks = (data?: AfterHoursPaginated, isLoading = false, isError = fal
         refetch,
     } as any);
     mockUseCreateAfterHoursSchedule.mockReturnValue({
-        mutateAsync: jest.fn().mockResolvedValue(undefined),
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
         isLoading: false,
     } as any);
     mockUseUpdateAfterHoursSchedule.mockReturnValue({
-        mutateAsync: jest.fn().mockResolvedValue(undefined),
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
         isLoading: false,
     } as any);
     mockUseDeleteAfterHoursSchedule.mockReturnValue({
-        mutateAsync: jest.fn().mockResolvedValue(undefined),
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
         isLoading: false,
     } as any);
 };
 
 describe('AfterHoursTab', () => {
     beforeEach(() => {
-        testDialogs.EditAfterhours = {open: jest.fn()};
+        testDialogs.EditAfterhours = {open: vi.fn()};
     });
 
     afterEach(() => {

@@ -1,3 +1,4 @@
+import type {Mock, MockedFunction} from 'vitest';
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {MantineTestProvider} from '../../test/utils';
@@ -7,11 +8,11 @@ import {OverviewPage} from './OverviewPage';
 // ContactID and FirstName are defined in setup.ts as 0 and 'Test'
 
 // Mock child components to isolate OverviewPage logic
-jest.mock('./components/FilterPanel', () => ({
+vi.mock('./components/FilterPanel', () => ({
     FilterPanel: (props: any) => <div data-testid="filter-panel">FilterPanel</div>,
 }));
 
-jest.mock('./components/StatsTabs', () => ({
+vi.mock('./components/StatsTabs', () => ({
     StatsTabs: (props: any) => (
         <div data-testid="stats-tabs" onClick={() => props.onTabChange(1)}>
             StatsTabs: active={props.activeTab}
@@ -19,7 +20,7 @@ jest.mock('./components/StatsTabs', () => ({
     ),
 }));
 
-jest.mock('../../components/common/deliveries-table', () => ({
+vi.mock('../../components/common/deliveries-table', () => ({
     DeliveriesTable: (props: any) => (
         <div data-testid="deliveries-table">
             DeliveriesTable: loading={String(props.isLoading)} total={props.total}
@@ -33,7 +34,7 @@ jest.mock('../../components/common/deliveries-table', () => ({
     ),
 }));
 
-jest.mock('./components/OpenJobsWidget', () => ({
+vi.mock('./components/OpenJobsWidget', () => ({
     OpenJobsWidget: (props: any) => (
         <div data-testid="open-jobs-widget">
             OpenJobsWidget: loading={String(props.isLoading)} count={props.openJobs?.length ?? 0}
@@ -41,28 +42,28 @@ jest.mock('./components/OpenJobsWidget', () => ({
     ),
 }));
 
-jest.mock('./components/MapDialog', () => ({
+vi.mock('./components/MapDialog', () => ({
     MapDialog: (props: any) => (
         props.open ? <div data-testid="map-dialog">MapDialog</div> : null
     ),
 }));
 
 // Mock hooks
-jest.mock('../../hooks/useOverviewApi', () => ({
-    useOverviewJobs: jest.fn(),
-    useOverviewRegions: jest.fn(),
-    useOverviewSpeeds: jest.fn(),
-    useOverviewStats: jest.fn(),
-    useOverviewOpenJobs: jest.fn(),
-    useCourierSearch: jest.fn(),
+vi.mock('../../hooks/useOverviewApi', () => ({
+    useOverviewJobs: vi.fn(),
+    useOverviewRegions: vi.fn(),
+    useOverviewSpeeds: vi.fn(),
+    useOverviewStats: vi.fn(),
+    useOverviewOpenJobs: vi.fn(),
+    useCourierSearch: vi.fn(),
 }));
 
-jest.mock('../../components/common/ai-summary-card/AiSummaryCard', () => ({
+vi.mock('../../components/common/ai-summary-card/AiSummaryCard', () => ({
     AiSummaryCard: ({title}: {title: string}) => <div data-testid="ai-summary">{title}</div>,
 }));
 
-jest.mock('../../utils/aiSettings', () => ({
-    isAiEnabled: jest.fn(() => false),
+vi.mock('../../utils/aiSettings', () => ({
+    isAiEnabled: vi.fn(() => false),
 }));
 
 import {isAiEnabled} from '../../utils/aiSettings';
@@ -74,11 +75,11 @@ import {
     useOverviewOpenJobs,
 } from '../../hooks/useOverviewApi';
 
-const mockUseOverviewJobs = useOverviewJobs as jest.MockedFunction<typeof useOverviewJobs>;
-const mockUseOverviewRegions = useOverviewRegions as jest.MockedFunction<typeof useOverviewRegions>;
-const mockUseOverviewSpeeds = useOverviewSpeeds as jest.MockedFunction<typeof useOverviewSpeeds>;
-const mockUseOverviewStats = useOverviewStats as jest.MockedFunction<typeof useOverviewStats>;
-const mockUseOverviewOpenJobs = useOverviewOpenJobs as jest.MockedFunction<typeof useOverviewOpenJobs>;
+const mockUseOverviewJobs = useOverviewJobs as MockedFunction<typeof useOverviewJobs>;
+const mockUseOverviewRegions = useOverviewRegions as MockedFunction<typeof useOverviewRegions>;
+const mockUseOverviewSpeeds = useOverviewSpeeds as MockedFunction<typeof useOverviewSpeeds>;
+const mockUseOverviewStats = useOverviewStats as MockedFunction<typeof useOverviewStats>;
+const mockUseOverviewOpenJobs = useOverviewOpenJobs as MockedFunction<typeof useOverviewOpenJobs>;
 
 
 const createTestQueryClient = () =>
@@ -90,14 +91,14 @@ function renderOverviewPage(overrides: Partial<React.ComponentProps<typeof Overv
     const queryClient = createTestQueryClient();
     const defaultProps = {
         showToast: {
-            showSuccessToast: jest.fn(),
-            showWarningToast: jest.fn(),
-            showErrorToast: jest.fn(),
-            showInfoToast: jest.fn(),
+            showSuccessToast: vi.fn(),
+            showWarningToast: vi.fn(),
+            showErrorToast: vi.fn(),
+            showInfoToast: vi.fn(),
         },
         isUsCustomer: false,
-        onOpenJobDetail: jest.fn(),
-        setRefreshCallback: jest.fn(),
+        onOpenJobDetail: vi.fn(),
+        setRefreshCallback: vi.fn(),
         ...overrides,
     };
 
@@ -151,10 +152,10 @@ describe('OverviewPage', () => {
             expect(screen.queryByTestId('ai-summary')).not.toBeInTheDocument();
             unmount();
 
-            (isAiEnabled as jest.Mock).mockReturnValue(true);
+            (isAiEnabled as Mock).mockReturnValue(true);
             renderOverviewPage();
             expect(screen.getByTestId('ai-summary')).toHaveTextContent('Auto-mate operations insights');
-            (isAiEnabled as jest.Mock).mockReturnValue(false);
+            (isAiEnabled as Mock).mockReturnValue(false);
         });
 
         it('renders FilterPanel', () => {
@@ -206,7 +207,7 @@ describe('OverviewPage', () => {
 
     describe('setRefreshCallback', () => {
         it('registers refresh callback', () => {
-            const setRefreshCallback = jest.fn();
+            const setRefreshCallback = vi.fn();
             renderOverviewPage({setRefreshCallback});
 
             expect(setRefreshCallback).toHaveBeenCalledWith(expect.any(Function));
@@ -239,7 +240,7 @@ describe('OverviewPage', () => {
 
     describe('View job details confirmation', () => {
         it('opens a confirmation dialog before opening the job, and only navigates on confirm', () => {
-            const onOpenJobDetail = jest.fn();
+            const onOpenJobDetail = vi.fn();
             renderOverviewPage({onOpenJobDetail});
 
             fireEvent.click(screen.getByTestId('open-job-detail'));
@@ -254,7 +255,7 @@ describe('OverviewPage', () => {
         });
 
         it('does not navigate when the confirmation is cancelled', () => {
-            const onOpenJobDetail = jest.fn();
+            const onOpenJobDetail = vi.fn();
             renderOverviewPage({onOpenJobDetail});
 
             fireEvent.click(screen.getByTestId('open-job-detail'));

@@ -9,10 +9,10 @@ import {createMockJob} from '../__testUtils__/mockJob';
 import {renderWithMantine as renderWithTheme} from '../../../../test/utils';
 
 describe('RelatedJobTabs', () => {
-    const onTabChange = jest.fn();
+    const onTabChange = vi.fn();
 
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('renders nothing when there is only one job', () => {

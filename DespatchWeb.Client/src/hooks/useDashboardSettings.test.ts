@@ -1,19 +1,20 @@
+import type {Mock} from 'vitest';
 import {act, renderHook} from '@testing-library/react';
 import {useDashboardSettings} from './useDashboardSettings';
 import {getPreference, savePreference} from '../api/preferencesApi';
 import {toastService} from '../services/toastService';
 
-jest.mock('../api/preferencesApi', () => ({getPreference: jest.fn(), savePreference: jest.fn()}));
-jest.mock('../services/toastService', () => ({
-    toastService: {showSuccessToast: jest.fn(), showErrorToast: jest.fn(), showInfoToast: jest.fn()},
+vi.mock('../api/preferencesApi', () => ({getPreference: vi.fn(), savePreference: vi.fn()}));
+vi.mock('../services/toastService', () => ({
+    toastService: {showSuccessToast: vi.fn(), showErrorToast: vi.fn(), showInfoToast: vi.fn()},
 }));
 
 const KEYS = {jobs: 'jobsKey', driverLocations: 'driverKey', tasks: 'tasksKey'};
 
 function setup(overrides: Partial<Parameters<typeof useDashboardSettings>[0]> = {}, result: unknown = null) {
-    const open = jest.fn().mockResolvedValue(result);
-    const onRefreshIntervals = jest.fn();
-    const onCourierDisplayMode = jest.fn();
+    const open = vi.fn().mockResolvedValue(result);
+    const onRefreshIntervals = vi.fn();
+    const onCourierDisplayMode = vi.fn();
     const hook = renderHook(() => useDashboardSettings({
         title: 'Dispatch Dashboard Settings',
         intervalKeys: KEYS,
@@ -30,8 +31,8 @@ function setup(overrides: Partial<Parameters<typeof useDashboardSettings>[0]> = 
 describe('useDashboardSettings', () => {
     beforeEach(() => {
         localStorage.clear();
-        jest.clearAllMocks();
-        (getPreference as jest.Mock).mockResolvedValue(null);
+        vi.clearAllMocks();
+        (getPreference as Mock).mockResolvedValue(null);
     });
 
     it('seeds the dialog (task interval inherits jobs on first run, courier mode defaults by region)', async () => {

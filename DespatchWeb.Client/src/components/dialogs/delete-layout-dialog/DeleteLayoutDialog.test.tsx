@@ -5,8 +5,8 @@ import { renderWithMantine } from '../../../test/utils';
 import { setupUser } from '../../../test/utils/setupUser';
 
 function setup(overrides: Partial<React.ComponentProps<typeof DeleteLayoutDialog>> = {}) {
-    const onClose = jest.fn();
-    const onConfirm = jest.fn();
+    const onClose = vi.fn();
+    const onConfirm = vi.fn();
     renderWithMantine(
         <DeleteLayoutDialog
             open

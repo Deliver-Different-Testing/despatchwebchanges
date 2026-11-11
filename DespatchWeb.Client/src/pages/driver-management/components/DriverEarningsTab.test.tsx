@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../test/utils';
@@ -8,21 +9,21 @@ import {CourierDailyEarningsPaginated} from '../../../types';
 import {useDriverEarnings} from '../../../hooks/useDriverManagementApi';
 
 // Mock the hooks
-jest.mock('../../../hooks/useDriverManagementApi', () => ({
-    useDriverEarnings: jest.fn(),
+vi.mock('../../../hooks/useDriverManagementApi', () => ({
+    useDriverEarnings: vi.fn(),
 }));
 
 // Mock the API
-jest.mock('../../../api/driverManagementApi', () => ({
+vi.mock('../../../api/driverManagementApi', () => ({
     driverManagementApi: {
-        exportDriverEarningsCsv: jest.fn(),
+        exportDriverEarningsCsv: vi.fn(),
     },
 }));
 
-const mockUseDriverEarnings = useDriverEarnings as jest.MockedFunction<typeof useDriverEarnings>;
+const mockUseDriverEarnings = useDriverEarnings as MockedFunction<typeof useDriverEarnings>;
 
 
-const renderWithProviders = (showToast = jest.fn()) => {
+const renderWithProviders = (showToast = vi.fn()) => {
     const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
@@ -47,7 +48,7 @@ const createMockData = (): CourierDailyEarningsPaginated => ({
     totalDeliveriesToday: 6,
 });
 
-const refetch = jest.fn();
+const refetch = vi.fn();
 
 const setupMocks = (data?: CourierDailyEarningsPaginated, isLoading = false, isError = false) => {
     mockUseDriverEarnings.mockReturnValue({

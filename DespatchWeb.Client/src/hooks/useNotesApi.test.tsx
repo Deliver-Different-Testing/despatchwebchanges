@@ -2,6 +2,7 @@
  * useNotesApi Hooks Tests
  */
 
+import type {Mocked} from 'vitest';
 import React from 'react';
 import {renderHook, waitFor, act} from '@testing-library/react';
 import {
@@ -22,22 +23,22 @@ import dayjs from 'dayjs';
 import {createQueryWrapper} from '../test/utils';
 
 // Mock the notesApi
-jest.mock('../api/notesApi', () => ({
+vi.mock('../api/notesApi', () => ({
     notesApi: {
-        getJobNotes: jest.fn(),
-        getBulkJobNotes: jest.fn(),
-        getNoteTypes: jest.fn(),
-        createNote: jest.fn(),
-        createBulkJobNote: jest.fn(),
-        updateNote: jest.fn(),
-        updateBulkJobNote: jest.fn(),
-        deleteNote: jest.fn(),
-        createNoteType: jest.fn(),
-        getNoteHistory: jest.fn(),
+        getJobNotes: vi.fn(),
+        getBulkJobNotes: vi.fn(),
+        getNoteTypes: vi.fn(),
+        createNote: vi.fn(),
+        createBulkJobNote: vi.fn(),
+        updateNote: vi.fn(),
+        updateBulkJobNote: vi.fn(),
+        deleteNote: vi.fn(),
+        createNoteType: vi.fn(),
+        getNoteHistory: vi.fn(),
     },
 }));
 
-const mockNotesApi = notesApi as jest.Mocked<typeof notesApi>;
+const mockNotesApi = notesApi as Mocked<typeof notesApi>;
 
 // Sample test data
 const mockNotes: JobNote[] = [

@@ -16,102 +16,103 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createMockJob, createMockReadTracker} from './__testUtils__/mockJob';
 import type {MountJobDetailsConfig, IJob} from './JobDetails.types';
 import {MantineTestProvider} from '../../../test/utils';
+import {JobDetails} from './JobDetails';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
-const mockUseJobDetail = jest.fn();
-jest.mock('./hooks/useJobDetail', () => ({
+const mockUseJobDetail = vi.fn();
+vi.mock('./hooks/useJobDetail', () => ({
     useJobDetail: (...args: unknown[]) => mockUseJobDetail(...args),
 }));
 
-const mockUseJobUpdate = jest.fn();
-jest.mock('./hooks/useJobUpdate', () => ({
+const mockUseJobUpdate = vi.fn();
+vi.mock('./hooks/useJobUpdate', () => ({
     useJobUpdate: (...args: unknown[]) => mockUseJobUpdate(...args),
 }));
 
-const mockUseFieldVisibility = jest.fn();
-jest.mock('./hooks/useFieldVisibility', () => ({
+const mockUseFieldVisibility = vi.fn();
+vi.mock('./hooks/useFieldVisibility', () => ({
     useFieldVisibility: (...args: unknown[]) => mockUseFieldVisibility(...args),
 }));
 
-const mockUseViewDensity = jest.fn();
-jest.mock('./hooks/useViewDensity', () => ({
+const mockUseViewDensity = vi.fn();
+vi.mock('./hooks/useViewDensity', () => ({
     useViewDensity: (...args: unknown[]) => mockUseViewDensity(...args),
 }));
 
-const mockUsePodPhotos = jest.fn();
-jest.mock('./hooks/usePodPhotos', () => ({
+const mockUsePodPhotos = vi.fn();
+vi.mock('./hooks/usePodPhotos', () => ({
     usePodPhotos: (...args: unknown[]) => mockUsePodPhotos(...args),
 }));
 
-const mockUseJobActions = jest.fn();
-jest.mock('./hooks/useJobActions', () => ({
+const mockUseJobActions = vi.fn();
+vi.mock('./hooks/useJobActions', () => ({
     useJobActions: (...args: unknown[]) => mockUseJobActions(...args),
 }));
 
-jest.mock('../sticky-notes/StickyNotes', () => ({
+vi.mock('../sticky-notes/StickyNotes', () => ({
     StickyNotes: () => <div data-testid="sticky-notes" />,
 }));
 
-jest.mock('../../dialogs/note-management-dialog/note-management-dialog-react.module', () => ({
-    openNoteManagementDialog: jest.fn(),
+vi.mock('../../dialogs/note-management-dialog/note-management-dialog-react.module', () => ({
+    openNoteManagementDialog: vi.fn(),
 }));
 
-jest.mock('../../../utils/dateUtils', () => ({
-    getTimezoneAbbreviation: jest.fn(() => 'NZDT'),
+vi.mock('../../../utils/dateUtils', () => ({
+    getTimezoneAbbreviation: vi.fn(() => 'NZDT'),
 }));
 
 // Mock eagerly loaded child components as simple stubs
-jest.mock('./components/WarningBanner', () => ({
+vi.mock('./components/WarningBanner', () => ({
     WarningBanner: () => <div data-testid="warning-banner" />,
 }));
 let capturedRelatedJobTabsProps: any = {};
-jest.mock('./components/RelatedJobTabs', () => ({
+vi.mock('./components/RelatedJobTabs', () => ({
     RelatedJobTabs: (props: any) => {
         capturedRelatedJobTabsProps = props;
         return <div data-testid="related-job-tabs" />;
     },
 }));
-jest.mock('./components/JobDetailHeader', () => ({
+vi.mock('./components/JobDetailHeader', () => ({
     JobDetailHeader: () => <div data-testid="job-detail-header" />,
 }));
-jest.mock('./components/MetricsGrid', () => ({
+vi.mock('./components/MetricsGrid', () => ({
     MetricsGrid: () => <div data-testid="metrics-grid" />,
 }));
-jest.mock('./components/AddressSection', () => ({
+vi.mock('./components/AddressSection', () => ({
     AddressSection: () => <div data-testid="address-section" />,
 }));
-jest.mock('./components/TotalDistance', () => ({
+vi.mock('./components/TotalDistance', () => ({
     TotalDistance: () => <div data-testid="total-distance" />,
 }));
-jest.mock('./components/FlightInformation', () => ({
+vi.mock('./components/FlightInformation', () => ({
     FlightInformation: () => <div data-testid="flight-information" />,
 }));
-jest.mock('./components/AgentInformation', () => ({
+vi.mock('./components/AgentInformation', () => ({
     AgentInformation: () => <div data-testid="agent-information" />,
 }));
-jest.mock('./components/JobFieldsSection', () => ({
+vi.mock('./components/JobFieldsSection', () => ({
     JobFieldsSection: () => <div data-testid="job-fields-section" />,
 }));
-jest.mock('./components/ToggleProperties', () => ({
+vi.mock('./components/ToggleProperties', () => ({
     ToggleProperties: () => <div data-testid="toggle-properties" />,
 }));
 let capturedPalletSectionProps: any = {};
-jest.mock('./components/PalletSection', () => ({
+vi.mock('./components/PalletSection', () => ({
     PalletSection: (props: any) => {
         capturedPalletSectionProps = props;
         return <div data-testid="pallet-section" data-pallet-count={props.pallets?.length ?? 0} />;
     },
 }));
-jest.mock('./components/TextInputDialog', () => ({
+vi.mock('./components/TextInputDialog', () => ({
     TextInputDialog: () => <div data-testid="text-input-dialog" />,
 }));
 
 // Lazy-loaded components - mock the module-level imports that React.lazy resolves
-jest.mock('./components/RecurringJobFields', () => ({
+vi.mock('./components/RecurringJobFields', () => ({
     RecurringJobFields: () => <div data-testid="recurring-job-fields" />,
 }));
-jest.mock('./components/PodPhotosSection', () => ({
+vi.mock('./components/PodPhotosSection', () => ({
     PodPhotosSection: () => <div data-testid="pod-photos-section" />,
 }));
 
@@ -130,14 +131,11 @@ function renderJobDetails(configOverrides?: Partial<MountJobDetailsConfig>) {
         isRecurringJob: false,
         isBulkJob: false,
         isUsCustomer: false,
-        showToast: jest.fn(),
-        onJobUpdate: jest.fn(),
-        onJobReadChanged: jest.fn(),
+        showToast: vi.fn(),
+        onJobUpdate: vi.fn(),
+        onJobReadChanged: vi.fn(),
         ...configOverrides,
     };
-
-    // Lazy import to ensure mocks are registered before module loads
-    const {JobDetails} = require('./JobDetails');
 
     return render(
         <QueryClientProvider client={createQueryClient()}>
@@ -150,75 +148,75 @@ function renderJobDetails(configOverrides?: Partial<MountJobDetailsConfig>) {
 
 const defaultActions = {
     textDialog: {open: false, title: '', label: '', initialValue: ''},
-    handleTextDialogSubmit: jest.fn(),
-    handleTextDialogCancel: jest.fn(),
+    handleTextDialogSubmit: vi.fn(),
+    handleTextDialogCancel: vi.fn(),
     cascadeDialog: {open: false, jobNumber: '', newDateLabel: '', members: []},
-    handleCascadeChoose: jest.fn(),
-    handleCascadeCancel: jest.fn(),
-    editDateAndTime: jest.fn(),
-    handleEditPickupAddress: jest.fn(),
-    handleEditDeliveryAddress: jest.fn(),
-    handleEditFromContact: jest.fn(),
-    handleEditToContact: jest.fn(),
-    handleEditFromContactPhone: jest.fn(),
-    handleEditToContactPhone: jest.fn(),
-    handleToggleProperty: jest.fn(),
-    handleVoidClick: jest.fn(),
-    handleActiveClick: jest.fn(),
-    handleDoneClick: jest.fn(),
-    handleTailLiftPuClick: jest.fn(),
-    handleTailLiftDoClick: jest.fn(),
-    handlePrivateResChange: jest.fn(),
-    handleCourierClick: jest.fn(),
-    handleEditPodName: jest.fn(),
-    handleEditCompletedTime: jest.fn(),
-    handlePricingClick: jest.fn(),
-    handleStatusClick: jest.fn(),
-    handleSpeedClick: jest.fn(),
-    handleSizeClick: jest.fn(),
-    handleJobTypeClick: jest.fn(),
-    handleDgClassClick: jest.fn(),
-    handleLeaveClick: jest.fn(),
-    handleTrackingMethodClick: jest.fn(),
-    handleContactClick: jest.fn(),
-    handleClientClick: jest.fn(),
-    handleInActiveByClick: jest.fn(),
-    handleEditDimensions: jest.fn(),
-    handleEditRefA: jest.fn(),
-    handleEditRefB: jest.fn(),
-    handleEditOurRef: jest.fn(),
-    handleEditConNote: jest.fn(),
-    handleEditWeight: jest.fn(),
-    handleEditTrackingMobile: jest.fn(),
-    handleEditTrackingEmail: jest.fn(),
-    handleEditCustomJobName: jest.fn(),
-    handlePodUpload: jest.fn(),
-    handlePodReport: jest.fn(),
-    handlePodSpreadsheet: jest.fn(),
-    handleSendPodEmail: jest.fn(),
-    handleDaysOfWeekChange: jest.fn(),
-    handleFrequencyChange: jest.fn(),
-    handleHolidayOptionChange: jest.fn(),
-    handleEditFirstDue: jest.fn(),
-    handleEditStopDate: jest.fn(),
-    handleEditRestartDate: jest.fn(),
+    handleCascadeChoose: vi.fn(),
+    handleCascadeCancel: vi.fn(),
+    editDateAndTime: vi.fn(),
+    handleEditPickupAddress: vi.fn(),
+    handleEditDeliveryAddress: vi.fn(),
+    handleEditFromContact: vi.fn(),
+    handleEditToContact: vi.fn(),
+    handleEditFromContactPhone: vi.fn(),
+    handleEditToContactPhone: vi.fn(),
+    handleToggleProperty: vi.fn(),
+    handleVoidClick: vi.fn(),
+    handleActiveClick: vi.fn(),
+    handleDoneClick: vi.fn(),
+    handleTailLiftPuClick: vi.fn(),
+    handleTailLiftDoClick: vi.fn(),
+    handlePrivateResChange: vi.fn(),
+    handleCourierClick: vi.fn(),
+    handleEditPodName: vi.fn(),
+    handleEditCompletedTime: vi.fn(),
+    handlePricingClick: vi.fn(),
+    handleStatusClick: vi.fn(),
+    handleSpeedClick: vi.fn(),
+    handleSizeClick: vi.fn(),
+    handleJobTypeClick: vi.fn(),
+    handleDgClassClick: vi.fn(),
+    handleLeaveClick: vi.fn(),
+    handleTrackingMethodClick: vi.fn(),
+    handleContactClick: vi.fn(),
+    handleClientClick: vi.fn(),
+    handleInActiveByClick: vi.fn(),
+    handleEditDimensions: vi.fn(),
+    handleEditRefA: vi.fn(),
+    handleEditRefB: vi.fn(),
+    handleEditOurRef: vi.fn(),
+    handleEditConNote: vi.fn(),
+    handleEditWeight: vi.fn(),
+    handleEditTrackingMobile: vi.fn(),
+    handleEditTrackingEmail: vi.fn(),
+    handleEditCustomJobName: vi.fn(),
+    handlePodUpload: vi.fn(),
+    handlePodReport: vi.fn(),
+    handlePodSpreadsheet: vi.fn(),
+    handleSendPodEmail: vi.fn(),
+    handleDaysOfWeekChange: vi.fn(),
+    handleFrequencyChange: vi.fn(),
+    handleHolidayOptionChange: vi.fn(),
+    handleEditFirstDue: vi.fn(),
+    handleEditStopDate: vi.fn(),
+    handleEditRestartDate: vi.fn(),
 
     // Universal Dispatch Dialog wiring — JobDetails reads these to render the dialog.
     dispatchDialog: {open: false, initialType: 'Courier' as const},
-    closeDispatchDialog: jest.fn(),
-    dispatchDialogConfirmCourier: jest.fn().mockResolvedValue(undefined),
-    dispatchDialogConfirmPartner: jest.fn().mockResolvedValue(undefined),
+    closeDispatchDialog: vi.fn(),
+    dispatchDialogConfirmCourier: vi.fn().mockResolvedValue(undefined),
+    dispatchDialogConfirmPartner: vi.fn().mockResolvedValue(undefined),
 
     // Saved-flight dialog wiring.
-    handleEditSavedFlight: jest.fn(),
+    handleEditSavedFlight: vi.fn(),
     savedFlightDialog: {open: false, bookingId: 0},
-    closeSavedFlightDialog: jest.fn(),
-    savedFlightDialogConfirm: jest.fn().mockResolvedValue(undefined),
+    closeSavedFlightDialog: vi.fn(),
+    savedFlightDialogConfirm: vi.fn().mockResolvedValue(undefined),
 
     // CreateAheadDays backfill dialog wiring.
-    handleInitialDaysChange: jest.fn().mockResolvedValue(undefined),
+    handleInitialDaysChange: vi.fn().mockResolvedValue(undefined),
     createAheadBackfillDialog: {open: false, jobId: 0, oldValue: 0, newValue: 0},
-    closeCreateAheadBackfillDialog: jest.fn(),
+    closeCreateAheadBackfillDialog: vi.fn(),
 };
 
 function setupDefaultMocks(overrides?: {
@@ -236,14 +234,14 @@ function setupDefaultMocks(overrides?: {
         sortedRelatedJobs,
         isLoading: overrides?.isLoading ?? false,
         isFetching: overrides?.isFetching ?? false,
-        refetch: jest.fn().mockResolvedValue(undefined),
+        refetch: vi.fn().mockResolvedValue(undefined),
     });
 
     mockUseJobUpdate.mockReturnValue({
-        updateField: jest.fn().mockResolvedValue(undefined),
-        updateAddress: jest.fn().mockResolvedValue(undefined),
-        toggleReadStatus: jest.fn().mockResolvedValue(undefined),
-        dispatchJob: jest.fn().mockResolvedValue(undefined),
+        updateField: vi.fn().mockResolvedValue(undefined),
+        updateAddress: vi.fn().mockResolvedValue(undefined),
+        toggleReadStatus: vi.fn().mockResolvedValue(undefined),
+        dispatchJob: vi.fn().mockResolvedValue(undefined),
         isUpdating: false,
         pendingRateChanges: [],
         selectedRateJobIds: new Set<number>(),
@@ -251,15 +249,15 @@ function setupDefaultMocks(overrides?: {
 
     mockUseFieldVisibility.mockReturnValue({
         isEditMode: false,
-        toggleEditMode: jest.fn(),
-        toggleField: jest.fn(),
-        resetToDefaults: jest.fn(),
-        isFieldVisible: jest.fn(() => true),
+        toggleEditMode: vi.fn(),
+        toggleField: vi.fn(),
+        resetToDefaults: vi.fn(),
+        isFieldVisible: vi.fn(() => true),
     });
 
     mockUseViewDensity.mockReturnValue({
         viewDensity: overrides?.isDense ? 'dense' : 'normal',
-        toggleDensity: jest.fn(),
+        toggleDensity: vi.fn(),
         isDense: overrides?.isDense ?? false,
     });
 
@@ -278,7 +276,7 @@ function setupDefaultMocks(overrides?: {
 
 describe('JobDetails', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         (window as any).ContactID = 1;
         (window as any).TimeZone = 'Pacific/Auckland';
     });
@@ -389,16 +387,16 @@ describe('JobDetails', () => {
         });
 
         it('calls toggleReadStatus when read status bar is clicked', async () => {
-            const toggleReadStatus = jest.fn().mockResolvedValue(undefined);
-            const onJobReadChanged = jest.fn();
+            const toggleReadStatus = vi.fn().mockResolvedValue(undefined);
+            const onJobReadChanged = vi.fn();
             const job = createMockJob({readTrackerInfo: createMockReadTracker({hasBeenRead: false})});
 
             setupDefaultMocks({job});
             mockUseJobUpdate.mockReturnValue({
-                updateField: jest.fn().mockResolvedValue(undefined),
-                updateAddress: jest.fn().mockResolvedValue(undefined),
+                updateField: vi.fn().mockResolvedValue(undefined),
+                updateAddress: vi.fn().mockResolvedValue(undefined),
                 toggleReadStatus,
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: vi.fn().mockResolvedValue(undefined),
                 isUpdating: false,
         pendingRateChanges: [],
         selectedRateJobIds: new Set<number>(),
@@ -476,7 +474,7 @@ describe('JobDetails', () => {
             expect(screen.queryByTestId('pallet-section')).not.toBeInTheDocument();
         });
 
-        it('passes only the current job pallets when switching between jobs', () => {
+        it('passes only the current job pallets when switching between jobs', async () => {
             const jobA = createMockJob({
                 id: 100,
                 jobNo: 'J-100',
@@ -504,7 +502,6 @@ describe('JobDetails', () => {
             });
             setupDefaultMocks({job: jobB, sortedRelatedJobs: [jobB]});
 
-            const {JobDetails} = require('./JobDetails');
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
                     <MantineTestProvider>
@@ -513,7 +510,7 @@ describe('JobDetails', () => {
                             isRecurringJob: false,
                             isBulkJob: false,
                             isUsCustomer: false,
-                            showToast: jest.fn(),
+                            showToast: vi.fn(),
                         }} />
                     </MantineTestProvider>
                 </QueryClientProvider>,
@@ -545,10 +542,10 @@ describe('JobDetails', () => {
         it('shows linear progress when updating', () => {
             setupDefaultMocks();
             mockUseJobUpdate.mockReturnValue({
-                updateField: jest.fn().mockResolvedValue(undefined),
-                updateAddress: jest.fn().mockResolvedValue(undefined),
-                toggleReadStatus: jest.fn().mockResolvedValue(undefined),
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                updateField: vi.fn().mockResolvedValue(undefined),
+                updateAddress: vi.fn().mockResolvedValue(undefined),
+                toggleReadStatus: vi.fn().mockResolvedValue(undefined),
+                dispatchJob: vi.fn().mockResolvedValue(undefined),
                 isUpdating: true,
                 pendingRateChanges: [],
                 selectedRateJobIds: new Set<number>(),
@@ -573,7 +570,7 @@ describe('JobDetails', () => {
                 createMockJob({id: 200, jobNo: 'J-200'}),
             ];
             setupDefaultMocks({sortedRelatedJobs: jobs});
-            const onRelatedJobChange = jest.fn();
+            const onRelatedJobChange = vi.fn();
             renderJobDetails({onRelatedJobChange});
 
             // Simulate tab change to second job
@@ -598,7 +595,7 @@ describe('JobDetails', () => {
             });
         });
 
-        it('initializes selectedTabIndex against fresh data, not stale keepPreviousData', () => {
+        it('initializes selectedTabIndex against fresh data, not stale keepPreviousData', async () => {
             // Race scenario: user has family A selected, clicks a child leg in family B.
             // The bridge swaps config.jobId to family B's child immediately, but React Query
             // serves family A's sortedRelatedJobs until the new fetch resolves. The
@@ -622,15 +619,14 @@ describe('JobDetails', () => {
 
             // Render 2: fresh data for family B arrives.
             setupDefaultMocks({sortedRelatedJobs: [familyBParent, familyBLhp, familyBLh1]});
-            const {JobDetails} = require('./JobDetails');
             const freshConfig: MountJobDetailsConfig = {
                 jobId: 201,
                 isRecurringJob: false,
                 isBulkJob: false,
                 isUsCustomer: false,
-                showToast: jest.fn(),
-                onJobUpdate: jest.fn(),
-                onJobReadChanged: jest.fn(),
+                showToast: vi.fn(),
+                onJobUpdate: vi.fn(),
+                onJobReadChanged: vi.fn(),
             };
             rerender(
                 <QueryClientProvider client={createQueryClient()}>
@@ -650,22 +646,22 @@ describe('JobDetails', () => {
         function renderWithPendingRates(pendingRateChanges: unknown[]) {
             setupDefaultMocks();
             mockUseJobUpdate.mockReturnValue({
-                updateField: jest.fn().mockResolvedValue(undefined),
-                updateAddress: jest.fn().mockResolvedValue(undefined),
-                toggleReadStatus: jest.fn().mockResolvedValue(undefined),
-                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                updateField: vi.fn().mockResolvedValue(undefined),
+                updateAddress: vi.fn().mockResolvedValue(undefined),
+                toggleReadStatus: vi.fn().mockResolvedValue(undefined),
+                dispatchJob: vi.fn().mockResolvedValue(undefined),
                 isUpdating: false,
                 pendingRateChanges,
                 selectedRateJobIds: new Set<number>(pendingRateChanges.map((r: any) => r.jobId)),
-                toggleRateSelection: jest.fn(),
-                toggleAllRateSelection: jest.fn(),
+                toggleRateSelection: vi.fn(),
+                toggleAllRateSelection: vi.fn(),
                 isApplyingRate: false,
-                confirmRateChange: jest.fn(),
-                dismissRateChange: jest.fn(),
-                checkForRateChange: jest.fn(),
-                checkForRateChanges: jest.fn(),
-                invalidateJobLists: jest.fn(),
-                invalidateJob: jest.fn(),
+                confirmRateChange: vi.fn(),
+                dismissRateChange: vi.fn(),
+                checkForRateChange: vi.fn(),
+                checkForRateChanges: vi.fn(),
+                invalidateJobLists: vi.fn(),
+                invalidateJob: vi.fn(),
             });
             renderJobDetails();
         }

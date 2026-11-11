@@ -158,8 +158,8 @@ describe('dateUtils', () => {
         // #948: the instant drifted by the browser's own UTC offset, so overdue/"ago" checks were
         // hours out everywhere but a UTC browser. getTimezoneOffset() minutes: PDT, EDT, NZDT, UTC.
         describe.each([420, 240, -780, 0])('in a browser with getTimezoneOffset() %i', browserOffset => {
-            beforeEach(() => { jest.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(browserOffset); });
-            afterEach(() => { jest.restoreAllMocks(); });
+            beforeEach(() => { vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(browserOffset); });
+            afterEach(() => { vi.restoreAllMocks(); });
 
             it.each(apiValues)('keeps the real instant of %s', apiValue => {
                 expect(parseDateFromApi(apiValue).valueOf()).toBe(Date.parse(apiValue));
@@ -325,10 +325,10 @@ describe('dateUtils', () => {
     });
 
     describe('tenantNow', () => {
-        afterEach(() => jest.useRealTimers());
+        afterEach(() => vi.useRealTimers());
 
         it("is the tenant's wall clock, so its day boundaries ignore the browser zone", () => {
-            jest.useFakeTimers({now: new Date('2026-10-29T03:00:00Z')});
+            vi.useFakeTimers({now: new Date('2026-10-29T03:00:00Z')});
             (window as any).TimeZone = 'Eastern Standard Time';
 
             const now = tenantNow();
@@ -460,11 +460,11 @@ describe('dateUtils', () => {
         const now = new Date('2024-06-15T12:00:00Z');
 
         beforeEach(() => {
-            jest.useFakeTimers().setSystemTime(now);
+            vi.useFakeTimers().setSystemTime(now);
         });
 
         afterEach(() => {
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         const ago = (ms: number) => new Date(now.getTime() - ms);

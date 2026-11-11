@@ -1,3 +1,4 @@
+import type {MockedFunction} from 'vitest';
 import {ILayout} from '../../../types/interfaces/layout.interfaces';
 import {
     LayoutSnapshot,
@@ -14,10 +15,10 @@ import {
 import {getLayouts, saveLayouts} from '../../../api/dispatchLayoutApi';
 import {DispatchLayoutDto} from "../../../types/dispatchLayout";
 
-jest.mock('../../../api/dispatchLayoutApi');
+vi.mock('../../../api/dispatchLayoutApi');
 
-const mockGetLayouts = getLayouts as jest.MockedFunction<typeof getLayouts>;
-const mockSaveLayouts = saveLayouts as jest.MockedFunction<typeof saveLayouts>;
+const mockGetLayouts = getLayouts as MockedFunction<typeof getLayouts>;
+const mockSaveLayouts = saveLayouts as MockedFunction<typeof saveLayouts>;
 
 const keys: LayoutStorageKeys = {
     layoutsKey: 'layouts-test',
@@ -37,7 +38,7 @@ const customLayout: ILayout = {
 
 beforeEach(() => {
     localStorage.clear();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockGetLayouts.mockResolvedValue([]);
     mockSaveLayouts.mockResolvedValue(undefined);
 });
@@ -97,7 +98,7 @@ describe('snapshotToRows / rowsToSnapshot', () => {
     });
 
     it('skips rows with invalid JSON rather than throwing', () => {
-        const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const rows: DispatchLayoutDto[] = [
             {name: 'Broken', layoutJson: '{not json', isActive: false},
         ];
@@ -177,8 +178,8 @@ describe('readLocalRows', () => {
 });
 
 describe('queueRemotePush', () => {
-    beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
 
     it('debounces and pushes only the latest rows', () => {
         const first: DispatchLayoutDto[] = [{name: 'A', layoutJson: '{}', isActive: false}];
@@ -188,7 +189,7 @@ describe('queueRemotePush', () => {
         queueRemotePush('JobSearch', second);
 
         expect(mockSaveLayouts).not.toHaveBeenCalled();
-        jest.runAllTimers();
+        vi.runAllTimers();
 
         expect(mockSaveLayouts).toHaveBeenCalledTimes(1);
         expect(mockSaveLayouts).toHaveBeenCalledWith('JobSearch', second);

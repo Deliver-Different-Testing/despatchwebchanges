@@ -11,6 +11,7 @@
  * so the stamp is the contract.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, screen, waitFor} from '@testing-library/react';
 import { renderWithMantine } from '../../../test/utils';
@@ -24,11 +25,11 @@ const userEvent = setupUser();
 
 // Only the tenant/timezone lookups are stubbed — `formatRelativeTime` is the real one,
 // since the rail's "2d ago" line is exactly what it computes.
-jest.mock('../../../utils/dateUtils', () => ({
-    ...jest.requireActual('../../../utils/dateUtils'),
-    getIanaTimezone: jest.fn(() => 'America/New_York'),
-    getTenantTimezone: jest.fn(() => 'America/New_York'),
-    getTimezoneAbbreviation: jest.fn(() => '(EST)'),
+vi.mock('../../../utils/dateUtils', async () => ({
+    ...(await vi.importActual<typeof import('../../../utils/dateUtils')>('../../../utils/dateUtils')),
+    getIanaTimezone: vi.fn(() => 'America/New_York'),
+    getTenantTimezone: vi.fn(() => 'America/New_York'),
+    getTimezoneAbbreviation: vi.fn(() => '(EST)'),
 }));
 
 const renderWithProviders = (ui: React.ReactElement) => renderWithMantine(ui);
@@ -58,14 +59,14 @@ const createMockTask = (overrides?: Partial<Task>): Task => ({
 
 const createMockServices = () => ({
     tasksService: {
-        markTaskAsClosed: jest.fn().mockResolvedValue(undefined),
-        updateTaskDate: jest.fn().mockResolvedValue(undefined),
-        updateTaskTime: jest.fn().mockResolvedValue(undefined),
-        reassignTaskToStaff: jest.fn().mockResolvedValue(undefined),
-        unassignTask: jest.fn().mockResolvedValue(undefined),
+        markTaskAsClosed: vi.fn().mockResolvedValue(undefined),
+        updateTaskDate: vi.fn().mockResolvedValue(undefined),
+        updateTaskTime: vi.fn().mockResolvedValue(undefined),
+        reassignTaskToStaff: vi.fn().mockResolvedValue(undefined),
+        unassignTask: vi.fn().mockResolvedValue(undefined),
     },
     dispatchService: {
-        getActiveStaff: jest.fn().mockResolvedValue([
+        getActiveStaff: vi.fn().mockResolvedValue([
             {id: 100, text: 'John Doe'},
             {id: 101, text: 'Jane Smith'},
             {id: 102, text: 'Bob Johnson'},
@@ -78,12 +79,12 @@ const createDefaultProps = (overrides?: Partial<TaskItemProps>): TaskItemProps =
     return {
         task: createMockTask(),
         config: {},
-        onTaskUpdated: jest.fn(),
-        onTaskClick: jest.fn(),
+        onTaskUpdated: vi.fn(),
+        onTaskClick: vi.fn(),
         tasksService: services.tasksService,
         dispatchService: services.dispatchService,
-        showSuccessToast: jest.fn(),
-        showErrorToast: jest.fn(),
+        showSuccessToast: vi.fn(),
+        showErrorToast: vi.fn(),
         ...overrides,
     };
 };
@@ -103,18 +104,14 @@ describe('TaskItem', () => {
     // Pin "now" to local midday so laterToday() is always ahead of it. Only Date is
     // faked, so userEvent and Mantine keep real timers.
     beforeEach(() => {
-        jest.useFakeTimers({
+        vi.useFakeTimers({
             now: dayjs().hour(12).minute(0).second(0).millisecond(0).toDate(),
-            doNotFake: [
-                'hrtime', 'nextTick', 'performance', 'queueMicrotask', 'requestAnimationFrame',
-                'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback', 'setImmediate',
-                'clearImmediate', 'setInterval', 'clearInterval', 'setTimeout', 'clearTimeout',
-            ],
+            toFake: ['Date'],
         });
     });
 
     afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
     });
 
     describe('Row anatomy', () => {
@@ -163,8 +160,8 @@ describe('TaskItem', () => {
             expect(dueControl()).toHaveAccessibleName(/\(EST\)/);
         });
 
-        it('reads the tenant zone at render, not at import', () => {
-            const {getTenantTimezone, getTimezoneAbbreviation} = jest.requireMock('../../../utils/dateUtils');
+        it('reads the tenant zone at render, not at import', async () => {
+            const {getTenantTimezone, getTimezoneAbbreviation} = vi.mocked(await import('../../../utils/dateUtils'));
             getTenantTimezone.mockReturnValueOnce('America/Chicago');
             getTimezoneAbbreviation.mockImplementationOnce(() => '(CST)');
 
@@ -313,7 +310,7 @@ describe('TaskItem', () => {
                 expect(props.tasksService.updateTaskTime).toHaveBeenCalled();
             });
             expect(props.showSuccessToast).toHaveBeenCalledWith('Task time updated');
-            const committed = (props.tasksService.updateTaskTime as jest.Mock).mock.calls[0][1];
+            const committed = (props.tasksService.updateTaskTime as Mock).mock.calls[0][1];
             expect(committed.format('HH:mm')).toBe('09:00');
         });
     });

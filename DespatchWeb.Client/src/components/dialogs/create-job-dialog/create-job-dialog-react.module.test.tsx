@@ -5,28 +5,28 @@
  */
 
 // Track render calls across test runs
-const mockRender = jest.fn();
+const mockRender = vi.fn();
 
 // Mock React DOM to prevent actual rendering
-jest.mock('react-dom/client', () => ({
-    createRoot: jest.fn(() => ({
+vi.mock('react-dom/client', async () => ({
+    createRoot: vi.fn(() => ({
         render: mockRender,
-        unmount: jest.fn(),
+        unmount: vi.fn(),
     })),
 }));
 
 // Mock the theme
 
 // Mock ReactQueryProvider
-jest.mock('../../../api', () => ({
+vi.mock('../../../api', async () => ({
     ReactQueryProvider: ({children}: any) => children,
 }));
 
 // Use require() instead of import to load the module after the mocks are installed
 let openCreateJobDialog: typeof import('./create-job-dialog-react.module').openCreateJobDialog;
 
-beforeAll(() => {
-    openCreateJobDialog = require('./create-job-dialog-react.module').openCreateJobDialog;
+beforeAll(async () => {
+    openCreateJobDialog = (await import('./create-job-dialog-react.module')).openCreateJobDialog;
 });
 
 describe('CreateJobDialogReactModule', () => {
@@ -54,7 +54,7 @@ describe('CreateJobDialogReactModule', () => {
 
         it('should accept optional toastService parameter', () => {
             const mockToast = {
-                showToast: jest.fn(),
+                showToast: vi.fn(),
             };
 
             const result = openCreateJobDialog(false, mockToast);

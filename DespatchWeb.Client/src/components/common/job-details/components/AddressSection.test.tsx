@@ -19,12 +19,12 @@ function createDefaultProps(overrides?: Record<string, any>) {
     return {
         job: createMockJob(),
         dense: false,
-        onEditPickupAddress: jest.fn(),
-        onEditDeliveryAddress: jest.fn(),
-        onEditFromContact: jest.fn(),
-        onEditToContact: jest.fn(),
-        onEditFromContactPhone: jest.fn(),
-        onEditToContactPhone: jest.fn(),
+        onEditPickupAddress: vi.fn(),
+        onEditDeliveryAddress: vi.fn(),
+        onEditFromContact: vi.fn(),
+        onEditToContact: vi.fn(),
+        onEditFromContactPhone: vi.fn(),
+        onEditToContactPhone: vi.fn(),
         ...overrides,
     };
 }
@@ -63,7 +63,7 @@ describe('AddressSection', () => {
     });
 
     it('calls onEditPickupAddress when pickup address area is clicked', () => {
-        const onEditPickupAddress = jest.fn();
+        const onEditPickupAddress = vi.fn();
         renderWithTheme(<AddressSection {...createDefaultProps({onEditPickupAddress})} />);
 
         fireEvent.click(screen.getByText(PICKUP_ADDRESS));
@@ -71,7 +71,7 @@ describe('AddressSection', () => {
     });
 
     it('calls onEditDeliveryAddress when delivery address is clicked', () => {
-        const onEditDeliveryAddress = jest.fn();
+        const onEditDeliveryAddress = vi.fn();
         renderWithTheme(<AddressSection {...createDefaultProps({onEditDeliveryAddress})} />);
 
         fireEvent.click(screen.getByText(DELIVERY_ADDRESS));
@@ -79,7 +79,7 @@ describe('AddressSection', () => {
     });
 
     it('calls onEditFromContact when pickup contact is clicked', () => {
-        const onEditFromContact = jest.fn();
+        const onEditFromContact = vi.fn();
         renderWithTheme(<AddressSection {...createDefaultProps({onEditFromContact})} />);
 
         fireEvent.click(screen.getByText(PICKUP_CONTACT));
@@ -87,7 +87,7 @@ describe('AddressSection', () => {
     });
 
     it('calls onEditToContact when delivery contact is clicked', () => {
-        const onEditToContact = jest.fn();
+        const onEditToContact = vi.fn();
         renderWithTheme(<AddressSection {...createDefaultProps({onEditToContact})} />);
 
         fireEvent.click(screen.getByText(DELIVERY_CONTACT));
@@ -95,8 +95,8 @@ describe('AddressSection', () => {
     });
 
     it('keeps the address clickable when locked (opens read-only) but not the contacts', () => {
-        const onEditPickupAddress = jest.fn();
-        const onEditFromContact = jest.fn();
+        const onEditPickupAddress = vi.fn();
+        const onEditFromContact = vi.fn();
         const job = createMockJob({locked: true});
         renderWithTheme(
             <AddressSection {...createDefaultProps({job, onEditPickupAddress, onEditFromContact})} />
@@ -150,8 +150,8 @@ describe('AddressSection', () => {
         });
 
         it('click handlers still work in dense mode', () => {
-            const onEditPickupAddress = jest.fn();
-            const onEditFromContact = jest.fn();
+            const onEditPickupAddress = vi.fn();
+            const onEditFromContact = vi.fn();
             renderWithTheme(
                 <AddressSection {...createDefaultProps({dense: true, onEditPickupAddress, onEditFromContact})} />
             );

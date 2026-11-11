@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import {
     loadNavStyleSettings,
     NAV_STYLE_STORAGE_KEY,
@@ -11,19 +12,19 @@ import {deletePreference, getPreference, savePreference} from '../api/preference
 import {getTenantNavStyleDefault} from '../api/tenantSettingsApi';
 import {StaffPreferenceKey} from '../types/enums/staff-preference-key.enum';
 
-jest.mock('../api/preferencesApi', () => ({
-    getPreference: jest.fn(),
-    savePreference: jest.fn(),
-    deletePreference: jest.fn(),
+vi.mock('../api/preferencesApi', () => ({
+    getPreference: vi.fn(),
+    savePreference: vi.fn(),
+    deletePreference: vi.fn(),
 }));
-jest.mock('../api/tenantSettingsApi', () => ({
-    getTenantNavStyleDefault: jest.fn(),
+vi.mock('../api/tenantSettingsApi', () => ({
+    getTenantNavStyleDefault: vi.fn(),
 }));
 
-const mockGet = getPreference as jest.Mock;
-const mockSave = savePreference as jest.Mock;
-const mockDelete = deletePreference as jest.Mock;
-const mockTenant = getTenantNavStyleDefault as jest.Mock;
+const mockGet = getPreference as Mock;
+const mockSave = savePreference as Mock;
+const mockDelete = deletePreference as Mock;
+const mockTenant = getTenantNavStyleDefault as Mock;
 
 const settings = (overrides: Partial<NavStyleSettings>): NavStyleSettings => ({
     userOverride: null, tenantDefault: null, userFailed: false, tenantFailed: false, ...overrides,
@@ -31,12 +32,12 @@ const settings = (overrides: Partial<NavStyleSettings>): NavStyleSettings => ({
 
 describe('nav style preference', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         localStorage.clear();
-        jest.spyOn(console, 'error').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => vi.restoreAllMocks());
 
     it('resolves the user override, then the tenant default, then dispatch', () => {
         expect(resolveNavStyle(settings({userOverride: 'dispatch', tenantDefault: 'dfrnt'}), null)).toBe('dispatch');
@@ -97,8 +98,8 @@ describe('nav style preference', () => {
         localStorage.setItem(NAV_STYLE_STORAGE_KEY, 'sidebar');
         expect(readCachedNavStyle()).toBeNull();
 
-        jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
-        jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
         expect(readCachedNavStyle()).toBeNull();
         expect(() => writeCachedNavStyle('dfrnt')).not.toThrow();
     });

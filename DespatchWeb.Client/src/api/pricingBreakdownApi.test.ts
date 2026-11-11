@@ -1,4 +1,5 @@
-/** @jest-environment node */
+/** @vitest-environment node */
+import type {Mocked} from 'vitest';
 /**
  * Pricing Breakdown API Service Tests
  */
@@ -9,14 +10,14 @@ import {createMockApiError} from '../test/utils';
 import {CreatePriceBreakdownRequest, DeletePriceBreakdownRequest, PriceBreakdown} from "../types/priceBreakdown";
 
 // Mock the apiClient
-jest.mock('./client', () => ({
+vi.mock('./client', () => ({
     apiClient: {
-        get: jest.fn(),
-        post: jest.fn(),
+        get: vi.fn(),
+        post: vi.fn(),
     },
 }));
 
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
+const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
 describe('pricingBreakdownApi', () => {
     describe('getPriceBreakdowns', () => {

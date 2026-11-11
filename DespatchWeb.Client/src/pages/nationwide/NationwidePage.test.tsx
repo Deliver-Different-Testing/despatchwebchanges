@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import dayjs from 'dayjs';
 import {act, render, screen, waitFor} from '@testing-library/react';
@@ -13,7 +14,7 @@ const listProps: Record<string, {
 }> = {};
 // What each list was pushed via setUpdateSearchParamsCallback, keyed by storagePrefix.
 const listParamPushes: Record<string, Record<string, unknown>[]> = {};
-jest.mock('../../components/job-list/JobListPanel', () => ({
+vi.mock('../../components/job-list/JobListPanel', () => ({
     JobListPanel: (props: {
         storagePrefix: string;
         fetchConfig?: {queryKeyFn?: unknown; initialParams?: Record<string, unknown>; refetchInterval?: number | false};
@@ -35,7 +36,7 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
 }));
 
 const tasksBoxProps: {refetchIntervalMs?: number | false} = {};
-jest.mock('../../components/common/tasks-box/TasksBox', () => ({
+vi.mock('../../components/common/tasks-box/TasksBox', () => ({
     TasksBox: (props: {refetchIntervalMs?: number | false}) => {
         tasksBoxProps.refetchIntervalMs = props.refetchIntervalMs;
         return <div data-testid="mock-tasks-box" />;
@@ -43,7 +44,7 @@ jest.mock('../../components/common/tasks-box/TasksBox', () => ({
 }));
 
 const mapProps: {mapZoom?: number; jobs?: unknown[]; preferenceScope?: string} = {};
-jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
+vi.mock('../../components/common/dispatch-map/DispatchMap', () => ({
     DispatchMap: (props: {mapZoom?: number; jobs?: unknown[]; preferenceScope?: string}) => {
         Object.assign(mapProps, props);
         return <div data-testid="mock-dispatch-map"/>;
@@ -54,7 +55,7 @@ jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
  * Mocking FlightAgentDataTable lets this suite assert the props the page threads through.
  */
 const widgetProps: Record<string, unknown> = {};
-jest.mock('../../components/common/flight-agent-data-table', () => ({
+vi.mock('../../components/common/flight-agent-data-table', () => ({
     FlightAgentDataTable: (props: Record<string, unknown>) => {
         Object.assign(widgetProps, props);
         return <div data-testid="mock-flight-agent-widget"/>;
@@ -65,20 +66,20 @@ jest.mock('../../components/common/flight-agent-data-table', () => ({
  * Dialog island modules register an AngularJS module at import time, so they are
  * mocked here the same way DispatchPage.test mocks its own.
  */
-jest.mock('../../components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module', () => ({
-    openFlightConfirmationDialog: jest.fn(() => Promise.resolve(null)),
+vi.mock('../../components/dialogs/flight-agent-confirmation-dialog/flight-agent-confirmation-dialog-react.module', () => ({
+    openFlightConfirmationDialog: vi.fn(() => Promise.resolve(null)),
 }));
-jest.mock('../../components/dialogs/auto-complete-dialog/auto-complete-dialog-react.module', () => ({
-    openAutoCompleteDialog: jest.fn(() => Promise.resolve(null)),
+vi.mock('../../components/dialogs/auto-complete-dialog/auto-complete-dialog-react.module', () => ({
+    openAutoCompleteDialog: vi.fn(() => Promise.resolve(null)),
 }));
-jest.mock('../../components/dialogs/recovery-agent-management-dialog', () => ({
-    openRecoveryAgentManagementDialog: jest.fn(() => Promise.resolve(null)),
+vi.mock('../../components/dialogs/recovery-agent-management-dialog', () => ({
+    openRecoveryAgentManagementDialog: vi.fn(() => Promise.resolve(null)),
 }));
-jest.mock('../../components/dialogs/add-event-dialog', () => ({
-    openAddEventDialog: jest.fn(() => Promise.resolve(true)),
+vi.mock('../../components/dialogs/add-event-dialog', () => ({
+    openAddEventDialog: vi.fn(() => Promise.resolve(true)),
 }));
-jest.mock('../../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
-    openEditAddressDialog: jest.fn().mockResolvedValue(null),
+vi.mock('../../components/dialogs/edit-address-dialog/edit-address-dialog-react.module', () => ({
+    openEditAddressDialog: vi.fn().mockResolvedValue(null),
 }));
 
 const dispatchDialogProps: {
@@ -87,31 +88,31 @@ const dispatchDialogProps: {
     existingDestination?: {id: number; text: string};
     onDispatchCourier?: (confirmation: {type: string; destination: {id: number; text: string}}) => Promise<void>;
 } = {};
-jest.mock('../../components/dialogs/dispatch-dialog', () => ({
+vi.mock('../../components/dialogs/dispatch-dialog', () => ({
     DispatchDialog: (props: typeof dispatchDialogProps) => {
         Object.assign(dispatchDialogProps, props);
         return <div data-testid="mock-dispatch-dialog"/>;
     },
 }));
 
-const getDispatchJobDetailMock = jest.fn((_jobId: number) => new Promise(() => {}));
-jest.mock('../../api/dispatchExecutorApi', () => ({
-    ...jest.requireActual('../../api/dispatchExecutorApi'),
+const getDispatchJobDetailMock = vi.fn((_jobId: number) => new Promise(() => {}));
+vi.mock('../../api/dispatchExecutorApi', async () => ({
+    ...(await vi.importActual<typeof import('../../api/dispatchExecutorApi')>('../../api/dispatchExecutorApi')),
     getDispatchJobDetail: (jobId: number) => getDispatchJobDetailMock(jobId),
 }));
 
-const assignFlightToJobMock = jest.fn().mockResolvedValue(undefined);
-jest.mock('../../api/nationwideApi', () => {
+const assignFlightToJobMock = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../api/nationwideApi', async () => {
     // Reassign in place -- spreading the class instance would drop its
     // prototype methods (getActiveAirlines, getNearbyAirports, ...), which
     // the flight/agent widget hook also needs on mount.
-    const actual = jest.requireActual('../../api/nationwideApi');
+    const actual = (await vi.importActual<typeof import('../../api/nationwideApi')>('../../api/nationwideApi'));
     actual.nationwideApi.assignFlightToJob = (...args: unknown[]) => assignFlightToJobMock(...args);
     return actual;
 });
 
-const executeDispatchConfirmationMock = jest.fn().mockResolvedValue({message: 'ok', severity: 'success'});
-jest.mock('../../components/dialogs/dispatch-dialog/executeDispatch', () => ({
+const executeDispatchConfirmationMock = vi.fn().mockResolvedValue({message: 'ok', severity: 'success'});
+vi.mock('../../components/dialogs/dispatch-dialog/executeDispatch', () => ({
     executeDispatchConfirmation: (...args: unknown[]) => executeDispatchConfirmationMock(...args),
 }));
 
@@ -119,8 +120,8 @@ const serverViews = [
     {id: 11, name: 'Auckland', centerLatitude: -36.85, centerLongitude: 174.76, selected: false},
     {id: 22, name: 'Airport', centerLatitude: -37.0, centerLongitude: 174.79, selected: false},
 ];
-const fetchPageViewsMock = jest.fn().mockResolvedValue(serverViews);
-jest.mock('../../api/dispatchViewsApi', () => ({
+const fetchPageViewsMock = vi.fn().mockResolvedValue(serverViews);
+vi.mock('../../api/dispatchViewsApi', () => ({
     fetchPageViews: (...a: unknown[]) => fetchPageViewsMock(...a),
 }));
 
@@ -141,7 +142,7 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof NationwidePag
         <QueryClientProvider client={queryClient}>
             <MantineTestProvider>
                 <NationwidePage
-                    showToast={jest.fn()}
+                    showToast={vi.fn()}
                     isUsCustomer={false}
                     timeZone="New Zealand Standard Time"
                     {...overrides}
@@ -219,7 +220,7 @@ describe('NationwidePage', () => {
     describe('date filter timezone conversion', () => {
         it('does not fail to load the date filter when the page timezone is a Windows ID, not IANA', () => {
             localStorage.setItem('dateFilter-2-0', JSON.stringify({startDate: 0, endDate: 0, useTime: false}));
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
             renderPage({timeZone: 'Eastern Standard Time'});
 
@@ -315,7 +316,7 @@ describe('NationwidePage', () => {
             // V1's handleJobDispatch() refused courier dispatch for isUsCustomer
             // with a warning toast (nationwide.controller.ts). The shared
             // DispatchDialog has no such gate, so this page must apply it itself.
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             renderPage({isUsCustomer: true, showToast});
             await selectAJob();
 
@@ -339,7 +340,7 @@ describe('NationwidePage', () => {
         });
 
         it('still allows courier dispatch for non-US customers', async () => {
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             renderPage({isUsCustomer: false, showToast});
             await selectAJob();
 
@@ -418,7 +419,7 @@ describe('NationwidePage', () => {
         };
 
         const assignTheFlight = async () => {
-            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+            (openFlightConfirmationDialog as Mock).mockResolvedValueOnce({
                 shouldAssign: true,
                 packageReadyTime,
                 packageDeliverByTime,
@@ -475,13 +476,13 @@ describe('NationwidePage', () => {
             renderPage();
             await selectAFlightJob();
 
-            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+            (openFlightConfirmationDialog as Mock).mockResolvedValueOnce({
                 shouldAssign: true,
                 awb: 'AWB123',
                 packageReadyTime,
                 packageDeliverByTime,
             });
-            const postSpy = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({data: {}} as never);
+            const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({data: {}} as never);
             getDispatchJobDetailMock.mockResolvedValueOnce(undefined);
 
             const onAddFlight = widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>;
@@ -496,17 +497,17 @@ describe('NationwidePage', () => {
         });
 
         it('warns rather than reporting a failed assignment when the flight is assigned but the AWB write fails', async () => {
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             renderPage({showToast});
             await selectAFlightJob();
 
-            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+            (openFlightConfirmationDialog as Mock).mockResolvedValueOnce({
                 shouldAssign: true,
                 awb: 'AWB123',
                 packageReadyTime,
                 packageDeliverByTime,
             });
-            const postSpy = jest.spyOn(apiClient, 'post').mockRejectedValueOnce(new Error('UpdateJob failed'));
+            const postSpy = vi.spyOn(apiClient, 'post').mockRejectedValueOnce(new Error('UpdateJob failed'));
             getDispatchJobDetailMock.mockResolvedValueOnce(undefined);
 
             const onAddFlight = widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>;
@@ -525,18 +526,18 @@ describe('NationwidePage', () => {
         });
 
         it('shows the generic error and never attempts the AWB write when the assignment itself fails', async () => {
-            const showToast = jest.fn();
+            const showToast = vi.fn();
             renderPage({showToast});
             await selectAFlightJob();
 
-            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+            (openFlightConfirmationDialog as Mock).mockResolvedValueOnce({
                 shouldAssign: true,
                 awb: 'AWB123',
                 packageReadyTime,
                 packageDeliverByTime,
             });
             assignFlightToJobMock.mockRejectedValueOnce(new Error('network error'));
-            const postSpy = jest.spyOn(apiClient, 'post');
+            const postSpy = vi.spyOn(apiClient, 'post');
 
             const onAddFlight = widgetProps.onAddFlightToJob as (flight: unknown) => Promise<void>;
             await act(async () => {
@@ -552,7 +553,7 @@ describe('NationwidePage', () => {
             renderPage();
             await selectAFlightJob();
 
-            (openFlightConfirmationDialog as jest.Mock).mockResolvedValueOnce({
+            (openFlightConfirmationDialog as Mock).mockResolvedValueOnce({
                 shouldAssign: true,
                 packageReadyTime,
                 packageDeliverByTime,
@@ -643,7 +644,7 @@ describe('NationwidePage', () => {
         });
 
         it('toggles a view (driven by the host toolbar) and pushes the new selection into every list', async () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
             await waitFor(() => expect(listParamPushes['nwNewJobList']).toContainEqual({despatchViewIds: [11], page: 0}));
@@ -656,7 +657,7 @@ describe('NationwidePage', () => {
         });
 
         it('clears the selection (driven by the host toolbar) and keeps it cleared in storage', async () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
             await waitFor(() => expect(listParamPushes['nwNewJobList']).toContainEqual({despatchViewIds: [11], page: 0}));
@@ -670,7 +671,7 @@ describe('NationwidePage', () => {
 
     describe('host toolbar bridge', () => {
         it('exposes a layout bridge to the host on mount', () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             expect(onLayoutBridgeReady).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -689,11 +690,11 @@ describe('NationwidePage', () => {
         });
 
         it('mirrors the view list and selection to the host toolbar, in both directions', async () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
-            const listener = jest.fn();
+            const listener = vi.fn();
             bridge.registerViewsListener(listener);
             // Still loading -- the toolbar keeps its spinner rather than
             // flashing "No views available".
@@ -716,7 +717,7 @@ describe('NationwidePage', () => {
         });
 
         it('applies a refresh interval pushed from the host settings dialog', () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
@@ -730,7 +731,7 @@ describe('NationwidePage', () => {
         it('applies a date filter pushed from the host toolbar to every list', () => {
             // V1 wired date-filter-data/on-date-filter-refresh into the toolbar
             // (nationwide.template.html); the React page must do the same via the bridge.
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
@@ -746,7 +747,7 @@ describe('NationwidePage', () => {
         });
 
         it('re-queries every mounted list when the date filter changes, not just on first mount', () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
@@ -760,7 +761,7 @@ describe('NationwidePage', () => {
         });
 
         it('passes the auto-refresh interval to the tasks box as well as the lists', () => {
-            const onLayoutBridgeReady = jest.fn();
+            const onLayoutBridgeReady = vi.fn();
             renderPage({onLayoutBridgeReady});
             const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
@@ -773,7 +774,7 @@ describe('NationwidePage', () => {
     describe('per-box manual refresh', () => {
         it('refreshes only the affected list, leaving non-list boxes as no-ops', async () => {
             const user = setupUser();
-            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
             renderPage();
 
             for (const button of screen.getAllByRole('button', {name: 'Refresh'})) {

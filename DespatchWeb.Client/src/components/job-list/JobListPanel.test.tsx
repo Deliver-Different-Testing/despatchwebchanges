@@ -1,3 +1,4 @@
+import type {Mock} from 'vitest';
 import React from 'react';
 import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
 import { renderWithMantineProviders } from '../../test/utils';
@@ -9,7 +10,7 @@ import dayjs from 'dayjs';
 import {JobStatus} from '../../types/enums/job-status.enum';
 
 // Mock @tanstack/react-virtual so rows render in jsdom (zero-height containers)
-jest.mock('@tanstack/react-virtual', () => ({
+vi.mock('@tanstack/react-virtual', () => ({
     useVirtualizer: ({count}: {count: number}) => ({
         getVirtualItems: () =>
             Array.from({length: count}, (_, i) => ({
@@ -25,19 +26,19 @@ jest.mock('@tanstack/react-virtual', () => ({
 }));
 
 // Mock the split-job flow
-jest.mock('../../services/splitJobFlow', () => ({
-    executeSplitJobFlow: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../services/splitJobFlow', () => ({
+    executeSplitJobFlow: vi.fn().mockResolvedValue(undefined),
 }));
-jest.mock('../dialogs/add-event-dialog', () => ({
-    openAddEventDialog: jest.fn().mockResolvedValue(true),
+vi.mock('../dialogs/add-event-dialog', () => ({
+    openAddEventDialog: vi.fn().mockResolvedValue(true),
 }));
-jest.mock('../dialogs/event-group-dialog', () => ({
-    openEventGroupDialog: jest.fn().mockResolvedValue(true),
+vi.mock('../dialogs/event-group-dialog', () => ({
+    openEventGroupDialog: vi.fn().mockResolvedValue(true),
 }));
 
 // Stub the dispatch dialog so the bulk wiring can be driven without going through
 // the dialog's radio/search flow (its own behaviour is covered by DispatchDialog.test.tsx).
-jest.mock('../dialogs/dispatch-dialog', () => ({
+vi.mock('../dialogs/dispatch-dialog', () => ({
     DispatchDialog: ({open, onDispatchCourier}: {
         open: boolean;
         onDispatchCourier: (c: {type: string; destination: {id: number; text: string}}) => Promise<void>;
@@ -54,51 +55,52 @@ jest.mock('../dialogs/dispatch-dialog', () => ({
         ) : null,
 }));
 
-jest.mock('../../api/dispatchExecutorApi', () => ({
-    assignAgentToJobs: jest.fn(),
-    assignNpAgentToJobs: jest.fn(),
+vi.mock('../../api/dispatchExecutorApi', async () => ({
+    assignAgentToJobs: vi.fn(),
+    assignNpAgentToJobs: vi.fn(),
 }));
 
 // Mock child components' heavy dependencies
-jest.mock('../../api/courierApi', () => ({
-    searchActiveCouriersExtended: jest.fn().mockResolvedValue([]),
+vi.mock('../../api/courierApi', async () => ({
+    searchActiveCouriersExtended: vi.fn().mockResolvedValue([]),
 }));
-jest.mock('../../utils/dateUtils', () =>
-    require('../../test/mocks/dateUtilsMock').nzDateUtilsMock());
+vi.mock('../../utils/dateUtils', async () =>
+    (await import('../../test/mocks/dateUtilsMock')).nzDateUtilsMock());
 
 // The column-preferences server sync is covered by its own describe block below;
 // everywhere else, stub it out so tests don't fire real network requests.
-jest.mock('./jobListPreferences', () => ({
-    ...jest.requireActual('./jobListPreferences'),
-    loadJobListColumnsFromServer: jest.fn().mockResolvedValue(null),
-    persistJobListColumnsToServer: jest.fn(),
+vi.mock('./jobListPreferences', async () => ({
+    ...(await vi.importActual<typeof import('./jobListPreferences')>('./jobListPreferences')),
+    loadJobListColumnsFromServer: vi.fn().mockResolvedValue(null),
+    persistJobListColumnsToServer: vi.fn(),
 }));
 
 // Covered by its own test file; everywhere else, stub it out so tests don't
 // fire real network requests for a preference this suite doesn't exercise.
-jest.mock('./addressFormatPreferences', () => ({
-    loadEffectiveAddressFormat: jest.fn().mockResolvedValue({}),
+vi.mock('./addressFormatPreferences', () => ({
+    loadEffectiveAddressFormat: vi.fn().mockResolvedValue({}),
 }));
 
-jest.mock('../../api/jobListApi', () => ({
-    allocateJobs: jest.fn(),
-    getEventGroups: jest.fn().mockResolvedValue([]),
-    getActivePartnerOptions: jest.fn().mockResolvedValue([]),
-    sendToPartner: jest.fn().mockResolvedValue({success: true, trackingNumber: 'TRK-123', message: 'OK'}),
-    updateJobReadStatus: jest.fn().mockResolvedValue(undefined),
-    bulkUpdateReadStatus: jest.fn().mockResolvedValue(undefined),
-    lateCall: jest.fn().mockResolvedValue(undefined),
-    reAllocateJobs: jest.fn().mockResolvedValue(undefined),
-    restoreJobs: jest.fn().mockResolvedValue(undefined),
-    getRestorePodImpact: jest.fn().mockResolvedValue([]),
-    addRestoreEvent: jest.fn().mockResolvedValue(undefined),
-    setFirstJob: jest.fn().mockResolvedValue(undefined),
-    releaseBulkJob: jest.fn().mockResolvedValue({jobNumbers: []}),
-    splitJob: jest.fn().mockResolvedValue(undefined),
-    markJobMissing: jest.fn().mockResolvedValue(undefined),
-    moveJobToReprice: jest.fn().mockResolvedValue(undefined),
-    updateJobDetail: jest.fn().mockResolvedValue(undefined),
-    restoreNationwideJob: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../api/jobListApi', () => ({
+    allocateJobs: vi.fn(),
+    getEventGroups: vi.fn().mockResolvedValue([]),
+    getActivePartnerOptions: vi.fn().mockResolvedValue([]),
+    sendToPartner: vi.fn().mockResolvedValue({success: true, trackingNumber: 'TRK-123', message: 'OK'}),
+    updateJobReadStatus: vi.fn().mockResolvedValue(undefined),
+    bulkUpdateReadStatus: vi.fn().mockResolvedValue(undefined),
+    lateCall: vi.fn().mockResolvedValue(undefined),
+    reAllocateJobs: vi.fn().mockResolvedValue(undefined),
+    restoreJobs: vi.fn().mockResolvedValue(undefined),
+    getRestorePodImpact: vi.fn().mockResolvedValue([]),
+    addRestoreEvent: vi.fn().mockResolvedValue(undefined),
+    setFirstJob: vi.fn().mockResolvedValue(undefined),
+    releaseBulkJob: vi.fn().mockResolvedValue({jobNumbers: []}),
+    splitJob: vi.fn().mockResolvedValue(undefined),
+    markJobMissing: vi.fn().mockResolvedValue(undefined),
+    moveJobToReprice: vi.fn().mockResolvedValue(undefined),
+    updateJobDetail: vi.fn().mockResolvedValue(undefined),
+    restoreNationwideJob: vi.fn().mockResolvedValue(undefined),
+    getPartnerRateForJob: vi.fn().mockResolvedValue({}),
 }));
 
 import {
@@ -112,12 +114,13 @@ import {searchActiveCouriersExtended} from '../../api/courierApi';
 import {loadJobListColumnsFromServer, persistJobListColumnsToServer} from './jobListPreferences';
 import {loadEffectiveAddressFormat} from './addressFormatPreferences';
 import {queryClient} from '../../api/queryClient';
-const mockedSearchCouriers = searchActiveCouriersExtended as jest.Mock;
-const mockedAllocateJobs = allocateJobs as jest.Mock;
-const mockedUpdateJobReadStatus = updateJobReadStatus as jest.Mock;
-const mockedRestoreJobs = restoreJobs as jest.Mock;
-const mockedGetRestorePodImpact = getRestorePodImpact as jest.Mock;
-const mockedAddRestoreEvent = addRestoreEvent as jest.Mock;
+import * as dispatchExecutorApi from '../../api/dispatchExecutorApi';
+const mockedSearchCouriers = searchActiveCouriersExtended as Mock;
+const mockedAllocateJobs = allocateJobs as Mock;
+const mockedUpdateJobReadStatus = updateJobReadStatus as Mock;
+const mockedRestoreJobs = restoreJobs as Mock;
+const mockedGetRestorePodImpact = getRestorePodImpact as Mock;
+const mockedAddRestoreEvent = addRestoreEvent as Mock;
 
 // ── Mock Data Factory ────────────────────────────────────────────────
 
@@ -166,7 +169,7 @@ function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
 
 function createDefaultProps(overrides?: Partial<JobListPanelProps>): JobListPanelProps {
     return {
-        showToast: jest.fn(),
+        showToast: vi.fn(),
         appPage: AppPage.Dispatch,
         ...overrides,
     };
@@ -200,7 +203,7 @@ describe('JobListPanel', () => {
 
     describe('Prefetch on Mount', () => {
         it('prefetches note types when the panel mounts', () => {
-            const prefetchSpy = jest.spyOn(queryClient, 'prefetchQuery').mockResolvedValue(undefined);
+            const prefetchSpy = vi.spyOn(queryClient, 'prefetchQuery').mockResolvedValue(undefined);
 
             renderWithMantineProviders(<JobListPanel {...createDefaultProps()}/>);
 
@@ -217,9 +220,9 @@ describe('JobListPanel', () => {
 
     describe('Rendering and AngularJS Bridge', () => {
         it('renders all sections, pushes jobs via bridge, and supports refresh/select callbacks', () => {
-            const onJobSelect = jest.fn();
-            const onRefresh = jest.fn();
-            const setJobsCallbackSpy = jest.fn();
+            const onJobSelect = vi.fn();
+            const onRefresh = vi.fn();
+            const setJobsCallbackSpy = vi.fn();
             let refreshFn: () => void = () => {};
             let selectJob: (id: number) => void = () => {};
             let pushJobs: (j: DispatchJob[], t: number) => void = () => {};
@@ -269,7 +272,7 @@ describe('JobListPanel', () => {
 
         it('highlights only the controlled selectedJobId, ignoring its own clicks until the prop moves', async () => {
             const user = setupUser();
-            const onJobSelect = jest.fn();
+            const onJobSelect = vi.fn();
             const jobs = [
                 createMockDispatchJob({id: 10, jobNo: 'J010'}),
                 createMockDispatchJob({id: 20, jobNo: 'J020'}),
@@ -317,7 +320,7 @@ describe('JobListPanel', () => {
 
     describe('Category Filtering', () => {
         it('filters by category and calls onCategoryChange', () => {
-            const onCategoryChange = jest.fn();
+            const onCategoryChange = vi.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'UNASSIGNED-1', statusId: 0}),
                 createMockDispatchJob({
@@ -432,10 +435,10 @@ describe('JobListPanel', () => {
         // wall-clock waits. fireEvent (instead of user-event) keeps the input update
         // synchronous so flushDebounce just has to advance the debounce timer.
         beforeEach(() => {
-            jest.useFakeTimers();
+            vi.useFakeTimers();
         });
         afterEach(() => {
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         const typeAndFlush = async (input: HTMLElement, value: string) => {
@@ -443,12 +446,12 @@ describe('JobListPanel', () => {
             // JobListPanel useEffect (200ms) → debouncedSearchQuery → filter.
             // Advance past the first to let the second be scheduled, then past the second.
             await act(async () => { fireEvent.change(input, {target: {value}}); });
-            await act(async () => { await jest.advanceTimersByTimeAsync(300); });
-            await act(async () => { await jest.advanceTimersByTimeAsync(200); });
+            await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+            await act(async () => { await vi.advanceTimersByTimeAsync(200); });
         };
 
         it('filters jobs by job number, client, and courier, and calls onSearchChange', async () => {
-            const onSearchChange = jest.fn();
+            const onSearchChange = vi.fn();
             const jobs = [
                 createMockDispatchJob({
                     id: 1, jobNo: 'ALPHA-001', client: 'Widget Co',
@@ -526,7 +529,7 @@ describe('JobListPanel', () => {
 
     describe('Stats, Footer, and Job Selection', () => {
         it('computes stats, shows footer counts, and selects job on click', () => {
-            const onJobSelect = jest.fn();
+            const onJobSelect = vi.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'J1', statusId: 0}),
                 createMockDispatchJob({id: 2, jobNo: 'J2', statusId: 1, assignedCourier: {id: 1, text: 'C'}}),
@@ -687,8 +690,8 @@ describe('JobListPanel', () => {
     });
 
     describe('Column Preferences (StaffPreference sync)', () => {
-        const mockedLoadColumns = loadJobListColumnsFromServer as jest.Mock;
-        const mockedPersistColumns = persistJobListColumnsToServer as jest.Mock;
+        const mockedLoadColumns = loadJobListColumnsFromServer as Mock;
+        const mockedPersistColumns = persistJobListColumnsToServer as Mock;
 
         beforeEach(() => {
             mockedLoadColumns.mockReset().mockResolvedValue(null);
@@ -755,7 +758,7 @@ describe('JobListPanel', () => {
     });
 
     describe('Address format preference', () => {
-        const mockedLoadAddressFormat = loadEffectiveAddressFormat as jest.Mock;
+        const mockedLoadAddressFormat = loadEffectiveAddressFormat as Mock;
 
         afterEach(() => {
             mockedLoadAddressFormat.mockReset().mockResolvedValue({});
@@ -787,7 +790,7 @@ describe('JobListPanel', () => {
     describe('Sorting', () => {
         it('toggles sort direction and calls onBackendFilter', () => {
             const storagePrefix = 'sortTest';
-            const onBackendFilter = jest.fn();
+            const onBackendFilter = vi.fn();
             renderAndPushJobs([createMockDispatchJob()], {storagePrefix, onBackendFilter});
 
             const header = screen.getByText('Job no');
@@ -905,8 +908,8 @@ describe('JobListPanel', () => {
 
     describe('Optimistic Dispatch', () => {
         it('renders assign button for unassigned jobs on dispatch page', () => {
-            const showToast = jest.fn();
-            const onRefresh = jest.fn();
+            const showToast = vi.fn();
+            const onRefresh = vi.fn();
             mockedAllocateJobs.mockResolvedValue(undefined);
 
             const job = createMockDispatchJob({id: 5, jobNo: 'DISP-1', statusId: 0});
@@ -1070,7 +1073,7 @@ describe('JobListPanel', () => {
     describe('fetchConfig mode (React Query data fetching)', () => {
         function createMockFetchConfig(overrides?: Partial<FetchConfig>): FetchConfig {
             return {
-                fetchFn: jest.fn().mockResolvedValue({
+                fetchFn: vi.fn().mockResolvedValue({
                     jobs: [createMockDispatchJob({id: 1, jobNo: 'FETCHED-001'})],
                     totalCount: 1,
                     hasMore: false,
@@ -1094,7 +1097,7 @@ describe('JobListPanel', () => {
             const statusCounts = {total: 2, unassigned: 1, active: 1, transit: 0, done: 1};
 
             const fetchConfig = createMockFetchConfig({
-                fetchFn: jest.fn().mockImplementation((params: JobListSearchParams) =>
+                fetchFn: vi.fn().mockImplementation((params: JobListSearchParams) =>
                     Promise.resolve({
                         jobs: params.statusFilter === 'delivered' ? [delivered] : [unassigned, delivered],
                         totalCount: params.statusFilter === 'delivered' ? 1 : 2,
@@ -1130,7 +1133,7 @@ describe('JobListPanel', () => {
 
         it('fetches jobs via React Query, skips setJobsCallback, and registers updateSearchParams', async () => {
             const fetchConfig = createMockFetchConfig();
-            const setJobsCallback = jest.fn();
+            const setJobsCallback = vi.fn();
             let updateParamsFn: ((params: Partial<JobListSearchParams>) => void) | null = null;
 
             renderWithMantineProviders(
@@ -1157,7 +1160,7 @@ describe('JobListPanel', () => {
         });
 
         it('calls updateParams via setUpdateSearchParamsCallback', async () => {
-            const fetchFn = jest.fn().mockResolvedValue({
+            const fetchFn = vi.fn().mockResolvedValue({
                 jobs: [createMockDispatchJob({id: 1, jobNo: 'INITIAL'})],
                 totalCount: 1,
                 hasMore: false,
@@ -1207,8 +1210,8 @@ describe('JobListPanel', () => {
 
             expect(await screen.findByText('FETCHED-001')).toBeInTheDocument();
 
-            (fetchConfig.fetchFn as jest.Mock).mockClear();
-            (fetchConfig.fetchFn as jest.Mock).mockResolvedValue({
+            (fetchConfig.fetchFn as Mock).mockClear();
+            (fetchConfig.fetchFn as Mock).mockResolvedValue({
                 jobs: [createMockDispatchJob({id: 2, jobNo: 'REFRESHED'})],
                 totalCount: 1,
                 hasMore: false,
@@ -1225,7 +1228,7 @@ describe('JobListPanel', () => {
 
         it('updates sort via hookData when column header is clicked', async () => {
             const fetchConfig = createMockFetchConfig();
-            const onBackendFilter = jest.fn();
+            const onBackendFilter = vi.fn();
 
             renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
@@ -1236,7 +1239,7 @@ describe('JobListPanel', () => {
 
             expect(await screen.findByText('FETCHED-001')).toBeInTheDocument();
 
-            (fetchConfig.fetchFn as jest.Mock).mockClear();
+            (fetchConfig.fetchFn as Mock).mockClear();
 
             fireEvent.click(screen.getByText('Job no'));
 
@@ -1257,12 +1260,12 @@ describe('JobListPanel', () => {
             const clearListJobs = [createMockDispatchJob({id: 10, jobNo: 'CLEAR-001'})];
             const allJobs = [createMockDispatchJob({id: 20, jobNo: 'ALL-001'})];
 
-            const fetchFn = jest.fn()
+            const fetchFn = vi.fn()
                 .mockResolvedValueOnce({jobs: [createMockDispatchJob({id: 1, jobNo: 'INITIAL'})], totalCount: 1, hasMore: false} as JobSearchResult)  // initial fetch
                 .mockResolvedValueOnce({jobs: clearListJobs, totalCount: 1, hasMore: false} as JobSearchResult) // clear list fetch
                 .mockResolvedValueOnce({jobs: allJobs, totalCount: 1, hasMore: false} as JobSearchResult);       // after clearing
 
-            const queryKeyFn = jest.fn((params: JobListSearchParams) =>
+            const queryKeyFn = vi.fn((params: JobListSearchParams) =>
                 params.selectedClearListId
                     ? ['test', 'clearList', params] as const
                     : ['test', 'jobs', params] as const
@@ -1316,7 +1319,7 @@ describe('JobListPanel', () => {
 
         it('shows loading indicator while fetching', async () => {
             let resolveFetch!: (value: JobSearchResult) => void;
-            const fetchFn = jest.fn().mockReturnValue(new Promise<JobSearchResult>(r => { resolveFetch = r; }));
+            const fetchFn = vi.fn().mockReturnValue(new Promise<JobSearchResult>(r => { resolveFetch = r; }));
             const fetchConfig = createMockFetchConfig({fetchFn});
 
             renderWithMantineProviders(
@@ -1338,13 +1341,13 @@ describe('JobListPanel', () => {
         });
 
         it('calls onJobsLoaded when jobs arrive in fetchConfig mode', async () => {
-            const onJobsLoaded = jest.fn();
+            const onJobsLoaded = vi.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'MAP-001', statusId: 0}),
                 createMockDispatchJob({id: 2, jobNo: 'MAP-002', statusId: 1}),
             ];
             const fetchConfig = createMockFetchConfig({
-                fetchFn: jest.fn().mockResolvedValue({
+                fetchFn: vi.fn().mockResolvedValue({
                     jobs,
                     totalCount: 2,
                     hasMore: false,
@@ -1361,9 +1364,9 @@ describe('JobListPanel', () => {
         });
 
         it('does not call onJobsLoaded when jobs array is empty', async () => {
-            const onJobsLoaded = jest.fn();
+            const onJobsLoaded = vi.fn();
             const fetchConfig = createMockFetchConfig({
-                fetchFn: jest.fn().mockResolvedValue({
+                fetchFn: vi.fn().mockResolvedValue({
                     jobs: [],
                     totalCount: 0,
                     hasMore: false,
@@ -1379,7 +1382,7 @@ describe('JobListPanel', () => {
         });
 
         it('does not call onJobsLoaded in pushed-data mode', () => {
-            const onJobsLoaded = jest.fn();
+            const onJobsLoaded = vi.fn();
             renderAndPushJobs(
                 [createMockDispatchJob({id: 1, jobNo: 'PUSHED-001'})],
                 {onJobsLoaded},
@@ -1397,7 +1400,7 @@ describe('JobListPanel', () => {
         it('shows empty state and stats from hook data', async () => {
             // Empty result
             const emptyFetchConfig = createMockFetchConfig({
-                fetchFn: jest.fn().mockResolvedValue({
+                fetchFn: vi.fn().mockResolvedValue({
                     jobs: [],
                     totalCount: 0,
                     hasMore: false,
@@ -1419,7 +1422,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 3, statusId: 6}),
             ];
             const statsFetchConfig = createMockFetchConfig({
-                fetchFn: jest.fn().mockResolvedValue({
+                fetchFn: vi.fn().mockResolvedValue({
                     jobs,
                     totalCount: 3,
                     hasMore: false,
@@ -1438,7 +1441,7 @@ describe('JobListPanel', () => {
         });
 
         it('filters locally and does not refetch when fetchConfig.clientSideSearch is set', async () => {
-            jest.useFakeTimers();
+            vi.useFakeTimers({shouldAdvanceTime: true});
             try {
                 const jobs = [
                     createMockDispatchJob({id: 1, jobNo: 'ALPHA-001'}),
@@ -1446,18 +1449,18 @@ describe('JobListPanel', () => {
                 ];
                 const fetchConfig = createMockFetchConfig({
                     clientSideSearch: true,
-                    fetchFn: jest.fn().mockResolvedValue({jobs, totalCount: 2, hasMore: false} as JobSearchResult),
+                    fetchFn: vi.fn().mockResolvedValue({jobs, totalCount: 2, hasMore: false} as JobSearchResult),
                 });
 
                 renderWithMantineProviders(<JobListPanel {...createDefaultProps({fetchConfig})} />);
 
                 expect(await screen.findByText('ALPHA-001')).toBeInTheDocument();
-                (fetchConfig.fetchFn as jest.Mock).mockClear();
+                (fetchConfig.fetchFn as Mock).mockClear();
 
                 const searchInput = screen.getByPlaceholderText('Search jobs…');
                 await act(async () => { fireEvent.change(searchInput, {target: {value: 'ALPHA'}}); });
-                await act(async () => { await jest.advanceTimersByTimeAsync(300); });
-                await act(async () => { await jest.advanceTimersByTimeAsync(200); });
+                await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+                await act(async () => { await vi.advanceTimersByTimeAsync(200); });
 
                 expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
                 expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
@@ -1465,7 +1468,7 @@ describe('JobListPanel', () => {
                 // A fully-loaded, non-paginated dataset must not be re-fetched per keystroke.
                 expect(fetchConfig.fetchFn).not.toHaveBeenCalled();
             } finally {
-                jest.useRealTimers();
+                vi.useRealTimers();
             }
         });
     });
@@ -1535,11 +1538,11 @@ describe('JobListPanel', () => {
     });
 
     describe('Bulk agent / network partner dispatch', () => {
-        const {assignAgentToJobs, assignNpAgentToJobs} = require('../../api/dispatchExecutorApi');
+        const {assignAgentToJobs, assignNpAgentToJobs} = vi.mocked(dispatchExecutorApi);
 
         beforeEach(() => {
-            (assignAgentToJobs as jest.Mock).mockReset();
-            (assignNpAgentToJobs as jest.Mock).mockReset();
+            (assignAgentToJobs as Mock).mockReset();
+            (assignNpAgentToJobs as Mock).mockReset();
         });
 
         /** Selects two jobs and opens the bulk dispatch dialog from the toolbar. */
@@ -1560,7 +1563,7 @@ describe('JobListPanel', () => {
         }
 
         it('sends the whole selection to the agent batch endpoint', async () => {
-            (assignAgentToJobs as jest.Mock).mockResolvedValue({assigned: 2, failed: 0, results: []});
+            (assignAgentToJobs as Mock).mockResolvedValue({assigned: 2, failed: 0, results: []});
             const user = await selectTwoAndOpenDispatch();
 
             await user.click(screen.getByText('Stub Bulk Agent'));
@@ -1572,7 +1575,7 @@ describe('JobListPanel', () => {
 
         it('reports partial failures as a warning rather than a clean success', async () => {
             // A job failing its flight gate must not silently vanish from the report.
-            (assignNpAgentToJobs as jest.Mock).mockResolvedValue({
+            (assignNpAgentToJobs as Mock).mockResolvedValue({
                 assigned: 1,
                 failed: 1,
                 results: [

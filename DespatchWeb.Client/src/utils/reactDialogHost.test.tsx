@@ -7,6 +7,7 @@
  * lifecycle lives here and is proved here.
  */
 
+import type {Mock} from 'vitest';
 import React from 'react';
 import {act} from '@testing-library/react';
 import type {ShowToastFn} from '../services/toastTypes';
@@ -16,7 +17,7 @@ interface Payload {
     label: string;
 }
 
-function renderProbe(spy: jest.Mock) {
+function renderProbe(spy: Mock) {
     return (ctx: {open: boolean; payload: Payload; close: (result: string) => void; showToast: ShowToastFn}) => {
         spy(ctx);
         return <div data-testid="probe">{ctx.open ? ctx.payload.label : 'closed'}</div>;
@@ -25,10 +26,10 @@ function renderProbe(spy: jest.Mock) {
 
 describe('createDialogHost', () => {
     let host: ReturnType<typeof createDialogHost<Payload, string>>;
-    let renderSpy: jest.Mock;
+    let renderSpy: Mock;
 
     beforeEach(() => {
-        renderSpy = jest.fn();
+        renderSpy = vi.fn();
         host = createDialogHost<Payload, string>({
             containerId: 'react-probe-dialog-root',
             render: renderProbe(renderSpy),
@@ -59,7 +60,7 @@ describe('createDialogHost', () => {
         });
 
         await act(async () => {
-            renderSpy.mock.calls.at(-1)[0].close('saved');
+            renderSpy.mock.calls.at(-1)![0].close('saved');
         });
 
         expect(result).toBe('saved');
@@ -75,7 +76,7 @@ describe('createDialogHost', () => {
         });
 
         await act(async () => {
-            renderSpy.mock.calls.at(-1)[0].settle('saved');
+            renderSpy.mock.calls.at(-1)![0].settle('saved');
         });
 
         expect(result).toBe('saved');
@@ -88,8 +89,8 @@ describe('createDialogHost', () => {
             host.open({label: 'First'}).then(v => resolved.push(v));
         });
         await act(async () => {
-            renderSpy.mock.calls.at(-1)[0].close('one');
-            renderSpy.mock.calls.at(-1)[0].close('again');
+            renderSpy.mock.calls.at(-1)![0].close('one');
+            renderSpy.mock.calls.at(-1)![0].close('again');
         });
         await act(async () => {
             host.open({label: 'Second'}).then(v => resolved.push(v));
@@ -101,22 +102,22 @@ describe('createDialogHost', () => {
     });
 
     it('sends toasts to the service supplied at open time', async () => {
-        const showToast = jest.fn();
+        const showToast = vi.fn();
         await act(async () => {
             void host.open({label: 'Hello'}, {showToast});
         });
 
-        renderSpy.mock.calls.at(-1)[0].showToast('Saved', 'success');
+        renderSpy.mock.calls.at(-1)![0].showToast('Saved', 'success');
         expect(showToast).toHaveBeenCalledWith('Saved', 'success', undefined);
     });
 
     it('falls back to the console when no toast service was supplied', async () => {
-        const log = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+        const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
         await act(async () => {
             void host.open({label: 'Hello'});
         });
 
-        renderSpy.mock.calls.at(-1)[0].showToast('Saved', 'success');
+        renderSpy.mock.calls.at(-1)![0].showToast('Saved', 'success');
         expect(log).toHaveBeenCalledWith('[Toast success]: Saved');
         log.mockRestore();
     });
