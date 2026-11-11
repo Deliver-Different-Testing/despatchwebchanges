@@ -15,7 +15,7 @@ Object.assign(globalThis, { File: NodeFile });
 // Start server before all tests
 beforeAll(() => {
     server.listen({
-        onUnhandledRequest: 'error', // Fail on unexpected requests
+        onUnhandledFrame: 'error', // Fail on unexpected requests
     });
 });
 

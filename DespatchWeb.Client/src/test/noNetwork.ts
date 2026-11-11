@@ -7,7 +7,7 @@
  *
  * Loaded only by the unit Vitest project. The integration suite deliberately omits it:
  * there MSW intercepts XHR and answers requests, and it already fails on
- * unhandled ones via `onUnhandledRequest: 'error'`.
+ * unhandled ones via `onUnhandledFrame: 'error'`.
  */
 if (typeof window !== 'undefined') {
     window.XMLHttpRequest.prototype.open = function (method: string, url: string) {
