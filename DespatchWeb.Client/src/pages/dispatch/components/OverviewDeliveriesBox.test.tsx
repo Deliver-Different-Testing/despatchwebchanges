@@ -4,7 +4,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import dayjs from 'dayjs';
 import {MantineTestProvider} from '../../../test/utils';
 import {OverviewDeliveriesBox} from './OverviewDeliveriesBox';
-import {MAX_OVERVIEW_PANEL_DAYS} from '../lib/overviewPanelRange';
+import {itThreadsOverviewPanelRange} from './overviewPanelRangeContract.testHelpers';
 
 vi.mock('../../../hooks/useOverviewApi', () => ({
     useOverviewJobs: vi.fn(),
@@ -67,29 +67,7 @@ describe('OverviewDeliveriesBox', () => {
         expect(screen.getByText('JOB-4242')).toBeInTheDocument();
     });
 
-    it('threads the dispatch date range straight into the query', () => {
-        renderBox();
-
-        expect(lastParams().startDate).toBe(startDate);
-        expect(lastParams().endDate).toBe(endDate);
-    });
-
-    it('threads the selected despatch views into the query, matching the main Jobs List', () => {
-        renderBox({despatchViewIds: [3, 7]});
-
-        expect(lastParams().despatchViewIds).toEqual([3, 7]);
-    });
-
-    /*
-     * The toolbar's "all time" resolves to epoch-start, which the Overview
-     * endpoints were never built to answer. The panel narrows it and says so.
-     */
-    it('clamps an all-time range and tells the operator', () => {
-        renderBox({startDate: dayjs(0), endDate});
-
-        expect(lastParams().startDate.isSame(endDate.subtract(MAX_OVERVIEW_PANEL_DAYS, 'day'))).toBe(true);
-        expect(screen.getByText(new RegExp(`last ${MAX_OVERVIEW_PANEL_DAYS} days`, 'i'))).toBeInTheDocument();
-    });
+    itThreadsOverviewPanelRange({renderBox, lastParams, startDate, endDate, startDateEpoch: dayjs(0)});
 
     it('says nothing about the range when it was not narrowed', () => {
         renderBox();

@@ -159,7 +159,7 @@ describe('DispatchMap Component', () => {
 });
 
 describe('DispatchMap Clearlist Envelope Feature', () => {
-    it('calls getClearListEnvelope when clearListId is provided and map is ready', async () => {
+    it('calls getClearListEnvelope and onEnvelopeUpdate when clearListId is provided and map is ready', async () => {
         // Mock useHereMap to return a ready map
         const mockMap = {
             getViewModel: vi.fn(() => ({
@@ -187,6 +187,9 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
 
         await waitFor(() => {
             expect(courierApi.getClearListEnvelope).toHaveBeenCalledWith(123, expect.objectContaining({signal: expect.any(AbortSignal)}));
+        });
+        await waitFor(() => {
+            expect(onEnvelopeUpdate).toHaveBeenCalledWith(mockEnvelope);
         });
     });
 
@@ -231,36 +234,6 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
         // The map should NOT have setLookAtData called on error
         expect(mockMap.getViewModel().setLookAtData).not.toHaveBeenCalled();
         expect(onEnvelopeUpdate).not.toHaveBeenCalled();
-    });
-
-    it('calls onEnvelopeUpdate when envelope is fetched successfully', async () => {
-        const mockMap = {
-            getViewModel: vi.fn(() => ({
-                setLookAtData: vi.fn(),
-            })),
-        };
-
-        mockHereMap({map: mockMap});
-
-        const mockEnvelope: ClearListEnvelopeData = {
-            minimumLatitude: 33.5,
-            maximumLatitude: 34.5,
-            minimumLongitude: -118.5,
-            maximumLongitude: -117.5,
-        };
-        (courierApi.getClearListEnvelope as Mock).mockResolvedValue(mockEnvelope);
-
-        const onEnvelopeUpdate = vi.fn();
-        const props = createDefaultProps({
-            clearListId: 123,
-            onEnvelopeUpdate,
-        });
-
-        renderWithProviders(<DispatchMap {...props} />);
-
-        await waitFor(() => {
-            expect(onEnvelopeUpdate).toHaveBeenCalledWith(mockEnvelope);
-        });
     });
 });
 
@@ -328,6 +301,29 @@ describe('DispatchMap Control Buttons', () => {
     });
 });
 
+// Renders the map with couriers enabled and a map whose view has no bounds, so the
+// courier fetch falls back to the default centre.
+async function renderCouriersWithNoBounds(): Promise<void> {
+    const mockMap = {
+        addObject: vi.fn(),
+        getViewModel: vi.fn(() => ({
+            getLookAtData: vi.fn(() => ({
+                bounds: null,
+            })),
+        })),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+    };
+
+    mockHereMap({map: mockMap});
+
+    renderWithProviders(<DispatchMap {...createDefaultProps({showAvailableCouriers: true})} />);
+
+    await waitFor(() => {
+        expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
+    });
+}
+
 describe('DispatchMap Courier Data', () => {
     beforeEach(() => {
         (courierApi.getAvailableCourierLocations as Mock).mockResolvedValue([]);
@@ -344,24 +340,7 @@ describe('DispatchMap Courier Data', () => {
     });
 
     it('fetches couriers when showAvailableCouriers is true and map is ready', async () => {
-        const mockMap = {
-            getViewModel: vi.fn(() => ({
-                getLookAtData: vi.fn(() => ({
-                    bounds: null,
-                })),
-            })),
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-        };
-
-        mockHereMap({map: mockMap});
-
-        const props = createDefaultProps({showAvailableCouriers: true});
-        renderWithProviders(<DispatchMap {...props} />);
-
-        await waitFor(() => {
-            expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
-        });
+        await renderCouriersWithNoBounds();
     });
 });
 
@@ -410,67 +389,29 @@ describe('DispatchMap Default Map Center', () => {
         (window as any).serverConfig = originalServerConfig;
     });
 
-    it('uses NZ center for courier fallback bounds when non-US customer', async () => {
-        (window as any).serverConfig = {isUSCustomer: false};
+    it.each([
+        {
+            region: 'NZ center for courier fallback bounds when non-US customer',
+            isUSCustomer: false,
+            // NZ center is ~174.7762 lng, ~-41.2865 lat — bounds should be around that
+            expected: {minLat: -41.7865, maxLat: -40.7865, minLng: 174.2762, maxLng: 175.2762},
+        },
+        {
+            region: 'US center for courier fallback bounds when US customer',
+            isUSCustomer: true,
+            // US center is ~-98.5556 lng, ~39.8097 lat — bounds should be around that
+            expected: {minLat: 39.31, maxLat: 40.31, minLng: -99.06, maxLng: -98.06},
+        },
+    ])('uses $region', async ({isUSCustomer, expected}) => {
+        (window as any).serverConfig = {isUSCustomer};
 
-        const mockMap = {
-            addObject: vi.fn(),
-            getViewModel: vi.fn(() => ({
-                getLookAtData: vi.fn(() => ({
-                    bounds: null,
-                })),
-            })),
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-        };
-
-        mockHereMap({map: mockMap});
-
-        const props = createDefaultProps({showAvailableCouriers: true});
-        renderWithProviders(<DispatchMap {...props} />);
-
-        await waitFor(() => {
-            expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
-        });
+        await renderCouriersWithNoBounds();
 
         const call = (courierApi.getAvailableCourierLocations as Mock).mock.calls[0];
         const [minLng, minLat, maxLng, maxLat] = call;
-        // NZ center is ~174.7762 lng, ~-41.2865 lat — bounds should be around that
-        expect(minLat).toBeCloseTo(-41.7865, 1);
-        expect(maxLat).toBeCloseTo(-40.7865, 1);
-        expect(minLng).toBeCloseTo(174.2762, 1);
-        expect(maxLng).toBeCloseTo(175.2762, 1);
-    });
-
-    it('uses US center for courier fallback bounds when US customer', async () => {
-        (window as any).serverConfig = {isUSCustomer: true};
-
-        const mockMap = {
-            addObject: vi.fn(),
-            getViewModel: vi.fn(() => ({
-                getLookAtData: vi.fn(() => ({
-                    bounds: null,
-                })),
-            })),
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-        };
-
-        mockHereMap({map: mockMap});
-
-        const props = createDefaultProps({showAvailableCouriers: true});
-        renderWithProviders(<DispatchMap {...props} />);
-
-        await waitFor(() => {
-            expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
-        });
-
-        const call = (courierApi.getAvailableCourierLocations as Mock).mock.calls[0];
-        const [minLng, minLat, maxLng, maxLat] = call;
-        // US center is ~-98.5556 lng, ~39.8097 lat — bounds should be around that
-        expect(minLat).toBeCloseTo(39.31, 1);
-        expect(maxLat).toBeCloseTo(40.31, 1);
-        expect(minLng).toBeCloseTo(-99.06, 1);
-        expect(maxLng).toBeCloseTo(-98.06, 1);
+        expect(minLat).toBeCloseTo(expected.minLat, 1);
+        expect(maxLat).toBeCloseTo(expected.maxLat, 1);
+        expect(minLng).toBeCloseTo(expected.minLng, 1);
+        expect(maxLng).toBeCloseTo(expected.maxLng, 1);
     });
 });

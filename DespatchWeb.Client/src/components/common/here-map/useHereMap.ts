@@ -325,7 +325,7 @@ export function useHereMap({
                     courierLocation.lng,
                     courierMarkerRef.current,
                     mapInstance.map,
-                    job.childJobs?.some((x) => x?.flight === true) || false,
+                    job.childJobs?.some((x) => x?.flight) || false,
                     isSingleAddress
                         ? 0
                         : job.pickup.lng - (job.delivery?.lng ?? 0)
@@ -737,7 +737,7 @@ export function useHereMap({
                     newValue.lng,
                     courierMarkerRef.current,
                     mapInstance.map,
-                    config.job.childJobs?.some((x) => x?.flight === true) ||
+                    config.job.childJobs?.some((x) => x?.flight) ||
                     false,
                     undefined
                 );

@@ -14,7 +14,7 @@ function appendIds(params: URLSearchParams, key: string, ids?: number[]): void {
     ids?.forEach(id => params.append(key, id.toString()));
 }
 
-export function getPodJobsDownloadUrl(
+export function buildJobSearchExportParams(
     fromDate: Dayjs,
     toDate: Dayjs,
     courierIds?: number[],
@@ -23,7 +23,7 @@ export function getPodJobsDownloadUrl(
     wild?: string,
     job?: string,
     jobId?: number,
-): string {
+): URLSearchParams {
     const params = new URLSearchParams();
     params.append('fromDate', formatDateForApiWithTzs(fromDate));
     params.append('toDate', formatDateForApiWithTzs(toDate));
@@ -33,7 +33,13 @@ export function getPodJobsDownloadUrl(
     if (wild) params.append('wild', wild);
     if (job) params.append('job', job);
     if (jobId) params.append('jobId', jobId.toString());
-    return `/Job/PodSearchDownload?${params.toString()}`;
+    return params;
+}
+
+export type JobSearchExportArgs = Parameters<typeof buildJobSearchExportParams>;
+
+export function getPodJobsDownloadUrl(...args: JobSearchExportArgs): string {
+    return `/Job/PodSearchDownload?${buildJobSearchExportParams(...args).toString()}`;
 }
 
 export function getClientJobsReportDownloadUrl(

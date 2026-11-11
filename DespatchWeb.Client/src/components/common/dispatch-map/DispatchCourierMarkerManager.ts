@@ -6,8 +6,8 @@
 
 import type {CourierMarkerData, IAvailableCourierPosition} from './DispatchMap.types';
 import type {LastDeliveryLabelMode} from '../../../types/courierFlagLastDelivery';
-import {COURIER_LABEL_COLORS, ICON_CACHE_LIMIT, MARKER_COLORS, POSITION_THRESHOLD,} from './DispatchMap.types';
-import {createMapTooltipElement, removeStaleMarkers, safeRemoveObject} from '../here-map/hereMapUtils';
+import {COURIER_LABEL_COLORS, ICON_CACHE_LIMIT, MARKER_COLORS} from './DispatchMap.types';
+import {createMapTooltipElement, moveMarkerIfChanged, removeStaleMarkers, safeRemoveObject} from '../here-map/hereMapUtils';
 import type {CourierFlagColors, CourierFlagLines} from '../here-map/courierFlagSvg';
 import {
     courierFlagAnchor,
@@ -111,22 +111,7 @@ export class DispatchCourierMarkerManager {
             const existing = this.courierMarkers.get(courier.courierId);
 
             if (existing) {
-                // Check if position changed significantly
-                const posChanged = this.hasPositionChanged(
-                    existing.lat,
-                    existing.lng,
-                    courier.latitude!,
-                    courier.longitude!
-                );
-
-                if (posChanged) {
-                    existing.marker.setGeometry({
-                        lat: courier.latitude,
-                        lng: courier.longitude,
-                    });
-                    existing.lat = courier.latitude!;
-                    existing.lng = courier.longitude!;
-                }
+                moveMarkerIfChanged(existing, courier.latitude!, courier.longitude!);
 
                 // The tooltip reads straight off the marker, so refresh its payload or it keeps
                 // reporting the job counts and last delivery from when the marker was created.
@@ -327,21 +312,6 @@ export class DispatchCourierMarkerManager {
         this.markerGroup.removeAll();
         this.courierMarkers.clear();
         this.hideTooltip();
-    }
-
-    /**
-     * Check if position changed significantly
-     */
-    private hasPositionChanged(
-        oldLat: number,
-        oldLng: number,
-        newLat: number,
-        newLng: number
-    ): boolean {
-        return (
-            Math.abs(oldLat - newLat) > POSITION_THRESHOLD ||
-            Math.abs(oldLng - newLng) > POSITION_THRESHOLD
-        );
     }
 
     /**

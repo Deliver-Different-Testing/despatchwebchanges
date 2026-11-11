@@ -156,6 +156,16 @@ const createMockProps = (overrides: Partial<FlightAgentDataTableProps> = {}): Fl
     ...overrides,
 });
 
+const expectAirlineFilterRoundTrip = async (props: FlightAgentDataTableProps) => {
+    renderWithTheme(<FlightAgentDataTable {...props} />);
+
+    await userEvent.click(screen.getAllByText('AA')[0]);
+    expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(expect.objectContaining({id: 1, text: 'AA'}));
+
+    await userEvent.click(screen.getByText('All'));
+    expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(null);
+};
+
 describe('FlightAgentDataTable', () => {
     // ── Flight Mode ─────────────────────────────────────────────────
     describe('Flight Mode', () => {
@@ -201,17 +211,10 @@ describe('FlightAgentDataTable', () => {
             });
 
             it('allows changing airline filter from no-flights state', async () => {
-                const props = createMockProps({
+                await expectAirlineFilterRoundTrip(createMockProps({
                     showNoFlightsAvailableMessage: true,
                     showFlightList: false,
-                });
-                renderWithTheme(<FlightAgentDataTable {...props} />);
-
-                await userEvent.click(screen.getAllByText('AA')[0]);
-                expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(expect.objectContaining({id: 1, text: 'AA'}));
-
-                await userEvent.click(screen.getByText('All'));
-                expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(null);
+                }));
             });
 
             it('opens departure airport menu from no-flights state', async () => {
@@ -317,17 +320,7 @@ describe('FlightAgentDataTable', () => {
             });
 
             it('calls onFilterFlightsByAirline when clicking airline chip', async () => {
-                const props = createMockProps();
-                renderWithTheme(<FlightAgentDataTable {...props} />);
-
-                await userEvent.click(screen.getAllByText('AA')[0]);
-                expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(expect.objectContaining({
-                    id: 1,
-                    text: 'AA'
-                }));
-
-                await userEvent.click(screen.getByText('All'));
-                expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(null);
+                await expectAirlineFilterRoundTrip(createMockProps());
             });
 
             it('calls onFlightSearchChange when typing in search', () => {

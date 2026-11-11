@@ -21,16 +21,9 @@ import type {
     JobAccessorialChargeDto,
 } from './types';
 
-vi.mock('../../../api/accessorialChargesApi', () => ({
-    accessorialChargesApi: {
-        getAvailableCharges: vi.fn(),
-        getAppliedCharges: vi.fn(),
-        getJobAmount: vi.fn(),
-        addCharges: vi.fn(),
-        updateCharge: vi.fn(),
-        deleteCharge: vi.fn(),
-    },
-}));
+vi.mock('../../../api/accessorialChargesApi', async () =>
+    (await import('./accessorialChargesApiMock.testHelpers')).createAccessorialChargesApiMock(),
+);
 vi.mock('../../../api/aiAssistantApi', () => ({analyzePricing: vi.fn()}));
 vi.mock('../../../utils/aiSettings', () => ({isAiEnabled: vi.fn()}));
 

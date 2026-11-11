@@ -19,6 +19,7 @@ import {
 } from './jobApi';
 import {apiClient} from './client';
 import {createMockApiError} from '../test/utils';
+import {buildQuickCreateJobRequest} from '../test/utils/quickCreateJobRequestFixture';
 
 // Mock the apiClient
 vi.mock('./client', () => ({
@@ -149,37 +150,7 @@ describe('jobApi', () => {
 
     describe('quickCreateJob', () => {
         it('should call apiClient.post with correct URL and job data', async () => {
-            const mockJob = {
-                clientId: 10,
-                deliverToContact: 'Jane',
-                podName: 'Pod1',
-                pickUpAddress: {} as any,
-                deliveryAddress: {} as any,
-                date: '2026-03-05T00:00:00-05:00',
-                fromContactName: 'John',
-                refA: 'REF-A',
-                refB: '',
-                deliveryNotes: '',
-                pickupNotes: '',
-                jobNotes: '',
-                van: false,
-                truck: false,
-                pedal: false,
-                attention: false,
-                vanOk: false,
-                reprice: false,
-                void: false,
-                done: false,
-                charge: 50.0,
-                fromLat: 40.7128,
-                fromLong: -74.006,
-                toLat: 34.0522,
-                toLong: -118.2437,
-                speedId: 1,
-                vehicleId: 2,
-                weightKg: null,
-                weightLb: null,
-            };
+            const mockJob = buildQuickCreateJobRequest({refA: 'REF-A'});
             mockApiClient.post.mockResolvedValueOnce({jobId: 999, jobNumber: 'JOB-999'});
 
             const result = await quickCreateJob(mockJob);

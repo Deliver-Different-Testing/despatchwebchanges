@@ -216,6 +216,23 @@ export function useJobUpdate(
     const invalidateChangeRequests = (jobId: number) =>
         queryClient.invalidateQueries({queryKey: ['jobChangeRequests', jobId]});
 
+    const finishUpdate = async (
+        job: {id: number; jobNo: string; isPartnerJob?: boolean},
+        response: JobUpdateResponse | undefined,
+        pendingMessage: string,
+    ) => {
+        if (response?.pending) {
+            showToast(pendingMessage, 'info');
+            await invalidateChangeRequests(job.id);
+        } else if (response?.applied && job.isPartnerJob) {
+            showToast(`${job.jobNo} synced with partner`, 'success');
+            await invalidateChangeRequests(job.id);
+        } else {
+            showToast(`${job.jobNo} updated`, 'success');
+        }
+        await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
+    };
+
     const updateFieldMutation = useMutation({
         mutationFn: async ({job, field, value, isRecurring, timezone}: UpdateFieldParams) => {
             if (job.isBulkJob) {
@@ -229,16 +246,7 @@ export function useJobUpdate(
             // Partner-job responses: the gate either auto-applied (and forwarded to the
             // peer) or filed a Pending change request. Show the user what actually
             // happened rather than the generic "updated" toast.
-            if (response?.pending) {
-                showToast(`${job.jobNo}: change requested — awaiting partner approval`, 'info');
-                await invalidateChangeRequests(job.id);
-            } else if (response?.applied && job.isPartnerJob) {
-                showToast(`${job.jobNo} synced with partner`, 'success');
-                await invalidateChangeRequests(job.id);
-            } else {
-                showToast(`${job.jobNo} updated`, 'success');
-            }
-            await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
+            await finishUpdate(job, response, `${job.jobNo}: change requested — awaiting partner approval`);
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
             if (!response?.pending && RERATE_FIELDS.has(field) && !job.ratedManually) {
                 await checkForRateChange(job);
@@ -283,16 +291,7 @@ export function useJobUpdate(
             // change request (Manual policy for PickupAddress / DeliveryAddress) and
             // returns 202 with { pending: true }. Mirror the field-update toast so the
             // user knows the change is queued, not silently lost.
-            if (response?.pending) {
-                showToast(`${job.jobNo}: address change requested — awaiting partner approval`, 'info');
-                await invalidateChangeRequests(job.id);
-            } else if (response?.applied && job.isPartnerJob) {
-                showToast(`${job.jobNo} synced with partner`, 'success');
-                await invalidateChangeRequests(job.id);
-            } else {
-                showToast(`${job.jobNo} updated`, 'success');
-            }
-            await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
+            await finishUpdate(job, response, `${job.jobNo}: address change requested — awaiting partner approval`);
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
             if (!response?.pending && !job.ratedManually && !job.isBulkJob) {
                 await checkForRateChange(job);

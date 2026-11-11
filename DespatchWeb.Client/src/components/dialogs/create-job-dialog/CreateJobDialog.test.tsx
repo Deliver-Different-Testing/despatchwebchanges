@@ -385,22 +385,19 @@ describe('CreateJobDialog', () => {
             Object.defineProperty(navigator, 'clipboard', {value: {writeText}, configurable: true});
         }
 
+        /** Selectable client/address options and a successful quick-create. */
+        function mockSelectableQuickCreate() {
+            mockUseClientSearch.mockReturnValue({data: [{id: 1, text: 'Test Client'}], isFetching: false});
+            mockUseAddressSearch.mockReturnValue({data: [mockAddressOption], isFetching: false});
+            (addressApi.getLocationDetailsById as Mock).mockResolvedValue(mockLookupResponse);
+            (jobApi.quickCreateJob as Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+        }
+
         it('submits with US-tenant Lb weight, copies the job number and names it in the toast', async () => {
             const onSubmit = vi.fn();
             const showToast = vi.fn();
 
-            // Configure mocks to return selectable options
-            mockUseClientSearch.mockReturnValue({
-                data: [{id: 1, text: 'Test Client'}],
-                isFetching: false,
-            });
-            mockUseAddressSearch.mockReturnValue({
-                data: [mockAddressOption],
-                isFetching: false,
-            });
-
-            (addressApi.getLocationDetailsById as Mock).mockResolvedValue(mockLookupResponse);
-            (jobApi.quickCreateJob as Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            mockSelectableQuickCreate();
             const writeText = vi.fn().mockResolvedValue(undefined);
             mockClipboard(writeText);
 
@@ -443,10 +440,7 @@ describe('CreateJobDialog', () => {
             const onSubmit = vi.fn();
             const showToast = vi.fn();
 
-            mockUseClientSearch.mockReturnValue({data: [{id: 1, text: 'Test Client'}], isFetching: false});
-            mockUseAddressSearch.mockReturnValue({data: [mockAddressOption], isFetching: false});
-            (addressApi.getLocationDetailsById as Mock).mockResolvedValue(mockLookupResponse);
-            (jobApi.quickCreateJob as Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            mockSelectableQuickCreate();
             mockClipboard(vi.fn().mockRejectedValue(new Error('not allowed')));
 
             const props = createMockProps({onSubmit, showToast, isUsTenant: true});
@@ -465,17 +459,7 @@ describe('CreateJobDialog', () => {
         }, 30000);
 
         it('submits with NZ-tenant Kg weight (label switches to Weight (kg))', async () => {
-            mockUseClientSearch.mockReturnValue({
-                data: [{id: 1, text: 'Test Client'}],
-                isFetching: false,
-            });
-            mockUseAddressSearch.mockReturnValue({
-                data: [mockAddressOption],
-                isFetching: false,
-            });
-
-            (addressApi.getLocationDetailsById as Mock).mockResolvedValue(mockLookupResponse);
-            (jobApi.quickCreateJob as Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
+            mockSelectableQuickCreate();
             mockClipboard(vi.fn().mockResolvedValue(undefined));
 
             const props = createMockProps({isUsTenant: false});

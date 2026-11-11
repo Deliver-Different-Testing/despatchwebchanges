@@ -92,6 +92,9 @@ export const MAP_CONSTANTS = {
     BOUNDING_BOX_EXPAND_FACTOR: 0.25,
 } as const;
 
+/** Marker moves smaller than this (degrees, ~11m at the equator) are GPS jitter and skipped. */
+export const MARKER_POSITION_THRESHOLD = 0.0001;
+
 export const US_MAP_CENTER = {lat: 39.8097343, lng: -98.5556199};
 export const NZ_MAP_CENTER = {lat: -41.2865, lng: 174.7762};
 

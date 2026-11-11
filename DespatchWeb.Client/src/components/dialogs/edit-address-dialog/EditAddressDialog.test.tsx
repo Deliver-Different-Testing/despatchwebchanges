@@ -213,6 +213,29 @@ function typeAddressSearch(value: string) {
     return searchInput;
 }
 
+/** Make search return the sample US results and the details lookup resolve to `lookup`. */
+function mockUsSearchWithLookup(lookup: HereMapsLookupResponse) {
+    mockUseAddressSearch.mockReturnValue({
+        data: sampleAddressResults,
+        isFetching: false,
+        error: null,
+    } as any);
+    mockAddressApi.getLocationDetailsById.mockResolvedValue(lookup);
+}
+
+async function clickFirstUsSuggestion() {
+    const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+    fireEvent.click(option);
+}
+
+/** Select the first suggestion and wait for the company/building field to settle on `expected`. */
+async function expectCompanyNameAfterSelecting(expected: string) {
+    await clickFirstUsSuggestion();
+    await waitFor(() => {
+        expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe(expected);
+    });
+}
+
 describe('EditAddressDialog', () => {
     beforeEach(() => {
         mockUseAddressSearch.mockReturnValue({
@@ -456,12 +479,7 @@ describe('EditAddressDialog', () => {
         afterEach(() => { errorSpy.mockRestore(); });
 
         it('populates US fields, coordinates, clears unit/notes, and sets country when selecting address', async () => {
-            mockUseAddressSearch.mockReturnValue({
-                data: sampleAddressResults,
-                isFetching: false,
-                error: null,
-            } as any);
-            mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponse);
+            mockUsSearchWithLookup(usLookupResponse);
 
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
@@ -473,8 +491,7 @@ describe('EditAddressDialog', () => {
             // Select address
             typeAddressSearch('123');
 
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            fireEvent.click(option);
+            await clickFirstUsSuggestion();
 
             await waitFor(() => {
                 expect(mockAddressApi.getLocationDetailsById).toHaveBeenCalledWith('here:af:address:123');
@@ -502,12 +519,7 @@ describe('EditAddressDialog', () => {
         });
 
         it('clears stale company name when selecting houseNumber result without buildingName', async () => {
-            mockUseAddressSearch.mockReturnValue({
-                data: sampleAddressResults,
-                isFetching: false,
-                error: null,
-            } as any);
-            mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponse);
+            mockUsSearchWithLookup(usLookupResponse);
 
             const props = createDefaultProps({
                 isUsTenant: true,
@@ -522,8 +534,7 @@ describe('EditAddressDialog', () => {
             fireEvent.focus(searchInput);
             fireEvent.change(searchInput, {target: {value: '123'}});
 
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            fireEvent.click(option);
+            await clickFirstUsSuggestion();
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street number/) as HTMLInputElement).value).toBe('123');
@@ -541,12 +552,7 @@ describe('EditAddressDialog', () => {
                     },
                 },
             };
-            mockUseAddressSearch.mockReturnValue({
-                data: sampleAddressResults,
-                isFetching: false,
-                error: null,
-            } as any);
-            mockAddressApi.getLocationDetailsById.mockResolvedValue(lookupWithBuilding);
+            mockUsSearchWithLookup(lookupWithBuilding);
 
             const props = createDefaultProps({
                 isUsTenant: true,
@@ -559,12 +565,7 @@ describe('EditAddressDialog', () => {
             fireEvent.focus(searchInput);
             fireEvent.change(searchInput, {target: {value: '123'}});
 
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            fireEvent.click(option);
-
-            await waitFor(() => {
-                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Freedom Tower');
-            });
+            await expectCompanyNameAfterSelecting('Freedom Tower');
         });
 
         it('uses title as company name when resultType is place', async () => {
@@ -575,24 +576,14 @@ describe('EditAddressDialog', () => {
                 address: {...HERE_US_ADDRESS_FIELDS},
                 position: {lat: 40.7128, lng: -74.006},
             };
-            mockUseAddressSearch.mockReturnValue({
-                data: sampleAddressResults,
-                isFetching: false,
-                error: null,
-            } as any);
-            mockAddressApi.getLocationDetailsById.mockResolvedValue(placeLookupResponse);
+            mockUsSearchWithLookup(placeLookupResponse);
 
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
             typeAddressSearch('123');
 
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            fireEvent.click(option);
-
-            await waitFor(() => {
-                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Starbucks Coffee');
-            });
+            await expectCompanyNameAfterSelecting('Starbucks Coffee');
         });
 
         it('prefers buildingName over title even for place results', async () => {
@@ -609,24 +600,14 @@ describe('EditAddressDialog', () => {
                     },
                 },
             };
-            mockUseAddressSearch.mockReturnValue({
-                data: sampleAddressResults,
-                isFetching: false,
-                error: null,
-            } as any);
-            mockAddressApi.getLocationDetailsById.mockResolvedValue(placeWithBuildingName);
+            mockUsSearchWithLookup(placeWithBuildingName);
 
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
             typeAddressSearch('123');
 
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            fireEvent.click(option);
-
-            await waitFor(() => {
-                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Main Street Plaza');
-            });
+            await expectCompanyNameAfterSelecting('Main Street Plaza');
         });
 
         it('populates NZ form fields when selecting an address from search results', async () => {
@@ -658,20 +639,14 @@ describe('EditAddressDialog', () => {
         });
 
         it('formats street name from streetInfo when available', async () => {
-            mockUseAddressSearch.mockReturnValue({
-                data: sampleAddressResults,
-                isFetching: false,
-                error: null,
-            } as any);
-            mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponseWithStreetInfo);
+            mockUsSearchWithLookup(usLookupResponseWithStreetInfo);
 
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
             typeAddressSearch('123');
 
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            fireEvent.click(option);
+            await clickFirstUsSuggestion();
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street name/) as HTMLInputElement).value).toBe('North Main Street');
@@ -692,8 +667,7 @@ describe('EditAddressDialog', () => {
 
             typeAddressSearch('123');
 
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            fireEvent.click(option);
+            await clickFirstUsSuggestion();
 
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith("Couldn't use the selected address. Try again.", 'error');
@@ -713,8 +687,7 @@ describe('EditAddressDialog', () => {
 
             typeAddressSearch('123');
 
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            fireEvent.click(option);
+            await clickFirstUsSuggestion();
 
             await waitFor(() => {
                 expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('40.7128');

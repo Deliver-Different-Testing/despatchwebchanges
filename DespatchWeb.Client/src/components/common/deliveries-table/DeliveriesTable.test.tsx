@@ -151,7 +151,7 @@ describe('DeliveriesTable', () => {
     });
 
     describe('Expandable rows', () => {
-        it('shows expand button when delivery has child jobs', () => {
+        it('shows expand button when delivery has child jobs and calls onToggleExpand when clicked', () => {
             const delivery = createMockDelivery({
                 childJobs: [
                     {jobId: 10, jobName: 'J-001-A', status: 'NEW', completion: 0, pickup: 'A', delivery: 'B', driver: 'X', region: 'Y'},
@@ -165,21 +165,9 @@ describe('DeliveriesTable', () => {
             // Find the expand button (collapsed row shows the "Expand child jobs" control)
             const expandButtons = screen.getAllByRole('button', {name: 'Expand child jobs'});
             expect(expandButtons.length).toBeGreaterThanOrEqual(1);
-        });
+        
 
-        it('calls onToggleExpand when expand button is clicked', () => {
-            const delivery = createMockDelivery({
-                childJobs: [
-                    {jobId: 10, jobName: 'J-001-A', status: 'NEW', completion: 0, pickup: 'A', delivery: 'B', driver: 'X', region: 'Y'},
-                ],
-            });
-
-            renderWithTheme(
-                <DeliveriesTable {...defaultProps} deliveries={[delivery]} total={1} />,
-            );
-
-            const expandButton = screen.getByRole('button', {name: 'Expand child jobs'});
-            fireEvent.click(expandButton);
+            fireEvent.click(screen.getByRole('button', {name: 'Expand child jobs'}));
 
             expect(defaultProps.onToggleExpand).toHaveBeenCalledWith(1);
         });

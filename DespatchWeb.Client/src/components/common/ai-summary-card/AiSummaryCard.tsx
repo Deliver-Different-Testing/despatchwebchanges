@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import {Icon, type LucideIcon} from '../icon/Icon';
 import {SummarySeverity, TimelineStatus} from '../../../api/aiAssistantApi';
+import {AutoMateCardHeader} from '../auto-mate-logo/AutoMateCardHeader';
 import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
 import {formatRelativeTime} from '../../../utils/dateUtils';
 import type {AttentionItem, StructuredSummaryResponse, TimelineItem} from '../../../types/ai';
@@ -190,102 +191,87 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
             padding={0}
             style={{overflow: 'hidden', borderLeft: `4px solid ${accent}`}}
         >
-            <Group
-                justify="space-between"
-                px="md"
-                py={10}
-                onClick={collapsible ? handleToggleExpanded : undefined}
-                onKeyDown={collapsible ? (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleToggleExpanded();
-                    }
-                } : undefined}
-                role={collapsible ? 'button' : undefined}
-                tabIndex={collapsible ? 0 : undefined}
-                aria-expanded={collapsible ? expanded : undefined}
-                style={{
-                    backgroundColor: `color-mix(in srgb, ${accent} 8%, transparent)`,
-                    cursor: collapsible ? 'pointer' : undefined,
-                    userSelect: collapsible ? 'none' : undefined,
-                }}
+            <AutoMateCardHeader
+                title={title}
+                accent={accent}
+                collapsible={collapsible}
+                expanded={expanded}
+                onToggle={handleToggleExpanded}
+                badges={
+                    <>
+                        <Badge size="xs" color={visuals.color} fw={700}>BETA</Badge>
+                        {summary && (
+                            <Badge size="sm" variant="light" color={visuals.color} tt="none" fw={600}>
+                                {summary.severity === 'Ok' ? 'On track' : summary.severity}
+                            </Badge>
+                        )}
+                    </>
+                }
             >
-                <Group gap="xs">
-                    <AutoMateLogo size={24}/>
-                    <Text size="sm" fw={600}>{title}</Text>
-                    <Badge size="xs" color={visuals.color} fw={700}>BETA</Badge>
-                    {summary && (
-                        <Badge size="sm" variant="light" color={visuals.color} tt="none" fw={600}>
-                            {summary.severity === 'Ok' ? 'On track' : summary.severity}
-                        </Badge>
-                    )}
-                </Group>
-                <Group gap={4}>
-                    {generatedAt && !loading && (
-                        <Text size="xs" c="dimmed" mr={4}>{relativeTime}</Text>
-                    )}
-                    {loading && (
-                        <>
-                            <Loader size={16} mr={4}/>
-                            <Tooltip label="Stop generating">
-                                <ActionIcon
-                                    variant="subtle"
-                                    color="gray"
-                                    size="sm"
-                                    onClick={(e) => {e.stopPropagation(); handleStop();}}
-                                    aria-label="Stop generating"
-                                >
-                                    <Icon lucide={Square} size={18}/>
-                                </ActionIcon>
-                            </Tooltip>
-                        </>
-                    )}
-                    {!loading && summary && (
-                        <Tooltip label="Refresh">
+                {generatedAt && !loading && (
+                    <Text size="xs" c="dimmed" mr={4}>{relativeTime}</Text>
+                )}
+                {loading && (
+                    <>
+                        <Loader size={16} mr={4}/>
+                        <Tooltip label="Stop generating">
                             <ActionIcon
                                 variant="subtle"
                                 color="gray"
                                 size="sm"
-                                onClick={handleRefresh}
-                                aria-label="Refresh summary"
+                                onClick={(e) => {e.stopPropagation(); handleStop();}}
+                                aria-label="Stop generating"
                             >
-                                <Icon lucide={RefreshCw} size={18}/>
+                                <Icon lucide={Square} size={18}/>
                             </ActionIcon>
                         </Tooltip>
-                    )}
-                    {/* `CopyButton` owns the copied flag and its reset timeout, so the
-                        card carries no clipboard state of its own. */}
-                    {!loading && summary && (
-                        <CopyButton value={buildPlainTextCopy(summary)} timeout={2000}>
-                            {({copied, copy}) => (
-                                <Tooltip label={copied ? 'Copied' : 'Copy briefing'}>
-                                    <ActionIcon
-                                        variant="subtle"
-                                        color={copied ? 'green' : 'gray'}
-                                        size="sm"
-                                        onClick={(e) => {e.stopPropagation(); copy();}}
-                                        aria-label="Copy briefing"
-                                    >
-                                        <Icon lucide={copied ? Check : Copy} size={16}/>
-                                    </ActionIcon>
-                                </Tooltip>
-                            )}
-                        </CopyButton>
-                    )}
-                    {collapsible && (
+                    </>
+                )}
+                {!loading && summary && (
+                    <Tooltip label="Refresh">
                         <ActionIcon
                             variant="subtle"
                             color="gray"
                             size="sm"
-                            tabIndex={-1}
-                            aria-label={expanded ? 'Collapse Auto-mate briefing' : 'Expand Auto-mate briefing'}
-                            onClick={(e) => {e.stopPropagation(); handleToggleExpanded();}}
+                            onClick={handleRefresh}
+                            aria-label="Refresh summary"
                         >
-                            <Icon lucide={expanded ? ChevronUp : ChevronDown} size={20}/>
+                            <Icon lucide={RefreshCw} size={18}/>
                         </ActionIcon>
-                    )}
-                </Group>
-            </Group>
+                    </Tooltip>
+                )}
+                {/* `CopyButton` owns the copied flag and its reset timeout, so the
+                    card carries no clipboard state of its own. */}
+                {!loading && summary && (
+                    <CopyButton value={buildPlainTextCopy(summary)} timeout={2000}>
+                        {({copied, copy}) => (
+                            <Tooltip label={copied ? 'Copied' : 'Copy briefing'}>
+                                <ActionIcon
+                                    variant="subtle"
+                                    color={copied ? 'green' : 'gray'}
+                                    size="sm"
+                                    onClick={(e) => {e.stopPropagation(); copy();}}
+                                    aria-label="Copy briefing"
+                                >
+                                    <Icon lucide={copied ? Check : Copy} size={16}/>
+                                </ActionIcon>
+                            </Tooltip>
+                        )}
+                    </CopyButton>
+                )}
+                {collapsible && (
+                    <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        tabIndex={-1}
+                        aria-label={expanded ? 'Collapse Auto-mate briefing' : 'Expand Auto-mate briefing'}
+                        onClick={(e) => {e.stopPropagation(); handleToggleExpanded();}}
+                    >
+                        <Icon lucide={expanded ? ChevronUp : ChevronDown} size={20}/>
+                    </ActionIcon>
+                )}
+            </AutoMateCardHeader>
             <Collapse expanded={expanded}>
                 <Stack gap="sm" px="md" py="sm">
                     {loading && !summary && (

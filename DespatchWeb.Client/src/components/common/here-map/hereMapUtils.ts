@@ -16,7 +16,7 @@ import type {
     Point,
 } from './HereMap.types';
 import {getMd3Scheme, type Md3Mode} from '../../../theme/md3';
-import {DEFAULT_MAP_CONFIG, getDefaultMapCenter, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES,} from './HereMap.types';
+import {DEFAULT_MAP_CONFIG, getDefaultMapCenter, MAP_CONSTANTS, MARKER_ICONS, MARKER_POSITION_THRESHOLD, SVG_TEMPLATES,} from './HereMap.types';
 
 declare const H: any;
 
@@ -460,6 +460,28 @@ function handleRoutingError(error: any): void {
 }
 
 /**
+ * Request the fastest car route between two points and hand the result to `onResult`.
+ */
+function requestFastCarRoute(
+    platform: any,
+    fromLat: number,
+    fromLng: number,
+    toLat: number,
+    toLng: number,
+    onResult: (result: any) => void
+): void {
+    const routingParameters: RoutingParameters = {
+        routingMode: 'fast',
+        transportMode: 'car',
+        origin: `${fromLat},${fromLng}`,
+        destination: `${toLat},${toLng}`,
+        return: 'polyline',
+    };
+
+    platform.getRoutingService().calculateRoute(routingParameters, onResult, handleRoutingError);
+}
+
+/**
  * Draw a route line between two points
  *
  * `signal` lets the caller cancel a still-in-flight routing request so the
@@ -482,14 +504,6 @@ export function drawRouteLine(
     onRouteDrawn?: (routeLine: any) => void,
     signal?: AbortSignal
 ): void {
-    const routingParameters: RoutingParameters = {
-        routingMode: 'fast',
-        transportMode: 'car',
-        origin: `${fromLat},${fromLng}`,
-        destination: `${toLat},${toLng}`,
-        return: 'polyline',
-    };
-
     const onResult = (result: any): void => {
         if (signal?.aborted) return;
         if (result.routes.length) {
@@ -527,8 +541,7 @@ export function drawRouteLine(
         }
     };
 
-    const router = platform.getRoutingService();
-    router.calculateRoute(routingParameters, onResult, handleRoutingError);
+    requestFastCarRoute(platform, fromLat, fromLng, toLat, toLng, onResult);
 }
 
 /**
@@ -553,14 +566,6 @@ export function addExtraRouteLine(
     onRouteAdded?: (routeLine: any, index: number) => void,
     signal?: AbortSignal
 ): void {
-    const routingParameters: RoutingParameters = {
-        routingMode: 'fast',
-        transportMode: 'car',
-        origin: `${fromLat},${fromLng}`,
-        destination: `${toLat},${toLng}`,
-        return: 'polyline',
-    };
-
     const onResult = (result: any): void => {
         if (signal?.aborted) return;
         if (result.routes.length) {
@@ -612,8 +617,7 @@ export function addExtraRouteLine(
         }
     };
 
-    const router = platform.getRoutingService();
-    router.calculateRoute(routingParameters, onResult, handleRoutingError);
+    requestFastCarRoute(platform, fromLat, fromLng, toLat, toLng, onResult);
 }
 
 /**
@@ -823,6 +827,26 @@ export function createMapTooltipElement(map: {getElement(): HTMLElement | null})
     map.getElement()?.appendChild(tooltip);
 
     return tooltip;
+}
+
+/**
+ * Move an existing marker only when it has drifted past the noise threshold, keeping the
+ * tracked lat/lng in step so small GPS jitter doesn't repaint the map.
+ */
+export function moveMarkerIfChanged(
+    entry: {marker: any; lat: number; lng: number},
+    lat: number,
+    lng: number,
+): void {
+    if (
+        Math.abs(entry.lat - lat) <= MARKER_POSITION_THRESHOLD &&
+        Math.abs(entry.lng - lng) <= MARKER_POSITION_THRESHOLD
+    ) {
+        return;
+    }
+    entry.marker.setGeometry({lat, lng});
+    entry.lat = lat;
+    entry.lng = lng;
 }
 
 /**

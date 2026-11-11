@@ -37,6 +37,7 @@ import {
     deleteJobDeliveryPhotoOrSignature,
 } from '../jobDetailApi';
 import { mockAttachedFiles } from '../../test/utils/msw/handlers';
+import { captureAllocateRequest } from '../../test/utils/msw/captureAllocateRequest';
 
 const mockJobDetail = {
     jobId: 123,
@@ -591,20 +592,12 @@ describe('jobDetailApi integration', () => {
 
     describe('allocateJob', () => {
         it('sends courier and job IDs with CSRF header', async () => {
-            let capturedBody: unknown = null;
-            let capturedCsrfHeader: string | null = null;
-            server.use(
-                http.post('*/job/Allocate', async ({ request }) => {
-                    capturedCsrfHeader = request.headers.get('X-Requested-With');
-                    capturedBody = await request.json();
-                    return new HttpResponse(null, { status: 200 });
-                })
-            );
+            const captured = captureAllocateRequest();
 
             await allocateJob(42, [100, 101]);
 
-            expect(capturedCsrfHeader).toBe('XMLHttpRequest');
-            expect(capturedBody).toMatchObject({ courierId: 42, jobIds: [100, 101] });
+            expect(captured.csrfHeader).toBe('XMLHttpRequest');
+            expect(captured.body).toMatchObject({ courierId: 42, jobIds: [100, 101] });
         });
 
         it('handles allocation error', async () => {

@@ -130,6 +130,27 @@ const primaryAgentLabel = (
     </Box>
 );
 
+/** Primary-agent checkbox; warns when ticking it would demote the job's current primary. */
+const PrimaryAgentField: React.FC<{
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    showReplaceWarning: boolean;
+}> = ({checked, onChange, showReplaceWarning}) => (
+    <>
+        <Checkbox
+            checked={checked}
+            onChange={(e) => onChange(e.currentTarget.checked)}
+            label={primaryAgentLabel}
+        />
+
+        {checked && showReplaceWarning && (
+            <Alert color="orange" icon={<Icon lucide={TriangleAlert}/>} mt="sm" radius="md">
+                Setting this agent as primary will remove the current primary status from other agents.
+            </Alert>
+        )}
+    </>
+);
+
 export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDialogProps> = ({
     open,
     job: initialJob,
@@ -495,17 +516,11 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         />
                                     </Box>
 
-                                    <Checkbox
+                                    <PrimaryAgentField
                                         checked={isPrimaryRecoveryAgent}
-                                        onChange={(e) => setIsPrimaryRecoveryAgent(e.currentTarget.checked)}
-                                        label={primaryAgentLabel}
+                                        onChange={setIsPrimaryRecoveryAgent}
+                                        showReplaceWarning={jobHasPrimary}
                                     />
-
-                                    {isPrimaryRecoveryAgent && jobHasPrimary && (
-                                        <Alert color="orange" icon={<Icon lucide={TriangleAlert}/>} mt="sm" radius="md">
-                                            Setting this agent as primary will remove the current primary status from other agents.
-                                        </Alert>
-                                    )}
                                 </Box>
 
                                 <FormActions>
@@ -533,17 +548,11 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                 />
 
                                 <Box p="md">
-                                    <Checkbox
+                                    <PrimaryAgentField
                                         checked={editIsPrimaryRecoveryAgent}
-                                        onChange={(e) => setEditIsPrimaryRecoveryAgent(e.currentTarget.checked)}
-                                        label={primaryAgentLabel}
+                                        onChange={setEditIsPrimaryRecoveryAgent}
+                                        showReplaceWarning={jobHasPrimary && !editingAgent.primaryRecoveryAgent}
                                     />
-
-                                    {editIsPrimaryRecoveryAgent && jobHasPrimary && !editingAgent.primaryRecoveryAgent && (
-                                        <Alert color="orange" icon={<Icon lucide={TriangleAlert}/>} mt="sm" radius="md">
-                                            Setting this agent as primary will remove the current primary status from other agents.
-                                        </Alert>
-                                    )}
                                 </Box>
 
                                 <FormActions>

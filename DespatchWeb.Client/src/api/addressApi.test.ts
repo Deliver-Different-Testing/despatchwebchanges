@@ -18,27 +18,27 @@ vi.mock('./client', () => ({
 
 const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
+const createMainStreetResult = (withAccess: boolean) => ({
+    title: '123 Main Street, New York, NY',
+    id: 'here:af:address:123',
+    resultType: 'houseNumber',
+    address: {
+        label: '123 Main Street, New York, NY 10001',
+        countryCode: 'USA',
+        countryName: 'United States',
+        city: 'New York',
+        street: 'Main Street',
+        postalCode: '10001',
+        houseNumber: '123',
+    },
+    position: {lat: 40.7128, lng: -74.006},
+    access: withAccess ? [{lat: 40.7128, lng: -74.006}] : [],
+});
+
 describe('addressApi', () => {
     describe('autocompleteSearch', () => {
         it('should call apiClient.get with correct URL and params', async () => {
-            const mockResponse = [
-                {
-                    title: '123 Main Street, New York, NY',
-                    id: 'here:af:address:123',
-                    resultType: 'houseNumber',
-                    address: {
-                        label: '123 Main Street, New York, NY 10001',
-                        countryCode: 'USA',
-                        countryName: 'United States',
-                        city: 'New York',
-                        street: 'Main Street',
-                        postalCode: '10001',
-                        houseNumber: '123',
-                    },
-                    position: {lat: 40.7128, lng: -74.006},
-                    access: [{lat: 40.7128, lng: -74.006}],
-                },
-            ];
+            const mockResponse = [createMainStreetResult(true)];
             mockApiClient.get.mockResolvedValueOnce(mockResponse);
 
             const result = await addressApi.autocompleteSearch('123 Main');
@@ -90,24 +90,7 @@ describe('addressApi', () => {
 
     describe('fetchNearestAddress', () => {
         it('should call apiClient.get with correct URL and params', async () => {
-            const mockResponse = [
-                {
-                    title: '123 Main Street, New York, NY',
-                    id: 'here:af:address:123',
-                    resultType: 'houseNumber',
-                    address: {
-                        label: '123 Main Street, New York, NY 10001',
-                        countryCode: 'USA',
-                        countryName: 'United States',
-                        city: 'New York',
-                        street: 'Main Street',
-                        postalCode: '10001',
-                        houseNumber: '123',
-                    },
-                    position: {lat: 40.7128, lng: -74.006},
-                    access: [],
-                },
-            ];
+            const mockResponse = [createMainStreetResult(false)];
             mockApiClient.get.mockResolvedValueOnce(mockResponse);
 
             const result = await addressApi.fetchNearestAddress(40.7128, -74.006);
