@@ -397,8 +397,8 @@ describe('CourierMapPage Component', () => {
 
             await waitFor(() => {
                 expect(mockCenterOnCourier).toHaveBeenCalledWith(expect.objectContaining({courierId: 1}));
+                expect(mockSetSelectedDriver).toHaveBeenCalledWith(1);
             });
-            expect(mockSetSelectedDriver).toHaveBeenCalledWith(1);
         });
 
         it('does not auto-select or zoom when the search matches more than one courier', async () => {
