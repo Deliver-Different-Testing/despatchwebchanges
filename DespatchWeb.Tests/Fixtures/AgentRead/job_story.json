@@ -1,0 +1,83 @@
+{
+ "searchCsv": "Id,JobNumber,CustomerName,BookDate,Amount,Notes,InvoiceNumber,Void\n415431,KT1176OTG,\"Acme, Inc.\",2026-07-21,120.50,\"line one\nline two\",417696,False\n415432,KT1177OTG,Bluebird,2026-07-21,0,plain,0,False\n415433,KT1178OTG,Cryoport,2026-07-22,88.00,\"\",,False\n",
+ "detail": {
+  "job": {
+   "jobId": 415431,
+   "jobNumber": "KT1176OTG",
+   "dispatchTime": "2026-07-20T16:01:22",
+   "puTime": "2026-07-21T09:32:46",
+   "completedTime": "2026-07-21T10:30:00",
+   "pickupTime": 240,
+   "deliveryTime": 480,
+   "pickupArrivalTime": null,
+   "deliveryArrivalTime": null,
+   "podName": "Daniela Rangel",
+   "void": false,
+   "statusName": "Completed",
+   "client": "Acme, Inc.",
+   "speed": "Same Day",
+   "amount": 120.5
+  },
+  "relatedJobs": []
+ },
+ "journey": [
+  {
+   "id": 6,
+   "jobId": 415431,
+   "title": "SMS sent",
+   "description": "Your parcel is on its way",
+   "date": "2026-07-22T02:27:00",
+   "tags": [
+    "sms"
+   ],
+   "grandTotalAfter": null
+  },
+  {
+   "id": 5,
+   "jobId": 415431,
+   "title": "Completed",
+   "description": "Delivered, signed Daniela Rangel",
+   "date": "2026-07-21T10:30:00",
+   "tags": [],
+   "grandTotalAfter": null
+  },
+  {
+   "id": 4,
+   "jobId": 415431,
+   "title": "Cubic Volume",
+   "description": "Cubic volume recalculated",
+   "date": "2026-07-21T10:29:00",
+   "tags": [],
+   "grandTotalAfter": null
+  },
+  {
+   "id": 3,
+   "jobId": 415431,
+   "title": "Pricing",
+   "description": "PPD Amount: 3.81 → 3.81",
+   "date": "2026-07-21T10:28:00",
+   "tags": [],
+   "grandTotalAfter": 3.81
+  },
+  {
+   "id": 2,
+   "jobId": 415431,
+   "title": "Picked up",
+   "description": "Driver status changed",
+   "date": "2026-07-21T10:26:00",
+   "tags": [],
+   "grandTotalAfter": null
+  },
+  {
+   "id": 1,
+   "jobId": 415431,
+   "title": "Accepted",
+   "description": "Courier accepted",
+   "date": "2026-07-21T10:24:00",
+   "tags": [],
+   "grandTotalAfter": null
+  }
+ ],
+ "notes": [],
+ "noteTypes": []
+}

@@ -34,4 +34,8 @@
     <ProjectReference Include="..\DespatchWeb.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Fixtures/AgentRead/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

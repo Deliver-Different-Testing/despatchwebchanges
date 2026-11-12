@@ -20,7 +20,7 @@ namespace DespatchWeb.Repositories;
 /// mapped columns from the EF model and fails when a new one is not covered here.
 /// </para>
 /// </summary>
-internal static class JobWildcardSearch
+internal static partial class JobWildcardSearch
 {
     private const string Space = " ";
     

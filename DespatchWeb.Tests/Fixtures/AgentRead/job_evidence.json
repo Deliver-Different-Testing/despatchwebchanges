@@ -1,0 +1,112 @@
+{
+  "_note": "Synthetic. Shapes follow reference/apps/despatchweb.md §3.1 (S3PhotoInfo, S3FileInfo, RestorePodImpact, OverlayDocuments). No real names, addresses, emails or S3 buckets.",
+  "searchCsv": "Id,JobNumber,CustomerName,BookDate,Amount,Void\n900101,QQ4401ZZ,Northwind Labs,2026-03-14,182.40,False\n900102,QQ4402ZZ,Northwind Labs,2026-03-15,96.00,False\n900103,QQ4403ZZ,Harbour Freight Co,2026-03-16,0,False\n",
+  "detail": {
+    "900101": {
+      "job": {
+        "jobId": 900101,
+        "jobNumber": "QQ4401ZZ",
+        "clientName": "Northwind Labs",
+        "statusName": "Completed",
+        "void": false,
+        "completedTime": "2026-03-14T15:22:10",
+        "puTime": "2026-03-14T11:04:00",
+        "podName": "R. Alvarez",
+        "amount": 182.4
+      }
+    },
+    "900102": {
+      "job": {
+        "jobId": 900102,
+        "jobNumber": "QQ4402ZZ",
+        "clientName": "Northwind Labs",
+        "statusName": "Completed",
+        "void": false,
+        "completedTime": "2026-03-15T09:41:00",
+        "puTime": "2026-03-15T08:02:00",
+        "podName": "T. Okafor",
+        "amount": 96.0
+      }
+    },
+    "900103": {
+      "job": {
+        "jobId": 900103,
+        "jobNumber": "QQ4403ZZ",
+        "clientName": "Harbour Freight Co",
+        "statusName": "On Board",
+        "void": false,
+        "completedTime": null,
+        "puTime": "2026-03-16T07:15:00",
+        "podName": null,
+        "amount": 0
+      }
+    }
+  },
+  "deliveryPhotos": {
+    "900101": [
+      {
+        "s3Key": "DeliverySignatures/2026/03/900101-sig-01.png",
+        "fileName": "900101-sig-01.png",
+        "contentType": "image/png",
+        "data": "iVBORw0KGgoAAAANSUhEUg-TRUNCATED-SYNTHETIC-BYTES",
+        "lastModified": "2026-03-14T15:22:14",
+        "size": 40118
+      },
+      {
+        "s3Key": "DeliveryPhotos/2026/03/900101-photo-01.jpg",
+        "fileName": "900101-photo-01.jpg",
+        "contentType": "image/jpeg",
+        "data": "/9j/4AAQSkZJRgABAQ-TRUNCATED-SYNTHETIC-BYTES",
+        "lastModified": "2026-03-14T15:22:31",
+        "size": 1904221
+      },
+      {
+        "s3Key": "DeliveryPhotos/2026/03/900101-photo-02.jpg",
+        "fileName": "900101-photo-02.jpg",
+        "contentType": "image/jpeg",
+        "data": "/9j/4AAQSkZJRgABAQ-TRUNCATED-SYNTHETIC-BYTES",
+        "lastModified": "2026-03-14T15:22:48",
+        "size": 1755903
+      }
+    ],
+    "900102": []
+  },
+  "pickupPhotos": {
+    "900101": [
+      {
+        "s3Key": "PickupScannedDocuments/2026/03/900101-manifest.pdf",
+        "fileName": "900101-manifest.pdf",
+        "contentType": "application/pdf",
+        "data": null,
+        "lastModified": "2026-03-14T11:06:02",
+        "size": 88214
+      }
+    ],
+    "900102": []
+  },
+  "attachedFiles": {
+    "900101": [
+      {
+        "s3Key": "jobs/900101/consignment-note.pdf",
+        "fileName": "consignment-note.pdf",
+        "lastModified": "2026-03-14T08:10:00",
+        "size": 214003
+      }
+    ],
+    "900102": [],
+    "900103": []
+  },
+  "restorePodImpact": {
+    "900101": [{ "jobId": 900101, "podName": "R. Alvarez", "capturedImageCount": 4, "imageCountKnown": true }],
+    "900102": [{ "jobId": 900102, "podName": "T. Okafor", "capturedImageCount": 0, "imageCountKnown": false }],
+    "900103": [{ "jobId": 900103, "podName": null, "capturedImageCount": 0, "imageCountKnown": true }]
+  },
+  "overlayDocuments": {
+    "900101": [
+      { "documentType": "consignment", "displayName": "Consignment note", "available": true },
+      { "documentType": "manifest", "displayName": "Run manifest", "available": false }
+    ],
+    "900102": [],
+    "900103": []
+  }
+}
