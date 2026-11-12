@@ -143,8 +143,15 @@ public class MessageRepository(
                 .First());
 
     public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId,
-        int limit = 200) =>
-        await Context.TucManualMessages
+        int limit = 200)
+    {
+        if (!Context.CurrentBypassFilters
+            && (staffId != infoService.GetStaffId() || !await Context.TucCouriers.AnyAsync(c => c.UccrId == courierId)))
+        {
+            return [];
+        }
+
+        return await Context.TucManualMessages
             .BetweenStaffAndCourier(staffId, courierId)
             .OrderByDescending(m => m.UcmmDate)
             .Take(limit)
@@ -165,6 +172,7 @@ public class MessageRepository(
                 IsSender = m.UcmmSendFromStaffId == staffId
             })
             .ToListAsync();
+    }
 
     public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId,
         int currentStaffId, int limit = 200) =>
@@ -221,6 +229,7 @@ public class MessageRepository(
         }
         else if (request.SendToStaffId.HasValue)
         {
+            await ThrowUnlessNetworkPartnerIsReplyingAsync(request.SendToStaffId.Value, staffId);
             HandleStaffMessage(message, request.SendToStaffId.Value);
         }
 
@@ -417,7 +426,7 @@ public class MessageRepository(
             })
             .ToListAsync();
 
-        var staff = await Context.TucStaffs
+        var staff = Context.CurrentIsNetworkPartner ? [] : await Context.TucStaffs
             .Where(s => s.UcstActive == true
                         && EF.Functions.Like(s.UcstFirstName + " " + s.UcstLastName, $"%{searchTerm}%"))
             .OrderBy(s => s.UcstFirstName)
@@ -502,6 +511,17 @@ public class MessageRepository(
             }
 
             message.Subject = $"SMS to Courier: {courierData.Code}";
+        }
+    }
+
+    // Network partners can't browse the tenant's staff, so they may only answer staff who wrote to them.
+    private async Task ThrowUnlessNetworkPartnerIsReplyingAsync(int toStaffId, int fromStaffId)
+    {
+        if (Context.CurrentIsNetworkPartner
+            && !await Context.TucManualMessages.AnyAsync(m =>
+                m.UcmmSendFromStaffId == toStaffId && m.UcmmSendToStaffId == fromStaffId))
+        {
+            throw new UnauthorizedAccessException("Network partners can only reply to staff who have messaged them.");
         }
     }
 

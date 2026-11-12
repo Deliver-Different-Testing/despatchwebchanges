@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
+using DespatchWeb.Filters;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -332,7 +333,10 @@ public class JobController(
             Log.Information("Updating price breakdown for job {JobId} (archived: {IsArchived})",
                 breakdown.JobId ?? breakdown.PrebookJobId, breakdown.IsArchived);
 
-            await jobCommandRepository.UpdateJobPriceBreakdownAsync(breakdown, breakdown.IsArchived);
+            if (!await jobCommandRepository.UpdateJobPriceBreakdownAsync(breakdown, breakdown.IsArchived))
+            {
+                return NotFound();
+            }
 
             if (breakdown.JobId.HasValue && !breakdown.IsArchived)
             {
@@ -380,7 +384,11 @@ public class JobController(
             Log.Information("Deleting price breakdown for charge {ChargeId} (archived: {IsArchived})",
                 request.ChargeId, request.IsArchived);
 
-            await jobCommandRepository.DeleteJobPriceBreakdownAsync(request.ChargeId, request.IsArchived);
+            if (!await jobCommandRepository.DeleteJobPriceBreakdownAsync(
+                    request.ChargeId, request.JobId, request.IsArchived))
+            {
+                return NotFound();
+            }
 
             if (!request.IsArchived)
             {
@@ -557,6 +565,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> UploadJobDeliveryPhotoOrSignature(
         int jobId,
         IFormFile file,
@@ -609,11 +618,17 @@ public class JobController(
     }
 
     [HttpDelete]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> DeleteJobDeliveryPhotoOrSignature(int jobId, string key)
     {
         if (Debugger.IsAttached)
         {
             return Json(new { success = true, message = "File deleted successfully" });
+        }
+
+        if (!await jobQueryRepository.IsMediaKeyVisibleAsync(key))
+        {
+            return NotFound();
         }
 
         try
@@ -936,6 +951,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> SendPodReport([FromBody] SendPodReportRequest request)
     {
         try
@@ -996,6 +1012,11 @@ public class JobController(
     {
         try
         {
+            if (!await pricingPermissionService.CanModifyPricesAsync())
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to upload prices");
+            }
+
             await jobReportService.ProcessJobPriceUploadAsync(file);
             return Ok();
         }
@@ -1084,6 +1105,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [NetworkPartnerCapability(NpCapability.SwapPod)]
     public async Task<IActionResult> SwapPod([FromBody] SwapPodRequest request)
     {
         var (job1, job2) = request;
@@ -1290,6 +1312,9 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "data.JobIds")]
+    [RequireScope(ScopedRecord.Courier, "data.CourierId")]
+    [NetworkPartnerCapability(NpCapability.Dispatch)]
     public async Task<IActionResult> Allocate([FromBody] AllocateJobsToCourierRequest data)
     {
         try
@@ -1320,6 +1345,9 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "data.JobIds")]
+    [RequireScope(ScopedRecord.Courier, "data.CourierId")]
+    [NetworkPartnerCapability(NpCapability.Dispatch)]
     public async Task<IActionResult> ReAllocate([FromBody] AllocateJobsToCourierRequest data)
     {
         try
@@ -1352,6 +1380,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobIds")]
+    [NetworkPartnerCapability(NpCapability.Dispatch)]
     public async Task<IActionResult> ReSendSelected(string jobIds)
     {
         var parsedIds = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -1362,6 +1392,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobIds")]
+    [NetworkPartnerCapability(NpCapability.Dispatch)]
     public async Task<IActionResult> ReAssignSelected(string jobIds)
     {
         var parsedIds = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -1382,6 +1414,9 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
+    [RequireScope(ScopedRecord.Courier, "courierId")]
+    [NetworkPartnerCapability(NpCapability.Dispatch)]
     public async Task<IActionResult> SetFirstJob(int jobId, int courierId)
     {
         var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
@@ -1395,6 +1430,9 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
+    [RequireScope(ScopedRecord.JobOrBulkJob, "request.SelectedJobIds")]
+    [NetworkPartnerCapability(NpCapability.Void)]
     public async Task<IActionResult> Void([FromBody] VoidJobRequest request)
     {
         try
@@ -1468,6 +1506,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [NetworkPartnerCapability(NpCapability.ChangePaidCourier)]
     public async Task<IActionResult> ChangeArchivedJobCourier([FromBody] ChangeArchivedJobCourierRequest request)
     {
         var partnerGuard = await RejectIfOutboundPartnerJobAsync(request.JobId);
@@ -1510,6 +1549,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.BulkJob, "request.BulkJobId", "request.SelectedJobIds")]
+    [NetworkPartnerCapability(NpCapability.Void)]
     public async Task<IActionResult> VoidBulkJob([FromBody] VoidBulkJobRequest request)
     {
         try
@@ -1531,6 +1572,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Courier, "courierId")]
+    [NetworkPartnerCapability(NpCapability.Dispatch)]
     public async Task<IActionResult> ReSendAll(int courierId)
     {
         try
@@ -1551,6 +1594,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobIds")]
+    [NetworkPartnerCapability(NpCapability.Restore)]
     public async Task<IActionResult> RestoreSplitJobs([FromQuery] List<int> jobIds)
     {
         try
@@ -1571,6 +1616,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "data.JobIds")]
+    [NetworkPartnerCapability(NpCapability.Restore)]
     public async Task<IActionResult> RestoreJobs([FromBody] RestoreJobsRequest data)
     {
         try
@@ -1615,6 +1662,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "data.JobIds")]
     public async Task<IActionResult> GetRestorePodImpact([FromBody] RestorePodImpactRequest data)
     {
         try
@@ -1748,6 +1796,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
+    [NetworkPartnerCapability(NpCapability.Split)]
     public async Task<IActionResult> SplitJob([FromBody] SplitJobRequest request)
     {
         try
@@ -1789,6 +1839,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
+    [NetworkPartnerCapability(NpCapability.Split)]
     public async Task<IActionResult> UnSplitJob(int jobId)
     {
         var message = await jobCommandRepository.UnSplitJobAsync(jobId);
@@ -1796,6 +1848,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [NetworkPartnerCapability(NpCapability.EditPodDetails)]
     public async Task<IActionResult> UpdatePodDetails([FromBody] UpdatePodDetailsRequest requestData)
     {
         try
@@ -2254,6 +2307,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.BookableClient, "request.ClientId")]
+    [NetworkPartnerCapability(NpCapability.QuickCreateJob)]
     public async Task<IActionResult> QuickCreateJob([FromBody] JobCreateViewModel request)
     {
         try
@@ -2281,6 +2336,9 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Courier, "viewModel.FromCourierId", "viewModel.ToCourierId")]
+    [RequireScope(ScopedRecord.Client, "viewModel.ClientId")]
+    [NetworkPartnerCapability(NpCapability.InterCourierCharge)]
     public async Task<IActionResult> InterCourierCharge([FromBody] InterCourierChargeViewModel viewModel)
     {
         try
@@ -2421,6 +2479,11 @@ public class JobController(
             });
         }
 
+        if (!await jobQueryRepository.IsJobVisibleAsync(jobId))
+        {
+            return NotFound();
+        }
+
         try
         {
             var s3Files = await jobPhotoService.GetAttachedFilesAsync(jobId);
@@ -2435,6 +2498,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> UploadFile([FromForm] FileUploadRequest request)
     {
         if (Debugger.IsAttached)
@@ -2497,6 +2561,11 @@ public class JobController(
             return File(png, "image/png", fileName);
         }
 
+        if (!await jobQueryRepository.IsMediaKeyVisibleAsync(key))
+        {
+            return NotFound();
+        }
+
         try
         {
             var result = await jobPhotoService.DownloadFileAsync(key);
@@ -2523,6 +2592,11 @@ public class JobController(
         if (Debugger.IsAttached)
         {
             return Ok(new { message = "File deleted successfully" });
+        }
+
+        if (!await jobQueryRepository.IsMediaKeyVisibleAsync(key))
+        {
+            return NotFound();
         }
 
         try
@@ -2629,6 +2703,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.BulkJob, "request.BulkJobId")]
     public async Task<IActionResult> UpdateBulkJobPackages([FromBody] UpdateBulkJobPackagesRequest request)
     {
         try
@@ -2693,6 +2768,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> UpdateDeliveryAddress([FromBody] UpdateAddressRequest request,
         CancellationToken ct)
     {
@@ -2712,6 +2788,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> UpdatePickupAddress([FromBody] UpdateAddressRequest request, CancellationToken ct)
     {
         var payload = JsonSerializer.Serialize(request.Address, CompoundPayloadJsonOptions);
@@ -2836,6 +2913,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "data.JobId")]
     public async Task<IActionResult> AddStopToJob([FromBody] AddStopRequest data)
     {
         try
@@ -2899,6 +2977,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> ApplyWebQtyUpdate(int jobId)
     {
         try
@@ -2921,6 +3000,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "data.JobIds")]
     public async Task<IActionResult> BulkUpdateReadStatus([FromBody] BulkReadUpdateRequestModel data)
     {
         try
@@ -2979,11 +3059,13 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "data.JobId")]
     public async Task<IActionResult> RepriceJobWithBaseAmount([FromBody] RepriceJobWithBaseAmountModel data)
     {
         try
         {
-            if (!await pricingPermissionService.CanUsePricingModeAsync("base"))
+            if (!await pricingPermissionService.CanModifyPricesAsync()
+                || !await pricingPermissionService.CanUsePricingModeAsync("base"))
             {
                 return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to set base amounts");
             }
@@ -3008,6 +3090,7 @@ public class JobController(
     }
 
     [HttpGet]
+    [NetworkPartnerCapability(NpCapability.Rerate)]
     public async Task<IActionResult> RecalculateJobRate(int jobId)
     {
         try
@@ -3037,6 +3120,8 @@ public class JobController(
     }
 
     [HttpGet]
+    [RequireScope(ScopedRecord.Job, "jobIds")]
+    [NetworkPartnerCapability(NpCapability.Rerate)]
     public async Task<IActionResult> RecalculateJobRates(string jobIds)
     {
         try
@@ -3112,6 +3197,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [NetworkPartnerCapability(NpCapability.Rerate)]
     public async Task<IActionResult> ApplyRecalculatedJobRate(int jobId, bool isPrebook = false)
     {
         try
@@ -3201,6 +3287,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
+    [NetworkPartnerCapability(NpCapability.SendToPartner)]
     public async Task<IActionResult> SendToPartner([FromBody] SendToPartnerRequest request)
     {
         try
@@ -3226,6 +3314,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
+    [NetworkPartnerCapability(NpCapability.SendToPartner)]
     public async Task<IActionResult> GetPartnerRateForJob([FromBody] PartnerRateForJobRequest request)
     {
         try
@@ -3251,6 +3341,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
+    [NetworkPartnerCapability(NpCapability.SendToPartner)]
     public async Task<IActionResult> AcceptPartnerRate([FromBody] AcceptPartnerRateRequest request)
     {
         try
@@ -3266,6 +3358,8 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
+    [NetworkPartnerCapability(NpCapability.SendToPartner)]
     public async Task<IActionResult> RejectPartnerRate([FromBody] RejectPartnerRateRequest request)
     {
         try

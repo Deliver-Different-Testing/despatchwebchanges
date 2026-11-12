@@ -15,7 +15,9 @@ public class MessagesControllerTests
 {
     private readonly IMessageRepository _messageRepositoryMock = Substitute.For<IMessageRepository>();
 
-    private MessagesController CreateController() => new(_messageRepositoryMock);
+    private readonly ITenantInfoService _infoServiceMock = Substitute.For<ITenantInfoService>();
+
+    private MessagesController CreateController() => new(_messageRepositoryMock, _infoServiceMock);
 
     [Fact]
     public async Task GetUnreadMessageCount_Success_ReturnsJsonWithCount()
@@ -90,11 +92,12 @@ public class MessagesControllerTests
     }
 
     [Fact]
-    public async Task GetMessages_ValidIds_ReturnsJsonWithMessages()
+    public async Task GetMessages_UsesTheCallersOwnStaffId()
     {
         // Arrange
         const int courierId = 1;
         const int staffId = 2;
+        _infoServiceMock.GetStaffId().Returns(staffId);
         var expectedMessages = new List<ChatMessageViewModel>
         {
             new() { Message = "Hello", MessageId = 1 },
@@ -106,7 +109,7 @@ public class MessagesControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.GetMessages(courierId, staffId);
+        var result = await controller.GetMessages(courierId);
 
         // Assert
         var jsonResult = Assert.IsType<JsonResult>(result);
@@ -122,7 +125,7 @@ public class MessagesControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.GetMessages(1, 2);
+        var result = await controller.GetMessages(1);
 
         // Assert
         var statusCodeResult = Assert.IsType<ObjectResult>(result);
@@ -130,11 +133,12 @@ public class MessagesControllerTests
     }
 
     [Fact]
-    public async Task GetMessagesByStaff_ValidIds_ReturnsJsonWithMessages()
+    public async Task GetMessagesByStaff_UsesTheCallersOwnStaffId()
     {
         // Arrange
         const int otherStaffId = 1;
         const int currentStaffId = 2;
+        _infoServiceMock.GetStaffId().Returns(currentStaffId);
         var expectedMessages = new List<ChatMessageViewModel>
         {
             new() { Message = "Staff message 1", MessageId = 1 },
@@ -146,7 +150,7 @@ public class MessagesControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.GetMessagesByStaff(otherStaffId, currentStaffId);
+        var result = await controller.GetMessagesByStaff(otherStaffId);
 
         // Assert
         var jsonResult = Assert.IsType<JsonResult>(result);
@@ -162,7 +166,7 @@ public class MessagesControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.GetMessagesByStaff(1, 2);
+        var result = await controller.GetMessagesByStaff(1);
 
         // Assert
         var statusCodeResult = Assert.IsType<ObjectResult>(result);

@@ -43,7 +43,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
     {
         var likePattern = $"%{searchTerm}%";
 
-        var results = await Context.TucClients
+        var results = await Context.BookableClients(Context.TucClients)
             .Where(c => c.UcclActive == true &&
                         EF.Functions.Like(c.UcclCode + " " + c.UcclName, likePattern))
             .OrderBy(c => c.UcclCode)

@@ -22,6 +22,7 @@ import {
 import type {JobUpdateResponse} from '../../../../api/jobDetailApi';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JobProperty} from '../../../../types/enums/job-property.enum';
+import {isNetworkPartnerSession} from '../../../dialogs/dispatch-dialog/dispatchSession';
 
 const RERATE_FIELDS = new Set<string>([
     JobProperty.Date,
@@ -150,6 +151,8 @@ export function useJobUpdate(
     }, []);
 
     const checkForRateChange = useCallback(async (job: IJob) => {
+        // Network partners can't change prices, so there is no re-rate to offer (the server refuses it).
+        if (isNetworkPartnerSession()) return;
         try {
             const preview = await previewJobRate(job.id);
             if (ratesDiffer(preview.rate, job.charge)) {
@@ -174,7 +177,7 @@ export function useJobUpdate(
      * user simply never sees a price step.
      */
     const checkForRateChanges = useCallback(async (jobIds: number[]) => {
-        if (jobIds.length === 0) return;
+        if (jobIds.length === 0 || isNetworkPartnerSession()) return;
         try {
             const previews = await previewJobRates(jobIds);
             openRateChanges(

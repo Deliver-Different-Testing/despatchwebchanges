@@ -53,8 +53,11 @@ public interface IJobCommandRepository
     Task<string> UnSplitJobAsync(int jobId);
 
     Task<int> AddJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false);
-    Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false);
-    Task DeleteJobPriceBreakdownAsync(int chargeId, bool isArchived = false);
+    /// <returns>False when no charge with that id belongs to the job, so nothing changed.</returns>
+    Task<bool> UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false);
+
+    /// <returns>False when no charge with that id belongs to the job, so nothing was deleted.</returns>
+    Task<bool> DeleteJobPriceBreakdownAsync(int chargeId, int jobId, bool isArchived = false);
     Task UpdateSplitPricingBreakdownAsync(UpdateSplitPricingBreakdownRequest request);
 
     Task UpdateJobWeightAsync(int jobId, decimal weight);
