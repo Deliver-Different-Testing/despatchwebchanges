@@ -97,6 +97,8 @@ export const MARKER_POSITION_THRESHOLD = 0.0001;
 
 export const US_MAP_CENTER = {lat: 39.8097343, lng: -98.5556199};
 export const NZ_MAP_CENTER = {lat: -41.2865, lng: 174.7762};
+/** Sydney. The fallback for an AU tenant with no SignUpPageSettings centre, so its maps don't open on NZ. */
+export const AU_MAP_CENTER = {lat: -33.8688, lng: 151.2093};
 
 /**
  * The signed-in network partner's own address, when the server resolved one.
@@ -106,14 +108,18 @@ export function getNetworkPartnerMapCenter(): { lat: number; lng: number } | nul
     return getSession().npMapCenter;
 }
 
+function isAuSession(): boolean {
+    return (getSession().countryCode ?? '').toUpperCase() === 'AU';
+}
+
 export function getDefaultMapCenter(): { lat: number; lng: number } {
     // A network partner works one address, not a country, so their own address is
     // a better opening view than the geographic centre of the tenant's country. After that the
     // tenant's own centre (SignUpPageSettings), so an AU tenant doesn't open on NZ; the hard-coded
-    // US/NZ centres are only the fallback when the tenant has none.
+    // US/AU/NZ centres are only the fallback when the tenant has none.
     return getNetworkPartnerMapCenter()
         ?? getSession().tenantMapCenter
-        ?? (getSession().isUsCustomer ? US_MAP_CENTER : NZ_MAP_CENTER);
+        ?? (getSession().isUsCustomer ? US_MAP_CENTER : isAuSession() ? AU_MAP_CENTER : NZ_MAP_CENTER);
 }
 
 export const DEFAULT_MAP_CONFIG: HereMapConfig = {

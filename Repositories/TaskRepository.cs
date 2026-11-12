@@ -1,5 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
@@ -259,6 +260,8 @@ public class TaskRepository(
 
                 if (existingEvent.UcevStaffIdin != staffId)
                 {
+                    await EnsureAssignableAsync(staffId);
+
                     var oldStaffName = existingEvent.OldStaffName?.Trim();
 
                     await Context.TucEvents
@@ -311,6 +314,27 @@ public class TaskRepository(
                 throw;
             }
         });
+    }
+
+    /// <summary>
+    /// Both staff records an assignment writes must exist: the assignee (tucEvent.UcevStaffIDIn) and the
+    /// signed-in user (tucEventAudit.UceaStaffID). Checked up front so a missing record is a clear 409,
+    /// not an FK violation surfacing as a 500.
+    /// </summary>
+    private async Task EnsureAssignableAsync(int staffId)
+    {
+        var callerStaffId = infoService.GetStaffIdOrNull();
+        if (callerStaffId is null || !await Context.TucStaffs.AnyAsync(s => s.UcstId == callerStaffId))
+        {
+            throw new TaskAssignmentException(TaskAssignmentException.CallerNotStaff);
+        }
+
+        if (staffId <= 0 || !await Context.TucStaffs.AnyAsync(s => s.UcstId == staffId))
+        {
+            throw new TaskAssignmentException(staffId == callerStaffId
+                ? TaskAssignmentException.CallerNotStaff
+                : TaskAssignmentException.AssigneeNotStaff);
+        }
     }
 
     public async Task UnassignEventAsync(int eventId)

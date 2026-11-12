@@ -42,6 +42,7 @@ import {
 } from '../../../utils/dateUtils';
 import {Icon} from '../icon/Icon';
 import classes from './TaskItem.module.css';
+import type {ApiError} from '../../../types';
 
 /** The string forms the two editors exchange values in. */
 const ISO_DATE = 'YYYY-MM-DD';
@@ -149,6 +150,18 @@ const Fact = ({label, value, stamp, hideLabel, color = 'gray', maw}: FactProps) 
     </Badge>
 );
 
+
+/**
+ * A 409 from task/ReassignTask carries a message written for the user (a missing staff record, e.g.
+ * a login not linked to tucStaff). Anything else stays on the generic text: 500s are sanitised server-side.
+ */
+function assignErrorMessage(error: unknown, fallback: string): string {
+    const apiError = error as Partial<ApiError> | null;
+    return apiError?.status === 409 && typeof apiError.message === 'string' && apiError.message
+        ? apiError.message
+        : fallback;
+}
+
 export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const {
         task,
@@ -234,7 +247,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             showSuccessToast?.('Task assigned to you');
             onTaskUpdated?.();
         } catch (error) {
-            showErrorToast?.("Couldn't assign the task. Check your connection and try again.");
+            showErrorToast?.(assignErrorMessage(error, "Couldn't assign the task. Check your connection and try again."));
             console.error('Error assigning task to current user:', error);
         }
     }, [currentUserId, task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
@@ -360,7 +373,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             onTaskUpdated?.();
             closePopover();
         } catch (error) {
-            showErrorToast?.("Couldn't reassign the task. Check your connection and try again.");
+            showErrorToast?.(assignErrorMessage(error, "Couldn't reassign the task. Check your connection and try again."));
             console.error('Error reassigning task:', error);
         }
     }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated, closePopover]);

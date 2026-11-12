@@ -1,5 +1,6 @@
 ﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -50,12 +51,19 @@ public class TaskRepositoryReassignTests : IAsyncDisposable
     private async Task SeedAsync(
         TucStaff[]? staff = null,
         TucEventType[]? eventTypes = null,
-        TucEvent[]? events = null)
+        TucEvent[]? events = null,
+        bool seedCaller = true)
     {
         await using var context = _db.CreateContext();
         if (staff is not null)
         {
             context.TucStaffs.AddRange(staff);
+        }
+
+        // The signed-in user (StaffID claim 99) must be a tucStaff row: the audit row is keyed on it.
+        if (seedCaller && staff?.Any(s => s.UcstId == 99) != true)
+        {
+            context.TucStaffs.Add(Staff(99, "Signed", "In"));
         }
 
         if (eventTypes is not null)
@@ -214,5 +222,54 @@ public class TaskRepositoryReassignTests : IAsyncDisposable
         var repository = CreateRepository();
 
         await Assert.ThrowsAsync<ArgumentException>(() => repository.ReassignEventToUserAsync(999, 8));
+    }
+
+    private static TucEvent OpenEvent() => new()
+    {
+        UcevId = 1,
+        UcevStaffIdin = null,
+        UcevJobId = 555,
+        UcevDueTime = TestDates.Now,
+        UcevClosed = false
+    };
+
+    [Fact]
+    public async Task ReassignEventToUserAsync_CallerHasNoStaffRow_ThrowsClearError_AndChangesNothing()
+    {
+        // Crisis, 10 Nov 2026: a login whose StaffID claim had no tucStaff row clicked an open task;
+        // the update failed on FK_tucEvent_tucStaff_In and the user saw a generic 500.
+        await SeedAsync(staff: [Staff(8, "Jane", "Roe")], events: [OpenEvent()], seedCaller: false);
+        _infoServiceMock.GetStaffIdOrNull().Returns(99);
+
+        var ex = await Assert.ThrowsAsync<TaskAssignmentException>(
+            () => CreateRepository().ReassignEventToUserAsync(1, 99));
+
+        Assert.Equal(TaskAssignmentException.CallerNotStaff, ex.Message);
+        await using var assertContext = _db.CreateContext();
+        Assert.Null((await assertContext.TucEvents.SingleAsync(TestContext.Current.CancellationToken)).UcevStaffIdin);
+        Assert.Empty(assertContext.TucEventAudits);
+    }
+
+    [Fact]
+    public async Task ReassignEventToUserAsync_CallerWithoutStaffClaim_ThrowsClearError()
+    {
+        await SeedAsync(staff: [Staff(8, "Jane", "Roe")], events: [OpenEvent()]);
+        _infoServiceMock.GetStaffIdOrNull().Returns((int?)null);
+
+        var ex = await Assert.ThrowsAsync<TaskAssignmentException>(
+            () => CreateRepository().ReassignEventToUserAsync(1, 8));
+
+        Assert.Equal(TaskAssignmentException.CallerNotStaff, ex.Message);
+    }
+
+    [Fact]
+    public async Task ReassignEventToUserAsync_AssigneeNotStaff_ThrowsClearError()
+    {
+        await SeedAsync(events: [OpenEvent()]);
+
+        var ex = await Assert.ThrowsAsync<TaskAssignmentException>(
+            () => CreateRepository().ReassignEventToUserAsync(1, 12345));
+
+        Assert.Equal(TaskAssignmentException.AssigneeNotStaff, ex.Message);
     }
 }

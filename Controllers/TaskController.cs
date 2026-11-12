@@ -1,3 +1,4 @@
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
@@ -147,6 +148,12 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         {
             await taskRepository.ReassignEventToUserAsync(data.EventId, data.StaffId);
             return Ok();
+        }
+        catch (TaskAssignmentException ex)
+        {
+            Log.Warning("Task {EventId} not assigned to staff {StaffId}: {Reason}", data.EventId, data.StaffId,
+                ex.Message);
+            return Conflict(ex.Message);
         }
         catch (Exception ex)
         {

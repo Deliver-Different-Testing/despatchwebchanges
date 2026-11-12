@@ -3,6 +3,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using JetBrains.Annotations;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -249,5 +250,17 @@ public class TaskControllerTests
 
         var status = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, status.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReassignTask_MissingStaffRecord_Returns409WithMessage()
+    {
+        _taskRepoMock.ReassignEventToUserAsync(Arg.Any<int>(), Arg.Any<int>())
+            .ThrowsAsync(new TaskAssignmentException(TaskAssignmentException.CallerNotStaff));
+
+        var result = await CreateController().ReassignTask(new TaskAssignStaffRequest { EventId = 1, StaffId = 5 });
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        Assert.Equal(TaskAssignmentException.CallerNotStaff, conflict.Value);
     }
 }
