@@ -1,5 +1,6 @@
 using System.Security.AccessControl;
 using System.Security.Principal;
+using DeliverDifferent.AgentAccess;
 using DeliverDifferentReporting.Extensions;
 using DespatchWeb;
 using DespatchWeb.Extensions;
@@ -124,6 +125,7 @@ builder.Services.AddOptions<AppSettings>()
 builder.Services
     .AddRepositories()
     .AddJobServices(builder.Configuration)
+    .AddAgentReadServices()
     .AddPricingServices()
     .AddReportingServices()
     .AddSupportServices()
@@ -192,6 +194,7 @@ app.UseSecurityHeaders();
 app.UseCookiePolicy();
 app.UseRouting();
 app.UseAuthentication();
+app.UseAgentRouteAllowList();
 app.UseConnectedTenantRejection();
 app.UseAuthorization();
 app.MapControllerRoute(

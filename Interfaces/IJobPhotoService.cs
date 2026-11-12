@@ -42,6 +42,12 @@ public interface IJobPhotoService
     /// <param name="month">The completion month used to locate the S3 folders.</param>
     Task<int> CountJobCapturedMediaAsync(int jobId, int year, int month);
 
+    /// <summary>
+    /// Lists a job's captured delivery and pickup artefacts (key, size, last modified) for the anchor month and its
+    /// neighbours, from the S3 listing alone: nothing is downloaded. A listing failure comes back empty.
+    /// </summary>
+    Task<IReadOnlyList<CapturedMediaInfo>> ListCapturedMediaAsync(int jobId, int year, int month);
+
     /// <summary>The distinct S3 keys of a job's delivery photos and signatures (pickup media excluded).</summary>
     Task<IReadOnlyList<string>> ListDeliveryMediaKeysAsync(int jobId, int year, int month);
 

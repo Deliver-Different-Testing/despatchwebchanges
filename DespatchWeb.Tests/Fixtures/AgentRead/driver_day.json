@@ -1,0 +1,343 @@
+{
+  "_comment": "Synthetic, sanitised. Shapes only — invented codes, names, fleets, areas and money. Shaped after TodayActiveDriversPaginatedResponse, CourierCompliancePaginatedResponse, CourierDailyEarningsPaginatedResponse and ClearListViewModel in reference/apps/despatchweb.md. now = 2026-08-27T14:20:00+12:00.",
+  "activeDriverPages": [
+    {
+      "items": [
+        {
+          "courierId": 501,
+          "code": "DR01",
+          "name": "Alex Sample",
+          "fleet": "Fleet North",
+          "loginTime": "2026-08-27T06:02:00+12:00",
+          "logoutTime": null,
+          "duration": "8h 18m",
+          "deliveries": 12,
+          "status": "Active"
+        },
+        {
+          "courierId": 502,
+          "code": "DR02",
+          "name": "Bo Sample",
+          "fleet": "Fleet North",
+          "loginTime": "2026-08-27T05:30:00+12:00",
+          "logoutTime": null,
+          "duration": "8h 50m",
+          "deliveries": 0,
+          "status": "Active"
+        },
+        {
+          "courierId": 503,
+          "code": "DR03",
+          "name": "Cass Sample",
+          "fleet": "Fleet South",
+          "loginTime": "2026-08-27T04:10:00+12:00",
+          "logoutTime": "2026-08-27T12:40:00+12:00",
+          "duration": "8h 30m",
+          "deliveries": 7,
+          "status": "Inactive"
+        }
+      ],
+      "total": 5,
+      "page": 1,
+      "pages": 2,
+      "totalActiveDrivers": 3,
+      "totalDriversActiveToday": 3,
+      "averageSessionTime": 659.6
+    },
+    {
+      "items": [
+        {
+          "courierId": 504,
+          "code": "DR04",
+          "name": "Dee Sample",
+          "fleet": "Fleet South",
+          "loginTime": "2026-08-27T00:05:00+12:00",
+          "logoutTime": null,
+          "duration": "14h 15m",
+          "deliveries": 3,
+          "status": "Active"
+        },
+        {
+          "courierId": 505,
+          "code": "DR05",
+          "name": "Eli Sample",
+          "fleet": "Not Available",
+          "loginTime": "2026-08-27T09:00:00+12:00",
+          "logoutTime": "2026-08-27T08:30:00+12:00",
+          "duration": "23h 30m",
+          "deliveries": 2,
+          "status": "Inactive"
+        }
+      ],
+      "total": 5,
+      "page": 2,
+      "pages": 2,
+      "totalActiveDrivers": 3,
+      "totalDriversActiveToday": 3,
+      "averageSessionTime": 659.6
+    }
+  ],
+  "compliance": {
+    "items": [
+      {
+        "code": "DR01",
+        "name": "Alex Sample",
+        "complianceType": "Driver's License",
+        "itemNumber": "DL-DR01",
+        "expiryDate": "2026-08-24T00:00:00+12:00",
+        "status": "Expired",
+        "daysUntilExpiry": "3 days overdue"
+      },
+      {
+        "code": "DR02",
+        "name": "Bo Sample",
+        "complianceType": "Driver's License",
+        "itemNumber": "DL-DR02",
+        "expiryDate": "2026-09-08T00:00:00+12:00",
+        "status": "Expiring Soon",
+        "daysUntilExpiry": "12 days"
+      },
+      {
+        "code": "DR03",
+        "name": "Cass Sample",
+        "complianceType": "Dangerous Goods",
+        "itemNumber": "DG-DR03",
+        "expiryDate": "2027-03-01T00:00:00+13:00",
+        "status": "Valid",
+        "daysUntilExpiry": "186 days"
+      },
+      {
+        "code": "DR04",
+        "name": "Dee Sample",
+        "complianceType": "Driver's License",
+        "itemNumber": "DL-DR04",
+        "expiryDate": null,
+        "status": "Not Set",
+        "daysUntilExpiry": "N/A"
+      },
+      {
+        "code": "DR06",
+        "name": "Fay Sample",
+        "complianceType": "Driver's License",
+        "itemNumber": "DL-DR06",
+        "expiryDate": "2026-12-01T00:00:00+13:00",
+        "status": "Valid",
+        "daysUntilExpiry": "96 days"
+      },
+      {
+        "code": "DR07",
+        "name": "Gus Sample",
+        "complianceType": "Driver's License",
+        "itemNumber": "DL-DR07",
+        "expiryDate": "2027-01-15T00:00:00+13:00",
+        "status": "Valid",
+        "daysUntilExpiry": "141 days"
+      }
+    ],
+    "total": 6,
+    "page": 1,
+    "pages": 1,
+    "totalExpired": 2,
+    "totalExpiringSoon": 1,
+    "totalValid": 3
+  },
+  "earnings": {
+    "items": [
+      { "courierId": 501, "name": "Alex Sample", "hoursLogged": 498, "deliveries": 12, "earnings": 312.5, "hourlyRate": 37.65 },
+      { "courierId": 502, "name": "Bo Sample", "hoursLogged": 530, "deliveries": 0, "earnings": 0, "hourlyRate": 0 },
+      { "courierId": 503, "name": "Cass Sample", "hoursLogged": 510, "deliveries": 7, "earnings": 198.75, "hourlyRate": 23.38 },
+      { "courierId": 504, "name": "Dee Sample", "hoursLogged": 855, "deliveries": 3, "earnings": 88.4, "hourlyRate": 6.2 },
+      { "courierId": 505, "name": "Eli Sample", "hoursLogged": 0, "deliveries": 2, "earnings": 45.0, "hourlyRate": 0 }
+    ],
+    "total": 5,
+    "page": 1,
+    "pages": 1,
+    "totalEarningsToday": 1044.35,
+    "averageHourlyRate": 28.11,
+    "totalActiveDrivers": 5,
+    "totalDeliveriesToday": 31
+  },
+  "board": {
+    "areas": [
+      {
+        "id": 11,
+        "name": "Central",
+        "order": 1,
+        "percentHeight": 33,
+        "totalRemaining": 9,
+        "top": [
+          {
+            "courierNumber": "DR01",
+            "courierData": {
+              "courier": "DR01 Alex Sample",
+              "courierNumber": null,
+              "location": "Unknown",
+              "pu": "Unknown",
+              "del": "Newtown, Southgate",
+              "lrm": "Unknown",
+              "eta2Lrm": "Unknown",
+              "courierId": 501,
+              "courierName": null,
+              "courierMobile": null
+            },
+            "destinations": [
+              { "id": 1, "label": "Newtown" },
+              { "id": 2, "label": "Southgate" }
+            ],
+            "jobCount": 6
+          }
+        ],
+        "middle": [
+          {
+            "courierNumber": "DR02",
+            "courierData": {
+              "courier": "DR02 Bo Sample",
+              "courierNumber": null,
+              "location": "Unknown",
+              "pu": "Unknown",
+              "del": "Unknown",
+              "lrm": "Unknown",
+              "eta2Lrm": "Unknown",
+              "courierId": 502,
+              "courierName": null,
+              "courierMobile": null
+            },
+            "destinations": [],
+            "jobCount": 0
+          }
+        ],
+        "bottom": []
+      },
+      {
+        "id": 12,
+        "name": "Harbour",
+        "order": 2,
+        "percentHeight": 33,
+        "totalRemaining": 4,
+        "top": [
+          {
+            "courierNumber": "DR01",
+            "courierData": {
+              "courier": "DR01 Alex Sample",
+              "courierNumber": null,
+              "location": "Unknown",
+              "pu": "Unknown",
+              "del": "Riverbend",
+              "lrm": "Unknown",
+              "eta2Lrm": "Unknown",
+              "courierId": 501,
+              "courierName": null,
+              "courierMobile": null
+            },
+            "destinations": [{ "id": 1, "label": "Riverbend" }],
+            "jobCount": 6
+          }
+        ],
+        "middle": [],
+        "bottom": [
+          {
+            "courierNumber": "DR03",
+            "courierData": {
+              "courier": "DR03 Cass Sample",
+              "courierNumber": null,
+              "location": "Unknown",
+              "pu": "Unknown",
+              "del": "Kingsway, Oakfield",
+              "lrm": "Unknown",
+              "eta2Lrm": "Unknown",
+              "courierId": 503,
+              "courierName": null,
+              "courierMobile": null
+            },
+            "destinations": [
+              { "id": 1, "label": "Kingsway" },
+              { "id": 2, "label": "Oakfield" }
+            ],
+            "jobCount": 4
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "name": "Outer",
+        "order": 3,
+        "percentHeight": 33,
+        "totalRemaining": 2,
+        "top": [
+          {
+            "courierNumber": "DR06",
+            "courierData": {
+              "courier": "DR06 Fay Sample",
+              "courierNumber": null,
+              "location": "Unknown",
+              "pu": "Unknown",
+              "del": "Fernhill",
+              "lrm": "Unknown",
+              "eta2Lrm": "Unknown",
+              "courierId": 606,
+              "courierName": null,
+              "courierMobile": null
+            },
+            "destinations": [{ "id": 1, "label": "Fernhill" }],
+            "jobCount": 2
+          }
+        ],
+        "middle": [],
+        "bottom": [
+          {
+            "courierNumber": null,
+            "courierData": {
+              "courier": "",
+              "courierNumber": null,
+              "location": "Unknown",
+              "pu": "Unknown",
+              "del": "Unknown",
+              "lrm": "Unknown",
+              "eta2Lrm": "Unknown",
+              "courierId": null,
+              "courierName": null,
+              "courierMobile": null
+            },
+            "destinations": [],
+            "jobCount": 0
+          }
+        ]
+      }
+    ],
+    "columns": [
+      {
+        "areas": [
+          {
+            "id": 11,
+            "name": "Central",
+            "order": 1,
+            "percentHeight": 33,
+            "totalRemaining": 9,
+            "top": [
+              {
+                "courierNumber": "DR01",
+                "courierData": { "courier": "DR01 Alex Sample", "location": "Unknown", "pu": "Unknown", "del": "Newtown, Southgate", "lrm": "Unknown", "eta2Lrm": "Unknown", "courierId": 501 },
+                "destinations": [
+                  { "id": 1, "label": "Newtown" },
+                  { "id": 2, "label": "Southgate" }
+                ],
+                "jobCount": 6
+              }
+            ],
+            "middle": [],
+            "bottom": []
+          }
+        ]
+      }
+    ]
+  },
+  "emptyActiveDrivers": {
+    "items": [],
+    "total": 0,
+    "page": 1,
+    "pages": 0,
+    "totalActiveDrivers": 0,
+    "totalDriversActiveToday": 0,
+    "averageSessionTime": 0
+  }
+}

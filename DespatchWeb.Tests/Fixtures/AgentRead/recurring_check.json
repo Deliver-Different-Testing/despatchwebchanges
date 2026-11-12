@@ -1,0 +1,1523 @@
+{
+ "asOf": "2026-08-27",
+ "lists": {
+  "0": {
+   "items": [],
+   "total": 0,
+   "page": 1,
+   "pages": 1
+  },
+  "1": {
+   "items": [
+    {
+     "id": 1198,
+     "booked": "2026-08-10T23:30:00-07:00",
+     "nextDueTime": "2026-08-28T00:00:00-07:00",
+     "client": "NEOGE",
+     "customJobName": "George Test Aug11",
+     "jobNo": "P2821CRT1",
+     "clientId": 85,
+     "courier": null,
+     "speed": "Commingle Route",
+     "pickupAddress": {
+      "addressLine1": "Sample Pickup",
+      "addressLine2": null,
+      "addressLine3": null,
+      "addressLine4": "1 Sample St",
+      "addressLine5": "Reno",
+      "addressLine6": "Nevada",
+      "addressLine7": "89511",
+      "addressLine8": "United States",
+      "latitude": 0,
+      "longitude": 0,
+      "fullAddress": "1 Sample St"
+     },
+     "deliveryAddress": {
+      "addressLine1": "Sample Pickup",
+      "addressLine2": null,
+      "addressLine3": null,
+      "addressLine4": "1 Sample St",
+      "addressLine5": "Aliso Viejo",
+      "addressLine6": "California",
+      "addressLine7": "92656",
+      "addressLine8": "United States",
+      "latitude": 0,
+      "longitude": 0,
+      "fullAddress": "1 Sample St"
+     },
+     "routeId": 5,
+     "routeName": "RNO200",
+     "recurringMode": 1,
+     "rawBaseAmount": 41.943,
+     "fuelSurchargeAmount": 10.943,
+     "ucbkAmount": 41.943,
+     "isChild": false
+    },
+    {
+     "id": 1215,
+     "booked": "2026-09-03T02:00:00-07:00",
+     "nextDueTime": "2026-08-28T00:00:00-07:00",
+     "client": "NEOGE",
+     "customJobName": "SFO1",
+     "jobNo": "P2757CRT",
+     "clientId": 85,
+     "courier": null,
+     "speed": "Commingle Route",
+     "pickupAddress": {
+      "addressLine1": "Sample Pickup",
+      "addressLine2": null,
+      "addressLine3": null,
+      "addressLine4": "1 Sample St",
+      "addressLine5": "Oakland",
+      "addressLine6": "California",
+      "addressLine7": "94611",
+      "addressLine8": "United States",
+      "latitude": 0,
+      "longitude": 0,
+      "fullAddress": "1 Sample St"
+     },
+     "deliveryAddress": {
+      "addressLine1": "Sample Pickup",
+      "addressLine2": null,
+      "addressLine3": null,
+      "addressLine4": "1 Sample St",
+      "addressLine5": "Aliso Viejo",
+      "addressLine6": "California",
+      "addressLine7": "92656",
+      "addressLine8": "United States",
+      "latitude": 0,
+      "longitude": 0,
+      "fullAddress": "1 Sample St"
+     },
+     "routeId": 6,
+     "routeName": "Hayward Pick up Route 1",
+     "recurringMode": 1,
+     "rawBaseAmount": 16.9531,
+     "fuelSurchargeAmount": 4.4231,
+     "ucbkAmount": 16.9531,
+     "isChild": false
+    },
+    {
+     "id": 1061,
+     "booked": "2026-07-06T16:00:00-07:00",
+     "nextDueTime": "2026-08-28T00:00:00-07:00",
+     "client": "NEOGE",
+     "customJobName": "George Western",
+     "jobNo": null,
+     "clientId": 85,
+     "courier": null,
+     "speed": "Commingle Route",
+     "pickupAddress": {
+      "addressLine1": "Sample Pickup",
+      "addressLine2": null,
+      "addressLine3": null,
+      "addressLine4": "1 Sample St",
+      "addressLine5": "Reno",
+      "addressLine6": "Nevada",
+      "addressLine7": "89503",
+      "addressLine8": "United States",
+      "latitude": 0,
+      "longitude": 0,
+      "fullAddress": "1 Sample St"
+     },
+     "deliveryAddress": {
+      "addressLine1": "Sample Pickup",
+      "addressLine2": null,
+      "addressLine3": null,
+      "addressLine4": "1 Sample St",
+      "addressLine5": "Aliso Viejo",
+      "addressLine6": "California",
+      "addressLine7": "92656",
+      "addressLine8": "United States",
+      "latitude": 0,
+      "longitude": 0,
+      "fullAddress": "1 Sample St"
+     },
+     "routeId": 5,
+     "routeName": "RNO200",
+     "recurringMode": 1,
+     "rawBaseAmount": 41.943,
+     "fuelSurchargeAmount": null,
+     "ucbkAmount": 41.943,
+     "isChild": false
+    }
+   ],
+   "total": 3,
+   "page": 1,
+   "pages": 1
+  },
+  "2": {
+   "items": [],
+   "total": 0,
+   "page": 1,
+   "pages": 1
+  }
+ },
+ "journeys": {
+  "1061": {
+   "breakdown": {
+    "total": 0,
+    "completed": 0,
+    "voided": 0,
+    "pending": 0
+   },
+   "runs": []
+  },
+  "1198": {
+   "breakdown": {
+    "total": 14,
+    "completed": 0,
+    "voided": 0,
+    "pending": 14
+   },
+   "runs": [
+    {
+     "parentJobId": 3126,
+     "parentJobNumber": "P2829",
+     "serviceDate": "2026-08-27T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 3121,
+       "jobNumber": "P2829LHP",
+       "status": 0
+      },
+      {
+       "jobId": 3122,
+       "jobNumber": "P2829LH1",
+       "status": 0
+      },
+      {
+       "jobId": 3123,
+       "jobNumber": "P2829LH2",
+       "status": 0
+      },
+      {
+       "jobId": 3124,
+       "jobNumber": "P2829LH3",
+       "status": 0
+      },
+      {
+       "jobId": 3125,
+       "jobNumber": "P2829LH4",
+       "status": 0
+      },
+      {
+       "jobId": 3127,
+       "jobNumber": "P2829DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 3103,
+     "parentJobNumber": "P2689",
+     "serviceDate": "2026-08-26T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 3098,
+       "jobNumber": "P2689LHP",
+       "status": 0
+      },
+      {
+       "jobId": 3099,
+       "jobNumber": "P2689LH1",
+       "status": 0
+      },
+      {
+       "jobId": 3100,
+       "jobNumber": "P2689LH2",
+       "status": 0
+      },
+      {
+       "jobId": 3101,
+       "jobNumber": "P2689LH3",
+       "status": 0
+      },
+      {
+       "jobId": 3102,
+       "jobNumber": "P2689LH4",
+       "status": 0
+      },
+      {
+       "jobId": 3104,
+       "jobNumber": "P2689DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 3079,
+     "parentJobNumber": "P2548",
+     "serviceDate": "2026-08-25T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 3074,
+       "jobNumber": "P2548LHP",
+       "status": 0
+      },
+      {
+       "jobId": 3075,
+       "jobNumber": "P2548LH1",
+       "status": 0
+      },
+      {
+       "jobId": 3076,
+       "jobNumber": "P2548LH2",
+       "status": 0
+      },
+      {
+       "jobId": 3077,
+       "jobNumber": "P2548LH3",
+       "status": 0
+      },
+      {
+       "jobId": 3078,
+       "jobNumber": "P2548LH4",
+       "status": 0
+      },
+      {
+       "jobId": 3080,
+       "jobNumber": "P2548DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 3061,
+     "parentJobNumber": "P2435",
+     "serviceDate": "2026-08-24T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 3056,
+       "jobNumber": "P2435LHP",
+       "status": 0
+      },
+      {
+       "jobId": 3057,
+       "jobNumber": "P2435LH1",
+       "status": 0
+      },
+      {
+       "jobId": 3058,
+       "jobNumber": "P2435LH2",
+       "status": 0
+      },
+      {
+       "jobId": 3059,
+       "jobNumber": "P2435LH3",
+       "status": 0
+      },
+      {
+       "jobId": 3060,
+       "jobNumber": "P2435LH4",
+       "status": 0
+      },
+      {
+       "jobId": 3062,
+       "jobNumber": "P2435DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 3033,
+     "parentJobNumber": "P2320",
+     "serviceDate": "2026-08-21T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 3028,
+       "jobNumber": "P2320LHP",
+       "status": 0
+      },
+      {
+       "jobId": 3029,
+       "jobNumber": "P2320LH1",
+       "status": 0
+      },
+      {
+       "jobId": 3030,
+       "jobNumber": "P2320LH2",
+       "status": 0
+      },
+      {
+       "jobId": 3031,
+       "jobNumber": "P2320LH3",
+       "status": 0
+      },
+      {
+       "jobId": 3032,
+       "jobNumber": "P2320LH4",
+       "status": 0
+      },
+      {
+       "jobId": 3034,
+       "jobNumber": "P2320DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 3005,
+     "parentJobNumber": "P2180",
+     "serviceDate": "2026-08-20T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 3000,
+       "jobNumber": "P2180LHP",
+       "status": 0
+      },
+      {
+       "jobId": 3001,
+       "jobNumber": "P2180LH1",
+       "status": 0
+      },
+      {
+       "jobId": 3002,
+       "jobNumber": "P2180LH2",
+       "status": 0
+      },
+      {
+       "jobId": 3003,
+       "jobNumber": "P2180LH3",
+       "status": 0
+      },
+      {
+       "jobId": 3004,
+       "jobNumber": "P2180LH4",
+       "status": 0
+      },
+      {
+       "jobId": 3006,
+       "jobNumber": "P2180DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 2977,
+     "parentJobNumber": "P2039",
+     "serviceDate": "2026-08-19T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 2972,
+       "jobNumber": "P2039LHP",
+       "status": 0
+      },
+      {
+       "jobId": 2973,
+       "jobNumber": "P2039LH1",
+       "status": 0
+      },
+      {
+       "jobId": 2974,
+       "jobNumber": "P2039LH2",
+       "status": 0
+      },
+      {
+       "jobId": 2975,
+       "jobNumber": "P2039LH3",
+       "status": 0
+      },
+      {
+       "jobId": 2976,
+       "jobNumber": "P2039LH4",
+       "status": 0
+      },
+      {
+       "jobId": 2978,
+       "jobNumber": "P2039DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 2948,
+     "parentJobNumber": "P1897",
+     "serviceDate": "2026-08-18T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 2943,
+       "jobNumber": "P1897LHP",
+       "status": 0
+      },
+      {
+       "jobId": 2944,
+       "jobNumber": "P1897LH1",
+       "status": 0
+      },
+      {
+       "jobId": 2945,
+       "jobNumber": "P1897LH2",
+       "status": 0
+      },
+      {
+       "jobId": 2946,
+       "jobNumber": "P1897LH3",
+       "status": 0
+      },
+      {
+       "jobId": 2947,
+       "jobNumber": "P1897LH4",
+       "status": 0
+      },
+      {
+       "jobId": 2949,
+       "jobNumber": "P1897DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 2930,
+     "parentJobNumber": "P1784",
+     "serviceDate": "2026-08-17T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 2925,
+       "jobNumber": "P1784LHP",
+       "status": 0
+      },
+      {
+       "jobId": 2926,
+       "jobNumber": "P1784LH1",
+       "status": 0
+      },
+      {
+       "jobId": 2927,
+       "jobNumber": "P1784LH2",
+       "status": 0
+      },
+      {
+       "jobId": 2928,
+       "jobNumber": "P1784LH3",
+       "status": 0
+      },
+      {
+       "jobId": 2929,
+       "jobNumber": "P1784LH4",
+       "status": 0
+      },
+      {
+       "jobId": 2931,
+       "jobNumber": "P1784DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 2902,
+     "parentJobNumber": "P1669",
+     "serviceDate": "2026-08-14T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 2897,
+       "jobNumber": "P1669LHP",
+       "status": 0
+      },
+      {
+       "jobId": 2898,
+       "jobNumber": "P1669LH1",
+       "status": 0
+      },
+      {
+       "jobId": 2899,
+       "jobNumber": "P1669LH2",
+       "status": 0
+      },
+      {
+       "jobId": 2900,
+       "jobNumber": "P1669LH3",
+       "status": 0
+      },
+      {
+       "jobId": 2901,
+       "jobNumber": "P1669LH4",
+       "status": 0
+      },
+      {
+       "jobId": 2903,
+       "jobNumber": "P1669DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 2874,
+     "parentJobNumber": "P1569",
+     "serviceDate": "2026-08-13T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 2869,
+       "jobNumber": "P1569LHP",
+       "status": 0
+      },
+      {
+       "jobId": 2870,
+       "jobNumber": "P1569LH1",
+       "status": 0
+      },
+      {
+       "jobId": 2871,
+       "jobNumber": "P1569LH2",
+       "status": 0
+      },
+      {
+       "jobId": 2872,
+       "jobNumber": "P1569LH3",
+       "status": 0
+      },
+      {
+       "jobId": 2873,
+       "jobNumber": "P1569LH4",
+       "status": 0
+      },
+      {
+       "jobId": 2875,
+       "jobNumber": "P1569DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 2850,
+     "parentJobNumber": "P1533",
+     "serviceDate": "2026-08-12T23:30:00-07:00",
+     "status": 1,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 2845,
+       "jobNumber": "P1533LHP",
+       "status": 2
+      },
+      {
+       "jobId": 2846,
+       "jobNumber": "P1533LH1",
+       "status": 0
+      },
+      {
+       "jobId": 2847,
+       "jobNumber": "P1533LH2",
+       "status": 0
+      },
+      {
+       "jobId": 2848,
+       "jobNumber": "P1533LH3",
+       "status": 0
+      },
+      {
+       "jobId": 2849,
+       "jobNumber": "P1533LH4",
+       "status": 0
+      },
+      {
+       "jobId": 2851,
+       "jobNumber": "P1533DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 502,
+     "parentJobNumber": "P1523",
+     "serviceDate": "2026-08-11T23:30:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 497,
+       "jobNumber": "P1523LHP",
+       "status": 0
+      },
+      {
+       "jobId": 498,
+       "jobNumber": "P1523LH1",
+       "status": 0
+      },
+      {
+       "jobId": 499,
+       "jobNumber": "P1523LH2",
+       "status": 0
+      },
+      {
+       "jobId": 500,
+       "jobNumber": "P1523LH3",
+       "status": 0
+      },
+      {
+       "jobId": 501,
+       "jobNumber": "P1523LH4",
+       "status": 0
+      },
+      {
+       "jobId": 503,
+       "jobNumber": "P1523DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 484,
+     "parentJobNumber": "E453CRT",
+     "serviceDate": "2026-08-10T23:30:00-07:00",
+     "status": 0,
+     "miles": 498,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 479,
+       "jobNumber": "E453CRTLHP",
+       "status": 0
+      },
+      {
+       "jobId": 480,
+       "jobNumber": "E453CRTLH1",
+       "status": 0
+      },
+      {
+       "jobId": 481,
+       "jobNumber": "E453CRTLH2",
+       "status": 0
+      },
+      {
+       "jobId": 482,
+       "jobNumber": "E453CRTLH3",
+       "status": 0
+      },
+      {
+       "jobId": 483,
+       "jobNumber": "E453CRTLH4",
+       "status": 0
+      },
+      {
+       "jobId": 485,
+       "jobNumber": "E453CRTDEL",
+       "status": 0
+      }
+     ]
+    }
+   ]
+  },
+  "1215": {
+   "breakdown": {
+    "total": 6,
+    "completed": 0,
+    "voided": 0,
+    "pending": 6
+   },
+   "runs": [
+    {
+     "parentJobId": 3148,
+     "parentJobNumber": "P2833",
+     "serviceDate": "2026-09-03T02:00:00-07:00",
+     "status": 0,
+     "miles": null,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 3145,
+       "jobNumber": "P2833LHP",
+       "status": 0
+      },
+      {
+       "jobId": 3146,
+       "jobNumber": "P2833LH1",
+       "status": 0
+      },
+      {
+       "jobId": 3147,
+       "jobNumber": "P2833LH2",
+       "status": 0
+      },
+      {
+       "jobId": 3149,
+       "jobNumber": "P2833DEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 557,
+     "parentJobNumber": "E464CRT",
+     "serviceDate": "2026-08-19T02:00:00-07:00",
+     "status": 0,
+     "miles": 422,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 554,
+       "jobNumber": "E464CRTLHP",
+       "status": 0
+      },
+      {
+       "jobId": 555,
+       "jobNumber": "E464CRTLH1",
+       "status": 0
+      },
+      {
+       "jobId": 556,
+       "jobNumber": "E464CRTLH2",
+       "status": 0
+      },
+      {
+       "jobId": 558,
+       "jobNumber": "E464CRTDEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 552,
+     "parentJobNumber": "E463CRT",
+     "serviceDate": "2026-08-18T02:00:00-07:00",
+     "status": 0,
+     "miles": 422,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 549,
+       "jobNumber": "E463CRTLHP",
+       "status": 0
+      },
+      {
+       "jobId": 550,
+       "jobNumber": "E463CRTLH1",
+       "status": 0
+      },
+      {
+       "jobId": 551,
+       "jobNumber": "E463CRTLH2",
+       "status": 0
+      },
+      {
+       "jobId": 553,
+       "jobNumber": "E463CRTDEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 547,
+     "parentJobNumber": "E462CRT",
+     "serviceDate": "2026-08-14T02:00:00-07:00",
+     "status": 0,
+     "miles": 422,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 544,
+       "jobNumber": "E462CRTLHP",
+       "status": 0
+      },
+      {
+       "jobId": 545,
+       "jobNumber": "E462CRTLH1",
+       "status": 0
+      },
+      {
+       "jobId": 546,
+       "jobNumber": "E462CRTLH2",
+       "status": 0
+      },
+      {
+       "jobId": 548,
+       "jobNumber": "E462CRTDEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 542,
+     "parentJobNumber": "E461CRT",
+     "serviceDate": "2026-08-13T02:00:00-07:00",
+     "status": 0,
+     "miles": 422,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 539,
+       "jobNumber": "E461CRTLHP",
+       "status": 0
+      },
+      {
+       "jobId": 540,
+       "jobNumber": "E461CRTLH1",
+       "status": 0
+      },
+      {
+       "jobId": 541,
+       "jobNumber": "E461CRTLH2",
+       "status": 0
+      },
+      {
+       "jobId": 543,
+       "jobNumber": "E461CRTDEL",
+       "status": 0
+      }
+     ]
+    },
+    {
+     "parentJobId": 537,
+     "parentJobNumber": "E460CRT",
+     "serviceDate": "2026-08-12T02:00:00-07:00",
+     "status": 0,
+     "miles": 422,
+     "pod": null,
+     "children": [
+      {
+       "jobId": 534,
+       "jobNumber": "E460CRTLHP",
+       "status": 0
+      },
+      {
+       "jobId": 535,
+       "jobNumber": "E460CRTLH1",
+       "status": 0
+      },
+      {
+       "jobId": 536,
+       "jobNumber": "E460CRTLH2",
+       "status": 0
+      },
+      {
+       "jobId": 538,
+       "jobNumber": "E460CRTDEL",
+       "status": 0
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "details": {
+  "1061": {
+   "job": {
+    "inActiveBy": null,
+    "inActiveDate": "2026-07-31T18:24:10.157",
+    "firstDue": "2026-07-06T00:00:00",
+    "nextDue": "2026-08-28T00:00:00",
+    "lastDone": "2026-07-30T22:00:37.027",
+    "stopDate": null,
+    "restartDate": null,
+    "active": false,
+    "daysOfWeek": 31,
+    "frequency": 1,
+    "holidayDeliveryOption": 2,
+    "routeId": 5,
+    "recurringInitialDays": null,
+    "van": false,
+    "vanOk": null,
+    "truck": null,
+    "reprice": null,
+    "attention": false,
+    "speedName": "Commingle Route",
+    "runName": null,
+    "barcode": "sample",
+    "isInvoiced": false,
+    "notifiedName": null,
+    "acceptedName": null,
+    "loggedInContactName": "George Hampton",
+    "deliverToContact": "Booking NEOGE",
+    "dispatcherName": null,
+    "trackingMethod": 0,
+    "trackingMobile": null,
+    "trackingEmail": "sample",
+    "udStatus": null,
+    "podPhoto": null,
+    "podName": null,
+    "toContactPhone": "sample",
+    "acceptedJobTypeId": null,
+    "notifiedJobTypeId": null,
+    "items": 0,
+    "refB": null,
+    "ourRef": null,
+    "sigNotRequired": null,
+    "charge": 41.943,
+    "date": "07/06/2026",
+    "dispatchTime": null,
+    "puTime": null,
+    "followupTime": null,
+    "palletInfo": null,
+    "dgDocumentation": null,
+    "privateRes": false,
+    "fromContactName": "Reception",
+    "fromContactNumber": null,
+    "fromContactNumberSource": null,
+    "bookingContactEmail": null,
+    "scheduleName": "Reno to Aliso Viejo (Schedule) pickup",
+    "createdDate": "2026-07-06T00:00:00",
+    "parcelDimensions": [],
+    "deliverToLeaveId": null,
+    "deliverByTime": null,
+    "notes": null,
+    "distance": 503,
+    "readTrackerInfo": null,
+    "pickUpWindowMins": null,
+    "deliverByWindowMins": null,
+    "hasDgDocsString": "No",
+    "calculateDimsOncePerJob": false,
+    "tailLiftPu": false,
+    "tailLiftDo": false,
+    "deliverToPrivateRes": false,
+    "bookingSource": {
+     "id": 12,
+     "text": "Prebook Monitor Job"
+    },
+    "pickupArrivalTime": null,
+    "deliveryArrivalTime": null,
+    "isFlightAssigned": false,
+    "angularId": "ad435227-72c7-437a-b94c-363b35268560",
+    "id": 1061,
+    "jobNo": null,
+    "isFlightJob": false,
+    "isAgentJob": true,
+    "isArchived": false,
+    "isBulkJob": false,
+    "hasBeenRead": false,
+    "isParentOrSingle": false,
+    "parentId": 262575,
+    "linkedJobId": null,
+    "internalStatusId": null,
+    "speedId": 421,
+    "statusId": null,
+    "statusName": null,
+    "status": null,
+    "void": null,
+    "completedTime": null,
+    "released": null,
+    "resolvedStatusId": 0,
+    "resolvedIsVoid": false,
+    "resolvedIsComplete": false,
+    "time": "2026-07-06T16:00:00",
+    "booked": "2026-07-06T16:00:00",
+    "remain": null,
+    "courier": null,
+    "assignedCourier": null,
+    "courierData": null,
+    "from": null,
+    "toAddress": "Neogenomics, 31 Columbia",
+    "toSuburbId": 0,
+    "pickupAddress": {
+     "addressLine1": "Sample Pickup",
+     "addressLine2": null,
+     "addressLine3": null,
+     "addressLine4": "1 Sample St",
+     "addressLine5": "Reno",
+     "addressLine6": "Nevada",
+     "addressLine7": "89503",
+     "addressLine8": "United States",
+     "latitude": 0,
+     "longitude": 0,
+     "fullAddress": "1 Sample St"
+    },
+    "deliveryAddress": {
+     "addressLine1": "Sample Pickup",
+     "addressLine2": null,
+     "addressLine3": null,
+     "addressLine4": "1 Sample St",
+     "addressLine5": "Aliso Viejo",
+     "addressLine6": "California",
+     "addressLine7": "92656",
+     "addressLine8": "United States",
+     "latitude": 0,
+     "longitude": 0,
+     "fullAddress": "1 Sample St"
+    },
+    "pickUpLongitude": -119.8198188,
+    "pickUpLatitude": 39.5315764,
+    "deliveryLongitude": -117.7268957,
+    "deliveryLatitude": 33.5873885,
+    "pickupContact": null,
+    "deliveryContact": null,
+    "direct": false,
+    "speed": "Commingle Route",
+    "notify": null,
+    "vehicle": null,
+    "client": "NEOGE",
+    "clientId": 85,
+    "clientName": "Neogenomics",
+    "refA": null,
+    "jobType": 2,
+    "jobTypeDescription": "Delivery",
+    "pickupTime": null,
+    "alertLatePickup": null,
+    "deliveryTime": null,
+    "alertLateDelivery": null,
+    "lp": null,
+    "ld": null,
+    "locked": null,
+    "isPartnerJob": false,
+    "done": false,
+    "preBook": true,
+    "size": {
+     "id": 29,
+     "text": "Car"
+    },
+    "return": false,
+    "dgClass": null,
+    "saturdayDelivery": false,
+    "pickupFrom": 0,
+    "rootParentId": 262575,
+    "toAirportId": null,
+    "fromAirportId": null,
+    "savedFlightNumber": null,
+    "assignedFlight": null,
+    "assignedAgent": null,
+    "isAgentAssigned": false,
+    "sentToPartnerName": null,
+    "partnerTenantName": null,
+    "partnerPairingId": null,
+    "relatedJobs": null,
+    "children": null,
+    "conNote": null,
+    "jobTypeMins": null,
+    "pickUpTimeZone": {
+     "id": 4,
+     "text": "America/Los_Angeles"
+    },
+    "deliveryTimeZone": {
+     "id": 4,
+     "text": "America/Los_Angeles"
+    },
+    "allowSplit": false,
+    "customJobName": "George Western",
+    "accessorialChargeGroupId": null,
+    "amount": null,
+    "weight": 5,
+    "quantity": null
+   },
+   "relatedJobs": []
+  },
+  "1198": {
+   "job": {
+    "inActiveBy": null,
+    "inActiveDate": null,
+    "firstDue": "2026-08-10T00:00:00",
+    "nextDue": "2026-08-28T00:00:00",
+    "lastDone": "2026-08-27T19:01:28.99",
+    "stopDate": null,
+    "restartDate": null,
+    "active": true,
+    "daysOfWeek": 31,
+    "frequency": 1,
+    "holidayDeliveryOption": 2,
+    "routeId": 5,
+    "recurringInitialDays": null,
+    "van": false,
+    "vanOk": null,
+    "truck": null,
+    "reprice": null,
+    "attention": false,
+    "speedName": "Commingle Route",
+    "runName": null,
+    "barcode": "sample",
+    "isInvoiced": false,
+    "notifiedName": null,
+    "acceptedName": null,
+    "loggedInContactName": "George Hampton",
+    "deliverToContact": "Booking NEOGE",
+    "dispatcherName": null,
+    "trackingMethod": 0,
+    "trackingMobile": null,
+    "trackingEmail": "sample",
+    "udStatus": null,
+    "podPhoto": null,
+    "podName": null,
+    "toContactPhone": "sample",
+    "acceptedJobTypeId": null,
+    "notifiedJobTypeId": null,
+    "items": 0,
+    "refB": null,
+    "ourRef": null,
+    "sigNotRequired": null,
+    "charge": 41.943,
+    "date": "08/10/2026",
+    "dispatchTime": null,
+    "puTime": null,
+    "followupTime": null,
+    "palletInfo": null,
+    "dgDocumentation": null,
+    "privateRes": false,
+    "fromContactName": "Pathology",
+    "fromContactNumber": null,
+    "fromContactNumberSource": null,
+    "bookingContactEmail": null,
+    "scheduleName": "Reno to Aliso Viejo (Schedule) pickup",
+    "createdDate": "2026-08-10T00:00:00",
+    "parcelDimensions": [],
+    "deliverToLeaveId": null,
+    "deliverByTime": null,
+    "notes": null,
+    "distance": 498,
+    "readTrackerInfo": null,
+    "pickUpWindowMins": null,
+    "deliverByWindowMins": null,
+    "hasDgDocsString": "No",
+    "calculateDimsOncePerJob": false,
+    "tailLiftPu": false,
+    "tailLiftDo": false,
+    "deliverToPrivateRes": false,
+    "bookingSource": {
+     "id": 12,
+     "text": "Prebook Monitor Job"
+    },
+    "pickupArrivalTime": null,
+    "deliveryArrivalTime": null,
+    "isFlightAssigned": false,
+    "angularId": "0ff67f05-2315-4d4a-8f73-66c77285140e",
+    "id": 1198,
+    "jobNo": "P2821CRT1",
+    "isFlightJob": false,
+    "isAgentJob": true,
+    "isArchived": false,
+    "isBulkJob": false,
+    "hasBeenRead": false,
+    "isParentOrSingle": false,
+    "parentId": 3126,
+    "linkedJobId": null,
+    "internalStatusId": null,
+    "speedId": 421,
+    "statusId": null,
+    "statusName": null,
+    "status": null,
+    "void": null,
+    "completedTime": null,
+    "released": null,
+    "resolvedStatusId": 6,
+    "resolvedIsVoid": false,
+    "resolvedIsComplete": true,
+    "time": "2026-08-10T23:30:00",
+    "booked": "2026-08-10T23:30:00",
+    "remain": null,
+    "courier": null,
+    "assignedCourier": null,
+    "courierData": null,
+    "from": null,
+    "toAddress": "Neogenomics, 31 Columbia",
+    "toSuburbId": 0,
+    "pickupAddress": {
+     "addressLine1": "Sample Pickup",
+     "addressLine2": null,
+     "addressLine3": null,
+     "addressLine4": "1 Sample St",
+     "addressLine5": "Reno",
+     "addressLine6": "Nevada",
+     "addressLine7": "89511",
+     "addressLine8": "United States",
+     "latitude": 0,
+     "longitude": 0,
+     "fullAddress": "1 Sample St"
+    },
+    "deliveryAddress": {
+     "addressLine1": "Sample Pickup",
+     "addressLine2": null,
+     "addressLine3": null,
+     "addressLine4": "1 Sample St",
+     "addressLine5": "Aliso Viejo",
+     "addressLine6": "California",
+     "addressLine7": "92656",
+     "addressLine8": "United States",
+     "latitude": 0,
+     "longitude": 0,
+     "fullAddress": "1 Sample St"
+    },
+    "pickUpLongitude": -119.7648164,
+    "pickUpLatitude": 39.4688761,
+    "deliveryLongitude": -117.7268957,
+    "deliveryLatitude": 33.5873885,
+    "pickupContact": null,
+    "deliveryContact": null,
+    "direct": false,
+    "speed": "Commingle Route",
+    "notify": null,
+    "vehicle": null,
+    "client": "NEOGE",
+    "clientId": 85,
+    "clientName": "Neogenomics",
+    "refA": null,
+    "jobType": 2,
+    "jobTypeDescription": "Delivery",
+    "pickupTime": null,
+    "alertLatePickup": null,
+    "deliveryTime": null,
+    "alertLateDelivery": null,
+    "lp": null,
+    "ld": null,
+    "locked": null,
+    "isPartnerJob": false,
+    "done": true,
+    "preBook": true,
+    "size": {
+     "id": 29,
+     "text": "Car"
+    },
+    "return": false,
+    "dgClass": null,
+    "saturdayDelivery": false,
+    "pickupFrom": 0,
+    "rootParentId": 3126,
+    "toAirportId": null,
+    "fromAirportId": null,
+    "savedFlightNumber": null,
+    "assignedFlight": null,
+    "assignedAgent": null,
+    "isAgentAssigned": false,
+    "sentToPartnerName": null,
+    "partnerTenantName": null,
+    "partnerPairingId": null,
+    "relatedJobs": null,
+    "children": null,
+    "conNote": null,
+    "jobTypeMins": null,
+    "pickUpTimeZone": {
+     "id": 4,
+     "text": "America/Los_Angeles"
+    },
+    "deliveryTimeZone": {
+     "id": 4,
+     "text": "America/Los_Angeles"
+    },
+    "allowSplit": false,
+    "customJobName": "George Test Aug11",
+    "accessorialChargeGroupId": null,
+    "amount": null,
+    "weight": 5,
+    "quantity": null
+   },
+   "relatedJobs": []
+  },
+  "1215": {
+   "job": {
+    "inActiveBy": null,
+    "inActiveDate": null,
+    "firstDue": "2026-08-20T00:00:00",
+    "nextDue": "2026-08-28T00:00:00",
+    "lastDone": "2026-08-27T19:02:23.37",
+    "stopDate": null,
+    "restartDate": null,
+    "active": true,
+    "daysOfWeek": 31,
+    "frequency": 1,
+    "holidayDeliveryOption": 0,
+    "routeId": 6,
+    "recurringInitialDays": 7,
+    "van": false,
+    "vanOk": null,
+    "truck": null,
+    "reprice": null,
+    "attention": false,
+    "speedName": "Commingle Route",
+    "runName": null,
+    "barcode": "sample",
+    "isInvoiced": false,
+    "notifiedName": null,
+    "acceptedName": null,
+    "loggedInContactName": "Booking NEOGE",
+    "deliverToContact": ".",
+    "dispatcherName": null,
+    "trackingMethod": null,
+    "trackingMobile": null,
+    "trackingEmail": "sample",
+    "udStatus": null,
+    "podPhoto": null,
+    "podName": null,
+    "toContactPhone": "sample",
+    "acceptedJobTypeId": null,
+    "notifiedJobTypeId": null,
+    "items": 0,
+    "refB": null,
+    "ourRef": null,
+    "sigNotRequired": null,
+    "charge": 16.9531,
+    "date": "09/03/2026",
+    "dispatchTime": null,
+    "puTime": null,
+    "followupTime": null,
+    "palletInfo": null,
+    "dgDocumentation": null,
+    "privateRes": false,
+    "fromContactName": ".",
+    "fromContactNumber": null,
+    "fromContactNumberSource": null,
+    "bookingContactEmail": null,
+    "scheduleName": "Hayward to Aliso Viejo (Schedule)",
+    "createdDate": "2026-09-03T00:00:00",
+    "parcelDimensions": [],
+    "deliverToLeaveId": null,
+    "deliverByTime": null,
+    "notes": null,
+    "distance": 422,
+    "readTrackerInfo": null,
+    "pickUpWindowMins": null,
+    "deliverByWindowMins": null,
+    "hasDgDocsString": "No",
+    "calculateDimsOncePerJob": false,
+    "tailLiftPu": false,
+    "tailLiftDo": false,
+    "deliverToPrivateRes": false,
+    "bookingSource": {
+     "id": 12,
+     "text": "Prebook Monitor Job"
+    },
+    "pickupArrivalTime": null,
+    "deliveryArrivalTime": null,
+    "isFlightAssigned": false,
+    "angularId": "958618bc-c592-469c-91fc-53ea9495f03d",
+    "id": 1215,
+    "jobNo": "P2757CRT",
+    "isFlightJob": false,
+    "isAgentJob": true,
+    "isArchived": false,
+    "isBulkJob": false,
+    "hasBeenRead": false,
+    "isParentOrSingle": false,
+    "parentId": 3148,
+    "linkedJobId": null,
+    "internalStatusId": null,
+    "speedId": 421,
+    "statusId": null,
+    "statusName": null,
+    "status": null,
+    "void": null,
+    "completedTime": null,
+    "released": null,
+    "resolvedStatusId": 6,
+    "resolvedIsVoid": false,
+    "resolvedIsComplete": true,
+    "time": "2026-08-12T02:00:00",
+    "booked": "2026-09-03T02:00:00",
+    "remain": null,
+    "courier": null,
+    "assignedCourier": null,
+    "courierData": null,
+    "from": null,
+    "toAddress": "Neogenomics, 31 Columbia",
+    "toSuburbId": 0,
+    "pickupAddress": {
+     "addressLine1": "Sample Pickup",
+     "addressLine2": null,
+     "addressLine3": null,
+     "addressLine4": "1 Sample St",
+     "addressLine5": "Oakland",
+     "addressLine6": "California",
+     "addressLine7": "94611",
+     "addressLine8": "United States",
+     "latitude": 0,
+     "longitude": 0,
+     "fullAddress": "1 Sample St"
+    },
+    "deliveryAddress": {
+     "addressLine1": "Sample Pickup",
+     "addressLine2": null,
+     "addressLine3": null,
+     "addressLine4": "1 Sample St",
+     "addressLine5": "Aliso Viejo",
+     "addressLine6": "California",
+     "addressLine7": "92656",
+     "addressLine8": "United States",
+     "latitude": 0,
+     "longitude": 0,
+     "fullAddress": "1 Sample St"
+    },
+    "pickUpLongitude": -122.2580217,
+    "pickUpLatitude": 37.8238491,
+    "deliveryLongitude": -117.7268957,
+    "deliveryLatitude": 33.5873885,
+    "pickupContact": null,
+    "deliveryContact": null,
+    "direct": false,
+    "speed": "Commingle Route",
+    "notify": null,
+    "vehicle": null,
+    "client": "NEOGE",
+    "clientId": 85,
+    "clientName": "Neogenomics",
+    "refA": "sample",
+    "jobType": 2,
+    "jobTypeDescription": "Delivery",
+    "pickupTime": null,
+    "alertLatePickup": null,
+    "deliveryTime": null,
+    "alertLateDelivery": null,
+    "lp": null,
+    "ld": null,
+    "locked": null,
+    "isPartnerJob": false,
+    "done": true,
+    "preBook": true,
+    "size": {
+     "id": 2,
+     "text": "Truck"
+    },
+    "return": false,
+    "dgClass": null,
+    "saturdayDelivery": false,
+    "pickupFrom": 0,
+    "rootParentId": 3148,
+    "toAirportId": null,
+    "fromAirportId": null,
+    "savedFlightNumber": null,
+    "assignedFlight": null,
+    "assignedAgent": null,
+    "isAgentAssigned": false,
+    "sentToPartnerName": null,
+    "partnerTenantName": null,
+    "partnerPairingId": null,
+    "relatedJobs": null,
+    "children": null,
+    "conNote": null,
+    "jobTypeMins": null,
+    "pickUpTimeZone": {
+     "id": 4,
+     "text": "America/Los_Angeles"
+    },
+    "deliveryTimeZone": {
+     "id": 4,
+     "text": "America/Los_Angeles"
+    },
+    "allowSplit": false,
+    "customJobName": "SFO1",
+    "accessorialChargeGroupId": null,
+    "amount": null,
+    "weight": 2,
+    "quantity": null
+   },
+   "relatedJobs": []
+  }
+ }
+}

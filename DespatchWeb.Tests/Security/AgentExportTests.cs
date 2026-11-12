@@ -89,6 +89,7 @@ public class AgentExportTests : IAsyncDisposable
         builder.Services.AddAuthorization();
         _app = builder.Build();
         _app.UseAuthentication();
+        _app.UseAgentRouteAllowList();
         _app.UseAuthorization();
         _app.MapControllers();
         await _app.StartAsync();

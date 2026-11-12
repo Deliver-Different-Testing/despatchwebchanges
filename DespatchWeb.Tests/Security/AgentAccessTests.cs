@@ -35,7 +35,11 @@ public class AgentAccessTests : IAsyncDisposable
 
     private readonly RsaSecurityKey _hubKey = new(RSA.Create(2048)) { KeyId = "k" };
     private readonly IConnectionStringManager _connections = Substitute.For<IConnectionStringManager>();
+    private readonly IAgentCapabilitySource _capabilities = Substitute.For<IAgentCapabilitySource>();
     private WebApplication? _app;
+
+    public AgentAccessTests() =>
+        _capabilities.GetAsync(default!, default).ReturnsForAnyArgs(new HashSet<string> { AgentCapabilities.Connect });
 
     private static IConfiguration Config(params (string Key, string? Value)[] values) =>
         new ConfigurationBuilder().AddInMemoryCollection(values.ToDictionary(v => v.Key, v => v.Value)).Build();
@@ -110,6 +114,7 @@ public class AgentAccessTests : IAsyncDisposable
             AppName = "DespatchWeb", HubAuthority = Hub, HubApiKey = "key", SqlCredentials = "User ID=dw;"
         });
         builder.Services.AddSingleton(Substitute.For<IAgentClaimsEnricher>());
+        builder.Services.AddSingleton(_capabilities);
         builder.Services.PostConfigure<JwtBearerOptions>(AgentTokenAuthentication.Scheme, o =>
         {
             var config = new OpenIdConnectConfiguration { Issuer = Hub + "/" };
@@ -120,9 +125,13 @@ public class AgentAccessTests : IAsyncDisposable
         builder.Services.AddAuthorization();
         _app = builder.Build();
         _app.UseMiddleware<CsrfProtectionMiddleware>();
+        _app.UseRouting();
         _app.UseAuthentication();
+        _app.UseAgentRouteAllowList();
         _app.UseAuthorization();
         _app.Map("/{**rest}", (HttpContext c) => Results.Text(c.User.FindFirst("StaffID")?.Value ?? "none")).RequireAuthorization();
+        _app.MapGet("/api/context", (HttpContext c) => Results.Text(c.User.FindFirst("StaffID")?.Value ?? "none"))
+            .RequireAuthorization().WithMetadata(new AgentAccessibleAttribute(AgentCapabilities.Connect));
         await _app.StartAsync();
         return _app.GetTestClient();
     }
@@ -154,13 +163,34 @@ public class AgentAccessTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task AnAgentRead_RunsAsTheUser()
+    public async Task AnAgentRead_OfAnOptedInRoute_RunsAsTheUser()
     {
         _connections.GetConnectionStringAsync(TenantConnectionCache.Key("7")).Returns("Server=db;");
-        var response = await Send(await Server(Cache(grantLive: true)), "GET", "/Job/Index", Token());
+        var response = await Send(await Server(Cache(grantLive: true)), "GET", "/api/context", Token());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("42", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task AnAgentRead_OfARouteThatIsNotOptedIn_IsForbidden()
+    {
+        _connections.GetConnectionStringAsync(TenantConnectionCache.Key("7")).Returns("Server=db;");
+        var response = await Send(await Server(Cache(grantLive: true)), "GET", "/job/Index", Token());
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Contains("agent_route_not_allowed", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task AnAgentRead_OfAnOptedInRoute_NeedsItsCapability()
+    {
+        _capabilities.GetAsync(default!, default).ReturnsForAnyArgs(new HashSet<string>());
+        _connections.GetConnectionStringAsync(TenantConnectionCache.Key("7")).Returns("Server=db;");
+        var response = await Send(await Server(Cache(grantLive: true)), "GET", "/api/context", Token());
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Contains("agent_capability_missing", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
