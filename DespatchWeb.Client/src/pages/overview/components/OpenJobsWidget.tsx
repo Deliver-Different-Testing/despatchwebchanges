@@ -6,6 +6,7 @@ import {OpenJobsList} from '../../../components/common/open-jobs-list';
 import {PanelHeader} from '../../../components/common/panel-header';
 import {SymbolIcon} from '../../../components/common/symbol-icon';
 import type {IOpenJobResponse, TableSort} from '../OverviewPage.interfaces';
+import {loadCollapseState, saveCollapseState} from '../../../utils/cardCollapseState';
 import {getContactId} from '../../../api/session';
 
 const OPEN_JOBS_VIEW_MODE_KEY = () => `openJobsViewMode_${getContactId()}`;
@@ -14,26 +15,6 @@ const OPEN_JOBS_LIMIT_KEY = () => `openJobsTableViewLimit${getContactId()}`;
 interface OpenJobsWidgetProps {
     openJobs: IOpenJobResponse[];
     isLoading: boolean;
-}
-
-function loadCollapseState(cardName: string): boolean {
-    try {
-        const saved = localStorage.getItem('cardCollapseStates');
-        if (saved) {
-            const states = JSON.parse(saved);
-            return states[cardName] || false;
-        }
-    } catch { /* localStorage may be unavailable */ }
-    return false;
-}
-
-function saveCollapseState(cardName: string, isCollapsed: boolean): void {
-    try {
-        const saved = localStorage.getItem('cardCollapseStates');
-        const states = saved ? JSON.parse(saved) : {};
-        states[cardName] = isCollapsed;
-        localStorage.setItem('cardCollapseStates', JSON.stringify(states));
-    } catch { /* localStorage may be unavailable */ }
 }
 
 /**

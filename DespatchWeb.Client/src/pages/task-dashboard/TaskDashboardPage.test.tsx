@@ -37,19 +37,7 @@ vi.mock('../../components/common/job-details/JobDetails', () => ({
 }));
 
 // Mock the tasksApi
-vi.mock('../../api/tasksApi', () => ({
-    tasksApi: {
-        getAllTasks: vi.fn(),
-        getActiveStaff: vi.fn(),
-        getEventTypes: vi.fn(),
-        getDeliveryJourney: vi.fn(),
-        markTaskAsClosed: vi.fn(),
-        updateTaskDate: vi.fn(),
-        updateTaskTime: vi.fn(),
-        reassignTaskToStaff: vi.fn(),
-        unassignTask: vi.fn(),
-    },
-}));
+vi.mock('../../api/tasksApi', async () => (await import('../../test/mocks/tasksApiMock')).createTasksApiMock());
 
 // Mock the date utilities
 vi.mock('../../utils/dateUtils', async () => ({

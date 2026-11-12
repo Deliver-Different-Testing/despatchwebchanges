@@ -154,35 +154,7 @@ export interface IOpenJobResponse {
     _deliveryTimeStr?: string;
 }
 
-export interface DriverViewModel {
-    name: string;
-    jobs: ViewJob[];
-    completedToday: number;
-    lastCompleted: string;
-    expanded: boolean;
-}
-
-export interface ViewJob {
-    jobId: number;
-    reference: string;
-    status: string;
-    pickup: {
-        time?: string;
-        timeString?: string;
-        name: string;
-        address: string;
-    };
-    delivery: {
-        time?: string;
-        timeString?: string;
-        name: string;
-        address: string;
-    };
-    quantity: number;
-    packageType: string;
-    mileage: number;
-    driverName: string;
-}
+export type {DriverViewModel, ViewJob} from '../../components/common/open-jobs-list/OpenJobsList.types';
 
 // ── Table types ──
 

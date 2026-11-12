@@ -5,7 +5,6 @@ import {renderWithMantine} from '../../test/utils';
 import {QueryClient} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../types';
-import dayjs from 'dayjs';
 
 // Mock JobDetails to avoid AngularJS dependency chain
 vi.mock('../../components/common/job-details/JobDetails', () => ({
@@ -52,6 +51,7 @@ import {useRecurringJobsList, useRouteList, useSpeedList} from '../../hooks/useR
 import {useCourierSearch} from '../../hooks/useCourierApi';
 import {recurringJobsApi} from '../../api/recurringJobsApi';
 import {updateJobDetail} from '../../api/jobListApi';
+import {createMockJob} from './recurringJobs.fixtures';
 
 const mockUseRecurringJobsList = useRecurringJobsList as MockedFunction<typeof useRecurringJobsList>;
 const mockUseSpeedList = useSpeedList as MockedFunction<typeof useSpeedList>;
@@ -74,32 +74,6 @@ const renderWithProviders = (props: RecurringJobsPageProps) => {
     const queryClient = createTestQueryClient();
     return renderWithMantine(<RecurringJobsPage {...props} />, {queryClient});
 };
-
-const createMockAddress = (line1: string, full: string) => ({
-    addressLine1: line1,
-    addressLine2: '',
-    addressLine3: '',
-    addressLine4: '',
-    addressLine5: '',
-    addressLine6: '',
-    addressLine7: '',
-    addressLine8: '',
-    fullAddress: full,
-});
-
-const createMockJob = (id: number, client: string = 'Test Client'): PrebookListModel => ({
-    id,
-    booked: dayjs('2024-01-15T10:30:00'),
-    nextDueTime: dayjs('2024-01-16T09:00:00'),
-    client,
-    jobNo: `JOB${id}`,
-    clientId: 100 + id,
-    courier: 'John Courier',
-    speed: 'Standard',
-    customJobName: `Job name ${id}`,
-    pickupAddress: createMockAddress('123 Pickup St', '123 Pickup St, London'),
-    deliveryAddress: createMockAddress('456 Delivery Ave', '456 Delivery Ave, Manchester'),
-});
 
 const createMockResponse = (jobs: PrebookListModel[], total: number = jobs.length): PaginatedRecurringJobsResponse => ({
     items: jobs,

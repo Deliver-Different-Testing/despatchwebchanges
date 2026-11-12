@@ -65,31 +65,15 @@ describe('usePodPhotos', () => {
         return renderHook(() => usePodPhotos(options), {wrapper});
     }
 
-    it('does not fetch photos when job is undefined', async () => {
-        const {result} = renderUsePodPhotos({job: undefined, isRecurringJob: false});
-
-        await act(async () => {});
-
-        expect(mockGetDeliveryPhotos).not.toHaveBeenCalled();
-        expect(mockGetPickupPhotos).not.toHaveBeenCalled();
-        expect(result.current.deliveryPhotos).toEqual([]);
-        expect(result.current.pickupPhotos).toEqual([]);
-    });
-
-    it('does not fetch photos for recurring jobs', async () => {
-        const job = createMockJob();
-        const {result} = renderUsePodPhotos({job, isRecurringJob: true});
-
-        await act(async () => {});
-
-        expect(mockGetDeliveryPhotos).not.toHaveBeenCalled();
-        expect(mockGetPickupPhotos).not.toHaveBeenCalled();
-        expect(result.current.deliveryPhotos).toEqual([]);
-    });
-
-    it('does not fetch photos for a job that has not been picked up', async () => {
-        const job = createMockJob({statusId: JobStatus.New, completedTime: null});
-        const {result} = renderUsePodPhotos({job, isRecurringJob: false});
+    it.each([
+        ['job is undefined', () => ({job: undefined, isRecurringJob: false})],
+        ['recurring jobs', () => ({job: createMockJob(), isRecurringJob: true})],
+        ['a job that has not been picked up', () => ({
+            job: createMockJob({statusId: JobStatus.New, completedTime: null}),
+            isRecurringJob: false,
+        })],
+    ])('does not fetch photos for %s', async (_name, buildOptions) => {
+        const {result} = renderUsePodPhotos(buildOptions());
 
         await act(async () => {});
 

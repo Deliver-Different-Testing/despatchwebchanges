@@ -116,10 +116,6 @@ vi.mock('../../components/dialogs/dispatch-dialog/executeDispatch', () => ({
     executeDispatchConfirmation: (...args: unknown[]) => executeDispatchConfirmationMock(...args),
 }));
 
-const serverViews = [
-    {id: 11, name: 'Auckland', centerLatitude: -36.85, centerLongitude: 174.76, selected: false},
-    {id: 22, name: 'Airport', centerLatitude: -37.0, centerLongitude: 174.79, selected: false},
-];
 const fetchPageViewsMock = vi.fn().mockResolvedValue(serverViews);
 vi.mock('../../api/dispatchViewsApi', () => ({
     fetchPageViews: (...a: unknown[]) => fetchPageViewsMock(...a),
@@ -135,6 +131,7 @@ import {openFlightConfirmationDialog} from '../../components/dialogs/flight-agen
 import {formatDateForApiWithTzs} from '../../utils/dateUtils';
 import {apiClient} from '../../api/client';
 import {JobProperty} from '../../types/enums/job-property.enum';
+import {serverViews} from '../dispatch/dispatchPageViews.fixtures';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof NationwidePage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -282,6 +279,20 @@ describe('NationwidePage', () => {
     });
 
     describe('agent assignment hand-off', () => {
+        const attemptCourierDispatchOnAgentJob = async () => {
+            const onAddAgent = widgetProps.onAddAgentToJob as (a: unknown) => Promise<void>;
+            await act(async () => {
+                await onAddAgent({agentId: 7, agentName: 'Acme Air'});
+            });
+
+            act(() => {
+                void dispatchDialogProps.onDispatchCourier!({
+                    type: 'Courier',
+                    destination: {id: 3, text: 'Fast Courier'},
+                });
+            });
+        };
+
         it('does not open the dispatch dialog until an agent is picked', () => {
             renderPage();
             expect(screen.queryByTestId('mock-dispatch-dialog')).not.toBeInTheDocument();
@@ -320,17 +331,7 @@ describe('NationwidePage', () => {
             renderPage({isUsCustomer: true, showToast});
             await selectAJob();
 
-            const onAddAgent = widgetProps.onAddAgentToJob as (a: unknown) => Promise<void>;
-            await act(async () => {
-                await onAddAgent({agentId: 7, agentName: 'Acme Air'});
-            });
-
-            act(() => {
-                void dispatchDialogProps.onDispatchCourier!({
-                    type: 'Courier',
-                    destination: {id: 3, text: 'Fast Courier'},
-                });
-            });
+            await attemptCourierDispatchOnAgentJob();
 
             await waitFor(() => expect(showToast).toHaveBeenCalledWith(
                 "Courier dispatch isn't available for US customers.",
@@ -344,17 +345,7 @@ describe('NationwidePage', () => {
             renderPage({isUsCustomer: false, showToast});
             await selectAJob();
 
-            const onAddAgent = widgetProps.onAddAgentToJob as (a: unknown) => Promise<void>;
-            await act(async () => {
-                await onAddAgent({agentId: 7, agentName: 'Acme Air'});
-            });
-
-            act(() => {
-                void dispatchDialogProps.onDispatchCourier!({
-                    type: 'Courier',
-                    destination: {id: 3, text: 'Fast Courier'},
-                });
-            });
+            await attemptCourierDispatchOnAgentJob();
 
             await waitFor(() => expect(executeDispatchConfirmationMock).toHaveBeenCalled());
             expect(executeDispatchConfirmationMock).toHaveBeenCalledWith(

@@ -57,6 +57,11 @@ describe('useJobDetail', () => {
         errorSpy = suppressConsoleError();
     });
 
+    const renderJobDetail = (props: Parameters<typeof useJobDetail>[0]) => {
+        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+        return renderHook(() => useJobDetail(props), {wrapper});
+    };
+
     afterEach(() => {
         errorSpy.mockRestore();
     });
@@ -67,11 +72,7 @@ describe('useJobDetail', () => {
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
         mockIsUsCustomer.mockReturnValue(true);
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false});
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -87,11 +88,7 @@ describe('useJobDetail', () => {
         mockGetRecurringJobDetail.mockResolvedValueOnce(mockDto as any);
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 5, isRecurringJob: true, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 5, isRecurringJob: true, isBulkJob: false});
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -105,11 +102,7 @@ describe('useJobDetail', () => {
         mockGetBulkJobDetail.mockResolvedValueOnce(mockDto as any);
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 10, isRecurringJob: false, isBulkJob: true}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 10, isRecurringJob: false, isBulkJob: true});
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -119,11 +112,7 @@ describe('useJobDetail', () => {
     });
 
     it('does not fetch when jobId <= 0', async () => {
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 0, isRecurringJob: false, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 0, isRecurringJob: false, isBulkJob: false});
 
         // Flush microtasks to ensure no fetch fires
         await act(async () => {});
@@ -134,11 +123,7 @@ describe('useJobDetail', () => {
     });
 
     it('does not fetch when enabled is false', async () => {
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false, enabled: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false, enabled: false});
 
         await act(async () => {});
 
@@ -156,11 +141,7 @@ describe('useJobDetail', () => {
         mockGetJobDetail.mockResolvedValueOnce(mockDto as any);
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false});
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -180,11 +161,7 @@ describe('useJobDetail', () => {
         mockGetJobDetail.mockResolvedValueOnce(mockDto as any);
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 202, isRecurringJob: false, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 202, isRecurringJob: false, isBulkJob: false});
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -215,11 +192,7 @@ describe('useJobDetail', () => {
         mockGetJobDetail.mockResolvedValueOnce(mockDto as any);
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 101, isRecurringJob: false, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 101, isRecurringJob: false, isBulkJob: false});
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -247,11 +220,7 @@ describe('useJobDetail', () => {
         mockGetRecurringJobDetail.mockResolvedValueOnce(mockDto as any);
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 1, isRecurringJob: true, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 1, isRecurringJob: true, isBulkJob: false});
 
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -263,11 +232,7 @@ describe('useJobDetail', () => {
     it('returns error state when API call fails', async () => {
         mockGetJobDetail.mockRejectedValueOnce(new Error('Network error'));
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false});
 
         await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -278,11 +243,7 @@ describe('useJobDetail', () => {
     it('returns loading state initially while fetching', () => {
         mockGetJobDetail.mockReturnValue(new Promise(() => {}));
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false});
 
         expect(result.current.isLoading).toBe(true);
         expect(result.current.isFetching).toBe(true);
@@ -294,11 +255,7 @@ describe('useJobDetail', () => {
         mockGetJobDetail.mockResolvedValueOnce(mockDto as any);
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
 
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(
-            () => useJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false}),
-            {wrapper},
-        );
+        const {result} = renderJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false});
 
         // Initially fetching
         expect(result.current.isFetching).toBe(true);

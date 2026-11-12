@@ -8,7 +8,7 @@ import {SearchSelect} from '../../common/search-select/SearchSelect';
 import type {ShowToastFn} from '../../../services/toastService';
 import type {SwapPodCandidate, SwapPodCandidateQuery, SwapPodResult} from '../../../api/jobApi';
 import {dayjs, getInputDateFormat} from '../../../utils/dateUtils';
-import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
+import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps, ValueChip} from '../shared/mantine';
 
 const ISO_DATE = 'YYYY-MM-DD';
 
@@ -21,23 +21,6 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_COLORS: Record<number, string> = {0: 'gray', 1: 'blue', 2: 'cyan', 6: 'green'};
-
-/** The two job numbers being swapped, shown side by side in the confirm step. */
-const JobChip: React.FC<{label: string; value: string}> = ({label, value}) => (
-    <Box
-        p="sm"
-        ta="center"
-        style={{
-            flex: 1,
-            borderRadius: 'var(--mantine-radius-sm)',
-            backgroundColor: 'var(--mantine-color-brand-light)',
-            border: '1px solid var(--mantine-color-brand-3)',
-        }}
-    >
-        <Text fz="xs" c="dimmed">{label}</Text>
-        <Text fz="lg" fw={700} c="var(--mantine-color-brand-light-color)">{value}</Text>
-    </Box>
-);
 
 const CandidateOption: React.FC<{candidate: SwapPodCandidate}> = ({candidate}) => (
     <Stack gap={2}>
@@ -247,9 +230,9 @@ export function SwapPodsDialog({
                             <Text fz="sm" fw={600}>Ready to swap</Text>
                         </Group>
                         <Group gap="md" align="center" wrap="nowrap">
-                            <JobChip label="Job 1" value={jobNo}/>
+                            <ValueChip label="Job 1" value={jobNo}/>
                             <Icon lucide={ArrowLeftRight} size={28} color="var(--mantine-color-dimmed)"/>
-                            <JobChip label="Job 2" value={secondJobNo}/>
+                            <ValueChip label="Job 2" value={secondJobNo}/>
                         </Group>
                         <Text fz="sm" mt="md">{outcome}</Text>
                     </Paper>

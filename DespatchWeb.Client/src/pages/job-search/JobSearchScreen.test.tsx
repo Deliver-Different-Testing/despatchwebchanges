@@ -99,14 +99,14 @@ describe('JobSearchScreen', () => {
         expect(mockBridge.setColumnEditMode).toHaveBeenLastCalledWith(true);
 
         const exit = pageProps.mock.calls.at(-1)![0].onExitColumnEditMode;
-        act(() => exit());
+        await act(() => exit());
         expect(mockBridge.setColumnEditMode).toHaveBeenLastCalledWith(false);
 
         layouts.onResetLayout!();
         expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('"Mine"'));
         expect(mockBridge.resetCurrentLayout).toHaveBeenCalled();
 
-        await captured.actionsMenu!.onInterCourierCharge({} as React.MouseEvent);
+        captured.actionsMenu!.onInterCourierCharge({} as React.MouseEvent);
         expect(mockBridge.openInterCourierCharge).toHaveBeenCalled();
 
         layouts.onCustomizePanels!();

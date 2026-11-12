@@ -4,7 +4,7 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import dayjs from 'dayjs';
 import {MantineTestProvider} from '../../../test/utils';
 import {OpenJobsBox} from './OpenJobsBox';
-import {MAX_OVERVIEW_PANEL_DAYS} from '../lib/overviewPanelRange';
+import {itThreadsOverviewPanelRange} from './overviewPanelRangeContract.testHelpers';
 
 vi.mock('../../../hooks/useOverviewApi', () => ({
     useOverviewOpenJobs: vi.fn(),
@@ -86,25 +86,7 @@ describe('OpenJobsBox', () => {
         expect(screen.getByText('John Smith')).toBeInTheDocument();
     });
 
-    it('threads the dispatch date range into the query', () => {
-        renderBox();
-
-        expect(lastParams().startDate).toBe(startDate);
-        expect(lastParams().endDate).toBe(endDate);
-    });
-
-    it('threads the selected despatch views into the query, matching the main Jobs List', () => {
-        renderBox({despatchViewIds: [3, 7]});
-
-        expect(lastParams().despatchViewIds).toEqual([3, 7]);
-    });
-
-    it('clamps an all-time range and tells the operator', () => {
-        renderBox({startDate: dayjs(0), endDate});
-
-        expect(lastParams().startDate.isSame(endDate.subtract(MAX_OVERVIEW_PANEL_DAYS, 'day'))).toBe(true);
-        expect(screen.getByText(new RegExp(`last ${MAX_OVERVIEW_PANEL_DAYS} days`, 'i'))).toBeInTheDocument();
-    });
+    itThreadsOverviewPanelRange({renderBox, lastParams, startDate, endDate, startDateEpoch: dayjs(0)});
 
     it('passes the refresh cadence to the query hook', () => {
         renderBox({refetchIntervalMs: 45000});

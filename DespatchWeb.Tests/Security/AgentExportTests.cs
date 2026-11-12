@@ -51,7 +51,14 @@ public class AgentExportTests : IAsyncDisposable
         }
     }
 
-    private async Task<HttpClient> Server(bool grantLive = true)
+    // Stands in for Hub's capabilities API (Access Control verbs AND hub tiles).
+    private sealed class FixedCapabilities(IReadOnlySet<string> held) : IAgentCapabilitySource
+    {
+        public Task<IReadOnlySet<string>> GetAsync(ClaimsPrincipal user, CancellationToken cancellationToken = default) =>
+            Task.FromResult(held);
+    }
+
+    private async Task<HttpClient> Server(bool grantLive = true, string[]? capabilities = null)
     {
         var connections = Substitute.For<IConnectionStringManager>();
         connections.GetConnectionStringAsync(TenantConnectionCache.Key("7")).Returns("Server=db;");
@@ -69,6 +76,8 @@ public class AgentExportTests : IAsyncDisposable
             AppName = "DespatchWeb", HubAuthority = Hub, HubApiKey = "key", SqlCredentials = "User ID=dw;"
         });
         builder.Services.Replace(ServiceDescriptor.Singleton<IAgentClaimsEnricher, TestGroupEnricher>());
+        builder.Services.Replace(ServiceDescriptor.Singleton<IAgentCapabilitySource>(
+            new FixedCapabilities((capabilities ?? [.. AgentCapabilities.All]).ToHashSet())));
         builder.Services.PostConfigure<JwtBearerOptions>(AgentTokenAuthentication.Scheme, o =>
         {
             var config = new OpenIdConnectConfiguration { Issuer = Hub + "/" };
@@ -80,6 +89,7 @@ public class AgentExportTests : IAsyncDisposable
         builder.Services.AddAuthorization();
         _app = builder.Build();
         _app.UseAuthentication();
+        _app.UseAgentRouteAllowList();
         _app.UseAuthorization();
         _app.MapControllers();
         await _app.StartAsync();
@@ -204,6 +214,27 @@ public class AgentExportTests : IAsyncDisposable
         var names = page.GetProperty("columns").EnumerateArray().Select(c => c.GetProperty("name").GetString()).ToList();
         Assert.Equal(expected, names.Contains("CourierPayment"));
         Assert.Contains("UcjbNumber", names);
+    }
+
+    [Fact]
+    public async Task WithoutTheSeeCostsVerb_EvenAnAllowedGroupGetsNoCostColumns()
+    {
+        Seed();
+        var client = await Server(capabilities: [AgentCapabilities.Connect, AgentCapabilities.ExportJobs]);
+
+        var page = await Page(client, $"/Agent/Export/jobs?{Window}", "1");
+
+        var names = page.GetProperty("columns").EnumerateArray().Select(c => c.GetProperty("name").GetString()).ToList();
+        Assert.DoesNotContain("CourierPayment", names);
+    }
+
+    [Fact]
+    public async Task WithoutTheExportJobsVerb_TheExportIsForbidden()
+    {
+        Seed();
+        var client = await Server(capabilities: [AgentCapabilities.Connect, AgentCapabilities.ExportPricing, AgentCapabilities.SeeCosts]);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await Get(client, $"/Agent/Export/jobs?{Window}", Token("1"))).StatusCode);
     }
 
     [Fact]

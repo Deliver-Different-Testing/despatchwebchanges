@@ -61,6 +61,7 @@ public class DiCompositionTests
         // Register the extension method groups under test
         services.AddRepositories();
         services.AddJobServices(config);
+        services.AddAgentReadServices();
         services.AddPricingServices();
         services.AddReportingServices();
         services.AddSupportServices();

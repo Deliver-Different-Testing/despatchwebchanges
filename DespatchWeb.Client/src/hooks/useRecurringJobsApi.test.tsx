@@ -260,7 +260,7 @@ describe('useRecurringJobsApi Hooks', () => {
     });
 
     describe('useSpeedList', () => {
-        it('should fetch speed list successfully', async () => {
+        it('should fetch speed list successfully as an array of options', async () => {
             mockRecurringJobsApi.getSpeedList.mockResolvedValueOnce(mockSpeedOptions);
 
             const {result} = renderHook(() => useSpeedList(), {
@@ -273,19 +273,6 @@ describe('useRecurringJobsApi Hooks', () => {
 
             expect(result.current.data).toEqual(mockSpeedOptions);
             expect(mockRecurringJobsApi.getSpeedList).toHaveBeenCalled();
-        });
-
-        it('should return array of speed options', async () => {
-            mockRecurringJobsApi.getSpeedList.mockResolvedValueOnce(mockSpeedOptions);
-
-            const {result} = renderHook(() => useSpeedList(), {
-                wrapper: createQueryWrapper(),
-            });
-
-            await waitFor(() => {
-                expect(result.current.isSuccess).toBe(true);
-            });
-
             expect(result.current.data).toHaveLength(3);
             expect(result.current.data?.[0]).toEqual({id: 1, text: 'Same Day'});
         });

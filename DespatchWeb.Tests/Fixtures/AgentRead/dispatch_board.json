@@ -1,0 +1,304 @@
+{
+  "_note": "Synthetic. Invented tenant 'test', invented view ids, job numbers, driver names and street names. Shaped from Models/Response/JobSearchResult.cs, Models/DispatchJobViewModel.cs, Models/OverviewStatsViewModel.cs, Models/Response/PaginatedResponse.cs + Models/OverviewViewModels.cs, Models/ClearListViewModel.cs and Models/DriverWorkOverviewViewModel.cs at HEAD 16dbd241.",
+
+  "pageViews": [
+    { "id": 12, "name": "Metro North", "centerLatitude": -36.85, "centerLongitude": 174.76 },
+    { "id": 13, "name": "Metro South", "centerLatitude": -37.02, "centerLongitude": 174.88 }
+  ],
+
+  "stats": { "active": 0, "inactive": 4, "completed": 26 },
+
+  "overviewPage": {
+    "items": [
+      {
+        "jobId": 90101,
+        "jobName": "TC1001DD",
+        "status": "New",
+        "completion": 0,
+        "pickup": "Unit 1, Sample Street",
+        "delivery": "Unit 9, Example Road",
+        "driver": "",
+        "region": "Metro North",
+        "childJobs": []
+      },
+      {
+        "jobId": 90103,
+        "jobName": "TC1003DD",
+        "status": "Picked Up",
+        "completion": 60,
+        "pickup": "Unit 4, Sample Street",
+        "delivery": "Unit 2, Example Road",
+        "driver": "Ana Fixture",
+        "region": "Metro South",
+        "childJobs": []
+      }
+    ],
+    "total": 6,
+    "page": 1,
+    "pages": 1
+  },
+
+  "jobIndex": {
+    "jobs": [
+      {
+        "id": 90101,
+        "jobNo": "TC1001DD",
+        "clientName": "Fixture Freight Ltd",
+        "speed": "Standard",
+        "booked": "2026-08-27T08:05:00",
+        "statusId": 0,
+        "statusName": "New",
+        "status": "N",
+        "void": false,
+        "done": false,
+        "completedTime": null,
+        "resolvedStatusId": 0,
+        "resolvedIsVoid": false,
+        "resolvedIsComplete": false,
+        "assignedCourier": null,
+        "courier": null,
+        "courierData": null,
+        "remain": 45,
+        "pickupAddress": { "addressLine1": "Unit 1", "addressLine5": "Sample Street", "addressLine6": "Testville" },
+        "deliveryAddress": { "addressLine1": "Unit 9", "addressLine5": "Example Road", "addressLine6": "Testville" },
+        "from": "Testville",
+        "toAddress": "Example Road",
+        "isBulkJob": false,
+        "isPartnerJob": false
+      },
+      {
+        "id": 90102,
+        "jobNo": "TC1002DD",
+        "clientName": "Fixture Freight Ltd",
+        "speed": "Standard",
+        "booked": "2026-08-27T08:10:00",
+        "statusId": 1000,
+        "statusName": "Void",
+        "status": "V",
+        "void": true,
+        "done": false,
+        "completedTime": null,
+        "resolvedStatusId": 1000,
+        "resolvedIsVoid": true,
+        "resolvedIsComplete": false,
+        "assignedCourier": null,
+        "courier": null,
+        "courierData": null,
+        "remain": -220,
+        "pickupAddress": { "addressLine1": "Unit 2", "addressLine5": "Sample Street", "addressLine6": "Testville" },
+        "deliveryAddress": { "addressLine1": "Unit 8", "addressLine5": "Example Road", "addressLine6": "Testville" },
+        "from": "Testville",
+        "toAddress": "Example Road",
+        "isBulkJob": false,
+        "isPartnerJob": false
+      },
+      {
+        "id": 90103,
+        "jobNo": "TC1003DD",
+        "clientName": "Sample Supplies Co",
+        "speed": "Urgent",
+        "booked": "2026-08-27T07:40:00",
+        "statusId": 5,
+        "statusName": "Picked Up",
+        "status": "P",
+        "void": false,
+        "done": false,
+        "completedTime": null,
+        "resolvedStatusId": 5,
+        "resolvedIsVoid": false,
+        "resolvedIsComplete": false,
+        "assignedCourier": { "id": 71, "text": "Ana Fixture" },
+        "courier": "AF71",
+        "courierData": { "courier": "AF71", "courierNumber": "AF71", "courierId": 71, "courierName": "Ana Fixture", "courierMobile": "N/A" },
+        "remain": -37,
+        "pickupAddress": { "addressLine1": "Unit 4", "addressLine5": "Sample Street", "addressLine6": "Testville" },
+        "deliveryAddress": { "addressLine1": "Unit 2", "addressLine5": "Example Road", "addressLine6": "Testville" },
+        "from": "Testville",
+        "toAddress": "Example Road",
+        "isBulkJob": false,
+        "isPartnerJob": false
+      },
+      {
+        "id": 90104,
+        "jobNo": "TC1004DD",
+        "clientName": "Sample Supplies Co",
+        "speed": "Economy",
+        "booked": "2026-08-27T06:55:00",
+        "statusId": 8,
+        "statusName": "Late Delivery",
+        "status": "LD",
+        "void": false,
+        "done": false,
+        "completedTime": null,
+        "resolvedStatusId": 8,
+        "resolvedIsVoid": false,
+        "resolvedIsComplete": false,
+        "assignedCourier": { "id": 72, "text": "Bo Fixture" },
+        "courier": "BF72",
+        "courierData": { "courier": "BF72", "courierNumber": "BF72", "courierId": 72, "courierName": "Bo Fixture", "courierMobile": "N/A" },
+        "remain": null,
+        "pickupAddress": { "addressLine1": "Unit 5", "addressLine5": "Sample Street", "addressLine6": "Testville" },
+        "deliveryAddress": { "addressLine1": "Unit 3", "addressLine5": "Example Road", "addressLine6": "Testville" },
+        "from": "Testville",
+        "toAddress": "Example Road",
+        "isBulkJob": false,
+        "isPartnerJob": false
+      },
+      {
+        "id": 90105,
+        "jobNo": "TC1005DD",
+        "clientName": "Fixture Freight Ltd",
+        "speed": "Standard",
+        "booked": "2026-08-27T06:20:00",
+        "statusId": 0,
+        "statusName": "New",
+        "status": "N",
+        "void": false,
+        "done": true,
+        "completedTime": "2026-08-27T09:14:00",
+        "resolvedStatusId": 6,
+        "resolvedIsVoid": false,
+        "resolvedIsComplete": true,
+        "assignedCourier": { "id": 71, "text": "Ana Fixture" },
+        "courier": "AF71",
+        "courierData": { "courier": "AF71", "courierNumber": "AF71", "courierId": 71, "courierName": "Ana Fixture", "courierMobile": "N/A" },
+        "remain": -95,
+        "pickupAddress": { "addressLine1": "Unit 6", "addressLine5": "Sample Street", "addressLine6": "Testville" },
+        "deliveryAddress": { "addressLine1": "Unit 4", "addressLine5": "Example Road", "addressLine6": "Testville" },
+        "from": "Testville",
+        "toAddress": "Example Road",
+        "isBulkJob": false,
+        "isPartnerJob": false
+      },
+      {
+        "id": 90106,
+        "jobNo": "TC1006DD",
+        "clientName": "Example Wholesale",
+        "speed": "Standard",
+        "booked": "2026-08-27T07:05:00",
+        "statusId": 10,
+        "statusName": "Undeliverable",
+        "status": "U",
+        "void": false,
+        "done": false,
+        "completedTime": null,
+        "resolvedStatusId": 10,
+        "resolvedIsVoid": false,
+        "resolvedIsComplete": true,
+        "assignedCourier": { "id": 72, "text": "Bo Fixture" },
+        "courier": "BF72",
+        "courierData": { "courier": "BF72", "courierNumber": "BF72", "courierId": 72, "courierName": "Bo Fixture", "courierMobile": "N/A" },
+        "remain": -60,
+        "pickupAddress": { "addressLine1": "Unit 7", "addressLine5": "Sample Street", "addressLine6": "Testville" },
+        "deliveryAddress": { "addressLine1": "Unit 5", "addressLine5": "Example Road", "addressLine6": "Testville" },
+        "from": "Testville",
+        "toAddress": "Example Road",
+        "isBulkJob": false,
+        "isPartnerJob": false
+      },
+      {
+        "id": 90107,
+        "jobNo": "TC1007DD",
+        "clientName": "Example Wholesale",
+        "speed": "Standard",
+        "booked": "2026-08-27T09:30:00",
+        "statusId": 18,
+        "statusName": "Preassigned",
+        "status": "PA",
+        "void": false,
+        "done": false,
+        "completedTime": null,
+        "resolvedStatusId": 18,
+        "resolvedIsVoid": false,
+        "resolvedIsComplete": false,
+        "assignedCourier": null,
+        "courier": null,
+        "courierData": { "courier": "N/A", "courierNumber": "N/A", "courierId": null, "courierName": "N/A", "courierMobile": "N/A" },
+        "remain": null,
+        "pickupAddress": { "addressLine1": "Unit 8", "addressLine5": "Sample Street", "addressLine6": "Testville" },
+        "deliveryAddress": { "addressLine1": "Unit 6", "addressLine5": "Example Road", "addressLine6": "Testville" },
+        "from": "Testville",
+        "toAddress": "Example Road",
+        "isBulkJob": false,
+        "isPartnerJob": false
+      },
+      {
+        "id": 90108,
+        "jobNo": "TC1008DD",
+        "clientName": "Partner Tenant Freight",
+        "speed": "Standard",
+        "booked": "2026-08-27T08:45:00",
+        "statusId": 1,
+        "statusName": "Dispatched",
+        "status": "D",
+        "void": false,
+        "done": false,
+        "completedTime": null,
+        "assignedCourier": null,
+        "courier": "CF73",
+        "courierData": { "courier": "CF73", "courierNumber": "CF73", "courierId": 73, "courierName": "Cy Fixture", "courierMobile": "N/A" },
+        "remain": 120,
+        "pickupAddress": { "addressLine1": "Unit 3", "addressLine5": "Sample Street", "addressLine6": "Testville" },
+        "deliveryAddress": { "addressLine1": "Unit 7", "addressLine5": "Example Road", "addressLine6": "Testville" },
+        "from": "Testville",
+        "toAddress": "Example Road",
+        "isBulkJob": true,
+        "isPartnerJob": true
+      }
+    ],
+    "totalCount": 8,
+    "hasMore": false,
+    "mapItems": []
+  },
+
+  "clearLists": {
+    "areas": [],
+    "columns": [
+      {
+        "areas": [
+          {
+            "id": 301,
+            "name": "North Run",
+            "order": 1,
+            "percentHeight": 50,
+            "totalRemaining": 4,
+            "top": [
+              {
+                "courierNumber": "AF71",
+                "courierData": { "courier": "AF71", "courierNumber": "AF71", "courierId": 71, "courierName": "Ana Fixture", "location": "Testville", "pu": "1", "del": "2", "lrm": "12", "eta2Lrm": "8", "courierMobile": "N/A" },
+                "destinations": [{ "id": 1, "label": "Testville" }],
+                "jobCount": 3
+              }
+            ],
+            "middle": [],
+            "bottom": []
+          },
+          {
+            "id": 302,
+            "name": "South Run",
+            "order": 2,
+            "percentHeight": 50,
+            "totalRemaining": 2,
+            "top": [
+              {
+                "courierNumber": "BF72",
+                "courierData": { "courier": "BF72", "courierNumber": "BF72", "courierId": 72, "courierName": "Bo Fixture", "location": "Testville", "pu": "0", "del": "1", "lrm": "20", "eta2Lrm": "15", "courierMobile": "N/A" },
+                "destinations": [{ "id": 2, "label": "Testville" }],
+                "jobCount": 2
+              }
+            ],
+            "middle": [],
+            "bottom": []
+          }
+        ]
+      }
+    ]
+  },
+
+  "driverWork": [
+    { "courierId": 71, "name": "Ana Fixture", "vehicleType": "VAN", "jobCount": 3, "driverStatusText": "Active" },
+    { "courierId": 72, "name": "Bo Fixture", "vehicleType": "CAR", "jobCount": 2, "driverStatusText": "Active" },
+    { "courierId": 73, "name": "Cy Fixture", "vehicleType": "TRK", "jobCount": 0, "driverStatusText": "Active" },
+    { "courierId": 74, "name": "Di Fixture", "vehicleType": "No Vehicle", "jobCount": 0, "driverStatusText": "Inactive" }
+  ]
+}

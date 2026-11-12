@@ -7,6 +7,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {TodayActiveTab} from './TodayActiveTab';
 import {TodayActiveDriverPaginated} from '../../../types';
 import {useTodayActiveDrivers} from '../../../hooks/useDriverManagementApi';
+import {itShowsLoadingIndicator, itShowsRetryableErrorState} from './driverTabLoadStates.testHelpers';
 
 vi.mock('../../../hooks/useDriverManagementApi', () => ({
     useTodayActiveDrivers: vi.fn(),
@@ -114,12 +115,7 @@ describe('TodayActiveTab', () => {
         expect(lastCall().orderBy).toBe('code');
     });
 
-    it('should show loading indicator when isLoading is true', () => {
-        setupMocks(undefined, true);
-        renderWithProviders();
-
-        expect(screen.getByText('Loading…')).toBeInTheDocument();
-    });
+    itShowsLoadingIndicator(setupMocks, renderWithProviders);
 
     it('should show empty message when no items', () => {
         setupMocks({
@@ -131,12 +127,5 @@ describe('TodayActiveTab', () => {
         expect(screen.getByText('No drivers logged in today')).toBeInTheDocument();
     });
 
-    it('should show a retryable error state when the load fails', () => {
-        setupMocks(undefined, false, true);
-        renderWithProviders();
-
-        expect(screen.getByText("Couldn't load drivers")).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', {name: 'Try again'}));
-        expect(refetch).toHaveBeenCalled();
-    });
+    itShowsRetryableErrorState(setupMocks, renderWithProviders, refetch, "Couldn't load drivers");
 });

@@ -37,3 +37,5 @@ export type {AgentEmailState} from './AgentEmailFields';
 export type {DialogFooterProps} from "./DialogFooterProps";
 export type {DialogShellProps} from "./DialogShellProps";
 export type {DialogHeaderProps} from "./DialogHeaderProps";
+export {ValueChip} from './ValueChip';
+export type {ValueChipProps} from './ValueChip';

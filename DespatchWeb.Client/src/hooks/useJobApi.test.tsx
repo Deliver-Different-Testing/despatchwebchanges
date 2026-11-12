@@ -9,6 +9,7 @@ import {useRelatedJobs, useClientSearch} from './useJobApi';
 import {jobApi} from '../api/jobApi';
 import {RelatedJobDto, Suggestion} from '../types';
 import {createQueryWrapper} from '../test/utils';
+import {expectQueryHookEmptyData, expectQueryHookError} from '../test/utils/queryHookCaseHelpers';
 
 // Mock the jobApi
 vi.mock('../api/jobApi', () => ({
@@ -91,29 +92,17 @@ describe('useRelatedJobs', () => {
     it('should handle empty results', async () => {
         mockJobApi.getRelatedJobsMultiSelectList.mockResolvedValueOnce([]);
 
-        const {result} = renderHook(() => useRelatedJobs(100, false), {wrapper: createQueryWrapper()});
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true);
-        });
-
-        expect(result.current.data).toEqual([]);
+        await expectQueryHookEmptyData(() => useRelatedJobs(100, false));
     });
 
     it('should handle errors', async () => {
         const error = new Error('Job not found');
         mockJobApi.getRelatedJobsMultiSelectList.mockRejectedValueOnce(error);
 
-        const {result} = renderHook(() => useRelatedJobs(999, false), {wrapper: createQueryWrapper()});
-
-        await waitFor(() => {
-            expect(result.current.isError).toBe(true);
-        });
-
-        expect(result.current.error).toEqual(error);
+        await expectQueryHookError(() => useRelatedJobs(999, false), error);
     });
 
-    it('should refetch when jobId changes', async () => {
+    it('should refetch when jobId or isArchived changes', async () => {
         mockJobApi.getRelatedJobsMultiSelectList.mockResolvedValue(mockRelatedJobs);
 
         const {result, rerender} = renderHook(
@@ -135,27 +124,11 @@ describe('useRelatedJobs', () => {
         await waitFor(() => {
             expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(200, false, false, expect.anything());
         });
-    });
 
-    it('should refetch when isArchived changes', async () => {
-        mockJobApi.getRelatedJobsMultiSelectList.mockResolvedValue(mockRelatedJobs);
-
-        const {result, rerender} = renderHook(
-            ({jobId, isArchived}) => useRelatedJobs(jobId, isArchived),
-            {
-                wrapper: createQueryWrapper(),
-                initialProps: {jobId: 100, isArchived: false},
-            }
-        );
+        rerender({jobId: 200, isArchived: true});
 
         await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true);
-        });
-
-        rerender({jobId: 100, isArchived: true});
-
-        await waitFor(() => {
-            expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(100, true, false, expect.anything());
+            expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(200, true, false, expect.anything());
         });
     });
 });

@@ -270,11 +270,7 @@ export const NZ_BOUNDS: RegionalBounds = {
     maxLat: -34,
 };
 
-/**
- * Minimum distance change (in degrees) to trigger marker position update
- * Approximately 11 meters at the equator
- */
-export const POSITION_THRESHOLD = 0.0001;
+export {MARKER_POSITION_THRESHOLD as POSITION_THRESHOLD} from '../../components/common/here-map/HereMap.types';
 
 /**
  * Maximum number of icons to cache to prevent memory issues
