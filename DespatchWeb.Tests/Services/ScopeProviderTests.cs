@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -347,8 +346,9 @@ public class ScopeProviderTests : IAsyncDisposable
     {
         using var seed = _db.CreateContext();
         seed.TblBranches.AddRange(
-            new TblBranch { BranchId = 1, Name = "Sydney", Code = "SYD", IsDefault = true, Active = true },
-            new TblBranch { BranchId = 2, Name = "Melbourne", Code = "MEL", IsDefault = false, Active = true });
+            new TblBranch { BranchId = 1, Name = "Sydney", Code = "SYD", IsDefault = true, Active = true, SiteId = 43 },
+            new TblBranch { BranchId = 2, Name = "Melbourne", Code = "MEL", IsDefault = false, Active = true, SiteId = 44 },
+            new TblBranch { BranchId = 3, Name = "Closed", Code = "OLD", IsDefault = false, Active = false, SiteId = 45 });
         seed.SaveChanges();
     }
 
@@ -374,7 +374,6 @@ public class ScopeProviderTests : IAsyncDisposable
         Assert.True(scope.IsBranchScoped);
         Assert.Equal([1], scope.BranchIds);
         Assert.True(scope.DefaultBranchInScope);
-        Assert.False(scope.BranchJobsIncludeCourier);
     }
 
     [Fact]
@@ -416,19 +415,14 @@ public class ScopeProviderTests : IAsyncDisposable
     }
 
     [Fact]
-    public void Branches_OptionBSetting_TurnsOnJobsViaCourier()
+    public void Branches_SiteIds_AreTheActiveBranchesSites()
     {
         SeedBranches();
-        StubTenantWithBranches([2]);
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                [ScopeProvider.JobsVisibleViaCourierSetting] = "true"
-            })
-            .Build();
+        StubTenantWithBranches([2, 3]);
 
-        var scope = new ScopeProvider(_httpContextAccessor, _tenantInfo, _db.CreateFactoryMock(), configuration).Scope;
+        var scope = CreateProvider().Scope;
 
-        Assert.True(scope.BranchJobsIncludeCourier);
+        Assert.Equal([44], scope.BranchSiteIds);
+        Assert.False(scope.DefaultBranchInScope);
     }
 }

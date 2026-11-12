@@ -16,4 +16,6 @@ public partial class TblBranch
     public bool IsDefault { get; set; }
 
     public bool Active { get; set; }
+
+    public int? SiteId { get; set; }
 }

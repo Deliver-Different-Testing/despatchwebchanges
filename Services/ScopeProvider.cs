@@ -21,15 +21,8 @@ namespace DespatchWeb.Services;
 public sealed class ScopeProvider(
     IHttpContextAccessor contextAccessor,
     ITenantInfoService tenantInfo,
-    IDbContextFactory<DespatchContext> contextFactory,
-    IConfiguration? configuration = null) : IScopeProvider, IDisposable
+    IDbContextFactory<DespatchContext> contextFactory) : IScopeProvider, IDisposable
 {
-    /// <summary>
-    /// Branches spec §4.1 option B: a branch-limited user also sees jobs whose courier
-    /// they can see. Off by default (option A, client only).
-    /// </summary>
-    public const string JobsVisibleViaCourierSetting = "Branches:JobsVisibleViaCourier";
-
     private ScopeContext? _scope;
     private bool _resolved;
     private DespatchContext? _bootstrapContext;
@@ -114,38 +107,52 @@ public sealed class ScopeProvider(
             ? tenantInfo.GetBranchIds()
             : null;
 
+        if (branchIds is null)
+        {
+            return _scope = new ScopeContext(clientTypeId, clientId, npAgentId);
+        }
+
+        var (defaultBranchInScope, siteIds) = LookUpBranches(branchIds);
         return _scope = new ScopeContext(clientTypeId, clientId, npAgentId,
             BranchIds: branchIds,
-            DefaultBranchInScope: branchIds is not null && IsDefaultBranchIn(branchIds),
-            BranchJobsIncludeCourier: branchIds is not null
-                                      && (configuration?.GetValue<bool>(JobsVisibleViaCourierSetting) ?? false));
+            DefaultBranchInScope: defaultBranchInScope,
+            BranchSiteIds: siteIds);
     }
 
     /// <summary>
-    /// A courier with no home branch belongs to the default branch (Branches D1), so a
-    /// branch-limited user sees them only when the default branch is one of theirs.
-    /// Looked up once per request, and only for branch-limited users.
+    /// One <c>tblBranch</c> read per request, only for branch-limited users: whether the
+    /// default branch is one of theirs (a courier with no home branch belongs to it, D1),
+    /// and the sites of their active branches (a job is theirs when a pickup or delivery
+    /// suburb sits on one). On failure the user keeps only the client and courier arms.
     /// </summary>
-    private bool IsDefaultBranchIn(IReadOnlyList<int> branchIds)
+    private (bool DefaultBranchInScope, IReadOnlyList<int> SiteIds) LookUpBranches(IReadOnlyList<int> branchIds)
     {
         if (branchIds.Count == 0)
         {
-            return false;
+            return (false, []);
         }
 
         try
         {
             _bootstrapContext ??= contextFactory.CreateDbContext();
-            var defaultBranchId = _bootstrapContext.TblBranches
-                .Where(b => b.IsDefault)
-                .Select(b => (int?)b.BranchId)
-                .FirstOrDefault();
-            return defaultBranchId is { } id && branchIds.Contains(id);
+            var ids = branchIds.ToArray();
+            var rows = _bootstrapContext.TblBranches
+                .Where(b => b.IsDefault || ids.Contains(b.BranchId))
+                .Select(b => new { b.BranchId, b.IsDefault, b.Active, b.SiteId })
+                .ToList();
+            var defaultInScope = rows.Any(b => b.IsDefault && ids.Contains(b.BranchId));
+            int[] siteIds =
+            [
+                .. rows.Where(b => b.Active && b.SiteId != null && ids.Contains(b.BranchId))
+                    .Select(b => b.SiteId!.Value)
+                    .Distinct()
+            ];
+            return (defaultInScope, siteIds);
         }
         catch (Exception ex)
         {
-            Log.Warning(ex, "ScopeProvider default branch lookup failed. Couriers with no home branch are hidden");
-            return false;
+            Log.Warning(ex, "ScopeProvider branch lookup failed. Default-branch couriers and address matching are off");
+            return (false, []);
         }
     }
 

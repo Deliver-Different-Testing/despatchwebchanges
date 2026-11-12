@@ -18,7 +18,7 @@ public sealed record ScopeContext(
     bool BypassFilters = false,
     IReadOnlyList<int>? BranchIds = null,
     bool DefaultBranchInScope = false,
-    bool BranchJobsIncludeCourier = false)
+    IReadOnlyList<int>? BranchSiteIds = null)
 {
     /// <summary>
     /// Background workers, scaffolding, design-time, or anonymous endpoints —
@@ -60,8 +60,8 @@ public sealed record ScopeContext(
     /// null means no <c>tblContactBranch</c> rows, i.e. every branch, as before branches
     /// existed. Customers, network partners, DF Admin and background work are never
     /// branch scoped. <see cref="DefaultBranchInScope"/> lets a courier with no home
-    /// branch count as the default branch's; <see cref="BranchJobsIncludeCourier"/> is
-    /// cross-branch option B (also show jobs whose courier is visible).
+    /// branch count as the default branch's; <see cref="BranchSiteIds"/> are the
+    /// <c>tblSite</c> ids of the user's active branches, used to match job addresses.
     /// </summary>
     public bool IsBranchScoped =>
         !BypassFilters && (IsTenant || IsInternal) && BranchIds is not null;

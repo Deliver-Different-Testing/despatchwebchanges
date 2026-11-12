@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
+using DespatchWeb.Interceptors;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -30,7 +31,15 @@ public partial class DespatchContext
     public bool CurrentIsBranchScoped => CurrentScope.IsBranchScoped;
     public int[] CurrentBranchIds => CurrentScope.BranchIds?.ToArray() ?? [];
     public bool CurrentDefaultBranchInScope => CurrentScope.DefaultBranchInScope;
-    public bool CurrentBranchJobsIncludeCourier => CurrentScope.BranchJobsIncludeCourier;
+    public int[] CurrentBranchSiteIds => CurrentScope.BranchSiteIds?.ToArray() ?? [];
+
+    /// <summary>Client filter key that job-rooted queries drop, so a visible job still loads its client.</summary>
+    public const string BranchClientsFilter = "BranchClients";
+
+    /// <summary>Courier filter key that job-rooted queries drop, so a visible job still loads its couriers.</summary>
+    public const string BranchCouriersFilter = "BranchCouriers";
+
+    private const string ScopeFilter = "Scope";
 
     public DespatchContext(DbContextOptions<DespatchContext> options, IScopeProvider scopeProvider)
         : this(options)
@@ -230,6 +239,8 @@ public partial class DespatchContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
+        optionsBuilder.AddInterceptors(BranchJobContextInterceptor.Instance);
+
 #if DEBUG
         if (Debugger.IsAttached)
         {
@@ -314,11 +325,11 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.RouteId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasQueryFilter(WithBranchJobArm<TucJobBooking>(j =>
+            entity.HasQueryFilter(WithBranchJobArm<TucJobBooking, BranchFamilyJobBooking>(j =>
                 CurrentBypassFilters
                 || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
                 || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcbkClientId == CurrentClientId),
-                j => j.UcbkClientId, j => j.CourierId));
+                new BranchJobShape<TucJobBooking>(j => j.UcbkId, j => j.BookingParentId, j => j.BookingRootParentId)));
         });
 
         modelBuilder.Entity<TblJob>(entity =>
@@ -386,11 +397,11 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.NpAgentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasQueryFilter(WithBranchJobArm<TucJob>(j =>
+            entity.HasQueryFilter(WithBranchJobArm<TucJob, BranchFamilyJob>(j =>
                 CurrentBypassFilters
                 || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
                 || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId),
-                j => j.UcjbClientId, j => j.UcjbCourierId));
+                new BranchJobShape<TucJob>(j => j.UcjbId, j => j.ParentId, j => j.RootParentId)));
         });
 
         modelBuilder.Entity<TblBulkJob>(entity =>
@@ -406,11 +417,11 @@ public partial class DespatchContext
                 .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasQueryFilter(WithBranchJobArm<TblBulkJob>(j =>
+            entity.HasQueryFilter(WithBranchJobArm<TblBulkJob, BranchFamilyBulkJob>(j =>
                 CurrentBypassFilters
                 || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
                 || (CurrentIsCustomerScoped && CurrentClientId != null && j.ClientId == CurrentClientId),
-                j => j.ClientId, j => j.CourierId));
+                new BranchJobShape<TblBulkJob>(j => j.BulkJobId, j => j.BulkParentId, _ => null)));
         });
 
         modelBuilder.Entity<TblBulkRunSchedule>(entity =>
@@ -574,31 +585,35 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.UcjbDispId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasQueryFilter(WithBranchJobArm<TucJobArchive>(j =>
+            entity.HasQueryFilter(WithBranchJobArm<TucJobArchive, BranchFamilyJobArchive>(j =>
                 CurrentBypassFilters
                 || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
                 || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId),
-                j => j.UcjbClientId, j => j.UcjbCourierId));
+                new BranchJobShape<TucJobArchive>(j => j.UcjbId, j => j.ParentId, j => j.RootParentId)));
         });
 
-        // Branches spec section 4: a branch-limited user sees clients in their branches plus the
-        // house accounts (the tenant's own, internal and DF Admin clients) all staff share.
-        // No other scope was client-filtered before branches, so every other scope passes.
-        modelBuilder.Entity<TucClient>().HasQueryFilter(c =>
-            !CurrentIsBranchScoped
-            || (c.BranchId != null && CurrentBranchIds.Contains(c.BranchId.Value))
-            || c.ClientTypeId == (int)ClientType.Tenant
-            || c.ClientTypeId == (int)ClientType.Internal
-            || c.ClientTypeId == (int)ClientType.DfrntAdmin
-            || c.UcclId == CurrentClientId);
+        MapBranchFamily<BranchFamilyJob>(modelBuilder, "tucJob", "ucjbID", "ParentID", "RootParentID",
+            "ucjbClientID", "ucjbCourierID", "ucjbFrom", "ucjbTo");
+        MapBranchFamily<BranchFamilyJobArchive>(modelBuilder, "tucJobArchive", "ucjbID", "ParentID", "RootParentID",
+            "ucjbClientID", "ucjbCourierID", "ucjbFrom", "ucjbTo");
+        MapBranchFamily<BranchFamilyJobBooking>(modelBuilder, "tucJobBooking", "ucbkID", "BookingParentID",
+            "BookingRootParentID", "ucbkClientID", "CourierID");
+        MapBranchFamily<BranchFamilyBulkJob>(modelBuilder, "tblBulkJob", "BulkJobID", "BulkParentID", null,
+            "ClientID", "CourierID");
 
-        // A courier with no home branch belongs to the default branch (Branches D1).
-        modelBuilder.Entity<TucCourier>().HasQueryFilter(c =>
-            CurrentBypassFilters
-            || (CurrentIsNetworkPartner && CurrentNpAgentId != null && c.NpAgentId == CurrentNpAgentId)
-            || (CurrentIsBranchScoped
-                && ((c.BranchId != null && CurrentBranchIds.Contains(c.BranchId.Value))
-                    || (c.BranchId == null && CurrentDefaultBranchInScope))));
+        // Client and courier lists for a branch-limited user. Both are named so a job-rooted
+        // query can drop them (BranchJobContextInterceptor): a visible job shows its client
+        // and couriers even when they belong to another branch.
+        modelBuilder.Entity<TucClient>().HasQueryFilter(BranchClientsFilter, Inline<TucClient>(c =>
+            !CurrentIsBranchScoped || ClientInUserBranches(c)));
+
+        modelBuilder.Entity<TucCourier>()
+            .HasQueryFilter(ScopeFilter, c =>
+                CurrentBypassFilters
+                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && c.NpAgentId == CurrentNpAgentId)
+                || CurrentIsBranchScoped)
+            .HasQueryFilter(BranchCouriersFilter, Inline<TucCourier>(c =>
+                !CurrentIsBranchScoped || CourierInUserBranches(c)));
 
         // Notes follow their job (or prebook); a note on neither is not branch data.
         modelBuilder.Entity<TucNote>().HasQueryFilter(n =>
@@ -677,34 +692,130 @@ public partial class DespatchContext
     }
 
     /// <summary>
-    /// The branch rule for every job-shaped table, in one place (Branches spec section 4.1).
-    /// A job follows its client, so it is visible when its client passes the
-    /// <see cref="TucClient"/> filter. Option B (also visible when its courier passes the
-    /// <see cref="TucCourier"/> filter) is switched by <c>Branches:JobsVisibleViaCourier</c>.
+    /// Branches spec section 4.1 (12 Nov): a branch-limited user sees a whole job family
+    /// (parent, every leg, the pickup leg) when ANY member's client branch, courier home
+    /// branch, or pickup / delivery suburb site is one of theirs. The family is every row of
+    /// the same table sharing the root <c>RootParentId ?? ParentId ?? id</c>. The one place
+    /// the rule lives; <typeparamref name="TFamily"/> is that table's filter-free view.
     /// </summary>
-    private Expression<Func<int?, int?, bool>> BranchJobVisible() => (clientId, courierId) =>
-        CurrentIsBranchScoped
-        && (Set<TucClient>().Any(c => c.UcclId == clientId)
-            || (CurrentBranchJobsIncludeCourier
-                && courierId != null
-                && Set<TucCourier>().Any(r => r.UccrId == courierId)));
+    private Expression<Func<T, bool>> BranchJobVisible<T, TFamily>(BranchJobShape<T> shape)
+        where T : class where TFamily : class =>
+        new BranchRuleInliner(this, shape.Id, shape.ParentId, shape.RootParentId).Inline<T>(row =>
+            CurrentIsBranchScoped
+            && Set<TFamily>().Any(m =>
+                (FamilyId(m) == FamilyRoot(row)
+                 || FamilyParentId(m) == FamilyRoot(row)
+                 || FamilyRootParentId(m) == FamilyRoot(row))
+                && (Set<TucClient>().Any(c => c.UcclId == FamilyClientId(m) && ClientInUserBranches(c))
+                    || Set<TucCourier>().Any(r => r.UccrId == FamilyCourierId(m) && CourierInUserBranches(r))
+                    || (FamilyHasAddresses(m)
+                        && Set<TucSuburb>().Any(s =>
+                            (s.UcsuId == FamilyFromSuburbId(m) || s.UcsuId == FamilyToSuburbId(m))
+                            && s.SiteId != null
+                            && CurrentBranchSiteIds.Contains(s.SiteId.Value))))));
 
-    /// <summary>Adds <see cref="BranchJobVisible"/> as an extra arm beside a table's existing scope arms.</summary>
-    private Expression<Func<T, bool>> WithBranchJobArm<T>(
-        Expression<Func<T, bool>> existing,
-        Expression<Func<T, int?>> clientId,
-        Expression<Func<T, int?>> courierId)
+    /// <summary>Clients in the user's branches, plus the house accounts every staff member shares.</summary>
+    private Expression<Func<TucClient, bool>> ClientInUserBranchesRule => c =>
+        (c.BranchId != null && CurrentBranchIds.Contains(c.BranchId.Value))
+        || c.ClientTypeId == (int)ClientType.Tenant
+        || c.ClientTypeId == (int)ClientType.Internal
+        || c.ClientTypeId == (int)ClientType.DfrntAdmin
+        || c.UcclId == CurrentClientId;
+
+    /// <summary>Couriers whose home branch is one of the user's; no home branch = the default branch (D1).</summary>
+    private Expression<Func<TucCourier, bool>> CourierInUserBranchesRule => r =>
+        (r.BranchId != null && CurrentBranchIds.Contains(r.BranchId.Value))
+        || (r.BranchId == null && CurrentDefaultBranchInScope);
+
+    private Expression<Func<T, bool>> WithBranchJobArm<T, TFamily>(
+        Expression<Func<T, bool>> existing, BranchJobShape<T> shape)
+        where T : class where TFamily : class
     {
-        var row = existing.Parameters[0];
-        var rule = BranchJobVisible();
-        var branchArm = new ReplacingExpressionVisitor(
-                [rule.Parameters[0], rule.Parameters[1]],
-                [
-                    ReplacingExpressionVisitor.Replace(clientId.Parameters[0], row, clientId.Body),
-                    ReplacingExpressionVisitor.Replace(courierId.Parameters[0], row, courierId.Body)
-                ])
-            .Visit(rule.Body);
+        var rule = BranchJobVisible<T, TFamily>(shape);
+        var branchArm = ReplacingExpressionVisitor.Replace(rule.Parameters[0], existing.Parameters[0], rule.Body);
+        return Expression.Lambda<Func<T, bool>>(Expression.OrElse(existing.Body, branchArm), existing.Parameters);
+    }
 
-        return Expression.Lambda<Func<T, bool>>(Expression.OrElse(existing.Body, branchArm), row);
+    private Expression<Func<T, bool>> Inline<T>(Expression<Func<T, bool>> filter) =>
+        new BranchRuleInliner(this, null, null, null).Inline(filter);
+
+    private static void MapBranchFamily<TFamily>(ModelBuilder modelBuilder, string table, string id,
+        string parentId, string? rootParentId, string clientId, string courierId,
+        string? fromSuburbId = null, string? toSuburbId = null) where TFamily : class
+    {
+        // ToView keeps EnsureCreated (SQLite tests) from creating a second table; it reads the real one.
+        var entity = modelBuilder.Entity<TFamily>();
+        entity.HasNoKey().ToView(table);
+        entity.Property<int>("Id").HasColumnName(id);
+        entity.Property<int?>("ParentId").HasColumnName(parentId);
+        entity.Property<int?>("ClientId").HasColumnName(clientId);
+        entity.Property<int?>("CourierId").HasColumnName(courierId);
+        if (rootParentId != null) entity.Property<int?>("RootParentId").HasColumnName(rootParentId);
+        if (fromSuburbId != null) entity.Property<int?>("FromSuburbId").HasColumnName(fromSuburbId);
+        if (toSuburbId != null) entity.Property<int?>("ToSuburbId").HasColumnName(toSuburbId);
+    }
+
+    // Markers, expanded by BranchRuleInliner before EF sees the filter. Never executed.
+    private static bool ClientInUserBranches(TucClient client) => throw new UnreachableException();
+    private static bool CourierInUserBranches(TucCourier courier) => throw new UnreachableException();
+    private static int FamilyRoot<T>(T row) => throw new UnreachableException();
+    private static int FamilyId<T>(T member) => throw new UnreachableException();
+    private static int? FamilyParentId<T>(T member) => throw new UnreachableException();
+    private static int? FamilyRootParentId<T>(T member) => throw new UnreachableException();
+    private static int? FamilyClientId<T>(T member) => throw new UnreachableException();
+    private static int? FamilyCourierId<T>(T member) => throw new UnreachableException();
+    private static bool FamilyHasAddresses<T>(T member) => throw new UnreachableException();
+    private static int? FamilyFromSuburbId<T>(T member) => throw new UnreachableException();
+    private static int? FamilyToSuburbId<T>(T member) => throw new UnreachableException();
+
+    /// <summary>How a job table names the columns that locate a row's family root.</summary>
+    private sealed record BranchJobShape<T>(
+        Expression<Func<T, int>> Id,
+        Expression<Func<T, int?>> ParentId,
+        Expression<Func<T, int?>> RootParentId);
+
+    private sealed class BranchRuleInliner(
+        DespatchContext context,
+        LambdaExpression? rowId,
+        LambdaExpression? rowParentId,
+        LambdaExpression? rowRootParentId) : ExpressionVisitor
+    {
+        public Expression<Func<T, bool>> Inline<T>(Expression<Func<T, bool>> template) =>
+            (Expression<Func<T, bool>>)Visit(template);
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if (node.Method.DeclaringType != typeof(DespatchContext) || !node.Method.IsStatic)
+            {
+                return base.VisitMethodCall(node);
+            }
+
+            var arg = node.Arguments.Count == 1 ? Visit(node.Arguments[0]) : null;
+            return node.Method.Name switch
+            {
+                nameof(ClientInUserBranches) => Apply(context.ClientInUserBranchesRule, arg!),
+                nameof(CourierInUserBranches) => Apply(context.CourierInUserBranchesRule, arg!),
+                nameof(FamilyRoot) => Expression.Coalesce(
+                    Apply(rowRootParentId!, arg!),
+                    Expression.Coalesce(Apply(rowParentId!, arg!), Apply(rowId!, arg!))),
+                nameof(FamilyId) => Member(arg!, "Id", typeof(int)),
+                nameof(FamilyParentId) => Member(arg!, "ParentId", typeof(int?)),
+                nameof(FamilyRootParentId) => Member(arg!, "RootParentId", typeof(int?)),
+                nameof(FamilyClientId) => Member(arg!, "ClientId", typeof(int?)),
+                nameof(FamilyCourierId) => Member(arg!, "CourierId", typeof(int?)),
+                nameof(FamilyHasAddresses) => Expression.Constant(arg!.Type.GetProperty("ToSuburbId") != null),
+                nameof(FamilyFromSuburbId) => Member(arg!, "FromSuburbId", typeof(int?)),
+                nameof(FamilyToSuburbId) => Member(arg!, "ToSuburbId", typeof(int?)),
+                _ => base.VisitMethodCall(node)
+            };
+        }
+
+        private static Expression Member(Expression member, string name, Type type) =>
+            member.Type.GetProperty(name) != null
+                ? Expression.Property(member, name)
+                : Expression.Constant(null, type);
+
+        private Expression Apply(LambdaExpression lambda, Expression argument) =>
+            Visit(ReplacingExpressionVisitor.Replace(lambda.Parameters[0], argument, lambda.Body));
     }
 }
