@@ -81,6 +81,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblAirport> TblAirports { get; set; }
 
+    public virtual DbSet<TblBranch> TblBranches { get; set; }
+
     public virtual DbSet<TblBulkEvent> TblBulkEvents { get; set; }
 
     public virtual DbSet<TblBulkJob> TblBulkJobs { get; set; }
@@ -1670,6 +1672,23 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Courier).WithMany(p => p.TblBulkEvents)
                 .HasForeignKey(d => d.CourierId)
                 .HasConstraintName("FK_tblBulkEvent_tucCourier");
+        });
+
+        modelBuilder.Entity<TblBranch>(entity =>
+        {
+            entity.HasKey(e => e.BranchId);
+
+            entity.ToTable("tblBranch");
+
+            entity.HasIndex(e => e.Code, "UX_tblBranch_Code").IsUnique();
+
+            entity.Property(e => e.Active).HasDefaultValue(true, "DF_tblBranch_Active");
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(10);
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
         });
 
         modelBuilder.Entity<TblBulkJob>(entity =>

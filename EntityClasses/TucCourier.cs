@@ -271,6 +271,8 @@ public partial class TucCourier
 
     public int? NpAgentId { get; set; }
 
+    public int? BranchId { get; set; }
+
     public string PaymentMethod { get; set; }
 
     public string MasterSubSettlementMode { get; set; }

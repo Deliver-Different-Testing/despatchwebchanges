@@ -587,6 +587,8 @@ public partial class TucClient
 
     public int? NpAgentId { get; set; }
 
+    public int? BranchId { get; set; }
+
     public string AccountingPaymentTermQboId { get; set; }
 
     public int? AccountingPaymentTermXeroDay { get; set; }

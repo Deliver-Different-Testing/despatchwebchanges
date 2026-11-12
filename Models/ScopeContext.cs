@@ -15,7 +15,10 @@ public sealed record ScopeContext(
     int? ClientTypeId,
     int? ClientId,
     int? NpAgentId,
-    bool BypassFilters = false)
+    bool BypassFilters = false,
+    IReadOnlyList<int>? BranchIds = null,
+    bool DefaultBranchInScope = false,
+    bool BranchJobsIncludeCourier = false)
 {
     /// <summary>
     /// Background workers, scaffolding, design-time, or anonymous endpoints —
@@ -51,4 +54,15 @@ public sealed record ScopeContext(
     // excluded while the Phase 1.3 reparent is pending — see IsInternal.
     public bool IsCustomerScoped =>
         ClientTypeId is null or (int)ClientType.Customer;
+
+    /// <summary>
+    /// Tenant staff limited to some branches (Branches spec §4). <see cref="BranchIds"/>
+    /// null means no <c>tblContactBranch</c> rows, i.e. every branch, as before branches
+    /// existed. Customers, network partners, DF Admin and background work are never
+    /// branch scoped. <see cref="DefaultBranchInScope"/> lets a courier with no home
+    /// branch count as the default branch's; <see cref="BranchJobsIncludeCourier"/> is
+    /// cross-branch option B (also show jobs whose courier is visible).
+    /// </summary>
+    public bool IsBranchScoped =>
+        !BypassFilters && (IsTenant || IsInternal) && BranchIds is not null;
 }

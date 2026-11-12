@@ -1,5 +1,6 @@
 #nullable enable
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
@@ -20,8 +21,15 @@ namespace DespatchWeb.Services;
 public sealed class ScopeProvider(
     IHttpContextAccessor contextAccessor,
     ITenantInfoService tenantInfo,
-    IDbContextFactory<DespatchContext> contextFactory) : IScopeProvider, IDisposable
+    IDbContextFactory<DespatchContext> contextFactory,
+    IConfiguration? configuration = null) : IScopeProvider, IDisposable
 {
+    /// <summary>
+    /// Branches spec §4.1 option B: a branch-limited user also sees jobs whose courier
+    /// they can see. Off by default (option A, client only).
+    /// </summary>
+    public const string JobsVisibleViaCourierSetting = "Branches:JobsVisibleViaCourier";
+
     private ScopeContext? _scope;
     private bool _resolved;
     private DespatchContext? _bootstrapContext;
@@ -102,7 +110,43 @@ public sealed class ScopeProvider(
             npAgentId = null;
         }
 
-        return _scope = new ScopeContext(clientTypeId, clientId, npAgentId);
+        var branchIds = clientTypeId is (int)ClientType.Tenant or (int)ClientType.Internal
+            ? tenantInfo.GetBranchIds()
+            : null;
+
+        return _scope = new ScopeContext(clientTypeId, clientId, npAgentId,
+            BranchIds: branchIds,
+            DefaultBranchInScope: branchIds is not null && IsDefaultBranchIn(branchIds),
+            BranchJobsIncludeCourier: branchIds is not null
+                                      && (configuration?.GetValue<bool>(JobsVisibleViaCourierSetting) ?? false));
+    }
+
+    /// <summary>
+    /// A courier with no home branch belongs to the default branch (Branches D1), so a
+    /// branch-limited user sees them only when the default branch is one of theirs.
+    /// Looked up once per request, and only for branch-limited users.
+    /// </summary>
+    private bool IsDefaultBranchIn(IReadOnlyList<int> branchIds)
+    {
+        if (branchIds.Count == 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            _bootstrapContext ??= contextFactory.CreateDbContext();
+            var defaultBranchId = _bootstrapContext.TblBranches
+                .Where(b => b.IsDefault)
+                .Select(b => (int?)b.BranchId)
+                .FirstOrDefault();
+            return defaultBranchId is { } id && branchIds.Contains(id);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "ScopeProvider default branch lookup failed. Couriers with no home branch are hidden");
+            return false;
+        }
     }
 
     public void Dispose() => _bootstrapContext?.Dispose();

@@ -223,6 +223,24 @@ public sealed class TenantInfoService(
     /// <inheritdoc />
     public int? GetClientId() => int.TryParse(ClaimValue("ClientID"), out var value) ? value : null;
 
+    /// <inheritdoc />
+    public IReadOnlyList<int>? GetBranchIds()
+    {
+        var value = ClaimValue("BranchIds");
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return
+        [
+            .. value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(part => int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .Distinct()
+        ];
+    }
+
     /// <summary>
     /// Determines if the current tenant is a US-based tenant.
     /// </summary>
