@@ -92,7 +92,8 @@ public class AgentJobSearchServiceTests
         Assert.Contains("fixed ClientReferenceB in Settings", (string)o["parcelsNotCountedBecause"]!);
         Assert.DoesNotContain("DOUBLE BOOKED", string.Join(" ", Flags(o)));
         Assert.Contains(Warnings(o), w => w.Contains("No job carries the order number in OurReference"));
-        Assert.Contains(Flags(o), f => f.Contains("priced $0"));
+        Assert.DoesNotContain(Flags(o), f => f.Contains("priced $0"));
+        Assert.Contains(o["priceFlags"]!.AsArray().Select(f => (string)f!), f => f.Contains("priced $0"));
     }
 
     [Fact]

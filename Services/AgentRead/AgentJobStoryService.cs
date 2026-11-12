@@ -52,7 +52,7 @@ public sealed class AgentJobStoryService(
     {
         ["found"] = false,
         ["job"] = job,
-        ["note"] = "No job with that number or id. Check the number (and the tenant you are connected to)."
+        ["message"] = "No job with that number or id. Check the number (and the tenant you are connected to)."
     };
 
     public static JobFacts ToFacts(JobViewModel j) => new(

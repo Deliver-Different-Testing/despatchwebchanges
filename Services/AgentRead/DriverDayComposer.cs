@@ -167,7 +167,7 @@ public static class DriverDayComposer
         if (active && carrying == 0 && (r.JobsDatedToday ?? 0) == 0) flags.Add("Logged in with nothing on the board and no jobs dated today — idle, or missing from the board's GPS areas");
         if (active && r.SessionMinutes is { } m && m >= LongSessionMinutes)
         {
-            flags.Add($"Logged in {(m / 60.0).ToString("0.0", CultureInfo.InvariantCulture)}h and still open — a forgotten logout inflates every hourly rate on this screen");
+            flags.Add($"Logged in {(m / 60.0).ToString("0.0", CultureInfo.InvariantCulture)}h and still open — a forgotten logout inflates every hourly figure on this screen");
         }
 
         if (r.SessionMinutes is < 0) flags.Add("Logout is BEFORE login — the app's Duration string silently rolls this forward a day; the raw times are wrong");

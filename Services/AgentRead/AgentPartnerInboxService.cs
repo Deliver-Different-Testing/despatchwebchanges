@@ -77,7 +77,7 @@ public sealed class AgentPartnerInboxService(
                 ["pendingCount"] = 0,
                 ["requests"] = new JsonArray(),
                 ["acceptance"] = null,
-                ["note"] = "No job with that id is visible to this login (it may not exist, or it may belong to another tenant or partner). No history or rate gate was read.",
+                ["message"] = "No job with that id is visible to this login (it may not exist, or it may belong to another tenant or partner). No history or acceptance gate was read.",
                 ["flags"] = new JsonArray(),
                 ["failures"] = new JsonArray(),
                 ["warnings"] = new JsonArray()
@@ -90,7 +90,7 @@ public sealed class AgentPartnerInboxService(
 
         List<string> flags = [];
         var stranded = history.Where(h => h.Status == "Approved" && h.AppliedAt is null).ToList();
-        if (acceptance.BlocksAllocation) flags.Add($"Rate gate {acceptance.Status} — this job cannot be allocated (the partner's reason is in acceptance.rejectionReason)");
+        if (acceptance.BlocksAllocation) flags.Add($"Acceptance gate {acceptance.Status} — this job cannot be allocated (see acceptance.rejectionReason)");
         if (stranded.Count > 0) flags.Add($"{stranded.Count} request(s) Approved but never Applied — agreed with the partner and never written to the job");
 
         return new JsonObject
@@ -104,7 +104,7 @@ public sealed class AgentPartnerInboxService(
             ["pendingCount"] = history.Count(h => h.Status == "Pending"),
             ["requests"] = new JsonArray([.. history.Select(h => (JsonNode)HistoryDetail(h, asOf))]),
             ["acceptance"] = PartnerInboxComposer.Acceptance(acceptance),
-            ["note"] = history.Count == 0
+            ["message"] = history.Count == 0
                 ? "No change request has ever been raised on this job, in either direction. That is not the same as 'this job has no partner' — read the acceptance state above."
                 : "This history runs both directions: origin 'Peer' came from the partner, 'Local' is ours waiting on them. Only Pending rows raised by the partner (or the voice agent) appear in the queue.",
             ["flags"] = AgentJobSearchService.Strings(flags),
@@ -147,7 +147,7 @@ public sealed class AgentPartnerInboxService(
         var readIds = jobIds.Take(maxJobs).ToList();
         if (jobIds.Count > readIds.Count)
         {
-            warnings.Add($"max_jobs={maxJobs}: read the history and rate gate for {readIds.Count} of {jobIds.Count} jobs. Rows for the rest carry acceptance:null — \"not checked\", not \"Allowed\".");
+            warnings.Add($"max_jobs={maxJobs}: read the history and acceptance gate for {readIds.Count} of {jobIds.Count} jobs. Rows for the rest carry acceptance:null — \"not checked\", not \"Allowed\".");
         }
 
         Dictionary<int, (IReadOnlyList<JobChangeRequestDto>? History, Acceptance Gate)> reads = [];

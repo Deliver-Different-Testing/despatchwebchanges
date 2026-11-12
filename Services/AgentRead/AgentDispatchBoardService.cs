@@ -143,7 +143,7 @@ public sealed class AgentDispatchBoardService(
                     ["jobs"] = d.JobCount,
                     ["status"] = d.DriverStatusText
                 })]),
-                ["note"] = "jobs is the driver's current work across the WHOLE tenant, not just the requested views; the read lists at most 500 active couriers."
+                ["message"] = "jobs is the driver's current work across the WHOLE tenant, not just the requested views; the read lists at most 500 active couriers."
             };
         }
         catch (Exception e) when (e is not OperationCanceledException)

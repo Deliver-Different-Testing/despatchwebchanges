@@ -196,6 +196,7 @@ public sealed class AgentJobSearchService(IJobQueryRepository jobs, ITenantClock
             },
             ["verdict"] = assessment.Verdict,
             ["flags"] = Strings(assessment.Flags),
+            ["priceFlags"] = Strings(assessment.PriceFlags),
             ["parcels"] = new JsonArray([.. (usable ? parcels : []).Select(p => (JsonNode)new JsonObject
             {
                 ["fulfilmentOrderId"] = p.FulfilmentOrderId,
@@ -236,7 +237,7 @@ public sealed class AgentJobSearchService(IJobQueryRepository jobs, ITenantClock
         List<string> warnings = [];
         if (reference is not null)
         {
-            warnings.Add("reference matches a job only when OurReference or ClientReferenceA/B/C equals it; the underlying wildcard also matches names, phones and addresses, so other hits are counted, not listed.");
+            warnings.Add("reference matches a job only when OurReference or ClientReferenceA/B/C equals it; the underlying wildcard also matches names, contact fields and addresses, so other hits are counted, not listed.");
         }
 
         if (wild.Length is > 0 and < 4)

@@ -26,6 +26,12 @@ public static partial class AgentFieldProjector
     private static readonly HashSet<string> NoteWords =
         ["note", "notes", "instruction", "instructions", "reason", "comment", "comments", "remark", "remarks"];
 
+    // A member name carries POD only through the word "pod" (podDetail); the wider set applies to typed text and field names.
+    private static readonly HashSet<string> PodMemberWords = ["pod"];
+
+    private static readonly HashSet<string> TextPodWords =
+        ["pod", "signature", "signatures", "signed", "photo", "photos", "photograph", "photographs", "image", "images"];
+
     // Member names that carry text a customer or staff member typed. Identifiers the model acts on (job numbers, ids) are not here.
     private static readonly HashSet<string> FreeTextMembers = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -59,11 +65,11 @@ public static partial class AgentFieldProjector
     public static string? ClassOf(string memberName) => ClassesOf(memberName).FirstOrDefault();
 
     /// <summary>Every class a member name belongs to; a member in more than one is shown only to a caller holding all of them.</summary>
-    public static IReadOnlyList<string> ClassesOf(string memberName) => ClassesOfWords(Words(memberName), CostWords);
+    public static IReadOnlyList<string> ClassesOf(string memberName) => ClassesOfWords(Words(memberName), CostWords, PodMemberWords);
 
     /// <summary>Classes of a field name that sits outside the member vocabulary (a change request's FieldName).</summary>
     public static IReadOnlyList<string> ClassesOfField(string? fieldName) =>
-        string.IsNullOrEmpty(fieldName) ? [] : ClassesOfWords(Words(fieldName), TextCostWords);
+        string.IsNullOrEmpty(fieldName) ? [] : ClassesOfWords(Words(fieldName), TextCostWords, TextPodWords);
 
     /// <summary>Classes of typed text: the word lists plus literal emails, phone numbers and currency amounts.</summary>
     public static IReadOnlyList<string> ClassesOfText(params string?[] texts)
@@ -73,8 +79,9 @@ public static partial class AgentFieldProjector
 
         var words = text.Split([' ', '\t', '\r', '\n', ',', ';', ':', '.', '-', '_', '/', '(', ')', '"', '\'', '!', '?', '=', '>', '<', '→', '$'], StringSplitOptions.RemoveEmptyEntries)
             .Select(w => w.ToLowerInvariant());
-        var classes = ClassesOfWords(words, TextCostWords);
+        var classes = ClassesOfWords(words, TextCostWords, TextPodWords);
 
+        if (!classes.Contains(AgentCapabilities.SeePod) && text.Contains("proof of delivery", StringComparison.OrdinalIgnoreCase)) classes.Add(AgentCapabilities.SeePod);
         if (!classes.Contains(AgentCapabilities.SeeCosts) && CurrencyPattern().IsMatch(text)) classes.Add(AgentCapabilities.SeeCosts);
         if (!classes.Contains(AgentCapabilities.SeeContactDetails) && (EmailPattern().IsMatch(text) || HasPhoneNumber(text)))
         {
@@ -91,6 +98,7 @@ public static partial class AgentFieldProjector
         if (classes.Contains(AgentCapabilities.SeeCosts)) parts.Add("price");
         if (classes.Contains(AgentCapabilities.SeeContactDetails)) parts.Add("phoneOrEmail");
         if (classes.Contains(AgentCapabilities.SeeNotes)) parts.Add("notes");
+        if (classes.Contains(AgentCapabilities.SeePod)) parts.Add("pod");
         return string.Concat(parts.Select((p, i) => i == 0 ? p : "And" + char.ToUpperInvariant(p[0]) + p[1..]));
     }
 
@@ -107,13 +115,14 @@ public static partial class AgentFieldProjector
         return false;
     }
 
-    private static List<string> ClassesOfWords(IEnumerable<string> sequence, HashSet<string> costWords)
+    private static List<string> ClassesOfWords(IEnumerable<string> sequence, HashSet<string> costWords, HashSet<string> podWords)
     {
         var words = sequence as IReadOnlyCollection<string> ?? [.. sequence];
         List<string> classes = [];
         if (words.Any(costWords.Contains) || costWords.Contains(string.Concat(words))) classes.Add(AgentCapabilities.SeeCosts);
         if (words.Any(ContactWords.Contains)) classes.Add(AgentCapabilities.SeeContactDetails);
         if (words.Any(NoteWords.Contains)) classes.Add(AgentCapabilities.SeeNotes);
+        if (words.Any(podWords.Contains)) classes.Add(AgentCapabilities.SeePod);
         return classes;
     }
 
@@ -225,7 +234,9 @@ public static partial class AgentFieldProjector
                 continue;
             }
 
-            Walk(value, memberPath, context);
+            if (classes.Count == 0 && !IsIdentityText(name) && !RedactNeutralText(obj, name, memberPath, context)) continue;
+
+            Walk(obj[name], memberPath, context);
             if (!classes.Contains(AgentCapabilities.SeeNotes) && !(FreeTextMembers.Contains(name) && IsText(value))) continue;
 
             obj.Remove(name);
@@ -235,6 +246,45 @@ public static partial class AgentFieldProjector
         }
         if (untrusted is not null) obj[UntrustedTextKey] = untrusted;
     }
+
+    // Text the roles may always see (names, addresses, references, people) and fixed-vocabulary labels (an artefact `kind` of
+    // "photo" is a count-style label, not POD content) are not content-classified; every other string member (flags,
+    // warnings, verdict, message...) is. The composers already route `what`/`detail`/`from`/`to` by class themselves.
+    private static readonly HashSet<string> LabelMembers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "kind", "leg", "folder", "class", "classification", "status", "type", "field"
+    };
+
+    private static bool IsIdentityText(string name) => FreeTextMembers.Contains(name) || LabelMembers.Contains(name);
+
+    /// <summary>Drops a string member, or the elements of a string array, whose text hits a class the caller lacks. Returns false when the member was removed.</summary>
+    private static bool RedactNeutralText(JsonObject obj, string name, string memberPath, Context context)
+    {
+        switch (obj[name])
+        {
+            case JsonValue v when v.TryGetValue<string>(out var text):
+                var missing = MissingClasses(text, context);
+                if (missing.Count == 0) return true;
+                obj.Remove(name);
+                foreach (var cls in missing) context.Omit(cls, memberPath);
+                return false;
+            case JsonArray array:
+                for (var i = array.Count - 1; i >= 0; i--)
+                {
+                    if (array[i] is not JsonValue item || !item.TryGetValue<string>(out var element)) continue;
+                    var gone = MissingClasses(element, context);
+                    if (gone.Count == 0) continue;
+                    array.RemoveAt(i);
+                    foreach (var cls in gone) context.Omit(cls, memberPath + "[]");
+                }
+
+                return true;
+            default:
+                return true;
+        }
+    }
+
+    private static List<string> MissingClasses(string text, Context context) => [.. ClassesOfText(text).Where(c => !context.Allows(c))];
 
     // POD data is not classified by member name: the name a driver recorded, the signer and the artefact file names.
     private static bool IsPodMember(string parentPath, string name) =>

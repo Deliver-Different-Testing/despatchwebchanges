@@ -128,7 +128,7 @@ public sealed partial class AgentJobEvidenceService(IJobQueryRepository jobs, IJ
             source = "caller";
             if (derived is { } d && d != used)
             {
-                warnings.Add($"month={month} was supplied by the caller and does not match completedTime ({completed:yyyy-MM-ddTHH:mm:ss}); the photo lookups used the caller's month.");
+                warnings.Add($"month={month} was supplied by the caller and does not match completedTime ({completed:yyyy-MM-ddTHH:mm:ss}); the attachment lookups used the caller's month.");
             }
         }
         else if (derived is { } d)
@@ -138,7 +138,7 @@ public sealed partial class AgentJobEvidenceService(IJobQueryRepository jobs, IJ
         }
         else
         {
-            warnings.Add("No completedTime on the job and no month argument — the delivery/pickup photo lookups were SKIPPED. They are keyed by the completion month and today's month would return an empty list that reads like 'no photos'.");
+            warnings.Add("No completedTime on the job and no month argument — the delivery/pickup attachment lookups were SKIPPED. They are keyed by the completion month and today's month would return an empty list that reads like 'no attachments'.");
         }
 
         ct.ThrowIfCancellationRequested();
@@ -146,7 +146,7 @@ public sealed partial class AgentJobEvidenceService(IJobQueryRepository jobs, IJ
         if (used is { } u)
         {
             items.AddRange((await photos.ListCapturedMediaAsync(id.Value, u.Year, u.Month)).Select(Classify));
-            warnings.Add("The photo listing returns empty both when nothing is held and when the S3 listing failed; an empty list is not proof of no photos.");
+            warnings.Add("The attachment listing returns empty both when nothing is held and when the S3 listing failed; an empty list is not proof of no attachments.");
         }
 
         var attachments = await photos.GetAttachedFilesAsync(id.Value);
@@ -157,7 +157,7 @@ public sealed partial class AgentJobEvidenceService(IJobQueryRepository jobs, IJ
         var cap = Math.Clamp(maxItems, 1, MaxItems);
         var by = job.AssignedCourier?.Text ?? job.Courier;
         if (all && items.Count > cap) warnings.Add($"max_items={cap}: showing {cap} of {items.Count} artefacts.");
-        warnings.Add("Image links are not available from this endpoint: despatch holds no sealed download link, so evidence is metadata only. Without agent-see-pod the POD name, signer and file names are omitted (counts, kinds, legs and times stay). takenAt is the S3 last-modified time; by is the job's assigned driver, not a per-image attribution; gpsPresent is not recorded where it can be listed (null).");
+        warnings.Add("Download links are not available from this endpoint: despatch holds no sealed download link, so evidence is metadata only. Without the proof-of-delivery verb the typed name, signer and file names are omitted (counts, kinds, legs and times stay). takenAt is the S3 last-modified time; by is the job's assigned driver, not a per-file attribution; gpsPresent is not recorded where it can be listed (null).");
 
         return new JsonObject
         {
@@ -177,11 +177,11 @@ public sealed partial class AgentJobEvidenceService(IJobQueryRepository jobs, IJ
                 ["year"] = used?.Year,
                 ["month"] = used?.Month,
                 ["source"] = source,
-                ["note"] = source switch
+                ["message"] = source switch
                 {
                     "completedTime" => "Derived from completedTime, as the S3 folders require. Today's month would have returned an empty list.",
-                    "caller" => "Caller-supplied. Not read off the record — treat the photo counts as scoped to the month you asked for.",
-                    _ => "No month: the photo lookups were skipped, so their counts below are 0 because nothing was read."
+                    "caller" => "Caller-supplied. Not read off the record — treat the attachment counts as scoped to the month you asked for.",
+                    _ => "No month: the attachment lookups were skipped, so their counts below are 0 because nothing was read."
                 }
             },
             ["counts"] = new JsonObject
@@ -216,7 +216,7 @@ public sealed partial class AgentJobEvidenceService(IJobQueryRepository jobs, IJ
     {
         ["found"] = false,
         ["job"] = job,
-        ["note"] = "No job with that number or id. Check the number (and the tenant you are connected to)."
+        ["message"] = "No job with that number or id. Check the number (and the tenant you are connected to)."
     };
 }
 

@@ -49,7 +49,7 @@ public sealed class AgentDriverDayService(
         var search = request.Search ?? "";
         if (request.Fleet is { } fleet)
         {
-            warnings.Add($"fleet={fleet} filters today's drivers and the compliance list; the earnings read takes no fleet, so courierPaymentToday and the tenant-wide money are UNFILTERED.");
+            warnings.Add($"fleet={fleet} filters today's drivers and the compliance list; the daily courier read takes no fleet, so its figures and the tenant-wide figures are UNFILTERED.");
         }
 
         try
@@ -67,12 +67,12 @@ public sealed class AgentDriverDayService(
                 }),
                 "Every driver below reads \"compliance not checked\"; none of them reads \"valid\".");
 
-            var earnings = await TryPageAsync<CourierDailyEarningsViewModel, CourierDailyEarningsPaginatedResponse>("daily earnings", warnings,
+            var earnings = await TryPageAsync<CourierDailyEarningsViewModel, CourierDailyEarningsPaginatedResponse>("daily courier figures", warnings,
                 p => couriers.GetCourierDailyEarningsAsync(new DespatchWeb.Models.PaginatedRequest
                 {
                     SearchTerm = search, OrderBy = "name", Page = p, PageSize = PageSize
                 }),
-                "Money columns are omitted, not zero.");
+                "The courier figures are omitted, not zero.");
 
             var (boardRead, board, boardViews) = await BoardAsync(request, warnings, ct);
 
@@ -104,7 +104,7 @@ public sealed class AgentDriverDayService(
             {
                 head["drivers"] = new JsonArray();
                 head["boardOnly"] = Array(boardOnly.Take(maxDrivers));
-                head["note"] = "No driver has logged in today on this tenant's clock. That is what the app reports; it is not evidence that nobody is working — a shift that began yesterday and never logged out is excluded by construction.";
+                head["message"] = "No driver has logged in today on this tenant's clock. That is what the app reports; it is not evidence that nobody is working — a shift that began yesterday and never logged out is excluded by construction.";
                 head["warnings"] = AgentJobSearchService.Strings(warnings);
                 return head;
             }
@@ -118,7 +118,7 @@ public sealed class AgentDriverDayService(
                 head["boardOnly"] = Array(boardOnly.Take(maxDrivers));
                 if (request.Detail == "attention")
                 {
-                    head["note"] = $"detail=\"attention\": only the {capped.Count} flagged driver(s) are listed. Ask for detail=all to see everyone who worked today.";
+                    head["message"] = $"detail=\"attention\": only the {capped.Count} flagged driver(s) are listed. Ask for detail=all to see everyone who worked today.";
                 }
             }
 
@@ -151,7 +151,7 @@ public sealed class AgentDriverDayService(
 
         if (first.Pages > MaxPages) warnings.Add($"{label}: {first.Pages} pages of {PageSize}; this tool read the first {MaxPages}. Narrow with search or fleet for a complete answer.");
         var complete = items.Count >= first.Total;
-        if (!complete) warnings.Add($"{label}: the response claims total={first.Total} but {items.Count} rows came back — treat this list as INCOMPLETE.");
+        if (!complete) warnings.Add($"{label}: the response claims {first.Total} rows but {items.Count} rows came back — treat this list as INCOMPLETE.");
         return new Paged<TItem, TResponse>(items, first, complete);
     }
 

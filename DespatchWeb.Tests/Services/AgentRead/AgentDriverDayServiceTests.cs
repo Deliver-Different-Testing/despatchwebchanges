@@ -227,7 +227,7 @@ public partial class AgentDriverDayServiceTests
 
         Assert.Empty(o["drivers"]!.AsArray());
         Assert.Equal(0, (int)o["counts"]!["driversWhoLoggedInToday"]!);
-        Assert.Contains("began yesterday", (string)o["note"]!);
+        Assert.Contains("began yesterday", (string)o["message"]!);
     }
 
     [Fact]
@@ -238,7 +238,7 @@ public partial class AgentDriverDayServiceTests
         Assert.NotEmpty(o["drivers"]!.AsArray());
         Assert.All(o["drivers"]!.AsArray(), d => Assert.NotEmpty(d!["flags"]!.AsArray()));
         Assert.Contains(Warnings(o), w => w.Contains("UNFILTERED"));
-        Assert.Contains("detail=\"attention\"", (string)o["note"]!);
+        Assert.Contains("detail=\"attention\"", (string)o["message"]!);
     }
 
     [Fact]

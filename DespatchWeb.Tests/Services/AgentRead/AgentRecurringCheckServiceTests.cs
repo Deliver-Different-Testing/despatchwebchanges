@@ -103,7 +103,7 @@ public class AgentRecurringCheckServiceTests
 
         var o = await _service.CheckAsync(new RecurringCheckRequest(AsOf: AsOf));
 
-        Assert.Contains(o["warnings"]!.AsArray().Select(w => (string)w!), w => w.Contains("received") && w.Contains("total"));
+        Assert.Contains(o["warnings"]!.AsArray().Select(w => (string)w!), w => w.Contains("received") && w.Contains("count"));
     }
 
     [Fact]

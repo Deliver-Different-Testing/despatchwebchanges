@@ -145,7 +145,7 @@ public sealed class AgentRecurringCheckService(
 
         if (all.Count != total)
         {
-            warnings.Add($"recurringMode {(int)mode}: received {all.Count} rows but the list reports total {total} — treat the list as incomplete");
+            warnings.Add($"recurringMode {(int)mode}: received {all.Count} rows but the list reports a count of {total} — treat the list as incomplete");
         }
 
         return all;

@@ -186,7 +186,7 @@ public class AgentPartnerInboxServiceTests
         Assert.Empty(none["requests"]!.AsArray());
         Assert.Equal("Allowed", (string?)none["acceptance"]!["status"]);
         Assert.False((bool)none["acceptance"]!["known"]!);
-        Assert.Contains("No change request has ever been raised", (string)none["note"]!);
+        Assert.Contains("No change request has ever been raised", (string)none["message"]!);
         await _requests.DidNotReceiveWithAnyArgs().ListPendingForApprovalAsync(default, default);
 
         var full = await _service.GetAsync(new PartnerInboxRequest(JobId: 700101, AsOf: AsOf));

@@ -62,9 +62,9 @@ public static partial class PartnerInboxComposer
         var meaning = status switch
         {
             "Allowed" => "Allowed OR no acceptance state recorded at all — the route returns \"Allowed\" for both. Never read it as \"the partner accepted\".",
-            "PendingAcceptance" => "The offered rate has not been accepted; allocating this job is blocked until someone reviews it.",
-            "Rejected" => "The rate was rejected; allocation stays blocked until the partner re-dispatches or cancels.",
-            "Accepted" => "The offered rate was accepted; no gate.",
+            "PendingAcceptance" => "The partner's offer has not been accepted; allocating this job is blocked until someone reviews it.",
+            "Rejected" => "The partner's offer was rejected; allocation stays blocked until the partner re-dispatches or cancels.",
+            "Accepted" => "The partner's offer was accepted; no gate.",
             _ => "Unrecognised acceptance status — the gate blocks on anything it does not know."
         };
         return new Acceptance(status, status != "Allowed", status is "PendingAcceptance" or "Rejected",
@@ -86,13 +86,13 @@ public static partial class PartnerInboxComposer
 
         if (acceptance?.Status == "PendingAcceptance")
         {
-            flags.Add("Rate not accepted — this job cannot be allocated to a driver until the offered rate is reviewed");
+            flags.Add("Offer not accepted — this job cannot be allocated to a driver until the offer is reviewed");
             if (acceptance.ProposedAgreedRate is { } offered) priceFlags.Add($"Offered rate {offered.ToString(CultureInfo.InvariantCulture)}");
         }
 
         if (acceptance?.Status == "Rejected")
         {
-            flags.Add("Rate was REJECTED — allocation stays blocked until the partner re-dispatches or cancels (the partner's reason is in acceptance.rejectionReason)");
+            flags.Add("Offer was REJECTED — allocation stays blocked until the partner re-dispatches or cancels (see acceptance.rejectionReason)");
         }
 
         if (commercial)

@@ -20,7 +20,11 @@ public sealed record ClassifiedJob(
 
 public sealed record Parcel(string? FulfilmentOrderId, List<string> Jobs, int Live, int Voided);
 
-public sealed record Assessment(string Verdict, IReadOnlyList<string> Flags);
+/// <summary>
+/// Flags that mention what a job is priced at live in <c>PriceFlags</c> so the cost class hides them; <c>Flags</c> must stay
+/// free of amount-derived text. The invoice state and number on a job row are billing status, not a price, and stay neutral.
+/// </summary>
+public sealed record Assessment(string Verdict, IReadOnlyList<string> Flags, IReadOnlyList<string> PriceFlags);
 
 /// <summary>The order and reference reading of a job search, ported from the shopify_order_jobs prototype.</summary>
 public static class JobSearchComposer
@@ -97,6 +101,7 @@ public static class JobSearchComposer
         int? expectedFulfilmentOrders)
     {
         List<string> flags = [];
+        List<string> priceFlags = [];
         var live = confirmed.Where(j => !j.IsVoid).ToList();
         var voided = confirmed.Count - live.Count;
 
@@ -104,14 +109,14 @@ public static class JobSearchComposer
         {
             if (unconfirmed.Count > 0)
             {
-                flags.Add("UNCONFIRMED ONLY — every hit came from the wildcard's substring match over references, names, phones and addresses. "
+                flags.Add("UNCONFIRMED ONLY — every hit came from the wildcard's substring match over references, names, contact fields and addresses. "
                           + "It may still be a genuine job matched on ShopRef1/2/3, which the export does not expose: open one job and check.");
                 return new Assessment(
                     $"NO CONFIRMED JOB. {unconfirmed.Count} job(s) matched the wildcard but no reference column equals the order — count none of them as this order's.",
-                    flags);
+                    flags, []);
             }
 
-            return new Assessment("NO JOB FOUND for this order in the searched window.", flags);
+            return new Assessment("NO JOB FOUND for this order in the searched window.", flags, []);
         }
 
         var parcelWord = parcelsCountable ? $"{parcels.Count} fulfilment order(s)" : "an uncountable number of fulfilment orders";
@@ -135,8 +140,8 @@ public static class JobSearchComposer
         if (parcelsCountable && doubled.Count > 0)
         {
             flags.Add($"DOUBLE BOOKED — fulfilment order(s) {string.Join(", ", doubled.Select(p => p.FulfilmentOrderId ?? "(blank)"))} have more than one live job. "
-                      + "The only guard against re-booking is the string \"Job Numbers:\" inside the merchant's Shopify note — "
-                      + "editing or clearing that note re-arms both the webhook and the poller. Void the duplicates; re-tagging the order is not enough. "
+                      + "The only guard against re-booking is the string \"Job Numbers:\" inside the Shopify order's free-text field — "
+                      + "editing or clearing that field re-arms both the webhook and the poller. Void the duplicates; re-tagging the order is not enough. "
                       + "One caveat before you act: a shop with a fixed NUMERIC ClientReferenceB in Settings → Delivery puts the same value on every job and looks "
                       + "exactly like this — check that setting first.");
             verdict += " A parcel has been booked twice.";
@@ -149,12 +154,12 @@ public static class JobSearchComposer
 
         if (live.Any(j => j.Row.Amount == 0))
         {
-            flags.Add("A live job is priced $0 — a postcode in no zone, or a manual price never entered. It will invoice at zero.");
+            priceFlags.Add("A live job is priced $0 — a postcode in no zone, or a manual price never entered. It will invoice at zero.");
         }
 
         if (live.Any(j => j.Row.Amount is null))
         {
-            flags.Add("A live job has a blank Amount — unpriced, not free.");
+            priceFlags.Add("A live job has a blank Amount — unpriced, not free.");
         }
 
         if (confirmed.Any(j => j.Row.IsArchived))
@@ -167,9 +172,10 @@ public static class JobSearchComposer
             flags.Add($"{unconfirmed.Count} further job(s) matched the wildcard but carry the order in no reference column — listed as unconfirmed and excluded from every count above.");
         }
 
-        return new Assessment(verdict, flags);
+        return new Assessment(verdict, flags, priceFlags);
     }
 
+    // invoiceState / invoiceNumber are billing status (is there an invoice), not a price, so they stay in the neutral members on purpose.
     public static string InvoiceState(int? invoiceNumber) => invoiceNumber switch
     {
         null => "uninvoiced",

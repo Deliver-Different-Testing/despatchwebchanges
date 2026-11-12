@@ -105,7 +105,7 @@ public static partial class JobStoryComposer
         List<string> flags = [];
         List<string> priceFlags = [];
         if (job.Void == true) flags.Add("VOID — this job was voided; nothing below is billable");
-        if (job.Completed is not null && string.IsNullOrWhiteSpace(job.SignedBy)) flags.Add("Completed with no POD name — check who signed before billing");
+        if (job.Completed is not null && string.IsNullOrWhiteSpace(job.SignedBy)) flags.Add("Completed with no POD name — check who signed");
         if (job.PickedUp is { } pu && job.Dispatched is { } dispatched && pu < dispatched) flags.Add("Picked up before it was dispatched — clock or status order is wrong");
         if (shaped.Any(s => s.OutOfSequence)) flags.Add("Journey has an out-of-sequence entry — read the timeline, not the last line");
         var delivered = shaped.FindIndex(s => DeliveryWord().IsMatch(s.Entry.Title));
@@ -194,7 +194,7 @@ public static partial class JobStoryComposer
 
         entry["what"] = freeText ? e.Icon switch { "sms" => "Message", "task" => "Task", _ => "Note" }
             : classes.Count > 1 ? "Restricted event"
-            : classes[0] switch { AgentCapabilities.SeeCosts => "Price event", AgentCapabilities.SeeContactDetails => "Contact detail event", _ => "Note" };
+            : classes[0] switch { AgentCapabilities.SeeCosts => "Price event", AgentCapabilities.SeeContactDetails => "Contact detail event", AgentCapabilities.SeePod => "Proof of delivery event", _ => "Note" };
         entry[MemberFor(classes)] = string.IsNullOrEmpty(e.Description) ? e.Title : $"{e.Title}: {e.Description}";
         return entry;
     }
