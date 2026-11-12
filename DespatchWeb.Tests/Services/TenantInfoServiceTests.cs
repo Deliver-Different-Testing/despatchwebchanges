@@ -639,6 +639,43 @@ public sealed class TenantInfoServiceTests: IAsyncDisposable
         Assert.Equal(3, service.GetClientTypeId());
     }
 
+    [Theory]
+    [InlineData("1", new[] { 1 })]
+    [InlineData("1, 2,2", new[] { 1, 2 })]
+    [InlineData(" 3 ,x, 0,-4", new[] { 3 })]
+    public void GetBranchIds_ParsesCommaList(string claim, int[] expected)
+    {
+        SetupHttpContextWithClaims(("BranchIds", claim));
+
+        Assert.Equal(expected, CreateService().GetBranchIds());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void GetBranchIds_EmptyClaim_ReturnsNull(string claim)
+    {
+        SetupHttpContextWithClaims(("BranchIds", claim));
+
+        Assert.Null(CreateService().GetBranchIds());
+    }
+
+    [Fact]
+    public void GetBranchIds_NoClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims();
+
+        Assert.Null(CreateService().GetBranchIds());
+    }
+
+    [Fact]
+    public void GetBranchIds_NoValidId_ReturnsEmptyList_FailClosed()
+    {
+        SetupHttpContextWithClaims(("BranchIds", "abc"));
+
+        Assert.Equal([], CreateService().GetBranchIds());
+    }
+
     [Fact]
     public void GetNpAgentId_WithValidClaim_ReturnsValue()
     {

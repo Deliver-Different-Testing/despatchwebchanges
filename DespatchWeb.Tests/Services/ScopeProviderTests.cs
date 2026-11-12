@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -325,5 +326,109 @@ public class ScopeProviderTests : IAsyncDisposable
 
         Assert.Same(a, b);
         _tenantInfo.Received(1).GetClientTypeId();
+    }
+
+    // ---- Branches (B2) ----------------------------------------------------------
+
+    private void StubTenantWithBranches(IReadOnlyList<int>? branchIds, ClientType type = ClientType.Tenant)
+    {
+        SetAuthenticated(true);
+        StubClaims(
+            clientTypeId: (int)type,
+            clientTypeIdAbsent: false,
+            npAgentId: type == ClientType.NetworkPartner ? 42 : null,
+            npAgentIdAbsent: false,
+            npAgentIdEmpty: type != ClientType.NetworkPartner,
+            clientId: 100);
+        _tenantInfo.GetBranchIds().Returns(branchIds);
+    }
+
+    private void SeedBranches()
+    {
+        using var seed = _db.CreateContext();
+        seed.TblBranches.AddRange(
+            new TblBranch { BranchId = 1, Name = "Sydney", Code = "SYD", IsDefault = true, Active = true },
+            new TblBranch { BranchId = 2, Name = "Melbourne", Code = "MEL", IsDefault = false, Active = true });
+        seed.SaveChanges();
+    }
+
+    [Fact]
+    public void Branches_TenantWithoutClaim_IsNotBranchScoped()
+    {
+        StubTenantWithBranches(null);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.Null(scope.BranchIds);
+        Assert.False(scope.IsBranchScoped);
+    }
+
+    [Fact]
+    public void Branches_TenantWithDefaultBranch_DefaultInScope()
+    {
+        SeedBranches();
+        StubTenantWithBranches([1]);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.True(scope.IsBranchScoped);
+        Assert.Equal([1], scope.BranchIds);
+        Assert.True(scope.DefaultBranchInScope);
+        Assert.False(scope.BranchJobsIncludeCourier);
+    }
+
+    [Fact]
+    public void Branches_TenantWithoutDefaultBranch_DefaultNotInScope()
+    {
+        SeedBranches();
+        StubTenantWithBranches([2]);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.True(scope.IsBranchScoped);
+        Assert.False(scope.DefaultBranchInScope);
+    }
+
+    [Fact]
+    public void Branches_InternalStaff_GetBranches()
+    {
+        SeedBranches();
+        StubTenantWithBranches([2], ClientType.Internal);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.True(scope.IsBranchScoped);
+    }
+
+    [Theory]
+    [InlineData(ClientType.NetworkPartner)]
+    [InlineData(ClientType.Customer)]
+    [InlineData(ClientType.DfrntAdmin)]
+    public void Branches_NonStaffScopes_IgnoreTheClaim(ClientType type)
+    {
+        StubTenantWithBranches([1], type);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.Null(scope.BranchIds);
+        Assert.False(scope.IsBranchScoped);
+        _tenantInfo.DidNotReceive().GetBranchIds();
+    }
+
+    [Fact]
+    public void Branches_OptionBSetting_TurnsOnJobsViaCourier()
+    {
+        SeedBranches();
+        StubTenantWithBranches([2]);
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                [ScopeProvider.JobsVisibleViaCourierSetting] = "true"
+            })
+            .Build();
+
+        var scope = new ScopeProvider(_httpContextAccessor, _tenantInfo, _db.CreateFactoryMock(), configuration).Scope;
+
+        Assert.True(scope.BranchJobsIncludeCourier);
     }
 }

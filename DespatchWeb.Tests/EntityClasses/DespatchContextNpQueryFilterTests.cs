@@ -446,4 +446,353 @@ public class DespatchContextNpQueryFilterTests : IAsyncDisposable
 
         Assert.Equal(2, count);
     }
+
+    // ---- Branches (B2): branch arm beside the NP arm ----------------------------
+
+    private const int Syd = 1;
+    private const int Mel = 2;
+    private const int SydClient = 10;
+    private const int MelClient = 20;
+    private const int TenantHouseClient = 30;
+    private const int InternalClient = 40;
+    private const int NoBranchCustomer = 50;
+
+    private static ScopeContext BranchTenantScope(int[] branchIds, bool defaultBranchInScope = false,
+        bool jobsViaCourier = false, int? clientId = TenantHouseClient) =>
+        new(ClientTypeId: (int)ClientType.Tenant, ClientId: clientId, NpAgentId: null,
+            BranchIds: branchIds, DefaultBranchInScope: defaultBranchInScope,
+            BranchJobsIncludeCourier: jobsViaCourier);
+
+    private static TucClient Client(int id, int? branchId, ClientType type = ClientType.Customer) => new()
+    {
+        UcclId = id,
+        UcclName = $"Client {id}",
+        UcclLegalName = $"Client {id}",
+        Smsname = "T",
+        UcclCode = $"C{id}",
+        UcclAddress = "1 St",
+        UcclExtraAddress = "",
+        UcclPostal = "",
+        UcclPostCode = "0",
+        UcclPhone = "",
+        UcclPhone2 = "",
+        UcclMobile = "",
+        UcclFax = "",
+        UcclType = "",
+        Created = TestDates.Now,
+        CreatedBy = "T",
+        LastModified = TestDates.Now,
+        LastModifiedBy = "T",
+        ClientTypeId = (int)type,
+        BranchId = branchId
+    };
+
+    private static TucCourier Courier(int id, int? branchId, int? npAgentId = null) => new()
+    {
+        UccrId = id, Code = $"C{id}", UccrName = $"Courier{id}", UccrSurname = "X",
+        UccrEmail = $"c{id}@t.com", UccrMobile = $"{id}",
+        Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T",
+        BranchId = branchId,
+        NpAgentId = npAgentId
+    };
+
+    private async Task SeedBranchClientsAsync(DespatchContext seed)
+    {
+        seed.TucClients.AddRange(
+            Client(SydClient, Syd),
+            Client(MelClient, Mel),
+            Client(TenantHouseClient, null, ClientType.Tenant),
+            Client(InternalClient, null, ClientType.Internal),
+            Client(NoBranchCustomer, null));
+        await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task Branches_TenantWithNoBranches_SeesEverything()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "SYD", UcjbClientId = SydClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "MEL", UcjbClientId = MelClient });
+            seed.TucCouriers.AddRange(Courier(1, Syd), Courier(2, Mel), Courier(3, null));
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(TenantScope());
+
+        Assert.Equal(2, await context.TucJobs.CountAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(5, await context.TucClients.CountAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(3, await context.TucCouriers.CountAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Branches_SydOnly_SeesSydClientJobsNotMel_OnEveryJobTable()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "SYD", UcjbClientId = SydClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "MEL", UcjbClientId = MelClient },
+                new TucJob { UcjbId = 3, UcjbNumber = "NO-CLIENT", UcjbClientId = null });
+            seed.TucJobArchives.AddRange(
+                new TucJobArchive { UcjbId = 11, UcjbNumber = "A-SYD", UcjbClientId = SydClient },
+                new TucJobArchive { UcjbId = 12, UcjbNumber = "A-MEL", UcjbClientId = MelClient });
+            seed.TucJobBookings.AddRange(
+                new TucJobBooking { UcbkId = 21, UcbkClientId = SydClient },
+                new TucJobBooking { UcbkId = 22, UcbkClientId = MelClient });
+            seed.TblBulkJobs.AddRange(
+                new TblBulkJob { BulkJobId = 31, JobNumber = "B-SYD", ClientId = SydClient },
+                new TblBulkJob { BulkJobId = 32, JobNumber = "B-MEL", ClientId = MelClient });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(BranchTenantScope([Syd]));
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Equal([1], await context.TucJobs.Select(j => j.UcjbId).ToListAsync(ct));
+        Assert.Equal([11], await context.TucJobArchives.Select(j => j.UcjbId).ToListAsync(ct));
+        Assert.Equal([21], await context.TucJobBookings.Select(j => j.UcbkId).ToListAsync(ct));
+        Assert.Equal([31], await context.TblBulkJobs.Select(j => j.BulkJobId).ToListAsync(ct));
+    }
+
+    [Fact]
+    public async Task Branches_SydOnly_Clients_OwnBranchPlusHouseAccounts()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+        }
+
+        await using var context = CreateContext(BranchTenantScope([Syd]));
+        var ids = await context.TucClients.Select(c => c.UcclId).OrderBy(id => id)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal([SydClient, TenantHouseClient, InternalClient], ids);
+    }
+
+    [Fact]
+    public async Task Branches_SydOnly_JobsOfTenantAndInternalClientsStayVisible()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "HOUSE", UcjbClientId = TenantHouseClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "INTERNAL", UcjbClientId = InternalClient },
+                new TucJob { UcjbId = 3, UcjbNumber = "NO-BRANCH", UcjbClientId = NoBranchCustomer });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(BranchTenantScope([Syd]));
+        var ids = await context.TucJobs.Select(j => j.UcjbId).OrderBy(id => id)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal([1, 2], ids);
+    }
+
+    [Fact]
+    public async Task Branches_SydAndMel_SeesBoth()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "SYD", UcjbClientId = SydClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "MEL", UcjbClientId = MelClient });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(BranchTenantScope([Syd, Mel]));
+
+        Assert.Equal(2, await context.TucJobs.CountAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Branches_Couriers_HomeBranch_AndNullBranchFollowsDefault()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            seed.TucCouriers.AddRange(Courier(1, Syd), Courier(2, Mel), Courier(3, null));
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var ct = TestContext.Current.CancellationToken;
+
+        await using (var defaultIsSyd = CreateContext(BranchTenantScope([Syd], defaultBranchInScope: true)))
+        {
+            Assert.Equal([1, 3], await defaultIsSyd.TucCouriers.Select(c => c.UccrId).OrderBy(id => id).ToListAsync(ct));
+        }
+
+        await using var defaultElsewhere = CreateContext(BranchTenantScope([Syd], defaultBranchInScope: false));
+        Assert.Equal([1], await defaultElsewhere.TucCouriers.Select(c => c.UccrId).ToListAsync(ct));
+    }
+
+    [Fact]
+    public async Task Branches_OptionB_Switch_ShowsMelJobWithSydCourierOnlyWhenOn()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucCouriers.AddRange(Courier(1, Syd), Courier(2, Mel));
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "MEL-BY-SYD", UcjbClientId = MelClient, UcjbCourierId = 1 },
+                new TucJob { UcjbId = 2, UcjbNumber = "MEL-BY-MEL", UcjbClientId = MelClient, UcjbCourierId = 2 },
+                new TucJob { UcjbId = 3, UcjbNumber = "MEL-NO-COURIER", UcjbClientId = MelClient });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var ct = TestContext.Current.CancellationToken;
+
+        await using (var optionA = CreateContext(BranchTenantScope([Syd])))
+        {
+            Assert.Empty(await optionA.TucJobs.ToListAsync(ct));
+        }
+
+        await using var optionB = CreateContext(BranchTenantScope([Syd], jobsViaCourier: true));
+        Assert.Equal([1], await optionB.TucJobs.Select(j => j.UcjbId).ToListAsync(ct));
+    }
+
+    [Fact]
+    public async Task Branches_Notes_FollowTheirJob()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "SYD", UcjbClientId = SydClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "MEL", UcjbClientId = MelClient });
+            seed.TucJobBookings.AddRange(
+                new TucJobBooking { UcbkId = 21, UcbkClientId = SydClient },
+                new TucJobBooking { UcbkId = 22, UcbkClientId = MelClient });
+            seed.TucNotes.AddRange(
+                new TucNote { NoteId = 1, NoteText = "syd job", JobId = 1 },
+                new TucNote { NoteId = 2, NoteText = "mel job", JobId = 2 },
+                new TucNote { NoteId = 3, NoteText = "syd prebook", JobBookingId = 21 },
+                new TucNote { NoteId = 4, NoteText = "mel prebook", JobBookingId = 22 },
+                new TucNote { NoteId = 5, NoteText = "no job" });
+            seed.TucJobArchives.AddRange(
+                new TucJobArchive { UcjbId = 11, UcjbNumber = "A-SYD", UcjbClientId = SydClient },
+                new TucJobArchive { UcjbId = 12, UcjbNumber = "A-MEL", UcjbClientId = MelClient });
+            seed.TucNoteArchives.AddRange(
+                new TucNoteArchive { NoteId = 1, NoteText = "syd archive", JobId = 11 },
+                new TucNoteArchive { NoteId = 2, NoteText = "mel archive", JobId = 12 });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(BranchTenantScope([Syd]));
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Equal([1, 3, 5], await context.TucNotes.Select(n => n.NoteId).OrderBy(id => id).ToListAsync(ct));
+        Assert.Equal([1], await context.TucNoteArchives.Select(n => n.NoteId).ToListAsync(ct));
+    }
+
+    [Fact]
+    public async Task Branches_EmptyBranchList_FailsClosed_HouseAccountsOnly()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "SYD", UcjbClientId = SydClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "HOUSE", UcjbClientId = TenantHouseClient });
+            seed.TucCouriers.AddRange(Courier(1, Syd), Courier(2, null));
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(BranchTenantScope([]));
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Equal([2], await context.TucJobs.Select(j => j.UcjbId).ToListAsync(ct));
+        Assert.Empty(await context.TucCouriers.ToListAsync(ct));
+    }
+
+    [Fact]
+    public async Task Branches_InternalStaffWithBranches_AreBranchLimited()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "SYD", UcjbClientId = SydClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "MEL", UcjbClientId = MelClient });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(
+            new ScopeContext((int)ClientType.Internal, InternalClient, null, BranchIds: [Syd]));
+
+        Assert.Equal([1], await context.TucJobs.Select(j => j.UcjbId)
+            .ToListAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Branches_NpUserWithBranchIds_StillOnlyNpArm()
+    {
+        // ScopeProvider never hands branches to an NP user; this proves the filters ignore
+        // them anyway: NP rows by NpAgentId, every client, couriers by NpAgentId.
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "NP-MEL", UcjbClientId = MelClient, NpAgentId = 77 },
+                new TucJob { UcjbId = 2, UcjbNumber = "SYD", UcjbClientId = SydClient });
+            seed.TucCouriers.AddRange(Courier(1, Syd), Courier(2, Mel, npAgentId: 77));
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(
+            new ScopeContext((int)ClientType.NetworkPartner, null, 77, BranchIds: [Syd]));
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Equal([1], await context.TucJobs.Select(j => j.UcjbId).ToListAsync(ct));
+        Assert.Equal(5, await context.TucClients.CountAsync(ct));
+        Assert.Equal([2], await context.TucCouriers.Select(c => c.UccrId).ToListAsync(ct));
+    }
+
+    [Fact]
+    public async Task Branches_CustomerAndDfAdminWithBranchIds_Unchanged()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "SYD", UcjbClientId = SydClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "MEL", UcjbClientId = MelClient });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var ct = TestContext.Current.CancellationToken;
+
+        await using (var customer = CreateContext(
+                         new ScopeContext((int)ClientType.Customer, MelClient, null, BranchIds: [Syd])))
+        {
+            Assert.Equal([2], await customer.TucJobs.Select(j => j.UcjbId).ToListAsync(ct));
+            Assert.Equal(5, await customer.TucClients.CountAsync(ct));
+        }
+
+        await using var dfAdmin = CreateContext(
+            new ScopeContext((int)ClientType.DfrntAdmin, null, null, BranchIds: [Syd]));
+        Assert.Equal(2, await dfAdmin.TucJobs.CountAsync(ct));
+        Assert.Equal(5, await dfAdmin.TucClients.CountAsync(ct));
+    }
+
+    [Fact]
+    public async Task Branches_BackgroundContext_Bypasses()
+    {
+        await using (var seed = _db.CreateContext())
+        {
+            await SeedBranchClientsAsync(seed);
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "SYD", UcjbClientId = SydClient },
+                new TucJob { UcjbId = 2, UcjbNumber = "MEL", UcjbClientId = MelClient });
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(ScopeContext.BackgroundContext with { BranchIds = [Syd] });
+
+        Assert.Equal(2, await context.TucJobs.CountAsync(TestContext.Current.CancellationToken));
+    }
 }
