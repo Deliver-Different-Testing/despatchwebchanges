@@ -22,6 +22,53 @@ vi.mock('./client', () => ({
 
 const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
+const createMockFlightDto = (overrides: Partial<FlightViewModelDto> = {}): FlightViewModelDto => ({
+    airline: 'NZ',
+    flightNumber: 'NZ123',
+    departureTime: '2024-03-15T08:00:00',
+    arrivalTime: '2024-03-15T11:30:00',
+    departureAirport: 'AKL',
+    arrivalAirport: 'SYD',
+    duration: '3h 30m',
+    stops: 0,
+    aircraft: 'Boeing 787',
+    serviceClasses: ['Economy', 'Business'],
+    isCodeShare: false,
+    serviceType: 'J',
+    isCharter: false,
+    serviceTypeDescription: 'Scheduled Passenger',
+    amount: 150.0,
+    codeShareAirline: '',
+    airlineId: 1,
+    departureTimeZone: 'Pacific/Auckland',
+    arrivalTimeZone: 'Australia/Sydney',
+    isMultiSegment: false,
+    elapsedTime: 210,
+    score: 95,
+    connectionId: 'conn-123',
+    flightSegments: [
+        {
+            segmentOrder: 1,
+            carrierFsCode: 'NZ',
+            flightNumber: '123',
+            departureTime: '2024-03-15T08:00:00',
+            arrivalTime: '2024-03-15T11:30:00',
+            departureAirportFsCode: 'AKL',
+            arrivalAirportFsCode: 'SYD',
+            flightEquipmentIataCode: '787',
+            elapsedTime: 210,
+            stopsInSegment: 0,
+            departureAirportName: 'Auckland Airport',
+            departureAirportCity: 'Auckland',
+            departureAirportTimeZone: 'Pacific/Auckland',
+            arrivalAirportName: 'Sydney Airport',
+            arrivalAirportCity: 'Sydney',
+            arrivalAirportTimeZone: 'Australia/Sydney',
+        },
+    ],
+    ...overrides,
+});
+
 describe('NationwideApiService', () => {
     describe('calculateCargoReadyTime', () => {
         it('should call apiClient.get with correct URL and params', async () => {
@@ -140,53 +187,6 @@ describe('NationwideApiService', () => {
     });
 
     describe('getScheduledFlightOptions', () => {
-        const createMockFlightDto = (overrides: Partial<FlightViewModelDto> = {}): FlightViewModelDto => ({
-            airline: 'NZ',
-            flightNumber: 'NZ123',
-            departureTime: '2024-03-15T08:00:00',
-            arrivalTime: '2024-03-15T11:30:00',
-            departureAirport: 'AKL',
-            arrivalAirport: 'SYD',
-            duration: '3h 30m',
-            stops: 0,
-            aircraft: 'Boeing 787',
-            serviceClasses: ['Economy', 'Business'],
-            isCodeShare: false,
-            serviceType: 'J',
-            isCharter: false,
-            serviceTypeDescription: 'Scheduled Passenger',
-            amount: 150.0,
-            codeShareAirline: '',
-            airlineId: 1,
-            departureTimeZone: 'Pacific/Auckland',
-            arrivalTimeZone: 'Australia/Sydney',
-            isMultiSegment: false,
-            elapsedTime: 210,
-            score: 95,
-            connectionId: 'conn-123',
-            flightSegments: [
-                {
-                    segmentOrder: 1,
-                    carrierFsCode: 'NZ',
-                    flightNumber: '123',
-                    departureTime: '2024-03-15T08:00:00',
-                    arrivalTime: '2024-03-15T11:30:00',
-                    departureAirportFsCode: 'AKL',
-                    arrivalAirportFsCode: 'SYD',
-                    flightEquipmentIataCode: '787',
-                    elapsedTime: 210,
-                    stopsInSegment: 0,
-                    departureAirportName: 'Auckland Airport',
-                    departureAirportCity: 'Auckland',
-                    departureAirportTimeZone: 'Pacific/Auckland',
-                    arrivalAirportName: 'Sydney Airport',
-                    arrivalAirportCity: 'Sydney',
-                    arrivalAirportTimeZone: 'Australia/Sydney',
-                },
-            ],
-            ...overrides,
-        });
-
         it('should call apiClient.get with correct URL and params', async () => {
             mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
@@ -413,52 +413,25 @@ describe('NationwideApiService', () => {
     });
 
     describe('timezone offset preservation', () => {
-        const createMockFlightDto = (overrides: Partial<FlightViewModelDto> = {}): FlightViewModelDto => ({
-            airline: 'NZ',
-            flightNumber: 'NZ123',
-            departureTime: '2024-03-15T08:00:00+13:00',
-            arrivalTime: '2024-03-15T11:30:00+11:00',
-            departureAirport: 'AKL',
-            arrivalAirport: 'SYD',
-            duration: '3h 30m',
-            stops: 0,
-            aircraft: 'Boeing 787',
-            serviceClasses: ['Economy'],
-            isCodeShare: false,
-            serviceType: 'J',
-            isCharter: false,
-            serviceTypeDescription: 'Scheduled Passenger',
-            amount: 150.0,
-            codeShareAirline: '',
-            airlineId: 1,
-            departureTimeZone: 'Pacific/Auckland',
-            arrivalTimeZone: 'Australia/Sydney',
-            isMultiSegment: false,
-            elapsedTime: 210,
-            score: 95,
-            connectionId: 'conn-123',
-            flightSegments: [
-                {
-                    segmentOrder: 1,
-                    carrierFsCode: 'NZ',
-                    flightNumber: '123',
+        const createOffsetFlightDto = (overrides: Partial<FlightViewModelDto> = {}): FlightViewModelDto => {
+            const flight = createMockFlightDto();
+            return {
+                ...flight,
+                departureTime: '2024-03-15T08:00:00+13:00',
+                arrivalTime: '2024-03-15T11:30:00+11:00',
+                serviceClasses: ['Economy'],
+                flightSegments: [{
+                    ...flight.flightSegments[0],
                     departureTime: '2024-03-15T08:00:00+13:00',
                     arrivalTime: '2024-03-15T11:30:00+11:00',
-                    departureAirportFsCode: 'AKL',
-                    arrivalAirportFsCode: 'SYD',
-                    flightEquipmentIataCode: '787',
-                    elapsedTime: 210,
-                    stopsInSegment: 0,
-                    departureAirportTimeZone: 'Pacific/Auckland',
-                    arrivalAirportTimeZone: 'Australia/Sydney',
-                },
-            ],
-            ...overrides,
-        });
+                }],
+                ...overrides,
+            };
+        };
 
         it('should preserve departure time without converting to local timezone', async () => {
             // This tests that 08:00+13:00 stays as 08:00, not converted to user's local time
-            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createOffsetFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -473,7 +446,7 @@ describe('NationwideApiService', () => {
 
         it('should preserve arrival time without converting to local timezone', async () => {
             // This tests that 11:30+11:00 stays as 11:30
-            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createOffsetFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -486,7 +459,7 @@ describe('NationwideApiService', () => {
         });
 
         it('should preserve timezone offset in parsed datetime', async () => {
-            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createOffsetFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -502,7 +475,7 @@ describe('NationwideApiService', () => {
         });
 
         it('should preserve segment times without timezone conversion', async () => {
-            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createOffsetFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -521,7 +494,7 @@ describe('NationwideApiService', () => {
         it('should preserve times for negative timezone offsets', async () => {
             // Flight in PST timezone (UTC-8)
             mockApiClient.get.mockResolvedValueOnce({
-                flights: [createMockFlightDto({
+                flights: [createOffsetFlightDto({
                     departureTime: '2024-01-15T10:30:00-08:00',
                     arrivalTime: '2024-01-15T14:00:00-05:00',
                     flightSegments: [{
@@ -637,28 +610,7 @@ describe('NationwideApiService flight and agent operations', () => {
     });
 
     describe('assignFlightToJob', () => {
-        it('posts the request body to nationwideJob/AssignFlightToJob', async () => {
-            mockApiClient.post.mockResolvedValue(undefined);
-            const request = {
-                jobId: 42,
-                fromAirportId: 1,
-                toAirportId: 2,
-                flightNumber: 'NZ123',
-                departureDate: '2026-03-15T08:00:00',
-                flightSegments: [],
-                packageDeliveryNotes: 'Leave at dock',
-            };
-
-            await nationwideApi.assignFlightToJob(request);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith(
-                'nationwideJob/AssignFlightToJob',
-                request,
-                expect.anything(),
-            );
-        });
-
-        it('gives the request extra headroom beyond the default timeout for slow multi-segment flights', async () => {
+        it('posts the request body to nationwideJob/AssignFlightToJob with extra timeout headroom for slow multi-segment flights', async () => {
             mockApiClient.post.mockResolvedValue(undefined);
             const request = {
                 jobId: 42,

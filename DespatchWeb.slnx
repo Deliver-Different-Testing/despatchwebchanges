@@ -15,7 +15,9 @@
     <File Path="nuget.config" />
   </Folder>
   <Project Path="DespatchWeb.Client/DespatchWeb.Client.esproj" Type="C#" />
-  <Project Path="DespatchWeb.csproj" />
+  <Project Path="DespatchWeb.csproj">
+    <BuildDependency Project="DespatchWeb.Client/DespatchWeb.Client.esproj" />
+  </Project>
   <Project Path="DespatchWeb.Tests/DespatchWeb.Tests.csproj" />
   <Properties Name="ExtensibilityGlobals" Scope="PostLoad">
     <Property Name="LessCompiler" Value="100a464d-538f-4881-8860-d78d8b8f32ba" />

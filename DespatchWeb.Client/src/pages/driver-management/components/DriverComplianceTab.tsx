@@ -19,22 +19,17 @@ import {
     FilterToolbar,
     getComplianceTypeColor,
     ListEmptyState,
-    SearchField,
     SortState,
     StatCard,
 } from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
+import {ExportCsvAction, filterUpdater, FilterSelect, FleetFilter, QuerySearchField} from './DriverFilterControls';
 import {dataTablePagingProps} from './dataTablePaging';
-import {ActionIcon, Alert, Badge, Button, Group, Loader, SegmentedControl, Select, Stack, Text, Tooltip} from '@mantine/core';
-import {CircleAlert, CircleCheck, CircleHelp, Download, Mail, Send, ShieldCheck, TriangleAlert} from 'lucide-react';
+import {ActionIcon, Alert, Badge, Button, Group, Loader, SegmentedControl, Stack, Text, Tooltip} from '@mantine/core';
+import {CircleAlert, CircleCheck, CircleHelp, Mail, Send, ShieldCheck, TriangleAlert} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
-import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
-import {
-    CRITERION_LABEL_GAP,
-    FILTER_CONTROL_HEIGHT,
-    GroupLabel,
-} from '../../../components/common/filter-fields';
+import {FILTER_CONTROL_HEIGHT} from '../../../components/common/filter-fields';
 import {
     DialogFooter,
     DialogHeader,
@@ -90,6 +85,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
         orderBy: '', pageSize: 100, page: 1, searchTerm: '', sortDescending: false,
     });
     const [filters, setFilters] = useState<ComplianceFilter>(DEFAULT_FILTERS);
+    const updateFilters = filterUpdater(setFilters, setQuery);
     const [reminderTarget, setReminderTarget] = useState<ReminderTarget | null>(null);
     const [channel, setChannel] = useState<ComplianceReminderChannel>(1);
     const [sort, setSort] = useState<SortState>({column: '', direction: 'asc'});
@@ -218,81 +214,43 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                         >
                             Send reminders
                         </Button>
-                        <HeaderActionIcon label="Export CSV" onClick={handleExport}>
-                            <Icon lucide={Download} size={PANEL_CONTROL_GLYPH_SIZE}/>
-                        </HeaderActionIcon>
+                        <ExportCsvAction onClick={handleExport}/>
                     </>
                 }
             >
-                <Stack gap={CRITERION_LABEL_GAP}>
-                    <GroupLabel selected={filters.type !== DEFAULT_FILTERS.type ? 1 : 0}>Type</GroupLabel>
-                    <Select
-                        size="xs"
-                        aria-label="Type"
-                        miw={150}
-                        allowDeselect={false}
-                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
-                        value={filters.type}
-                        onChange={(value) => {
-                            setFilters(f => ({...f, type: (value ?? '') as ComplianceFilter['type']}));
-                            setQuery(q => ({...q, page: 1}));
-                        }}
-                        data={[
-                            {value: '', label: 'All types'},
-                            {value: 'drivers_license', label: 'Driver licence'},
-                            {value: 'dg_endorsement', label: 'DG endorsement'},
-                            {value: 'wof', label: 'WOF'},
-                            {value: 'registration', label: 'Registration'},
-                        ]}
-                    />
-                </Stack>
-                <Stack gap={CRITERION_LABEL_GAP}>
-                    <GroupLabel selected={filters.status !== DEFAULT_FILTERS.status ? 1 : 0}>Status</GroupLabel>
-                    <Select
-                        size="xs"
-                        aria-label="Status"
-                        miw={150}
-                        allowDeselect={false}
-                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
-                        value={filters.status}
-                        onChange={(value) => {
-                            setFilters(f => ({...f, status: (value ?? '') as ComplianceFilter['status']}));
-                            setQuery(q => ({...q, page: 1}));
-                        }}
-                        data={[
-                            {value: 'attention', label: 'Needs attention'},
-                            {value: 'expired', label: 'Expired'},
-                            {value: 'expiring', label: 'Expiring soon'},
-                            {value: 'not_set', label: 'Not set'},
-                            {value: 'valid', label: 'Valid'},
-                            {value: '', label: 'All statuses'},
-                        ]}
-                    />
-                </Stack>
-                <Stack gap={CRITERION_LABEL_GAP}>
-                    <GroupLabel selected={filters.fleet ? 1 : 0}>Fleet</GroupLabel>
-                    <Select
-                        size="xs"
-                        aria-label="Fleet"
-                        miw={150}
-                        allowDeselect={false}
-                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
-                        value={String(filters.fleet)}
-                        onChange={(value) => {
-                            setFilters(f => ({...f, fleet: Number(value ?? 0)}));
-                            setQuery(q => ({...q, page: 1}));
-                        }}
-                        data={[
-                            {value: '0', label: 'All fleets'},
-                            ...fleetOptions.map(opt => ({value: String(opt.id), label: opt.text})),
-                        ]}
-                    />
-                </Stack>
-                <SearchField
-                    value={query.searchTerm ?? ''}
-                    onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
-                    placeholder="Search compliance…"
+                <FilterSelect
+                    label="Type"
+                    selected={filters.type !== DEFAULT_FILTERS.type}
+                    value={filters.type}
+                    onChange={(value) => updateFilters({type: (value ?? '') as ComplianceFilter['type']})}
+                    data={[
+                        {value: '', label: 'All types'},
+                        {value: 'drivers_license', label: 'Driver licence'},
+                        {value: 'dg_endorsement', label: 'DG endorsement'},
+                        {value: 'wof', label: 'WOF'},
+                        {value: 'registration', label: 'Registration'},
+                    ]}
                 />
+                <FilterSelect
+                    label="Status"
+                    selected={filters.status !== DEFAULT_FILTERS.status}
+                    value={filters.status}
+                    onChange={(value) => updateFilters({status: (value ?? '') as ComplianceFilter['status']})}
+                    data={[
+                        {value: 'attention', label: 'Needs attention'},
+                        {value: 'expired', label: 'Expired'},
+                        {value: 'expiring', label: 'Expiring soon'},
+                        {value: 'not_set', label: 'Not set'},
+                        {value: 'valid', label: 'Valid'},
+                        {value: '', label: 'All statuses'},
+                    ]}
+                />
+                <FleetFilter
+                    fleet={filters.fleet}
+                    fleetOptions={fleetOptions}
+                    onChange={(fleet) => updateFilters({fleet})}
+                />
+                <QuerySearchField query={query} setQuery={setQuery} placeholder="Search compliance…"/>
             </FilterToolbar>
 
             {/* Table */}

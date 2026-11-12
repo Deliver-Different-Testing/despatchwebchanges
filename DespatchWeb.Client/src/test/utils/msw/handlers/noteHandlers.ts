@@ -6,6 +6,7 @@
 
 import { http, HttpResponse } from 'msw';
 import {rejectWithoutCsrf} from './requestGuards';
+import {csrfJsonPostHandler} from './csrfJsonPostHandler';
 import type { JobNoteDto, NoteType } from '../../../../types';
 
 // Mock data
@@ -89,56 +90,16 @@ export const noteHandlers = [
     }),
 
     // Create a note
-    http.post('*/note/CreateNote', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/note/CreateNote'),
 
     // Create a bulk job note
-    http.post('*/note/CreateBulkJobNote', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/note/CreateBulkJobNote'),
 
     // Update a note
-    http.post('*/note/UpdateNote', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/note/UpdateNote'),
 
     // Update a bulk job note
-    http.post('*/note/UpdateBulkJobNote', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/note/UpdateBulkJobNote'),
 
     // Delete a note
     http.delete('*/note/DeleteNote', ({ request }) => {
@@ -156,15 +117,5 @@ export const noteHandlers = [
     }),
 
     // Create a note type
-    http.post('*/note/CreateNoteType', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/note/CreateNoteType'),
 ];

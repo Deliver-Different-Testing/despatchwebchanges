@@ -6,6 +6,7 @@ import type {LayoutStorageKeys} from '../../components/common/box-shell/layoutPe
 import type {ToolbarActionsConfig} from '../../components/common/app-shell/ToolbarActionsView';
 import {useCustomizePanelsDialog} from '../../hooks/useCustomizePanelsDialog';
 import {useLayoutToolbar} from '../../hooks/useLayoutToolbar';
+import {toLayoutsMenuProps} from '../../utils/toLayoutsMenuProps';
 import {useResetLayout} from '../../hooks/useResetLayout';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './lib/boxDefinitions';
 import type {JobSearchLayoutBridge} from './JobSearchLayoutBridge';
@@ -94,18 +95,12 @@ export const JobSearchScreen: React.FC<JobSearchScreenProps> = ({jobId}) => {
     const handleExitColumnEditMode = useCallback(() => setColumnEditMode(false), [setColumnEditMode]);
 
     const toolbarActions: ToolbarActionsConfig = {
-        layouts: {
-            items: layoutToolbar.layouts,
-            currentLayoutName: layoutToolbar.currentLayoutName,
-            onSaveLayout: () => void layoutToolbar.saveLayout(),
-            onLoadLayout: layoutToolbar.loadLayout,
-            onDeleteLayout: (index) => void layoutToolbar.deleteLayout(index),
-            onRenameLayout: (index) => void layoutToolbar.renameLayout(index),
-            onCustomizePanels: () => void openCustomizePanels(),
-            onResetLayout: resetLayout,
+        layouts: toLayoutsMenuProps(layoutToolbar, {
+            openCustomizePanels,
+            resetLayout,
             columnEditMode,
             onToggleColumnEditMode: () => setColumnEditMode(!columnEditMode),
-        },
+        }),
         actionsMenu: {onCreateNewJob: createNewJob, onInterCourierCharge: interCourierCharge},
     };
 

@@ -231,46 +231,19 @@ describe('StickyNotes', () => {
             consoleErrorSpy.mockRestore();
         });
 
-        it('filters notes by category when selected', async () => {
+        it('filters notes to the selected category and shows it in the header', async () => {
             const user = setupUser();
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
+            renderWithProviders(<StickyNotes {...createDefaultProps()} />);
 
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
-            // Open menu and select "Client" category
-            const filterButton = screen.getByRole('button', {name: 'Filter by category'});
-            await user.click(filterButton!);
-
-            expect(await screen.findByRole('menu')).toBeInTheDocument();
-
-            const menu = screen.getByRole('menu');
-            const clientMenuItem = within(menu).getByText('Client Note');
-            await user.click(clientMenuItem);
-
-            // Should only show client note
-            expect(await screen.findByText('This is a client note')).toBeInTheDocument();
-            expect(screen.queryByText('This is an internal note')).not.toBeInTheDocument();
-        });
-
-        it('shows filter indicator when category is selected', async () => {
-            const user = setupUser();
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            // Open menu and select "Client" category
-            const filterButton = screen.getByRole('button', {name: 'Filter by category'});
-            await user.click(filterButton!);
-
-            expect(await screen.findByRole('menu')).toBeInTheDocument();
-
-            const menu = screen.getByRole('menu');
+            await user.click(screen.getByRole('button', {name: 'Filter by category'}));
+            const menu = await screen.findByRole('menu');
             await user.click(within(menu).getByText('Client Note'));
 
-            // Should show filter indicator in header
             expect(await screen.findByText('- Client Note')).toBeInTheDocument();
+            expect(screen.getByText('This is a client note')).toBeInTheDocument();
+            expect(screen.queryByText('This is an internal note')).not.toBeInTheDocument();
         });
     });
 
@@ -349,11 +322,9 @@ describe('StickyNotes', () => {
     });
 
     describe('Delete note', () => {
-        it('calls deleteNote API when confirmed and shows success toast', async () => {
+        const clickDeleteAndConfirm = async (confirmed: boolean) => {
             const props = createDefaultProps();
-
-            // Mock window.confirm
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(confirmed);
 
             renderWithProviders(<StickyNotes {...props} />);
 
@@ -363,6 +334,12 @@ describe('StickyNotes', () => {
             fireEvent.click(deleteButtons[0]);
 
             expect(confirmSpy).toHaveBeenCalled();
+            return {props, confirmSpy};
+        };
+
+        it('calls deleteNote API when confirmed and shows success toast', async () => {
+            const {props, confirmSpy} = await clickDeleteAndConfirm(true);
+
             expect(mockedNotesApi.deleteNote).toHaveBeenCalledWith(1, 123);
 
             // Shows success toast after deleting
@@ -374,19 +351,8 @@ describe('StickyNotes', () => {
         });
 
         it('does not delete note when cancelled', async () => {
-            const props = createDefaultProps();
+            const {confirmSpy} = await clickDeleteAndConfirm(false);
 
-            // Mock window.confirm to return false
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            const deleteButtons = screen.getAllByRole('button', {name: 'Delete note'});
-            fireEvent.click(deleteButtons[0]);
-
-            expect(confirmSpy).toHaveBeenCalled();
             expect(mockedNotesApi.deleteNote).not.toHaveBeenCalled();
 
             confirmSpy.mockRestore();

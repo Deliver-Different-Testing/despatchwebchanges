@@ -28,6 +28,19 @@ public interface IJobQueryRepository
         int? jobId = null
     );
 
+    /// <summary>As above, with the free-text term limited to the columns of the data classes in <paramref name="wildColumns"/>.</summary>
+    Task<IReadOnlyList<JobDownloadModel>> PodSearchDownloadAsync(
+        IReadOnlyList<int> courierIds,
+        IReadOnlyList<int> speedIds,
+        string wild,
+        string job,
+        DateTime fromDate,
+        DateTime toDate,
+        IReadOnlyList<int> clientIds,
+        int? jobId,
+        JobWildcardColumns wildColumns
+    );
+
     Task<PriceDetailReportRaw> GetPriceDetailReportAsync(
         PriceDetailReportRequest request,
         CancellationToken ct = default);

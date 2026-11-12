@@ -25,6 +25,7 @@ import {DateInput} from '@mantine/dates';
 import {Calendar, CalendarRange} from 'lucide-react';
 import dayjs, {Dayjs} from 'dayjs';
 import {getIanaTimezone, getInputDateFormat, getTimezoneName} from '../../../utils/dateUtils';
+import {getMinsSelectionOptions} from '../../../utils/MinsSelectionOptions';
 import {getContactId} from '../../../api/session';
 import {Icon} from '../icon/Icon';
 import {toolbarIconButtonClassName, toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
@@ -48,11 +49,6 @@ export interface DateFilterData {
 
 export type DateRangeOption = 'all_time' | 'today' | 'custom_minutes' | 'custom_date';
 
-interface DurationOption {
-    id: number;
-    text: string;
-}
-
 export interface DateFilterMenuProps {
     dateFilterData: DateFilterData | null;
     appPage?: string;
@@ -62,24 +58,6 @@ export interface DateFilterMenuProps {
 }
 
 // Helper functions
-function getMinsSelectionOptions(
-    startSeconds: number = 300,
-    intervalSeconds: number = 300,
-    maxMinutes: number = 180
-): DurationOption[] {
-    const options: DurationOption[] = [];
-    const maxSeconds = maxMinutes * 60;
-
-    for (let seconds = startSeconds; seconds <= maxSeconds; seconds += intervalSeconds) {
-        options.push({
-            id: seconds,
-            text: formatDuration(seconds),
-        });
-    }
-
-    return options;
-}
-
 function formatDuration(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -136,7 +114,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     // `Select` is string-valued; the durations are seconds, so they round-trip
     // through `String()`/`Number()` at the boundary.
     const minsOptions = useMemo(
-        () => getMinsSelectionOptions(300, 300, 180).map(({id, text}) => ({value: String(id), label: text})),
+        () => getMinsSelectionOptions(300, 300, 180, formatDuration).map(({id, text}) => ({value: String(id), label: text})),
         [],
     );
     const minsUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);

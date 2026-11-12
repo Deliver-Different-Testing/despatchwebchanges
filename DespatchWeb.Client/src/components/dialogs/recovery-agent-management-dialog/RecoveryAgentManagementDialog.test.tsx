@@ -78,6 +78,51 @@ const createMockProps = (
     ...overrides,
 });
 
+async function renderDialog(props: RecoveryAgentManagementDialogProps) {
+    await act(async () => {
+        renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
+    });
+}
+
+async function openAssignForm(props: RecoveryAgentManagementDialogProps) {
+    await renderDialog(props);
+    await waitFor(() => {
+        expect(props.onLoadAirports).toHaveBeenCalled();
+    });
+    await act(async () => {
+        await userEvent.click(screen.getByRole('button', {name: /assign agent/i}));
+    });
+}
+
+async function pickLaxAndAcmeThenAssign(props: RecoveryAgentManagementDialogProps) {
+    await act(async () => {
+        await userEvent.click(screen.getByLabelText('Airport location'));
+    });
+    await act(async () => {
+        await userEvent.click(await screen.findByText('Los Angeles International (LAX)'));
+    });
+    await waitFor(() => {
+        expect(props.onLoadAgentsForAirport).toHaveBeenCalledWith(1);
+    });
+    await act(async () => {
+        await userEvent.click(screen.getByLabelText('Available agent'));
+    });
+    await act(async () => {
+        await userEvent.click(await screen.findByText('Acme Couriers'));
+    });
+    const assignButton = screen.getAllByRole('button', {name: /assign agent/i}).pop()!;
+    await act(async () => {
+        await userEvent.click(assignButton);
+    });
+}
+
+async function clickRemoveSue(props: RecoveryAgentManagementDialogProps) {
+    await renderDialog(props);
+    await act(async () => {
+        await userEvent.click(screen.getByRole('button', {name: /remove sue recovery/i}));
+    });
+}
+
 describe('RecoveryAgentManagementDialog', () => {
     it('does not render dialog when open is false', () => {
         const props = createMockProps({open: false});
@@ -132,46 +177,8 @@ describe('RecoveryAgentManagementDialog', () => {
 
     it('loads agent options for the chosen airport and assigns an agent', async () => {
         const props = createMockProps();
-        await act(async () => {
-            renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
-        });
-
-        await waitFor(() => {
-            expect(props.onLoadAirports).toHaveBeenCalled();
-        });
-
-        // Open assign form
-        await act(async () => {
-            await userEvent.click(screen.getByRole('button', {name: /assign agent/i}));
-        });
-
-        // Pick airport
-        const airportSelect = screen.getByLabelText('Airport location');
-        await act(async () => {
-            await userEvent.click(airportSelect);
-        });
-        await act(async () => {
-            await userEvent.click(await screen.findByText('Los Angeles International (LAX)'));
-        });
-
-        await waitFor(() => {
-            expect(props.onLoadAgentsForAirport).toHaveBeenCalledWith(1);
-        });
-
-        // Pick agent
-        const agentSelect = screen.getByLabelText('Available agent');
-        await act(async () => {
-            await userEvent.click(agentSelect);
-        });
-        await act(async () => {
-            await userEvent.click(await screen.findByText('Acme Couriers'));
-        });
-
-        // Confirm assign
-        const assignButton = screen.getAllByRole('button', {name: /assign agent/i}).pop()!;
-        await act(async () => {
-            await userEvent.click(assignButton);
-        });
+        await openAssignForm(props);
+        await pickLaxAndAcmeThenAssign(props);
 
         await waitFor(() => {
             expect(props.onAddAgent).toHaveBeenCalledWith({
@@ -190,16 +197,7 @@ describe('RecoveryAgentManagementDialog', () => {
 
     it('shows a warning when promoting a new agent to primary while another primary exists', async () => {
         const props = createMockProps();
-        await act(async () => {
-            renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
-        });
-        await waitFor(() => {
-            expect(props.onLoadAirports).toHaveBeenCalled();
-        });
-
-        await act(async () => {
-            await userEvent.click(screen.getByRole('button', {name: /assign agent/i}));
-        });
+        await openAssignForm(props);
 
         const primaryCheckbox = screen.getByRole('checkbox', {name: /set as primary recovery agent/i});
         await act(async () => {
@@ -252,14 +250,7 @@ describe('RecoveryAgentManagementDialog', () => {
         const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
         try {
             const props = createMockProps();
-            await act(async () => {
-                renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
-            });
-
-            const removeButton = screen.getByRole('button', {name: /remove sue recovery/i});
-            await act(async () => {
-                await userEvent.click(removeButton);
-            });
+            await clickRemoveSue(props);
 
             await waitFor(() => {
                 expect(confirmSpy).toHaveBeenCalled();
@@ -279,14 +270,7 @@ describe('RecoveryAgentManagementDialog', () => {
         const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
         try {
             const props = createMockProps();
-            await act(async () => {
-                renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
-            });
-
-            const removeButton = screen.getByRole('button', {name: /remove sue recovery/i});
-            await act(async () => {
-                await userEvent.click(removeButton);
-            });
+            await clickRemoveSue(props);
 
             expect(props.onRemoveAgent).not.toHaveBeenCalled();
         } finally {
@@ -312,26 +296,7 @@ describe('RecoveryAgentManagementDialog', () => {
                 await userEvent.click(screen.getByRole('button', {name: /assign agent/i}));
             });
 
-            await act(async () => {
-                await userEvent.click(screen.getByLabelText('Airport location'));
-            });
-            await act(async () => {
-                await userEvent.click(await screen.findByText('Los Angeles International (LAX)'));
-            });
-            await waitFor(() => {
-                expect(props.onLoadAgentsForAirport).toHaveBeenCalledWith(1);
-            });
-            await act(async () => {
-                await userEvent.click(screen.getByLabelText('Available agent'));
-            });
-            await act(async () => {
-                await userEvent.click(await screen.findByText('Acme Couriers'));
-            });
-
-            const assignButton = screen.getAllByRole('button', {name: /assign agent/i}).pop()!;
-            await act(async () => {
-                await userEvent.click(assignButton);
-            });
+            await pickLaxAndAcmeThenAssign(props);
 
             await waitFor(() => {
                 expect(props.showToast).toHaveBeenCalledWith(
@@ -367,16 +332,7 @@ describe('RecoveryAgentManagementDialog', () => {
         const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
         try {
             const props = createMockProps();
-            await act(async () => {
-                renderWithMantine(<RecoveryAgentManagementDialog {...props} />);
-            });
-            await waitFor(() => {
-                expect(props.onLoadAirports).toHaveBeenCalled();
-            });
-
-            await act(async () => {
-                await userEvent.click(screen.getByRole('button', {name: /assign agent/i}));
-            });
+            await openAssignForm(props);
 
             const primaryCheckbox = screen.getByRole('checkbox', {name: /set as primary recovery agent/i});
             await act(async () => {

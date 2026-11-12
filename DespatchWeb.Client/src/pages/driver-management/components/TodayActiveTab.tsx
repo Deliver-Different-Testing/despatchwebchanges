@@ -1,19 +1,14 @@
 import React, {useState} from 'react';
-import {Badge, Group, Select, Stack} from '@mantine/core';
-import {Car, CircleDot, Clock, Download, RefreshCw, Users} from 'lucide-react';
+import {Badge, Group, Stack} from '@mantine/core';
+import {Car, CircleDot, Clock, Users} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
-import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../../components/common/panel-controls';
-import {
-    CRITERION_LABEL_GAP,
-    FILTER_CONTROL_HEIGHT,
-    GroupLabel,
-} from '../../../components/common/filter-fields';
 import {useTodayActiveDrivers} from '../../../hooks/useDriverManagementApi';
 import {FleetOption, PaginatedRequest, TodayActiveDriver, TodayActiveDriverFilter} from '../../../types';
 import {driverManagementApi} from '../../../api/driverManagementApi';
-import {DataTable, DataTableColumn, FilterToolbar, ListEmptyState, SearchField, SortState, StatCard, formatMinutes, getFleetChipStyle} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, ListEmptyState, SortState, StatCard, formatMinutes, getFleetChipStyle} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
+import {filterUpdater, FilterSelect, FleetFilter, QuerySearchField, RefreshExportActions} from './DriverFilterControls';
 import {dataTablePagingProps} from './dataTablePaging';
 
 interface TodayActiveTabProps {
@@ -39,6 +34,7 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
     const [filters, setFilters] = useState<TodayActiveDriverFilter>({
         status: 'all', fleet: 0,
     });
+    const updateFilters = filterUpdater(setFilters, setQuery);
     const [sort, setSort] = useState<SortState>({column: 'name', direction: 'asc'});
 
     const {data, isLoading, isError, refetch} = useTodayActiveDrivers(query, filters);
@@ -84,61 +80,25 @@ export const TodayActiveTab: React.FC<TodayActiveTabProps> = ({showToast, fleetO
             <FilterToolbar
                 activeFilterCount={activeFilterCount}
                 onClearAll={handleClearFilters}
-                actions={
-                    <>
-                        <HeaderActionIcon label="Refresh" onClick={() => refetch()}>
-                            <Icon lucide={RefreshCw} size={PANEL_CONTROL_GLYPH_SIZE}/>
-                        </HeaderActionIcon>
-                        <HeaderActionIcon label="Export CSV" onClick={handleExport}>
-                            <Icon lucide={Download} size={PANEL_CONTROL_GLYPH_SIZE}/>
-                        </HeaderActionIcon>
-                    </>
-                }
+                actions={<RefreshExportActions onRefresh={() => refetch()} onExport={handleExport}/>}
             >
-                <Stack gap={CRITERION_LABEL_GAP}>
-                    <GroupLabel selected={filters.status !== 'all' ? 1 : 0}>Status</GroupLabel>
-                    <Select
-                        size="xs"
-                        aria-label="Status"
-                        miw={150}
-                        allowDeselect={false}
-                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
-                        value={filters.status}
-                        onChange={(value) => {
-                            setFilters(f => ({...f, status: (value ?? 'all') as TodayActiveDriverFilter['status']}));
-                            setQuery(q => ({...q, page: 1}));
-                        }}
-                        data={[
-                            {value: 'all', label: 'All statuses'},
-                            {value: 'active', label: 'Active'},
-                            {value: 'inactive', label: 'Inactive'},
-                        ]}
-                    />
-                </Stack>
-                <Stack gap={CRITERION_LABEL_GAP}>
-                    <GroupLabel selected={filters.fleet ? 1 : 0}>Fleet</GroupLabel>
-                    <Select
-                        size="xs"
-                        aria-label="Fleet"
-                        miw={150}
-                        allowDeselect={false}
-                        styles={{input: {height: FILTER_CONTROL_HEIGHT, minHeight: FILTER_CONTROL_HEIGHT}}}
-                        value={String(filters.fleet)}
-                        onChange={(value) => {
-                            setFilters(f => ({...f, fleet: Number(value ?? 0)}));
-                            setQuery(q => ({...q, page: 1}));
-                        }}
-                        data={[
-                            {value: '0', label: 'All fleets'},
-                            ...fleetOptions.map(opt => ({value: String(opt.id), label: opt.text})),
-                        ]}
-                    />
-                </Stack>
-                <SearchField
-                    value={query.searchTerm ?? ''}
-                    onChange={(value) => setQuery(q => ({...q, searchTerm: value, page: 1}))}
-                    placeholder="Search drivers…"
+                <FilterSelect
+                    label="Status"
+                    selected={filters.status !== 'all'}
+                    value={filters.status}
+                    onChange={(value) => updateFilters({status: (value ?? 'all') as TodayActiveDriverFilter['status']})}
+                    data={[
+                        {value: 'all', label: 'All statuses'},
+                        {value: 'active', label: 'Active'},
+                        {value: 'inactive', label: 'Inactive'},
+                    ]}
                 />
+                <FleetFilter
+                    fleet={filters.fleet}
+                    fleetOptions={fleetOptions}
+                    onChange={(fleet) => updateFilters({fleet})}
+                />
+                <QuerySearchField query={query} setQuery={setQuery} placeholder="Search drivers…"/>
             </FilterToolbar>
 
             {/* Table */}

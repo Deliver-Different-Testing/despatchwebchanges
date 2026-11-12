@@ -11,7 +11,7 @@ import {ActionIcon, Badge, Box, Card, Collapse, Group, Loader, Skeleton, Stack, 
 import {ChevronDown, ChevronUp, RefreshCw} from 'lucide-react';
 import {Icon} from '../icon/Icon';
 import {SummarySeverity} from '../../../api/aiAssistantApi';
-import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
+import {AutoMateCardHeader} from '../auto-mate-logo/AutoMateCardHeader';
 import type {ExtractBlockersResponse} from '../../../types/ai';
 
 interface AiBlockersCardProps {
@@ -102,54 +102,41 @@ export const AiBlockersCard: React.FC<AiBlockersCardProps> = ({title, fetchBlock
             padding={0}
             style={{overflow: 'hidden', borderLeft: `4px solid ${accent}`}}
         >
-            <Group
-                justify="space-between"
-                px="md"
-                py={10}
-                onClick={collapsible ? toggle : undefined}
-                role={collapsible ? 'button' : undefined}
-                tabIndex={collapsible ? 0 : undefined}
-                aria-expanded={collapsible ? expanded : undefined}
-                style={{
-                    backgroundColor: `color-mix(in srgb, ${accent} 8%, transparent)`,
-                    cursor: collapsible ? 'pointer' : undefined,
-                    userSelect: collapsible ? 'none' : undefined,
-                }}
+            <AutoMateCardHeader
+                title={title}
+                accent={accent}
+                collapsible={collapsible}
+                expanded={expanded}
+                onToggle={toggle}
+                badges={<Badge size="xs" variant="default" fw={700}>BETA</Badge>}
             >
-                <Group gap="xs">
-                    <AutoMateLogo size={24}/>
-                    <Text size="sm" fw={600}>{title}</Text>
-                    <Badge size="xs" variant="default" fw={700}>BETA</Badge>
-                </Group>
-                <Group gap={4}>
-                    {loading && <Loader size={16} mr={4}/>}
-                    {!loading && data && (
-                        <Tooltip label="Refresh">
-                            <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                size="sm"
-                                onClick={handleRefresh}
-                                aria-label="Refresh blockers"
-                            >
-                                <Icon lucide={RefreshCw} size={18}/>
-                            </ActionIcon>
-                        </Tooltip>
-                    )}
-                    {collapsible && (
+                {loading && <Loader size={16} mr={4}/>}
+                {!loading && data && (
+                    <Tooltip label="Refresh">
                         <ActionIcon
                             variant="subtle"
                             color="gray"
                             size="sm"
-                            tabIndex={-1}
-                            aria-label={expanded ? 'Collapse blockers' : 'Expand blockers'}
-                            onClick={(e) => {e.stopPropagation(); toggle();}}
+                            onClick={handleRefresh}
+                            aria-label="Refresh blockers"
                         >
-                            <Icon lucide={expanded ? ChevronUp : ChevronDown} size={20}/>
+                            <Icon lucide={RefreshCw} size={18}/>
                         </ActionIcon>
-                    )}
-                </Group>
-            </Group>
+                    </Tooltip>
+                )}
+                {collapsible && (
+                    <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        tabIndex={-1}
+                        aria-label={expanded ? 'Collapse blockers' : 'Expand blockers'}
+                        onClick={(e) => {e.stopPropagation(); toggle();}}
+                    >
+                        <Icon lucide={expanded ? ChevronUp : ChevronDown} size={20}/>
+                    </ActionIcon>
+                )}
+            </AutoMateCardHeader>
             <Collapse expanded={expanded}>
                 <Box px="md" py="sm">
                     {loading && !data && (

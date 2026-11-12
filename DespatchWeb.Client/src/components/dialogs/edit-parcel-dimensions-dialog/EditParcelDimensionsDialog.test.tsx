@@ -80,6 +80,18 @@ describe('EditParcelDimensionsDialog read-only mode', () => {
     });
 });
 
+async function cancelWithUnsavedChange(user: ReturnType<typeof setupUser>) {
+    const nameInput = screen.getByPlaceholderText('Name');
+    await user.clear(nameInput);
+    await user.paste('Changed');
+
+    await user.click(screen.getByRole('button', {name: /cancel/i}));
+}
+
+function getDiscardConfirmDialog() {
+    return screen.getByText('Discard unsaved changes').closest('[role="dialog"]') as HTMLElement;
+}
+
 // ── Discard changes confirmation ───────────────────────────────────
 
 describe('EditParcelDimensionsDialog discard changes confirmation', () => {
@@ -99,11 +111,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
         const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
-        const nameInput = screen.getByPlaceholderText('Name');
-        await user.clear(nameInput);
-        await user.paste('Changed');
-
-        await user.click(screen.getByRole('button', {name: /cancel/i}));
+        await cancelWithUnsavedChange(user);
 
         expect(screen.getByText('Discard unsaved changes')).toBeInTheDocument();
         expect(defaultProps.onClose).not.toHaveBeenCalled();
@@ -113,13 +121,9 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
         const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
-        const nameInput = screen.getByPlaceholderText('Name');
-        await user.clear(nameInput);
-        await user.paste('Changed');
+        await cancelWithUnsavedChange(user);
 
-        await user.click(screen.getByRole('button', {name: /cancel/i}));
-
-        const confirmDialog = screen.getByText('Discard unsaved changes').closest('[role="dialog"]') as HTMLElement;
+        const confirmDialog = getDiscardConfirmDialog();
         await user.click(within(confirmDialog).getByRole('button', {name: /discard/i}));
 
         expect(defaultProps.onClose).toHaveBeenCalled();
@@ -129,13 +133,9 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
         const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
-        const nameInput = screen.getByPlaceholderText('Name');
-        await user.clear(nameInput);
-        await user.paste('Changed');
+        await cancelWithUnsavedChange(user);
 
-        await user.click(screen.getByRole('button', {name: /cancel/i}));
-
-        const confirmDialog = screen.getByText('Discard unsaved changes').closest('[role="dialog"]') as HTMLElement;
+        const confirmDialog = getDiscardConfirmDialog();
         await user.click(within(confirmDialog).getByRole('button', {name: /keep editing/i}));
 
         expect(defaultProps.onClose).not.toHaveBeenCalled();

@@ -1,4 +1,5 @@
 #nullable enable
+using DeliverDifferent.AgentAccess;
 using DeliverDifferent.AgentAccess.Export;
 using DespatchWeb.EntityClasses;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +10,7 @@ namespace DespatchWeb.Controllers;
 
 [ApiController]
 [Authorize(Policy = AgentExport.Policy)]
+[AgentAccessible(AgentCapabilities.ExportJobs)]
 public class AgentExportController(IEntityExportService export, IDbContextFactory<DespatchContext> contextFactory) : ControllerBase
 {
     private static readonly string[] Entities =

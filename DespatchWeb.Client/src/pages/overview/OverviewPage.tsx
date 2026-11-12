@@ -11,6 +11,7 @@ import {
     useOverviewStats,
     useOverviewOpenJobs,
 } from '../../hooks/useOverviewApi';
+import {loadCollapseState, saveCollapseState} from '../../utils/cardCollapseState';
 import {isAiEnabled} from '../../utils/aiSettings';
 import {AiSummaryCard} from '../../components/common/ai-summary-card/AiSummaryCard';
 import {summarizeOperations} from '../../api/aiAssistantApi';
@@ -32,26 +33,6 @@ import type {
 } from './OverviewPage.interfaces';
 
 const OVERVIEW_LIMIT_KEY = () => `overviewJobLimitDisplay-${getContactId()}`;
-
-function loadCollapseState(cardName: string): boolean {
-    try {
-        const saved = localStorage.getItem('cardCollapseStates');
-        if (saved) {
-            const states = JSON.parse(saved);
-            return states[cardName] || false;
-        }
-    } catch { /* localStorage may be unavailable */ }
-    return false;
-}
-
-function saveCollapseState(cardName: string, isCollapsed: boolean): void {
-    try {
-        const saved = localStorage.getItem('cardCollapseStates');
-        const states = saved ? JSON.parse(saved) : {};
-        states[cardName] = isCollapsed;
-        localStorage.setItem('cardCollapseStates', JSON.stringify(states));
-    } catch { /* localStorage may be unavailable */ }
-}
 
 export const OverviewPage: React.FC<OverviewPageProps> = ({
                                                               onOpenJobDetail,

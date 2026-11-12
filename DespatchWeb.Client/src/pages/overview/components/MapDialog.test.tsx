@@ -1,8 +1,7 @@
 import type {Mocked} from 'vitest';
 import React from 'react';
-import {render, screen, fireEvent, within} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {MantineTestProvider} from '../../../test/utils';
+import {screen, fireEvent, within} from '@testing-library/react';
+import {renderWithProviders} from '../../../test/utils';
 import {MapDialog} from './MapDialog';
 import {overviewApi} from '../../../api/overviewApi';
 import {configApi} from '../../../api/configApi';
@@ -26,20 +25,6 @@ vi.mock('../../../components/common/here-map/HereMap', () => ({
 
 const mockOverviewApi = overviewApi as Mocked<typeof overviewApi>;
 const mockConfigApi = configApi as Mocked<typeof configApi>;
-
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {queries: {retry: false, gcTime: 0}},
-    });
-
-const renderWithProviders = (ui: React.ReactElement) => {
-    const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <MantineTestProvider>{ui}</MantineTestProvider>
-        </QueryClientProvider>,
-    );
-};
 
 function createMockDelivery(overrides: Partial<OverviewTableParentJob> = {}): OverviewTableParentJob {
     return {

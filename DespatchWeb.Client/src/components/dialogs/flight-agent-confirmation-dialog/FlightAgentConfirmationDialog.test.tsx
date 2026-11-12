@@ -118,6 +118,24 @@ function renderFlightWithCargoTimes(onCalculateCargoTimes: Mock) {
     );
 }
 
+/** Renders flight mode with the given cargo times, confirms, and returns the onConfirm payload. */
+async function confirmFlightAssignment(cargoProcessing: FlightCargoProcessing) {
+    const user = setupUser();
+    const onConfirm = vi.fn();
+    renderWithTheme(
+        <FlightAgentConfirmationDialog
+            {...defaultProps}
+            mode="flight"
+            flight={createFlight()}
+            onCalculateCargoTimes={vi.fn().mockResolvedValue(cargoProcessing)}
+            onConfirm={onConfirm}
+        />
+    );
+    expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
+    await user.click(screen.getByText('Confirm assignment'));
+    return onConfirm.mock.calls[0][0];
+}
+
 describe('FlightAgentConfirmationDialog', () => {
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
@@ -707,8 +725,6 @@ describe('FlightAgentConfirmationDialog', () => {
         });
 
         it('uses cargo opening time if arrival + processing is before opening', async () => {
-            const user = setupUser();
-            const onConfirm = vi.fn();
 
             // Arrival at 04:00, processing time 60 mins = 05:00 (before cargo opens at 06:00)
             const cargoProcessing = createCargoProcessing({
@@ -718,23 +734,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 cargoClosingTime: dayjs('2024-03-15T22:00:00'),
             });
 
-            const onCalculateCargoTimes = vi.fn().mockResolvedValue(cargoProcessing);
-
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                    onConfirm={onConfirm}
-                />
-            );
-
-            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
-
-            await user.click(screen.getByText('Confirm assignment'));
-
-            const result = onConfirm.mock.calls[0][0];
+            const result = await confirmFlightAssignment(cargoProcessing);
             expect(result.packageReadyTime).toBeDefined();
             // Should use cargo opening time (06:00) since 05:00 is before opening
             expect(result.packageReadyTime.hour()).toBe(6);
@@ -881,60 +881,24 @@ describe('FlightAgentConfirmationDialog', () => {
 
     describe('Issue #4: Delivery By Time', () => {
         it('includes deliverByTime from API response in confirmation result', async () => {
-            const user = setupUser();
-            const onConfirm = vi.fn();
 
             const cargoProcessing = createCargoProcessing({
                 deliverByTime: dayjs('2024-03-15T18:00:00'),
             });
 
-            const onCalculateCargoTimes = vi.fn().mockResolvedValue(cargoProcessing);
-
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                    onConfirm={onConfirm}
-                />
-            );
-
-            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
-
-            await user.click(screen.getByText('Confirm assignment'));
-
-            const result = onConfirm.mock.calls[0][0];
+            const result = await confirmFlightAssignment(cargoProcessing);
             expect(result.packageDeliverByTime).toBeDefined();
             expect(result.packageDeliverByTime.hour()).toBe(18);
         });
 
         it('does not include deliverByTime when not provided by API', async () => {
-            const user = setupUser();
-            const onConfirm = vi.fn();
 
             // No deliverByTime in the response
             const cargoProcessing = createCargoProcessing({
                 deliverByTime: undefined,
             });
 
-            const onCalculateCargoTimes = vi.fn().mockResolvedValue(cargoProcessing);
-
-            renderWithTheme(
-                <FlightAgentConfirmationDialog
-                    {...defaultProps}
-                    mode="flight"
-                    flight={createFlight()}
-                    onCalculateCargoTimes={onCalculateCargoTimes}
-                    onConfirm={onConfirm}
-                />
-            );
-
-            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
-
-            await user.click(screen.getByText('Confirm assignment'));
-
-            const result = onConfirm.mock.calls[0][0];
+            const result = await confirmFlightAssignment(cargoProcessing);
             // deliverByTime should be undefined if not provided by API
             expect(result.packageDeliverByTime).toBeUndefined();
         });

@@ -390,22 +390,6 @@ describe('LayoutsMenu', () => {
         expect(onCustomizePanels).toHaveBeenCalledTimes(1);
     });
 
-    it('should offer Show/Hide Panels on a user-created layout', async () => {
-        const onCustomizePanels = vi.fn();
-        renderWithMantine(
-            <LayoutsMenu
-                {...defaultProps}
-                currentLayoutName="Custom Layout 1"
-                onCustomizePanels={onCustomizePanels}
-            />
-        );
-
-        fireEvent.click(screen.getByRole('button'));
-        fireEvent.click(await screen.findByText('Show/Hide Panels…'));
-
-        expect(onCustomizePanels).toHaveBeenCalledTimes(1);
-    });
-
     it('should disable the editing entries on the read-only Default layout', async () => {
         const onCustomizePanels = vi.fn();
         const onToggleColumnEditMode = vi.fn();

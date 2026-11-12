@@ -19,6 +19,7 @@ import {useCustomizePanelsDialog} from '../../hooks/useCustomizePanelsDialog';
 import {useDashboardSettings} from '../../hooks/useDashboardSettings';
 import {useDateFilter} from '../../hooks/useDateFilter';
 import {useLayoutToolbar} from '../../hooks/useLayoutToolbar';
+import {toLayoutsMenuProps} from '../../utils/toLayoutsMenuProps';
 import {useResetLayout} from '../../hooks/useResetLayout';
 import {getSession} from '../../api/session';
 import {toastService} from '../../services/toastService';
@@ -138,18 +139,12 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
             ),
             onClearAll: () => bridgeRef.current?.setViewSelection([]),
         },
-        layouts: {
-            items: layoutToolbar.layouts,
-            currentLayoutName: layoutToolbar.currentLayoutName,
-            onSaveLayout: () => void layoutToolbar.saveLayout(),
-            onLoadLayout: layoutToolbar.loadLayout,
-            onDeleteLayout: (index) => void layoutToolbar.deleteLayout(index),
-            onRenameLayout: (index) => void layoutToolbar.renameLayout(index),
-            onCustomizePanels: () => void openCustomizePanels(),
-            onResetLayout: resetLayout,
+        layouts: toLayoutsMenuProps(layoutToolbar, {
+            openCustomizePanels,
+            resetLayout,
             columnEditMode,
             onToggleColumnEditMode: toggleColumnEditMode,
-        },
+        }),
         dateFilter: {data: dateFilter, appPage: 'home', timeZone, onRefreshData: refreshDateFilter},
         actionsMenu: {
             onCreateNewJob: () => void createNewJob(),

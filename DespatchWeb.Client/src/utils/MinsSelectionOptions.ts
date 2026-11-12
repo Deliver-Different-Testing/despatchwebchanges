@@ -3,7 +3,8 @@
 export function getMinsSelectionOptions(
     startSeconds: number = 30,
     intervalSeconds: number = 30,
-    maxMinutes: number = 15
+    maxMinutes: number = 15,
+    format: (seconds: number) => string = formatDuration
 ): ISuggestion[] {
     const options: ISuggestion[] = [];
 
@@ -12,7 +13,7 @@ export function getMinsSelectionOptions(
     for (let seconds = startSeconds; seconds <= maxSeconds; seconds += intervalSeconds) {
         options.push({
             id: seconds,
-            text: formatDuration(seconds)
+            text: format(seconds)
         });
     }
 

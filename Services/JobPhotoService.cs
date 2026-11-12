@@ -281,6 +281,21 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             .ToList();
     }
 
+    public async Task<IReadOnlyList<CapturedMediaInfo>> ListCapturedMediaAsync(int jobId, int year, int month)
+    {
+        var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
+        var pattern = $"{jobId}-";
+
+        var delivery = await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Delivery);
+        var pickup = await SearchFilesByPatternAsync(bucketName, pattern, year, month, JobPhotoType.Pickup);
+
+        return
+        [
+            .. delivery.DistinctBy(o => o.Key).Select(o => new CapturedMediaInfo("delivery", o.Key, o.Size ?? 0, o.LastModified)),
+            .. pickup.DistinctBy(o => o.Key).Select(o => new CapturedMediaInfo("pickup", o.Key, o.Size ?? 0, o.LastModified))
+        ];
+    }
+
     public async Task<IReadOnlyList<string>> ListDeliveryMediaKeysAsync(int jobId, int year, int month)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");

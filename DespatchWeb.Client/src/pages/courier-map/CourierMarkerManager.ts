@@ -20,10 +20,10 @@ import {
     getDriverStatus,
     ICON_CACHE_LIMIT,
     MARKER_COLORS,
-    POSITION_THRESHOLD,
 } from './CourierMapPage.types';
 import {
     createMapTooltipElement,
+    moveMarkerIfChanged,
     removeStaleMarkers,
     safeRemoveObject,
 } from '../../components/common/here-map/hereMapUtils';
@@ -109,22 +109,7 @@ export class CourierMarkerManager {
             const isSelected = courier.courierId === this.selectedCourierId;
 
             if (existing) {
-                // Check if position changed significantly
-                const posChanged = this.hasPositionChanged(
-                    existing.lat,
-                    existing.lng,
-                    courier.latitude!,
-                    courier.longitude!
-                );
-
-                if (posChanged) {
-                    existing.marker.setGeometry({
-                        lat: courier.latitude,
-                        lng: courier.longitude,
-                    });
-                    existing.lat = courier.latitude!;
-                    existing.lng = courier.longitude!;
-                }
+                moveMarkerIfChanged(existing, courier.latitude!, courier.longitude!);
 
                 // The tooltip reads straight off the marker, so refresh its payload or it keeps
                 // reporting the job counts and last delivery from when the marker was created.
@@ -261,18 +246,6 @@ export class CourierMarkerManager {
     }
 
     // ── Private ──────────────────────────────
-
-    private hasPositionChanged(
-        oldLat: number,
-        oldLng: number,
-        newLat: number,
-        newLng: number
-    ): boolean {
-        return (
-            Math.abs(oldLat - newLat) > POSITION_THRESHOLD ||
-            Math.abs(oldLng - newLng) > POSITION_THRESHOLD
-        );
-    }
 
     /**
      * The last-delivery line is only ever shown for the currently-selected courier — an

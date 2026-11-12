@@ -19,6 +19,15 @@ vi.mock('./client', () => ({
 
 const mockApiClient = apiClient as Mocked<typeof apiClient>;
 
+const breakdownMutationErrorCases = [
+    ['404 Not Found', createMockApiError({status: 404, statusText: 'Not Found', message: 'Breakdown not found'})],
+    ['500 Server Error', createMockApiError({
+        status: 500,
+        statusText: 'Internal Server Error',
+        message: 'Database error'
+    })],
+] as const;
+
 describe('pricingBreakdownApi', () => {
     describe('getPriceBreakdowns', () => {
         const mockBreakdowns: PriceBreakdown[] = [
@@ -195,18 +204,7 @@ describe('pricingBreakdownApi', () => {
             expect(mockApiClient.post).toHaveBeenCalledWith('job/UpdatePriceComponent', breakdown);
         });
 
-        it.each([
-            ['404 Not Found', createMockApiError({
-                status: 404,
-                statusText: 'Not Found',
-                message: 'Breakdown not found'
-            })],
-            ['500 Server Error', createMockApiError({
-                status: 500,
-                statusText: 'Internal Server Error',
-                message: 'Database error'
-            })],
-        ])('should propagate %s errors from apiClient', async (_, error) => {
+        it.each(breakdownMutationErrorCases)('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.post.mockRejectedValueOnce(error);
             const breakdown: PriceBreakdown = {chargeId: 1, name: 'Test', amount: 10.00};
             await expect(pricingBreakdownApi.updatePriceBreakdown(breakdown)).rejects.toEqual(error);
@@ -239,18 +237,7 @@ describe('pricingBreakdownApi', () => {
             expect(mockApiClient.post).toHaveBeenCalledWith('job/DeletePriceComponent', deleteRequest);
         });
 
-        it.each([
-            ['404 Not Found', createMockApiError({
-                status: 404,
-                statusText: 'Not Found',
-                message: 'Breakdown not found'
-            })],
-            ['500 Server Error', createMockApiError({
-                status: 500,
-                statusText: 'Internal Server Error',
-                message: 'Database error'
-            })],
-        ])('should propagate %s errors from apiClient', async (_, error) => {
+        it.each(breakdownMutationErrorCases)('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.post.mockRejectedValueOnce(error);
             const deleteRequest: DeletePriceBreakdownRequest = {chargeId: 1, jobId: 100};
             await expect(pricingBreakdownApi.deletePriceBreakdown(deleteRequest)).rejects.toEqual(error);

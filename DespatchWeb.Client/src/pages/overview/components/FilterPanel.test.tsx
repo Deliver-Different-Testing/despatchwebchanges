@@ -4,9 +4,8 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {MantineTestProvider} from '../../../test/utils';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {screen, fireEvent, waitFor} from '@testing-library/react';
+import {renderWithProviders} from '../../../test/utils';
 import {FilterPanel} from './FilterPanel';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 import {testDialogs} from '../../../components/dialogs/testDialogRegistry';
@@ -18,20 +17,6 @@ vi.mock('../../../api/overviewApi', async () => ({
 }));
 
 vi.mock('../../../components/dialogs/dialogRegistry', async () => (await import('../../../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
-
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {queries: {retry: false, gcTime: 0}},
-    });
-
-const renderWithProviders = (ui: React.ReactElement) => {
-    const queryClient = createTestQueryClient();
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <MantineTestProvider>{ui}</MantineTestProvider>
-        </QueryClientProvider>,
-    );
-};
 
 const mockRegions: ISuggestion[] = [
     {id: 1, text: 'London'},

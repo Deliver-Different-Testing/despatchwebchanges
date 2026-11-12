@@ -9,6 +9,8 @@ import { server } from '../../test/utils/msw/setupIntegration';
 import { http, HttpResponse } from 'msw';
 import { jobApi } from '../jobApi';
 import { mockRelatedJobs, mockClientSuggestions } from '../../test/utils/msw/handlers';
+import { buildQuickCreateJobRequest } from '../../test/utils/quickCreateJobRequestFixture';
+import { captureAllocateRequest } from '../../test/utils/msw/captureAllocateRequest';
 
 describe('jobApi integration', () => {
     describe('getRelatedJobsMultiSelectList', () => {
@@ -274,37 +276,9 @@ describe('jobApi integration', () => {
 
     describe('quickCreateJob', () => {
         it('creates a job and returns the new job id and job number', async () => {
-            const result = await jobApi.quickCreateJob({
-                clientId: 10,
-                deliverToContact: 'Jane Doe',
-                podName: 'Pod1',
-                pickUpAddress: {} as any,
-                deliveryAddress: {} as any,
-                date: '2026-03-05T00:00:00-05:00',
-                fromContactName: 'John Smith',
-                refA: '',
-                refB: '',
-                deliveryNotes: '',
-                pickupNotes: '',
-                jobNotes: '',
-                van: false,
-                truck: false,
-                pedal: false,
-                attention: false,
-                vanOk: false,
-                reprice: false,
-                void: false,
-                done: false,
-                charge: 50.0,
-                fromLat: 40.7128,
-                fromLong: -74.006,
-                toLat: 34.0522,
-                toLong: -118.2437,
-                speedId: 1,
-                vehicleId: 2,
-                weightKg: null,
-                weightLb: null,
-            });
+            const result = await jobApi.quickCreateJob(
+                buildQuickCreateJobRequest({deliverToContact: 'Jane Doe', fromContactName: 'John Smith'})
+            );
 
             expect(result).toEqual({ jobId: 12345, jobNumber: 'JOB-12345' });
         });
@@ -392,21 +366,12 @@ describe('jobApi integration', () => {
 
     describe('allocateJobToCourier', () => {
         it('sends correct allocation data with CSRF header', async () => {
-            let capturedBody: unknown = null;
-            let capturedCsrfHeader: string | null = null;
-
-            server.use(
-                http.post('*/job/Allocate', async ({ request }) => {
-                    capturedCsrfHeader = request.headers.get('X-Requested-With');
-                    capturedBody = await request.json();
-                    return new HttpResponse(null, { status: 200 });
-                })
-            );
+            const captured = captureAllocateRequest();
 
             await jobApi.allocateJobToCourier(42, [999]);
 
-            expect(capturedCsrfHeader).toBe('XMLHttpRequest');
-            expect(capturedBody).toMatchObject({
+            expect(captured.csrfHeader).toBe('XMLHttpRequest');
+            expect(captured.body).toMatchObject({
                 courierId: 42,
                 jobIds: [999],
             });

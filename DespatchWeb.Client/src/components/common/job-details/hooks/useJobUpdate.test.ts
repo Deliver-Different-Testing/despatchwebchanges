@@ -104,6 +104,18 @@ describe('useJobUpdate', () => {
         return renderHook(() => useJobUpdate(mockShowToast, options), {wrapper});
     }
 
+    async function dispatchWithInvalidateSpy() {
+        mockAllocateJob.mockResolvedValueOnce(undefined);
+        mockGetCourierById.mockResolvedValueOnce({id: 'C1', name: 'Courier'});
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+        const {result} = renderUseJobUpdate();
+
+        await act(async () => {
+            await result.current.dispatchJob({job: createMockJob(), courierId: 1});
+        });
+        return invalidateSpy;
+    }
+
     describe('updateField', () => {
         it('calls updateJobDetail for standard jobs and shows success toast', async () => {
             mockUpdateJobDetail.mockResolvedValueOnce({});
@@ -607,14 +619,7 @@ describe('useJobUpdate', () => {
         });
 
         it('invalidates job list caches after a successful dispatch', async () => {
-            mockAllocateJob.mockResolvedValueOnce(undefined);
-            mockGetCourierById.mockResolvedValueOnce({id: 'C1', name: 'Courier'});
-            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-            const {result} = renderUseJobUpdate();
-
-            await act(async () => {
-                await result.current.dispatchJob({job: createMockJob(), courierId: 1});
-            });
+            const invalidateSpy = await dispatchWithInvalidateSpy();
 
             for (const prefix of listPrefixes) {
                 expect(invalidateSpy).toHaveBeenCalledWith({queryKey: prefix});
@@ -650,14 +655,7 @@ describe('useJobUpdate', () => {
         });
 
         it('invalidates job detail cache after a successful dispatch', async () => {
-            mockAllocateJob.mockResolvedValueOnce(undefined);
-            mockGetCourierById.mockResolvedValueOnce({id: 'C1', name: 'Courier'});
-            const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-            const {result} = renderUseJobUpdate();
-
-            await act(async () => {
-                await result.current.dispatchJob({job: createMockJob(), courierId: 1});
-            });
+            const invalidateSpy = await dispatchWithInvalidateSpy();
 
             expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs', 'detail', 1]});
         });
@@ -767,26 +765,15 @@ describe('useJobUpdate', () => {
             expect(result.current.pendingRateChanges.map(r => r.jobId)).toEqual([3]);
         });
 
-        it('never offers to re-price a manually-priced job', async () => {
+        it.each([
             // A hand-set price must survive a date change. Offering it — even unticked — is a
             // click away from clobbering it, so it is left out of the dialog entirely.
+            ['never offers to re-price a manually-priced job', {ratedManually: true}],
+            ['drops jobs the backend could not rate', {failed: true}],
+        ])('%s', async (_name, flags) => {
             mockPreviewJobRates.mockResolvedValueOnce([
                 ratePreview(1, 120, 135),
-                ratePreview(2, 45, 90, {ratedManually: true}),
-            ]);
-            const {result} = renderUseJobUpdate();
-
-            await act(async () => {
-                await result.current.checkForRateChanges([1, 2]);
-            });
-
-            expect(result.current.pendingRateChanges.map(r => r.jobId)).toEqual([1]);
-        });
-
-        it('drops jobs the backend could not rate', async () => {
-            mockPreviewJobRates.mockResolvedValueOnce([
-                ratePreview(1, 120, 135),
-                ratePreview(2, 45, 90, {failed: true}),
+                ratePreview(2, 45, 90, flags),
             ]);
             const {result} = renderUseJobUpdate();
 

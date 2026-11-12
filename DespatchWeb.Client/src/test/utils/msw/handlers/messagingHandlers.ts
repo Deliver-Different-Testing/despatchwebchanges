@@ -6,6 +6,7 @@
 
 import { http, HttpResponse } from 'msw';
 import {rejectWithoutCsrf} from './requestGuards';
+import {csrfJsonPostHandler} from './csrfJsonPostHandler';
 import type { RecentConversation, ChatMessage, QuickResponse, MessageContactOption } from '../../../../components/dialogs/messaging-dialog/types';
 import { OtherMessagePartyType } from '../../../../components/dialogs/messaging-dialog/types';
 
@@ -111,30 +112,10 @@ export const messagingHandlers = [
     }),
 
     // Send a message
-    http.post('*/messages/SendMessage', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/messages/SendMessage'),
 
     // Send message to multiple recipients
-    http.post('*/messages/SendMultiMessage', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/messages/SendMultiMessage'),
 
     // Mark messages as read
     http.post('*/messages/MarkMessagesAsRead', ({ request }) => {

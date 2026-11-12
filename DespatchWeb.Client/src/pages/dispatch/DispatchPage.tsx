@@ -1,4 +1,6 @@
 import {refreshJobDetails} from '../../components/common/job-details/jobDetailsRefresh';
+import {useViewsListener} from '../../hooks/useViewsListener';
+import {runSharedJobAction} from '../jobActionDialogs';
 import {getSession} from '../../api/session';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
@@ -20,26 +22,19 @@ import {
     allocateJobs,
     reAllocateJobs,
     sendToPartner,
-    setJobLocked,
-    getActivePartnerOptions,
-    getPartnerRateForJob,
 } from '../../api/jobListApi';
 import {getDispatchJobDetail} from '../../api/dispatchExecutorApi';
-import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 import {JobListPanel} from '../../components/job-list/JobListPanel';
 import {JobDetailsMount} from '../../components/common/job-details/JobDetailsMount';
 import {loadJobListCategory, toStatusFilter} from '../../components/job-list/jobListPreferences';
-import {DispatchDialog, type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
-import {
-    isNetworkPartnerSession,
-    stopJobCountFor,
-} from '../../components/dialogs/dispatch-dialog/dispatchSession';
+import {type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
+import {SingleJobDispatchDialog} from '../../components/dialogs/dispatch-dialog/SingleJobDispatchDialog';
 import {executeDispatchConfirmation} from '../../components/dialogs/dispatch-dialog/executeDispatch';
 import {openInterCourierChargeDialog} from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
 import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {DispatchJobActionsMenu, DispatchJobActionId} from './components/DispatchJobActionsMenu';
 import {BoxShell} from '../../components/common/box-shell/BoxShell';
-import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
+import {boxShellLayoutProps, useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
 import {usePanelHideButtonSetting} from '../../components/common/box-shell/usePanelHideButtonSetting';
 import type {LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
 import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
@@ -238,30 +233,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         );
     }, [pageViews, applyViewSelection]);
 
-    // The host toolbar's Views menu mirrors this selection; it registers a
-    // listener and pushes its own changes back through `setViewSelection`.
-    const decoratedViews = useMemo<DfrntPageViewModel[]>(
-        () => (pageViews ?? []).map(v => ({...v, selected: filters.despatchViewIds.includes(v.id)})),
-        [pageViews, filters.despatchViewIds],
-    );
-    const decoratedViewsRef = useRef(decoratedViews);
-    const viewsListenerRef = useRef<((views: DfrntPageViewModel[]) => void) | null>(null);
-    // Hold the first notification until the list has actually loaded, so the
-    // toolbar menu keeps its spinner instead of flashing "No views yet".
-    const viewsLoadedRef = useRef(false);
-    viewsLoadedRef.current = !viewsLoading;
-    useEffect(() => {
-        decoratedViewsRef.current = decoratedViews;
-        if (!viewsLoading) viewsListenerRef.current?.(decoratedViews);
-    }, [decoratedViews, viewsLoading]);
-
-    const registerViewsListener = useCallback((listener: (views: DfrntPageViewModel[]) => void) => {
-        viewsListenerRef.current = listener;
-        if (viewsLoadedRef.current) listener(decoratedViewsRef.current);
-        return () => {
-            if (viewsListenerRef.current === listener) viewsListenerRef.current = null;
-        };
-    }, []);
+    const registerViewsListener = useViewsListener(pageViews, filters.despatchViewIds, viewsLoading);
 
     // Auto-refresh intervals (ms; false = off), seeded from localStorage and
     // updated from the settings dialog via the bridge. Applied as React Query
@@ -530,43 +502,6 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     return;
                 }
 
-                case 'accessorialCharges':
-                    if (!job.accessorialChargeGroupId) return;
-                    await (await loadDialog('AccessorialCharges')).open({
-                        job: {
-                            id: job.id,
-                            accessorialChargeGroupId: job.accessorialChargeGroupId,
-                            amount: job.amount,
-                            weight: job.weight,
-                            quantity: job.quantity,
-                        },
-                        toastService: {showToast},
-                    });
-                    refreshDetail();
-                    return;
-
-                case 'attachments':
-                    await (await loadDialog('JobFileUpload')).open(job.id);
-                    refreshDetail();
-                    return;
-
-                case 'addTask':
-                    await openAddEventDialog({
-                        job: {id: job.id, jobNo: job.jobNo, client: job.client ?? '', clientId: job.clientId},
-                        toastService: {showToast},
-                    });
-                    return;
-
-                case 'lock':
-                case 'unlock': {
-                    const locked = actionId === 'lock';
-                    await setJobLocked(job.id, locked, !!job.preBook);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
-                    await refreshLists();
-                    refreshDetail();
-                    return;
-                }
-
                 case 'split': {
                     const {executeSplitJobFlow} = await import('../../services/splitJobFlow');
                     await executeSplitJobFlow({
@@ -587,6 +522,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                     return;
 
                 default:
+                    if (await runSharedJobAction(actionId, job, {showToast, refreshDetail, refreshLists})) return;
                     console.error(`[DispatchPage] Unknown FAB action "${actionId}"`);
                     showToast("That action isn't available here.", 'warning');
             }
@@ -785,23 +721,14 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         <Stack h="100%" w="100%" gap={0} style={{minHeight: 0}}>
             <Box style={{flex: 1, minHeight: 0, position: 'relative'}}>
                 <BoxShell
-                    layout={boxLayout.layout}
-                    layoutVersion={boxLayout.layoutVersion}
-                    boxes={boxLayout.boxes}
+                    {...boxShellLayoutProps(boxLayout)}
                     renderBoxContent={renderBoxContent}
                     onRefreshBox={handleRefreshBox}
                     boxSubtitle={subtitleFor}
                     boxRightSlot={boxRightSlotFor}
-                    onColumnSizes={boxLayout.setColumnSizes}
-                    onBoxHeights={boxLayout.setBoxHeights}
-                    onMoveBox={boxLayout.moveBox}
-                    onHideBox={(name) => boxLayout.setBoxVisibility(name, false)}
                     hideButtonEnabled={hideButtonEnabled}
-                    isDefaultLayout={boxLayout.isDefaultLayout}
                     columnEditMode={columnEditMode}
                     onExitColumnEditMode={handleExitColumnEditMode}
-                    onAddColumn={boxLayout.addColumn}
-                    onRemoveColumn={boxLayout.removeColumn}
                 />
             </Box>
             <LayoutPromptDialogs
@@ -809,27 +736,12 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 layoutNames={boxLayout.layouts.map(l => l.name)}
             />
             {currentJob && (
-                <DispatchDialog
+                <SingleJobDispatchDialog
+                    job={currentJob}
                     open={dispatchDialogOpen}
-                    mode={{
-                        kind: 'single',
-                        jobId: currentJob.id,
-                        jobNo: currentJob.jobNo,
-                        flags: {
-                            isArchived: Boolean(currentJob.isArchived),
-                            isBulkJob: Boolean(currentJob.isBulkJob),
-                            preBook: Boolean(currentJob.preBook),
-                        },
-                    }}
-                    existingDestination={currentJob.assignedCourier}
-                    stopJobCount={stopJobCountFor(currentJob.jobNo, currentJob.relatedJobs)}
-                    existingConNote={currentJob.conNote}
-                    isNetworkPartner={isNetworkPartnerSession()}
                     onClose={closeDispatchDialog}
                     onDispatchCourier={handleDispatchCourier}
                     onSendToPartner={handleSendToPartner}
-                    fetchRate={getPartnerRateForJob}
-                    getPartnerOptions={getActivePartnerOptions}
                 />
             )}
         </Stack>

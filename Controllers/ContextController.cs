@@ -1,4 +1,5 @@
 #nullable enable
+using DeliverDifferent.AgentAccess;
 using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
@@ -14,6 +15,7 @@ public class ContextController(
     IConnectionStringManager connectionStringManager) : ControllerBase
 {
     [Authorize]
+    [AgentAccessible(AgentCapabilities.Connect)]
     [HttpGet("/api/context")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public async Task<IActionResult> Get()

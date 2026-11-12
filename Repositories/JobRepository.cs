@@ -3267,6 +3267,18 @@ public partial class JobRepository(
     /// <param name="clientIds">Optional filter by client IDs.</param>
     /// <param name="jobId"></param>
     /// <returns>List of job models formatted for download export.</returns>
+    public Task<IReadOnlyList<JobDownloadModel>> PodSearchDownloadAsync(
+        IReadOnlyList<int> courierIds,
+        IReadOnlyList<int> speedIds,
+        string wild,
+        string job,
+        DateTime fromDate,
+        DateTime toDate,
+        IReadOnlyList<int> clientIds,
+        int? jobId = null) =>
+        PodSearchDownloadAsync(courierIds, speedIds, wild, job, fromDate, toDate, clientIds, jobId, JobWildcardColumns.All);
+
+    /// <param name="wildColumns">Which data classes the <paramref name="wild"/> term may match inside (agents hold a subset).</param>
     public async Task<IReadOnlyList<JobDownloadModel>> PodSearchDownloadAsync(
         IReadOnlyList<int> courierIds,
         IReadOnlyList<int> speedIds,
@@ -3275,7 +3287,8 @@ public partial class JobRepository(
         DateTime fromDate,
         DateTime toDate,
         IReadOnlyList<int> clientIds,
-        int? jobId = null
+        int? jobId,
+        JobWildcardColumns wildColumns
     )
     {
         var fromDateOnly = fromDate.Date;
@@ -3334,8 +3347,8 @@ public partial class JobRepository(
 
         if (!jobIdSet && wildSet)
         {
-            liveJobsQuery = liveJobsQuery.Where(JobWildcardSearch.LiveJobMatches(wildSearch));
-            archivedJobsQuery = archivedJobsQuery.Where(JobWildcardSearch.ArchivedJobMatches(wildSearch));
+            liveJobsQuery = liveJobsQuery.Where(JobWildcardSearch.LiveJobMatches(wildSearch, wildColumns));
+            archivedJobsQuery = archivedJobsQuery.Where(JobWildcardSearch.ArchivedJobMatches(wildSearch, wildColumns));
         }
 
         archivedJobsQuery = ExcludeLiveDuplicates(archivedJobsQuery, archivedJobsContext.TucJobs);

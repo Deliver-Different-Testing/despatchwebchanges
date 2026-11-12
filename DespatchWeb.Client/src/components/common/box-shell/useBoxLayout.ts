@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import type {BoxShellProps} from './BoxShell';
 import {IBox, ILayout} from '../../../types/interfaces/layout.interfaces';
 import {
     clearBoxVisibility,
@@ -391,4 +392,20 @@ function layoutsContain(layouts: ILayout[], name: string): boolean {
 
 function cloneLayoutPayload(layout: ILayout['layout']): ILayout['layout'] {
     return JSON.parse(JSON.stringify(layout));
+}
+
+/** The BoxShell props that come straight from the page's box layout. */
+export function boxShellLayoutProps(boxLayout: UseBoxLayoutResult) {
+    return {
+        layout: boxLayout.layout,
+        layoutVersion: boxLayout.layoutVersion,
+        boxes: boxLayout.boxes,
+        isDefaultLayout: boxLayout.isDefaultLayout,
+        onColumnSizes: boxLayout.setColumnSizes,
+        onBoxHeights: boxLayout.setBoxHeights,
+        onMoveBox: boxLayout.moveBox,
+        onHideBox: (name: string) => boxLayout.setBoxVisibility(name, false),
+        onAddColumn: boxLayout.addColumn,
+        onRemoveColumn: boxLayout.removeColumn,
+    } satisfies Partial<BoxShellProps>;
 }

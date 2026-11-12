@@ -67,7 +67,7 @@ public static class AuthServiceCollectionExtensions
             authentication.AddHubOrAgentPolicyScheme(CookieScheme).AddAgentTokenAuthentication(agentAccess);
             services.AddAgentTenantConnectionStore<AgentTenantConnectionStore>();
             services.Replace(ServiceDescriptor.Scoped<IAgentClaimsEnricher, AgentUserClaimsEnricher>());
-            services.AddAgentExport();
+            services.AddAgentExport(AgentCapabilities.ExportJobs);
         }
         else
         {

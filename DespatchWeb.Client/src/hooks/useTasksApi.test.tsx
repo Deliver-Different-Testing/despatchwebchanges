@@ -19,23 +19,12 @@ import {
     useUnassignTask,
 } from './useTasksApi';
 import {tasksApi} from '../api/tasksApi';
+import {expectQueryHookError} from '../test/utils/queryHookCaseHelpers';
 import {Task, StaffSuggestion, EventTypeSuggestion} from '../types';
 import {DeliveryJourney} from '../components/common/task-history/TaskHistory.interfaces';
 
 // Mock the tasksApi
-vi.mock('../api/tasksApi', () => ({
-    tasksApi: {
-        getAllTasks: vi.fn(),
-        getActiveStaff: vi.fn(),
-        getEventTypes: vi.fn(),
-        getDeliveryJourney: vi.fn(),
-        markTaskAsClosed: vi.fn(),
-        updateTaskDate: vi.fn(),
-        updateTaskTime: vi.fn(),
-        reassignTaskToStaff: vi.fn(),
-        unassignTask: vi.fn(),
-    },
-}));
+vi.mock('../api/tasksApi', async () => (await import('../test/mocks/tasksApiMock')).createTasksApiMock());
 
 const mockTasksApi = tasksApi as Mocked<typeof tasksApi>;
 
@@ -237,15 +226,7 @@ describe('useTasksApi Hooks', () => {
             const error = new Error('Failed to fetch staff');
             mockTasksApi.getActiveStaff.mockRejectedValueOnce(error);
 
-            const {result} = renderHook(() => useActiveStaff(), {
-                wrapper: createWrapper(),
-            });
-
-            await waitFor(() => {
-                expect(result.current.isError).toBe(true);
-            });
-
-            expect(result.current.error).toEqual(error);
+            await expectQueryHookError(() => useActiveStaff(), error);
         });
 
         it('should not fetch when disabled', async () => {
@@ -278,15 +259,7 @@ describe('useTasksApi Hooks', () => {
             const error = new Error('Failed to fetch event types');
             mockTasksApi.getEventTypes.mockRejectedValueOnce(error);
 
-            const {result} = renderHook(() => useEventTypes(), {
-                wrapper: createWrapper(),
-            });
-
-            await waitFor(() => {
-                expect(result.current.isError).toBe(true);
-            });
-
-            expect(result.current.error).toEqual(error);
+            await expectQueryHookError(() => useEventTypes(), error);
         });
 
         it('should not fetch when disabled', async () => {

@@ -10,6 +10,7 @@ import {useDashboardSettings} from '../../hooks/useDashboardSettings';
 import {useDateFilter} from '../../hooks/useDateFilter';
 import {useLayoutToolbar} from '../../hooks/useLayoutToolbar';
 import {useResetLayout} from '../../hooks/useResetLayout';
+import {toLayoutsMenuProps} from '../../utils/toLayoutsMenuProps';
 import {NationwidePage} from './NationwidePage';
 import type {NationwideLayoutBridge} from './NationwidePageProps';
 import {createDefaultNationwideLayout, createNationwideBoxes} from './lib/boxDefinitions';
@@ -103,16 +104,7 @@ export const NationwideScreen: React.FC<NationwideScreenProps> = ({deepLinkJobId
             ),
             onClearAll: () => bridge?.setViewSelection([]),
         },
-        layouts: {
-            items: layoutToolbar.layouts,
-            currentLayoutName: layoutToolbar.currentLayoutName,
-            onSaveLayout: () => void layoutToolbar.saveLayout(),
-            onLoadLayout: layoutToolbar.loadLayout,
-            onDeleteLayout: index => void layoutToolbar.deleteLayout(index),
-            onRenameLayout: index => void layoutToolbar.renameLayout(index),
-            onCustomizePanels: () => void openCustomizePanels(),
-            onResetLayout: resetLayout,
-        },
+        layouts: toLayoutsMenuProps(layoutToolbar, {openCustomizePanels, resetLayout}),
         settings: {onClick: () => void openSettings()},
         dateFilter: {
             data: dateFilter,

@@ -14,8 +14,6 @@ import {searchActiveClients} from '../../api/jobApi';
 import {searchActiveCouriers} from '../../api/courierApi';
 import {
     addRestoreEvent,
-    getActivePartnerOptions,
-    getPartnerRateForJob,
     getRestorePodImpact,
     restoreJobs,
     restoreSplitJobs,
@@ -38,7 +36,7 @@ import {BoxShell} from '../../components/common/box-shell/BoxShell';
 import {JobSearchJobActionsMenu, type JobSearchJobActionId} from './components/JobSearchJobActionsMenu';
 import {ScanList} from './components/ScanList';
 import {useSearchCriteria} from './hooks/useSearchCriteria';
-import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
+import {boxShellLayoutProps, useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
 import {usePanelHideButtonSetting} from '../../components/common/box-shell/usePanelHideButtonSetting';
 import {useDeepLinkJob} from './hooks/useDeepLinkJob';
 import {createDefaultJobSearchLayout, createJobSearchBoxes} from './lib/boxDefinitions';
@@ -51,14 +49,12 @@ import {
 import type {LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
 import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
 import {useLayoutPrompts} from '../../components/layout-prompts/useLayoutPrompts';
-import {DispatchDialog, type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
-import {
-    isNetworkPartnerSession,
-    stopJobCountFor,
-} from '../../components/dialogs/dispatch-dialog/dispatchSession';
+import {type DispatchConfirmation} from '../../components/dialogs/dispatch-dialog';
+import {SingleJobDispatchDialog} from '../../components/dialogs/dispatch-dialog/SingleJobDispatchDialog';
 import {executeDispatchConfirmation} from '../../components/dialogs/dispatch-dialog/executeDispatch';
 import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {JobSearchPageProps} from "./JobSearchPageProps";
+import {openAccessorialChargesForJob, openAttachmentsForJob} from '../jobActionDialogs';
 import {loadDialog} from '../../components/dialogs/dialogRegistry';
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
@@ -417,22 +413,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         try {
             switch (actionId) {
                 case 'accessorialCharges':
-                    if (!job.accessorialChargeGroupId) return;
-                    await (await loadDialog('AccessorialCharges')).open({
-                        job: {
-                            id: job.id,
-                            accessorialChargeGroupId: job.accessorialChargeGroupId,
-                            amount: job.amount,
-                            weight: job.weight,
-                            quantity: job.quantity,
-                        },
-                        toastService: {showToast},
-                    });
+                    if (!await openAccessorialChargesForJob(job, showToast)) return;
                     await invalidateDetail();
                     return;
 
                 case 'attachments':
-                    await (await loadDialog('JobFileUpload')).open(job.id);
+                    await openAttachmentsForJob(job);
                     await invalidateDetail();
                     return;
 
@@ -742,24 +728,15 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         <Box style={{display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0}}>
             <Box style={{flex: 1, minHeight: 0}}>
                 <BoxShell
-                    layout={boxLayout.layout}
-                    layoutVersion={boxLayout.layoutVersion}
-                    boxes={boxLayout.boxes}
+                    {...boxShellLayoutProps(boxLayout)}
                     renderBoxContent={renderBoxContent}
                     onRefreshBox={handleRefreshBox}
                     boxSubtitle={subtitleFor}
                     boxLocked={lockedFor}
                     boxRightSlot={boxRightSlotFor}
-                    onColumnSizes={boxLayout.setColumnSizes}
-                    onBoxHeights={boxLayout.setBoxHeights}
-                    onMoveBox={boxLayout.moveBox}
-                    onHideBox={(name) => boxLayout.setBoxVisibility(name, false)}
                     hideButtonEnabled={hideButtonEnabled}
-                    isDefaultLayout={boxLayout.isDefaultLayout}
                     columnEditMode={columnEditMode}
                     onExitColumnEditMode={handleExitColumnEditMode}
-                    onAddColumn={boxLayout.addColumn}
-                    onRemoveColumn={boxLayout.removeColumn}
                 />
             </Box>
             <LayoutPromptDialogs
@@ -784,27 +761,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 }}
             />
             {currentJob && (
-                <DispatchDialog
+                <SingleJobDispatchDialog
+                    job={currentJob}
                     open={dispatchDialogOpen}
-                    mode={{
-                        kind: 'single',
-                        jobId: currentJob.id,
-                        jobNo: currentJob.jobNo,
-                        flags: {
-                            isArchived: Boolean(currentJob.isArchived),
-                            isBulkJob: Boolean(currentJob.isBulkJob),
-                            preBook: Boolean(currentJob.preBook),
-                        },
-                    }}
-                    existingDestination={currentJob.assignedCourier}
-                    stopJobCount={stopJobCountFor(currentJob.jobNo, currentJob.relatedJobs)}
-                    existingConNote={currentJob.conNote}
-                    isNetworkPartner={isNetworkPartnerSession()}
                     onClose={() => setDispatchDialogOpen(false)}
                     onDispatchCourier={handleDispatchCourier}
                     onSendToPartner={handleSendToPartner}
-                    fetchRate={getPartnerRateForJob}
-                    getPartnerOptions={getActivePartnerOptions}
                 />
             )}
         </Box>

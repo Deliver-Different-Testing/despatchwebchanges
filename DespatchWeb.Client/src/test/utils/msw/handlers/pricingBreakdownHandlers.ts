@@ -5,7 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
-import {rejectWithoutCsrf} from './requestGuards';
+import {csrfJsonPostHandler} from './csrfJsonPostHandler';
 import {PriceBreakdown} from "../../../../types/priceBreakdown";
 
 
@@ -48,42 +48,11 @@ export const pricingBreakdownHandlers = [
     }),
 
     // Add price component (returns new chargeId)
-    http.post('*/job/AddPriceComponent', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        // Return new chargeId
-        return HttpResponse.json(42);
-    }),
+    csrfJsonPostHandler('*/job/AddPriceComponent', () => HttpResponse.json(42)),
 
     // Update price component
-    http.post('*/job/UpdatePriceComponent', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/job/UpdatePriceComponent'),
 
     // Delete price component
-    http.post('*/job/DeletePriceComponent', async ({ request }) => {
-        const rejected = rejectWithoutCsrf(request);
-        if (rejected) return rejected;
-
-        const body = await request.json();
-        if (!body || typeof body !== 'object') {
-            return new HttpResponse('Invalid request body', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
+    csrfJsonPostHandler('*/job/DeletePriceComponent'),
 ];
