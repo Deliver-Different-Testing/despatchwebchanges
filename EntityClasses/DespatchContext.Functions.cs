@@ -30,9 +30,9 @@ namespace DespatchWeb.EntityClasses
         }
 
         [DbFunction("UTL_fncJob_ExtraRate", "dbo")]
-        public IQueryable<UTL_fncJob_ExtraRateResult> UTL_fncJob_ExtraRate(decimal? TotalWeight, int? Quantity, decimal? Cubic, int? TotalPallets, int? ExtraStopOffs, int? VehicleSizeID, bool? DangerousGoods, decimal? DryIceWeight, int? PickupWaitTime, int? DeliveryWaitTime, int? ExtraChargeID, bool? Holiday, bool? Afterhours, int? FromZoneCongestionID, int? ToZoneCongestionID, decimal? MFV, decimal? PPD, int? FuelSurchargeId, int? ClientID, DateTime? Date, string CubicList)
+        public IQueryable<UTL_fncJob_ExtraRateResult> UTL_fncJob_ExtraRate(decimal? TotalWeight, int? Quantity, decimal? Cubic, int? TotalPallets, int? ExtraStopOffs, int? VehicleSizeID, bool? DangerousGoods, decimal? DryIceWeight, int? PickupWaitTime, int? DeliveryWaitTime, int? ExtraChargeID, bool? Holiday, bool? Afterhours, int? FromZoneCongestionID, int? ToZoneCongestionID, decimal? MFV, decimal? PPD, int? FuelSurchargeId, int? ClientID, DateTime? Date, string CubicList, decimal? RowHolidayAmount, decimal? RowHolidayDriverPay, decimal? RowAfterHoursAmount, decimal? RowAfterHoursDriverPay)
         {
-            return FromExpression(() => UTL_fncJob_ExtraRate(TotalWeight, Quantity, Cubic, TotalPallets, ExtraStopOffs, VehicleSizeID, DangerousGoods, DryIceWeight, PickupWaitTime, DeliveryWaitTime, ExtraChargeID, Holiday, Afterhours, FromZoneCongestionID, ToZoneCongestionID, MFV, PPD, FuelSurchargeId, ClientID, Date, CubicList));
+            return FromExpression(() => UTL_fncJob_ExtraRate(TotalWeight, Quantity, Cubic, TotalPallets, ExtraStopOffs, VehicleSizeID, DangerousGoods, DryIceWeight, PickupWaitTime, DeliveryWaitTime, ExtraChargeID, Holiday, Afterhours, FromZoneCongestionID, ToZoneCongestionID, MFV, PPD, FuelSurchargeId, ClientID, Date, CubicList, RowHolidayAmount, RowHolidayDriverPay, RowAfterHoursAmount, RowAfterHoursDriverPay));
         }
 
         [DbFunction("UTL_fncJob_RawBaseToAmount", "dbo")]
