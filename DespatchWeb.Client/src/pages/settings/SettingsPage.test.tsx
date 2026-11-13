@@ -28,13 +28,6 @@ import {StaffPreferenceKey} from '../../types/enums/staff-preference-key.enum';
 import {useColorMode} from '../../hooks/useColorMode';
 import {resetNavStyleStore} from '../../hooks/useNavStyle';
 import {toastService} from '../../services/toastService';
-import {isLiquidGlassSupported} from '../../hooks/glassSupport';
-
-vi.mock('../../hooks/glassSupport', async () => ({
-    ...(await vi.importActual<typeof import('../../hooks/glassSupport')>('../../hooks/glassSupport')),
-    isLiquidGlassSupported: vi.fn(),
-}));
-
 vi.mock('../../hooks/useColorMode', () => ({
     useColorMode: vi.fn(),
 }));
@@ -255,41 +248,10 @@ describe('SettingsPage', () => {
         expect(mockSetAiChatEnabled).toHaveBeenCalledWith(true);
     });
 
-    describe('Liquid Glass', () => {
-        beforeEach(() => (isLiquidGlassSupported as Mock).mockReturnValue(true));
+    it('offers no Liquid Glass toggle, because glass is always on', () => {
+        renderWithMantine(<SettingsPage />);
 
-        it('is off by default, tagged BETA, and names the browsers it works in', () => {
-            renderWithMantine(<SettingsPage />);
-
-            expect(screen.getByRole('switch', {name: 'Liquid Glass'})).not.toBeChecked();
-            expect(screen.getByText(/Works in Chromium browsers/)).toBeInTheDocument();
-            expect(screen.getByText(/Chrome, Edge, Brave and Opera/)).toBeInTheDocument();
-        });
-
-        it('turns on and persists when toggled', async () => {
-            const user = setupUser();
-            renderWithMantine(<SettingsPage />);
-
-            await user.click(screen.getByRole('switch', {name: 'Liquid Glass'}));
-
-            expect(screen.getByRole('switch', {name: 'Liquid Glass'})).toBeChecked();
-            expect(localStorage.getItem('dd-liquid-glass')).toBe('on');
-            expect(savePreference).toHaveBeenCalledWith('LiquidGlass', 'on');
-        });
-
-        it('is disabled and explains why in an unsupported browser', async () => {
-            (isLiquidGlassSupported as Mock).mockReturnValue(false);
-            localStorage.removeItem('dd-liquid-glass');
-            const user = setupUser();
-            renderWithMantine(<SettingsPage />);
-
-            const toggle = screen.getByRole('switch', {name: 'Liquid Glass'});
-            expect(toggle).toBeDisabled();
-            expect(screen.getByText(/Your browser doesn't support Liquid Glass/)).toBeInTheDocument();
-            await user.click(toggle);
-            expect(toggle).not.toBeChecked();
-            expect(localStorage.getItem('dd-liquid-glass')).toBeNull();
-        });
+        expect(screen.queryByRole('switch', {name: 'Liquid Glass'})).not.toBeInTheDocument();
     });
 
     describe('Dashboard settings', () => {

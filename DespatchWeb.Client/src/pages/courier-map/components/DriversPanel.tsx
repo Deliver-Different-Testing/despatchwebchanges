@@ -16,7 +16,7 @@ import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import classes from './DriversPanel.module.css';
 import {glassClassNames} from '@deliver-different/glass';
-import {useLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
+import {isLiquidGlassSupported} from '../../../hooks/glassSupport';
 import {NoData} from '../../../components/common/no-data';
 import type {DriversPanelProps, FleetSelectorOption} from '../CourierMapPage.types';
 import {matchesCourierSearch} from '../CourierMapPage.types';
@@ -107,7 +107,7 @@ export function DriversPanel({
     );
     const selectedFleetValues = useMemo(() => selectedFleetIds.map(String), [selectedFleetIds]);
 
-    const glassEnabled = useLiquidGlassEnabled();
+    const glassEnabled = isLiquidGlassSupported();
 
     return (
         <Box

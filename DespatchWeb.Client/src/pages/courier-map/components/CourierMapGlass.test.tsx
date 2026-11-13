@@ -37,16 +37,8 @@ const controlsProps = {
 } as unknown as MapControlsProps;
 
 describe('Courier map liquid glass', () => {
-    afterEach(() => localStorage.clear());
-
-    it('leaves the drivers card and map controls plain while Liquid Glass is off (the default)', () => {
-        renderWithMantine(<><DriversPanel {...panelProps}/><MapControls {...controlsProps}/></>);
-        expect(screen.getByRole('button', {name: 'Toggle drivers panel'}).parentElement).not.toHaveClass('dfrnt-glass');
-        expect(screen.getByRole('button', {name: 'Refresh data'}).closest('.mantine-Paper-root')).not.toHaveClass('dfrnt-glass');
-    });
-
-    it('frosts the zoom/view rail and the dispatch rail only when on', () => {
-        const rails = () => renderWithMantine(
+    it('frosts the zoom/view rail and the dispatch rail', () => {
+        renderWithMantine(
             <>
                 <MapZoomViewControls map={null} platform={null} defaultLayers={null}/>
                 <MapControlButtons
@@ -60,19 +52,11 @@ describe('Courier map liquid glass', () => {
         );
         const railOf = (name: string) => screen.getByRole('button', {name}).closest('.mantine-Paper-root');
 
-        const off = rails();
-        expect(railOf('Zoom in')).not.toHaveClass('dfrnt-glass');
-        expect(railOf('Toggle auto zoom')).not.toHaveClass('dfrnt-glass');
-        off.unmount();
-
-        localStorage.setItem('dd-liquid-glass', 'on');
-        rails();
         expect(railOf('Zoom in')).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');
         expect(railOf('Toggle auto zoom')).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');
     });
 
-    it('frosts the drivers card and map controls when on, but not the driver list', () => {
-        localStorage.setItem('dd-liquid-glass', 'on');
+    it('frosts the drivers card and map controls, but not the driver list', () => {
         renderWithMantine(<><DriversPanel {...panelProps}/><MapControls {...controlsProps}/></>);
 
         expect(screen.getByRole('button', {name: 'Toggle drivers panel'}).parentElement).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');
