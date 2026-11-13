@@ -65,7 +65,7 @@ public class TaskRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
         var today = filters?.Date ?? clock.TenantNow.AddDays(1);
 
-        var query = ApplyTaskGroupFilter(Context.TucEvents);
+        var query = ApplyScopeFilter(ApplyTaskGroupFilter(Context.TucEvents), Context);
 
         if (filters != null)
         {
@@ -146,7 +146,7 @@ public class TaskRepository(
 
             try
             {
-                var existingEvent = await Context.TucEvents
+                var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
                     .Where(e => e.UcevId == eventId)
                     .Select(e => new { e.UcevClosed })
                     .FirstOrDefaultAsync();
@@ -193,7 +193,7 @@ public class TaskRepository(
 
             try
             {
-                var existingEvent = await Context.TucEvents
+                var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
                     .Where(e => e.UcevId == eventId)
                     .Select(e => new { e.UcevDueTime })
                     .FirstOrDefaultAsync();
@@ -239,7 +239,7 @@ public class TaskRepository(
 
             try
             {
-                var existingEvent = await Context.TucEvents
+                var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
                     .Where(e => e.UcevId == eventId)
                     .Select(e => new
                     {
@@ -322,7 +322,7 @@ public class TaskRepository(
 
             try
             {
-                var existingEvent = await Context.TucEvents
+                var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
                     .Where(e => e.UcevId == eventId)
                     .Select(e => new
                     {
@@ -632,6 +632,16 @@ public class TaskRepository(
             : query.OrderByDescending(e => e.UcevDueTime.Date < today)
                 .ThenBy(e => e.UcevDueTime)
                 .ThenBy(e => e.UcevId);
+
+    /// <summary>
+    /// tucEvent has no scope filter of its own, so a scoped caller only gets tasks on jobs the
+    /// filtered job sets let them see; unlinked tasks are staff-only.
+    /// </summary>
+    internal static IQueryable<TucEvent> ApplyScopeFilter(IQueryable<TucEvent> query, DespatchContext context) =>
+        context.CurrentBypassFilters
+            ? query
+            : query.Where(e => context.TucJobs.Any(j => j.UcjbId == e.UcevJobId)
+                               || context.TucJobArchives.Any(j => j.UcjbId == e.UcevJobId));
 
     /// <summary>
     /// Restricts an event query to the groups that surface as actionable tasks in the task

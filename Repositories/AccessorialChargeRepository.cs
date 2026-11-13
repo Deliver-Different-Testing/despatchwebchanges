@@ -79,6 +79,11 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
 
     public async Task<IReadOnlyList<JobAccessorialChargeDto>> GetAppliedChargesAsync(int jobId)
     {
+        if (!await Context.IsJobVisibleAsync(jobId))
+        {
+            return [];
+        }
+
         var charges = await Context.JobAccessorialCharges
             .Where(jac => jac.JobId == jobId)
             .OrderBy(jac => jac.Created)
@@ -103,16 +108,24 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             newJobTotal);
     }
 
+    // jobAccessorialCharge has no scope filter, so a scoped caller only reaches charges on jobs it can see.
+    private IQueryable<JobAccessorialCharge> ChargeInScope(int jobAccessorialChargeId)
+    {
+        var charges = Context.JobAccessorialCharges.Where(jac => jac.JobAccessorialChargeId == jobAccessorialChargeId);
+        return Context.CurrentBypassFilters
+            ? charges
+            : charges.Where(jac => Context.TucJobs.Any(j => j.UcjbId == jac.JobId)
+                                   || Context.TucJobArchives.Any(j => j.UcjbId == jac.JobId));
+    }
+
     public async Task<JobAccessorialChargeDto> GetAppliedChargeWithDetailsAsync(int jobAccessorialChargeId) =>
-        await Context.JobAccessorialCharges
-            .Where(jac => jac.JobAccessorialChargeId == jobAccessorialChargeId)
+        await ChargeInScope(jobAccessorialChargeId)
             .Select(AppliedChargeProjection)
             .FirstOrDefaultAsync();
 
     public async Task UpdateChargeAsync(int jobAccessorialChargeId, decimal calculatedAmount, decimal? overrideAmount,
         decimal? driverCalculatedAmount, decimal? driverOverrideAmount, decimal? inputValue, int itemCount, string notes, string userName) =>
-        await Context.JobAccessorialCharges
-            .Where(jac => jac.JobAccessorialChargeId == jobAccessorialChargeId)
+        await ChargeInScope(jobAccessorialChargeId)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(jac => jac.InputValue, inputValue)
                 .SetProperty(jac => jac.ItemCount, itemCount)
@@ -125,8 +138,7 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
                 .SetProperty(jac => jac.LastModifiedBy, userName ?? "Unknown"));
 
     public async Task DeleteChargeAsync(int jobAccessorialChargeId) =>
-        await Context.JobAccessorialCharges
-            .Where(jac => jac.JobAccessorialChargeId == jobAccessorialChargeId)
+        await ChargeInScope(jobAccessorialChargeId)
             .ExecuteDeleteAsync();
 
     public async Task<decimal> GetJobAmountAsync(int jobId) =>

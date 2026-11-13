@@ -37,7 +37,8 @@ const ACTIONS: JobAction<JobSearchJobActionId>[] = [
         // Only for archived, completed jobs — the live-job path is a normal re-dispatch.
         // Invoiced/settled jobs are refused by the server pre-check (DispatchJob rows
         // don't carry a populated invoiced flag), which shows an explanatory popup.
-        available: job => !job.bulkJob && !job.preBook && !!job.isArchived && !!job.done},
+        available: job => !job.bulkJob && !job.preBook && !!job.isArchived && !!job.done
+            && !isNetworkPartnerSession()},
     {id: 'restore', label: 'Restore job', icon: 'undo',
         // Archived jobs live only in the archive tables; restore operates on live (tucJob)
         // rows, so restoring an archived job silently no-ops — don't offer it.
@@ -52,9 +53,10 @@ const ACTIONS: JobAction<JobSearchJobActionId>[] = [
         available: job => !job.preBook && !job.bulkJob && !job.locked && !job.invoiced},
     {id: 'split', label: 'Split job', icon: 'shuffle',
         // Archived jobs are refused by executeSplitJobFlow, so offering it would be a dead end.
-        available: job => !!job.allowSplit && !job.isArchived},
+        available: job => !!job.allowSplit && !job.isArchived && !isNetworkPartnerSession()},
     {id: 'unsplit', label: 'Unsplit job', icon: 'undo',
-        available: job => !job.preBook && !job.locked && job.jobRelationshipTypeId === 8},
+        available: job => !job.preBook && !job.locked && job.jobRelationshipTypeId === 8
+            && !isNetworkPartnerSession()},
 ];
 
 export const JobSearchJobActionsMenu: React.FC<JobSearchJobActionsMenuProps> = ({currentJob, onAction}) => (

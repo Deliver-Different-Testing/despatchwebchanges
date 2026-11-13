@@ -46,7 +46,7 @@ const ACTIONS: JobAction<DispatchJobActionId>[] = [
     {id: 'lock', label: 'Lock job', icon: 'lock',
         available: job => !job.locked && !job.invoiced},
     {id: 'split', label: 'Split job', icon: 'shuffle',
-        available: job => !!job.allowSplit},
+        available: job => !!job.allowSplit && !isNetworkPartnerSession()},
     {id: 'swapPod', label: 'Swap POD', icon: 'swap_calls',
         available: job => !!job.done && !job.bulkJob && !job.preBook},
 ];

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
@@ -1003,6 +1004,11 @@ public class NationwideJobRepository(
     {
         var recoveryAgent = await Context.JobRecoveryAgents.FindAsync(request.RecoveryId);
         ArgumentNullException.ThrowIfNull(recoveryAgent);
+
+        if (!await Context.IsJobVisibleAsync(recoveryAgent.JobId))
+        {
+            throw new JobNotFoundException($"Recovery {request.RecoveryId} was not found.");
+        }
 
         if (request.IsPrimaryRecoveryAgent)
         {

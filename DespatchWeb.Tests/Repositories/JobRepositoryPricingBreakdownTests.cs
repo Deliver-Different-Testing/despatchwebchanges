@@ -452,7 +452,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
             new ChargeViewModel { ChargeId = 1, JobId = jobId, Name = "Updated", Amount = 175.00m }, isArchived: true);
         await repository.AddJobPriceBreakdownAsync(
             new ChargeViewModel { ChildJobId = jobId, Name = "Added", Amount = 5.00m }, isArchived: true);
-        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: true);
+        await repository.DeleteJobPriceBreakdownAsync(2, 100, isArchived: true);
 
         _context.ChangeTracker.Clear();
         var notes = await _context.TucNoteArchives.Where(n => n.JobId == jobId)
@@ -518,7 +518,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(chargeId, isArchived: false);
+        await repository.DeleteJobPriceBreakdownAsync(chargeId, 100, isArchived: false);
 
         var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Null(breakdown);
@@ -535,7 +535,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(chargeId, isArchived: true);
+        await repository.DeleteJobPriceBreakdownAsync(chargeId, 100, isArchived: true);
 
         var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Null(breakdown);
@@ -550,7 +550,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         Assert.Null(exception);
         return;
 
-        async Task Act() => await repository.DeleteJobPriceBreakdownAsync(999, isArchived: false);
+        async Task Act() => await repository.DeleteJobPriceBreakdownAsync(999, 100, isArchived: false);
     }
 
     [Fact]
@@ -566,7 +566,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: false);
+        await repository.DeleteJobPriceBreakdownAsync(2, 100, isArchived: false);
 
         var remaining = await _context.PricingBreakdowns.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(remaining);
@@ -716,7 +716,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: false);
+        await repository.DeleteJobPriceBreakdownAsync(2, 100, isArchived: false);
 
         _context.ChangeTracker.Clear();
         var job = await _context.TucJobs.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
@@ -736,7 +736,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: true);
+        await repository.DeleteJobPriceBreakdownAsync(2, 100, isArchived: true);
 
         _context.ChangeTracker.Clear();
         var job = await _context.TucJobArchives.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
@@ -753,7 +753,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(1, isArchived: false);
+        await repository.DeleteJobPriceBreakdownAsync(1, 100, isArchived: false);
 
         _context.ChangeTracker.Clear();
         var job = await _context.TucJobs.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
@@ -879,7 +879,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: false);
+        await repository.DeleteJobPriceBreakdownAsync(2, 100, isArchived: false);
 
         _context.ChangeTracker.Clear();
         Assert.Equal(1, await _context.PricingBreakdowns.CountAsync(TestContext.Current.CancellationToken));
@@ -901,7 +901,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(1, isArchived: true);
+        await repository.DeleteJobPriceBreakdownAsync(1, 100, isArchived: true);
 
         Assert.Empty(await _context.PricingBreakdownArchives.ToListAsync(TestContext.Current.CancellationToken));
     }
@@ -928,7 +928,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: false);
+        await repository.DeleteJobPriceBreakdownAsync(2, 100, isArchived: false);
 
         _context.ChangeTracker.Clear();
         var legAJob = await _context.TucJobs.FirstAsync(j => j.UcjbId == legA, TestContext.Current.CancellationToken);
@@ -1295,6 +1295,27 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var legBJob = await _context.TucJobs.FirstAsync(j => j.UcjbId == legB, TestContext.Current.CancellationToken);
         Assert.Equal(120.00m, legAJob.UcjbAmount);
         Assert.Equal(80.00m, legBJob.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task UpdateSplitPricingBreakdownAsync_ItemRevenueForAnotherJobsCharge_LeavesItAlone()
+    {
+        SeedTwoLegSplitParent(100, 101, 102, itemAmount: 100.00m, shareA: 60m, shareB: 40m);
+        _context.TucJobs.Add(CreateJob(200, "OTHER"));
+        _context.PricingBreakdowns.Add(CreatePricingBreakdown(50, 200, null, "Theirs", 30.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdateSplitPricingBreakdownAsync(new UpdateSplitPricingBreakdownRequest
+        {
+            JobId = 100,
+            ItemRevenues = [new SplitPricingItemRevenueUpdate { PricingBreakdownId = 50, Revenue = 0.01m, Name = "Hijacked" }]
+        });
+
+        await using var check = _db.CreateContext();
+        var theirs = await check.PricingBreakdowns.SingleAsync(p => p.PricingBreakdownId == 50,
+            TestContext.Current.CancellationToken);
+        Assert.Equal(30.00m, theirs.ChargeAmount);
+        Assert.Equal("Theirs", theirs.ChargeName);
     }
 
     [Fact]
@@ -1975,7 +1996,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
             new PricingBreakdownAllocationArchive { ParentPricingBreakdownId = 2, LegJobId = legB, SharePercent = 50m, ChargeAmount = 10.00m });
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await CreateRepository().DeleteJobPriceBreakdownAsync(2, isArchived: true);
+        await CreateRepository().DeleteJobPriceBreakdownAsync(2, 100, isArchived: true);
 
         _context.ChangeTracker.Clear();
         Assert.False(await _context.PricingBreakdownAllocationArchives
@@ -2075,6 +2096,112 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         UcbkId = id,
         UcbkJobNumber = jobNumber
     };
+
+    // ---- A charge is only reachable through the job it belongs to ---------------------
+
+    private JobRepository CreateCustomerScopedRepository(int clientId)
+    {
+        var provider = Substitute.For<IScopeProvider>();
+        provider.Scope.Returns(new ScopeContext(ClientTypeId: (int)ClientType.Customer, ClientId: clientId, NpAgentId: null));
+        return new JobRepository(
+            SqliteTestDatabase.CreateFactoryMock(new DespatchContext(_db.Options, provider)),
+            _tenantInfoServiceMock, _clock, _clearListEnvelopeServiceMock, _createJobServiceMock,
+            Substitute.For<ICourierRepository>(), Substitute.For<ISuburbResolver>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UpdateJobPriceBreakdownAsync_ChargeOnAnotherJob_LeavesItAlone(bool isArchived)
+    {
+        if (isArchived)
+        {
+            _context.TucJobArchives.AddRange(CreateArchivedJob(100, "A"), CreateArchivedJob(200, "B"));
+            _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(2, 200, "Theirs", 50.00m));
+        }
+        else
+        {
+            _context.TucJobs.AddRange(CreateJob(100, "A"), CreateJob(200, "B"));
+            _context.PricingBreakdowns.Add(CreatePricingBreakdown(2, 200, null, "Theirs", 50.00m));
+        }
+
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var updated = await CreateRepository().UpdateJobPriceBreakdownAsync(
+            new ChargeViewModel { ChargeId = 2, JobId = 100, Name = "Hijacked", Amount = 0.01m }, isArchived);
+
+        Assert.False(updated);
+        await using var check = _db.CreateContext();
+        var name = isArchived
+            ? (await check.PricingBreakdownArchives.SingleAsync(TestContext.Current.CancellationToken)).ChargeName
+            : (await check.PricingBreakdowns.SingleAsync(TestContext.Current.CancellationToken)).ChargeName;
+        Assert.Equal("Theirs", name);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeleteJobPriceBreakdownAsync_ChargeOnAnotherJob_LeavesItAlone(bool isArchived)
+    {
+        if (isArchived)
+        {
+            _context.TucJobArchives.AddRange(CreateArchivedJob(100, "A"), CreateArchivedJob(200, "B"));
+            _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(2, 200, "Theirs", 50.00m));
+        }
+        else
+        {
+            _context.TucJobs.AddRange(CreateJob(100, "A"), CreateJob(200, "B"));
+            _context.PricingBreakdowns.Add(CreatePricingBreakdown(2, 200, null, "Theirs", 50.00m));
+        }
+
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var deleted = await CreateRepository().DeleteJobPriceBreakdownAsync(2, 100, isArchived);
+
+        Assert.False(deleted);
+        await using var check = _db.CreateContext();
+        var remaining = isArchived
+            ? await check.PricingBreakdownArchives.CountAsync(TestContext.Current.CancellationToken)
+            : await check.PricingBreakdowns.CountAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(1, remaining);
+    }
+
+    [Fact]
+    public async Task PriceBreakdownWrites_OwnJob_SplitLegAndStaffPrebook_StillWork()
+    {
+        _context.TucJobs.AddRange(CreateJob(100, "A"), CreateJob(101, "LEG"));
+        _context.PricingBreakdowns.AddRange(
+            CreatePricingBreakdown(1, 100, null, "Own", 10.00m),
+            CreatePricingBreakdown(2, 100, null, "Leg line", 20.00m, childJobId: 101),
+            CreatePricingBreakdown(3, null, 500, "Prebook", 30.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        Assert.True(await repository.UpdateJobPriceBreakdownAsync(
+            new ChargeViewModel { ChargeId = 1, JobId = 100, Name = "Own", Amount = 11.00m }));
+        Assert.True(await repository.UpdateJobPriceBreakdownAsync(
+            new ChargeViewModel { ChargeId = 2, JobId = 101, Name = "Leg line", Amount = 21.00m }));
+        Assert.True(await repository.UpdateJobPriceBreakdownAsync(
+            new ChargeViewModel { ChargeId = 3, PrebookJobId = 500, Name = "Prebook", Amount = 31.00m }));
+        Assert.True(await repository.DeleteJobPriceBreakdownAsync(3, 500));
+    }
+
+    [Fact]
+    public async Task PriceBreakdownWrites_Customer_CannotReachAPrebookChargeThroughAJobIdItOwns()
+    {
+        // tblJob and tucJobBooking ids share one integer space, so a customer who owns job 500 must
+        // not reach the prebook charge of booking 500.
+        _context.PricingBreakdowns.Add(CreatePricingBreakdown(3, null, 500, "Someone's prebook", 30.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateCustomerScopedRepository(clientId: 10);
+
+        Assert.False(await repository.UpdateJobPriceBreakdownAsync(
+            new ChargeViewModel { ChargeId = 3, JobId = 500, Name = "x", Amount = 0m }));
+        Assert.False(await repository.DeleteJobPriceBreakdownAsync(3, 500));
+
+        await using var check = _db.CreateContext();
+        Assert.Equal(30.00m, (await check.PricingBreakdowns.SingleAsync(TestContext.Current.CancellationToken)).ChargeAmount);
+    }
 
     private static PricingBreakdown CreatePricingBreakdown(int id, int? jobId, int? prebookJobId, string name, decimal amount, decimal? costAmount = null, int? childJobId = null) => new()
     {

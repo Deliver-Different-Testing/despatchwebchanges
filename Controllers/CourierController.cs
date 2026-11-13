@@ -1,4 +1,5 @@
 ﻿using DespatchWeb.Enums;
+using DespatchWeb.Filters;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -374,6 +375,7 @@ public class CourierController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Courier, "request.CourierId")]
     public async Task<IActionResult> UpdateAfterHoursCourierSchedule(
         [FromBody] AfterHoursCourierScheduleViewModel request)
     {
@@ -393,6 +395,7 @@ public class CourierController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Courier, "request.CourierId")]
     public async Task<IActionResult> CreateAfterHoursCourierSchedule(
         [FromBody] AfterHoursCourierScheduleViewModel request)
     {

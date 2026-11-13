@@ -8,7 +8,7 @@ using Serilog;
 namespace DespatchWeb.Controllers;
 
 [Authorize]
-public class MessagesController(IMessageRepository messageRepository) : Controller
+public class MessagesController(IMessageRepository messageRepository, ITenantInfoService infoService) : Controller
 {
     public async Task<IActionResult> GetUnreadMessageCount()
     {
@@ -38,11 +38,11 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         }
     }
 
-    public async Task<IActionResult> GetMessages(int courierId, int staffId)
+    public async Task<IActionResult> GetMessages(int courierId)
     {
         try
         {
-            var messages = await messageRepository.GetMessagesByCourierIdAsync(courierId, staffId);
+            var messages = await messageRepository.GetMessagesByCourierIdAsync(courierId, infoService.GetStaffId());
             return Json(messages);
         }
         catch (Exception e)
@@ -52,11 +52,11 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
         }
     }
 
-    public async Task<IActionResult> GetMessagesByStaff(int otherStaffId, int currentStaffId)
+    public async Task<IActionResult> GetMessagesByStaff(int otherStaffId)
     {
         try
         {
-            var messages = await messageRepository.GetMessagesByStaffIdAsync(otherStaffId, currentStaffId);
+            var messages = await messageRepository.GetMessagesByStaffIdAsync(otherStaffId, infoService.GetStaffId());
             return Json(messages);
         }
         catch (Exception e)
@@ -78,6 +78,10 @@ public class MessagesController(IMessageRepository messageRepository) : Controll
 
             await messageRepository.SendMessageAsync(request);
             return Ok();
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, e.Message);
         }
         catch (Exception e)
         {

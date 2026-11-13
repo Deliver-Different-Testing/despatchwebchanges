@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using DespatchWeb.Enums;
+using DespatchWeb.Filters;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -264,6 +265,7 @@ public class NationwideJobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> AssignFlightToJob(
         [FromBody] AssignFlightToJobRequest request, CancellationToken cancellationToken = default)
     {
@@ -527,6 +529,7 @@ public class NationwideJobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> RestoreJob([FromBody] RestoreJobRequest request)
     {
         try

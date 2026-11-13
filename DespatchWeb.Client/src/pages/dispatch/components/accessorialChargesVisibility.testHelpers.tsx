@@ -26,3 +26,24 @@ export function itHidesAccessorialChargesForNetworkPartner(renderMenu: RenderMen
         }
     });
 }
+
+// Functions a network partner can't use at all, even on its own jobs (NpCapability table on the server).
+export function itHidesActionForNetworkPartner(renderMenu: RenderMenu, job: DispatchJob, label: string) {
+    it(`hides "${label}" for a network partner session, shows it otherwise`, async () => {
+        const user = setupUser();
+
+        renderMenu({currentJob: job});
+        await user.click(screen.getByRole('button', {name: 'Job actions'}));
+        expect(screen.getByRole('menuitem', {name: label})).toBeInTheDocument();
+
+        (window as any).IsNetworkPartner = true;
+        try {
+            renderMenu({currentJob: job});
+            const [, npMenuButton] = screen.getAllByRole('button', {name: 'Job actions'});
+            await user.click(npMenuButton);
+            expect(screen.queryByRole('menuitem', {name: label})).not.toBeInTheDocument();
+        } finally {
+            (window as any).IsNetworkPartner = undefined;
+        }
+    });
+}

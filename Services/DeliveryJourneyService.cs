@@ -45,6 +45,11 @@ public sealed partial class DeliveryJourneyService(
         await using var notesContext = await contextFactory.CreateDbContextAsync();
         await using var statusContext = await contextFactory.CreateDbContextAsync();
 
+        if (!await mainContext.IsJobVisibleAsync(jobId))
+        {
+            return [];
+        }
+
         var isLiveJob = await mainContext.IsLiveJobAsync(jobId);
 
         var tasksTask = GetTasksAsync(tasksContext, jobId);
@@ -510,6 +515,11 @@ public sealed partial class DeliveryJourneyService(
     public async Task<IReadOnlyList<JobStatusHistoryEntry>> GetStatusHistoryForJobAsync(int jobId)
     {
         await using var context = await contextFactory.CreateDbContextAsync();
+
+        if (!await context.IsJobVisibleAsync(jobId))
+        {
+            return [];
+        }
 
         const string changeType = nameof(DeliveryJourneyChangeType.JobStatus);
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Anthropic.Exceptions;
 using DespatchWeb.Exceptions;
+using DespatchWeb.Filters;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.AutoMate;
@@ -22,6 +23,7 @@ public class AiController(
     IAiAuditLog auditLog) : Controller
 {
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> SummarizeJobNotes(int jobId, CancellationToken ct)
     {
         try
@@ -63,6 +65,7 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> SummarizeJobEvents(int jobId, CancellationToken ct)
     {
         try
@@ -145,6 +148,7 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> SummarizeJob(int jobId, CancellationToken ct)
     {
         try
@@ -350,6 +354,7 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> DraftPodEmail(int jobId, CancellationToken ct)
     {
         try
@@ -395,6 +400,7 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> DraftNote([FromBody] DraftNoteRequest request, CancellationToken ct)
     {
         try
@@ -436,6 +442,7 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> ExtractBlockers(int jobId, CancellationToken ct)
     {
         try
@@ -477,6 +484,7 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> AnalyzePricing(int jobId, int accessorialChargeGroupId, CancellationToken ct)
     {
         try
