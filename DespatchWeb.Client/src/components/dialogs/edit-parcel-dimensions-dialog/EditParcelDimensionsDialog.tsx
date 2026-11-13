@@ -12,6 +12,7 @@ import {
 } from '../shared/mantine';
 
 import {apiClient} from '../../../api/client';
+import classes from './EditParcelDimensionsDialog.module.css';
 import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions} from './types';
 
 const MAX_NAME_LENGTH = 50;
@@ -224,9 +225,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     const [itemTypesByItemId, setItemTypesByItemId] = useState<Map<number, ParcelItemType[]>>(new Map());
     const [isPerJob, setIsPerJob] = useState(false);
     const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
-    const [pendingFocus, setPendingFocus] = useState<{removeKey: string} | {toggleGroupId: string} | null>(null);
-    const [removalStatus, setRemovalStatus] = useState('');
+    const [pendingFocus, setPendingFocus] = useState<{removeKey: string} | {toggleGroupId: string} | {barcodeKey: string} | null>(null);
+    const [listStatus, setListStatus] = useState({message: '', id: 0});
     const removeButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+    const barcodeInputRefs = useRef(new Map<string, HTMLInputElement>());
     const toggleButtonRefs = useRef(new Map<string, HTMLButtonElement>());
 
     const dimensionUnit = isUsCustomer ? 'in' : 'cm';
@@ -255,7 +257,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         setItemTypesByItemId(new Map());
         setIsPerJob(calculateDimsOncePerJob);
         setPendingRemoval(null);
-        setRemovalStatus('');
+        setListStatus({message: '', id: 0});
 
         if (jobId) {
             apiClient.get<boolean>('job/IsJobParent', {jobId}).then(setIsParentJob).catch(() => {});
@@ -329,6 +331,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         setIsFormDirty(true);
     }, []);
 
+    const announce = useCallback((message: string) => {
+        setListStatus(prev => ({message, id: prev.id + 1}));
+    }, []);
+
     const confirmRemoveBarcode = useCallback(() => {
         if (!pendingRemoval) return;
         setPendingRemoval(null);
@@ -343,16 +349,37 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             ? {removeKey: (remaining[index] ?? remaining[index - 1]).key}
             : {toggleGroupId: group.id});
         setGroups(prev => prev.map(g => g.id === group.id ? {...g, barcodes: remaining} : g));
-        setRemovalStatus(`${parcelLabel(pendingRemoval)} removed. Save to apply.`);
+        announce(`${parcelLabel(pendingRemoval)} removed. Save to apply.`);
         setIsFormDirty(true);
-    }, [pendingRemoval, groups]);
+    }, [pendingRemoval, groups, announce]);
+
+    const insertBarcode = useCallback((groupId: string, beforeKey: string) => {
+        const group = groups.find(g => g.id === groupId);
+        const index = group?.barcodes.findIndex(b => b.key === beforeKey) ?? -1;
+        if (!group || index < 0) return;
+
+        const inserted = newBarcode(jobNumber ? `${jobNumber}-${nextBarcodeStart(groups, jobNumber)}` : '');
+        const barcodes = [...group.barcodes.slice(0, index), inserted, ...group.barcodes.slice(index)];
+        setGroups(prev => prev.map(g => g.id === groupId ? {...g, barcodes} : g));
+        setPendingFocus({barcodeKey: inserted.key});
+        announce(inserted.value
+            ? `Parcel ${inserted.value} added as item ${index + 1}. Save to apply.`
+            : `Item ${index + 1} added. Save to apply.`);
+        setIsFormDirty(true);
+    }, [groups, jobNumber, announce]);
 
     useEffect(() => {
         if (!pendingFocus) return;
-        const target = 'removeKey' in pendingFocus
-            ? removeButtonRefs.current.get(pendingFocus.removeKey)
-            : toggleButtonRefs.current.get(pendingFocus.toggleGroupId);
-        target?.focus();
+        if ('barcodeKey' in pendingFocus) {
+            const input = barcodeInputRefs.current.get(pendingFocus.barcodeKey);
+            input?.focus();
+            input?.select();
+        } else {
+            const target = 'removeKey' in pendingFocus
+                ? removeButtonRefs.current.get(pendingFocus.removeKey)
+                : toggleButtonRefs.current.get(pendingFocus.toggleGroupId);
+            target?.focus();
+        }
         setPendingFocus(null);
     }, [pendingFocus]);
 
@@ -651,12 +678,31 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                 </Table.Tr>
 
                                 {g.expandedBarcodes && g.barcodes.map((barcode, i) => (
-                                    <Table.Tr key={barcode.key} bg="var(--mantine-color-gray-0)">
+                                    <Table.Tr key={barcode.key} bg="var(--mantine-color-gray-0)" className={classes.seamRow}>
                                         <Table.Td pl={32}>
+                                            <Tooltip label="Add parcel here">
+                                                <span className={classes.seam}>
+                                                    <ActionIcon
+                                                        className={classes.insert}
+                                                        variant="default"
+                                                        radius="xl"
+                                                        size={24}
+                                                        aria-label={barcode.value ? `Add parcel before parcel ${barcode.value}` : `Add parcel before item ${i + 1}`}
+                                                        onClick={() => insertBarcode(g.id, barcode.key)}
+                                                        disabled={readOnly}
+                                                    >
+                                                        <Icon lucide={Plus} size={14}/>
+                                                    </ActionIcon>
+                                                </span>
+                                            </Tooltip>
                                             <Text fz="xs" c="dimmed">Item {i + 1}</Text>
                                         </Table.Td>
                                         <Table.Td colSpan={6}>
                                             <TextInput
+                                                ref={el => {
+                                                    if (el) barcodeInputRefs.current.set(barcode.key, el);
+                                                    else barcodeInputRefs.current.delete(barcode.key);
+                                                }}
                                                 size="sm"
                                                 disabled={readOnly}
                                                 value={barcode.value}
@@ -824,7 +870,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                 </span>
             </Tooltip>
 
-            <VisuallyHidden role="status" aria-live="polite">{removalStatus}</VisuallyHidden>
+            <VisuallyHidden role="status" aria-live="polite">
+                {/* Keyed so a repeat of the same message is a new node and is still announced. */}
+                <span key={listStatus.id}>{listStatus.message}</span>
+            </VisuallyHidden>
 
             {/* Remove-parcel confirmation */}
             <DialogShell

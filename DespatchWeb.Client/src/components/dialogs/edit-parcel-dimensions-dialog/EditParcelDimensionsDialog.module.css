@@ -1,0 +1,33 @@
+/*
+ * Insert-parcel seam: a "+" centred on the top edge of each barcode row. While it is
+ * hovered or keyboard-focused the row draws a keyline along that edge, showing exactly
+ * where the new parcel will land. The row is the containing block, so the button centres
+ * on the full row width rather than on the cell that holds it (kept first for tab order).
+ */
+.seamRow {
+    position: relative;
+}
+
+.seam {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 1;
+    transform: translate(-50%, -50%);
+}
+
+.insert {
+    --ai-color: var(--mantine-color-dimmed);
+}
+
+.insert:not(:disabled):hover,
+.insert:focus-visible {
+    --ai-bg: var(--mantine-primary-color-filled);
+    --ai-hover: var(--mantine-primary-color-filled-hover);
+    --ai-color: var(--mantine-primary-color-contrast);
+    --ai-bd: 1px solid var(--mantine-primary-color-filled);
+}
+
+tr:has(.insert:not(:disabled):hover, .insert:focus-visible) > td {
+    box-shadow: inset 0 2px 0 var(--mantine-primary-color-filled);
+}

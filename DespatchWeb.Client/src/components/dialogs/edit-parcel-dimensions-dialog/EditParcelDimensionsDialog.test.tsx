@@ -337,6 +337,63 @@ describe('EditParcelDimensionsDialog remove a specific parcel', () => {
     });
 });
 
+// ── Insert a parcel mid-list ───────────────────────────────────────
+
+describe('EditParcelDimensionsDialog insert a parcel mid-list', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    const numberedParcels = (count: number) =>
+        Array.from({length: count}, (_, i) => mockParcel({weight: 5, barcode: `55-${i + 1}`}));
+
+    const barcodeValues = () =>
+        screen.getAllByLabelText('Barcode').map(input => (input as HTMLInputElement).value);
+
+    it('inserts the next-numbered parcel at the chosen position, focuses it and saves in list order', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55} parcels={numberedParcels(3)} />);
+
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        await user.click(screen.getByRole('button', {name: 'Add parcel before parcel 55-2'}));
+
+        expect(screen.getByText(/1 type · 4 parcels total/i)).toBeInTheDocument();
+        expect(barcodeValues()).toEqual(['55-1', '55-4', '55-2', '55-3']);
+        const inserted = screen.getByDisplayValue('55-4') as HTMLInputElement;
+        expect(inserted).toHaveFocus();
+        expect([inserted.selectionStart, inserted.selectionEnd]).toEqual([0, 4]);
+        expect(screen.getByRole('status')).toHaveTextContent('Parcel 55-4 added as item 2. Save to apply.');
+
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        const saved = mockPost.mock.calls.find(c => c[0] === 'job/UpdateJobPackages')![1].parcels as ParcelDimensions[];
+        expect(saved.map(p => p.barcode)).toEqual(['55-1', '55-4', '55-2', '55-3']);
+    });
+
+    it('inserts a blank parcel without a job number, and the insert makes Cancel ask to discard', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel()]} />);
+
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        await user.click(screen.getByRole('button', {name: 'Add parcel before item 1'}));
+
+        expect(barcodeValues()).toEqual(['', '', '']);
+        expect(screen.getAllByLabelText('Barcode')[0]).toHaveFocus();
+        expect(screen.getByRole('status')).toHaveTextContent('Item 1 added. Save to apply.');
+
+        await user.click(screen.getByRole('button', {name: /^cancel$/i}));
+        expect(screen.getByText('Discard unsaved changes')).toBeInTheDocument();
+    });
+
+    it('disables inserting on a read-only job', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} readOnly parcels={numberedParcels(2)} />);
+
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        expect(screen.getByRole('button', {name: 'Add parcel before parcel 55-1'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Add parcel before parcel 55-2'})).toBeDisabled();
+    });
+});
+
 // ── Weight validation ──────────────────────────────────────────────
 
 describe('EditParcelDimensionsDialog weight validation', () => {
