@@ -12,6 +12,14 @@
   <ItemGroup>
     <InternalsVisibleTo Include="DespatchWeb.Tests" />
   </ItemGroup>
+
+  <!-- Build the SPA before this project scans wwwroot/dist. The slnx BuildDependency only orders a
+       solution build; DespatchWeb.Tests builds this project through its own ProjectReference, which
+       bypassed it and let Vite's emptyOutDir delete dist mid-scan. Skipped under CI (the SPA is built
+       separately there) and when the client folder isn't present (Docker restores this csproj alone). -->
+  <ItemGroup Condition="'$(CI)' != 'true' and Exists('DespatchWeb.Client/DespatchWeb.Client.esproj')">
+    <ProjectReference Include="DespatchWeb.Client/DespatchWeb.Client.esproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TypeScriptTarget>ES2021</TypeScriptTarget>
   </PropertyGroup>
