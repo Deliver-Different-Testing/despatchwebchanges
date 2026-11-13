@@ -75,8 +75,13 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
          */
         <Stack gap={16} h="100%" p={8} bg="var(--mantine-color-body)">
             {/* Page Header */}
-            <Card withBorder p={0} radius="lg" style={{flexShrink: 0, overflow: 'hidden'}}>
-                <Tabs value={String(selectedTab)} onChange={handleTabChange}>
+            <Card withBorder p={0} radius="lg" maw="100%" style={{flexShrink: 0, overflow: 'hidden', alignSelf: 'center'}}>
+                {/* One row, scrolling on overflow: stacked tab rows make the active tab ambiguous. */}
+                <Tabs
+                    value={String(selectedTab)}
+                    onChange={handleTabChange}
+                    styles={{list: {flexWrap: 'nowrap', overflowX: 'auto'}}}
+                >
                     <Tabs.List>
                         {TAB_LABELS.map((label, index) => (
                             <Tabs.Tab key={label} value={String(index)}>{label}</Tabs.Tab>
