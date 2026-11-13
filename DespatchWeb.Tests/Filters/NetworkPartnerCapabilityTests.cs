@@ -105,7 +105,9 @@ public class NetworkPartnerCapabilityTests
     {
         var context = await RunAsync(ClientType.NetworkPartner, NpCapability.Split);
 
-        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(context.Result).StatusCode);
+        var result = Assert.IsType<ObjectResult>(context.Result);
+        Assert.Equal(StatusCodes.Status403Forbidden, result.StatusCode);
+        Assert.Equal("Partner accounts can't split jobs. Ask the dispatch team to do it.", result.Value);
     }
 
     [Fact]

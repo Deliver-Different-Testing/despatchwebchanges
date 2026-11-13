@@ -521,7 +521,7 @@ public class MessageRepository(
             && !await Context.TucManualMessages.AnyAsync(m =>
                 m.UcmmSendFromStaffId == toStaffId && m.UcmmSendToStaffId == fromStaffId))
         {
-            throw new UnauthorizedAccessException("Network partners can only reply to staff who have messaged them.");
+            throw new UnauthorizedAccessException("Message not sent. You can only reply to staff who've messaged you.");
         }
     }
 

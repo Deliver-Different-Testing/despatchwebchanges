@@ -52,6 +52,10 @@ public class JobController(
     IScopeProvider scopeProvider
 ) : Controller
 {
+    private const string JobNotFound = "Job not found. Refresh the list and try again.";
+    private const string FileNotFound = "File not found. Refresh the attachments and try again.";
+    private const string PriceLineNotFound = "Price line not found on this job. Refresh the prices and try again.";
+
     public const int MaxRestorePodImageProbeJobs = 50;
 
     private const int RestorePodImageProbeConcurrency = 8;
@@ -335,7 +339,7 @@ public class JobController(
 
             if (!await jobCommandRepository.UpdateJobPriceBreakdownAsync(breakdown, breakdown.IsArchived))
             {
-                return NotFound();
+                return NotFound(PriceLineNotFound);
             }
 
             if (breakdown.JobId.HasValue && !breakdown.IsArchived)
@@ -387,7 +391,7 @@ public class JobController(
             if (!await jobCommandRepository.DeleteJobPriceBreakdownAsync(
                     request.ChargeId, request.JobId, request.IsArchived))
             {
-                return NotFound();
+                return NotFound(PriceLineNotFound);
             }
 
             if (!request.IsArchived)
@@ -628,7 +632,7 @@ public class JobController(
 
         if (!await jobQueryRepository.IsMediaKeyVisibleAsync(key))
         {
-            return NotFound();
+            return NotFound(FileNotFound);
         }
 
         try
@@ -2481,7 +2485,7 @@ public class JobController(
 
         if (!await jobQueryRepository.IsJobVisibleAsync(jobId))
         {
-            return NotFound();
+            return NotFound(JobNotFound);
         }
 
         try
@@ -2563,7 +2567,7 @@ public class JobController(
 
         if (!await jobQueryRepository.IsMediaKeyVisibleAsync(key))
         {
-            return NotFound();
+            return NotFound(FileNotFound);
         }
 
         try
@@ -2596,7 +2600,7 @@ public class JobController(
 
         if (!await jobQueryRepository.IsMediaKeyVisibleAsync(key))
         {
-            return NotFound();
+            return NotFound(FileNotFound);
         }
 
         try

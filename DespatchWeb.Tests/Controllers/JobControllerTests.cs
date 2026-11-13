@@ -694,7 +694,8 @@ public class JobControllerTests : IDisposable
 
         var result = await CreateController().UpdatePriceComponent(breakdown);
 
-        Assert.IsType<NotFoundResult>(result);
+        Assert.Equal("Price line not found on this job. Refresh the prices and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
         await _taskRepositoryMock.DidNotReceiveWithAnyArgs().AddEventAsync(0, null!, 0);
     }
 
@@ -706,7 +707,8 @@ public class JobControllerTests : IDisposable
         var result = await CreateController()
             .DeletePriceComponent(new DeletePriceComponentRequest { ChargeId = 2, JobId = 1 });
 
-        Assert.IsType<NotFoundResult>(result);
+        Assert.Equal("Price line not found on this job. Refresh the prices and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
         await _taskRepositoryMock.DidNotReceiveWithAnyArgs().AddEventAsync(0, null!, 0);
     }
 
@@ -3007,7 +3009,8 @@ public class JobControllerTests : IDisposable
 
         var result = await CreateController().GetAttachedFiles(1);
 
-        Assert.IsType<NotFoundResult>(result);
+        Assert.Equal("Job not found. Refresh the list and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
         await _jobPhotoServiceMock.DidNotReceive().GetAttachedFilesAsync(Arg.Any<int>());
     }
 
@@ -3718,7 +3721,8 @@ public class JobControllerTests : IDisposable
         var result = await CreateController()
             .DeleteJobDeliveryPhotoOrSignature(100, "DeliveryPhotos/2026/11/200-638000.jpg");
 
-        Assert.IsType<NotFoundResult>(result);
+        Assert.Equal("File not found. Refresh the attachments and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
         await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().ArchiveJobPhotoAsync(0, null!);
     }
 
@@ -3729,7 +3733,8 @@ public class JobControllerTests : IDisposable
 
         var result = await CreateController().DownloadFile("JobAttachments/200-1.pdf");
 
-        Assert.IsType<NotFoundResult>(result);
+        Assert.Equal("File not found. Refresh the attachments and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
         await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DownloadFileAsync(null!);
     }
 
@@ -3740,7 +3745,8 @@ public class JobControllerTests : IDisposable
 
         var result = await CreateController().DeleteFile("JobAttachments/200-1.pdf");
 
-        Assert.IsType<NotFoundResult>(result);
+        Assert.Equal("File not found. Refresh the attachments and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
         await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DeleteFileAsync(null!);
     }
 

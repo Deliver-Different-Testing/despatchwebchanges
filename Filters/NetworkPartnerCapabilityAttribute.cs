@@ -49,6 +49,16 @@ public sealed class NetworkPartnerCapabilityAttribute(NpCapability capability) :
 {
     public NpCapability Capability { get; } = capability;
 
+    private static string Describe(NpCapability capability) => capability switch
+    {
+        NpCapability.Split => "split jobs",
+        NpCapability.SendToPartner => "send jobs to partners",
+        NpCapability.ChangePaidCourier => "change the paid courier",
+        NpCapability.InterCourierCharge => "add inter-courier charges",
+        NpCapability.Rerate => "re-rate jobs",
+        _ => "do this"
+    };
+
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var scope = context.HttpContext.RequestServices.GetRequiredService<IScopeProvider>().Scope;
@@ -56,7 +66,7 @@ public sealed class NetworkPartnerCapabilityAttribute(NpCapability capability) :
         {
             Log.Warning("NetworkPartnerCapability deny: {Capability} for {Method} {Path}",
                 Capability, context.HttpContext.Request.Method, context.HttpContext.Request.Path);
-            context.Result = new ObjectResult("Network partners can't use this action")
+            context.Result = new ObjectResult($"Partner accounts can't {Describe(Capability)}. Ask the dispatch team to do it.")
             {
                 StatusCode = StatusCodes.Status403Forbidden
             };

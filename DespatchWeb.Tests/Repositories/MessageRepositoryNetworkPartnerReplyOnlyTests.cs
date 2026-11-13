@@ -88,9 +88,10 @@ public class MessageRepositoryNetworkPartnerReplyOnlyTests : IAsyncDisposable
     {
         await SeedAsync();
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+        var refused = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             CreateRepository(ClientType.NetworkPartner).SendMessageAsync(
                 new SendMessageRequest { SendToStaffId = StaffWhoNeverWrote, Message = "Hello" }));
+        Assert.Equal("Message not sent. You can only reply to staff who've messaged you.", refused.Message);
 
         Assert.Equal(0, await MessagesToAsync(StaffWhoNeverWrote));
     }

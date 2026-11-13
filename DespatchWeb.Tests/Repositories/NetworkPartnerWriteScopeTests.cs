@@ -117,7 +117,8 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
 
         var (context, nextCalled) = await RunFilterAsync(NpScope(), filter, new() { ["data"] = request });
 
-        Assert.IsType<NotFoundResult>(context.Result);
+        Assert.Equal("Job not found. Refresh the list and try again.",
+            Assert.IsType<NotFoundObjectResult>(context.Result).Value);
         Assert.False(nextCalled);
     }
 
@@ -150,7 +151,7 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
         var (context, nextCalled) = await RunFilterAsync(NpScope(),
             new RequireScopeAttribute(record, "id"), new() { ["id"] = id });
 
-        Assert.IsType<NotFoundResult>(context.Result);
+        Assert.IsType<NotFoundObjectResult>(context.Result);
         Assert.False(nextCalled);
     }
 

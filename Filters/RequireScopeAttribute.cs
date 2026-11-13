@@ -51,13 +51,22 @@ public sealed class RequireScopeAttribute(ScopedRecord record, params string[] i
 
                 Log.Warning("RequireScope deny: {Record} {Id} is outside the caller's scope for {Method} {Path}",
                     Record, id, context.HttpContext.Request.Method, context.HttpContext.Request.Path);
-                context.Result = new NotFoundResult();
+                context.Result = new NotFoundObjectResult(NotFoundMessage);
                 return;
             }
         }
 
         await next();
     }
+
+    // The same wording whether the record is missing or someone else's, so it confirms nothing.
+    private string NotFoundMessage => Record switch
+    {
+        ScopedRecord.BulkJob => "Bulk job not found. Refresh the list and try again.",
+        ScopedRecord.Courier => "Courier not found. Refresh the list and try again.",
+        ScopedRecord.Client or ScopedRecord.BookableClient => "Client not found. Refresh the list and try again.",
+        _ => "Job not found. Refresh the list and try again."
+    };
 
     private Task<bool> IsVisibleAsync(DespatchContext db, int id) => Record switch
     {
