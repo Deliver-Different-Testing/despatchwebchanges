@@ -4,7 +4,10 @@ import {render, screen} from '@testing-library/react';
 import {DispatchJobActionsMenu} from './DispatchJobActionsMenu';
 import type {DispatchJob} from '../../../types/dispatchJob';
 import {MantineTestProvider} from '../../../test/utils';
-import {itHidesAccessorialChargesForNetworkPartner} from './/accessorialChargesVisibility.testHelpers';
+import {
+    itHidesAccessorialChargesForNetworkPartner,
+    itHidesActionForNetworkPartner,
+} from './/accessorialChargesVisibility.testHelpers';
 
 // Minimal job: no flags set, so the always-available + lockable actions show.
 const job = {jobId: 55, jobNo: 'J55'} as unknown as DispatchJob;
@@ -41,4 +44,5 @@ describe('DispatchJobActionsMenu', () => {
     });
 
     itHidesAccessorialChargesForNetworkPartner(renderMenu, job);
+    itHidesActionForNetworkPartner(renderMenu, {...job, allowSplit: true} as unknown as DispatchJob, 'Split job');
 });

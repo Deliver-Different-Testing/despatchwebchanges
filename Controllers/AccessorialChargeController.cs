@@ -1,3 +1,4 @@
+using DespatchWeb.Filters;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Accessorial;
 using Microsoft.AspNetCore.Authorization;
@@ -41,6 +42,7 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
     }
 
     [HttpPost("Add")]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> Add(int jobId, [FromBody] List<JobAccessorialChargeCreateRequest> charges)
     {
         try

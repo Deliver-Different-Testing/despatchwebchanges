@@ -37,6 +37,7 @@ import {
     restoreJobs,
     allocateJob,
     getCourierById,
+    previewJobRate,
     previewJobRates,
     applyJobRate,
 } from '../../../../api/jobDetailApi';
@@ -795,6 +796,24 @@ describe('useJobUpdate', () => {
 
             expect(result.current.pendingRateChanges).toEqual([]);
             expect(mockShowToast).not.toHaveBeenCalled();
+        });
+
+        it('never asks to re-rate for a network partner, who cannot change prices', async () => {
+            (window as any).IsNetworkPartner = true;
+            try {
+                const {result} = renderUseJobUpdate();
+
+                await act(async () => {
+                    await result.current.checkForRateChanges([1, 2]);
+                    await result.current.checkForRateChange({id: 1, jobNo: 'J1', charge: 10} as never);
+                });
+
+                expect(mockPreviewJobRates).not.toHaveBeenCalled();
+                expect(previewJobRate).not.toHaveBeenCalled();
+                expect(result.current.pendingRateChanges).toEqual([]);
+            } finally {
+                (window as any).IsNetworkPartner = undefined;
+            }
         });
 
         it('does not call the API for an empty job list', async () => {

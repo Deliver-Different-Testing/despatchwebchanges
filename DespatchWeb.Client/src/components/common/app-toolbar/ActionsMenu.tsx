@@ -10,6 +10,7 @@ import {ActionIcon, Menu, Tooltip} from '@mantine/core';
 import {DollarSign, Plus} from 'lucide-react';
 import {Icon} from '../icon/Icon';
 import {toolbarIconButtonClassName, toolbarIconButtonStyle} from './ToolbarActions';
+import {isNetworkPartnerSession} from '../../dialogs/dispatch-dialog/dispatchSession';
 
 export interface ActionsMenuProps {
     onCreateNewJob: (event: React.MouseEvent) => void;
@@ -40,9 +41,11 @@ export const ActionsMenu: React.FC<ActionsMenuProps> = ({
                 <Menu.Item leftSection={<Icon lucide={Plus} size={16} />} onClick={onCreateNewJob}>
                     Add new job
                 </Menu.Item>
-                <Menu.Item leftSection={<Icon lucide={DollarSign} size={16} />} onClick={onInterCourierCharge}>
-                    Inter-Courier Charge
-                </Menu.Item>
+                {!isNetworkPartnerSession() && (
+                    <Menu.Item leftSection={<Icon lucide={DollarSign} size={16} />} onClick={onInterCourierCharge}>
+                        Inter-Courier Charge
+                    </Menu.Item>
+                )}
             </Menu.Dropdown>
         </Menu>
     );

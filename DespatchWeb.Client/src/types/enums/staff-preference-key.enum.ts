@@ -17,7 +17,6 @@ export enum StaffPreferenceKey {
     CourierMapDisplaySettings = 'CourierMapDisplaySettings',
     ShowPanelHideButton = 'ShowPanelHideButton',
     Appearance = 'Appearance',
-    LiquidGlass = 'LiquidGlass',
     CourierFlagLastDelivery = 'CourierFlagLastDelivery',
     ThemeCustomisation = 'ThemeCustomisation',
     NavStyle = 'NavStyle',

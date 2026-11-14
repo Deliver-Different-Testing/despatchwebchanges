@@ -137,6 +137,12 @@ public interface IJobQueryRepository
 
     Task<ArchivedCourierChangeEligibility?> GetArchivedCourierChangeEligibilityAsync(int jobId);
     Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
+
+    /// <summary>Whether the caller's scope can see this live or archived job.</summary>
+    Task<bool> IsJobVisibleAsync(int jobId);
+
+    /// <summary>Whether the caller's scope can see the job an S3 media/attachment key belongs to.</summary>
+    Task<bool> IsMediaKeyVisibleAsync(string key);
     Task<bool> JobNumberExistsAsync(string jobNumber);
 
     Task<decimal> GetNationwideServiceRawPriceAsync(int? clientId, int? fromSuburbId,

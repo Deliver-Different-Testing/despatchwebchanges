@@ -849,7 +849,8 @@ public partial class CourierRepository(
             // Delete the original schedule group in a single query
             await Context.TblAfterhoursCouriers
                 .Where(s => Context.TblAfterhoursCouriers
-                    .Where(c => c.Id == request.AfterHoursScheduleId)
+                    .Where(c => c.Id == request.AfterHoursScheduleId
+                                && (Context.CurrentBypassFilters || Context.TucCouriers.Any(k => k.UccrId == c.CourierId)))
                     .Any(c => c.CourierId == s.CourierId &&
                               c.StartTime == s.StartTime &&
                               c.EndTime == s.EndTime))
@@ -917,7 +918,8 @@ public partial class CourierRepository(
         {
             await Context.TblAfterhoursCouriers
                 .Where(s => Context.TblAfterhoursCouriers
-                    .Where(c => c.Id == afterHoursScheduleId)
+                    .Where(c => c.Id == afterHoursScheduleId
+                                && (Context.CurrentBypassFilters || Context.TucCouriers.Any(k => k.UccrId == c.CourierId)))
                     .Any(c => c.CourierId == s.CourierId &&
                               c.StartTime == s.StartTime &&
                               c.EndTime == s.EndTime))
@@ -1947,17 +1949,33 @@ public partial class CourierRepository(
                 StringComparer.OrdinalIgnoreCase);
     }
 
+    internal readonly record struct AreaCountScope(int? NpAgentId, string CacheKey);
+
+    // GetAreaRemainingCounts is tenant-wide unless given @NpAgentId: staff get it unscoped, a network
+    // partner its own jobs only, and anyone else (customers, unlinked partners) no counts.
+    internal static AreaCountScope? AreaCountScopeFor(DespatchContext context)
+    {
+        const string cacheKey = "ClearList:AreaRemainingCounts";
+        if (context.CurrentBypassFilters)
+        {
+            return new AreaCountScope(null, cacheKey);
+        }
+
+        return context is { CurrentIsNetworkPartner: true, CurrentNpAgentId: { } npAgentId }
+            ? new AreaCountScope(npAgentId, $"{cacheKey}:np:{npAgentId}")
+            : null;
+    }
+
     private async Task<Dictionary<string, int>> GetTotalRemainingForAllAreasAsync(
         bool hasAreaFilters, CancellationToken cancellationToken = default)
     {
-        if (!hasAreaFilters)
+        var scope = AreaCountScopeFor(Context);
+        if (!hasAreaFilters || scope is not { } areaScope)
         {
             return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         }
 
-        const string cacheKey = "ClearList:AreaRemainingCounts";
-
-        return await cache.GetOrCreateAsync(cacheKey, async entry =>
+        return await cache.GetOrCreateAsync(areaScope.CacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
 
@@ -1965,9 +1983,13 @@ public partial class CourierRepository(
 
             await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-            var results = await context.Database
-                .SqlQueryRaw<AreaRemainingCountDto>("EXEC dbo.GetAreaRemainingCounts")
-                .ToListAsync(cancellationToken);
+            var results = areaScope.NpAgentId is { } npAgentId
+                ? await context.Database
+                    .SqlQuery<AreaRemainingCountDto>($"EXEC dbo.GetAreaRemainingCounts @NpAgentId = {npAgentId}")
+                    .ToListAsync(cancellationToken)
+                : await context.Database
+                    .SqlQueryRaw<AreaRemainingCountDto>("EXEC dbo.GetAreaRemainingCounts")
+                    .ToListAsync(cancellationToken);
 
             return results
                 .Where(r => r.Remaining >= 0)

@@ -50,7 +50,7 @@ public sealed class PricingPermissionService(
     }
 
     /// <inheritdoc />
-    public Task<bool> CanBulkUpdatePricesAsync() => Task.FromResult(true);
+    public Task<bool> CanBulkUpdatePricesAsync() => Task.FromResult(!CallerIsNetworkPartner);
 
     /// <inheritdoc />
     public Task<bool> CanModifyPriceBreakdownAsync() => Task.FromResult(!CallerIsNetworkPartner);

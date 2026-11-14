@@ -18,8 +18,6 @@ import {AutoMateLogo} from '../../components/common/auto-mate-logo/AutoMateLogo'
 import {Icon} from '../../components/common/icon/Icon';
 import {ActionButton, ACTION_BUTTON_GLYPH_SIZE} from '../../components/common/action-button';
 import {useColorMode, type ColorModePreference} from '../../hooks/useColorMode';
-import {setLiquidGlassEnabled, useLiquidGlassEnabled} from '../../hooks/useLiquidGlassPreference';
-import {isLiquidGlassSupported} from '../../hooks/glassSupport';
 import {aiAccentColor} from '../../theme/designTokens';
 import {
     isAiEnabled,
@@ -61,8 +59,6 @@ const APPEARANCE_OPTIONS: {value: ColorModePreference; label: string}[] = [
 
 export const SettingsPage: React.FC = () => {
     const {preference: colorPreference, setPreference: setColorPreference} = useColorMode();
-    const liquidGlassEnabled = useLiquidGlassEnabled();
-    const liquidGlassSupported = isLiquidGlassSupported();
     const [aiEnabled, setAiEnabledState] = useState<boolean>(isAiEnabled);
     const isUsCustomer = getSession().isUsCustomer ?? false;
     const courierFlag = useCourierFlagLastDelivery(isUsCustomer);
@@ -343,26 +339,6 @@ export const SettingsPage: React.FC = () => {
                             />
                         </Box>
 
-                        <Box mt={16}>
-                            <SettingRow
-                                title="Liquid Glass"
-                                badge={
-                                    <Badge
-                                        size="xs"
-                                        c="white"
-                                        style={{'--badge-bg': aiAccentColor} as React.CSSProperties}
-                                    >
-                                        BETA
-                                    </Badge>
-                                }
-                                description={liquidGlassSupported
-                                    ? 'Gives dialogs and menus a frosted glass look. Works in Chromium browsers such as Chrome, Edge, Brave and Opera.'
-                                    : `Your browser doesn't support Liquid Glass. Use Chrome, Edge, Brave or Opera to turn it on.`}
-                                checked={liquidGlassEnabled}
-                                disabled={!liquidGlassSupported}
-                                onToggle={() => setLiquidGlassEnabled(!liquidGlassEnabled)}
-                            />
-                        </Box>
                     </Box>
 
                     <Box>

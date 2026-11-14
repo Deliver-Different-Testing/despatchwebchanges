@@ -13,6 +13,7 @@ import {MantineTestProvider} from '../../../test/utils';
 import {setupUser} from '../../../test/utils/setupUser';
 import {JobSearchJobActionsMenu} from './JobSearchJobActionsMenu';
 import type {DispatchJob} from '../../../types/dispatchJob';
+import {itHidesActionForNetworkPartner} from '../../dispatch/components/accessorialChargesVisibility.testHelpers';
 
 // Minimal job with just the fields the action predicates read.
 const makeJob = (overrides: Partial<DispatchJob> = {}): DispatchJob => ({
@@ -122,4 +123,8 @@ describe('JobSearchJobActionsMenu', () => {
             (window as any).IsNetworkPartner = undefined;
         }
     });
+
+    itHidesActionForNetworkPartner(renderMenu, makeJob({allowSplit: true}), 'Split job');
+    itHidesActionForNetworkPartner(renderMenu, makeJob({jobRelationshipTypeId: 8}), 'Unsplit job');
+    itHidesActionForNetworkPartner(renderMenu, makeJob({isArchived: true, done: true}), 'Change paid courier');
 });

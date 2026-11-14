@@ -18,7 +18,7 @@ import {toThemeAppearance} from './appearance';
 import {useAppearance} from '../hooks/useAppearance';
 import {ColorModeProvider, useColorMode} from '../hooks/useColorMode';
 import {ReactQueryProvider} from '../api';
-import {useLiquidGlassEnabled} from '../hooks/useLiquidGlassPreference';
+import {isLiquidGlassSupported} from '../hooks/glassSupport';
 
 interface DfrntMantineProviderProps {
     children: React.ReactNode;
@@ -33,7 +33,7 @@ const ThemedSubtree: React.FC<DfrntMantineProviderProps> = ({children}) => {
     );
     const theme = useMemo(() => createDfrntTheme(appearance), [appearance]);
     // Translucent glass lowers the contrast of whatever sits on it, so high contrast turns it off.
-    const glassEnabled = useLiquidGlassEnabled() && !appearance.highContrast;
+    const glassEnabled = isLiquidGlassSupported() && !appearance.highContrast;
     // Native controls and scrollbars follow the scheme.
     useEffect(() => {
         document.documentElement.style.colorScheme = mode;

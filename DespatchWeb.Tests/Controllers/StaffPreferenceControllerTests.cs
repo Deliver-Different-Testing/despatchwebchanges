@@ -91,7 +91,7 @@ public class StaffPreferenceControllerTests
     }
 
     [Fact]
-    public async Task SavePreference_AcceptsTheLiquidGlassKey()
+    public async Task SavePreference_RejectsTheRetiredLiquidGlassKey()
     {
         var controller = CreateController();
 
@@ -101,8 +101,8 @@ public class StaffPreferenceControllerTests
             PreferenceJson = "on"
         });
 
-        Assert.IsType<OkResult>(result);
-        await _repositoryMock.Received(1).SetPreferenceAsync("LiquidGlass", "on");
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _repositoryMock.DidNotReceiveWithAnyArgs().SetPreferenceAsync(null!, null!);
     }
 
     [Fact]

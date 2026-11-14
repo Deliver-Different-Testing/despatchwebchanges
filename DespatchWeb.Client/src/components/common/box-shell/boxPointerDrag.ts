@@ -1,5 +1,5 @@
 import classes from './BoxShell.module.css';
-import {isLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
+import {isLiquidGlassSupported} from '../../../hooks/glassSupport';
 
 /*
  * Pointer-driven panel reorder. The browser's native drag-and-drop gives no
@@ -101,7 +101,7 @@ const buildGhost = (card: HTMLElement) => {
     ghost.className = classes.ghost;
     ghost.setAttribute('data-box-drag-ghost', '');
     ghost.setAttribute('aria-hidden', 'true');
-    if (isLiquidGlassEnabled()) ghost.setAttribute('data-glass', '');
+    if (isLiquidGlassSupported()) ghost.setAttribute('data-glass', '');
     ghost.style.width = `${width}px`;
     ghost.style.height = `${height}px`;
 
