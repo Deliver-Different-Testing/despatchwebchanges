@@ -12,6 +12,26 @@
   <ItemGroup>
     <InternalsVisibleTo Include="DespatchWeb.Tests" />
   </ItemGroup>
+
+  <!-- Build the SPA before this project scans wwwroot/dist. The slnx BuildDependency only orders a
+       solution build; DespatchWeb.Tests builds this project through its own ProjectReference, which
+       bypassed it and let Vite's emptyOutDir delete dist mid-scan. Skipped under CI (the SPA is built
+       separately there) and when the client folder isn't present (Docker restores this csproj alone). -->
+  <ItemGroup Condition="'$(CI)' != 'true' and Exists('DespatchWeb.Client/DespatchWeb.Client.esproj')">
+    <ProjectReference Include="DespatchWeb.Client/DespatchWeb.Client.esproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+  <!-- Vite names bundles by content hash and empties dist on every build, so a wwwroot/dist list
+       taken when the project is evaluated goes stale as soon as the SPA build runs ("No file exists
+       for the asset ..."). List dist when static web assets are resolved instead, after that build. -->
+  <ItemGroup>
+    <Content Remove="wwwroot\dist\**" />
+  </ItemGroup>
+  <Target Name="IncludeSpaDistAsContent" BeforeTargets="ResolveProjectStaticWebAssets">
+    <ItemGroup>
+      <Content Include="wwwroot\dist\**" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TypeScriptTarget>ES2021</TypeScriptTarget>
   </PropertyGroup>

@@ -72,6 +72,11 @@ public class JobControllerTests : IDisposable
             .Returns(new PartnerJobGateResult.NotPartner());
         // By default, allow all pricing operations in tests (internal user behavior)
         _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(true);
+        _jobQueryRepositoryMock.IsMediaKeyVisibleAsync(Arg.Any<string>()).Returns(true);
+        _jobCommandRepositoryMock.UpdateJobPriceBreakdownAsync(Arg.Any<ChargeViewModel>(), Arg.Any<bool>())
+            .Returns(true);
+        _jobCommandRepositoryMock.DeleteJobPriceBreakdownAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>())
+            .Returns(true);
         _pricingPermissionServiceMock.CanBulkUpdatePricesAsync().Returns(true);
         _pricingPermissionServiceMock.CanModifyPriceBreakdownAsync().Returns(true);
         _pricingPermissionServiceMock.CanExportPricingAsync().Returns(true);
@@ -649,7 +654,7 @@ public class JobControllerTests : IDisposable
         };
 
         _jobCommandRepositoryMock.UpdateJobPriceBreakdownAsync(breakdown)
-            .Returns(Task.CompletedTask);
+            .Returns(true);
 
         var controller = CreateController();
 
@@ -682,6 +687,32 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdatePriceComponent_ChargeNotOnTheJob_ReturnsNotFoundWithoutLoggingAnEvent()
+    {
+        var breakdown = new ChargeViewModel { ChargeId = 2, JobId = 1, Amount = 1m };
+        _jobCommandRepositoryMock.UpdateJobPriceBreakdownAsync(breakdown, Arg.Any<bool>()).Returns(false);
+
+        var result = await CreateController().UpdatePriceComponent(breakdown);
+
+        Assert.Equal("Price line not found on this job. Refresh the prices and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
+        await _taskRepositoryMock.DidNotReceiveWithAnyArgs().AddEventAsync(0, null!, 0);
+    }
+
+    [Fact]
+    public async Task DeletePriceComponent_ChargeNotOnTheJob_ReturnsNotFoundWithoutLoggingAnEvent()
+    {
+        _jobCommandRepositoryMock.DeleteJobPriceBreakdownAsync(2, 1, false).Returns(false);
+
+        var result = await CreateController()
+            .DeletePriceComponent(new DeletePriceComponentRequest { ChargeId = 2, JobId = 1 });
+
+        Assert.Equal("Price line not found on this job. Refresh the prices and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
+        await _taskRepositoryMock.DidNotReceiveWithAnyArgs().AddEventAsync(0, null!, 0);
+    }
+
+    [Fact]
     public async Task DeletePriceComponent_ValidRequest_ReturnsOk()
     {
         // Arrange
@@ -692,8 +723,8 @@ public class JobControllerTests : IDisposable
             IsArchived = false
         };
 
-        _jobCommandRepositoryMock.DeleteJobPriceBreakdownAsync(1)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.DeleteJobPriceBreakdownAsync(1, 1)
+            .Returns(true);
 
         var controller = CreateController();
 
@@ -1011,7 +1042,8 @@ public class JobControllerTests : IDisposable
     {
         // Arrange
         const int jobId = 1;
-        const string key = "jobs/1/photo.png";
+        const string key = "DeliveryPhotos/2026/11/1-638000.png";
+        _jobQueryRepositoryMock.IsJobVisibleAsync(jobId).Returns(true);
 
         _jobPhotoServiceMock.ArchiveJobPhotoAsync(jobId, key)
             .Returns(true);
@@ -1030,7 +1062,8 @@ public class JobControllerTests : IDisposable
     {
         // Arrange
         const int jobId = 1;
-        const string key = "invalid-key";
+        const string key = "DeliveryPhotos/2026/11/1-missing.png";
+        _jobQueryRepositoryMock.IsJobVisibleAsync(jobId).Returns(true);
 
         _jobPhotoServiceMock.ArchiveJobPhotoAsync(jobId, key)
             .Returns(false);
@@ -2951,6 +2984,7 @@ public class JobControllerTests : IDisposable
             new() { FileName = "doc2.pdf", S3Key = "jobs/1/doc2.pdf" }
         };
 
+        _jobQueryRepositoryMock.IsJobVisibleAsync(jobId).Returns(true);
         _jobPhotoServiceMock.GetAttachedFilesAsync(jobId)
             .Returns(expectedFiles);
 
@@ -2966,6 +3000,18 @@ public class JobControllerTests : IDisposable
         {
             Assert.Equal(2, files.Count);
         }
+    }
+
+    [Fact]
+    public async Task GetAttachedFiles_JobOutsideCallersScope_ReturnsNotFoundWithoutListingS3()
+    {
+        _jobQueryRepositoryMock.IsJobVisibleAsync(1).Returns(false);
+
+        var result = await CreateController().GetAttachedFiles(1);
+
+        Assert.Equal("Job not found. Refresh the list and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
+        await _jobPhotoServiceMock.DidNotReceive().GetAttachedFilesAsync(Arg.Any<int>());
     }
 
     [Fact]
@@ -3642,6 +3688,66 @@ public class JobControllerTests : IDisposable
         Assert.IsType<OkObjectResult>(result);
         var okResult = (OkObjectResult)result;
         Assert.Equal(expectedRate, okResult.Value);
+    }
+
+    [Fact]
+    public async Task RepriceJobWithBaseAmount_CallerCannotModifyPrices_ReturnsForbidden()
+    {
+        _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(false);
+
+        var result = await CreateController()
+            .RepriceJobWithBaseAmount(new RepriceJobWithBaseAmountModel { JobId = 1, BaseAmount = 50m });
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().RepriceJobWithBaseAmountAsync(null!);
+    }
+
+    [Fact]
+    public async Task Upload_CallerCannotModifyPrices_ReturnsForbidden()
+    {
+        _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(false);
+
+        var result = await CreateController().Upload(Substitute.For<IFormFile>());
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
+        await _jobReportServiceMock.DidNotReceiveWithAnyArgs().ProcessJobPriceUploadAsync(null!);
+    }
+
+    [Fact]
+    public async Task DeleteJobDeliveryPhotoOrSignature_KeyNotVisible_ReturnsNotFound()
+    {
+        _jobQueryRepositoryMock.IsMediaKeyVisibleAsync("DeliveryPhotos/2026/11/200-638000.jpg").Returns(false);
+
+        var result = await CreateController()
+            .DeleteJobDeliveryPhotoOrSignature(100, "DeliveryPhotos/2026/11/200-638000.jpg");
+
+        Assert.Equal("File not found. Refresh the attachments and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().ArchiveJobPhotoAsync(0, null!);
+    }
+
+    [Fact]
+    public async Task DownloadFile_KeyNotVisible_ReturnsNotFoundWithoutReadingS3()
+    {
+        _jobQueryRepositoryMock.IsMediaKeyVisibleAsync("JobAttachments/200-1.pdf").Returns(false);
+
+        var result = await CreateController().DownloadFile("JobAttachments/200-1.pdf");
+
+        Assert.Equal("File not found. Refresh the attachments and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DownloadFileAsync(null!);
+    }
+
+    [Fact]
+    public async Task DeleteFile_KeyNotVisible_ReturnsNotFoundWithoutDeleting()
+    {
+        _jobQueryRepositoryMock.IsMediaKeyVisibleAsync("JobAttachments/200-1.pdf").Returns(false);
+
+        var result = await CreateController().DeleteFile("JobAttachments/200-1.pdf");
+
+        Assert.Equal("File not found. Refresh the attachments and try again.",
+            Assert.IsType<NotFoundObjectResult>(result).Value);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DeleteFileAsync(null!);
     }
 
     [Fact]

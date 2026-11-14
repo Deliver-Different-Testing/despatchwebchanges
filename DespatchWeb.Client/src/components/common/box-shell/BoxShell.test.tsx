@@ -2,7 +2,6 @@ import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MantineTestProvider} from '../../../test/utils';
 import {BoxShell, BoxShellProps} from './BoxShell';
-import {setLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import {ILayout} from '../../../types/interfaces/layout.interfaces';
 
 vi.mock('../../../hooks/glassSupport', async () => ({
@@ -304,8 +303,6 @@ describe('BoxShell box card chrome', () => {
     });
 
     describe('sticky header', () => {
-        afterEach(() => setLiquidGlassEnabled(false));
-
         it('overlays the header on the scroller so body content can scroll beneath it', () => {
             renderShell();
 
@@ -314,8 +311,7 @@ describe('BoxShell box card chrome', () => {
             expect(screen.getByTestId('job-search-box-scroller')).toHaveTextContent('content-jobList');
         });
 
-        it('stays a solid header even with Liquid Glass on, because it sits over dense job rows', () => {
-            setLiquidGlassEnabled(true);
+        it('stays a solid header despite Liquid Glass, because it sits over dense job rows', () => {
             renderShell();
             const header = screen.getByTestId('job-search-box-header');
 

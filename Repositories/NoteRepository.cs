@@ -81,7 +81,8 @@ public class NoteRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
         var result = await Context.TblBulkJobNotes
-            .Where(n => n.NoteId == noteId)
+            .Where(n => n.NoteId == noteId
+                        && (Context.CurrentBypassFilters || Context.TblBulkJobs.Any(b => b.BulkJobId == n.BulkJobId)))
             .Select(n => new TucNoteViewModel
             {
                 NoteId = n.NoteId,
@@ -132,6 +133,14 @@ public class NoteRepository(
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText);
+
+        if (!Context.CurrentBypassFilters
+            && (!await Context.TblBulkJobs.AnyAsync(b => b.BulkJobId == viewModel.BulkJobId.Value, cancellationToken)
+                || (viewModel.NoteId > 0 && !await IsNoteVisibleAsync(viewModel.NoteId, NoteHistorySource.BulkNote))))
+        {
+            throw new JobNotFoundException(
+                $"Bulk job {viewModel.BulkJobId.Value} was not found, so the note could not be saved.");
+        }
 
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == viewModel.NoteTypeId,
@@ -246,8 +255,23 @@ public class NoteRepository(
         await Context.SaveChangesAsync();
     }
 
+    private async Task<bool> IsNoteVisibleAsync(int noteId, NoteHistorySource source) =>
+        Context.CurrentBypassFilters || source switch
+        {
+            NoteHistorySource.Note => await Context.TucNotes.AnyAsync(n => n.NoteId == noteId),
+            NoteHistorySource.BulkNote => await Context.TblBulkJobNotes.AnyAsync(n =>
+                n.NoteId == noteId && Context.TblBulkJobs.Any(b => b.BulkJobId == n.BulkJobId)),
+            NoteHistorySource.Archive => await Context.TucNoteArchives.AnyAsync(n => n.NoteId == noteId),
+            _ => throw new ArgumentOutOfRangeException(nameof(source))
+        };
+
     public async Task<IReadOnlyList<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source)
     {
+        if (!await IsNoteVisibleAsync(noteId, source))
+        {
+            return [];
+        }
+
         var query = source switch
         {
             NoteHistorySource.Note => Context.TucNoteHistories.Where(h => h.NoteId == noteId),
@@ -324,6 +348,11 @@ public class NoteRepository(
 
     public async Task DeleteBulkNoteAsync(int noteId, CancellationToken cancellationToken = default)
     {
+        if (!await IsNoteVisibleAsync(noteId, NoteHistorySource.BulkNote))
+        {
+            return;
+        }
+
         await Context.TucNoteHistories
             .Where(h => h.BulkNoteId == noteId)
             .ExecuteDeleteAsync(cancellationToken);

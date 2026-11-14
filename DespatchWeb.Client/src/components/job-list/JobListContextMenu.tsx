@@ -139,6 +139,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         onChanged: refresh,
     });
 
+    const isNetworkPartner = isNetworkPartnerSession();
     const hasOpenDialog = lateDialogOpen || confirmDialogOpen || restoreConfirm !== null || splitJobLoading || dispatchDialog.open || sendToLiveTarget !== null || changeCourierActive;
     if (!job && !hasOpenDialog) return null;
 
@@ -679,7 +680,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Send to DFRNT Partner — opens the universal dispatch dialog with
                         the DFRNT Partner radio pre-selected. */}
-                    {menuItem('send-to-partner', {
+                    {!isNetworkPartner && menuItem('send-to-partner', {
                         icon: <Icon lucide={Send} size={16}/>,
                         label: 'Send to partner',
                         onClick: () => openDispatchDialog('DfrntPartner'),
@@ -706,7 +707,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     })}
 
                     {/* Split Job */}
-                    {activeJob.allowSplit && !hasChildren && !isPartnerJob && menuItem('split', {
+                    {activeJob.allowSplit && !hasChildren && !isPartnerJob && !isNetworkPartner && menuItem('split', {
                         icon: <Icon lucide={Split} size={16}/>,
                         label: 'Split job',
                         onClick: handleSplitJob,
@@ -739,7 +740,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Change Paid Courier — archived, completed jobs only. Invoiced/settled
                         jobs are refused by the eligibility pre-check, which explains why. */}
-                    {activeJob.isArchived && activeJob.done && !activeJob.isBulkJob && menuItem('change-courier', {
+                    {activeJob.isArchived && activeJob.done && !activeJob.isBulkJob && !isNetworkPartner
+                        && menuItem('change-courier', {
                         icon: <Icon tabler={IconTruck} size={16}/>,
                         label: 'Change paid courier',
                         onClick: () => void openChangeCourier({id: activeJob.id, jobNo: activeJob.jobNo}),
@@ -877,7 +879,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     existingDestination={activeJob.assignedCourier}
                     stopJobCount={stopJobCountFor(activeJob.jobNo, activeJob.relatedJobs)}
                     existingConNote={activeJob.conNote}
-                    isNetworkPartner={isNetworkPartnerSession()}
+                    isNetworkPartner={isNetworkPartner}
                     onClose={() => setDispatchDialog((s) => ({...s, open: false}))}
                     onDispatchCourier={handleDispatchDialogConfirmCourier}
                     onSendToPartner={handleDispatchDialogConfirmPartner}

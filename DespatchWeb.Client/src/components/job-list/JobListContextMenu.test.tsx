@@ -347,6 +347,22 @@ describe('JobListContextMenu', () => {
             expect(screen.queryByText('Split job')).not.toBeInTheDocument();
         });
 
+        it('hides Send to partner, Split job and Change paid courier for a network partner', () => {
+            const job = createMockDispatchJob({
+                allowSplit: true, _groupChildren: [], isArchived: true, done: true, isBulkJob: false,
+            });
+            (window as any).IsNetworkPartner = true;
+            try {
+                renderWithMantine(<JobListContextMenu {...createDefaultProps({job})} />);
+                expect(screen.queryByText('Send to partner')).not.toBeInTheDocument();
+                expect(screen.queryByText('Split job')).not.toBeInTheDocument();
+                expect(screen.queryByText('Change paid courier')).not.toBeInTheDocument();
+                expect(screen.getByText('Void job')).toBeInTheDocument();
+            } finally {
+                (window as any).IsNetworkPartner = undefined;
+            }
+        });
+
         it('shows/hides Re-Dispatch based on assignedCourier', () => {
             // shows when assignedCourier exists
             const {unmount} = renderWithMantine(<JobListContextMenu {...createDefaultProps({

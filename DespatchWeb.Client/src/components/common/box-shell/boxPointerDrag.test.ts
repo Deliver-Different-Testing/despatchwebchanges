@@ -1,6 +1,5 @@
 import type {Mock} from 'vitest';
 import {startBoxPointerDrag} from './boxPointerDrag';
-import {LIQUID_GLASS_STORAGE_KEY} from '../../../hooks/useLiquidGlassPreference';
 
 vi.mock('../../../hooks/glassSupport', async () => ({
     ...(await vi.importActual<typeof import('../../../hooks/glassSupport')>('../../../hooks/glassSupport')),
@@ -87,20 +86,10 @@ describe('startBoxPointerDrag', () => {
         expect(col1.cards[0]).toHaveAttribute('data-dragging');
     });
 
-    it('frosts the ghost as liquid glass only when the device has opted in', () => {
+    it('frosts the ghost as liquid glass', () => {
         grab(col1.handle(0), {columnId: 'col1', index: 0}, onMove);
         mouse('pointermove', 60, 80);
-        expect(document.querySelector('[data-box-drag-ghost]')).not.toHaveAttribute('data-glass');
-        mouse('pointercancel', 0, 0);
-
-        localStorage.setItem(LIQUID_GLASS_STORAGE_KEY, 'on');
-        try {
-            grab(col1.handle(0), {columnId: 'col1', index: 0}, onMove);
-            mouse('pointermove', 60, 80);
-            expect(document.querySelector('[data-box-drag-ghost]')).toHaveAttribute('data-glass');
-        } finally {
-            localStorage.removeItem(LIQUID_GLASS_STORAGE_KEY);
-        }
+        expect(document.querySelector('[data-box-drag-ghost]')).toHaveAttribute('data-glass');
     });
 
     it('shows the insertion edge and moves before the card under the upper half', () => {

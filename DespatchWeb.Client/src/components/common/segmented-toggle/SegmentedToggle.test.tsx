@@ -13,7 +13,6 @@ import {Rows3, Rows4} from 'lucide-react';
 
 import {renderWithMantine} from '../../../test/utils';
 import {setupUser} from '../../../test/utils/setupUser';
-import {setLiquidGlassEnabled} from '../../../hooks/useLiquidGlassPreference';
 import {Icon} from '../icon/Icon';
 import {SegmentedToggle} from './SegmentedToggle';
 import {
@@ -204,7 +203,6 @@ describe('SegmentedToggle', () => {
 
         afterEach(() => {
             (globalThis as {CSS?: unknown}).CSS = originalCss;
-            setLiquidGlassEnabled(false);
         });
 
         const group = (orientation: 'horizontal' | 'vertical') => {
@@ -214,18 +212,11 @@ describe('SegmentedToggle', () => {
             return screen.getByRole('radiogroup');
         };
 
-        it('glasses the horizontal bar only when the Liquid Glass preference is on', () => {
-            setLiquidGlassEnabled(false);
-            expect(group('horizontal')).not.toHaveAttribute('data-glass');
-        });
-
-        it('opts the horizontal bar into glass when the preference is on, but never the vertical list', () => {
-            setLiquidGlassEnabled(true);
+        it('glasses the horizontal bar', () => {
             expect(group('horizontal')).toHaveAttribute('data-glass');
         });
 
         it('leaves the vertical row list unglassed', () => {
-            setLiquidGlassEnabled(true);
             expect(group('vertical')).not.toHaveAttribute('data-glass');
         });
     });

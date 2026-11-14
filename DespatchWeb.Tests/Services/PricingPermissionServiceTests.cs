@@ -311,6 +311,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
 
         Assert.False(await service.CanModifyPricesAsync());
         Assert.False(await service.CanModifyPriceBreakdownAsync());
+        Assert.False(await service.CanBulkUpdatePricesAsync());
     }
 
     // A network partner must not be able to export/download anything containing tenant revenue -

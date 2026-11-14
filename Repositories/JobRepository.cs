@@ -1290,11 +1290,30 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="viewModel">The updated charge details.</param>
     /// <param name="isArchived">True if updating an archived job's pricing breakdown.</param>
-    public async Task UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false)
+    // A charge row belongs to a job through JobId, or ChildJobId for a split leg's line. Prebook ids
+    // share the job id space, so only staff may reach a prebook charge; a scoped caller proved access
+    // to a job (tblJob), never to a booking.
+    private IQueryable<PricingBreakdown> BreakdownsOfJob(int chargeId, int? jobId, int? prebookJobId)
+    {
+        var rows = Context.PricingBreakdowns.Where(p => p.PricingBreakdownId == chargeId);
+        if (prebookJobId.HasValue)
+        {
+            return Context.CurrentBypassFilters ? rows.Where(p => p.PrebookJobId == prebookJobId) : rows.Where(_ => false);
+        }
+
+        return rows.Where(p => p.JobId == jobId || p.ChildJobId == jobId
+                               || (Context.CurrentBypassFilters && p.PrebookJobId == jobId));
+    }
+
+    private IQueryable<PricingBreakdownArchive> ArchivedBreakdownsOfJob(int chargeId, int? jobId) =>
+        Context.PricingBreakdownArchives
+            .Where(p => p.PricingBreakdownId == chargeId && (p.JobId == jobId || p.ChildJobId == jobId));
+
+    public async Task<bool> UpdateJobPriceBreakdownAsync(ChargeViewModel viewModel, bool isArchived = false)
     {
         if (viewModel.JobId is null && viewModel.PrebookJobId is null)
         {
-            return;
+            return false;
         }
 
         var targetJobId = viewModel.ChildJobId ?? viewModel.JobId;
@@ -1308,8 +1327,7 @@ public partial class JobRepository(
         int rowsAffected;
         if (isArchived)
         {
-            rowsAffected = await Context.PricingBreakdownArchives
-                .Where(p => p.PricingBreakdownId == viewModel.ChargeId)
+            rowsAffected = await ArchivedBreakdownsOfJob(viewModel.ChargeId, viewModel.JobId)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(p => p.ChargeAmount, viewModel.Amount)
                     .SetProperty(p => p.ChargeName, viewModel.Name)
@@ -1317,8 +1335,7 @@ public partial class JobRepository(
         }
         else
         {
-            rowsAffected = await Context.PricingBreakdowns
-                .Where(p => p.PricingBreakdownId == viewModel.ChargeId)
+            rowsAffected = await BreakdownsOfJob(viewModel.ChargeId, viewModel.JobId, viewModel.PrebookJobId)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(p => p.ChargeAmount, viewModel.Amount)
                     .SetProperty(p => p.ChargeName, viewModel.Name)
@@ -1327,7 +1344,7 @@ public partial class JobRepository(
 
         if (rowsAffected == 0)
         {
-            return;
+            return false;
         }
 
         var note = $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}";
@@ -1355,22 +1372,24 @@ public partial class JobRepository(
             await RecalculateJobAmountFromBreakdownAsync(
                 viewModel.JobId, viewModel.PrebookJobId, viewModel.ChildJobId, isArchived);
         }
+
+        return true;
     }
 
     /// <summary>
     /// Deletes a pricing breakdown component from a job.
     /// </summary>
     /// <param name="chargeId">The pricing breakdown ID to delete.</param>
+    /// <param name="jobId">The job the caller was authorised for; the charge must belong to it.</param>
     /// <param name="isArchived">True if deleting from an archived job.</param>
-    public async Task DeleteJobPriceBreakdownAsync(int chargeId, bool isArchived = false)
+    public async Task<bool> DeleteJobPriceBreakdownAsync(int chargeId, int jobId, bool isArchived = false)
     {
         if (isArchived)
         {
-            var archiveBreakdown = await Context.PricingBreakdownArchives
-                .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+            var archiveBreakdown = await ArchivedBreakdownsOfJob(chargeId, jobId).FirstOrDefaultAsync();
             if (archiveBreakdown == null)
             {
-                return;
+                return false;
             }
 
             var archiveJobId = archiveBreakdown.JobId;
@@ -1398,19 +1417,18 @@ public partial class JobRepository(
                     .Where(a => a.ParentPricingBreakdownId == chargeId)
                     .ExecuteDeleteAsync();
                 await RewriteArchivedSplitParentAsync(archiveJobId!.Value);
-                return;
+                return true;
             }
 
             await RecalculateJobAmountFromBreakdownAsync(
                 archiveJobId, null, null, isArchived: true);
-            return;
+            return true;
         }
 
-        var breakdown = await Context.PricingBreakdowns
-            .FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        var breakdown = await BreakdownsOfJob(chargeId, jobId, prebookJobId: null).FirstOrDefaultAsync();
         if (breakdown == null)
         {
-            return;
+            return false;
         }
 
         var note = $"Deleted {chargeId} - {breakdown.ChargeName} - {breakdown.ChargeAmount}";
@@ -1451,6 +1469,8 @@ public partial class JobRepository(
             await RecalculateJobAmountFromBreakdownAsync(
                 deletedJobId, deletedPrebookId, deletedChildJobId, isArchived: false);
         }
+
+        return true;
     }
 
     /// <summary>
@@ -2751,7 +2771,8 @@ public partial class JobRepository(
             else if (newName is not null)
             {
                 await Context.PricingBreakdowns
-                    .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId)
+                    .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId
+                                && p.JobId == request.JobId && p.ChildJobId == null)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(p => p.ChargeAmount, itemRevenue.Revenue)
                         .SetProperty(p => p.ChargeName, newName));
@@ -2759,7 +2780,8 @@ public partial class JobRepository(
             else
             {
                 await Context.PricingBreakdowns
-                    .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId)
+                    .Where(p => p.PricingBreakdownId == itemRevenue.PricingBreakdownId
+                                && p.JobId == request.JobId && p.ChildJobId == null)
                     .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.ChargeAmount, itemRevenue.Revenue));
             }
         }
@@ -3715,8 +3737,14 @@ public partial class JobRepository(
     /// Retrieves active contacts for a specific client.
     /// </summary>
     /// <param name="clientId">The client ID to get contacts for.</param>
-    public async Task<IReadOnlyList<Suggestion>> GetContactsByClientIdAsync(int clientId) =>
-        await Context.UtlQryContactLookups
+    public async Task<IReadOnlyList<Suggestion>> GetContactsByClientIdAsync(int clientId)
+    {
+        if (!await Context.IsClientVisibleAsync(clientId))
+        {
+            return [];
+        }
+
+        return await Context.UtlQryContactLookups
             .Join(
                 Context.TblClientContacts,
                 s => s.ContactId,
@@ -3727,6 +3755,7 @@ public partial class JobRepository(
             .Select(x => new Suggestion { Id = x.s.ContactId, Text = x.s.UcctFirstname + Space + x.s.UcctSurname })
             .Distinct()
             .ToListAsync();
+    }
 
     /// <summary>
     /// Retrieves available locations where parcels can be left if recipient not home.
@@ -4132,6 +4161,10 @@ public partial class JobRepository(
         return result ?? 0m;
     }
 
+    public Task<bool> IsJobVisibleAsync(int jobId) => Context.IsJobVisibleAsync(jobId);
+
+    public Task<bool> IsMediaKeyVisibleAsync(string key) => Context.IsMediaKeyVisibleAsync(key);
+
     /// <summary>
     /// Retrieves detailed dispatch information for a job, checking both active and archived tables.
     /// </summary>
@@ -4160,6 +4193,11 @@ public partial class JobRepository(
             }
 
             return activeJob;
+        }
+
+        if (!await Context.IsJobVisibleAsync(jobId))
+        {
+            return null;
         }
 
         var archivedJobQuery =
