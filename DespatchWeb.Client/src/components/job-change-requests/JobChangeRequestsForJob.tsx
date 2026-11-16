@@ -445,7 +445,7 @@ function ChangeRequestCard({
                         mt="xs"
                         py={2}
                     >
-                        Change request cancelled. {row.approvalPartyType === localPartyType ? '' : 'The partner has been notified.'}
+                        Change request cancelled. {row.pairingId != null ? 'The partner has been notified.' : ''}
                     </Alert>
                 )}
 

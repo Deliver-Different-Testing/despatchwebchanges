@@ -1,4 +1,4 @@
-import {getSession} from '../../../api/session';
+import {getSession, isAuSession} from '../../../api/session';
 /**
  * HereMap Type Definitions
  *
@@ -106,10 +106,6 @@ export const AU_MAP_CENTER = {lat: -33.8688, lng: 151.2093};
  */
 export function getNetworkPartnerMapCenter(): { lat: number; lng: number } | null {
     return getSession().npMapCenter;
-}
-
-export function isAuSession(): boolean {
-    return (getSession().countryCode ?? '').toUpperCase() === 'AU';
 }
 
 export function getDefaultMapCenter(): { lat: number; lng: number } {

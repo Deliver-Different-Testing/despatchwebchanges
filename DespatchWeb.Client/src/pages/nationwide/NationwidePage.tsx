@@ -568,12 +568,10 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         refetchInterval: refetchIntervalMs,
     }), [dateFilter, selectedViewIds, refetchIntervalMs]);
 
-    const mapConfig = useMemo(() => {
-        if (!currentJob) {
-            return {center: getDefaultMapCenter(), zoom: 7, selectedJobIndex: 0};
-        }
-        return calculateMapBounds(currentJob as never, {fallbackCentre: getDefaultMapCenter()});
-    }, [currentJob]);
+    const mapConfig = useMemo(
+        () => calculateMapBounds(currentJob as never, {fallbackCentre: getDefaultMapCenter()}),
+        [currentJob],
+    );
 
     /** The map takes its own item shape, not the list DTO. */
     const mapItems = useMemo<IDispatchMapItem[]>(() => (currentJob ? [{

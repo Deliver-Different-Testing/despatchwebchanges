@@ -89,3 +89,4 @@ export function getSession(): Session {
 
 export const getContactId = (): number => getSession().contactId;
 export const getTimeZone = (): string => getSession().timeZone;
+export const isAuSession = (): boolean => (getSession().countryCode ?? '').toUpperCase() === 'AU';

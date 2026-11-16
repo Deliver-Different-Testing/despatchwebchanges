@@ -85,7 +85,6 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
         const guard = flightSearchGuard({
             job,
             airports: {outbound: selectedOutboundAirport, inbound: selectedInboundAirport},
-            loading: false,
         });
 
         if (guard.action === 'skip') return;

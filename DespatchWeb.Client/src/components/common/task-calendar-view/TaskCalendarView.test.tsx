@@ -296,6 +296,21 @@ describe('TaskCalendarView', () => {
             await waitFor(() => {
                 expect(props.showErrorToast).toHaveBeenCalledWith("Couldn't update the task. Check your connection and try again.");
             });
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
+        });
+
+        it('ticks the checkbox immediately without mutating the task prop', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            tasksService.markTaskAsClosed = vi.fn(() => new Promise<void>(() => {}));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+
+            expect(screen.getByRole('checkbox')).toBeChecked();
+            expect(task.closed).toBe(false);
         });
     });
 

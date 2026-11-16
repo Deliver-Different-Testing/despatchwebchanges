@@ -98,7 +98,7 @@ function formatWeekDayHeader(date: Dayjs): string {
 }
 
 export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
-    tasks,
+    tasks: sourceTasks,
     onTaskClick,
     onTaskStatusChange,
     onViewChange,
@@ -109,6 +109,18 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
     const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
     const [viewMode, setViewMode] = useState<ViewMode>('month');
     const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+    // Optimistic ticks, keyed by task id, until the parent refetches the task list.
+    const [closedOverrides, setClosedOverrides] = useState<Record<number, boolean>>({});
+
+    useEffect(() => {
+        setClosedOverrides({});
+    }, [sourceTasks]);
+
+    const tasks = useMemo(
+        () => sourceTasks?.map(task =>
+            task.id in closedOverrides ? {...task, closed: closedOverrides[task.id]} : task),
+        [sourceTasks, closedOverrides],
+    );
 
     // Build calendar data reactively based on state
     const calendarWeeks = useMemo((): CalendarWeek[] => {
@@ -248,14 +260,18 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
         event.stopPropagation();
 
         const newClosedState = !task.closed;
-        task.closed = newClosedState;
+        setClosedOverrides(prev => ({...prev, [task.id]: newClosedState}));
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
             showSuccessToast?.('Task updated');
-            onTaskStatusChange?.(task);
+            onTaskStatusChange?.({...task, closed: newClosedState});
         } catch (error) {
-            task.closed = !newClosedState;
+            setClosedOverrides(prev => {
+                const next = {...prev};
+                delete next[task.id];
+                return next;
+            });
             showErrorToast?.(taskErrorMessage(error, "Couldn't update the task. Check your connection and try again."));
             console.error('Error updating task:', error);
         }
