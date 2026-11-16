@@ -5,7 +5,7 @@
  * Uses MUI components for styling and interactions.
  */
 
-import React, {useState, useMemo, useEffect, useCallback} from 'react';
+import React, {useState, useMemo, useEffect, useCallback, useRef} from 'react';
 import {
     ActionIcon,
     Box,
@@ -60,6 +60,7 @@ const TIME_SLOTS = generateTimeSlots();
 interface ClosedOverride {
     closed: boolean;
     pending: boolean;
+    seq: number;
 }
 
 function getTasksForDate(tasks: Task[] | undefined, date: Dayjs): Task[] {
@@ -117,6 +118,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
     // Optimistic ticks, keyed by task id. A refetch drops settled ones but keeps those still saving.
     const [closedOverrides, setClosedOverrides] = useState<Record<number, ClosedOverride>>({});
     const [overriddenTasks, setOverriddenTasks] = useState(sourceTasks);
+    const overrideSeqRef = useRef(0);
     if (overriddenTasks !== sourceTasks) {
         setOverriddenTasks(sourceTasks);
         setClosedOverrides(prev => Object.fromEntries(Object.entries(prev).filter(([, o]) => o.pending)));
@@ -266,15 +268,23 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
         event.stopPropagation();
 
         const newClosedState = !task.closed;
-        setClosedOverrides(prev => ({...prev, [task.id]: {closed: newClosedState, pending: true}}));
+        const seq = ++overrideSeqRef.current;
+        setClosedOverrides(prev => ({...prev, [task.id]: {closed: newClosedState, pending: true, seq}}));
+
+        // A later click on the same task owns the override; an earlier request settling must not clobber it.
+        const settle = (succeeded: boolean) => setClosedOverrides(prev => {
+            if (prev[task.id]?.seq !== seq) return prev;
+            const {[task.id]: _, ...rest} = prev;
+            return succeeded ? {...rest, [task.id]: {closed: newClosedState, pending: false, seq}} : rest;
+        });
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
-            setClosedOverrides(prev => ({...prev, [task.id]: {closed: newClosedState, pending: false}}));
+            settle(true);
             showSuccessToast?.('Task updated');
             onTaskStatusChange?.({...task, closed: newClosedState});
         } catch (error) {
-            setClosedOverrides(prev => ({...prev, [task.id]: {closed: task.closed, pending: false}}));
+            settle(false);
             showErrorToast?.(taskErrorMessage(error, "Couldn't update the task. Check your connection and try again."));
             console.error('Error updating task:', error);
         }

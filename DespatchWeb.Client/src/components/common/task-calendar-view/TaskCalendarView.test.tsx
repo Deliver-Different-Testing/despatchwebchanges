@@ -327,6 +327,25 @@ describe('TaskCalendarView', () => {
             expect(screen.getByRole('checkbox')).toBeChecked();
         });
 
+        it('keeps the latest click when an earlier save settles after it', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            let resolveFirst!: () => void;
+            tasksService.markTaskAsClosed = vi.fn()
+                .mockImplementationOnce(() => new Promise<void>(resolve => { resolveFirst = resolve; }))
+                .mockImplementationOnce(() => new Promise<void>(() => {}));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            await user.click(screen.getByRole('checkbox'));
+            resolveFirst();
+
+            await waitFor(() => expect(props.onTaskStatusChange).toHaveBeenCalled());
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
+        });
+
         it('drops a settled tick once the refetched list arrives', async () => {
             const user = setupUser();
             const task = createMockTask({closed: false});
