@@ -407,6 +407,9 @@ public class NationwideJobRepository(
         }
         catch (Exception ex)
         {
+            // The assignment is already saved; drop the unsaved message so a later save on this
+            // context can't flush it.
+            Context.ChangeTracker.Clear();
             Log.Warning(ex,
                 "Job {JobId}: failed to email agent {AgentId} the inbound link (best-effort, ignored)",
                 jobId, agentId);
@@ -443,6 +446,9 @@ public class NationwideJobRepository(
             }
             catch (Exception ex)
             {
+                // The repository shares one context, so a failed job's unsaved edits would
+                // otherwise be flushed by the next job's SaveChanges.
+                Context.ChangeTracker.Clear();
                 Log.Warning(ex, "Bulk agent assignment: job {JobId} failed, continuing with the batch", jobId);
                 results.Add(new BulkAssignmentResult(jobId, false, ex.Message, null));
             }
@@ -466,6 +472,7 @@ public class NationwideJobRepository(
             }
             catch (Exception ex)
             {
+                Context.ChangeTracker.Clear();
                 Log.Warning(ex, "Bulk network partner assignment: job {JobId} failed, continuing with the batch",
                     jobId);
                 results.Add(new BulkAssignmentResult(jobId, false, ex.Message, null));
