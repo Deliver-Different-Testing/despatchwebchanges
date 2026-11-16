@@ -344,8 +344,8 @@ function ChangeRequestCard({
         () => formatRequestedAtTooltip(row.requestedAt),
         [row.requestedAt],
     );
-    const canApprove = row.status === 'Pending' && row.approvalPartyType === localPartyType;
     const isOwnPending = row.status === 'Pending' && row.origin === 'Local';
+    const canApprove = row.status === 'Pending' && !isOwnPending && row.approvalPartyType === localPartyType;
     const isRejecting = rejectingId === row.id;
     const isCancelling = cancellingId === row.id;
     const aging = row.status === 'Pending' ? ageLevel(row.requestedAt) : 'fresh';

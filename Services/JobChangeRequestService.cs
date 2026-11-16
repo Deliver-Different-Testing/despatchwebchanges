@@ -177,6 +177,12 @@ public sealed class JobChangeRequestService(
                 { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot approve" };
         }
 
+        if (IsLocalOrigin(row))
+        {
+            return new JobChangeRequestResult
+                { Success = false, Message = "Your own change request can only be approved by the partner" };
+        }
+
         // Reject rows whose field name doesn't map to any v1 enum value rather than
         // silently flipping to Applied without mutating the job. Peer-create writes the
         // payload's FieldName verbatim, so a peer running ahead of us on the field-set
@@ -325,6 +331,12 @@ public sealed class JobChangeRequestService(
                 { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot reject" };
         }
 
+        if (IsLocalOrigin(row))
+        {
+            return new JobChangeRequestResult
+                { Success = false, Message = "Your own change request can't be rejected here; cancel it instead" };
+        }
+
         if (request.RowVersion is not null)
         {
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
@@ -404,7 +416,7 @@ public sealed class JobChangeRequestService(
 
         // Only the originator can retract — peer-side rows are rejected via RejectAsync.
         // This keeps the semantic clean: Cancelled = "the requester took it back".
-        if (!string.Equals(row.UjcrOrigin, "Local", StringComparison.Ordinal))
+        if (!IsLocalOrigin(row))
         {
             return new JobChangeRequestResult
                 { Success = false, Message = "Only the originator can cancel a change request" };
@@ -577,6 +589,11 @@ public sealed class JobChangeRequestService(
 
     private const string AgentOrigin = "VoiceAgent";
 
+    // Manual rules always make the counterparty the approver, so a Local row is awaiting the
+    // other side; only Peer / VoiceAgent rows are this tenant's to approve or reject.
+    private static bool IsLocalOrigin(TucJobChangeRequest row) =>
+        string.Equals(row.UjcrOrigin, "Local", StringComparison.Ordinal);
+
     private static AgentInboundChangeRequestResult AgentFailure(string message) =>
         new() { Success = false, Message = message };
 
@@ -643,7 +660,11 @@ public sealed class JobChangeRequestService(
         // Delivered while the peer is still pre-pickup). If the field isn't allowed at our
         // stage, reject the inbound rather than silently queueing a request the approver
         // can never act on.
-        if (Enum.TryParse<JobChangeField>(payload.FieldName, ignoreCase: true, out var peerField))
+        // Store the canonical enum name: ApproveAsync and RecordPeerAppliedAsync parse it
+        // case-sensitively, and the duplicate guard below compares it verbatim.
+        var isKnownField = Enum.TryParse<JobChangeField>(payload.FieldName, ignoreCase: true, out var peerField);
+        var fieldName = isKnownField ? peerField.ToString() : payload.FieldName;
+        if (isKnownField)
         {
             var localStage = MapLifecycleStage(mirror.UcjbStatus);
             var localDecision = policyService.Evaluate(peerField, "PartnerTenant", localStage);
@@ -664,7 +685,7 @@ public sealed class JobChangeRequestService(
         // arbitrarily. SourceRequestUuid dedup above only catches replays of the SAME request.
         if (await ctx.TucJobChangeRequests
                 .AnyAsync(r => r.UjcrJobId == mirror.UcjbId
-                               && r.UjcrFieldName == payload.FieldName
+                               && r.UjcrFieldName == fieldName
                                && (r.UjcrStatus == JobChangeRequestStatus.Pending
                                    || r.UjcrStatus == JobChangeRequestStatus.Approved), ct))
         {
@@ -683,7 +704,7 @@ public sealed class JobChangeRequestService(
             UjcrOrigin = "Peer",
             UjcrRequestingPartyType = "PartnerTenant",
             UjcrApprovalPartyType = "OwnerTenant",
-            UjcrFieldName = payload.FieldName,
+            UjcrFieldName = fieldName,
             UjcrCurrentValue = payload.CurrentValue,
             UjcrRequestedValue = payload.RequestedValue,
             UjcrReason = payload.Reason,

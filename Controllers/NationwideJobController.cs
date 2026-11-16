@@ -763,6 +763,6 @@ public class NationwideJobController(
     {
         var contactId = infoService.GetContactId();
         var clientIds = await clientRepository.ClientContactsAsync(contactId);
-        return string.Join(",", clientIds);
+        return string.Join(",", clientIds.Select(c => c.Id));
     }
 }

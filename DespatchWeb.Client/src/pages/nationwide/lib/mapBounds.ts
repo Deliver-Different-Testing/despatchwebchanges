@@ -19,9 +19,7 @@ export interface Coordinates {
 }
 
 export interface MapBoundsOptions {
-    isUsCustomer: boolean;
-    usCentre: Coordinates;
-    nzCentre: Coordinates;
+    fallbackCentre: Coordinates;
 }
 
 export interface MapBoundsResult {
@@ -58,7 +56,7 @@ export function zoomForSpan(maxDiff: number): number {
 /**
  * Centre and zoom to frame a job's pickup and delivery.
  *
- * Falls back to the tenant's country centre when either address is missing.
+ * Falls back to `options.fallbackCentre` when either address is missing.
  * `childJobs` is always empty — V1 never populated it, and child-job markers
  * were never rendered on this page.
  */
@@ -66,7 +64,7 @@ export function calculateMapBounds(
     job: IDispatchJob,
     options: MapBoundsOptions,
 ): MapBoundsResult {
-    const fallbackCentre = options.isUsCustomer ? options.usCentre : options.nzCentre;
+    const {fallbackCentre} = options;
 
     if (!job || !job.pickupAddress || !job.deliveryAddress) {
         return {

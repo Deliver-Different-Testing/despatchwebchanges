@@ -119,6 +119,8 @@ public sealed class FlightAssignmentService(
             ? string.Empty
             : value.Replace(" ", "").Replace("-", "").Trim().ToUpperInvariant();
 
+    // The repository pairs webhookIds[i] with the i-th segment in SegmentOrder, so ids stay
+    // positional: a failed rule keeps its slot as an empty string rather than shifting later legs.
     private async Task<List<string>> CreateWebhooksAsync(List<FlightSegmentViewModel> flightSegments)
     {
         var webhookIds = new List<string>();
@@ -127,17 +129,14 @@ public sealed class FlightAssignmentService(
             return webhookIds;
         }
 
-        foreach (var segment in flightSegments)
+        foreach (var segment in flightSegments.OrderBy(s => s.SegmentOrder))
         {
             var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
                 $"{segment.CarrierFsCode}{segment.FlightNumber}",
                 segment.DepartureTime,
                 segment.DepartureAirportFsCode) ?? string.Empty;
 
-            if (!string.IsNullOrEmpty(webhookId))
-            {
-                webhookIds.Add(webhookId);
-            }
+            webhookIds.Add(webhookId);
         }
 
         return webhookIds;

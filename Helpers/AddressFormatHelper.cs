@@ -31,22 +31,13 @@ public static class AddressFormatter
         var state = GetAddressLine(address, 6)?.Trim();
         var zip = GetAddressLine(address, 7)?.Trim();
 
-        if (string.IsNullOrWhiteSpace(city))
-        {
-            return string.Join(", ", lines);
-        }
+        var cityState = string.Join(", ", new[] { city, state }.Where(part => !string.IsNullOrWhiteSpace(part)));
+        var lastLine = string.Join(" ", new[] { cityState, zip }.Where(part => !string.IsNullOrWhiteSpace(part)));
 
-        var lastLine = city;
-        if (!string.IsNullOrWhiteSpace(state))
+        if (lastLine.Length > 0)
         {
-            lastLine += ", " + state;
-            if (!string.IsNullOrWhiteSpace(zip))
-            {
-                lastLine += " " + zip;
-            }
+            lines.Add(lastLine);
         }
-
-        lines.Add(lastLine);
 
         return string.Join(", ", lines);
     }
