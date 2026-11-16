@@ -42,6 +42,7 @@ import {
 } from '../../../utils/dateUtils';
 import {Icon} from '../icon/Icon';
 import classes from './TaskItem.module.css';
+import {taskErrorMessage} from '../../../utils/taskErrorMessage';
 
 /** The string forms the two editors exchange values in. */
 const ISO_DATE = 'YYYY-MM-DD';
@@ -234,7 +235,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             showSuccessToast?.('Task assigned to you');
             onTaskUpdated?.();
         } catch (error) {
-            showErrorToast?.("Couldn't assign the task. Check your connection and try again.");
+            showErrorToast?.(taskErrorMessage(error, "Couldn't assign the task. Check your connection and try again."));
             console.error('Error assigning task to current user:', error);
         }
     }, [currentUserId, task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
@@ -260,7 +261,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             onTaskUpdated?.();
             closePopover();
         } catch (error) {
-            showErrorToast?.("Couldn't unassign the task. Check your connection and try again.");
+            showErrorToast?.(taskErrorMessage(error, "Couldn't unassign the task. Check your connection and try again."));
             console.error('Error unassigning task:', error);
         } finally {
             setIsUnassigning(false);
@@ -274,10 +275,10 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
-            showSuccessToast?.('Task completed');
+            showSuccessToast?.(newClosedState ? 'Task completed' : 'Task reopened');
             onTaskUpdated?.();
         } catch (error) {
-            showErrorToast?.("Couldn't update the task. Check your connection and try again.");
+            showErrorToast?.(taskErrorMessage(error, "Couldn't update the task. Check your connection and try again."));
             console.error('Error updating task:', error);
         } finally {
             setIsCompleting(false);
@@ -325,7 +326,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             onTaskUpdated?.();
             setDueTab('time');
         } catch (error) {
-            showErrorToast?.("Couldn't update the task date. Check your connection and try again.");
+            showErrorToast?.(taskErrorMessage(error, "Couldn't update the task date. Check your connection and try again."));
             console.error('Error updating task date:', error);
         }
     }, [task.id, task.dueDate, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
@@ -348,7 +349,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             onTaskUpdated?.();
             closePopover();
         } catch (error) {
-            showErrorToast?.("Couldn't update the task time. Check your connection and try again.");
+            showErrorToast?.(taskErrorMessage(error, "Couldn't update the task time. Check your connection and try again."));
             console.error('Error updating task time:', error);
         }
     }, [timeDraft, task.id, task.dueDate, tasksService, showSuccessToast, showErrorToast, onTaskUpdated, closePopover]);
@@ -360,7 +361,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
             onTaskUpdated?.();
             closePopover();
         } catch (error) {
-            showErrorToast?.("Couldn't reassign the task. Check your connection and try again.");
+            showErrorToast?.(taskErrorMessage(error, "Couldn't reassign the task. Check your connection and try again."));
             console.error('Error reassigning task:', error);
         }
     }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated, closePopover]);

@@ -11,6 +11,7 @@ import {RecurringJobsScreen} from './recurring-jobs/RecurringJobsScreen';
 import {SettingsScreen} from './settings/SettingsScreen';
 import {CourierMapScreen} from './courier-map/CourierMapScreen';
 import {ErrorScreen} from './error-page/ErrorScreen';
+import {US_MAP_CENTER} from '../components/common/here-map/HereMap.types';
 import {getHereMapsKey} from '../api/configApi';
 import {openJobInSearch} from '../services/navigationService';
 
@@ -90,7 +91,7 @@ describe('CourierMapScreen', () => {
         renderScreen(<CourierMapScreen/>);
 
         expect(await screen.findByTestId('map')).toBeInTheDocument();
-        expect(propsOf('map')).toMatchObject({apiKey: 'key-1', isUsCustomer: true, mapCenter: {lat: 39.8283, lng: -98.5795}});
+        expect(propsOf('map')).toMatchObject({apiKey: 'key-1', isUsCustomer: true, mapCenter: US_MAP_CENTER});
         expect(screen.getByRole('heading', {name: 'Courier map'})).toBeInTheDocument();
     });
 

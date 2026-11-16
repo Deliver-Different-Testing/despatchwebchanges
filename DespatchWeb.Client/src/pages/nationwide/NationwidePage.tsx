@@ -55,7 +55,7 @@ import {useBoxLayout} from '../../components/common/box-shell/useBoxLayout';
 import type {LayoutStorageKeys} from '../../components/common/box-shell/layoutPersistence';
 import {LayoutPromptDialogs} from '../../components/layout-prompts/LayoutPromptDialogs';
 import {useLayoutPrompts} from '../../components/layout-prompts/useLayoutPrompts';
-import {NZ_MAP_CENTER, US_MAP_CENTER, getDefaultMapCenter} from '../../components/common/here-map/HereMap.types';
+import {getDefaultMapCenter} from '../../components/common/here-map/HereMap.types';
 import {NationwideBoxes} from './lib/nationwideBoxes';
 import {createDefaultNationwideLayout, createNationwideBoxes} from './lib/boxDefinitions';
 import {calculateMapBounds} from './lib/mapBounds';
@@ -572,12 +572,8 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         if (!currentJob) {
             return {center: getDefaultMapCenter(), zoom: 7, selectedJobIndex: 0};
         }
-        return calculateMapBounds(currentJob as never, {
-            isUsCustomer,
-            usCentre: US_MAP_CENTER,
-            nzCentre: NZ_MAP_CENTER,
-        });
-    }, [currentJob, isUsCustomer]);
+        return calculateMapBounds(currentJob as never, {fallbackCentre: getDefaultMapCenter()});
+    }, [currentJob]);
 
     /** The map takes its own item shape, not the list DTO. */
     const mapItems = useMemo<IDispatchMapItem[]>(() => (currentJob ? [{

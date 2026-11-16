@@ -17,7 +17,8 @@ import type {
     IHereMapChildJob,
     IHereMapJob,
 } from './HereMap.types';
-import {DEFAULT_MAP_CONFIG, getDefaultMapCenter, NZ_MAP_CENTER, US_MAP_CENTER, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES} from './HereMap.types';
+import {clearSessionContext, setSessionContext} from '../../../api/session';
+import {AU_MAP_CENTER, DEFAULT_MAP_CONFIG, getDefaultMapCenter, NZ_MAP_CENTER, US_MAP_CENTER, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES} from './HereMap.types';
 import {createCurvedPath, getAllVisiblePoints,} from './hereMapUtils';
 
 
@@ -373,6 +374,20 @@ describe('getDefaultMapCenter', () => {
     it('returns NZ center when isUSCustomer is undefined', () => {
         (window as any).serverConfig = {};
         expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);
+    });
+
+    it('opens an AU tenant with no centre of its own on Sydney', () => {
+        setSessionContext({
+            contactId: 5, staffId: 7, firstName: 'Jane', fullName: 'Jane Doe', email: 'j@t.com',
+            dispatcher: null, timeZone: 'Australia/Sydney', countryCode: 'AU', isUsTenant: false,
+            currencyCode: 'AUD', clientInternal: false, isNetworkPartner: false,
+            visibleFeatures: null, npMapCenter: null, hubUrl: null, tenantMapCenter: null,
+        });
+        try {
+            expect(getDefaultMapCenter()).toEqual(AU_MAP_CENTER);
+        } finally {
+            clearSessionContext();
+        }
     });
 
     it('returns NZ center when serverConfig is undefined', () => {

@@ -147,6 +147,14 @@ describe('JobChangeRequestsForJob', () => {
         expect(screen.getByRole('button', {name: /^Reject$/})).toBeInTheDocument();
     });
 
+    it('hides Approve on our own request even when its approval party matches the local default', async () => {
+        mockApi.forJob.mockResolvedValueOnce([{...baseRow, origin: 'Local', approvalPartyType: 'OwnerTenant'}]);
+        renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="OwnerTenant"/>);
+
+        expect(await screen.findByRole('button', {name: /^Cancel$/})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /Approve/})).not.toBeInTheDocument();
+    });
+
     it('shows "Awaiting partner" pill when local party is not the approver', async () => {
         mockApi.forJob.mockResolvedValueOnce([baseRow]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="PartnerTenant"/>);

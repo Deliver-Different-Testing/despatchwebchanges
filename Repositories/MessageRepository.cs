@@ -23,7 +23,7 @@ public class MessageRepository(
     public async Task<int> GetUnreadMessageCountAsync()
     {
         var currentStaffId = infoService.GetStaffId();
-        var cacheKey = $"unread-messages:{currentStaffId}";
+        var cacheKey = $"unread-messages:{infoService.GetCurrentTenantId()}:{currentStaffId}";
 
         // Try cache first
         if (cache.TryGetValue<int>(cacheKey, out var cachedCount))
@@ -350,7 +350,7 @@ public class MessageRepository(
 
         if (affectedRows > 0)
         {
-            var cacheKey = $"unread-messages:{currentStaffId}";
+            var cacheKey = $"unread-messages:{infoService.GetCurrentTenantId()}:{currentStaffId}";
             cache?.Remove(cacheKey);
         }
     }

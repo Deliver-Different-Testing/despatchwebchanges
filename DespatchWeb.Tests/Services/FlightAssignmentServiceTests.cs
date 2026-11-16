@@ -15,8 +15,9 @@ public class FlightAssignmentServiceTests
 
     private FlightAssignmentService CreateService() => new(_flightService, _repository);
 
-    private static FlightSegmentViewModel Segment(string carrier, string number) => new()
+    private static FlightSegmentViewModel Segment(string carrier, string number, int order = 0) => new()
     {
+        SegmentOrder = order,
         CarrierFsCode = carrier,
         FlightNumber = number,
         DepartureAirportFsCode = "AKL",
@@ -73,6 +74,31 @@ public class FlightAssignmentServiceTests
         await _repository.Received(1).AddJobNationwideAsync(
             request,
             Arg.Is<IReadOnlyList<string>>(ids => ids!.Count == 2 && ids.Contains("wh-1") && ids.Contains("wh-2")),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignFlightAsync_WebhookIdsFollowSegmentOrder_AndKeepSlotForFailedRule()
+    {
+        var first = Segment("NZ", "123", order: 1);
+        var second = Segment("NZ", "456", order: 2);
+        var request = new AssignFlightToJobRequest
+        {
+            JobId = 100,
+            FlightNumber = "NZ123",
+            DepartureDate = DateTimeOffset.Parse("2026-07-08T08:00:00Z"),
+            FlightSegments = [second, first]
+        };
+        _flightService.CreateFlightRuleByDepartureAsync("NZ123", Arg.Any<DateTimeOffset>(), Arg.Any<string>())
+            .Returns((string)null);
+        _flightService.CreateFlightRuleByDepartureAsync("NZ456", Arg.Any<DateTimeOffset>(), Arg.Any<string>())
+            .Returns("wh-2");
+
+        await CreateService().AssignFlightAsync(request, TestContext.Current.CancellationToken);
+
+        await _repository.Received(1).AddJobNationwideAsync(
+            request,
+            Arg.Is<IReadOnlyList<string>>(ids => ids!.SequenceEqual(new[] { "", "wh-2" })),
             Arg.Any<CancellationToken>());
     }
 

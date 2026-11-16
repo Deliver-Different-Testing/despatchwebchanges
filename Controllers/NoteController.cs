@@ -194,7 +194,10 @@ public class NoteController(
         try
         {
             var note = await noteRepository.GetNoteByIdAsync(noteId, jobId);
-            ArgumentNullException.ThrowIfNull(note);
+            if (note == null)
+            {
+                return NotFound($"Note with ID {noteId} not found.");
+            }
 
             await noteRepository.DeleteNoteAsync(noteId, jobId);
 
