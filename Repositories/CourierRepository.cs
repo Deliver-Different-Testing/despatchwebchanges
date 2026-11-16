@@ -1714,7 +1714,7 @@ public partial class CourierRepository(
     private async Task<IReadOnlyList<PolygonChannelMapping>> GetPolygonMappingsAsync(List<int> clearListAreaIds,
         CancellationToken cancellationToken = default)
     {
-        var cacheKey = GetPolygonMappingsCacheKey(clearListAreaIds);
+        var cacheKey = $"{infoService.GetCurrentTenantId()}:{GetPolygonMappingsCacheKey(clearListAreaIds)}";
 
         return await cache.GetOrCreateAsync(
             cacheKey,
@@ -1975,7 +1975,7 @@ public partial class CourierRepository(
             return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         }
 
-        return await cache.GetOrCreateAsync(areaScope.CacheKey, async entry =>
+        return await cache.GetOrCreateAsync($"{infoService.GetCurrentTenantId()}:{areaScope.CacheKey}", async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
 

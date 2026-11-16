@@ -1,5 +1,6 @@
 ﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -52,17 +53,19 @@ public class TaskRepositoryUnassignTests : IAsyncDisposable
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
+    private static TucStaff Staff(int id, string first, string last) => new()
+    {
+        UcstId = id,
+        UcstFirstName = first,
+        UcstLastName = last,
+        CreatedBy = "test",
+        LastModifiedBy = "test"
+    };
+
     [Fact]
     public async Task UnassignEventAsync_ClearsStaff_AuditsChange_AndRecordsJourney()
     {
-        await SeedStaffAsync(new TucStaff
-        {
-            UcstId = 7,
-            UcstFirstName = "John",
-            UcstLastName = "Doe",
-            CreatedBy = "test",
-            LastModifiedBy = "test"
-        });
+        await SeedStaffAsync(Staff(7, "John", "Doe"), Staff(99, "Signed", "In"));
         await SeedEventsAsync(new TucEvent
         {
             UcevId = 1,
@@ -117,6 +120,27 @@ public class TaskRepositoryUnassignTests : IAsyncDisposable
         await using var assertContext = _db.CreateContext();
         Assert.Empty(assertContext.TucEventAudits);
         Assert.Empty(assertContext.JobDeliveryJourneys);
+    }
+
+    [Fact]
+    public async Task UnassignEventAsync_CallerHasNoStaffRow_ThrowsClearError_AndChangesNothing()
+    {
+        await SeedStaffAsync(Staff(7, "John", "Doe"));
+        await SeedEventsAsync(new TucEvent
+        {
+            UcevId = 1,
+            UcevStaffIdin = 7,
+            UcevJobId = 555,
+            UcevDueTime = TestDates.Now,
+            UcevClosed = false
+        });
+
+        var ex = await Assert.ThrowsAsync<TaskAssignmentException>(() => CreateRepository().UnassignEventAsync(1));
+
+        Assert.Equal(TaskAssignmentException.CallerNotStaff, ex.Message);
+        await using var assertContext = _db.CreateContext();
+        Assert.Equal(7, (await assertContext.TucEvents.SingleAsync(TestContext.Current.CancellationToken)).UcevStaffIdin);
+        Assert.Empty(assertContext.TucEventAudits);
     }
 
     [Fact]

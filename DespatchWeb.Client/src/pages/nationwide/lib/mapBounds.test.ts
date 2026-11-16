@@ -8,9 +8,7 @@
 import {FLIGHT_SPEED_ID, calculateMapBounds} from './mapBounds';
 
 const NZ_CENTRE = {lat: -41, lng: 174};
-const US_CENTRE = {lat: 39, lng: -98};
 
-const centres = {usCentre: US_CENTRE, nzCentre: NZ_CENTRE};
 
 function jobAt(pickup: {lat: number; lng: number}, delivery: {lat: number; lng: number}, extra: object = {}) {
     return {
@@ -24,29 +22,24 @@ function jobAt(pickup: {lat: number; lng: number}, delivery: {lat: number; lng: 
 
 describe('calculateMapBounds', () => {
     describe('fallback when the job has no usable addresses', () => {
-        it('falls back to the tenant centre at zoom 7', () => {
-            expect(calculateMapBounds(undefined as never, {...centres, isUsCustomer: false}))
+        it('falls back to the given centre at zoom 7', () => {
+            expect(calculateMapBounds(undefined as never, {fallbackCentre: NZ_CENTRE}))
                 .toEqual({center: NZ_CENTRE, zoom: 7, selectedJobIndex: 0});
-        });
-
-        it('uses the US centre for a US tenant', () => {
-            expect(calculateMapBounds(undefined as never, {...centres, isUsCustomer: true}))
-                .toEqual({center: US_CENTRE, zoom: 7, selectedJobIndex: 0});
         });
 
         it('falls back when either address is missing', () => {
             const noDelivery = {id: 1, pickupAddress: {latitude: 1, longitude: 1}} as never;
             const noPickup = {id: 1, deliveryAddress: {latitude: 1, longitude: 1}} as never;
 
-            expect(calculateMapBounds(noDelivery, {...centres, isUsCustomer: false}).zoom).toBe(7);
-            expect(calculateMapBounds(noPickup, {...centres, isUsCustomer: false}).zoom).toBe(7);
+            expect(calculateMapBounds(noDelivery, {fallbackCentre: NZ_CENTRE}).zoom).toBe(7);
+            expect(calculateMapBounds(noPickup, {fallbackCentre: NZ_CENTRE}).zoom).toBe(7);
         });
     });
 
     it('centres on the midpoint of pickup and delivery', () => {
         const result = calculateMapBounds(
             jobAt({lat: -36, lng: 174}, {lat: -42, lng: 172}),
-            {...centres, isUsCustomer: false},
+            {fallbackCentre: NZ_CENTRE},
         );
 
         expect(result.center).toEqual({lat: -39, lng: 173});
@@ -76,7 +69,7 @@ describe('calculateMapBounds', () => {
         ])('a span of %s degrees gives zoom %i', (span, expected) => {
             const result = calculateMapBounds(
                 jobAt({lat: 0, lng: 0}, {lat: span, lng: 0}),
-                {...centres, isUsCustomer: false},
+                {fallbackCentre: NZ_CENTRE},
             );
             expect(result.zoom).toBe(expected);
         });
@@ -84,7 +77,7 @@ describe('calculateMapBounds', () => {
         it('uses the longitude span when it is the larger one', () => {
             const result = calculateMapBounds(
                 jobAt({lat: 0, lng: 0}, {lat: 0.2, lng: 30}),
-                {...centres, isUsCustomer: false},
+                {fallbackCentre: NZ_CENTRE},
             );
             expect(result.zoom).toBe(4);
         });
@@ -94,7 +87,7 @@ describe('calculateMapBounds', () => {
         it('carries the pickup and delivery coordinates and the job id', () => {
             const result = calculateMapBounds(
                 jobAt({lat: -36, lng: 174}, {lat: -42, lng: 172}, {id: 99}),
-                {...centres, isUsCustomer: false},
+                {fallbackCentre: NZ_CENTRE},
             );
 
             expect(result.job).toEqual({
@@ -109,7 +102,7 @@ describe('calculateMapBounds', () => {
         it('flags a flight job by the nationwide speed id', () => {
             const result = calculateMapBounds(
                 jobAt({lat: -36, lng: 174}, {lat: -42, lng: 172}, {speedId: FLIGHT_SPEED_ID}),
-                {...centres, isUsCustomer: false},
+                {fallbackCentre: NZ_CENTRE},
             );
 
             expect(result.job?.flight).toBe(true);
@@ -122,7 +115,7 @@ describe('calculateMapBounds', () => {
                 deliveryAddress: {},
             } as never;
 
-            const result = calculateMapBounds(job, {...centres, isUsCustomer: false});
+            const result = calculateMapBounds(job, {fallbackCentre: NZ_CENTRE});
 
             expect(result.job?.pickup).toEqual({lat: 0, lng: 0});
             expect(result.center).toEqual({lat: 0, lng: 0});

@@ -61,8 +61,11 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
 
     /** Paging cursor from the previous search; drives "next day". */
     const lastDepartureTimeRef = useRef<Dayjs | undefined>(undefined);
-    /** Guards re-entrancy without waiting for a state flush. */
-    const searchingRef = useRef(false);
+    /**
+     * Latest search wins: a newer search (another job, airport or airline) supersedes one still in
+     * flight instead of being dropped, and the stale response is ignored.
+     */
+    const searchSeqRef = useRef(0);
     /** Ignores results for a job the operator has already navigated away from. */
     const jobIdRef = useRef<number | undefined>(job?.id);
     jobIdRef.current = job?.id;
@@ -82,7 +85,7 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
         const guard = flightSearchGuard({
             job,
             airports: {outbound: selectedOutboundAirport, inbound: selectedInboundAirport},
-            loading: searchingRef.current,
+            loading: false,
         });
 
         if (guard.action === 'skip') return;
@@ -94,7 +97,8 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
         }
 
         const jobId = job!.id;
-        searchingRef.current = true;
+        const seq = ++searchSeqRef.current;
+        const isStale = () => seq !== searchSeqRef.current || jobIdRef.current !== jobId;
         setFlightsLoading(true);
 
         try {
@@ -115,19 +119,18 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
                 includeNearbyAirports,
             });
 
-            if (jobIdRef.current !== jobId) return;
+            if (isStale()) return;
 
             setFlightOptions(result.flights ?? []);
             setFlightMessage(flightResultMessage(result));
             lastDepartureTimeRef.current = result.lastDepartureTime;
         } catch (error) {
-            if (jobIdRef.current !== jobId) return;
+            if (isStale()) return;
             console.error('Error loading flights:', error);
             setFlightMessage(flightSearchErrorMessage(error));
             setFlightOptions([]);
         } finally {
-            searchingRef.current = false;
-            setFlightsLoading(false);
+            if (seq === searchSeqRef.current) setFlightsLoading(false);
         }
     }, [job, selectedAirline, selectedOutboundAirport, selectedInboundAirport, includeNearbyAirports, timeZone]);
 

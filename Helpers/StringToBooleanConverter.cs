@@ -43,8 +43,7 @@ public sealed class StringToBooleanConverter : JsonConverter<bool?>
 
                 return null;
             case JsonTokenType.Number:
-                var numberValue = reader.GetInt32();
-                return numberValue != 0;
+                return reader.GetDouble() != 0;
             case JsonTokenType.None:
             case JsonTokenType.StartObject:
             case JsonTokenType.EndObject:

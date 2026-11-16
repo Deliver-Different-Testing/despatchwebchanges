@@ -1,6 +1,6 @@
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -18,23 +18,20 @@ public class TenantMapCentreServiceTests : IAsyncDisposable
         await _db.DisposeAsync();
     }
 
-    private async Task CreateTableAsync(bool withRow)
+    private async Task SeedAsync(decimal lat, decimal lng)
     {
         await using var context = _db.CreateContext();
-        await context.Database.ExecuteSqlRawAsync(
-            "CREATE TABLE SignUpPageSettings (SignUpPageSettingsId INTEGER PRIMARY KEY, MapCenterLatitude REAL NOT NULL, MapCenterLongitude REAL NOT NULL)",
-            TestContext.Current.CancellationToken);
-        if (withRow)
+        context.SignUpPageSettings.Add(new SignUpPageSetting
         {
-            await context.Database.ExecuteSqlRawAsync(
-                "INSERT INTO SignUpPageSettings VALUES (1, -33.8679, 151.2073)", TestContext.Current.CancellationToken);
-        }
+            SignUpPageSettingsId = 1, MapCenterLatitude = lat, MapCenterLongitude = lng
+        });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task ReturnsTheTenantsCentre()
     {
-        await CreateTableAsync(withRow: true);
+        await SeedAsync(-33.8679m, 151.2073m);
 
         var centre = await new TenantMapCentreService(_db.CreateFactoryMock()).GetMapCentreAsync();
 
@@ -44,14 +41,14 @@ public class TenantMapCentreServiceTests : IAsyncDisposable
     [Fact]
     public async Task NoRow_ReturnsNull_SoTheFrontEndKeepsItsDefault()
     {
-        await CreateTableAsync(withRow: false);
-
         Assert.Null(await new TenantMapCentreService(_db.CreateFactoryMock()).GetMapCentreAsync());
     }
 
     [Fact]
-    public async Task NoTable_ReturnsNull()
+    public async Task RowStillOnTheAucklandColumnDefaults_ReturnsNull_SoAnAuTenantDoesNotOpenOnAuckland()
     {
+        await SeedAsync(-36.850657m, 174.76466m);
+
         Assert.Null(await new TenantMapCentreService(_db.CreateFactoryMock()).GetMapCentreAsync());
     }
 }

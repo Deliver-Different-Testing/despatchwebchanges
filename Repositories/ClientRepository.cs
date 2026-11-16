@@ -30,7 +30,6 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             .Where(c => c.ContactId == contactId)
             .Where(c => c.TblClientContactInternetPermissions
                 .Any(cip => cip.InternetPermission.SystemName == "DespatchWeb"))
-            .OrderByDescending(c => c.IsDefaultAccount)
             .Select(c => new Suggestion
             {
                 Id = c.ClientId,

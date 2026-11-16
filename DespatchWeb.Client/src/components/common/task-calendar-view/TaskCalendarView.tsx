@@ -36,6 +36,7 @@ import {
     CalendarWeek,
 } from './TaskCalendarView.interfaces';
 import {Task} from '../task-item/TaskItem.interfaces';
+import {taskErrorMessage} from '../../../utils/taskErrorMessage';
 
 dayjs.extend(isoWeek);
 dayjs.extend(weekday);
@@ -255,7 +256,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
             onTaskStatusChange?.(task);
         } catch (error) {
             task.closed = !newClosedState;
-            showErrorToast?.("Couldn't update the task. Check your connection and try again.");
+            showErrorToast?.(taskErrorMessage(error, "Couldn't update the task. Check your connection and try again."));
             console.error('Error updating task:', error);
         }
     }, [tasksService, showSuccessToast, showErrorToast, onTaskStatusChange]);

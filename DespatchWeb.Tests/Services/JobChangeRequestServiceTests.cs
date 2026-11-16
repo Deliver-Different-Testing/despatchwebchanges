@@ -91,6 +91,14 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
     private TestDespatchContext CreateContext() => new(_options);
 
+    // Local rows await the partner, so approve/reject tests flip a locally created row to Peer origin.
+    private async Task MarkPeerOriginAsync(int requestId)
+    {
+        await using var ctx = CreateContext();
+        await ctx.TucJobChangeRequests.Where(r => r.UjcrId == requestId)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.UjcrOrigin, "Peer"));
+    }
+
     [Fact]
     public async Task CreateLocalAsync_returns_error_when_job_not_found()
     {
@@ -285,6 +293,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         }, CancellationToken.None);
         Assert.True(pending.Success);
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var approved = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
         Assert.True(approved.Success, approved.Message);
@@ -316,6 +325,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         }, CancellationToken.None);
         Assert.True(pending.Success);
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var approved = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
         Assert.True(approved.Success, approved.Message);
@@ -343,6 +353,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             RequestedValue = payload
         }, CancellationToken.None);
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var approved = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
         Assert.True(approved.Success, approved.Message);
@@ -441,6 +452,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         }, CancellationToken.None);
         Assert.True(pending.Success);
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var approved = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
 
@@ -457,6 +469,35 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Requester_cannot_approve_or_reject_its_own_local_request()
+    {
+        await SeedJobAsync(initialQty: 3);
+        await SeedPairingAsync();
+        var service = CreateService();
+
+        var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.Quantity),
+            RequestedValue = "9"
+        }, CancellationToken.None);
+        var id = pending.Request!.Id;
+
+        var approve = await service.ApproveAsync(id, new ApproveJobChangeRequestRequest { RequestId = id },
+            CancellationToken.None);
+        var reject = await service.RejectAsync(id, new RejectJobChangeRequestRequest { RequestId = id },
+            CancellationToken.None);
+
+        Assert.False(approve.Success);
+        Assert.False(reject.Success);
+        await using var ctx = CreateContext();
+        Assert.Equal((short)3, ctx.TucJobs.Single(j => j.UcjbId == 1).UcjbQty);
+        Assert.Equal("Pending", ctx.TucJobChangeRequests.Single(r => r.UjcrId == id).UjcrStatus);
+        await _partnerClient.DidNotReceiveWithAnyArgs()
+            .ForwardDecisionAsync(default, default, default!, default, default);
+    }
+
+    [Fact]
     public async Task RejectAsync_marks_rejected_and_does_not_change_job()
     {
         await SeedJobAsync(initialQty: 3);
@@ -470,6 +511,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             RequestedValue = "9"
         }, CancellationToken.None);
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var rejected = await service.RejectAsync(pending.Request!.Id,
             new RejectJobChangeRequestRequest { RequestId = pending.Request.Id, Reason = "not authorised" },
             CancellationToken.None);
@@ -666,6 +708,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         }, CancellationToken.None);
         Assert.True(pending.Success, pending.Message);
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var approved = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
 
@@ -676,6 +719,35 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         await using var ctx = CreateContext();
         var job = ctx.TucJobs.Single(j => j.UcjbId == 1);
         Assert.Equal(175.50m, job.PartnerAgreedRate);
+    }
+
+    [Fact]
+    public async Task RecordPeerCreateAsync_stores_canonical_field_name_so_approve_applies_it()
+    {
+        await SeedJobAsync(initialQty: 3);
+        await SeedPairingAsync();
+        _sendToPartner.GetRateForJobAsync(Arg.Any<int>(), 1)
+            .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 120m });
+        var service = CreateService();
+
+        var created = await service.RecordPeerCreateAsync(new PeerInboundChangeRequestPayload
+        {
+            PartnerJobGuid = (await GetPartnerJobGuidAsync(1))!.Value,
+            SourceRequestUuid = Guid.NewGuid(),
+            FieldName = "quantity",
+            RequestedValue = "9",
+            ApprovalMode = "Manual",
+            RequiresCommercialRefresh = true
+        }, CancellationToken.None);
+        Assert.True(created.Success, created.Message);
+        Assert.Equal(nameof(JobChangeField.Quantity), created.Request!.FieldName);
+
+        var approved = await service.ApproveAsync(created.Request.Id,
+            new ApproveJobChangeRequestRequest { RequestId = created.Request.Id }, CancellationToken.None);
+
+        Assert.True(approved.Success, approved.Message);
+        await using var ctx = CreateContext();
+        Assert.Equal((short)9, ctx.TucJobs.Single(j => j.UcjbId == 1).UcjbQty);
     }
 
     [Fact]
@@ -729,6 +801,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         var staleRowVersion = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var approved = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id, RowVersion = staleRowVersion },
             CancellationToken.None);
@@ -878,6 +951,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         }, CancellationToken.None);
         Assert.True(pending.Success);
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var approved = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
 
@@ -914,6 +988,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             RequestedValue = "200"
         }, CancellationToken.None);
 
+        await MarkPeerOriginAsync(pending.Request!.Id);
         await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
 
@@ -1147,6 +1222,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             .Returns(new PartnerRateForJobResponse { Source = "none" });
 
         // WHEN we try to approve
+        await MarkPeerOriginAsync(pending.Request!.Id);
         var result = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id },
             CancellationToken.None);
