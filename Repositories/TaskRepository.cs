@@ -655,45 +655,19 @@ public class TaskRepository(
     internal static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
         DateTime today)
     {
-        var overdueFirst = query
-            .OrderByDescending(e =>
-                e.UcevDueTime.Date < today.Date ||
-                (e.UcevDueTime.Date == today.Date &&
-                 e.UcevDueTime.TimeOfDay < today.TimeOfDay &&
-                 !e.UcevClosed)
-            );
+        // Overdue means open and past due, matching the IncludeOverdue filter. UcevId breaks ties so the
+        // order is total: GetAllTasksAsync applies Take() straight after, and a partial order lets the
+        // database return a different page each call.
+        var overdueFirst = query.OrderByDescending(e => !e.UcevClosed && e.UcevDueTime < today);
 
-        if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy))
-        {
-            // GetAllTasksAsync applies Take() straight after ordering. Sorting only by the
-            // overdue flag leaves every row within a group tied, so the database is free to
-            // return a different arbitrary page each call and a task can disappear between
-            // refreshes. UcevId makes the order total.
-            return overdueFirst
-                .ThenBy(e => e.UcevDueTime)
-                .ThenBy(e => e.UcevId);
-        }
+        var isDescending = filters != null
+                           && !string.IsNullOrWhiteSpace(filters.OrderBy)
+                           && string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
-        query = overdueFirst;
-
-        var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
-
-        return filters.OrderBy.ToLowerInvariant() switch
-        {
-            _ =>
-                ApplyDateTimeOrder(query, isDescending, today)
-        };
+        return isDescending
+            ? overdueFirst.ThenByDescending(e => e.UcevDueTime).ThenBy(e => e.UcevId)
+            : overdueFirst.ThenBy(e => e.UcevDueTime).ThenBy(e => e.UcevId);
     }
-
-    private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending,
-        DateTime today) =>
-        isDescending
-            ? query.OrderByDescending(e => e.UcevDueTime.Date < today.Date)
-                .ThenByDescending(e => e.UcevDueTime)
-                .ThenBy(e => e.UcevId)
-            : query.OrderByDescending(e => e.UcevDueTime.Date < today)
-                .ThenBy(e => e.UcevDueTime)
-                .ThenBy(e => e.UcevId);
 
     /// <summary>
     /// tucEvent has no scope filter of its own, so a scoped caller only gets tasks on jobs the

@@ -249,7 +249,7 @@ public sealed class TenantInfoService(
         var staffId = GetStaffId();
 
         // Cache key unique per staff member
-        var cacheKey = $"staff_info_{staffId}";
+        var cacheKey = $"staff_info_{GetCurrentTenantId()}_{staffId}";
 
         return await cache.GetOrCreateAsync(cacheKey, async entry =>
         {

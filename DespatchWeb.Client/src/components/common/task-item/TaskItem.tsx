@@ -275,7 +275,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
-            showSuccessToast?.('Task completed');
+            showSuccessToast?.(newClosedState ? 'Task completed' : 'Task reopened');
             onTaskUpdated?.();
         } catch (error) {
             showErrorToast?.(taskErrorMessage(error, "Couldn't update the task. Check your connection and try again."));

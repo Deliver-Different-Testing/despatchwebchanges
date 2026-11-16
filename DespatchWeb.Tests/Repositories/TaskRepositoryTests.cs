@@ -517,6 +517,31 @@ public class TaskRepositoryTests : IAsyncDisposable
         Assert.Equal(Expected4, results);
     }
 
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("created", "asc")]
+    [InlineData("created", "desc")]
+    public void ApplyOrdering_RanksOnlyOpenPastDueTasksAsOverdue(string orderBy, string orderDirection)
+    {
+        var today = new DateTime(2025, 6, 15, 12, 0, 0);
+        var events = new[]
+        {
+            CreateEvent(1, e => e.UcevDueTime = new DateTime(2025, 6, 15, 15, 0, 0)),
+            CreateEvent(2, e =>
+            {
+                e.UcevDueTime = new DateTime(2025, 6, 10, 9, 0, 0);
+                e.UcevClosed = true;
+            }),
+            CreateEvent(3, e => e.UcevDueTime = new DateTime(2025, 6, 15, 9, 0, 0))
+        };
+
+        var filters = new TaskTableFiltersRequest { OrderBy = orderBy, OrderDirection = orderDirection };
+
+        var results = ApplyOrderingInMemory(events, filters, today);
+
+        Assert.Equal(3, results[0]);
+    }
+
     [Fact]
     public void ApplyOrdering_WithDateTimeOrder_BreaksDueTimeTiesById()
     {
