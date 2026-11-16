@@ -78,6 +78,7 @@ export function SearchSelect<T>({
 
     useEffect(() => {
         if (inputValue.length < minSearchLength) {
+            abortRef.current?.abort();
             setFetchedOptions([]);
             setFetching(false);
             searchChangeRef.current?.('');

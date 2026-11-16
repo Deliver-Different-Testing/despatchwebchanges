@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {ILayout} from '../types/interfaces/layout.interfaces';
 import type {LayoutStorageKeys} from '../components/common/box-shell/layoutPersistence';
 import {
@@ -52,6 +52,9 @@ export function useLayoutToolbar(params: UseLayoutToolbarParams): UseLayoutToolb
     const sync = useCallback(() => {
         setSnapshot({layouts: host.layouts, currentLayoutName: host.currentLayoutName ?? 'Default'});
     }, [host]);
+
+    // A storage-key change builds a new host; resync so the toolbar stops showing the old key's layouts.
+    useEffect(sync, [sync]);
 
     return useMemo(() => {
         const wrapAsync = (fn: (index: number) => Promise<void>) => async (index: number) => {

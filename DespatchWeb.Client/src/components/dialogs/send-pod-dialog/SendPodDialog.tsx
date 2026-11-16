@@ -182,7 +182,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
     };
 
     const handleSend = () => {
-        if (recipients.length === 0) return;
+        if (recipients.length === 0 || sending || sent) return;
         onSend({
             jobId: jobData.jobId,
             recipients,
@@ -350,7 +350,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                 onConfirm={handleSend}
                 confirmLabel={sent ? 'Queued' : 'Send POD PDF'}
                 confirmIcon={sent ? <Icon lucide={Check}/> : <Icon lucide={Send}/>}
-                confirmDisabled={recipients.length === 0}
+                confirmDisabled={recipients.length === 0 || sent}
                 submitting={sending}
             />
         </DialogShell>

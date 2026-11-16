@@ -9,6 +9,8 @@ export const formatCurrency = (amount: number): string => {
         _cachedFormatter = new Intl.NumberFormat('en-NZ', {
             style: 'currency',
             currency: code,
+            // en-NZ would otherwise label foreign dollars "US$" / "A$" on US and AU tenants.
+            currencyDisplay: 'narrowSymbol',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         });
