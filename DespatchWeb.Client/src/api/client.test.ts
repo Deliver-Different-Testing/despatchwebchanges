@@ -296,6 +296,16 @@ describe('ApiClient', () => {
             })).rejects.toMatchObject({status: 401, authRedirect: 'https://hub.test/'});
         });
 
+        it('should read the server message out of a blob error body', async () => {
+            const errorHandler = mockResponseInterceptorUse.mock.calls[0][1];
+            const data = new Blob([JSON.stringify({message: 'No drivers match this filter'})], {type: 'application/json'});
+
+            await expect(errorHandler({
+                message: 'Request failed with status code 400',
+                response: {status: 400, statusText: 'Bad Request', data, headers: {}},
+            })).rejects.toMatchObject({status: 400, message: 'No drivers match this filter'});
+        });
+
         it('should handle network errors without response', async () => {
             const interceptorCall = mockResponseInterceptorUse.mock.calls[0];
             const errorHandler = interceptorCall[1];

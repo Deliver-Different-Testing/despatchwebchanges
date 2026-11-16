@@ -76,7 +76,8 @@ export function CourierMapPage({
         getPreference(StaffPreferenceKey.CourierMapDisplaySettings)
             .then((raw) => {
                 if (cancelled || !raw) return;
-                setDisplaySettings(JSON.parse(raw) as CourierMapDisplaySettings);
+                // Merged over the defaults so a preference saved before a setting existed still has it.
+                setDisplaySettings({...LIVE_TEMPLATE, ...(JSON.parse(raw) as Partial<CourierMapDisplaySettings>)});
             })
             .catch((err) => console.error('[CourierMapPage] failed to load display settings preference:', err));
         return () => { cancelled = true; };

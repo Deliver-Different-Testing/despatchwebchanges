@@ -33,8 +33,8 @@ const TAB_LABELS = [
 
 function getInitialTab(): number {
     try {
-        const stored = localStorage.getItem(TAB_KEY());
-        if (stored) return parseInt(stored, 10);
+        const stored = Number(localStorage.getItem(TAB_KEY()) ?? 0);
+        if (Number.isInteger(stored) && stored >= 0 && stored < TAB_LABELS.length) return stored;
     } catch { /* ignore */ }
     return 0;
 }

@@ -34,6 +34,19 @@ function extractErrorMessage(error: AxiosError): string {
     return error.message ?? 'Unknown error';
 }
 
+async function readBlobErrorBody(blob: Blob): Promise<unknown> {
+    try {
+        const text = await blob.text();
+        try {
+            return JSON.parse(text);
+        } catch {
+            return text || undefined;
+        }
+    } catch {
+        return undefined;
+    }
+}
+
 class ApiClient {
     private readonly instance: AxiosInstance;
 
@@ -55,10 +68,15 @@ class ApiClient {
         // Response interceptor for error handling
         this.instance.interceptors.response.use(
             response => response,
-            (error: AxiosError) => {
+            async (error: AxiosError) => {
                 // Don't transform cancelled requests - let them propagate naturally
                 if (axios.isCancel(error)) {
                     return Promise.reject(error);
+                }
+
+                // responseType 'blob' (postForBlob) delivers error bodies as a Blob too.
+                if (error.response && typeof Blob !== 'undefined' && error.response.data instanceof Blob) {
+                    error.response.data = await readBlobErrorBody(error.response.data);
                 }
 
                 const apiError: ApiError = {
@@ -221,7 +239,8 @@ export function downloadBlob(
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Revoking in the same tick can cancel the download before the browser has started reading the blob.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export default ApiClient;

@@ -31,8 +31,14 @@ export async function confirmNavigationAllowed(): Promise<boolean> {
     const guard = activeGuard;
     if (!guard?.isDirty()) return true;
 
-    const decision = await guard.promptToLeave();
-    if (decision === 'stay') return false;
-    if (decision === 'save-and-leave') await guard.save();
-    return true;
+    try {
+        const decision = await guard.promptToLeave();
+        if (decision === 'stay') return false;
+        if (decision === 'save-and-leave') await guard.save();
+        return true;
+    } catch (error) {
+        // A rejection left unhandled here would leave the router's blocker stuck in 'blocked'.
+        console.error('Leave guard failed; staying on the page:', error);
+        return false;
+    }
 }

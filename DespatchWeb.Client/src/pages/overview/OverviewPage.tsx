@@ -51,8 +51,12 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     const [sort, setSort] = useState<TableSort>({column: 'jobName', direction: 'asc'});
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(() => {
-        const saved = localStorage.getItem(OVERVIEW_LIMIT_KEY());
-        return saved ? parseInt(saved, 10) : 20;
+        try {
+            const saved = Number(localStorage.getItem(OVERVIEW_LIMIT_KEY()));
+            return Number.isInteger(saved) && saved > 0 ? saved : 20;
+        } catch {
+            return 20;
+        }
     });
     const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(() =>
         loadCollapseState('overview'),
@@ -70,7 +74,10 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
     // Debounce search input
     useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(search), 300);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 300);
         return () => clearTimeout(timer);
     }, [search]);
 
@@ -239,7 +246,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
     const handleLimitChange = useCallback((newLimit: number) => {
         setLimit(newLimit);
-        localStorage.setItem(OVERVIEW_LIMIT_KEY(), `${newLimit}`);
+        try {
+            localStorage.setItem(OVERVIEW_LIMIT_KEY(), `${newLimit}`);
+        } catch {
+            // Storage unavailable (private mode / quota): the limit just won't persist.
+        }
         setPage(1);
     }, []);
 

@@ -25,7 +25,7 @@ import {
     alpha,
     em,
 } from '@mantine/core';
-import {useMediaQuery} from '@mantine/hooks';
+import {useDebouncedValue, useMediaQuery} from '@mantine/hooks';
 import {
     CalendarDays,
     Info,
@@ -174,6 +174,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
     // Filter values
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery] = useDebouncedValue(searchQuery, 300);
     const [staffFilter, setStaffFilter] = useState('all');
     const [eventTypeFilter, setEventTypeFilter] = useState('all');
 
@@ -231,8 +232,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
         filters.showCompleted = true;
 
-        if (searchQuery) {
-            filters.searchText = searchQuery;
+        if (debouncedSearchQuery) {
+            filters.searchText = debouncedSearchQuery;
         }
 
         const range = showFullCalendar ? calendarWindow : listWindow;
@@ -242,7 +243,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
         filters.includeOverdue = true;
 
         return filters;
-    }, [staffFilter, eventTypeFilter, searchQuery, showFullCalendar, calendarWindow, listWindow]);
+    }, [staffFilter, eventTypeFilter, debouncedSearchQuery, showFullCalendar, calendarWindow, listWindow]);
 
     // React Query hooks
     const {
@@ -462,7 +463,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     // Only play the entrance stagger when the *view intent* changes (first load,
     // status/view toggle, or a filter change) — never on a background refetch,
     // so an auto-refresh doesn't re-animate the whole queue.
-    const viewSignature = `${statusFilter}|${showFullCalendar}|${searchQuery}|${staffFilter}|${eventTypeFilter}`;
+    const viewSignature = `${statusFilter}|${showFullCalendar}|${debouncedSearchQuery}|${staffFilter}|${eventTypeFilter}`;
     const prevViewSignatureRef = useRef<string | null>(null);
     const animateEntrance = prevViewSignatureRef.current !== viewSignature;
     useEffect(() => {

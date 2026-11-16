@@ -210,10 +210,17 @@ export const SettingsPage: React.FC = () => {
 
     const handleResetAddressFormat = () => {
         void deletePreference(StaffPreferenceKey.DispatchAddressFormat)
-            .catch((error) => {
-                console.error('Failed to reset address format preference:', error);
-                toastService.showErrorToast("Couldn't reset address format. Check your connection and try again.");
-            });
+            .then(
+                () => applyTenantAddressFormat(),
+                (error) => {
+                    console.error('Failed to reset address format preference:', error);
+                    toastService.showErrorToast("Couldn't reset address format. Check your connection and try again.");
+                },
+            );
+    };
+
+    const applyTenantAddressFormat = () => {
+        setHasAddressOverride(false);
         void getTenantAddressFormatDefault()
             .then((tenantJson) => {
                 const tenantSides = parseAddressFormatJson(tenantJson);
@@ -223,7 +230,6 @@ export const SettingsPage: React.FC = () => {
                 setPickupDraft(pickup);
                 setDeliverySaved(delivery);
                 setDeliveryDraft(delivery);
-                setHasAddressOverride(false);
                 setTenantDefaults(tenantSides);
             })
             .catch((error) => console.error('Failed to load tenant address format default:', error));
@@ -240,7 +246,10 @@ export const SettingsPage: React.FC = () => {
         return registerUnsavedChangesGuard({
             isDirty: () => JSON.stringify(draftRef.current) !== JSON.stringify(savedRef.current),
             promptToLeave: () => new Promise<LeaveDecision>((resolve) => setLeaveResolver(() => resolve)),
-            save: () => saveAddressFormat(draftRef.current.pickup, draftRef.current.delivery),
+            save: () => saveAddressFormat(draftRef.current.pickup, draftRef.current.delivery).catch((error) => {
+                toastService.showErrorToast("Couldn't save address format, so you're still on this page. Try again.");
+                throw error;
+            }),
         });
     }, [saveAddressFormat]);
 
