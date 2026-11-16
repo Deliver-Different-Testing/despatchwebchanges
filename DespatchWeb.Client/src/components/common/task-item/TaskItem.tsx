@@ -42,7 +42,7 @@ import {
 } from '../../../utils/dateUtils';
 import {Icon} from '../icon/Icon';
 import classes from './TaskItem.module.css';
-import type {ApiError} from '../../../types';
+import {taskErrorMessage} from '../../../utils/taskErrorMessage';
 
 /** The string forms the two editors exchange values in. */
 const ISO_DATE = 'YYYY-MM-DD';
@@ -149,17 +149,6 @@ const Fact = ({label, value, stamp, hideLabel, color = 'gray', maw}: FactProps) 
         <Text span inherit fw={600}>{value}</Text>
     </Badge>
 );
-
-/**
- * A 409 from the task endpoints carries a message written for the user (a missing staff record, e.g.
- * a login not linked to tucStaff). Anything else stays on the generic text: 500s are sanitised server-side.
- */
-function taskErrorMessage(error: unknown, fallback: string): string {
-    const apiError = error as Partial<ApiError> | null;
-    return apiError?.status === 409 && typeof apiError.message === 'string' && apiError.message
-        ? apiError.message
-        : fallback;
-}
 
 export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const {

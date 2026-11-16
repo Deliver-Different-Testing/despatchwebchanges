@@ -236,8 +236,6 @@ public class TaskRepositoryReassignTests : IAsyncDisposable
     [Fact]
     public async Task ReassignEventToUserAsync_CallerHasNoStaffRow_ThrowsClearError_AndChangesNothing()
     {
-        // Crisis, 10 Nov 2026: a login whose StaffID claim had no tucStaff row clicked an open task;
-        // the update failed on FK_tucEvent_tucStaff_In and the user saw a generic 500.
         await SeedAsync(staff: [Staff(8, "Jane", "Roe")], events: [OpenEvent()], seedCaller: false);
         _infoServiceMock.GetStaffIdOrNull().Returns(99);
 

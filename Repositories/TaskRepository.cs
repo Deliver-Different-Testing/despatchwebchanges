@@ -161,7 +161,7 @@ public class TaskRepository(
                 // Only create audit record if value actually changed
                 if (existingEvent.UcevClosed != closed)
                 {
-                    await EnsureCallerIsStaffAsync();
+                    var callerStaffId = await EnsureCallerIsStaffAsync();
 
                     await Context.TucEvents
                         .Where(e => e.UcevId == eventId)
@@ -170,7 +170,7 @@ public class TaskRepository(
 
                     await CreateEventAuditRecord(
                         eventId,
-                        infoService.GetStaffId(),
+                        callerStaffId,
                         TucEventChangeType.Update,
                         "UcevClosed",
                         existingEvent.UcevClosed.ToString(),
@@ -214,7 +214,7 @@ public class TaskRepository(
 
                 if (existingEvent.UcevDueTime != dueTime.DateTime)
                 {
-                    await EnsureCallerIsStaffAsync();
+                    var callerStaffId = await EnsureCallerIsStaffAsync();
 
                     await Context.TucEvents
                         .Where(e => e.UcevId == eventId)
@@ -223,7 +223,7 @@ public class TaskRepository(
 
                     await CreateEventAuditRecord(
                         eventId,
-                        infoService.GetStaffId(),
+                        callerStaffId,
                         TucEventChangeType.Update,
                         "UcevDueTime",
                         existingEvent.UcevDueTime.ToString("O"),
@@ -275,7 +275,7 @@ public class TaskRepository(
 
                 if (existingEvent.UcevStaffIdin != staffId)
                 {
-                    await EnsureAssignableAsync(staffId);
+                    var callerStaffId = await EnsureAssignableAsync(staffId);
 
                     var oldStaffName = existingEvent.OldStaffName?.Trim();
 
@@ -286,7 +286,7 @@ public class TaskRepository(
 
                     await CreateEventAuditRecord(
                         eventId,
-                        infoService.GetStaffId(),
+                        callerStaffId,
                         TucEventChangeType.Update,
                         "UcevStaffIdin",
                         existingEvent.UcevStaffIdin?.ToString() ?? "null",
@@ -304,7 +304,6 @@ public class TaskRepository(
                             ? $"Task '{existingEvent.TaskTitle}' assigned to {newStaffName}"
                             : $"Task '{existingEvent.TaskTitle}' reassigned from {oldStaffName} to {newStaffName}";
 
-                        var assignStaffId = infoService.GetStaffIdOrNull();
                         await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
                         {
                             JobId = existingEvent.UcevJobId.Value,
@@ -312,8 +311,8 @@ public class TaskRepository(
                             FieldName = "TaskAssignment",
                             OldValue = oldStaffName,
                             NewValue = newStaffName,
-                            StaffId = assignStaffId,
-                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(assignStaffId),
+                            StaffId = callerStaffId,
+                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(callerStaffId),
                             UpdatedAt = DateTime.UtcNow,
                             Comments = comments
                         });
@@ -341,14 +340,16 @@ public class TaskRepository(
     /// signed-in user (tucEventAudit.UceaStaffID). Checked up front so a missing record is a clear 409,
     /// not an FK violation surfacing as a 500.
     /// </summary>
-    private async Task EnsureAssignableAsync(int staffId)
+    private async Task<int> EnsureAssignableAsync(int staffId)
     {
-        await EnsureCallerIsStaffAsync();
+        var callerStaffId = await EnsureCallerIsStaffAsync();
 
         if (staffId <= 0 || !await Context.TucStaffs.AnyAsync(s => s.UcstId == staffId))
         {
             throw new TaskAssignmentException(TaskAssignmentException.AssigneeNotStaff);
         }
+
+        return callerStaffId;
     }
 
     /// <summary>Every task change writes a tucEventAudit row keyed on the signed-in user's StaffID, a foreign key to tucStaff.</summary>
@@ -397,7 +398,7 @@ public class TaskRepository(
 
                 if (existingEvent.UcevStaffIdin != null)
                 {
-                    await EnsureCallerIsStaffAsync();
+                    var callerStaffId = await EnsureCallerIsStaffAsync();
 
                     var oldStaffId = existingEvent.UcevStaffIdin.Value;
                     var oldStaffName = existingEvent.StaffName?.Trim();
@@ -409,7 +410,7 @@ public class TaskRepository(
 
                     await CreateEventAuditRecord(
                         eventId,
-                        infoService.GetStaffId(),
+                        callerStaffId,
                         TucEventChangeType.Update,
                         "UcevStaffIdin",
                         oldStaffId.ToString(),
@@ -418,7 +419,6 @@ public class TaskRepository(
 
                     if (existingEvent.UcevJobId.HasValue)
                     {
-                        var unassignStaffId = infoService.GetStaffIdOrNull();
                         await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
                         {
                             JobId = existingEvent.UcevJobId.Value,
@@ -426,8 +426,8 @@ public class TaskRepository(
                             FieldName = "TaskAssignment",
                             OldValue = oldStaffName,
                             NewValue = null,
-                            StaffId = unassignStaffId,
-                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(unassignStaffId),
+                            StaffId = callerStaffId,
+                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(callerStaffId),
                             UpdatedAt = DateTime.UtcNow,
                             Comments = $"Task '{existingEvent.TaskTitle}' unassigned from {oldStaffName}"
                         });
