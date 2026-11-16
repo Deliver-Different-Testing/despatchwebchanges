@@ -1,3 +1,4 @@
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
@@ -34,6 +35,10 @@ public class TaskController(ITaskRepository taskRepository) : Controller
             await taskRepository.SetEventAsClosedAsync(data.EventId, data.Closed);
             return Ok();
         }
+        catch (TaskAssignmentException ex)
+        {
+            return TaskNotChanged(ex, data.EventId, nameof(MarkTaskAsClosed));
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}",
@@ -50,6 +55,10 @@ public class TaskController(ITaskRepository taskRepository) : Controller
             await taskRepository.UpdateEventDueTimeAsync(data.EventId, data.Date);
             return Ok();
         }
+        catch (TaskAssignmentException ex)
+        {
+            return TaskNotChanged(ex, data.EventId, nameof(UpdateTaskDate));
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}",
@@ -65,6 +74,10 @@ public class TaskController(ITaskRepository taskRepository) : Controller
         {
             await taskRepository.UpdateEventDueTimeAsync(data.EventId, data.Time);
             return Ok();
+        }
+        catch (TaskAssignmentException ex)
+        {
+            return TaskNotChanged(ex, data.EventId, nameof(UpdateTaskTime));
         }
         catch (Exception ex)
         {
@@ -148,6 +161,10 @@ public class TaskController(ITaskRepository taskRepository) : Controller
             await taskRepository.ReassignEventToUserAsync(data.EventId, data.StaffId);
             return Ok();
         }
+        catch (TaskAssignmentException ex)
+        {
+            return TaskNotChanged(ex, data.EventId, nameof(ReassignTask));
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}",
@@ -164,11 +181,21 @@ public class TaskController(ITaskRepository taskRepository) : Controller
             await taskRepository.UnassignEventAsync(data.EventId);
             return Ok();
         }
+        catch (TaskAssignmentException ex)
+        {
+            return TaskNotChanged(ex, data.EventId, nameof(UnassignTask));
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(TaskController), nameof(UnassignTask)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
+    }
+
+    private ConflictObjectResult TaskNotChanged(TaskAssignmentException ex, int eventId, string action)
+    {
+        Log.Warning("{Action} refused for task {EventId}: {Reason}", action, eventId, ex.Message);
+        return Conflict(ex.Message);
     }
 }

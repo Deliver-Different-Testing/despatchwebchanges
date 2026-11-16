@@ -13,6 +13,8 @@ public partial class DespatchContext
 {
     private readonly IScopeProvider? _scopeProvider;
 
+    public virtual DbSet<SignUpPageSetting> SignUpPageSettings { get; set; }
+
     private ScopeContext CurrentScope =>
         _scopeProvider?.Scope ?? ScopeContext.BackgroundContext;
 
@@ -302,6 +304,15 @@ public partial class DespatchContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<SignUpPageSetting>(entity =>
+        {
+            entity.ToTable("SignUpPageSettings");
+            entity.HasKey(e => e.SignUpPageSettingsId);
+            entity.Property(e => e.SignUpPageSettingsId).ValueGeneratedNever();
+            entity.Property(e => e.MapCenterLatitude).HasColumnType("decimal(9, 6)");
+            entity.Property(e => e.MapCenterLongitude).HasColumnType("decimal(9, 6)");
+        });
+
         modelBuilder.Entity<TucJobBooking>(entity =>
         {
             entity.HasOne(d => d.Route)

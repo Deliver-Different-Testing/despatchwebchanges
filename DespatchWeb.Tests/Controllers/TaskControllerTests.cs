@@ -3,6 +3,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using JetBrains.Annotations;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -249,5 +250,39 @@ public class TaskControllerTests
 
         var status = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, status.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReassignTask_MissingStaffRecord_Returns409WithMessage()
+    {
+        _taskRepoMock.ReassignEventToUserAsync(Arg.Any<int>(), Arg.Any<int>())
+            .ThrowsAsync(new TaskAssignmentException(TaskAssignmentException.CallerNotStaff));
+
+        var result = await CreateController().ReassignTask(new TaskAssignStaffRequest { EventId = 1, StaffId = 5 });
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        Assert.Equal(TaskAssignmentException.CallerNotStaff, conflict.Value);
+    }
+
+    [Fact]
+    public async Task UnassignTask_MissingStaffRecord_Returns409WithMessage()
+    {
+        _taskRepoMock.UnassignEventAsync(Arg.Any<int>())
+            .ThrowsAsync(new TaskAssignmentException(TaskAssignmentException.CallerNotStaff));
+
+        var result = await CreateController().UnassignTask(new TaskUnassignRequest { EventId = 1 });
+
+        Assert.Equal(TaskAssignmentException.CallerNotStaff, Assert.IsType<ConflictObjectResult>(result).Value);
+    }
+
+    [Fact]
+    public async Task MarkTaskAsClosed_MissingStaffRecord_Returns409WithMessage()
+    {
+        _taskRepoMock.SetEventAsClosedAsync(Arg.Any<int>(), Arg.Any<bool>())
+            .ThrowsAsync(new TaskAssignmentException(TaskAssignmentException.StaffRecordMissing));
+
+        var result = await CreateController().MarkTaskAsClosed(new TaskCloseRequest { EventId = 1, Closed = true });
+
+        Assert.Equal(TaskAssignmentException.StaffRecordMissing, Assert.IsType<ConflictObjectResult>(result).Value);
     }
 }

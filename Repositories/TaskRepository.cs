@@ -1,11 +1,13 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -159,6 +161,8 @@ public class TaskRepository(
                 // Only create audit record if value actually changed
                 if (existingEvent.UcevClosed != closed)
                 {
+                    await EnsureCallerIsStaffAsync();
+
                     await Context.TucEvents
                         .Where(e => e.UcevId == eventId)
                         .ExecuteUpdateAsync(setters => setters
@@ -175,6 +179,11 @@ public class TaskRepository(
                 }
 
                 await transaction.CommitAsync();
+            }
+            catch (Exception ex) when (IsStaffForeignKeyViolation(ex))
+            {
+                await transaction.RollbackAsync();
+                throw new TaskAssignmentException(TaskAssignmentException.StaffRecordMissing);
             }
             catch
             {
@@ -205,6 +214,8 @@ public class TaskRepository(
 
                 if (existingEvent.UcevDueTime != dueTime.DateTime)
                 {
+                    await EnsureCallerIsStaffAsync();
+
                     await Context.TucEvents
                         .Where(e => e.UcevId == eventId)
                         .ExecuteUpdateAsync(setters => setters
@@ -221,6 +232,11 @@ public class TaskRepository(
                 }
 
                 await transaction.CommitAsync();
+            }
+            catch (Exception ex) when (IsStaffForeignKeyViolation(ex))
+            {
+                await transaction.RollbackAsync();
+                throw new TaskAssignmentException(TaskAssignmentException.StaffRecordMissing);
             }
             catch
             {
@@ -259,6 +275,8 @@ public class TaskRepository(
 
                 if (existingEvent.UcevStaffIdin != staffId)
                 {
+                    await EnsureAssignableAsync(staffId);
+
                     var oldStaffName = existingEvent.OldStaffName?.Trim();
 
                     await Context.TucEvents
@@ -305,6 +323,11 @@ public class TaskRepository(
 
                 await transaction.CommitAsync();
             }
+            catch (Exception ex) when (IsStaffForeignKeyViolation(ex))
+            {
+                await transaction.RollbackAsync();
+                throw new TaskAssignmentException(TaskAssignmentException.StaffRecordMissing);
+            }
             catch
             {
                 await transaction.RollbackAsync();
@@ -312,6 +335,38 @@ public class TaskRepository(
             }
         });
     }
+
+    /// <summary>
+    /// Both staff records an assignment writes must exist: the assignee (tucEvent.UcevStaffIDIn) and the
+    /// signed-in user (tucEventAudit.UceaStaffID). Checked up front so a missing record is a clear 409,
+    /// not an FK violation surfacing as a 500.
+    /// </summary>
+    private async Task EnsureAssignableAsync(int staffId)
+    {
+        await EnsureCallerIsStaffAsync();
+
+        if (staffId <= 0 || !await Context.TucStaffs.AnyAsync(s => s.UcstId == staffId))
+        {
+            throw new TaskAssignmentException(TaskAssignmentException.AssigneeNotStaff);
+        }
+    }
+
+    /// <summary>Every task change writes a tucEventAudit row keyed on the signed-in user's StaffID, a foreign key to tucStaff.</summary>
+    private async Task<int> EnsureCallerIsStaffAsync()
+    {
+        var callerStaffId = infoService.GetStaffIdOrNull();
+        if (callerStaffId is null || !await Context.TucStaffs.AnyAsync(s => s.UcstId == callerStaffId))
+        {
+            throw new TaskAssignmentException(TaskAssignmentException.CallerNotStaff);
+        }
+
+        return callerStaffId.Value;
+    }
+
+    /// <summary>The pre-checks can race a staff row being removed; the foreign keys are the real guard.</summary>
+    private static bool IsStaffForeignKeyViolation(Exception ex) =>
+        (ex as SqlException ?? ex.InnerException as SqlException) is { Number: 547 } sql
+        && sql.Message.Contains("tucStaff", StringComparison.OrdinalIgnoreCase);
 
     public async Task UnassignEventAsync(int eventId)
     {
@@ -342,6 +397,8 @@ public class TaskRepository(
 
                 if (existingEvent.UcevStaffIdin != null)
                 {
+                    await EnsureCallerIsStaffAsync();
+
                     var oldStaffId = existingEvent.UcevStaffIdin.Value;
                     var oldStaffName = existingEvent.StaffName?.Trim();
 
@@ -379,6 +436,11 @@ public class TaskRepository(
                 }
 
                 await transaction.CommitAsync();
+            }
+            catch (Exception ex) when (IsStaffForeignKeyViolation(ex))
+            {
+                await transaction.RollbackAsync();
+                throw new TaskAssignmentException(TaskAssignmentException.StaffRecordMissing);
             }
             catch
             {
