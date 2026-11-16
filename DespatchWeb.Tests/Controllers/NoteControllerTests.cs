@@ -34,6 +34,17 @@ public class NoteControllerTests
         Assert.Equal("Job 424242 was not found, so the note could not be saved.", notFound.Value);
     }
 
+    [Fact]
+    public async Task DeleteNote_WhenNoteNotFound_ReturnsNotFoundAndDeletesNothing()
+    {
+        _noteRepositoryMock.GetNoteByIdAsync(99, 5).Returns((TucNoteViewModel)null);
+
+        var result = await CreateController().DeleteNote(99, 5);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        await _noteRepositoryMock.DidNotReceiveWithAnyArgs().DeleteNoteAsync(default, default, default);
+    }
+
     [Theory]
     [InlineData("Note", NoteHistorySource.Note)]
     [InlineData("BulkNote", NoteHistorySource.BulkNote)]
