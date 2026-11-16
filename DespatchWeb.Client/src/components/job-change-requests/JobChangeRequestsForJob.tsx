@@ -189,7 +189,7 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
         try {
             const result = await jobChangeRequestApi.cancel({requestId: row.id, rowVersion: row.rowVersion});
             const notice = describeCancellation(row, result.peerForwardWarning);
-            if (notice.warned) setRecentlyCancelled({id: row.id, notice});
+            setRecentlyCancelled(notice.warned ? {id: row.id, notice} : null);
             await invalidate();
             onModifyRequest({fieldName: row.fieldName, requestedValue: row.requestedValue});
         } catch (e) {

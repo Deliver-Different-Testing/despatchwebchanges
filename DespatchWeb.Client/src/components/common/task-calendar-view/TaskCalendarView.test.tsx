@@ -346,6 +346,41 @@ describe('TaskCalendarView', () => {
             expect(screen.getByRole('checkbox')).not.toBeChecked();
         });
 
+        it('rolls a failed untick back to the saved tick, not the stale task prop', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            tasksService.markTaskAsClosed = vi.fn()
+                .mockResolvedValueOnce(undefined)
+                .mockRejectedValueOnce(new Error('offline'));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            await waitFor(() => expect(props.onTaskStatusChange).toHaveBeenCalled());
+            await user.click(screen.getByRole('checkbox'));
+
+            await waitFor(() => expect(props.showErrorToast).toHaveBeenCalled());
+            expect(screen.getByRole('checkbox')).toBeChecked();
+        });
+
+        it('rolls a failed click back past another click that is still saving', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            tasksService.markTaskAsClosed = vi.fn()
+                .mockReturnValueOnce(new Promise<void>(() => {}))
+                .mockRejectedValueOnce(new Error('offline'));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            await user.click(screen.getByRole('checkbox'));
+
+            await waitFor(() => expect(props.showErrorToast).toHaveBeenCalled());
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
+        });
+
         it('drops a settled tick once the refetched list arrives', async () => {
             const user = setupUser();
             const task = createMockTask({closed: false});

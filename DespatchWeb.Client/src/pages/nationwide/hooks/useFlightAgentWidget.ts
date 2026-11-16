@@ -90,6 +90,9 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
         if (guard.action === 'skip') return;
 
         if (guard.action === 'block') {
+            // Supersede any search still in flight so its results can't land over the block message.
+            ++searchSeqRef.current;
+            setFlightsLoading(false);
             setFlightOptions([]);
             setFlightMessage(guard.message);
             return;

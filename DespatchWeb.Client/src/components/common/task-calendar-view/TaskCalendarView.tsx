@@ -61,6 +61,8 @@ interface ClosedOverride {
     closed: boolean;
     pending: boolean;
     seq: number;
+    /** Last value the server confirmed in this view; undefined means the task prop is the truth. */
+    confirmed?: boolean;
 }
 
 function getTasksForDate(tasks: Task[] | undefined, date: Dayjs): Task[] {
@@ -269,13 +271,23 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
 
         const newClosedState = !task.closed;
         const seq = ++overrideSeqRef.current;
-        setClosedOverrides(prev => ({...prev, [task.id]: {closed: newClosedState, pending: true, seq}}));
+        setClosedOverrides(prev => ({
+            ...prev,
+            [task.id]: {closed: newClosedState, pending: true, seq, confirmed: prev[task.id]?.confirmed},
+        }));
 
         // A later click on the same task owns the override; an earlier request settling must not clobber it.
+        // A failure rolls back to the last confirmed value, never to another click's unsaved one.
         const settle = (succeeded: boolean) => setClosedOverrides(prev => {
-            if (prev[task.id]?.seq !== seq) return prev;
-            const {[task.id]: _, ...rest} = prev;
-            return succeeded ? {...rest, [task.id]: {closed: newClosedState, pending: false, seq}} : rest;
+            const current = prev[task.id];
+            if (current?.seq !== seq) return prev;
+            const confirmed = succeeded ? newClosedState : current.confirmed;
+            if (confirmed === undefined) {
+                const next = {...prev};
+                delete next[task.id];
+                return next;
+            }
+            return {...prev, [task.id]: {closed: confirmed, pending: false, seq, confirmed}};
         });
 
         try {
