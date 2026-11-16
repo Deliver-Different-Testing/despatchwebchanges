@@ -36,7 +36,7 @@ import {
     PortionJobInfo,
 } from './types';
 import {accessorialChargesApi} from '../../../api/accessorialChargesApi';
-import {getSession} from '../../../api/session';
+import {isNzSession} from '../../../api/session';
 import {DialogShell, DialogHeader, dialogContentBg, dialogSize, headerOnColor, headerOverlayColor} from '../shared/mantine';
 import {Icon} from '../../common/icon/Icon';
 import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton';
@@ -163,7 +163,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
     showToast,
 }) => {
     // Driver pay on accessorials doesn't apply to NZ (NZ pays the courier a % of the whole job).
-    const isNzTenant = (getSession().countryCode ?? '').toUpperCase() === 'NZ';
+    const isNzTenant = isNzSession();
 
     // ── State ─────────────────────────────────────────────────────────────────
     const [availableCharges, setAvailableCharges] = useState<AccessorialChargeDto[]>([]);

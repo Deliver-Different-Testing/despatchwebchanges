@@ -312,6 +312,33 @@ describe('TaskCalendarView', () => {
             expect(screen.getByRole('checkbox')).toBeChecked();
             expect(task.closed).toBe(false);
         });
+
+        it('keeps a tick that is still saving when the task list refetches', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            tasksService.markTaskAsClosed = vi.fn(() => new Promise<void>(() => {}));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            const {rerender} = renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            rerender(<TaskCalendarView {...props} tasks={[{...task}]} />);
+
+            expect(screen.getByRole('checkbox')).toBeChecked();
+        });
+
+        it('drops a settled tick once the refetched list arrives', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const props = createDefaultProps({tasks: [task]});
+            const {rerender} = renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            await waitFor(() => expect(props.onTaskStatusChange).toHaveBeenCalled());
+            rerender(<TaskCalendarView {...props} tasks={[{...task, closed: false}]} />);
+
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
+        });
     });
 
     describe('Week view', () => {

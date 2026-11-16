@@ -57,6 +57,11 @@ function generateTimeSlots(): string[] {
 
 const TIME_SLOTS = generateTimeSlots();
 
+interface ClosedOverride {
+    closed: boolean;
+    pending: boolean;
+}
+
 function getTasksForDate(tasks: Task[] | undefined, date: Dayjs): Task[] {
     if (!tasks) return [];
     return tasks.filter(task => dayjs(task.dueDate).isSame(date, 'day'));
@@ -109,16 +114,17 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
     const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
     const [viewMode, setViewMode] = useState<ViewMode>('month');
     const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
-    // Optimistic ticks, keyed by task id, until the parent refetches the task list.
-    const [closedOverrides, setClosedOverrides] = useState<Record<number, boolean>>({});
-
-    useEffect(() => {
-        setClosedOverrides({});
-    }, [sourceTasks]);
+    // Optimistic ticks, keyed by task id. A refetch drops settled ones but keeps those still saving.
+    const [closedOverrides, setClosedOverrides] = useState<Record<number, ClosedOverride>>({});
+    const [overriddenTasks, setOverriddenTasks] = useState(sourceTasks);
+    if (overriddenTasks !== sourceTasks) {
+        setOverriddenTasks(sourceTasks);
+        setClosedOverrides(prev => Object.fromEntries(Object.entries(prev).filter(([, o]) => o.pending)));
+    }
 
     const tasks = useMemo(
         () => sourceTasks?.map(task =>
-            task.id in closedOverrides ? {...task, closed: closedOverrides[task.id]} : task),
+            task.id in closedOverrides ? {...task, closed: closedOverrides[task.id].closed} : task),
         [sourceTasks, closedOverrides],
     );
 
@@ -260,18 +266,15 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
         event.stopPropagation();
 
         const newClosedState = !task.closed;
-        setClosedOverrides(prev => ({...prev, [task.id]: newClosedState}));
+        setClosedOverrides(prev => ({...prev, [task.id]: {closed: newClosedState, pending: true}}));
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
+            setClosedOverrides(prev => ({...prev, [task.id]: {closed: newClosedState, pending: false}}));
             showSuccessToast?.('Task updated');
             onTaskStatusChange?.({...task, closed: newClosedState});
         } catch (error) {
-            setClosedOverrides(prev => {
-                const next = {...prev};
-                delete next[task.id];
-                return next;
-            });
+            setClosedOverrides(prev => ({...prev, [task.id]: {closed: task.closed, pending: false}}));
             showErrorToast?.(taskErrorMessage(error, "Couldn't update the task. Check your connection and try again."));
             console.error('Error updating task:', error);
         }
