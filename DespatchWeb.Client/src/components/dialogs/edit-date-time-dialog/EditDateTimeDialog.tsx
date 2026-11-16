@@ -12,6 +12,7 @@ import { Icon } from '../../common/icon/Icon';
 import {
     DialogFooter, DialogHeader, DialogShell, dialogContentBg, sectionPaperProps,
 } from '../shared/mantine';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -142,7 +143,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             await onSubmit(result);
         } catch (error: unknown) {
             console.error('Error submitting date/time:', error);
-            showToast(error instanceof Error ? `Couldn't save date/time. ${error.message}` : "Couldn't save date/time. Try again.", 'error');
+            showToast(`Couldn't save date/time. ${errorMessageOf(error, 'Try again.')}`, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -162,7 +163,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             });
         } catch (error: unknown) {
             console.error('Error clearing date/time:', error);
-            showToast(error instanceof Error ? `Couldn't clear date/time. ${error.message}` : "Couldn't clear date/time. Try again.", 'error');
+            showToast(`Couldn't clear date/time. ${errorMessageOf(error, 'Try again.')}`, 'error');
         } finally {
             setIsLoading(false);
         }

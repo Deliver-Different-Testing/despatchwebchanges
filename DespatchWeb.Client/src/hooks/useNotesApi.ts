@@ -96,8 +96,11 @@ export function useNoteTypes(options?: { enabled?: boolean }) {
  */
 async function invalidateJobNotes(
     queryClient: QueryClient,
-    {jobId, jobBookingId}: { jobId?: number; jobBookingId?: number },
+    {jobId, jobBookingId, noteId}: { jobId?: number; jobBookingId?: number; noteId?: number },
 ): Promise<void> {
+    if (noteId) {
+        await queryClient.invalidateQueries({queryKey: queryKeys.notes.historyAll(noteId)});
+    }
     if (jobId) {
         await queryClient.invalidateQueries({queryKey: queryKeys.notes.job(jobId, false)});
     }
@@ -176,6 +179,7 @@ export function useUpdateBulkJobNote() {
     return useMutation<void, Error, UpdateNoteRequest & { bulkJobId?: number }>({
         mutationFn: (note) => notesApi.updateBulkJobNote(note),
         onSuccess: async (_, variables) => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.notes.historyAll(variables.noteId)});
             if (variables.bulkJobId) {
                 await queryClient.invalidateQueries({
                     queryKey: queryKeys.notes.bulkJob(variables.bulkJobId),

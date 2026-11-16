@@ -21,6 +21,7 @@ import {
     sectionPaperProps,
 } from '../../../components/dialogs/shared/mantine';
 import {Icon} from '../../../components/common/icon/Icon';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 /** Both the picker's exchange format and what the API binds as a `DateOnly`. */
 const ISO_DATE = 'YYYY-MM-DD';
@@ -92,7 +93,7 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
             // scope/mode failures so the operator sees what to fix.
             const message =
                 (error as { response?: { data?: string } })?.response?.data
-                || (error instanceof Error ? error.message : "Couldn't insert the jobs to live. Try again.");
+                || errorMessageOf(error, "Couldn't insert the jobs to live. Try again.");
             console.error('Insert-to-live failed:', error);
             showToast(message, 'error');
         } finally {

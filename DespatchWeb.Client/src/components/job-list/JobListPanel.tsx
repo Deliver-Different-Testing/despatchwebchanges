@@ -53,6 +53,7 @@ import {assignAgentToJobs, assignNpAgentToJobs} from '../../api/dispatchExecutor
 import {RestoreConfirmationDialog} from '../dialogs/restore-confirmation-dialog';
 import type {RestorePodImpactSummary} from '../dialogs/restore-confirmation-dialog';
 import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
+import {errorMessageOf} from '../../utils/errorMessage';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -827,7 +828,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             }
         } catch (err) {
             // Re-throw so the dialog surfaces the error inline.
-            const message = err instanceof Error ? err.message : "Couldn't dispatch the jobs. Check your connection and try again.";
+            const message = errorMessageOf(err, "Couldn't dispatch the jobs. Check your connection and try again.");
             throw new Error(message, {cause: err});
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh, closeBulkDispatch]);

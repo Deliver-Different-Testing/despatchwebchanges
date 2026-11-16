@@ -18,6 +18,7 @@ import {formatRelativeTime} from '../../../utils/dateUtils';
 import {AiMarkdownRenderer} from './AiMarkdownRenderer';
 import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
 import type {AiSummaryResponse} from '../../../types/ai';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 interface AiSummaryPanelProps {
     title: string;
@@ -73,7 +74,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             if (e instanceof Error && (e.name === 'AbortError' || e.name === 'CanceledError') || controller.signal.aborted) {
                 return;
             }
-            const message = e instanceof Error ? e.message : "Couldn't generate the Auto-mate summary. Try again.";
+            const message = errorMessageOf(e, "Couldn't generate the Auto-mate summary. Try again.");
             setError(message);
         } finally {
             if (abortControllerRef.current === controller) {

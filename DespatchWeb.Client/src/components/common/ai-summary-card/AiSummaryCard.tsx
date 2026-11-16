@@ -22,6 +22,7 @@ import {AutoMateCardHeader} from '../auto-mate-logo/AutoMateCardHeader';
 import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
 import {formatRelativeTime} from '../../../utils/dateUtils';
 import type {AttentionItem, StructuredSummaryResponse, TimelineItem} from '../../../types/ai';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 interface AiSummaryCardProps {
     title: string;
@@ -140,7 +141,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
             ) {
                 return;
             }
-            setError(e instanceof Error ? e.message : "Couldn't generate the Auto-mate summary. Try again.");
+            setError(errorMessageOf(e, "Couldn't generate the Auto-mate summary. Try again."));
         } finally {
             if (abortRef.current === controller) {
                 setLoading(false);

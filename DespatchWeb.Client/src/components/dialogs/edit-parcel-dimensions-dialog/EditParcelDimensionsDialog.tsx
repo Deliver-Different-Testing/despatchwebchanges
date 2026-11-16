@@ -14,6 +14,7 @@ import {
 import {apiClient} from '../../../api/client';
 import classes from './EditParcelDimensionsDialog.module.css';
 import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions} from './types';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 const MAX_NAME_LENGTH = 50;
 
@@ -504,7 +505,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             const result: EditParcelDimensionsDialogResult = {parcels: updatedParcels, totalWeight: parcelTotal, calculateDimsOncePerJob: isPerJob};
             onSubmit(result);
         } catch (error: unknown) {
-            showToast(error instanceof Error ? `Couldn't update parcels. ${error.message}` : "Couldn't update parcels. Try again.", 'error');
+            showToast(`Couldn't update parcels. ${errorMessageOf(error, 'Try again.')}`, 'error');
         } finally {
             setIsLoading(false);
         }

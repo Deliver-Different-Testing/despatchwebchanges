@@ -28,6 +28,7 @@ import type {
     PreviewCreateAheadBackfillResult,
 } from '../../../../types';
 import type {ShowToastFn} from '../../../../services/toastService';
+import {errorMessageOf} from '../../../../utils/errorMessage';
 
 export interface CreateAheadBackfillDialogProps {
     open: boolean;
@@ -86,7 +87,7 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
                 if (cancelled) return;
                 const message =
                     (error as {response?: {data?: string}})?.response?.data
-                    || (error instanceof Error ? error.message : "Couldn't load the backfill preview. Try again.");
+                    || errorMessageOf(error, "Couldn't load the backfill preview. Try again.");
                 setPreviewError(message);
             })
             .finally(() => {
@@ -157,7 +158,7 @@ export const CreateAheadBackfillDialog: React.FC<CreateAheadBackfillDialogProps>
         } catch (error) {
             const message =
                 (error as {response?: {data?: string}})?.response?.data
-                || (error instanceof Error ? error.message : "Couldn't create the backfill jobs. Try again.");
+                || errorMessageOf(error, "Couldn't create the backfill jobs. Try again.");
             showToast(message, 'error');
         } finally {
             setIsSubmitting(false);

@@ -43,6 +43,7 @@ import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton'
 import {useAiDraft} from '../../../hooks/useAiDraft';
 import {analyzePricing, recordPricingOutcome} from '../../../api/aiAssistantApi';
 import type {PricingAnalysisResponse} from '../../../types/ai';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 interface AppliedRowState {
     inputValue: string;
@@ -319,7 +320,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setIsLoadingApplied(false);
             return charges;
         } catch (error: unknown) {
-            showToastRef.current(`Couldn't load applied charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't load applied charges. ${errorMessageOf(error, 'Try again.')}`, 'error');
             setIsLoadingApplied(false);
             return null;
         }
@@ -353,7 +354,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             setIsLoadingAvailable(false);
             return charges;
         } catch (error: unknown) {
-            showToastRef.current(`Couldn't load available charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't load available charges. ${errorMessageOf(error, 'Try again.')}`, 'error');
             setIsLoadingAvailable(false);
             return null;
         }
@@ -419,7 +420,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                 });
                 didSave = true;
             } catch (error: unknown) {
-                showToastRef.current(`Couldn't update percentage charge "${charge.name}". ${error instanceof Error ? error.message : String(error)}`, 'error');
+                showToastRef.current(`Couldn't update percentage charge "${charge.name}". ${errorMessageOf(error, 'Try again.')}`, 'error');
             }
         }
 
@@ -658,7 +659,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             const applied = await loadAllRef.current();
             if (charge.chargeType !== 'percentage') await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Couldn't save charge. ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't save charge. ${errorMessageOf(error, 'Try again.')}`, 'error');
             setAppliedRowState(prev => ({
                 ...prev,
                 [charge.jobAccessorialChargeId]: { ...prev[charge.jobAccessorialChargeId], isSaving: false },
@@ -688,7 +689,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             const applied = await loadAllRef.current();
             await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Couldn't delete charge. ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't delete charge. ${errorMessageOf(error, 'Try again.')}`, 'error');
             setAppliedRowState(prev => ({
                 ...prev,
                 [charge.jobAccessorialChargeId]: { ...prev[charge.jobAccessorialChargeId], isDeleting: false },
@@ -794,7 +795,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
             const applied = await loadAllRef.current();
             await autoSavePercentageCharges(applied);
         } catch (error: unknown) {
-            showToastRef.current(`Couldn't add charges. ${error instanceof Error ? error.message : String(error)}`, 'error');
+            showToastRef.current(`Couldn't add charges. ${errorMessageOf(error, 'Try again.')}`, 'error');
             setIsAddingCharges(false);
         }
     }, [getActiveJobId, autoSavePercentageCharges]);

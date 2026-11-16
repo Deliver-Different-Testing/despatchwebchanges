@@ -229,6 +229,34 @@ describe('useMessages', () => {
         },
     ];
 
+    it('ignores a slower earlier load that lands after a newer conversation load', async () => {
+        let resolveFirst!: (value: typeof mockMessages) => void;
+        mockMessagingApi.getMessages
+            .mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve as typeof resolveFirst; }))
+            .mockResolvedValueOnce([mockMessages[1]] as never);
+        const {result} = renderHook(() => useMessages(100));
+
+        let first!: Promise<void>;
+        act(() => { first = result.current.loadMessages(200, OtherMessagePartyType.Courier); });
+        await act(async () => { await result.current.loadMessages(300, OtherMessagePartyType.Courier); });
+        await act(async () => { resolveFirst(mockMessages); await first; });
+
+        expect(result.current.messages.map(m => m.messageId)).toEqual([1]);
+        expect(result.current.isLoading).toBe(false);
+    });
+
+    it('keeps a failed local message through a silent refresh so it can be retried', async () => {
+        mockMessagingApi.getMessages.mockResolvedValue(mockMessages as never);
+        const {result} = renderHook(() => useMessages(100));
+        act(() => result.current.addOptimisticMessage({
+            ...mockMessages[0], messageId: -5, message: 'unsent', status: 'failed',
+        }));
+
+        await act(async () => { await result.current.loadMessages(200, OtherMessagePartyType.Courier, true); });
+
+        expect(result.current.messages.map(m => m.messageId)).toEqual([1, 2, -5]);
+    });
+
     it('should initialize with empty messages', () => {
         const { result } = renderHook(() => useMessages(100));
 
