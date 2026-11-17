@@ -45,12 +45,13 @@ public class VoiceAgentAssignTests : IAsyncDisposable
     private readonly IDispatchJobService _dispatch = Substitute.For<IDispatchJobService>();
     private WebApplication? _app;
     private string? _staffClaimSeenByService;
+    private string? _tenantClaimSeenByService;
     private CourierClaimOutcome _outcome = CourierClaimOutcome.Assigned;
 
     public VoiceAgentAssignTests() =>
         _connections.GetConnectionStringAsync(TenantConnectionCache.Key("1")).Returns("Server=db;");
 
-    private static VoiceAgentAssignOptions Options(string? accounts = Sub + "=1") => VoiceAgentAssignOptions.From(
+    private static VoiceAgentAssignOptions Options(string? accounts = Sub) => VoiceAgentAssignOptions.From(
         new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["VoiceAgentAssign:ClusterIssuer"] = Cluster,
@@ -106,7 +107,9 @@ public class VoiceAgentAssignTests : IAsyncDisposable
         _app.MapControllers();
         _dispatch.ClaimJobForCourierAsync(default, default, default, default).ReturnsForAnyArgs(_ =>
         {
-            _staffClaimSeenByService = _app.Services.GetRequiredService<IHttpContextAccessor>().HttpContext!.User.FindFirst("StaffID")?.Value;
+            var user = _app.Services.GetRequiredService<IHttpContextAccessor>().HttpContext!.User;
+            _staffClaimSeenByService = user.FindFirst("StaffID")?.Value;
+            _tenantClaimSeenByService = user.FindFirst("CurrentTenantID")?.Value;
             return _outcome;
         });
         await _app.StartAsync();
@@ -135,10 +138,11 @@ public class VoiceAgentAssignTests : IAsyncDisposable
         SigningCredentials = new SigningCredentials(_hubKey, SecurityAlgorithms.RsaSha256)
     });
 
-    private static async Task<HttpResponseMessage> Post(HttpClient client, string? bearer, string body = Body, string? cookie = null)
+    private static async Task<HttpResponseMessage> Post(HttpClient client, string? bearer, string body = Body, string? cookie = null, string? tenant = "1")
     {
         var request = new HttpRequestMessage(HttpMethod.Post, Path) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
         if (bearer is not null) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+        if (tenant is not null) request.Headers.Add("X-Tenant-Id", tenant);
         if (cookie is not null) request.Headers.Add("Cookie", cookie);
         return await client.SendAsync(request);
     }
@@ -279,7 +283,7 @@ public class VoiceAgentAssignTests : IAsyncDisposable
     [InlineData(null)]
     [InlineData("")]
     [InlineData("not-an-entry")]
-    [InlineData("system:serviceaccount:integration-manager-788-*:integrationmanager=1")]
+    [InlineData("system:serviceaccount:integration-manager-788-*:default")]
     public async Task WithNoValidServiceAccounts_EverythingIsRefused(string? accounts)
     {
         var response = await Post(await Server(Options(accounts)), ClusterToken());
@@ -305,21 +309,91 @@ public class VoiceAgentAssignTests : IAsyncDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, (await Post(await Server(), ClusterToken())).StatusCode);
     }
 
-    [Fact]
-    public void ServiceAccounts_AreParsedExactly_AndAmbiguousOnesDropped()
-    {
-        var options = Options(string.Join(',',
-            "system:serviceaccount:ns-a:im=1",
-            "system:serviceaccount:ns-b:im=2",
-            "system:serviceaccount:ns-c:im=3",
-            "system:serviceaccount:ns-c:im=4",
-            "system:serviceaccount:ns-*:im=5",
-            "system:serviceaccount:ns-d:im=0"));
+    [Theory]
+    [InlineData("despatchweb-594-urgent-staging", "system:serviceaccount:integration-manager-788-urgent-staging:default")]
+    [InlineData("despatchweb-594-staging", "system:serviceaccount:integration-manager-788-staging:default")]
+    [InlineData("despatchweb-594-production", "system:serviceaccount:integration-manager-788-production:default")]
+    [InlineData("despatchweb-594-urgent-prod\n", "system:serviceaccount:integration-manager-788-urgent-prod:default")]
+    [InlineData("despatchweb-594-", null)]
+    [InlineData("despatchweb-594-a:b", null)]
+    [InlineData("kube-system", null)]
+    [InlineData("integration-manager-788-staging", null)]
+    [InlineData(null, null)]
+    public void TheSubject_IsDerivedFromThePodsNamespace(string? ns, string? expected) =>
+        Assert.Equal(expected, VoiceAgentAssignOptions.DeriveSubject(ns));
 
-        Assert.Equal(1, options.ServiceAccounts["system:serviceaccount:ns-a:im"]);
-        Assert.Equal(2, options.ServiceAccounts["system:serviceaccount:ns-b:im"]);
-        Assert.Equal(2, options.ServiceAccounts.Count);
-        Assert.Equal(3, options.InvalidEntries.Count);
+    private static VoiceAgentAssignOptions FromFile(string? ns, string? accounts = null)
+    {
+        var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        if (ns is not null) File.WriteAllText(path, ns);
+        try
+        {
+            return VoiceAgentAssignOptions.From(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["VoiceAgentAssign:ClusterIssuer"] = Cluster,
+                ["VoiceAgentAssign:NamespacePath"] = path,
+                ["VoiceAgentAssign:ServiceAccounts"] = accounts
+            }).Build());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ThePodsNamespaceFile_GivesTheOneAllowedSubject()
+    {
+        var options = FromFile("despatchweb-594-urgent-staging\n");
+
+        Assert.True(options.IsConfigured);
+        Assert.Equal(["system:serviceaccount:integration-manager-788-urgent-staging:default"], options.AllowedSubjects);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("some-other-namespace")]
+    public void AnUnrecognisedOrMissingNamespace_IsClosed(string? ns)
+    {
+        var options = FromFile(ns);
+
+        Assert.False(options.IsConfigured);
+        Assert.Empty(options.AllowedSubjects);
+        Assert.NotEmpty(options.AllowedSubjectsNote);
+    }
+
+    [Fact]
+    public void AnOverride_WinsOverTheNamespace_AndWildcardsAreDropped()
+    {
+        var options = FromFile("despatchweb-594-staging",
+            "system:serviceaccount:ns-a:im,system:serviceaccount:ns-*:im,system:serviceaccount:ns-b:*,system:serviceaccount:ns-c:im=3,junk");
+
+        Assert.Equal(["system:serviceaccount:ns-a:im"], options.AllowedSubjects);
+        Assert.Equal(4, options.InvalidEntries.Count);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("0")]
+    [InlineData("-3")]
+    [InlineData("abc")]
+    public async Task AMissingOrInvalidTenantHeader_IsRefused(string? tenant)
+    {
+        var response = await Post(await Server(), ClusterToken(), tenant: tenant);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        await NothingWasClaimed();
+    }
+
+    [Fact]
+    public async Task TheHeaderTenant_IsTheRequestsTenant()
+    {
+        _connections.GetConnectionStringAsync(TenantConnectionCache.Key("5")).Returns("Server=db5;");
+
+        var response = await Post(await Server(), ClusterToken(), tenant: "5");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("5", _tenantClaimSeenByService);
     }
 
     [Fact]
