@@ -24,7 +24,8 @@ public class AiControllerTests
     public AiControllerTests()
     {
         _tenantInfo.GetStaffId().Returns(1);
-        _tenantInfo.GetTenantTimeZone().Returns("Pacific/Auckland");
+        _tenantInfo.GetStaffIdOrNull().Returns(1);
+        _tenantInfo.GetCurrentTenantId().Returns("tenant-7");
 
         _rateLimiter
             .TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>())
@@ -55,6 +56,34 @@ public class AiControllerTests
 
         var statusResult = result as ObjectResult;
         Assert.Equal(429, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task SummarizeJob_CustomerCaller_RateLimitsByNegatedContactId()
+    {
+        _tenantInfo.GetStaffId().Returns(0);
+        _tenantInfo.GetStaffIdOrNull().Returns((int?)null);
+        _tenantInfo.GetContactId().Returns(42);
+        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
+
+        await CreateController().SummarizeJob(1, TestContext.Current.CancellationToken);
+
+        await _rateLimiter.Received(1).TryAcquireAsync(-42, "tenant-7");
+    }
+
+    [Fact]
+    public async Task SummarizeJob_CustomerCaller_RecordsUsageUnderNegatedContactId()
+    {
+        _tenantInfo.GetStaffId().Returns(0);
+        _tenantInfo.GetStaffIdOrNull().Returns((int?)null);
+        _tenantInfo.GetContactId().Returns(42);
+        var usage = new AiUsageInfo { InputTokens = 10, OutputTokens = 5 };
+        _summarizationService.SummarizeJobAsync(1, Arg.Any<CancellationToken>())
+            .Returns(new StructuredSummaryResponse { Verdict = "ok", Usage = usage });
+
+        await CreateController().SummarizeJob(1, TestContext.Current.CancellationToken);
+
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(-42, "tenant-7", "SummarizeJob", AiTaskClass.Judgment, usage);
     }
 
     [Fact]
@@ -90,7 +119,7 @@ public class AiControllerTests
 
         await _rateLimiter
             .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", "SummarizeTaskDashboard", AiTaskClass.Judgment,
+            .RecordTokenUsageAsync(1, "tenant-7", "SummarizeTaskDashboard", AiTaskClass.Judgment,
                 Arg.Is<AiUsageInfo>(u => u.InputTokens == 100 && u.OutputTokens == 25));
     }
 
@@ -207,7 +236,7 @@ public class AiControllerTests
 
         await _rateLimiter
             .Received(1)
-            .RecordTokenUsageAsync(1, "Pacific/Auckland", "SummarizeOperations", AiTaskClass.Judgment,
+            .RecordTokenUsageAsync(1, "tenant-7", "SummarizeOperations", AiTaskClass.Judgment,
                 Arg.Is<AiUsageInfo>(u => u.InputTokens == 90 && u.OutputTokens == 15));
     }
 
@@ -309,7 +338,7 @@ public class AiControllerTests
 
         Assert.IsType<JsonResult>(result);
         await _rateLimiter.Received(1).RecordTokenUsageAsync(
-            1, "Pacific/Auckland", "DraftMessage", AiTaskClass.Drafting,
+            1, "tenant-7", "DraftMessage", AiTaskClass.Drafting,
             Arg.Is<AiUsageInfo>(u => u.InputTokens == 70 && u.OutputTokens == 18));
     }
 
@@ -449,7 +478,7 @@ public class AiControllerTests
 
         Assert.IsType<JsonResult>(result);
         await _rateLimiter.Received(1).RecordTokenUsageAsync(
-            1, "Pacific/Auckland", "ExtractBlockers", AiTaskClass.Judgment,
+            1, "tenant-7", "ExtractBlockers", AiTaskClass.Judgment,
             Arg.Is<AiUsageInfo>(u => u.InputTokens == 90 && u.OutputTokens == 25));
     }
 
@@ -525,7 +554,7 @@ public class AiControllerTests
 
         await CreateController().AnalyzePricing(1, 5, TestContext.Current.CancellationToken);
 
-        _audit.Received(1).Suggested("AnalyzePricing", 1, 1, "Pacific/Auckland", response);
+        _audit.Received(1).Suggested("AnalyzePricing", 1, 1, "tenant-7", response);
     }
 
     [Fact]
@@ -537,7 +566,7 @@ public class AiControllerTests
         await CreateController().TriageChangeRequest(42, 1, TestContext.Current.CancellationToken);
 
         _audit.Received(1).Suggested(
-            "TriageChangeRequest", 1, 1, "Pacific/Auckland", Arg.Any<object>());
+            "TriageChangeRequest", 1, 1, "tenant-7", Arg.Any<object>());
     }
 
     [Fact]
@@ -551,7 +580,7 @@ public class AiControllerTests
         });
 
         Assert.IsType<JsonResult>(result);
-        _audit.Received(1).Decided("AnalyzePricing", 1, 1, "Pacific/Auckland", Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5, 6 })), Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5 })));
+        _audit.Received(1).Decided("AnalyzePricing", 1, 1, "tenant-7", Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5, 6 })), Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5 })));
     }
 
     [Fact]
@@ -578,7 +607,7 @@ public class AiControllerTests
         });
 
         _audit.Received(1).Decided(
-            "AnalyzePricing", 1, 1, "Pacific/Auckland",
+            "AnalyzePricing", 1, 1, "tenant-7",
             Arg.Any<IReadOnlyList<int>>(),
             Arg.Is<IReadOnlyList<int>>(l => l.SequenceEqual(new[] { 5 })));
     }

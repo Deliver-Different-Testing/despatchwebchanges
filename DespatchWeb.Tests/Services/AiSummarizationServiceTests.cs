@@ -76,8 +76,6 @@ public class AiSummarizationServiceTests
             .Returns(response);
     }
 
-    // ----- Markdown summaries (notes / events) ------------------------------
-
     // ----- Structured summaries: job ----------------------------------------
 
     [Fact]

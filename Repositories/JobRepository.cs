@@ -15,7 +15,6 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Repositories;
@@ -2603,20 +2602,21 @@ public partial class JobRepository(
         await createJobService.CreateJobAsync(data, cancellationToken);
 
     /// <summary>
-    /// Reads the most recent external (non-Staff) qty change from JobDeliveryJourney and applies
-    /// it to TucJob.UcjbQty, then records a Staff journey entry so to apply is auditable.
+    /// Applies the latest JobDeliveryJourney qty entry to TucJob.UcjbQty when it came from outside staff,
+    /// then records a journey entry for the caller so the apply is auditable.
     /// </summary>
     public async Task<bool> ApplyWebQtyUpdateAsync(int jobId)
     {
+        // Only the latest qty entry can be pending: once staff have changed or applied the qty, an older external
+        // change is superseded and must not overwrite it.
         var pendingChange = await Context.JobDeliveryJourneys
-            .Where(j => j.JobId == jobId &&
-                        j.FieldName == "ucjbQty" &&
-                        j.UpdatedByType != nameof(DeliveryJourneyUpdatedByType.Staff) &&
-                        j.NewValue != null)
-            .OrderByDescending(j => j.UpdatedAt)
+            .Where(j => j.JobId == jobId && j.FieldName == "ucjbQty")
+            .OrderByDescending(j => j.JourneyId)
             .FirstOrDefaultAsync();
 
-        if (pendingChange == null)
+        if (pendingChange == null ||
+            pendingChange.UpdatedByType == nameof(DeliveryJourneyUpdatedByType.Staff) ||
+            pendingChange.NewValue == null)
         {
             return false;
         }
@@ -2626,18 +2626,22 @@ public partial class JobRepository(
             return false;
         }
 
-        var currentQty = await Context.TucJobs
+        // A partner job is managed by the partner, so its qty is never changed from here.
+        var job = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => j.UcjbQty)
+            .Select(j => new { j.UcjbQty, IsPartnerJob = j.PartnerJobGuid.HasValue })
             .FirstOrDefaultAsync();
 
-        if (currentQty == newQty)
+        if (job == null || job.IsPartnerJob || job.UcjbQty == newQty)
         {
             return false;
         }
 
+        var currentQty = job.UcjbQty;
+        // Conditional on the qty just read, so a concurrent edit or a second concurrent apply is not overwritten or
+        // audited twice.
         var rowsAffected = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
+            .Where(j => j.UcjbId == jobId && j.UcjbQty == currentQty)
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, newQty));
 
         if (rowsAffected == 0)
@@ -6570,34 +6574,6 @@ public partial class JobRepository(
             UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId)
         });
         await Context.SaveChangesAsync();
-    }
-
-    private async Task<JobInfo> GetJobInfo(int jobId) =>
-        await Context
-            .TucJobs.Where(j => j.UcjbId == jobId)
-            .Select(j => new JobInfo { ClientItemIds = j.ClientItemIds, IsVan = j.UcjbSize == 3 })
-            .FirstOrDefaultAsync();
-
-    private static IEnumerable<int> GetClientItemIds(string clientItemIdsString)
-    {
-        if (string.IsNullOrEmpty(clientItemIdsString))
-        {
-            return [];
-        }
-
-        return clientItemIdsString
-            .Split(',')
-            .Where(s => !string.IsNullOrEmpty(s))
-            .Select(int.Parse);
-    }
-
-    private async Task<decimal> CalculateAmountAsync(int clientId,
-        decimal amount)
-    {
-        var outputParam = new OutputParameter<decimal?>();
-        await Context.Procedures.UTL_stpPPD_ExclusiveAmountAsync(clientId, amount, outputParam);
-
-        return outputParam.Value ?? 0m;
     }
 
     private async Task<string> GenerateJobNumberAsync(

@@ -2890,7 +2890,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating job read status");
+            Log.Error(ex, "Error retrieving time zone options");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -2906,11 +2906,12 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating job read status");
+            Log.Error(ex, "Error adding a stop to Job {JobId}", data?.JobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> GetDeliveryJourney(int jobId, string timeZone = null)
     {
         try

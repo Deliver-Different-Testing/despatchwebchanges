@@ -3501,6 +3501,18 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task GetDeliveryJourney_AppliesWebQtyUpdate()
+    {
+        const int jobId = 10;
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)
+            .Returns(new List<DeliveryJourneyViewModel>());
+
+        await CreateController().GetDeliveryJourney(jobId);
+
+        await _jobCommandRepositoryMock.Received(1).ApplyWebQtyUpdateAsync(jobId);
+    }
+
+    [Fact]
     public async Task GetDeliveryJourney_WithClientTimeZone_AppliesTenantTimeZoneOverride()
     {
         // The client passes its known-good window.TimeZone so the journey converts

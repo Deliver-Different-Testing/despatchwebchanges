@@ -149,9 +149,7 @@ public partial class DespatchContext
                     Code = c.Code,
                     Name = c.UccrName + " " + c.UccrSurname,
                     DangerousGoods = c.UccrDangerousGoods == 1,
-                    DgLicenseExpiry = c.DglicenseExpiry,
-                    VehicleType = c.UccrVehicle,
-                    JobCount = 0
+                    DgLicenseExpiry = c.DglicenseExpiry
                 }));
 
     private static readonly Func<DespatchContext, NoteType, Task<bool>> ConfirmNoteTypeExistsCompiled =

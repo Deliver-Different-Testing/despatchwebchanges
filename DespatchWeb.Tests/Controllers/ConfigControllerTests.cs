@@ -8,8 +8,6 @@ namespace DespatchWeb.Tests.Controllers;
 public class ConfigControllerTests : IDisposable
 {
     private readonly string? _originalKey = Environment.GetEnvironmentVariable("HereMapsAPIKey");
-    private readonly string? _originalId = Environment.GetEnvironmentVariable("HereMapsID");
-    private readonly string? _originalCode = Environment.GetEnvironmentVariable("HereMapsCode");
 
     private static ConfigController CreateController() => new();
 
@@ -37,8 +35,6 @@ public class ConfigControllerTests : IDisposable
     public void Dispose()
     {
         Environment.SetEnvironmentVariable("HereMapsAPIKey", _originalKey);
-        Environment.SetEnvironmentVariable("HereMapsID", _originalId);
-        Environment.SetEnvironmentVariable("HereMapsCode", _originalCode);
         GC.SuppressFinalize(this);
     }
 }

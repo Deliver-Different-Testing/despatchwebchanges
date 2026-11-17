@@ -295,32 +295,14 @@ public sealed class AddStopJobService(
     /// Creates a pricing breakdown for a live job stop.
     /// </summary>
     private static PricingBreakdown CreatePricingBreakdown(int stopJobId) =>
-        CreatePricingBreakdownCore(stopJobId, isRecurring: false);
-
-    /// <summary>
-    /// Creates a pricing breakdown with extra stop charges.
-    /// </summary>
-    private static PricingBreakdown CreatePricingBreakdownCore(int stopJobId, bool isRecurring)
-    {
-        var breakdown = new PricingBreakdown
+        new()
         {
+            JobId = stopJobId,
             ChargeAmount = ExtraStopAmount,
             CostAmount = ExtraStopCourierPayment,
             Total = ExtraStopAmount - ExtraStopCourierPayment,
             ChargeName = "Extra Stop"
         };
-
-        if (isRecurring)
-        {
-            breakdown.PrebookJobId = stopJobId;
-        }
-        else
-        {
-            breakdown.JobId = stopJobId;
-        }
-
-        return breakdown;
-    }
 
     /// <summary>
     /// Creates package entities for the stop job based on the shipment details quantity.

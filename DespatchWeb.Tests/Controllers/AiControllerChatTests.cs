@@ -25,7 +25,7 @@ public class AiControllerChatTests
     public AiControllerChatTests()
     {
         _tenantInfo.GetStaffIdOrNull().Returns(1);
-        _tenantInfo.GetTenantTimeZone().Returns("Pacific/Auckland");
+        _tenantInfo.GetCurrentTenantId().Returns("tenant-7");
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(true);
         _http.Response.Body = _body;
     }
@@ -116,7 +116,7 @@ public class AiControllerChatTests
 
         await Act(new AutoMateChatRequest());
 
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland", "Chat", AiTaskClass.Chat, usage);
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "tenant-7", "Chat", AiTaskClass.Chat, usage);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class AiControllerChatTests
 
         await Act(new AutoMateChatRequest());
 
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "Pacific/Auckland", "Chat", AiTaskClass.Chat, usage);
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(1, "tenant-7", "Chat", AiTaskClass.Chat, usage);
     }
 
     [Fact]
@@ -205,8 +205,8 @@ public class AiControllerChatTests
 
         await Act(new AutoMateChatRequest());
 
-        await _rateLimiter.Received(1).TryAcquireAsync(-55, "Pacific/Auckland");
-        await _rateLimiter.Received(1).RecordTokenUsageAsync(-55, "Pacific/Auckland", "Chat", AiTaskClass.Chat, Arg.Any<AiUsageInfo>());
+        await _rateLimiter.Received(1).TryAcquireAsync(-55, "tenant-7");
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(-55, "tenant-7", "Chat", AiTaskClass.Chat, Arg.Any<AiUsageInfo>());
     }
 
     [Fact]
