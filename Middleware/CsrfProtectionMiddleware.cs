@@ -1,3 +1,5 @@
+using DespatchWeb.Extensions;
+
 namespace DespatchWeb.Middleware;
 
 /// <summary>
@@ -11,7 +13,11 @@ public class CsrfProtectionMiddleware(RequestDelegate next)
         var method = context.Request.Method;
         var isStateChangingRequest = method is "POST" or "PUT" or "PATCH" or "DELETE";
 
-        if (isStateChangingRequest && !context.Request.Path.StartsWithSegments("/healthz"))
+        // Bearer-only machine endpoint: there is no ambient cookie credential for a forged request to ride on.
+        var isVoiceAgentCall = context.Request.Path.StartsWithSegments(VoiceAgentAssignAuthentication.PathPrefix.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+                               && context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
+
+        if (isStateChangingRequest && !isVoiceAgentCall && !context.Request.Path.StartsWithSegments("/healthz"))
         {
             var hasXhrHeader = context.Request.Headers.XRequestedWith == "XMLHttpRequest";
             if (!hasXhrHeader)
