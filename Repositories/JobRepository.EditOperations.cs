@@ -13,6 +13,25 @@ namespace DespatchWeb.Repositories;
 public partial class JobRepository
 {
     /// <summary>
+    /// The code of the client a job is being moved to. A branch-limited caller can only pick a client in their own list;
+    /// asking for any other would silently write a client id with no client code, so it is refused instead.
+    /// </summary>
+    private async Task<string> ResolveClientCodeForEditAsync(int clientId)
+    {
+        var visible = await Context.TucClients
+            .Where(c => c.UcclId == clientId)
+            .Select(c => new { c.UcclCode })
+            .FirstOrDefaultAsync();
+
+        if (visible is null && Context.CurrentIsBranchScoped)
+        {
+            throw new ClientNotFoundException($"Client {clientId} was not found.");
+        }
+
+        return visible?.UcclCode;
+    }
+
+    /// <summary>
     /// Updates a single property on a bulk job record.
     /// Uses ExecuteUpdateAsync for simple field updates, falls back to entity tracking for complex cases.
     /// </summary>
@@ -471,10 +490,7 @@ public partial class JobRepository
                 break;
             case JobProperty.ClientID:
                 var newClientId = int.Parse(value);
-                var clientCode = await Context.TucClients
-                    .Where(c => c.UcclId == newClientId)
-                    .Select(c => c.UcclCode)
-                    .FirstOrDefaultAsync();
+                var clientCode = await ResolveClientCodeForEditAsync(newClientId);
 
                 job.UcjbClientId = newClientId;
                 job.UcjbClientCode = clientCode;
@@ -766,10 +782,7 @@ public partial class JobRepository
                 break;
             case JobProperty.ClientID:
                 var archiveClientId = int.Parse(value);
-                var clientCode = await Context.TucClients
-                    .Where(c => c.UcclId == archiveClientId)
-                    .Select(c => c.UcclCode)
-                    .FirstOrDefaultAsync();
+                var clientCode = await ResolveClientCodeForEditAsync(archiveClientId);
 
                 archive.UcjbClientId = archiveClientId;
                 archive.UcjbClientCode = clientCode;
@@ -1067,10 +1080,7 @@ public partial class JobRepository
 
             case JobProperty.ClientID:
                 var clientId = int.Parse(value);
-                var clientCode = await Context.TucClients
-                    .Where(c => c.UcclId == clientId)
-                    .Select(c => c.UcclCode)
-                    .FirstOrDefaultAsync();
+                var clientCode = await ResolveClientCodeForEditAsync(clientId);
                 rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
                     .SetProperty(j => j.ClientId, clientId)
                     .SetProperty(j => j.ClientCode, clientCode));

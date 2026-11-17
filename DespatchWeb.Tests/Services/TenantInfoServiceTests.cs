@@ -639,6 +639,55 @@ public sealed class TenantInfoServiceTests: IAsyncDisposable
         Assert.Equal(3, service.GetClientTypeId());
     }
 
+    // ---- BranchIds claim (Branches programme): null = no restriction; a non-empty claim is a comma list ----
+
+    [Fact]
+    public void GetBranchIds_WithNoClaim_IsNull_MeaningNoRestriction()
+    {
+        SetupHttpContextWithClaims(("ClientTypeId", "4"));
+
+        Assert.Null(CreateService().GetBranchIds());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void GetBranchIds_WithAnEmptyClaim_IsNull_MeaningNoRestriction(string claim)
+    {
+        SetupHttpContextWithClaims(("BranchIds", claim));
+
+        Assert.Null(CreateService().GetBranchIds());
+    }
+
+    [Theory]
+    [InlineData("1", new[] { 1 })]
+    [InlineData("1,2", new[] { 1, 2 })]
+    [InlineData(" 2 , 1 ", new[] { 2, 1 })]
+    [InlineData("3,3,3", new[] { 3 })]
+    [InlineData("1,,2,", new[] { 1, 2 })]
+    [InlineData("1,x,2", new[] { 1, 2 })]
+    public void GetBranchIds_ParsesTheCommaList(string claim, int[] expected)
+    {
+        SetupHttpContextWithClaims(("BranchIds", claim));
+
+        Assert.Equal(expected, CreateService().GetBranchIds());
+    }
+
+    [Theory]
+    [InlineData("x")]
+    [InlineData("0")]
+    [InlineData("-4")]
+    [InlineData("x,0,-1")]
+    public void GetBranchIds_ANonEmptyClaimWithNoValidId_IsAnEmptyList_LimitingTheUserToNoBranch(string claim)
+    {
+        SetupHttpContextWithClaims(("BranchIds", claim));
+
+        var result = CreateService().GetBranchIds();
+
+        Assert.NotNull(result);   // not null: null would mean no restriction, which would fail open
+        Assert.Empty(result!);
+    }
+
     [Fact]
     public void GetNpAgentId_WithValidClaim_ReturnsValue()
     {

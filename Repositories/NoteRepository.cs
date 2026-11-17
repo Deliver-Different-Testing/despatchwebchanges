@@ -22,6 +22,7 @@ public class NoteRepository(
 
         var bulkNotes = await Context.TblBulkJobNotes
             .Where(n => n.BulkJobId == bulkJobId)
+            .Where(n => !Context.CurrentIsBranchScoped || Context.TblBulkJobs.Any(b => b.BulkJobId == n.BulkJobId))   // notes follow their bulk job
             .OrderByDescending(n => n.CreatedDate)
             .Select(n => new TucNoteViewModel
             {
@@ -134,6 +135,8 @@ public class NoteRepository(
 
         ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText);
 
+        // NP and branch-limited staff (CurrentBypassFilters is false for both): only on a bulk job they can see, and
+        // only editing a note they can see. TblBulkJobs carries the NP and branch filters.
         if (!Context.CurrentBypassFilters
             && (!await Context.TblBulkJobs.AnyAsync(b => b.BulkJobId == viewModel.BulkJobId.Value, cancellationToken)
                 || (viewModel.NoteId > 0 && !await IsNoteVisibleAsync(viewModel.NoteId, NoteHistorySource.BulkNote))))
@@ -158,6 +161,12 @@ public class NoteRepository(
             // Update existing bulk note
             var existingNote = await Context.TblBulkJobNotes.FindAsync([viewModel.NoteId], cancellationToken);
             ArgumentNullException.ThrowIfNull(existingNote);
+
+            // FindAsync reads by key, past every filter: the note being edited must belong to a visible bulk job too.
+            if (!await Context.BulkJobVisibleAsync(existingNote.BulkJobId))
+            {
+                throw new JobNotFoundException("The bulk job was not found, so the note could not be saved.");
+            }
 
             // Record history before modifying
             await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.BulkNote, staffId,
@@ -206,6 +215,19 @@ public class NoteRepository(
         // Mirror GetNoteByIdAsync: the job picks the table so a colliding NoteId in
         // the other table is untouched. Archive history is keyed by ArchiveNoteId.
         var isArchived = jobId.HasValue && await IsJobArchived(jobId.Value);
+
+        // Branch-limited staff: the note itself (filtered to visible jobs) must be there before its edit history is
+        // touched, otherwise the history of a hidden note would be wiped while the note survived.
+        if (Context.CurrentIsBranchScoped)
+        {
+            var noteVisible = isArchived
+                ? await Context.TucNoteArchives.AnyAsync(n => n.NoteId == noteId, cancellationToken)
+                : await Context.TucNotes.AnyAsync(n => n.NoteId == noteId, cancellationToken);
+            if (!noteVisible)
+            {
+                throw new JobNotFoundException("The note was not found.");
+            }
+        }
 
         if (isArchived)
         {
@@ -267,6 +289,7 @@ public class NoteRepository(
 
     public async Task<IReadOnlyList<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source)
     {
+        // A note's edit history is only readable through a note the caller can see (NP and branch filters).
         if (!await IsNoteVisibleAsync(noteId, source))
         {
             return [];
@@ -350,6 +373,13 @@ public class NoteRepository(
     {
         if (!await IsNoteVisibleAsync(noteId, NoteHistorySource.BulkNote))
         {
+            // Upstream NP rule: a note the caller cannot see is a silent no-op. Branch-limited staff get the explicit
+            // not-found we already return for the other branch-guarded writes.
+            if (Context.CurrentIsBranchScoped)
+            {
+                throw new JobNotFoundException("The note was not found.");
+            }
+
             return;
         }
 

@@ -145,6 +145,8 @@ public class MessageRepository(
     public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId,
         int limit = 200)
     {
+        // Upstream NP rule; for a branch-limited staff member CurrentBypassFilters is false and TucCouriers carries the
+        // branch courier filter, so the same check also limits them to couriers in their list.
         if (!Context.CurrentBypassFilters
             && (staffId != infoService.GetStaffId() || !await Context.TucCouriers.AnyAsync(c => c.UccrId == courierId)))
         {

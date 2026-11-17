@@ -288,8 +288,12 @@ public sealed class CreateJobService(
         // Uses LEFT JOIN for defaults and scalar subqueries for settings to avoid SQL APPLY.
         if (data.ClientId > 0)
         {
+            // The client always comes from an existing job the caller can already see (add-stop, agent recovery). That job
+            // may belong to a client in another branch, which is not in a branch-limited user's client list, so only the
+            // branch list filter is dropped here; without this the new job would be created with no client, charge type
+            // or operator.
             var initialData = await (
-                from c in context.TucClients
+                from c in context.TucClients.IgnoreQueryFilters([DespatchContext.BranchClientsFilter])
                 where c.UcclId == data.ClientId
                 join d in context.TblJobDefaults on c.UcclCode equals d.Code into defaults
                 from d in defaults.DefaultIfEmpty()

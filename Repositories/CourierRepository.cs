@@ -205,7 +205,21 @@ public partial class CourierRepository(
 
     public async Task<IReadOnlyList<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
+        // Branch-limited staff: only for a job they can see, and only couriers in their own courier list. The stored
+        // procedure takes no scope, so the result is narrowed here.
+        if (Context.CurrentIsBranchScoped && !await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId))
+        {
+            return [];
+        }
+
         var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
+        if (Context.CurrentIsBranchScoped)
+        {
+            var ids = results.Select(c => c.CourierID ?? 0).ToList();
+            var allowed = (await Context.TucCouriers.Where(r => ids.Contains(r.UccrId)).Select(r => r.UccrId).ToListAsync()).ToHashSet();
+            results = [.. results.Where(c => allowed.Contains(c.CourierID ?? 0))];
+        }
+
         return
         [
             .. results.Select(c => new PotentialCouriersViewModel

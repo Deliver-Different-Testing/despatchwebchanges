@@ -1040,10 +1040,19 @@ public class RecurringJobRepository(
 
             case JobProperty.ClientID:
                 var clientId = ParseValue<int>(value, property);
-                var code = await Context.TucClients
+                var pickedClient = await Context.TucClients
                     .Where(c => c.UcclId == clientId)
-                    .Select(c => c.UcclCode)
+                    .Select(c => new { c.UcclCode })
                     .FirstOrDefaultAsync();
+
+                // Branch-limited staff can only pick a client in their own list; anything else would write a client id
+                // with no client code.
+                if (pickedClient is null && Context.CurrentIsBranchScoped)
+                {
+                    throw new Exceptions.ClientNotFoundException($"Client {clientId} was not found.");
+                }
+
+                var code = pickedClient?.UcclCode;
 
                 await Context.TucJobBookings.Where(j =>
                         j.UcbkId == jobId || j.BookingParentId == jobId || j.ParentId == jobId)

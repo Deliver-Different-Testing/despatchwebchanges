@@ -70,6 +70,13 @@ public interface ITenantInfoService : IDisposable
     /// </summary>
     int? GetClientId();
 
+    /// <summary>
+    /// Branches the logged-in staff member is limited to, from the Hub <c>BranchIds</c> claim (comma list).
+    /// Null when the claim is absent or empty: no restriction (every existing user and every super user).
+    /// A non-empty claim holding no valid id gives an EMPTY list, which limits the user to no branch (fail closed).
+    /// </summary>
+    IReadOnlyList<int>? GetBranchIds();
+
     Task<Suggestion?> GetStaffInfoAsync();
     string GetTenantTimeZone();
     DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime);
