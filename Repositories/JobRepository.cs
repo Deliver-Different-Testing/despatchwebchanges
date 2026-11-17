@@ -2627,16 +2627,18 @@ public partial class JobRepository(
             return false;
         }
 
-        var currentQty = await Context.TucJobs
+        // A partner job is managed by the partner, so its qty is never changed from here.
+        var job = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => j.UcjbQty)
+            .Select(j => new { j.UcjbQty, IsPartnerJob = j.PartnerJobGuid.HasValue })
             .FirstOrDefaultAsync();
 
-        if (currentQty == newQty)
+        if (job == null || job.IsPartnerJob || job.UcjbQty == newQty)
         {
             return false;
         }
 
+        var currentQty = job.UcjbQty;
         var rowsAffected = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, newQty));

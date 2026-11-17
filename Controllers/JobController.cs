@@ -2890,7 +2890,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating job read status");
+            Log.Error(ex, "Error retrieving time zone options");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -2918,11 +2918,7 @@ public class JobController(
         {
             infoService.SetTenantTimeZoneOverride(timeZone);
 
-            if (!await jobQueryRepository.IsPartnerJobAsync(jobId))
-            {
-                await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
-            }
-
+            await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
             var deliveryJourney = await deliveryJourneyService.GetDeliveryJourneyForJobAsync(jobId);
             return Json(deliveryJourney);
         }

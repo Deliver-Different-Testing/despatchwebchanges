@@ -3501,21 +3501,7 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task GetDeliveryJourney_PartnerJob_DoesNotApplyWebQtyUpdate()
-    {
-        const int jobId = 9;
-        _jobQueryRepositoryMock.IsPartnerJobAsync(jobId).Returns(true);
-        _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)
-            .Returns(new List<DeliveryJourneyViewModel>());
-
-        var result = await CreateController().GetDeliveryJourney(jobId);
-
-        Assert.IsType<JsonResult>(result);
-        await _jobCommandRepositoryMock.DidNotReceive().ApplyWebQtyUpdateAsync(Arg.Any<int>());
-    }
-
-    [Fact]
-    public async Task GetDeliveryJourney_OwnJob_AppliesWebQtyUpdate()
+    public async Task GetDeliveryJourney_AppliesWebQtyUpdate()
     {
         const int jobId = 10;
         _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)

@@ -1438,6 +1438,24 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         Assert.Equal((short)7, (await verify.TucJobs.SingleAsync(j => j.UcjbId == 100, TestContext.Current.CancellationToken)).UcjbQty);
     }
 
+    [Fact]
+    public async Task ApplyWebQtyUpdateAsync_PartnerJob_DoesNotApplyQty()
+    {
+        await using var context = CreateContext();
+        var job = CreateJob(100, "J100");
+        job.UcjbQty = 2;
+        job.PartnerJobGuid = Guid.NewGuid();
+        context.TucJobs.Add(job);
+        context.JobDeliveryJourneys.Add(QtyJourney(100, "2", "5", "Customer", TestDates.Now));
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var applied = await CreateRepository().ApplyWebQtyUpdateAsync(100);
+
+        await using var verify = CreateContext();
+        Assert.False(applied);
+        Assert.Equal((short)2, (await verify.TucJobs.SingleAsync(j => j.UcjbId == 100, TestContext.Current.CancellationToken)).UcjbQty);
+    }
+
     private static JobDeliveryJourney QtyJourney(int jobId, string oldValue, string newValue, string updatedByType,
         DateTime updatedAt) => new()
     {
