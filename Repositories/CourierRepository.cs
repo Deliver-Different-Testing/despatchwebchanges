@@ -336,32 +336,6 @@ public partial class CourierRepository(
         }
     }
 
-    public async Task<IReadOnlyList<ActiveCouriersViewModel>> AllActiveCouriersAsync()
-    {
-        try
-        {
-            Log.Information("Retrieving all active couriers");
-
-            var results = await GetActiveCouriersAsync(includeJobCount: false);
-            var mappedResults = results.Select(c => new ActiveCouriersViewModel
-            {
-                Code = c.Code,
-                CourierId = c.CourierId,
-                Name = c.Name,
-                DangerousGoods = c.DangerousGoods,
-                DGLicenseExpiry = c.DgLicenseExpiry
-            }).ToList();
-
-            Log.Information("Retrieved {Count} active couriers", mappedResults.Count);
-            return mappedResults;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving all active couriers");
-            throw;
-        }
-    }
-
     public async Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
         int clearListAreaId, Country country, bool includeCouriers = false) =>
         await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(

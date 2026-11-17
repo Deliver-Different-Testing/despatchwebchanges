@@ -8,7 +8,7 @@ import {getSpeedList} from '../../../api/jobDetailApi';
 import {toastService} from '../../../services/toastService';
 import {FIELD_META, formatChangeRequestValue, getFieldMeta, type JobChangeRequestFieldMeta} from '../../job-change-requests/jobChangeRequestFormatting';
 import {isUsCustomer} from '../../../utils/dateUtils';
-import {getSession} from '../../../api/session';
+import {isAuSession} from '../../../api/session';
 import type {ISuggestion} from '../../../types/interfaces/job.interface';
 import type {JobChangeRequestResult} from '../../../types/jobChangeRequest';
 
@@ -508,7 +508,7 @@ function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
         onChange({...value, [key]: event.currentTarget.value});
     const isUs = isUsCustomer();
     // AU keeps the state where NZ keeps the city, matching what Booking and the Edit Address dialog store
-    const isAu = !isUs && (getSession().countryCode ?? '').toUpperCase() === 'AU';
+    const isAu = !isUs && isAuSession();
     return (
         <Stack gap="xs">
             <TextInput

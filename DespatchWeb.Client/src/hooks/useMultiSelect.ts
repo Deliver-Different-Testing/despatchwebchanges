@@ -5,7 +5,7 @@
  * Supports plain click toggle, Ctrl/Cmd add/remove, and Shift range-select.
  */
 
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 export interface UseMultiSelectReturn {
     selectedIds: Set<number>;
@@ -20,6 +20,19 @@ export interface UseMultiSelectReturn {
 export function useMultiSelect(orderedIds: number[]): UseMultiSelectReturn {
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const lastClickedIdRef = useRef<number | null>(null);
+
+    // Bulk actions act on selectedIds, so a job that leaves the list (a poll refresh, a filter)
+    // must leave the selection too, or it is acted on while no longer shown.
+    useEffect(() => {
+        const visible = new Set(orderedIds);
+        setSelectedIds(prev => {
+            if ([...prev].every(id => visible.has(id))) return prev;
+            return new Set([...prev].filter(id => visible.has(id)));
+        });
+        if (lastClickedIdRef.current !== null && !visible.has(lastClickedIdRef.current)) {
+            lastClickedIdRef.current = null;
+        }
+    }, [orderedIds]);
 
     const toggle = useCallback((jobId: number, event: React.MouseEvent) => {
         const isCtrlOrCmd = event.ctrlKey || event.metaKey;

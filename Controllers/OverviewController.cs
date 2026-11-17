@@ -97,20 +97,6 @@ public class OverviewController(IJobQueryRepository jobRepository, ICourierRepos
         }
     }
 
-    public async Task<IActionResult> GetJobsForMegaMap()
-    {
-        try
-        {
-            var jobs = await jobRepository.GetJobsForMegaMapAsync();
-            return Json(jobs);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting jobs for mega map");
-            return StatusCode(500);
-        }
-    }
-
     public async Task<IActionResult> GetOpenJobs([FromQuery] OpenJobsRequest parameters)
     {
         try

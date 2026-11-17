@@ -20,6 +20,18 @@ function makeEvent(overrides: Partial<React.MouseEvent> = {}): React.MouseEvent 
 describe('useMultiSelect', () => {
     const orderedIds = [10, 20, 30, 40, 50];
 
+    it('drops selected ids that leave the list so bulk actions skip hidden jobs', () => {
+        const {result, rerender} = renderHook(({ids}) => useMultiSelect(ids), {initialProps: {ids: orderedIds}});
+
+        act(() => result.current.toggle(20, makeEvent()));
+        act(() => result.current.toggle(30, makeEvent({ctrlKey: true})));
+        expect(result.current.selectCount).toBe(2);
+
+        rerender({ids: [10, 30, 40, 50]});
+
+        expect([...result.current.selectedIds]).toEqual([30]);
+    });
+
     it('starts empty, plain click selects/replaces/deselects', () => {
         const {result} = renderHook(() => useMultiSelect(orderedIds));
 

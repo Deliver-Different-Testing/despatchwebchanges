@@ -32,8 +32,6 @@ import {
     restoreJobs,
     allocateJob,
     getCourierById,
-    updatePackages,
-    updateBulkJobPackages,
     downloadFile,
     getPodReportUrl,
     getPodSpreadsheetUrl,
@@ -344,26 +342,6 @@ describe('jobDetailApi', () => {
         });
     });
 
-    describe('Package Operations', () => {
-        it('updatePackages posts jobId and parcels', async () => {
-            const parcels = [{length: 10, width: 20, height: 30, weight: 5}];
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-
-            await updatePackages(123, parcels as any);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/UpdateJobPackages', {jobId: 123, parcels});
-        });
-
-        it('updateBulkJobPackages posts bulkJobId and parcels', async () => {
-            const parcels = [{length: 10, width: 20, height: 30, weight: 5}];
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-
-            await updateBulkJobPackages(789, parcels as any);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/UpdateBulkJobPackages', {bulkJobId: 789, parcels});
-        });
-    });
-
     // ── File Downloads ──────────────────────────────────────────────
 
     describe('downloadFile', () => {
@@ -532,8 +510,6 @@ describe('jobDetailApi', () => {
             ['updateJobReadStatus', () => updateJobReadStatus(1, true), mockApiClient.post],
             ['restoreJobs', () => restoreJobs([1]), mockApiClient.post],
             ['allocateJob', () => allocateJob(1, [1]), mockApiClient.post],
-            ['updatePackages', () => updatePackages(1, []), mockApiClient.post],
-            ['updateBulkJobPackages', () => updateBulkJobPackages(1, []), mockApiClient.post],
             ['deleteJobFile', () => deleteJobFile(1, 'key'), mockApiClient.delete],
             ['deleteJobDeliveryPhotoOrSignature', () => deleteJobDeliveryPhotoOrSignature(1, 'key'), mockApiClient.delete],
             ['uploadJobFile', () => uploadJobFile(1, new File([''], 'f')), mockApiClient.uploadFormData],

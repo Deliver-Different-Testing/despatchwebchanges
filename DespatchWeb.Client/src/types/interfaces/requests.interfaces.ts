@@ -5,7 +5,3 @@ export interface UpdatePodDetailsRequest {
     podTime: string;
 }
 
-export interface IAllocateJobsToCourierRequest {
-    courierId: number;
-    jobIds: number[];
-}

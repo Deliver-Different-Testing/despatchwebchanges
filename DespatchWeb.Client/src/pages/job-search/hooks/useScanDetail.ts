@@ -1,6 +1,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {fetchScanDetail, ScanDetailRecord} from '../../../api/jobSearchApi';
 import {queryKeys} from '../../../api/queryClient';
+import {formatDateForApiWithTzs} from '../../../utils/dateUtils';
 
 export interface UseScanDetailOptions {
     jobId?: number;
@@ -19,7 +20,10 @@ export function useScanDetail({jobId, runDate, isBulkJob = false}: UseScanDetail
     const enabled = !!jobId && !!runDate;
 
     const {data, isLoading, isError, refetch} = useQuery({
-        queryKey: jobId ? queryKeys.jobSearch.scanDetail(jobId, isBulkJob) : ['jobSearch', 'scanDetail', 'disabled'],
+        // A bulk job's runs share one id, so the run date has to be part of the key.
+        queryKey: jobId
+            ? [...queryKeys.jobSearch.scanDetail(jobId, isBulkJob), enabled ? formatDateForApiWithTzs(runDate as never) : null]
+            : ['jobSearch', 'scanDetail', 'disabled'],
         queryFn: ({signal}) => fetchScanDetail(runDate, jobId as number, isBulkJob, {signal}),
         enabled,
         staleTime: 15_000,

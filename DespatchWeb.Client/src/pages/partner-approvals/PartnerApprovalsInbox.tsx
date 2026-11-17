@@ -78,10 +78,12 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
     /** Sorted oldest-first inside each customer group — overdue rises to the top. */
     const grouped = useMemo(() => groupByCustomer(items), [items]);
 
-    const invalidate = useCallback(() => {
+    // Only the inbox and the decided job's own requests change; a blanket ['jobChangeRequests']
+    // prefix would also refetch hasActivePartners and every other job's cached requests.
+    const invalidate = useCallback((jobId: number) => {
         return Promise.all([
             queryClient.invalidateQueries({queryKey: ['jobChangeRequests', 'inbox']}),
-            queryClient.invalidateQueries({queryKey: ['jobChangeRequests']}),
+            queryClient.invalidateQueries({queryKey: ['jobChangeRequests', jobId]}),
         ]);
     }, [queryClient]);
 
@@ -93,7 +95,7 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                 requestId: item.request.id,
                 rowVersion: item.request.rowVersion,
             });
-            await invalidate();
+            await invalidate(item.request.jobId);
         } catch (e) {
             setActionError((e as {message?: string})?.message ?? 'Approve failed');
         } finally {
@@ -112,7 +114,7 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
             });
             setRejectingId(null);
             setRejectReason('');
-            await invalidate();
+            await invalidate(item.request.jobId);
         } catch (e) {
             setActionError((e as {message?: string})?.message ?? 'Reject failed');
         } finally {

@@ -43,6 +43,7 @@ import type {DispatchConfirmation, DispatchType} from '../../../dialogs/dispatch
 import type {ISuggestion} from '../../../../types/interfaces/job.interface';
 import {toastService} from '../../../../services/toastService';
 import {executeDispatchConfirmation} from '../../../dialogs/dispatch-dialog/executeDispatch';
+import {errorMessageOf} from '../../../../utils/errorMessage';
 
 interface TextDialogState {
     open: boolean;
@@ -854,7 +855,7 @@ export function useJobActions({
                     toastService.showSuccessToast(message);
                 }
             } catch (err) {
-                const message = err instanceof Error ? err.message : "Couldn't dispatch the job. Check your connection and try again.";
+                const message = errorMessageOf(err, "Couldn't dispatch the job. Check your connection and try again.");
                 throw new Error(message, {cause: err});
             }
             return;
@@ -874,7 +875,7 @@ export function useJobActions({
             await refreshAndNotify();
             setDispatchDialog((s) => ({...s, open: false}));
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Couldn't dispatch the job. Check your connection and try again.";
+            const message = errorMessageOf(err, "Couldn't dispatch the job. Check your connection and try again.");
             throw new Error(message, {cause: err});
         }
     }, [isRecurringJob, dispatchJob, updateField, refreshAndNotify]);
@@ -892,7 +893,7 @@ export function useJobActions({
             await refreshAndNotify();
             setDispatchDialog((s) => ({...s, open: false}));
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Unassign failed';
+            const message = errorMessageOf(err, 'Unassign failed');
             throw new Error(message, {cause: err});
         }
     }, [updateField, refreshAndNotify]);
@@ -1226,7 +1227,7 @@ export function useJobActions({
     const handlePodUpload = useCallback(() => {
         const j = jobRef.current;
         if (!j) return;
-        void loadDialog('JobFileUpload').then(d => d.open(podMediaJobId(j), 'POD'));
+        void loadDialog('JobFileUpload').then(d => d.open(podMediaJobId(j), 'POD', j.completedTime));
     }, []);
 
     const handlePodReport = useCallback(() => {

@@ -128,6 +128,23 @@ export async function setJobLocked(jobId: number, locked: boolean, isRecurring: 
     await updateJobDetail(jobId, 'Locked', locked, isRecurring);
 }
 
+export interface LockableRow {
+    id: number;
+    preBook?: boolean;
+    isBulkJob?: boolean;
+    linkedJobId?: number;
+}
+
+/**
+ * A prebook row locks its own template (UpdateRecurringJob). A bulk row's `id` is a BulkJobId, which
+ * UpdateJob would read as an unrelated live job, so it locks the job it generated, or nothing yet.
+ */
+export function lockTargetFor(row: LockableRow): {jobId: number; isRecurring: boolean} | null {
+    if (row.preBook) return {jobId: row.id, isRecurring: true};
+    if (row.isBulkJob) return row.linkedJobId ? {jobId: row.linkedJobId, isRecurring: false} : null;
+    return {jobId: row.id, isRecurring: false};
+}
+
 // ── Un-Split ─────────────────────────────────────────────────────────
 
 export async function unSplitJob(jobId: number): Promise<string> {

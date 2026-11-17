@@ -30,12 +30,6 @@ public interface IJobReportService
     Task<IReadOnlyList<JobManualPriceModel>> ParseBulkPriceFileAsync(IFormFile file);
 
     /// <summary>
-    /// Processes a job price upload file: archives to S3, parses data, and updates job prices.
-    /// </summary>
-    /// <param name="file">The uploaded spreadsheet file (xls, xlsx, or csv).</param>
-    Task ProcessJobPriceUploadAsync(IFormFile file);
-
-    /// <summary>
     /// Generates a CSV export of all recurring jobs matching the search criteria.
     /// </summary>
     /// <param name="request">Search and filter parameters.</param>

@@ -18,7 +18,7 @@ import {
     deleteJobDeliveryPhotoOrSignature,
     downloadFile,
 } from '../../../api/jobDetailApi';
-import dayjs from 'dayjs';
+import dayjs, {type Dayjs} from 'dayjs';
 import {formatDateForApiWithTzs} from '../../../utils/dateUtils';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -27,6 +27,7 @@ const ACCEPTED_MIME_PATTERN = /^image\/|^application\/pdf$/;
 interface UseFileUploadOptions {
     jobId: number;
     initialUploadType: FileUploadType;
+    completedTime?: string | Dayjs;
     showToast: ShowToastFn;
 }
 
@@ -63,7 +64,7 @@ export interface UseFileUploadReturn {
     handleDrop: (e: React.DragEvent, isPOD: boolean, podDesc?: string) => void;
 }
 
-export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUploadOptions): UseFileUploadReturn {
+export function useFileUpload({jobId, initialUploadType, completedTime, showToast}: UseFileUploadOptions): UseFileUploadReturn {
     const showNormalTab = initialUploadType === 'normal' || initialUploadType === 'both';
     const showPodTab = initialUploadType === 'pod' || initialUploadType === 'both';
 
@@ -100,8 +101,10 @@ export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUplo
 
         if (showPodTab) {
             try {
-                const now = dayjs();
-                const podPhotos = await getJobDeliveryPhotos(jobId, now.year(), now.month() + 1);
+                // The server scans the neighbouring months too, so the completion month finds an older POD.
+                const completed = completedTime ? dayjs(completedTime) : null;
+                const month = completed?.isValid() ? completed : dayjs();
+                const podPhotos = await getJobDeliveryPhotos(jobId, month.year(), month.month() + 1);
                 if (podPhotos?.length) {
                     setPodFiles(prev => {
                         const existingKeys = new Set(prev.map(f => f.s3Key));
@@ -131,7 +134,7 @@ export function useFileUpload({jobId, initialUploadType, showToast}: UseFileUplo
                 showToast("Couldn't load POD photos. Try again.", 'error');
             }
         }
-    }, [jobId, showNormalTab, showPodTab, showToast]);
+    }, [jobId, completedTime, showNormalTab, showPodTab, showToast]);
 
     const uploadFiles = useCallback(async (selectedFiles: File[], isPOD: boolean, podDesc?: string) => {
         if (!selectedFiles.length || isUploadingRef.current) return;

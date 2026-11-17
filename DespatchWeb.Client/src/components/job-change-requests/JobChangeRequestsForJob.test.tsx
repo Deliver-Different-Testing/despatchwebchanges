@@ -280,6 +280,20 @@ describe('JobChangeRequestsForJob', () => {
             expect(await screen.findByText(/Change request cancelled/)).toBeInTheDocument();
         });
 
+        it('says the partner was not notified when the peer forward failed', async () => {
+            const pairedRow = {...localPendingRow, pairingId: 7};
+            mockApi.forJob.mockResolvedValueOnce([pairedRow]).mockResolvedValueOnce([
+                {...pairedRow, status: 'Cancelled'},
+            ]);
+            mockApi.cancel.mockResolvedValueOnce({success: true, peerForwardWarning: 'IM unreachable'});
+
+            const user = await openCancelPrompt();
+            await user.click(screen.getByRole('button', {name: /Confirm cancel/}));
+
+            expect(await screen.findByText(/partner was not notified \(IM unreachable\)/)).toBeInTheDocument();
+            expect(screen.queryByText(/partner has been notified/)).not.toBeInTheDocument();
+        });
+
         it('surfaces an error message when the cancel API rejects', async () => {
             mockApi.forJob.mockResolvedValueOnce([localPendingRow]);
             mockApi.cancel.mockRejectedValueOnce(new Error('Network down'));

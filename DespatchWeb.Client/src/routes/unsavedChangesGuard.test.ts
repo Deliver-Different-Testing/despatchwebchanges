@@ -53,6 +53,18 @@ describe('unsavedChangesGuard', () => {
         unregister();
     });
 
+    it('stays on the page instead of rejecting when the save fails', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const unregister = registerUnsavedChangesGuard({
+            isDirty: () => true,
+            promptToLeave: vi.fn().mockResolvedValue('save-and-leave'),
+            save: vi.fn().mockRejectedValue(new Error('offline')),
+        });
+
+        expect(await confirmNavigationAllowed()).toBe(false);
+        unregister();
+    });
+
     it('stops checking a guard once unregistered', async () => {
         const promptToLeave = vi.fn();
         const unregister = registerUnsavedChangesGuard({isDirty: () => true, promptToLeave, save: vi.fn()});

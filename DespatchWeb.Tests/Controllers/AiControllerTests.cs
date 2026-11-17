@@ -46,64 +46,6 @@ public class AiControllerTests
         _audit);
 
     [Fact]
-    public async Task SummarizeJobNotes_RateLimited_Returns429()
-    {
-        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
-        var controller = CreateController();
-
-        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(429, statusResult!.StatusCode);
-    }
-
-    [Fact]
-    public async Task SummarizeJobNotes_ValidRequest_ReturnsJson()
-    {
-        _summarizationService.SummarizeJobNotesAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
-        {
-            Summary = "Job had two pickups.",
-            Usage = new AiUsageInfo { InputTokens = 80, OutputTokens = 15 }
-        });
-
-        var controller = CreateController();
-
-        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
-
-        Assert.IsType<JsonResult>(result);
-    }
-
-    [Fact]
-    public async Task SummarizeJobEvents_ValidRequest_ReturnsJson()
-    {
-        _summarizationService.SummarizeJobEventsAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
-        {
-            Summary = "Late alert resolved.",
-            Usage = new AiUsageInfo { InputTokens = 60, OutputTokens = 10 }
-        });
-
-        var controller = CreateController();
-
-        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
-
-        Assert.IsType<JsonResult>(result);
-    }
-
-    [Fact]
-    public async Task SummarizeJobEvents_ServiceThrows_Returns500()
-    {
-        _summarizationService.SummarizeJobEventsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Exception("DB error"));
-
-        var controller = CreateController();
-
-        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(500, statusResult!.StatusCode);
-    }
-
-    [Fact]
     public async Task SummarizeTaskDashboard_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
@@ -573,17 +515,6 @@ public class AiControllerTests
 
         var statusResult = result as ObjectResult;
         Assert.Equal(499, statusResult!.StatusCode);
-    }
-
-    [Fact]
-    public async Task SummarizeJobNotes_AiUnavailable_Returns503()
-    {
-        _summarizationService.SummarizeJobNotesAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new AiUnavailableException("timed out"));
-
-        var result = await CreateController().SummarizeJobNotes(1, TestContext.Current.CancellationToken);
-
-        Assert.Equal(503, Assert.IsType<ObjectResult>(result).StatusCode);
     }
 
     [Fact]

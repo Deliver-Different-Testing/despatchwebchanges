@@ -118,6 +118,9 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         [],
     );
     const minsUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    // The rolling-window interval outlives the render that started it, so it reads the latest callback.
+    const onRefreshDataRef = useRef(onRefreshData);
+    onRefreshDataRef.current = onRefreshData;
     const prevDateFilterRef = useRef<DateFilterData | null>(null);
 
     // Load saved option from localStorage and emit initial date filter data
@@ -246,13 +249,13 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
             setStartDate(defaults.startDate);
             setEndDate(newEndDate);
 
-            onRefreshData({
+            onRefreshDataRef.current({
                 startDate: defaults.startDate,
                 endDate: newEndDate,
                 useTime: true,
             });
         }, 60000); // Update every minute
-    }, [ianaTimeZone, onRefreshData, stopMinsUpdate]);
+    }, [ianaTimeZone, stopMinsUpdate]);
 
     const handleRangeOptionChange = useCallback(async (option: DateRangeOption) => {
         setSelectedRangeOption(option);

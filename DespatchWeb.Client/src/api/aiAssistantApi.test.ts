@@ -3,13 +3,11 @@ import type {Mocked} from 'vitest';
 /**
  * AI Summary API Service Tests
  *
- * Tests the AI summarization API functions: summarizeJobNotes (markdown),
- * summarizeJob, summarizeTaskDashboard, summarizeOperations,
+ * Tests the AI summarization API functions: summarizeJob, summarizeTaskDashboard, summarizeOperations,
  * summarizeCompliance (structured).
  */
 
 import {
-    summarizeJobNotes,
     summarizeJob,
     summarizeOperations,
     summarizeCompliance,
@@ -48,23 +46,6 @@ const structuredResponse = {
 describe('aiAssistantApi', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-    });
-
-    describe('summarizeJobNotes (markdown)', () => {
-        it('calls correct endpoint with jobId', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Test summary',
-                usage: {inputTokens: 100, outputTokens: 20},
-            });
-
-            await summarizeJobNotes(42);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith(
-                '/Ai/SummarizeJobNotes',
-                null,
-                {params: {jobId: 42}}
-            );
-        });
     });
 
     describe('summarizeJob (structured)', () => {

@@ -15,6 +15,7 @@ import {
     RecentConversation
 } from "../components/dialogs/messaging-dialog/types";
 import messagingApi from "../api/messagingApi";
+import {errorMessageOf} from "../utils/errorMessage";
 
 export const conversationsQueryKey = ['messages', 'conversations'] as const;
 export const CONVERSATIONS_REFRESH_MS = 20_000;
@@ -87,7 +88,7 @@ export function useConversations(open: boolean) {
         isLoading,
         isSlow,
         isRefreshing: query.isFetching,
-        error: query.isError && query.data === undefined ? errorMessage(query.error) : null,
+        error: query.isError && query.data === undefined ? errorMessageOf(query.error, 'Failed to load conversations') : null,
         refresh,
         updateConversation,
         addConversation,
@@ -96,13 +97,6 @@ export function useConversations(open: boolean) {
 
 const EMPTY_CONVERSATIONS: RecentConversation[] = [];
 
-function errorMessage(error: unknown): string {
-    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-        return error.message;
-    }
-    return 'Failed to load conversations';
-}
-
 /**
  * Hook for managing messages in a conversation
  */
@@ -110,29 +104,40 @@ export function useMessages(currentStaffId: number) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // Only the newest load may write: switching conversations while an earlier load
+    // (or a silent poll) is in flight must not land the old conversation's messages.
+    const latestLoadRef = useRef(0);
 
     const loadMessages = useCallback(async (
         otherPartyId: number,
         otherPartyType: OtherMessagePartyType,
         silent = false
     ) => {
+        const loadId = ++latestLoadRef.current;
         if (!silent) setIsLoading(true);
         setError(null);
 
         try {
             const data = await messagingApi.getMessages(otherPartyId, otherPartyType, currentStaffId);
+            if (loadId !== latestLoadRef.current) return;
             // Sort by time, tie-breaking on messageId (received order) so a
             // re-fetch can never re-shuffle messages that share a timestamp.
             const sorted = [...data].sort((a, b) => {
                 const diff = new Date(a.messageTime).getTime() - new Date(b.messageTime).getTime();
                 return diff !== 0 ? diff : a.messageId - b.messageId;
             });
-            setMessages(sorted);
+            // Unconfirmed local bubbles are not on the server yet; keep them so a poll
+            // doesn't wipe a 'sending' message or a 'failed' one awaiting Retry.
+            setMessages(prev => [
+                ...sorted,
+                ...prev.filter(m => m.status === 'sending' || m.status === 'failed'),
+            ]);
         } catch (err: unknown) {
+            if (loadId !== latestLoadRef.current) return;
             console.error('Failed to load messages:', err);
-            if (!silent) setError(err instanceof Error ? err.message : 'Failed to load messages');
+            if (!silent) setError(errorMessageOf(err, 'Failed to load messages'));
         } finally {
-            if (!silent) setIsLoading(false);
+            if (loadId === latestLoadRef.current) setIsLoading(false);
         }
     }, [currentStaffId]);
 
@@ -147,7 +152,9 @@ export function useMessages(currentStaffId: number) {
     }, []);
 
     const clearMessages = useCallback(() => {
+        latestLoadRef.current++;
         setMessages([]);
+        setIsLoading(false);
     }, []);
 
     return {
@@ -226,12 +233,15 @@ export function useContactSearch() {
     const [results, setResults] = useState<MessageContactOption[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // Debouncing only orders the requests' start; a slower earlier search could still land last.
+    const latestSearchRef = useRef(0);
 
     const search = useCallback(async (term: string) => {
         // Clear previous timeout
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
+        const searchId = ++latestSearchRef.current;
 
         setSearchTerm(term);
 
@@ -246,12 +256,12 @@ export function useContactSearch() {
             setIsSearching(true);
             try {
                 const data = await messagingApi.getMessageContactOptions(term);
-                setResults(data);
+                if (searchId === latestSearchRef.current) setResults(data);
             } catch (err) {
                 console.error('Search failed:', err);
-                setResults([]);
+                if (searchId === latestSearchRef.current) setResults([]);
             } finally {
-                setIsSearching(false);
+                if (searchId === latestSearchRef.current) setIsSearching(false);
             }
         }, 300);
     }, []);
@@ -260,6 +270,7 @@ export function useContactSearch() {
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
+        latestSearchRef.current++;
         setSearchTerm('');
         setResults([]);
         setIsSearching(false);

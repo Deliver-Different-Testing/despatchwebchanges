@@ -27,7 +27,6 @@ export const GENERIC_ERROR_MESSAGE =
 export interface FlightSearchGuardInput {
     job?: {assignedFlight?: unknown} | undefined;
     airports: {outbound?: {id: number} | unknown; inbound?: {id: number} | unknown};
-    loading: boolean;
 }
 
 export type FlightSearchGuardResult =
@@ -52,8 +51,6 @@ export function flightSearchGuard(input: FlightSearchGuardInput): FlightSearchGu
     }
 
     if (input.job.assignedFlight) return {action: 'skip'};
-
-    if (input.loading) return {action: 'skip'};
 
     if (!input.airports.outbound || !input.airports.inbound) {
         return {action: 'block', clearFlights: true, message: NO_AIRPORTS_MESSAGE};

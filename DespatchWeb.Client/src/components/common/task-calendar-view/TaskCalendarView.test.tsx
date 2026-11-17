@@ -296,6 +296,102 @@ describe('TaskCalendarView', () => {
             await waitFor(() => {
                 expect(props.showErrorToast).toHaveBeenCalledWith("Couldn't update the task. Check your connection and try again.");
             });
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
+        });
+
+        it('ticks the checkbox immediately without mutating the task prop', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            tasksService.markTaskAsClosed = vi.fn(() => new Promise<void>(() => {}));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+
+            expect(screen.getByRole('checkbox')).toBeChecked();
+            expect(task.closed).toBe(false);
+        });
+
+        it('keeps a tick that is still saving when the task list refetches', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            tasksService.markTaskAsClosed = vi.fn(() => new Promise<void>(() => {}));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            const {rerender} = renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            rerender(<TaskCalendarView {...props} tasks={[{...task}]} />);
+
+            expect(screen.getByRole('checkbox')).toBeChecked();
+        });
+
+        it('keeps the latest click when an earlier save settles after it', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            let resolveFirst!: () => void;
+            tasksService.markTaskAsClosed = vi.fn()
+                .mockImplementationOnce(() => new Promise<void>(resolve => { resolveFirst = resolve; }))
+                .mockImplementationOnce(() => new Promise<void>(() => {}));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            await user.click(screen.getByRole('checkbox'));
+            resolveFirst();
+
+            await waitFor(() => expect(props.onTaskStatusChange).toHaveBeenCalled());
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
+        });
+
+        it('rolls a failed untick back to the saved tick, not the stale task prop', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            tasksService.markTaskAsClosed = vi.fn()
+                .mockResolvedValueOnce(undefined)
+                .mockRejectedValueOnce(new Error('offline'));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            await waitFor(() => expect(props.onTaskStatusChange).toHaveBeenCalled());
+            await user.click(screen.getByRole('checkbox'));
+
+            await waitFor(() => expect(props.showErrorToast).toHaveBeenCalled());
+            expect(screen.getByRole('checkbox')).toBeChecked();
+        });
+
+        it('rolls a failed click back past another click that is still saving', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const tasksService = createMockTasksService();
+            tasksService.markTaskAsClosed = vi.fn()
+                .mockReturnValueOnce(new Promise<void>(() => {}))
+                .mockRejectedValueOnce(new Error('offline'));
+            const props = createDefaultProps({tasks: [task], tasksService});
+            renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            await user.click(screen.getByRole('checkbox'));
+
+            await waitFor(() => expect(props.showErrorToast).toHaveBeenCalled());
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
+        });
+
+        it('drops a settled tick once the refetched list arrives', async () => {
+            const user = setupUser();
+            const task = createMockTask({closed: false});
+            const props = createDefaultProps({tasks: [task]});
+            const {rerender} = renderWithProviders(<TaskCalendarView {...props} />);
+
+            await user.click(screen.getByRole('checkbox'));
+            await waitFor(() => expect(props.onTaskStatusChange).toHaveBeenCalled());
+            rerender(<TaskCalendarView {...props} tasks={[{...task, closed: false}]} />);
+
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
         });
     });
 

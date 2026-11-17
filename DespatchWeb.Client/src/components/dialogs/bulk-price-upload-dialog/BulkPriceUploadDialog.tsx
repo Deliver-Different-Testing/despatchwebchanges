@@ -42,6 +42,7 @@ import {
     PricingMode,
     DialogState,
 } from './types';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 const VALID_EXTENSIONS = ['.xls', '.xlsx', '.csv'];
 
@@ -215,7 +216,7 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             }
         } catch (error: unknown) {
             console.error('Error applying prices:', error);
-            const msg = error instanceof Error ? `Couldn't apply prices. ${error.message}` : "Couldn't apply prices. Try again.";
+            const msg = `Couldn't apply prices. ${errorMessageOf(error, 'Try again.')}`;
             setErrorMessage(msg);
             setCurrentState('mode-select');
             setIsLoading(false);

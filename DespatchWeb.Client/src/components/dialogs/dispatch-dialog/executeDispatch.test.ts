@@ -102,6 +102,15 @@ describe('executeDispatchConfirmation', () => {
             expect(mockUpdateJobDetail).not.toHaveBeenCalled();
         });
 
+        it('reports an AWB save failure as a warning rather than a failed dispatch', async () => {
+            mockAssignAgent.mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true});
+            mockUpdateJobDetail.mockRejectedValue(new Error('conNote blew up'));
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            expect(await executeDispatchConfirmation(job, {type: 'Agent', destination: agent, awb: 'AWB-3'}))
+                .toEqual({message: expect.stringContaining('AWB AWB-3 could not be saved'), severity: 'warning'});
+        });
+
         it('reports what happened to the inbound-agent email', async () => {
             mockAssignAgent.mockResolvedValue({status: 'Queued', agentEmail: 'a@b.c', willEmail: true});
             expect(await executeDispatchConfirmation(job, {type: 'Agent', destination: agent}))

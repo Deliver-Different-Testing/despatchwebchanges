@@ -71,7 +71,6 @@ public interface IJobQueryRepository
 
     Task<int> MaxAutoLatePickupAlertAsync();
     Task<int> MaxAutoLateDeliveryAlertAsync();
-    Task<decimal> PpdExclusiveAmountAsync(int clientId, decimal amount);
     Task<decimal> GetJobAmountAsync(int jobId, bool isBooking);
 
     Task<IReadOnlyList<Suggestion>> GetSpeedsAsync();
@@ -92,14 +91,6 @@ public interface IJobQueryRepository
 
     Task<SuggestedFuelChargeViewModel> GetSuggestedFuelChargeAsync(int jobId, decimal chargeAmount, bool isPrebook,
         bool isArchived = false);
-
-    Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
-
-    Task<PaginatedResponse<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
-        int clientId,
-        int speedId,
-        int jobId
-    );
 
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
@@ -124,11 +115,6 @@ public interface IJobQueryRepository
     Task<TucJobType> GetJobTypeByIdAsync(int speedId);
 
     Task<IReadOnlyList<AddressWithAgent>> GetClosestAirportsAsync(decimal latitude, decimal longitude);
-
-    Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
-        CancellationToken cancellationToken = default);
 
     Task<bool> IsJobParentAsync(int jobId);
     Task<bool> IsBulkJobParent(int bulkJobId);

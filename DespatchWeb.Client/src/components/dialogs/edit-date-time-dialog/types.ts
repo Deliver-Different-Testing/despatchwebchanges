@@ -11,11 +11,6 @@ import type { ShowToastFn } from '../../../services/toastService';
 export type JobPropertyField = string;
 
 /**
- * Dialog mode configuration
- */
-export type DateTimeMode = 'date' | 'time' | 'datetime';
-
-/**
  * Result returned when the dialog is submitted
  */
 export interface EditDateTimeDialogResult {

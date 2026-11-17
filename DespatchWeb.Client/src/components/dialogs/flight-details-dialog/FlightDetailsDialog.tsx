@@ -58,14 +58,15 @@ function formatDuration(minutes: number): string {
 }
 
 /**
- * Parse duration string (HH:MM:SS format) to minutes
+ * Parse a .NET TimeSpan string ([d.]HH:MM:SS) to minutes
  */
 function parseDurationToMinutes(durationStr: string): number {
-    const matches = durationStr.match(/(\d+):(\d+):(\d+)/);
-    if (matches && matches.length >= 4) {
-        const hours = parseInt(matches[1]);
-        const mins = parseInt(matches[2]);
-        return hours * 60 + mins;
+    const matches = durationStr.match(/^(?:(\d+)\.)?(\d+):(\d+):(\d+)/);
+    if (matches) {
+        const days = matches[1] ? parseInt(matches[1], 10) : 0;
+        const hours = parseInt(matches[2], 10);
+        const mins = parseInt(matches[3], 10);
+        return days * 24 * 60 + hours * 60 + mins;
     }
     return 0;
 }

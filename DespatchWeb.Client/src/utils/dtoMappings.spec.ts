@@ -11,7 +11,6 @@ import {formatShortDateTime, formatShortDate, formatDateFromApi} from './dateUti
 /** Builds a minimal IJobDto with sensible defaults. Override as needed. */
 function makeJobDto(overrides: Partial<IJobDto> = {}): IJobDto {
     return {
-        angularId: 'test-1',
         id: 1,
         rootParentId: undefined,
         hasBeenRead: false,

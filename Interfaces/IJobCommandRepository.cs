@@ -84,8 +84,6 @@ public interface IJobCommandRepository
     Task<QuickAddJobResult> QuickAddJobAsync(JobCreateViewModel request);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
 
-    Task AddClientsItemToJobAsync(int jobId, IReadOnlyList<int> clientItemIds, decimal totalCost);
-
     Task AddEntityAsync<T>(T entity) where T : class;
 
     Task UpdateJobNoteAsync(int jobId, string note);

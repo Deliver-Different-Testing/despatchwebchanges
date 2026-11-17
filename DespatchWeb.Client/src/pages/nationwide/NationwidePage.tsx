@@ -8,7 +8,7 @@ import {getContactId} from '../../api/session';
 import {AppPage as LegacyAppPage} from '../../types/enums/app-pages.enum';
 import {AppPage} from '../../types/dispatchJob';
 import type {DispatchJob, JobListSearchParams} from '../../types/dispatchJob';
-import type {IDispatchMapItem, ISuggestion} from '../../types/interfaces/job.interface';
+import type {IDispatchJob, IDispatchMapItem, ISuggestion} from '../../types/interfaces/job.interface';
 import {JobProperty} from '../../types/enums/job-property.enum';
 import type {Agent} from '../../types/agent';
 import type {FlightViewModel} from '../../types/nationwideJobs';
@@ -568,12 +568,10 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         refetchInterval: refetchIntervalMs,
     }), [dateFilter, selectedViewIds, refetchIntervalMs]);
 
-    const mapConfig = useMemo(() => {
-        if (!currentJob) {
-            return {center: getDefaultMapCenter(), zoom: 7, selectedJobIndex: 0};
-        }
-        return calculateMapBounds(currentJob as never, {fallbackCentre: getDefaultMapCenter()});
-    }, [currentJob]);
+    const mapConfig = useMemo(
+        () => calculateMapBounds(currentJob as IDispatchJob | undefined, {fallbackCentre: getDefaultMapCenter()}),
+        [currentJob],
+    );
 
     /** The map takes its own item shape, not the list DTO. */
     const mapItems = useMemo<IDispatchMapItem[]>(() => (currentJob ? [{

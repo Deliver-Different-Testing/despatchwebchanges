@@ -72,6 +72,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
     open,
     jobId,
     initialUploadType,
+    completedTime,
     onClose,
     showToast,
 }) => {
@@ -80,7 +81,7 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
 
     const [activeTab, setActiveTab] = useState<string>('normal');
 
-    const upload = useFileUpload({jobId, initialUploadType, showToast});
+    const upload = useFileUpload({jobId, initialUploadType, completedTime, showToast});
     const resetFileInputRef = useRef<() => void>(null);
 
     // In multi-tab mode, the active tab determines whether the current upload is POD

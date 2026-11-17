@@ -2,8 +2,6 @@ import React, {useState, useCallback, useMemo, useEffect} from 'react';
 import {getContactId} from '../../api/session';
 import {Box, Card, Collapse, Flex, Group, TextInput} from '@mantine/core';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../components/common/panel-controls';
-import {useQueryClient} from '@tanstack/react-query';
-import {queryKeys} from '../../api';
 import {
     useOverviewJobs,
     useOverviewRegions,
@@ -36,9 +34,7 @@ const OVERVIEW_LIMIT_KEY = () => `overviewJobLimitDisplay-${getContactId()}`;
 
 export const OverviewPage: React.FC<OverviewPageProps> = ({
                                                               onOpenJobDetail,
-                                                              setRefreshCallback,
                                                           }) => {
-    const queryClient = useQueryClient();
 
     // ── State ──
     const [activeTab, setActiveTab] = useState(0);
@@ -51,8 +47,12 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     const [sort, setSort] = useState<TableSort>({column: 'jobName', direction: 'asc'});
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(() => {
-        const saved = localStorage.getItem(OVERVIEW_LIMIT_KEY());
-        return saved ? parseInt(saved, 10) : 20;
+        try {
+            const saved = Number(localStorage.getItem(OVERVIEW_LIMIT_KEY()));
+            return Number.isInteger(saved) && saved > 0 ? saved : 20;
+        } catch {
+            return 20;
+        }
     });
     const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(() =>
         loadCollapseState('overview'),
@@ -70,7 +70,10 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
     // Debounce search input
     useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(search), 300);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 300);
         return () => clearTimeout(timer);
     }, [search]);
 
@@ -135,13 +138,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     const total = jobsData?.total ?? 0;
 
     // ── Refresh callback (exposed to AngularJS) ──
-    const handleRefresh = useCallback(() => {
-        queryClient.invalidateQueries({queryKey: queryKeys.overview.all});
-    }, [queryClient]);
-
-    useEffect(() => {
-        setRefreshCallback(handleRefresh);
-    }, [setRefreshCallback, handleRefresh]);
 
     // ── Filter handlers ──
     const allRegionsSelected = regions.length > 0 && selectedRegionIds.size === regions.length;
@@ -239,7 +235,11 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
     const handleLimitChange = useCallback((newLimit: number) => {
         setLimit(newLimit);
-        localStorage.setItem(OVERVIEW_LIMIT_KEY(), `${newLimit}`);
+        try {
+            localStorage.setItem(OVERVIEW_LIMIT_KEY(), `${newLimit}`);
+        } catch {
+            // Storage unavailable (private mode / quota): the limit just won't persist.
+        }
         setPage(1);
     }, []);
 

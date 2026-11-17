@@ -15,6 +15,7 @@ describe('formatCurrency', () => {
         const result = formatCurrency(100);
         expect(result).toContain('100.00');
         expect(result).toContain('$');
+        expect(result).not.toContain('US$');
     });
 
     it('defaults to NZD when CurrencyCode is not set', () => {

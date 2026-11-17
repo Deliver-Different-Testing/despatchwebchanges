@@ -13,6 +13,7 @@ import {Icon} from '../icon/Icon';
 import {SummarySeverity} from '../../../api/aiAssistantApi';
 import {AutoMateCardHeader} from '../auto-mate-logo/AutoMateCardHeader';
 import type {ExtractBlockersResponse} from '../../../types/ai';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 interface AiBlockersCardProps {
     title: string;
@@ -65,7 +66,7 @@ export const AiBlockersCard: React.FC<AiBlockersCardProps> = ({title, fetchBlock
             ) {
                 return;
             }
-            setError(e instanceof Error ? e.message : "Couldn't extract blockers. Try again.");
+            setError(errorMessageOf(e, "Couldn't extract blockers. Try again."));
         } finally {
             if (abortRef.current === controller) {
                 setLoading(false);

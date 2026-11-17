@@ -53,9 +53,4 @@ public interface IPricingPermissionService
     /// </summary>
     /// <param name="pricingMode">The pricing mode to validate.</param>
     void ValidatePricingMode(string pricingMode);
-
-    /// <summary>
-    /// Gets the current user's pricing permissions as a summary object.
-    /// </summary>
-    Task<PricingPermissions> GetPricingPermissionsAsync();
 }

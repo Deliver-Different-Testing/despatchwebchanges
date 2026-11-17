@@ -195,7 +195,8 @@ export function parseInputDate(input: string, isUs?: boolean): Dayjs | null {
     const dd = useUs ? second : first;
     const mm = useUs ? first : second;
     const d = dayjs(`${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`);
-    return d.isValid() ? d : null;
+    // dayjs rolls an impossible day over (31/02 -> 3 March), so check it round-trips.
+    return d.isValid() && d.date() === Number(dd) && d.month() + 1 === Number(mm) ? d : null;
 }
 
 /**

@@ -1883,27 +1883,6 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Associates client items with a job and updates the job amount.
-    /// </summary>
-    public async Task AddClientsItemToJobAsync(
-        int jobId,
-        IReadOnlyList<int> clientItemIds,
-        decimal totalCost
-    )
-    {
-        var clientItemsString =
-            clientItemIds.Count == 0
-                ? string.Empty
-                : string.Join(",", clientItemIds);
-
-        await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(j => j.ClientItemIds, clientItemsString)
-                .SetProperty(j => j.UcjbAmount, totalCost));
-    }
-
-    /// <summary>
     /// Updates the read status for multiple jobs in a single atomic operation.
     /// </summary>
     /// <param name="data">Request containing job IDs and whether to mark as read or unread.</param>
@@ -3742,13 +3721,6 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Calculates the PPD (Prepaid Discount) exclusive amount for a client.
-    /// </summary>
-    public async Task<decimal> PpdExclusiveAmountAsync(int clientId,
-        decimal amount) =>
-        await CalculateAmountAsync(clientId, amount);
-
-    /// <summary>
     /// Retrieves all available job speeds/types.
     /// </summary>
     public async Task<IReadOnlyList<Suggestion>> GetSpeedsAsync() =>
@@ -4129,36 +4101,6 @@ public partial class JobRepository(
         .FirstOrDefaultAsync();
 
     /// <summary>
-    /// Checks if a client has any active items available for a specific speed.
-    /// </summary>
-    public async Task<bool> HasClientItemsAvailableAsync(int clientId,
-        int speedId) =>
-        await Context
-            .TblClientAvailableSpeeds.Where(cas =>
-                cas.ClientId == clientId && cas.SpeedId == speedId
-            )
-            .SelectMany(cas =>
-                cas.TblClientAvailableSpeedItems.Where(casi => casi.Active)
-                    .Select(casi => casi.ClientItem)
-            )
-            .AnyAsync();
-
-    /// <summary>
-    /// Retrieves paginated client items available for a specific speed, with selection state from a job.
-    /// </summary>
-    public async Task<PaginatedResponse<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
-        int clientId,
-        int speedId,
-        int jobId
-    )
-    {
-        var job = await GetJobInfo(jobId);
-        var clientItemIds = GetClientItemIds(job?.ClientItemIds);
-        var clientItemsQuery = BuildClientItemsQuery(clientId, speedId, clientItemIds);
-        return await CreatePagedList(clientItemsQuery);
-    }
-
-    /// <summary>
     /// Retrieves job details needed for late call notification processing.
     /// </summary>
     public async Task<JobLateCallDto> GetJobForLateCallAsync(int jobId) =>
@@ -4470,99 +4412,6 @@ public partial class JobRepository(
             });
 
         return await active.Concat(archive).Concat(booking).ToListAsync();
-    }
-
-    /// <summary>
-    /// Retrieves all active jobs with location data for the mega map display.
-    /// </summary>
-    public async Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(
-        CancellationToken cancellationToken = default)
-    {
-        const int maxMapJobs = 5000;
-        var isUsCustomer = _infoService.IsUsTenant();
-
-        var jobs = await Context.TucJobs
-            .Where(j =>
-                j.UcjbStatus.HasValue
-                && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
-                && !j.UcjbVoid
-            )
-            .Take(maxMapJobs)
-            .Select(j => new MegaMapResponse
-            {
-                JobId = j.UcjbId,
-                JobNumber = j.UcjbNumber,
-                JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
-                EstimatedDelivery =
-                    j.UcjbSpeedNavigation.GroupingId ==
-                    (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
-                    && j.TucJobNationwides.Count != 0
-                        ? j.TucJobNationwides.OrderByDescending(n => n.UcnwLegNumber).First().UcnwEta.Value
-                        : j
-                            .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
-                            .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
-                IsFlightJob = j.UcjbSpeedNavigation.GroupingId ==
-                              (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
-                PickupLocation = new AddressViewModel
-                {
-                    Latitude = j.PickUpLatitude ?? 0,
-                    Longitude = j.PickUpLongitude ?? 0,
-                    AddressLine1 = j.PickupAddressLine1,
-                    AddressLine2 = j.PickupAddressLine2,
-                    AddressLine3 = j.PickupAddressLine3,
-                    AddressLine4 = j.PickupAddressLine4,
-                    AddressLine5 = j.PickupAddressLine5,
-                    AddressLine6 = j.PickupAddressLine6,
-                    AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8
-                },
-                DeliveryLocation = new AddressViewModel
-                {
-                    Latitude = j.DeliveryLatitude ?? 0,
-                    Longitude = j.DeliveryLongitude ?? 0,
-                    AddressLine1 = j.DeliveryAddressLine1,
-                    AddressLine2 = j.DeliveryAddressLine2,
-                    AddressLine3 = j.DeliveryAddressLine3,
-                    AddressLine4 = j.DeliveryAddressLine4,
-                    AddressLine5 = j.DeliveryAddressLine5,
-                    AddressLine6 = j.DeliveryAddressLine6,
-                    AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8
-                },
-                CourierLocation = j.UcjbCourierId.HasValue
-                    ? new CourierLocation
-                    {
-                        CourierId = j.UcjbCourier.UccrId,
-                        CourierName =
-                            $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}".Trim(),
-                        Coordinates = j.UcjbCourier.CourierGpsid.HasValue
-                            ? new Coordinates
-                            {
-                                Lat = (decimal)j.UcjbCourier.CourierGps.Latitude,
-                                Lng = (decimal)j.UcjbCourier.CourierGps.Longitude
-                            }
-                            : null
-                    }
-                    : null,
-                FlightInfo =
-                    j.UcjbSpeedNavigation.GroupingId ==
-                    (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
-                        ? j.TucJobNationwides
-                            .OrderBy(n => n.UcnwLegNumber).Take(1)
-                            .SelectMany(
-                                first => j.TucJobNationwides.OrderByDescending(n => n.UcnwLegNumber).Take(1),
-                                (first, last) => new AssignedFlight
-                                {
-                                    FlightNumber = first.UcnwFlightNo,
-                                    ExpectedArrival = last.UcnwEta,
-                                    ExpectedDeparture = first.UcnwEtd
-                                })
-                            .FirstOrDefault()
-                        : null
-            })
-            .ToListAsync(cancellationToken);
-
-        return jobs;
     }
 
     /// <summary>
@@ -4916,10 +4765,6 @@ public partial class JobRepository(
 
     public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string localTenantId) =>
         await Context.IsOutboundPartnerJobAsync(jobId, localTenantId);
-
-    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
-        CancellationToken cancellationToken = default)
-        => await base.GetJobCoordinatesAsync(selectedViewIds, cancellationToken);
 
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
@@ -6744,42 +6589,6 @@ public partial class JobRepository(
             .Split(',')
             .Where(s => !string.IsNullOrEmpty(s))
             .Select(int.Parse);
-    }
-
-    private IQueryable<ClientItemsViewModel> BuildClientItemsQuery(
-        int clientId,
-        int speedId,
-        IEnumerable<int> clientItemIds
-    )
-    {
-        return Context
-            .TblClientAvailableSpeeds.Where(cas =>
-                cas.ClientId == clientId && cas.SpeedId == speedId
-            )
-            .SelectMany(cas =>
-                cas.TblClientAvailableSpeedItems.Where(casi => casi.Active)
-                    .Select(casi => new ClientItemsViewModel
-                    {
-                        ItemId = casi.ClientItem.ItemId,
-                        ClientId = casi.ClientItem.ClientId,
-                        Name = casi.ClientItem.Name,
-                        Description = casi.ClientItem.Description,
-                        PerItem = casi.ClientItem.PerItem,
-                        Rate = casi.ClientItem.Rate,
-                        VehicleSizeId = casi.ClientItem.VehicleSizeId,
-                        Selected = clientItemIds.Contains(casi.ClientItem.ItemId)
-                    })
-            );
-    }
-
-    private static async Task<PaginatedResponse<ClientItemsViewModel>> CreatePagedList(
-        IQueryable<ClientItemsViewModel> query
-    )
-    {
-        var count = await query.CountAsync();
-        var items = await query.ToListAsync();
-
-        return new PaginatedResponse<ClientItemsViewModel> { Items = items, Total = count };
     }
 
     private async Task<decimal> CalculateAmountAsync(int clientId,

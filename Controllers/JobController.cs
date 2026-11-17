@@ -122,47 +122,6 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> GetAllJobCoordinates(
-        bool isInternal,
-        string clientIds,
-        [FromQuery] List<int> despatchViewIds)
-    {
-        try
-        {
-            Log.Information(
-                "GetAllJobCoordinates endpoint called with Status: {Status}, IsInternal: {IsInternal}, "
-                + "ClientIds: {ClientIds}",
-                isInternal,
-                clientIds,
-                despatchViewIds
-            );
-
-            if (scopeProvider.Scope?.IsCustomerScoped == true)
-            {
-                await clientAccessValidator.ValidateClientAccessAsync(infoService.GetContactId(), clientIds);
-            }
-
-            var result = await jobQueryRepository.GetJobCoordinatesAsync(despatchViewIds);
-
-            Log.Information(
-                "Successfully retrieved {Count} job coordinates",
-                result.Count
-            );
-
-            return Json(result);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Log.Warning(ex, "Unauthorized access attempt");
-            return StatusCode(StatusCodes.Status401Unauthorized, "Unauthorized access");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error processing job coordinates request");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
     public async Task<IActionResult> GetJobsByClearListEnvelope(
         JobQueryParams queryParams,
         bool isInternal,
@@ -1036,31 +995,6 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Upload(IFormFile file)
-    {
-        try
-        {
-            if (!await pricingPermissionService.CanModifyPricesAsync())
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to upload prices");
-            }
-
-            await jobReportService.ProcessJobPriceUploadAsync(file);
-            return Ok();
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(Upload)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
-    [HttpPost]
     public async Task<IActionResult> ApplyBulkPriceUpdate(IFormFile file, [FromQuery] string pricingMode)
     {
         try
@@ -1624,32 +1558,6 @@ public class JobController(
     }
 
     [HttpPost]
-    [RequireScope(ScopedRecord.Courier, "courierId")]
-    [NetworkPartnerCapability(NpCapability.Dispatch)]
-    public async Task<IActionResult> ReSendAll(int courierId)
-    {
-        try
-        {
-            await jobCommandRepository.ReSendAllJobsAsync(courierId);
-            return Ok();
-        }
-        catch (JobNotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(
-                ex,
-                "Error resending jobs to CourierId {CourierId}. Error: {ErrorMessage}",
-                courierId,
-                ex.Message
-            );
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    [HttpPost]
     [RequireScope(ScopedRecord.Job, "jobIds")]
     [NetworkPartnerCapability(NpCapability.Restore)]
     public async Task<IActionResult> RestoreSplitJobs([FromQuery] List<int> jobIds)
@@ -2090,12 +1998,6 @@ public class JobController(
         return Json(data);
     }
 
-    public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)
-    {
-        var ppd = await jobQueryRepository.PpdExclusiveAmountAsync(clientId, amount);
-        return Json(ppd);
-    }
-
     [HttpPost]
     public async Task<IActionResult> UpdateRecurringJob(
         int jobId,
@@ -2442,37 +2344,6 @@ public class JobController(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(InterCourierCharge)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-    }
-
-    public async Task<IActionResult> HasClientItemsAvailable(int clientId, int speedId)
-    {
-        var hasItems = await jobQueryRepository.HasClientItemsAvailableAsync(clientId, speedId);
-        return Json(hasItems);
-    }
-
-    public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId)
-    {
-        var clientItems =
-            await jobQueryRepository.GetClientItemsBySpeedAsync(clientId, speedId, jobId);
-        return Json(clientItems);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> AddClientItemsToJob(
-        int jobId,
-        [FromBody] ClientItemsModel itemsModel
-    )
-    {
-        if (itemsModel != null)
-        {
-            await jobCommandRepository.AddClientsItemToJobAsync(
-                jobId,
-                itemsModel.ServiceIds,
-                itemsModel.TotalCost
-            );
-        }
-
-        return Ok();
     }
 
     public async Task<IActionResult> SendPod(int jobId, string toEmail)
@@ -3040,21 +2911,6 @@ public class JobController(
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> AddStopToRecurringJob([FromBody] AddStopRequest data)
-    {
-        try
-        {
-            var newStopJobId = await addStopJobService.AddStopInsertRecurringJobAsync(data);
-            return Json(newStopJobId);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating job read status for Job {JobId}", data.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
     public async Task<IActionResult> GetDeliveryJourney(int jobId, string timeZone = null)
     {
         try
@@ -3084,29 +2940,6 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error retrieving the recurring delivery journey for Booking {BookingId}", bookingId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    [HttpPost]
-    [RequireScope(ScopedRecord.Job, "jobId")]
-    public async Task<IActionResult> ApplyWebQtyUpdate(int jobId)
-    {
-        try
-        {
-            var partnerGuard = await RejectIfPartnerJobAsync(jobId);
-            if (partnerGuard != null)
-            {
-                return partnerGuard;
-            }
-
-            var applied = await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
-            return applied ? Ok() : NotFound("No pending web qty update found for this job.");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(ApplyWebQtyUpdate)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -3368,20 +3201,6 @@ public class JobController(
         }
 
         return result;
-    }
-
-    public async Task<IActionResult> GetPricingPermissions()
-    {
-        try
-        {
-            var permissions = await pricingPermissionService.GetPricingPermissionsAsync();
-            return Json(permissions);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting pricing permissions");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
     }
 
     public async Task<IActionResult> GetActivePartnerOptions()

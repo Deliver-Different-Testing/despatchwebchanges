@@ -21,8 +21,6 @@ public interface ICourierRepository
 
     Task<IReadOnlyList<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false);
 
-    Task<IReadOnlyList<ActiveCouriersViewModel>> AllActiveCouriersAsync();
-
     Task<ClearListViewModel> GetClearListsAsync(
         IReadOnlyList<int> despatchViewIds,
         DateTimeOffset? startDate = null,

@@ -231,11 +231,5 @@ export interface CourierDailyEarningsPaginated extends PaginatedResponse<Courier
 export interface DriverManagementPageProps {
     showToast: ShowToastFn;
     isUsCustomer?: boolean;
-    setRefreshCallback?: (callback: () => void) => void;
 }
 
-export interface MountDriverManagementConfig {
-    /** Ignored: the module supplies toasts from the Mantine toastService. */
-    showToast?: ShowToastFn;
-    isUsCustomer?: boolean;
-}

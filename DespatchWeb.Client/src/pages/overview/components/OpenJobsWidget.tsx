@@ -23,16 +23,31 @@ interface OpenJobsWidgetProps {
  * shared `OpenJobsList`, which Dispatch mounts as a panel with its own frame and
  * its own storage keys.
  */
+// Storage can be blocked (private mode, quota); the view preferences then just don't persist.
+function readStored(key: string): string | null {
+    try {
+        return localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+function writeStored(key: string, value: string): void {
+    try {
+        localStorage.setItem(key, value);
+    } catch { /* not persisted */ }
+}
+
 export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoading}) => {
     const [isCollapsed, setIsCollapsed] = useState(() => loadCollapseState('openJobs'));
     const [isTableView, setIsTableView] = useState(
-        () => localStorage.getItem(OPEN_JOBS_VIEW_MODE_KEY()) === 'table',
+        () => readStored(OPEN_JOBS_VIEW_MODE_KEY()) === 'table',
     );
     const [tableSort, setTableSort] = useState<TableSort>({column: 'reference', direction: 'asc'});
     const [tablePage, setTablePage] = useState(1);
     const [tableLimit, setTableLimit] = useState(() => {
-        const saved = localStorage.getItem(OPEN_JOBS_LIMIT_KEY());
-        return saved ? parseInt(saved, 10) : 5;
+        const saved = Number(readStored(OPEN_JOBS_LIMIT_KEY()));
+        return Number.isInteger(saved) && saved > 0 ? saved : 5;
     });
 
     const toggleCollapse = useCallback(() => {
@@ -45,13 +60,13 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
     // Sets rather than flips: the control is a radio group, so re-picking the
     // active view must be a no-op, not a switch to the other one.
     const selectViewMode = useCallback((table: boolean) => {
-        localStorage.setItem(OPEN_JOBS_VIEW_MODE_KEY(), table ? 'table' : 'card');
+        writeStored(OPEN_JOBS_VIEW_MODE_KEY(), table ? 'table' : 'card');
         setIsTableView(table);
     }, []);
 
     const handleLimitChange = useCallback((newLimit: number) => {
         setTableLimit(newLimit);
-        localStorage.setItem(OPEN_JOBS_LIMIT_KEY(), `${newLimit}`);
+        writeStored(OPEN_JOBS_LIMIT_KEY(), `${newLimit}`);
         setTablePage(1);
     }, []);
 

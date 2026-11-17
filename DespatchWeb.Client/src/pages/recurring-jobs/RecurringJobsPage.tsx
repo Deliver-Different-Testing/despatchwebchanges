@@ -1,5 +1,5 @@
 
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {Box, Card, Stack, Text} from '@mantine/core';
 import {Info, Repeat, SlidersHorizontal} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
@@ -45,7 +45,6 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                                                                         showToast,
                                                                         isUsCustomer = false,
                                                                         onAddStop,
-                                                                        setRefreshCallback,
                                                                     }) => {
     // Query state
     const [query, setQuery] = useState<RecurringJobQuery>(DEFAULT_QUERY);
@@ -71,14 +70,6 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     // Fetch data
     const {data, isLoading, isFetching, refetch} = useRecurringJobsList(query);
 
-    // Register refresh callback for AngularJS to call
-    useEffect(() => {
-        if (setRefreshCallback) {
-            setRefreshCallback(async () => {
-                await refetch();
-            });
-        }
-    }, [setRefreshCallback, refetch]);
 
     // Handlers
     const handleSearchChange = useCallback((searchText: string) => {

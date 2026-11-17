@@ -10,6 +10,3 @@ export const overviewToast: OverviewShowToastFn = {
     showErrorToast: (m) => toastService.showErrorToast(m ?? 'Something went wrong'),
     showInfoToast: (m) => toastService.showInfoToast(m),
 };
-
-/** Pages hand a refresh callback to the legacy toolbar; PageFrame wires none, so it is dropped. */
-export const noopRegisterRefresh = (): void => undefined;

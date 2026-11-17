@@ -1,7 +1,4 @@
 ﻿import {IFlightViewModel, IFlightViewModelDto} from "../types/interfaces/nationwideFlight.interfaces";
-import IFlightCargoProcessing, {
-    IFlightCargoProcessingDto
-} from "../types/interfaces/flight-cargo-processing.interface";
 import {
     IDispatchJob,
     IDispatchJobDto,
@@ -19,48 +16,10 @@ import {
     formatShortDateTime,
     getTimezoneAbbreviation
 } from "./dateUtils";
-import {ITask, ITaskDto} from "../types/interfaces/task.interfaces";
 import {
     IDeliveryJourney,
     IDeliveryJourneyDto
 } from "../components/common/task-history/TaskHistory.interfaces";
-
-export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
-    const departureTime = formatDateFromApi(dto.departureTime);
-    const arrivalTime = formatDateFromApi(dto.arrivalTime);
-    return {
-        ...dto,
-        departureTime,
-        arrivalTime,
-        _departureTimeStr: formatLongDateTime(departureTime),
-        _departureTimeZoneStr: getTimezoneAbbreviation(dto.departureTimeZone, departureTime),
-        _arrivalTimeStr: formatLongDateTime(arrivalTime),
-        _arrivalTimeZoneStr: getTimezoneAbbreviation(dto.arrivalTimeZone, arrivalTime),
-        flightSegments: dto.flightSegments?.map(segment => {
-            const segDepartureTime = formatDateFromApi(segment.departureTime);
-            const segArrivalTime = formatDateFromApi(segment.arrivalTime);
-            return {
-                ...segment,
-                departureTime: segDepartureTime,
-                arrivalTime: segArrivalTime,
-                _departureTimeStr: formatLongDateTime(segDepartureTime),
-                _arrivalTimeStr: formatLongDateTime(segArrivalTime),
-                _arrivalTimeZoneStr: getTimezoneAbbreviation(segment.arrivalAirportTimeZone, segArrivalTime),
-                _departureTimeZoneStr: getTimezoneAbbreviation(segment.departureAirportTimeZone, segDepartureTime),
-            };
-        }) ?? []
-    };
-}
-
-export function transformCargoHoursDTO(dto: IFlightCargoProcessingDto): IFlightCargoProcessing {
-    return {
-        ...dto,
-        arrivalTime: formatDateFromApi(dto.arrivalTime),
-        cargoOpeningTime: formatDateFromApi(dto.cargoOpeningTime),
-        cargoClosingTime: formatDateFromApi(dto.cargoClosingTime),
-        deliverByTime: dto.deliverByTime ? formatDateFromApi(dto.deliverByTime) : undefined,
-    };
-}
 
 export function transformJobGroupDTO(dto: IJobGroupDto, isUsCustomer: boolean): IJobGroup {
     return {
@@ -211,20 +170,6 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
         _groupChildren: children,
         _isExpanded: false
     };
-}
-
-export function transformTaskDTO(dto: ITaskDto): ITask {
-    const dueDate = formatDateFromApi(dto.dueDate);
-    const createdAt = dto.createdAt ? formatDateFromApi(dto.createdAt) : undefined;
-    return {
-        ...dto,
-        dueDate,
-        createdAt,
-        _dueDateString: formatLongDate(dueDate),
-        _dueTimeString: formatMins(dueDate),
-        _createdDateString: createdAt && formatLongDate(createdAt),
-        _createdTimeString: createdAt && formatMins(createdAt)
-    }
 }
 
 export function transformDeliveryJourneyDTO(dto: IDeliveryJourneyDto): IDeliveryJourney {

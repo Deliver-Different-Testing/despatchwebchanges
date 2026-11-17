@@ -5,7 +5,6 @@ import {Box, Progress} from '@mantine/core';
 import {useDebouncedValue, useDisclosure, useHotkeys, useLocalStorage, useUncontrolled} from '@mantine/hooks';
 import dayjs from 'dayjs';
 import type {
-    CourierData,
     DensityMode,
     DispatchJob,
     JobCategory,
@@ -35,7 +34,7 @@ import {
 } from '../../api/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
-import {isDone, isInTransit, isUrgent, JOB_STATUS, needsDispatch, priorityRank} from './jobListHelpers';
+import {isDone, isInTransit, isUrgent, needsDispatch, priorityRank} from './jobListHelpers';
 import {
     jobListStorageKey,
     loadJobListCategory,
@@ -53,6 +52,7 @@ import {assignAgentToJobs, assignNpAgentToJobs} from '../../api/dispatchExecutor
 import {RestoreConfirmationDialog} from '../dialogs/restore-confirmation-dialog';
 import type {RestorePodImpactSummary} from '../dialogs/restore-confirmation-dialog';
 import {needsRestoreConfirmation, summarisePodImpact} from '../../services/restorePodImpact';
+import {errorMessageOf} from '../../utils/errorMessage';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -231,10 +231,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               appPage,
                                                               onJobSelect,
                                                               selectedJobId: controlledSelectedJobId,
-                                                              onRefresh,
                                                               onSearchChange,
                                                               onCategoryChange,
-                                                              onBackendFilter,
                                                               onAddStop,
                                                               onJobsLoaded,
                                                               defaultCategory,
@@ -246,9 +244,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               undeliverableIsDone,
                                                               headerSlot,
                                                               topSlot,
-                                                              setJobsCallback,
-                                                              setRefreshCallback,
-                                                              setSelectJobCallback,
                                                               setUpdateSearchParamsCallback,
                                                           }) => {
     const getStorageKey = useCallback(
@@ -265,25 +260,20 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         });
     }, []);
 
-    // ── React Query data fetching (when fetchConfig is provided) ─────
+    // ── React Query data fetching ────────────────────────────────────
     const hookData = useJobListData(fetchConfig);
     const hookDataRef = useRef(hookData);
     hookDataRef.current = hookData;
 
-    // ── Job data (pushed from AngularJS when no fetchConfig) ─────────
-    const [pushedJobs, setPushedJobs] = useState<DispatchJob[]>([]);
-    const [pushedTotalCount, setPushedTotalCount] = useState(0);
-
-    // Use hook data when available, otherwise fall back to pushed data
-    const jobs = fetchConfig ? hookData.jobs : pushedJobs;
-    const totalCount = fetchConfig ? hookData.totalCount : pushedTotalCount;
+    const jobs = hookData.jobs;
+    const totalCount = hookData.totalCount;
 
     // ── Notify parent when jobs are loaded (for map sync) ────────────
     useEffect(() => {
-        if (onJobsLoaded && fetchConfig && jobs.length > 0) {
+        if (onJobsLoaded && jobs.length > 0) {
             onJobsLoaded(jobs);
         }
-    }, [jobs, onJobsLoaded, fetchConfig]);
+    }, [jobs, onJobsLoaded]);
 
     // ── UI State ─────────────────────────────────────────────────────
     const [selectedJobId, setSelectedJobId] = useUncontrolled<number | null>({
@@ -391,48 +381,14 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // filtering the courier search with no UI to clear it.
     const loggedInCouriersOnlyEffective = showLoggedInSwitch && loggedInCouriersOnly;
 
-    // ── Register callbacks for AngularJS bridge (legacy mode) ────────
-    const updateJobsRef = useRef<((jobs: DispatchJob[], total: number) => void) | null>(null);
-    updateJobsRef.current = (newJobs: DispatchJob[], total: number) => {
-        setPushedJobs(newJobs);
-        setPushedTotalCount(total);
-        setLastUpdated(`Last updated: ${dayjs().format('h:mm A')}`);
-    };
-
+    // The host page pushes search params into the panel through this callback.
     useEffect(() => {
-        if (!fetchConfig && setJobsCallback) {
-            setJobsCallback((newJobs, total) => {
-                if (updateJobsRef.current) updateJobsRef.current(newJobs, total);
-            });
-        }
-    }, [fetchConfig, setJobsCallback]);
-
-    useEffect(() => {
-        if (setRefreshCallback) {
-            setRefreshCallback(() => {
-                if (fetchConfig) {
-                    hookDataRef.current.refresh();
-                } else if (onRefresh) {
-                    onRefresh();
-                }
-            });
-        }
-    }, [setRefreshCallback, onRefresh, fetchConfig]);
-
-    useEffect(() => {
-        if (setSelectJobCallback) {
-            setSelectJobCallback((jobId) => setSelectedJobId(jobId));
-        }
-    }, [setSelectJobCallback]);
-
-    // Register updateSearchParams callback for AngularJS to update fetch params
-    useEffect(() => {
-        if (fetchConfig && setUpdateSearchParamsCallback) {
+        if (setUpdateSearchParamsCallback) {
             setUpdateSearchParamsCallback((newParams) => {
                 hookDataRef.current.updateParams(newParams);
             });
         }
-    }, [fetchConfig, setUpdateSearchParamsCallback]);
+    }, [setUpdateSearchParamsCallback]);
 
     // Update category when defaultCategory prop changes. Only an actual change counts —
     // on mount the stored category has already won in the initialiser above, and this
@@ -456,7 +412,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         previousForcedCategoryRef.current = forcedCategory;
     }, [forcedCategory]);
 
-    // Update lastUpdated when hook data changes (fetchConfig mode)
+    // Update lastUpdated when hook data changes
     useEffect(() => {
         if (hookData && !hookData.isLoading && !hookData.isFetching) {
             setLastUpdated(`Last updated: ${dayjs().format('h:mm A')}`);
@@ -481,7 +437,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
         // Search filter (skip when the backend handles it via fetchConfig — unless
         // that fetch has no server-side search of its own, e.g. Current Work).
-        if (debouncedSearchQuery && (!fetchConfig || fetchConfig.clientSideSearch)) {
+        if (debouncedSearchQuery && fetchConfig.clientSideSearch) {
             filtered = filtered.filter((job) => matchesSearch(job, debouncedSearchQuery));
         }
 
@@ -559,13 +515,12 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 if (onJobSelect) onJobSelect(job);
                 if (!job.hasBeenRead && !job.isArchived) {
                     updateJobReadStatus(job.linkedJobId ?? job.id, true).then(() => {
-                        if (fetchConfig) hookDataRef.current.refresh();
-                        else if (onRefresh) onRefresh();
+                        hookDataRef.current.refresh();
                     });
                 }
             }
         },
-        [onJobSelect, multiSelect, fetchConfig, onRefresh, selectedJobId],
+        [onJobSelect, multiSelect, selectedJobId],
     );
 
     const handleContextMenu = useCallback(
@@ -590,23 +545,21 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         (category: JobCategory) => {
             setSelectedCategory(category);
             persistJobListCategory(storagePrefix, category);
-            if (fetchConfig) {
-                hookDataRef.current.updateParams({statusFilter: toStatusFilter(category)});
-            }
+            hookDataRef.current.updateParams({statusFilter: toStatusFilter(category)});
             if (onCategoryChange) onCategoryChange(category);
         },
-        [onCategoryChange, fetchConfig, storagePrefix],
+        [onCategoryChange, storagePrefix],
     );
 
     const handleSearchChange = useCallback(
         (query: string) => {
             setSearchQuery(query.toLowerCase());
-            if (fetchConfig && !fetchConfig.clientSideSearch) {
+            if (!fetchConfig.clientSideSearch) {
                 hookDataRef.current.updateParams({searchText: query || undefined});
             }
             if (onSearchChange) onSearchChange(query);
         },
-        [onSearchChange, fetchConfig],
+        [onSearchChange, fetchConfig.clientSideSearch],
     );
 
     const handleSortChange = useCallback(
@@ -621,7 +574,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         [setSortState],
     );
 
-    // When sort changes: update hook params (fetchConfig mode) or notify AngularJS (legacy mode)
+    // When sort changes, push it into the data hook's params
     const sortChangeInitRef = useRef(true);
     useEffect(() => {
         if (sortChangeInitRef.current) {
@@ -629,13 +582,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             return;
         }
         if (sortState.column && sortState.direction) {
-            if (fetchConfig) {
-                hookDataRef.current.updateSort(sortState.column, sortState.direction);
-            } else if (onBackendFilter) {
-                onBackendFilter(sortState.column, sortState.direction);
-            }
+            hookDataRef.current.updateSort(sortState.column, sortState.direction);
         }
-    }, [sortState.column, sortState.direction, fetchConfig, onBackendFilter]);
+    }, [sortState.column, sortState.direction]);
 
     const handleLoggedInCouriersOnlyChange = useCallback((checked: boolean) => {
         setLoggedInCouriersOnly(checked);
@@ -676,12 +625,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     );
 
     const handleRefresh = useCallback(() => {
-        if (fetchConfig) {
-            hookDataRef.current.refresh();
-        } else if (onRefresh) {
-            onRefresh();
-        }
-    }, [fetchConfig, onRefresh]);
+        hookDataRef.current.refresh();
+    }, []);
 
     // ── Bulk action handlers ───────────────────────────────────────────
 
@@ -706,15 +651,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             // Invalidate job detail (and related/photos) so an open detail panel reflects the
             // reset status, then refresh the list.
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
-            if (fetchConfig) {
-                hookDataRef.current.refresh();
-            } else if (onRefresh) {
-                onRefresh();
-            }
+            hookDataRef.current.refresh();
         } catch {
             showToast("Couldn't restore the jobs. Check your connection and try again.", 'error');
         }
-    }, [multiSelect, jobs, showToast, fetchConfig, onRefresh]);
+    }, [multiSelect, jobs, showToast]);
 
     const handleBulkRestore = useCallback(async () => {
         // Exclude archived jobs — restore only operates on live rows.
@@ -753,15 +694,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             await bulkUpdateReadStatus(ids, true);
             showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as read`, 'success');
             multiSelect.clear();
-            if (fetchConfig) {
-                hookDataRef.current.refresh();
-            } else if (onRefresh) {
-                onRefresh();
-            }
+            hookDataRef.current.refresh();
         } catch {
             showToast("Couldn't mark the jobs as read. Check your connection and try again.", 'error');
         }
-    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+    }, [multiSelect, showToast]);
 
     const handleBulkMarkUnread = useCallback(async () => {
         const ids = [...multiSelect.selectedIds];
@@ -769,15 +706,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             await bulkUpdateReadStatus(ids, false);
             showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as unread`, 'success');
             multiSelect.clear();
-            if (fetchConfig) {
-                hookDataRef.current.refresh();
-            } else if (onRefresh) {
-                onRefresh();
-            }
+            hookDataRef.current.refresh();
         } catch {
             showToast("Couldn't mark the jobs as unread. Check your connection and try again.", 'error');
         }
-    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+    }, [multiSelect, showToast]);
 
     // Bulk dispatch dialog state. The universal DispatchDialog is rendered at the
     // panel level so the toolbar's "Dispatch" button just toggles open=true.
@@ -820,17 +753,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             closeBulkDispatch();
             multiSelect.clear();
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
-            if (fetchConfig) {
-                hookDataRef.current.refresh();
-            } else if (onRefresh) {
-                onRefresh();
-            }
+            hookDataRef.current.refresh();
         } catch (err) {
             // Re-throw so the dialog surfaces the error inline.
-            const message = err instanceof Error ? err.message : "Couldn't dispatch the jobs. Check your connection and try again.";
+            const message = errorMessageOf(err, "Couldn't dispatch the jobs. Check your connection and try again.");
             throw new Error(message, {cause: err});
         }
-    }, [multiSelect, showToast, fetchConfig, onRefresh, closeBulkDispatch]);
+    }, [multiSelect, showToast, closeBulkDispatch]);
 
     // Bulk DFRNT Partner is disabled in the dialog (per-job rates required),
     // so this should never fire — but the dialog still needs the prop.
@@ -843,45 +772,16 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         courierId: number,
         courierName: string,
     ) => {
-        // Parse courier code and name from "101 - John Smith" format
-        const parts = courierName.split(' - ');
-        const courierCode = parts[0]?.trim() || '';
-        const courierDisplayName = parts.slice(1).join(' - ').trim() || courierName;
-
-        // Optimistic update — immediately show courier in the list
-        setPushedJobs(prev => prev.map(j => {
-            if (j.id !== job.id) return j;
-            return {
-                ...j,
-                assignedCourier: {id: courierId, text: courierName},
-                courierData: {
-                    ...j.courierData,
-                    courier: courierCode,
-                    courierName: courierDisplayName,
-                    courierNumber: String(courierId),
-                } as CourierData,
-                statusId: JOB_STATUS.Dispatched,
-                status: 'Dispatched',
-                statusName: 'Dispatched',
-            };
-        }));
-
         try {
             await allocateJobs(courierId, [job.id]);
             showToast(`Dispatched to ${courierName}`, 'success');
             // Refresh data — invalidate job detail so the detail panel updates too
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
-            if (fetchConfig) {
-                hookDataRef.current.refresh();
-            } else if (onRefresh) {
-                onRefresh();
-            }
+            hookDataRef.current.refresh();
         } catch {
-            // Rollback — restore original job
-            setPushedJobs(prev => prev.map(j => j.id === job.id ? job : j));
             showToast("Couldn't dispatch the job. Check your connection and try again.", 'error');
         }
-    }, [showToast, fetchConfig, onRefresh]);
+    }, [showToast]);
 
     // Rows exist but the tab hides them all: say so and offer the way out, rather than
     // the generic empty state, which reads as "there is no work".
@@ -889,7 +789,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         if (selectedCategory === 'all' || debouncedSearchQuery || visibleJobs.length > 0 || stats.total === 0) {
             return undefined;
         }
-        if (fetchConfig && hookData.isLoading) return undefined;
+        if (hookData.isLoading) return undefined;
         const label = CATEGORY_LABELS[selectedCategory];
         return {
             title: `No ${label} jobs`,
@@ -897,7 +797,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             actionText: 'Show all',
             onAction: () => handleCategoryChange('all'),
         };
-    }, [selectedCategory, debouncedSearchQuery, visibleJobs.length, stats.total, fetchConfig, hookData.isLoading, handleCategoryChange]);
+    }, [selectedCategory, debouncedSearchQuery, visibleJobs.length, stats.total, hookData.isLoading, handleCategoryChange]);
 
     // ── Render ───────────────────────────────────────────────────────
 
@@ -915,7 +815,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 position: 'relative',
             }}
         >
-            {fetchConfig && hookData.isFetching && (
+            {hookData.isFetching && (
                 <Progress.Root
                     size="xs"
 
@@ -993,17 +893,17 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 appPage={appPage}
                 isJobSearchPage={isJobSearchPage}
                 loggedInCouriersOnly={loggedInCouriersOnlyEffective}
-                onLoadMore={fetchConfig ? hookData.fetchNextPage : undefined}
-                hasMore={fetchConfig ? hookData.hasMore : false}
-                isFetchingMore={fetchConfig ? hookData.isFetchingNextPage : false}
+                onLoadMore={hookData.fetchNextPage}
+                hasMore={hookData.hasMore}
+                isFetchingMore={hookData.isFetchingNextPage}
                 emptyState={filterEmptyState}
             />
             <JobListFooter
                 displayedCount={visibleJobs.length}
                 totalCount={totalCount}
                 lastUpdated={lastUpdated}
-                isLoadingMore={fetchConfig ? hookData.isFetchingNextPage : false}
-                allJobsLoaded={fetchConfig ? !hookData.hasMore && totalCount > 0 : totalCount > 0 && jobs.length >= totalCount}
+                isLoadingMore={hookData.isFetchingNextPage}
+                allJobsLoaded={!hookData.hasMore && totalCount > 0}
             />
             <JobListContextMenu
                 job={contextMenuJob}
