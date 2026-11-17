@@ -92,6 +92,14 @@ export const OverviewDeliveriesBox: React.FC<OverviewDeliveriesBoxProps> = ({
         [startDate, endDate],
     );
 
+    // A new date range or view scope is a new result set, so the old page number no longer applies.
+    const scopeKey = `${range.startDate.valueOf()}|${range.endDate.valueOf()}|${despatchViewIds.join(',')}`;
+    const [pagedScopeKey, setPagedScopeKey] = useState(scopeKey);
+    if (pagedScopeKey !== scopeKey) {
+        setPagedScopeKey(scopeKey);
+        setPage(1);
+    }
+
     const {data, isLoading} = useOverviewJobs(
         {
             statusGroup: STATUS_GROUPS.indexOf(statusGroup) + 1,

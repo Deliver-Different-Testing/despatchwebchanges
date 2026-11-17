@@ -81,7 +81,10 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         // unambiguously — no `customParseFormat` plugin needed, and no zone applied.
         const parsed = value ? dayjs(value) : null;
         if (parsed?.isValid()) {
-            setDateTime(prev => prev.year(parsed.year()).month(parsed.month()).date(parsed.date()));
+            // After a clear `prev` is invalid, and setters on an invalid dayjs stay invalid.
+            setDateTime(prev => prev.isValid()
+                ? prev.year(parsed.year()).month(parsed.month()).date(parsed.date())
+                : parsed);
         } else {
             // A cleared field marks the value invalid so Save refuses it, rather than
             // silently keeping the old date.

@@ -157,7 +157,7 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
             console.error('Error loading agents:', error);
             setAgentMessage("Couldn't load agents for this job. Check your connection and try again.");
         } finally {
-            setAgentsLoading(false);
+            if (jobIdRef.current === jobId) setAgentsLoading(false);
         }
     }, [job]);
 
@@ -177,6 +177,8 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
         setSelectedInboundAirport(undefined);
         setOutboundAirportOptions([]);
         setInboundAirportOptions([]);
+        // The previous job's agent load no longer owns the spinner (its finally skips once the job moves on).
+        setAgentsLoading(false);
 
         if (!job) return;
 
