@@ -32,7 +32,8 @@ public static class AuthServiceCollectionExtensions
         };
     }
 
-    public static void AddAppAuthentication(this IServiceCollection services, string domain, AgentAccessOptions? agentAccess = null)
+    public static void AddAppAuthentication(this IServiceCollection services, string domain, AgentAccessOptions? agentAccess = null,
+        VoiceAgentAssignOptions? voiceAgentAssign = null)
     {
         var authentication = services.AddAuthentication(agentAccess is null ? CookieScheme : AgentTokenAuthentication.HubOrAgentScheme)
             .AddCookie(CookieScheme, options =>
@@ -61,6 +62,8 @@ public static class AuthServiceCollectionExtensions
                 options.Cookie.HttpOnly = true;
                 options.Cookie.Domain = domain;
             });
+
+        authentication.AddVoiceAgentAssignAuthentication(voiceAgentAssign ?? new VoiceAgentAssignOptions(), agentAccess);
 
         if (agentAccess is not null)
         {

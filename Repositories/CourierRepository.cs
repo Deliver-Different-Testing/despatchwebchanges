@@ -1005,12 +1005,14 @@ public partial class CourierRepository(
         ];
     }
 
-    public async Task ResetClearListAreaOrderAsync(int courierId)
+    public Task ResetClearListAreaOrderAsync(int courierId) => ResetClearListAreaOrderAsync(courierId, Context);
+
+    public async Task ResetClearListAreaOrderAsync(int courierId, DespatchContext context)
     {
         var tenantTime = clock.TenantNow;
 
         // Count jobs for the courier that are not void and not done
-        var jobCount = await Context.TucJobs
+        var jobCount = await context.TucJobs
             .Where(j =>
                 j.UcjbVoid == false &&
                 j.UcjbJobDone == false &&
@@ -1021,7 +1023,7 @@ public partial class CourierRepository(
         {
             case 0:
                 // Update clear list area order - set status to 3 and format OrderTime
-                await Context.TblClearListAreaOrders
+                await context.TblClearListAreaOrders
                     .Where(c => c.CourierId == courierId)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(c => c.Status, 3)
@@ -1030,7 +1032,7 @@ public partial class CourierRepository(
             case > 0:
             {
                 // Check if jobs are only status 5 (picked up) or 8 (late delivery)
-                var jobsNotPickedUpOrLate = await Context.TucJobs
+                var jobsNotPickedUpOrLate = await context.TucJobs
                     .Where(j =>
                         j.UcjbVoid == false &&
                         j.UcjbJobDone == false &&
@@ -1042,7 +1044,7 @@ public partial class CourierRepository(
                 if (jobsNotPickedUpOrLate == 0)
                 {
                     // All jobs are only picked up or late delivery
-                    await Context.TblClearListAreaOrders
+                    await context.TblClearListAreaOrders
                         .Where(c => c.CourierId == courierId)
                         .ExecuteUpdateAsync(setters => setters
                             .SetProperty(c => c.Status, 5)

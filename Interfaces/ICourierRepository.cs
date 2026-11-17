@@ -1,5 +1,6 @@
 #nullable enable
 
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -60,6 +61,9 @@ public interface ICourierRepository
 
     Task<IReadOnlyList<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync();
     Task ResetClearListAreaOrderAsync(int courierId);
+
+    /// <summary>Runs on the caller's context, so it joins a transaction the caller already holds.</summary>
+    Task ResetClearListAreaOrderAsync(int courierId, DespatchContext context);
     Task<ClearListDebugViewModel> GetClearListDebugAsync(int courierId, CancellationToken cancellationToken = default);
 
     /* Driver Management Dashboard - Export (no pagination) */
