@@ -6572,34 +6572,6 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
     }
 
-    private async Task<JobInfo> GetJobInfo(int jobId) =>
-        await Context
-            .TucJobs.Where(j => j.UcjbId == jobId)
-            .Select(j => new JobInfo { ClientItemIds = j.ClientItemIds, IsVan = j.UcjbSize == 3 })
-            .FirstOrDefaultAsync();
-
-    private static IEnumerable<int> GetClientItemIds(string clientItemIdsString)
-    {
-        if (string.IsNullOrEmpty(clientItemIdsString))
-        {
-            return [];
-        }
-
-        return clientItemIdsString
-            .Split(',')
-            .Where(s => !string.IsNullOrEmpty(s))
-            .Select(int.Parse);
-    }
-
-    private async Task<decimal> CalculateAmountAsync(int clientId,
-        decimal amount)
-    {
-        var outputParam = new OutputParameter<decimal?>();
-        await Context.Procedures.UTL_stpPPD_ExclusiveAmountAsync(clientId, amount, outputParam);
-
-        return outputParam.Value ?? 0m;
-    }
-
     private async Task<string> GenerateJobNumberAsync(
         int staffId,
         int jobTypeId,

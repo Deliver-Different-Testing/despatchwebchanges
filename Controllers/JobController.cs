@@ -2906,18 +2906,23 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating job read status");
+            Log.Error(ex, "Error adding a stop to Job {JobId}", data?.JobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> GetDeliveryJourney(int jobId, string timeZone = null)
     {
         try
         {
             infoService.SetTenantTimeZoneOverride(timeZone);
 
-            await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
+            if (!await jobQueryRepository.IsPartnerJobAsync(jobId))
+            {
+                await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
+            }
+
             var deliveryJourney = await deliveryJourneyService.GetDeliveryJourneyForJobAsync(jobId);
             return Json(deliveryJourney);
         }

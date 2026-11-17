@@ -237,7 +237,7 @@ public partial class CourierRepository(
     {
         try
         {
-            var results = await GetActiveCouriersAsync(includeJobCount: false);
+            var results = await Context.GetActiveCouriersAsync(clock.TenantToday);
             return
             [
                 .. results.Select(c => new ActiveCouriersViewModel
@@ -1469,40 +1469,6 @@ public partial class CourierRepository(
                     nameof(GetNzAvailableCourierPositionsAsync)));
             throw;
         }
-    }
-
-    private async Task<IReadOnlyList<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
-    {
-        var today = clock.TenantToday;
-        var results = await Context.GetActiveCouriersAsync(today);
-
-        if (!includeJobCount || results.Count == 0)
-        {
-            return results;
-        }
-
-        var courierIds = results.Select(c => c.CourierId).ToList();
-
-        var jobCounts = await Context.TucJobs
-            .Where(j => j.UcjbCourierId.HasValue &&
-                        courierIds.Contains(j.UcjbCourierId.Value) &&
-                        !j.UcjbVoid &&
-                        !j.UcjbJobDone &&
-                        j.UcjbDate.Date <= today.Date)
-            .GroupBy(j => j.UcjbCourierId.Value)
-            .Select(g => new { CourierId = g.Key, Count = g.Count() })
-            .TagWith("GetActiveCouriers - Job Counts")
-            .ToListAsync();
-
-        var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.Count);
-
-        // Update job counts in memory
-        foreach (var result in results)
-        {
-            result.JobCount = jobCountDict.GetValueOrDefault(result.CourierId, 0);
-        }
-
-        return results;
     }
 
     internal static List<ClearListResult> BuildClearListResultsInMemory(

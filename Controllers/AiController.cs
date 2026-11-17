@@ -28,7 +28,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -70,7 +70,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -111,7 +111,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -152,7 +152,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -193,7 +193,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -234,7 +234,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -276,7 +276,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -322,7 +322,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -364,7 +364,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -406,7 +406,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -449,7 +449,7 @@ public class AiController(
         try
         {
             var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
             {
@@ -506,7 +506,7 @@ public class AiController(
         var accepted = request.AcceptedChargeIds.Where(request.SuggestedChargeIds.Contains).Distinct().ToList();
 
         auditLog.Decided(
-            nameof(AnalyzePricing), request.JobId, tenantInfo.GetStaffId(), tenantInfo.GetTenantTimeZone(),
+            nameof(AnalyzePricing), request.JobId, tenantInfo.GetStaffId(), tenantInfo.GetCurrentTenantId(),
             request.SuggestedChargeIds, accepted);
 
         return Json(new { recorded = true });
@@ -519,7 +519,7 @@ public class AiController(
     {
         // Customers and partners have no staff id; their contact id, negated, keeps them out of the staff key space.
         var userId = tenantInfo.GetStaffIdOrNull() ?? -tenantInfo.GetContactId();
-        var tenantId = tenantInfo.GetTenantTimeZone();
+        var tenantId = tenantInfo.GetCurrentTenantId();
 
         if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
         {

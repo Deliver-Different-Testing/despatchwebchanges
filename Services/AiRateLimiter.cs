@@ -25,7 +25,7 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
         var windowKey = now.ToString("yyyyMMddHHmm");
 
         // Check per-user limit
-        var userKey = $"ai_rate:user:{staffId}:{windowKey}";
+        var userKey = $"ai_rate:user:{tenantId}:{staffId}:{windowKey}";
         var userCount = await IncrementCounterAsync(userKey);
         if (userCount > _settings.RateLimitPerUserPerMinute)
         {
