@@ -579,6 +579,8 @@ public partial class JobRepository(
             return;
         }
 
+        await EnsureJobsVisibleAsync(jobIds);
+
         foreach (var jobId in jobIds)
         {
             await Context.Procedures.uspReDespatchJobAsync(jobId);
@@ -596,6 +598,8 @@ public partial class JobRepository(
             return;
         }
 
+        await EnsureJobsVisibleAsync(jobIds);
+
         foreach (var jobId in jobIds)
         {
             await Context.Procedures.uspReassignJobAsync(jobId);
@@ -605,8 +609,37 @@ public partial class JobRepository(
     /// <summary>
     /// Sets a job as the first priority job for a courier.
     /// </summary>
-    public async Task SetFirstJobAsync(int jobId, int courierId) =>
+    public async Task SetFirstJobAsync(int jobId, int courierId)
+    {
+        await EnsureJobsVisibleAsync([jobId]);
+        await EnsureCourierVisibleAsync(courierId);
         await Context.Procedures.DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(jobId, courierId);
+    }
+
+    // Branches (B2): these actions run stored procedures by id, so the EF filters never see them. A branch-limited
+    // caller may only act on jobs and couriers the filters let them see; everyone else is unaffected.
+    private async Task EnsureJobsVisibleAsync(IReadOnlyCollection<int> jobIds)
+    {
+        if (!await Context.AllJobsVisibleAsync(jobIds))
+        {
+            throw new JobNotFoundException("One or more of the jobs were not found.");
+        }
+    }
+
+    private async Task EnsureCourierVisibleAsync(int courierId)
+    {
+        if (!await Context.CourierVisibleAsync(courierId))
+        {
+            throw new JobNotFoundException("The courier was not found.");
+        }
+    }
+
+    public async Task<bool> IsJobHiddenByBranchScopeAsync(int jobId) =>
+        Context.CurrentIsBranchScoped && !await Context.AllJobsVisibleAsync([jobId]);
+
+    public async Task<bool> IsJobMediaKeyHiddenByBranchScopeAsync(string key) =>
+        Context.CurrentIsBranchScoped
+        && (!JobMediaKey.TryGetJobId(key, out var keyJobId) || !await Context.AllJobsVisibleAsync([keyJobId]));
 
     /// <summary>
     /// Updates POD (proof of delivery) details including name, time, and status for a job and its related jobs.
@@ -721,8 +754,11 @@ public partial class JobRepository(
     /// <summary>
     /// Re-sends all jobs assigned to a courier to their device.
     /// </summary>
-    public async Task ReSendAllJobsAsync(int courierId) =>
+    public async Task ReSendAllJobsAsync(int courierId)
+    {
+        await EnsureCourierVisibleAsync(courierId);
         await Context.Procedures.uspReDespatchJobByCourierIDAsync(courierId);
+    }
 
     /// <summary>
     /// Resets the late notification flag for a job's pickup or delivery event.
@@ -883,6 +919,8 @@ public partial class JobRepository(
         {
             return;
         }
+
+        await EnsureJobsVisibleAsync(jobIds);
 
         foreach (var jobId in jobIds)
         {
@@ -1132,6 +1170,8 @@ public partial class JobRepository(
     /// <returns>Status message from the unsplit operation.</returns>
     public async Task<string> UnSplitJobAsync(int jobId)
     {
+        await EnsureJobsVisibleAsync([jobId]);
+
         var message = new OutputParameter<string>();
         var returnValue = new OutputParameter<int>();
 
@@ -1779,6 +1819,12 @@ public partial class JobRepository(
     /// <returns>The ID of the newly created job and the job number generated for it.</returns>
     public async Task<QuickAddJobResult> QuickAddJobAsync(JobCreateViewModel request)
     {
+        // The proc takes the client id as given; a branch-limited caller may only create for a client in their own list.
+        if (Context.CurrentIsBranchScoped && !await Context.TucClients.AnyAsync(c => c.UcclId == request.ClientId))
+        {
+            throw new ClientNotFoundException($"Client {request.ClientId} was not found.");
+        }
+
         try
         {
             var now = _infoService.GetCurrentTenantTime();
@@ -3752,6 +3798,13 @@ public partial class JobRepository(
                 (s, cc) => new { s, cc }
             )
             .Where(x => x.cc.ClientId == clientId && x.s.Active)
+            // Branch-limited staff: only a client they can see, or the client of a job they can see (a job shows its own
+            // client even when it belongs to another branch). Everyone else is unaffected.
+            .Where(_ => !Context.CurrentIsBranchScoped
+                        || Context.TucClients.Any(c => c.UcclId == clientId)
+                        || Context.TucJobs.Any(j => j.UcjbClientId == clientId)
+                        || Context.TucJobArchives.Any(j => j.UcjbClientId == clientId)
+                        || Context.TucJobBookings.Any(j => j.UcbkClientId == clientId))
             .Select(x => new Suggestion { Id = x.s.ContactId, Text = x.s.UcctFirstname + Space + x.s.UcctSurname })
             .Distinct()
             .ToListAsync();
@@ -5372,7 +5425,10 @@ public partial class JobRepository(
 
         var courierIds = legs.Where(l => l.UcjbCourierId.HasValue)
             .Select(l => l.UcjbCourierId!.Value).Distinct().ToList();
+        // The legs above came through the job filter, so they are the caller's to see: their couriers' names show even when
+        // a courier belongs to another branch (only the branch list filter is dropped).
         var courierNames = await Context.TucCouriers
+            .IgnoreQueryFilters([DespatchContext.BranchCouriersFilter])
             .Where(c => courierIds.Contains(c.UccrId))
             .ToDictionaryAsync(c => c.UccrId, c => c.UccrName + " " + c.UccrSurname);
 

@@ -4833,4 +4833,127 @@ public class JobControllerTests : IDisposable
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, obj.StatusCode);
     }
+
+    // ---- Branches (B2) review fixes: by-id actions, photos and attachments, hidden clients ----
+
+    [Fact]
+    public async Task ByIdJobActions_ReturnNotFound_WhenTheCallerCannotSeeTheJob()
+    {
+        var controller = CreateController();
+        _jobCommandRepositoryMock.ReSendSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>()).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>()).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.SetFirstJobAsync(5, 6).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.UnSplitJobAsync(5).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.ReSendAllJobsAsync(6).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.RestoreSplitJobsAsync(Arg.Any<IReadOnlyList<int>>()).Throws(new JobNotFoundException("nope"));
+
+        Assert.IsType<NotFoundObjectResult>(await controller.ReSendSelected("5"));
+        Assert.IsType<NotFoundObjectResult>(await controller.ReAssignSelected("5"));
+        Assert.IsType<NotFoundObjectResult>(await controller.SetFirstJob(5, 6));
+        Assert.IsType<NotFoundObjectResult>(await controller.UnSplitJob(5));
+        Assert.IsType<NotFoundObjectResult>(await controller.ReSendAll(6));
+        Assert.IsType<NotFoundObjectResult>(await controller.RestoreSplitJobs([5]));
+    }
+
+    [Fact]
+    public async Task PhotoAndAttachmentEndpoints_ReturnNotFound_WhenTheJobIsHidden_AndTouchNoFiles()
+    {
+        _jobQueryRepositoryMock.IsJobHiddenByBranchScopeAsync(5).Returns(true);
+        var controller = CreateController();
+        var file = Substitute.For<IFormFile>();
+
+        Assert.IsType<NotFoundObjectResult>(await controller.GetAttachedFiles(5));
+        Assert.IsType<NotFoundObjectResult>(await controller.UploadFile(new FileUploadRequest { JobId = 5, File = file }));
+        Assert.IsType<NotFoundObjectResult>(await controller.UploadJobDeliveryPhotoOrSignature(5, file));
+        Assert.IsType<NotFoundObjectResult>(await controller.GetJobDeliveryPhotosAndSignature(5, 2026, 11));
+        Assert.IsType<NotFoundObjectResult>(await controller.GetJobPickupPhotos(5, 2026, 11));
+        Assert.IsType<NotFoundObjectResult>(await controller.DeleteJobDeliveryPhotoOrSignature(5, "DeliveryPhotos/2026/11/5-1.jpg"));
+
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().GetAttachedFilesAsync(default);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().UploadJobAttachmentAsync(default, null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().UploadJobPhotoOrSignatureAsync(default, null!, default, default, default);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().ArchiveJobPhotoAsync(default, null!);
+        await _podMediaServiceMock.DidNotReceiveWithAnyArgs().GetDeliveryMediaAsync(default, default, default);
+        await _podMediaServiceMock.DidNotReceiveWithAnyArgs().GetPickupMediaAsync(default, default, default);
+    }
+
+    [Fact]
+    public async Task KeyedFileEndpoints_ReturnNotFound_WhenTheKeyBelongsToAHiddenJob_AndTouchNoFiles()
+    {
+        _jobQueryRepositoryMock.IsJobMediaKeyHiddenByBranchScopeAsync("JobAttachments/2026/11/5-1.pdf").Returns(true);
+        var controller = CreateController();
+
+        Assert.IsType<NotFoundObjectResult>(await controller.DownloadFile("JobAttachments/2026/11/5-1.pdf"));
+        Assert.IsType<NotFoundObjectResult>(await controller.DeleteFile("JobAttachments/2026/11/5-1.pdf"));
+        // The job id on the request is the caller's own, but the key points at somebody else's job.
+        Assert.IsType<NotFoundObjectResult>(await controller.DeleteJobDeliveryPhotoOrSignature(1, "JobAttachments/2026/11/5-1.pdf"));
+
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DownloadFileAsync(null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DeleteFileAsync(null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().ArchiveJobPhotoAsync(default, null!);
+    }
+
+    [Fact]
+    public async Task KeyedFileEndpoints_StillWork_WhenTheCallerCanSeeTheJob()
+    {
+        var controller = CreateController();
+        _jobPhotoServiceMock.DeleteFileAsync("JobAttachments/2026/11/1-1.pdf").Returns(true);
+
+        var result = await controller.DeleteFile("JobAttachments/2026/11/1-1.pdf");
+
+        Assert.IsType<OkObjectResult>(result);
+        await _jobPhotoServiceMock.Received(1).DeleteFileAsync("JobAttachments/2026/11/1-1.pdf");
+    }
+
+    // Every caller, branch-limited or not: a backslash, '..', empty segment or leading slash is never a key we issued.
+    [Theory]
+    [InlineData(@"DeliveryPhotos\2026\11\1-1.jpg")]
+    [InlineData("DeliveryPhotos/../JobAttachments/1-1.pdf")]
+    [InlineData("/DeliveryPhotos/2026/11/1-1.jpg")]
+    [InlineData("DeliveryPhotos//1-1.jpg")]
+    public async Task KeyedFileEndpoints_ReturnBadRequest_ForAKeyWeNeverIssue_AndTouchNoFiles(string key)
+    {
+        var controller = CreateController();
+
+        Assert.IsType<BadRequestObjectResult>(await controller.DownloadFile(key));
+        Assert.IsType<BadRequestObjectResult>(await controller.DeleteFile(key));
+        Assert.IsType<BadRequestObjectResult>(await controller.DeleteJobDeliveryPhotoOrSignature(1, key));
+
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DownloadFileAsync(null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DeleteFileAsync(null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().ArchiveJobPhotoAsync(default, null!);
+    }
+
+    [Fact]
+    public async Task QuickCreateJob_ReturnsBadRequest_WhenTheClientIsNotOneTheCallerCanSee()
+    {
+        var request = new JobCreateViewModel { ClientId = 10, SpeedId = 3 };
+        _jobCommandRepositoryMock.QuickAddJobAsync(request).Throws(new ClientNotFoundException("Client 10 was not found."));
+
+        var result = await CreateController().QuickCreateJob(request);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateBulkJob_ReturnsBadRequest_WhenTheClientIsNotOneTheCallerCanSee()
+    {
+        _jobCommandRepositoryMock.UpdateBulkJobAsync(3, JobProperty.ClientID, "10")
+            .Throws(new ClientNotFoundException("Client 10 was not found."));
+
+        var result = await CreateController().UpdateBulkJob(3, JobProperty.ClientID, "10");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJob_ReturnsBadRequest_WhenTheClientIsNotOneTheCallerCanSee()
+    {
+        _recurringJobRepositoryMock.UpdateRecurringJobAsync(3, JobProperty.ClientID, "10")
+            .Throws(new ClientNotFoundException("Client 10 was not found."));
+
+        var result = await CreateController().UpdateRecurringJob(3, JobProperty.ClientID, "10");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
 }

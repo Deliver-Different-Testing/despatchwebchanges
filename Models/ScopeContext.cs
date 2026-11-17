@@ -15,7 +15,11 @@ public sealed record ScopeContext(
     int? ClientTypeId,
     int? ClientId,
     int? NpAgentId,
-    bool BypassFilters = false)
+    bool BypassFilters = false,
+    IReadOnlyList<int>? BranchIds = null,
+    bool DefaultBranchInScope = false,
+    IReadOnlyList<int>? BranchSiteIds = null,
+    int? ParentJobCourierId = null)
 {
     /// <summary>
     /// Background workers, scaffolding, design-time, or anonymous endpoints —
@@ -51,4 +55,18 @@ public sealed record ScopeContext(
     // excluded while the Phase 1.3 reparent is pending — see IsInternal.
     public bool IsCustomerScoped =>
         ClientTypeId is null or (int)ClientType.Customer;
+
+    /// <summary>
+    /// Tenant (or transitional Internal) staff limited to some branches (Branches programme, B2). <see cref="BranchIds"/>
+    /// is null when the Hub <c>BranchIds</c> claim is empty: no restriction, exactly as before branches existed.
+    /// An empty non-null list limits the user to no branch. DF Admin, network partners, customers and background work
+    /// are never branch scoped. <see cref="DefaultBranchInScope"/>: a courier or client with no branch belongs to the
+    /// default branch (D1), so it counts for a user who holds that branch. <see cref="BranchSiteIds"/>: the <c>tblSite</c>
+    /// ids of the user's active branches, matched against a job's pickup and delivery suburbs.
+    /// <see cref="ParentJobCourierId"/>: the system courier <c>tblSetting.ParentJobCourierId</c> that split parents are parked
+    /// on. It is a placeholder, not a real branch courier, so the courier arm of the job rule ignores it (a split parent is
+    /// judged by client, suburbs and its real legs' couriers).
+    /// </summary>
+    public bool IsBranchScoped =>
+        !BypassFilters && (IsTenant || IsInternal) && BranchIds is not null;
 }

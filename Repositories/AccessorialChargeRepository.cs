@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Accessorial;
 using Microsoft.EntityFrameworkCore;
@@ -86,6 +87,7 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
 
         var charges = await Context.JobAccessorialCharges
             .Where(jac => jac.JobId == jobId)
+            .Where(jac => !Context.CurrentIsBranchScoped || Context.TucJobs.Any(j => j.UcjbId == jac.JobId))   // branch-limited staff: visible jobs only
             .OrderBy(jac => jac.Created)
             .Select(AppliedChargeProjection)
             .ToListAsync();
@@ -96,6 +98,12 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
 
     public async Task AddChargeAsync(int jobId, JobAccessorialChargeCreateRequest request, string userName)
     {
+        // The stored procedure works by job id and bypasses the EF filters: branch-limited staff may only add to visible jobs.
+        if (Context.CurrentIsBranchScoped && !await Context.AllJobsVisibleAsync([jobId]))
+        {
+            throw new JobNotFoundException("Job not found.");
+        }
+
         var newJobTotal = new OutputParameter<decimal?>();
         await Context.Procedures.sp_AddJobAccessorialAsync(
             jobId,

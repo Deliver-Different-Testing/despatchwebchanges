@@ -4,6 +4,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
@@ -117,6 +118,185 @@ public class ScopeProviderTests : IAsyncDisposable
         Assert.Equal(42, scope.NpAgentId);
         Assert.Equal(100, scope.ClientId);
         Assert.False(scope.BypassFilters);
+    }
+
+    // ---- Branches programme: tenant staff limited by the BranchIds claim ----
+
+    private void StubBranches(params int[]? branchIds) =>
+        _tenantInfo.GetBranchIds().Returns(branchIds);
+
+    private void SeedBranches(params TblBranch[] branches)
+    {
+        using var seed = _db.CreateContext();
+        seed.TblBranches.AddRange(branches);
+        seed.SaveChanges();
+    }
+
+    private static TblBranch Branch(int id, string code, int? siteId, bool isDefault = false, bool active = true) =>
+        new() { BranchId = id, Name = code, Code = code, SiteId = siteId, IsDefault = isDefault, Active = active };
+
+    private void SignInAs(ClientType type, int? clientId = 1)
+    {
+        SetAuthenticated(true);
+        StubClaims((int)type, false, null, false, true, clientId);
+    }
+
+    [Fact]
+    public void TenantStaff_WithNoBranchClaim_IsNotBranchScoped()
+    {
+        SignInAs(ClientType.Tenant);
+        StubBranches(null);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.False(scope.IsBranchScoped);
+        Assert.Null(scope.BranchIds);
+    }
+
+    [Fact]
+    public void TenantStaff_WithBranches_IsBranchScoped_WithTheirIdsSitesAndDefaultFlag()
+    {
+        SeedBranches(Branch(1, "SYD", 43, isDefault: true), Branch(2, "MEL", 44), Branch(3, "BNE", 45));
+        SignInAs(ClientType.Tenant);
+        StubBranches(2, 1);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.True(scope.IsBranchScoped);
+        Assert.Equal([2, 1], scope.BranchIds);
+        Assert.True(scope.DefaultBranchInScope);
+        Assert.Equal([43, 44], scope.BranchSiteIds!.Order());   // Brisbane is not theirs
+    }
+
+    [Fact]
+    public void TenantStaff_WithBranches_CarriesTheConfiguredParentJobCourier()
+    {
+        // The courier split parents are parked on: a placeholder the job rule's courier arm must ignore.
+        SeedBranches(Branch(1, "SYD", 43, isDefault: true), Branch(2, "MEL", 44));
+        using (var seed = _db.CreateContext())
+        {
+            seed.TblSettings.Add(TestSettings.Minimal(parentJobCourierId: 4));
+            seed.SaveChanges();
+        }
+
+        SignInAs(ClientType.Tenant);
+        StubBranches(1);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.Equal(4, scope.ParentJobCourierId);
+    }
+
+    [Fact]
+    public void TenantStaff_WithBranches_HasNoParentJobCourier_WhenNoneIsConfigured()
+    {
+        SeedBranches(Branch(1, "SYD", 43, isDefault: true));
+        SignInAs(ClientType.Tenant);
+        StubBranches(1);
+
+        Assert.Null(CreateProvider().Scope.ParentJobCourierId);
+    }
+
+    [Fact]
+    public void TenantStaff_WithoutTheDefaultBranch_DoesNotGetDefaultBranchRows()
+    {
+        SeedBranches(Branch(1, "SYD", 43, isDefault: true), Branch(2, "MEL", 44));
+        SignInAs(ClientType.Tenant);
+        StubBranches(2);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.False(scope.DefaultBranchInScope);
+        Assert.Equal([44], scope.BranchSiteIds);
+    }
+
+    [Fact]
+    public void AnInactiveBranch_ContributesNoSite_ButStillCountsAsTheirs()
+    {
+        SeedBranches(Branch(1, "SYD", 43, isDefault: true), Branch(2, "MEL", 44, active: false));
+        SignInAs(ClientType.Tenant);
+        StubBranches(1, 2);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.Equal([1, 2], scope.BranchIds);
+        Assert.Equal([43], scope.BranchSiteIds);
+    }
+
+    [Fact]
+    public void ABranchWithNoSite_ContributesNoSite()
+    {
+        SeedBranches(Branch(1, "SYD", null, isDefault: true));
+        SignInAs(ClientType.Tenant);
+        StubBranches(1);
+
+        Assert.Empty(CreateProvider().Scope.BranchSiteIds!);
+    }
+
+    [Fact]
+    public void AnEmptyBranchList_IsBranchScoped_ToNothing_FailingClosed()
+    {
+        SignInAs(ClientType.Tenant);
+        StubBranches([]);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.True(scope.IsBranchScoped);
+        Assert.Empty(scope.BranchIds!);
+        Assert.False(scope.DefaultBranchInScope);
+        Assert.Empty(scope.BranchSiteIds!);
+    }
+
+    [Fact]
+    public void TransitionalInternalStaff_CanBeBranchScoped_Too()
+    {
+        SeedBranches(Branch(1, "SYD", 43, isDefault: true));
+        SignInAs(ClientType.Internal);
+        StubBranches(1);
+
+        Assert.True(CreateProvider().Scope.IsBranchScoped);
+    }
+
+    [Theory]
+    [InlineData(ClientType.DfrntAdmin)]
+    [InlineData(ClientType.NetworkPartner)]
+    [InlineData(ClientType.Customer)]
+    public void NobodyElse_IsEverBranchScoped_EvenWithTheClaim(ClientType type)
+    {
+        SignInAs(type);
+        StubBranches(1, 2);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.False(scope.IsBranchScoped);
+        Assert.Null(scope.BranchIds);
+    }
+
+    [Fact]
+    public void BackgroundWork_IsNeverBranchScoped()
+    {
+        SetAuthenticated(false);
+        StubBranches(1);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.True(scope.BypassFilters);
+        Assert.False(scope.IsBranchScoped);
+    }
+
+    [Fact]
+    public void WhenTheBranchLookupFails_TheUserStaysBranchScoped_WithoutDefaultOrSiteMatching()
+    {
+        SignInAs(ClientType.Tenant);
+        StubBranches(1);
+        var failing = Substitute.For<IDbContextFactory<DespatchContext>>();
+        failing.CreateDbContext().Returns(_ => throw new InvalidOperationException("database down"));
+
+        var scope = new ScopeProvider(_httpContextAccessor, _tenantInfo, failing).Scope;
+
+        Assert.True(scope.IsBranchScoped);   // a failure narrows what they see, it never widens it
+        Assert.False(scope.DefaultBranchInScope);
+        Assert.Empty(scope.BranchSiteIds!);
     }
 
     [Fact]
