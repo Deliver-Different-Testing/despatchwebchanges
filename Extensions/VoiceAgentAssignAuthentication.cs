@@ -143,11 +143,11 @@ public sealed class VoiceAgentAssignOptions
 public sealed class HubTenantTimeZoneSource(IHttpClientFactory httpClientFactory, AgentAccessOptions options)
 {
     public const string HttpClientName = "DespatchWeb.HubTimeZone";
-    private static readonly ConcurrentDictionary<int, string> Cache = new();
+    private readonly ConcurrentDictionary<int, string> _cache = new();
 
     public async Task<string?> GetAsync(int tenantId, CancellationToken cancellationToken)
     {
-        if (Cache.TryGetValue(tenantId, out var cached)) return cached;
+        if (_cache.TryGetValue(tenantId, out var cached)) return cached;
         if (string.IsNullOrWhiteSpace(options.HubApiKey)) return null;
 
         try
@@ -160,7 +160,7 @@ public sealed class HubTenantTimeZoneSource(IHttpClientFactory httpClientFactory
             var body = await response.Content.ReadFromJsonAsync<TimeZoneResponse>(cancellationToken);
             if (string.IsNullOrWhiteSpace(body?.TimeZone)) return null;
 
-            Cache[tenantId] = body.TimeZone;
+            _cache[tenantId] = body.TimeZone;
             return body.TimeZone;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

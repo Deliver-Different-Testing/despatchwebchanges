@@ -8,20 +8,29 @@ public partial class JobRepository
 {
     private const int OnHoldStatus = 100;
 
+    // Everything JobListStatusBuckets keeps out of "needs dispatch" (on the road, completed, void), finished outcomes
+    // (Undeliverable, Missing), Preassigned (allocated, per JobChangeRequestService), held jobs and agent statuses.
     private static readonly int[] UnclaimableStatuses =
     [
+        (int)JobStatus.Dispatched,
+        (int)JobStatus.Accepted,
+        (int)JobStatus.PickedUp,
+        (int)JobStatus.InTransit,
+        (int)JobStatus.Completed,
+        (int)JobStatus.Undeliverable,
         (int)JobStatus.Preassigned,
         OnHoldStatus,
         (int)JobStatus.OutboundAgentAssigned,
         (int)JobStatus.InboundAgentAssigned,
-        (int)JobStatus.GroundAgentAssigned
+        (int)JobStatus.GroundAgentAssigned,
+        (int)JobStatus.Void,
+        (int)JobStatus.Missing
     ];
 
     public async Task<CourierClaimOutcome> ClaimJobForCourierAsync(int jobId, int courierId, int staffId,
         CancellationToken cancellationToken = default)
     {
         var context = Context;
-        int[] jobIds = [jobId];
 
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
@@ -36,7 +45,12 @@ public partial class JobRepository
                             && j.ParentId == null
                             && !j.UcjbVoid
                             && !j.UcjbJobDone
-                            && (j.UcjbStatus == null || !UnclaimableStatuses.Contains(j.UcjbStatus.Value)))
+                            && j.UcjbComplTime == null
+                            && (j.UcjbStatus == null || !UnclaimableStatuses.Contains(j.UcjbStatus.Value))
+                            // Re-checked here, not only before the claim, so a courier or staff member made inactive
+                            // in between is never written to the job.
+                            && context.TucCouriers.Any(c => c.UccrId == courierId && c.Active)
+                            && context.TucStaffs.Any(s => s.UcstId == staffId && s.UcstActive))
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(j => j.UcjbCourierId, courierId)
                     .SetProperty(j => j.AgentId, (int?)null)
@@ -55,7 +69,6 @@ public partial class JobRepository
             }
 
             await courierRepository.ResetClearListAreaOrderAsync(courierId, context);
-            await CascadeCourierToChildJobsAsync(jobIds, InternalJobStatus.AwaitingPod);
             await transaction.CommitAsync(cancellationToken);
             return CourierClaimOutcome.Assigned;
         });

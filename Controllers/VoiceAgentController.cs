@@ -13,7 +13,7 @@ public sealed record CourierAssignRequest(int JobId, int CourierId, int StaffId,
 
 /// <summary>
 /// Called only by Integration Manager's voice agent, with a Kubernetes service-account token. The tenant comes from the
-/// token's subject, never from the body. Cookie users and Hub agent tokens are not accepted here.
+/// X-Tenant-Id header, never from the body. Cookie users and Hub agent tokens are not accepted here.
 /// </summary>
 [Authorize(AuthenticationSchemes = VoiceAgentAssignAuthentication.Scheme, Policy = VoiceAgentAssignAuthentication.Policy)]
 public sealed class VoiceAgentController(IDispatchJobService dispatchJobService) : ControllerBase
@@ -53,7 +53,7 @@ public sealed class VoiceAgentController(IDispatchJobService dispatchJobService)
 
         return outcome is CourierClaimOutcome.InvalidStaff or CourierClaimOutcome.InvalidCourier
             ? Error(name)
-            : Content($"{{\"outcome\":\"{name}\"}}", "application/json");
+            : Ok(new Dictionary<string, string> { ["outcome"] = name });
     }
 
     private BadRequestObjectResult Error(string code) => BadRequest(new Dictionary<string, string> { ["error"] = code });
@@ -65,6 +65,7 @@ public sealed class VoiceAgentController(IDispatchJobService dispatchJobService)
         CourierClaimOutcome.Unavailable => "unavailable",
         CourierClaimOutcome.NotFound => "not_found",
         CourierClaimOutcome.InvalidStaff => "invalid_staff",
-        _ => "invalid_courier"
+        CourierClaimOutcome.InvalidCourier => "invalid_courier",
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null)
     };
 }

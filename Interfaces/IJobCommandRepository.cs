@@ -112,8 +112,8 @@ public interface IJobCommandRepository
     Task AssignCourierToChildJobsAsync(IReadOnlyList<int> jobIds, InternalJobStatus internalStatus);
 
     /// <summary>
-    /// Gives an open job to a courier only if it is still unassigned: the claim, the clear-list reset and the
-    /// child-job cascade commit together or not at all. A dispatcher's allocation always wins.
+    /// Gives an open, non-child job to a courier only if it is still unassigned: the claim and the clear-list reset
+    /// commit together or not at all. A dispatcher's allocation always wins.
     /// </summary>
     Task<CourierClaimOutcome> ClaimJobForCourierAsync(int jobId, int courierId, int staffId, CancellationToken cancellationToken = default);
 
