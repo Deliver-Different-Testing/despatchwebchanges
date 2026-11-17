@@ -51,7 +51,6 @@ const CONFIRMED_LINE_ALLOCATION = [
 
 function createMockJob(overrides?: Partial<DispatchJob>): DispatchJob {
     return {
-        angularId: 'job-1',
         id: 1,
         jobNo: 'J001',
         hasBeenRead: true,

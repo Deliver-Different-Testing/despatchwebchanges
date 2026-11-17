@@ -5,11 +5,6 @@ export interface AiUsageInfo {
     outputTokens: number;
 }
 
-export interface AiSummaryResponse {
-    summary: string;
-    usage: AiUsageInfo;
-}
-
 export interface AttentionItem {
     headline: string;
     action: string;

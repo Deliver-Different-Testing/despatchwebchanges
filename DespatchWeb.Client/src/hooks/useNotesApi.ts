@@ -169,27 +169,6 @@ export function useUpdateNote() {
 }
 
 /**
- * Hook to update an existing bulk job note
- *
- * @returns Mutation object with mutate function and status
- */
-export function useUpdateBulkJobNote() {
-    const queryClient = useQueryClient();
-
-    return useMutation<void, Error, UpdateNoteRequest & { bulkJobId?: number }>({
-        mutationFn: (note) => notesApi.updateBulkJobNote(note),
-        onSuccess: async (_, variables) => {
-            await queryClient.invalidateQueries({queryKey: queryKeys.notes.historyAll(variables.noteId)});
-            if (variables.bulkJobId) {
-                await queryClient.invalidateQueries({
-                    queryKey: queryKeys.notes.bulkJob(variables.bulkJobId),
-                });
-            }
-        },
-    });
-}
-
-/**
  * Hook to delete a note
  *
  * @returns Mutation object with mutate function and status

@@ -1,6 +1,6 @@
 import type {Mocked, MockedFunction} from 'vitest';
 import React from 'react';
-import {act, fireEvent, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {renderWithMantine} from '../../test/utils';
 import {QueryClient} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
@@ -86,7 +86,6 @@ const createDefaultProps = (overrides?: Partial<RecurringJobsPageProps>): Recurr
     showToast: vi.fn(),
     isUsCustomer: false,
     onAddStop: vi.fn(),
-    setRefreshCallback: vi.fn(),
     ...overrides,
 });
 
@@ -126,9 +125,8 @@ describe('RecurringJobsPage', () => {
     });
 
     // ── Initial render: toolbar, empty state, refresh callback, speed filter, export, refresh (single render) ─
-    it('renders toolbar, empty state, speed filter, registers callback, and supports export/refresh', async () => {
+    it('renders toolbar, empty state, speed filter, and supports export/refresh', async () => {
         const showToast = vi.fn();
-        const setRefreshCallback = vi.fn();
         const refetch = vi.fn();
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse([]),
@@ -137,7 +135,7 @@ describe('RecurringJobsPage', () => {
             refetch,
         } as any);
 
-        renderWithProviders(createDefaultProps({showToast, setRefreshCallback}));
+        renderWithProviders(createDefaultProps({showToast}));
 
         // Toolbar
         expect(screen.getByPlaceholderText('Search jobs…')).toBeInTheDocument();
@@ -146,9 +144,6 @@ describe('RecurringJobsPage', () => {
 
         // Empty state
         expect(screen.getByText('No recurring jobs match your search.')).toBeInTheDocument();
-
-        // Refresh callback
-        expect(setRefreshCallback).toHaveBeenCalledWith(expect.any(Function));
 
         // Speed filter
         expect(screen.getByRole('combobox', {name: 'Speed'})).toBeInTheDocument();

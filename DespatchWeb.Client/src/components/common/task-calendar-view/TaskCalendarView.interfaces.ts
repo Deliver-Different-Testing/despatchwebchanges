@@ -38,11 +38,3 @@ export interface TasksServiceInterface {
     markTaskAsClosed(taskId: number, closed: boolean): Promise<void>;
 }
 
-export interface TaskCalendarViewState {
-    currentDate: Dayjs;
-    viewMode: ViewMode;
-    calendarWeeks: CalendarWeek[];
-    weekDays: Dayjs[];
-    selectedDate: Dayjs;
-    timeSlots: string[];
-}

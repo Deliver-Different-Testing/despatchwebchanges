@@ -12,7 +12,6 @@ import {
     MessagesButton,
     RefreshButton,
     SettingsButton,
-    ToolbarIconButton,
     View,
     ViewsMenu,
 } from './ToolbarActions';
@@ -25,7 +24,6 @@ describe('Shell icon buttons', () => {
         ['Layouts', <LayoutsMenu key="l" layouts={[]} onSaveLayout={vi.fn()} onLoadLayout={vi.fn()} onDeleteLayout={vi.fn()} />],
         ['Messages', <MessagesButton key="m" unreadCount={5} onClick={vi.fn()} />],
         ['Views', <ViewsMenu key="v" views={[{id: 1, name: 'V', selected: true}]} onToggleView={vi.fn()} onClearAll={vi.fn()} />],
-        ['Custom', <ToolbarIconButton key="c" icon={<span />} tooltip="Custom" onClick={vi.fn()} />],
     ])('%s takes its glyph colour from the shell variables', (name, element) => {
         // The on-colour differs per tenant (Ink on gold, white on Ink), so the button
         // defers to the var the theme resolver publishes rather than baking it in.
@@ -477,35 +475,5 @@ describe('LayoutsMenu', () => {
         fireEvent.click(screen.getByRole('button'));
         expect(await screen.findByText('Switch layout')).toBeInTheDocument();
         expect(screen.queryByText('Reset layout')).not.toBeInTheDocument();
-    });
-});
-
-describe('ToolbarIconButton', () => {
-    const defaultProps = {
-        icon: <span data-testid="test-icon">Icon</span>,
-        tooltip: 'Test Tooltip',
-        onClick: vi.fn(),
-    };
-
-    it('should render with icon and call onClick when clicked', () => {
-        const onClick = vi.fn();
-        renderWithMantine(<ToolbarIconButton {...defaultProps} onClick={onClick} />);
-
-        expect(screen.getByTestId('test-icon')).toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole('button'));
-        expect(onClick).toHaveBeenCalledTimes(1);
-    });
-
-    it('should be disabled and not call onClick when disabled', () => {
-        const onClick = vi.fn();
-        renderWithMantine(
-            <ToolbarIconButton {...defaultProps} onClick={onClick} disabled={true} />
-        );
-
-        expect(screen.getByRole('button')).toBeDisabled();
-
-        fireEvent.click(screen.getByRole('button'));
-        expect(onClick).not.toHaveBeenCalled();
     });
 });

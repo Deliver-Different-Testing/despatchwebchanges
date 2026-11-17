@@ -4,7 +4,7 @@ import {ErrorBoundary} from '../../components/common/error-boundary';
 import type {PrebookListModel} from '../../types';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {getSession} from '../../api/session';
-import {noopRegisterRefresh, showPageToast} from '../pageToasts';
+import {showPageToast} from '../pageToasts';
 
 export interface RecurringJobsScreenProps {
     /** Adds a pickup/delivery stop to a recurring job. Defaults to a no-op until the add-stop flow is wired in. */
@@ -20,7 +20,6 @@ export const RecurringJobsScreen: React.FC<RecurringJobsScreenProps> = ({onAddSt
                 showToast={showPageToast}
                 isUsCustomer={getSession().isUsCustomer ?? false}
                 onAddStop={onAddStop}
-                setRefreshCallback={noopRegisterRefresh}
             />
         </ErrorBoundary>
     </PageFrame>

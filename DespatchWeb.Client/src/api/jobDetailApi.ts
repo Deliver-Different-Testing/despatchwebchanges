@@ -11,7 +11,6 @@ import type {
     ISuggestion,
     InternalStatus,
     IAddressViewModel,
-    IParcelDimensions,
 } from '../types/interfaces/job.interface';
 import type {Is3PhotoInfo} from '../types/interfaces/aws.interfaces';
 import type {UpdatePodDetailsRequest} from '../types/interfaces/requests.interfaces';
@@ -315,16 +314,6 @@ export function allocateJob(courierId: number, jobIds: number[]): Promise<void> 
 
 export function getCourierById(courierId: number): Promise<{ id: string; name: string }> {
     return apiClient.get('courier/GetCourier', {courierId});
-}
-
-// ── Package Operations ──────────────────────────────────────────────
-
-export function updatePackages(jobId: number, parcels: IParcelDimensions[]): Promise<unknown> {
-    return apiClient.post('job/UpdateJobPackages', {jobId, parcels});
-}
-
-export function updateBulkJobPackages(bulkJobId: number, parcels: IParcelDimensions[]): Promise<unknown> {
-    return apiClient.post('job/UpdateBulkJobPackages', {bulkJobId, parcels});
 }
 
 // ── File Downloads ──────────────────────────────────────────────────

@@ -91,8 +91,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         setColumnEditMode(false);
         onExitColumnEditMode?.();
     }, [onExitColumnEditMode]);
-    const [sortColumn, setSortColumn] = useState<string | undefined>();
-    const [sortDirection, setSortDirection] = useState<string | undefined>();
     const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
     const [restoreConfirm, setRestoreConfirm] =
         useState<{job: DispatchJob; summary: RestorePodImpactSummary} | null>(null);
@@ -192,10 +190,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             wild: searchCriteria.criteria.wild,
             job: searchCriteria.criteria.job,
             jobId: searchCriteria.criteria.jobId,
-            sortColumn,
-            sortDirection,
         },
-    }), [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId, sortColumn, sortDirection]);
+    }), [searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
     const fetchConfigBulk = useMemo(() => ({
         fetchFn: fetchBulkJobs,
@@ -245,8 +241,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             wild: searchCriteria.criteria.wild,
             job: searchCriteria.criteria.job,
             jobId: searchCriteria.criteria.jobId,
-            sortColumn,
-            sortDirection,
             disabled: byBulkJobId,
             page: 0,
         };
@@ -263,7 +257,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             disabled: byJobId,
             page: 0,
         });
-    }, [sortColumn, sortDirection, resolveDates, searchCriteria.criteria.bulkJobId, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
+    }, [resolveDates, searchCriteria.criteria.bulkJobId, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
 
     const handleRefreshBox = useCallback(async (boxName: string) => {
         switch (boxName) {
@@ -593,10 +587,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         storagePrefix="jobSearchJobList"
                         fetchConfig={fetchConfigMain as any}
                         onJobSelect={(job) => selectJob(job, false)}
-                        onBackendFilter={(column, direction) => {
-                            setSortColumn(column);
-                            setSortDirection(direction);
-                        }}
                         setUpdateSearchParamsCallback={(cb) => {
                             updateMainParamsRef.current = cb;
                         }}

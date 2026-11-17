@@ -11,7 +11,6 @@
 import type {Dayjs} from "dayjs";
 // Type-only both ways: `job.interface` imports IFlightSegment back from here,
 // and erased imports keep that cycle harmless.
-import type {IAgent} from "./job.interface";
 
 export interface IFlightViewModel {
     airline: string;
@@ -47,7 +46,6 @@ export interface IFlightViewModel {
     _arrivalTimeZoneStr: string;
     _departureTimeZoneStr: string;
 }
-
 
 export interface IFlightSegment {
     segmentOrder: number;
@@ -111,12 +109,6 @@ export interface IFlightSegmentDto {
     airlineName?: string;
 }
 
-export interface StatusChangeEvent {
-    jobId: number;
-    previousStatusId: number;
-    newStatusId: number;
-}
-
 export interface AssignFlightToJobRequest {
     jobId: number;
     fromAirportId?: number;
@@ -127,11 +119,6 @@ export interface AssignFlightToJobRequest {
     packageReadyTime?: string;
     packageDeliverByTime?: string;
     packageDeliveryNotes?: string;
-}
-
-export interface IFlightSearchResponseDto {
-    flights: IFlightViewModelDto[];
-    message?: string;
 }
 
 export interface IFlightViewModelDto {
@@ -161,14 +148,3 @@ export interface IFlightViewModelDto {
     flightSegments: IFlightSegmentDto[];
 }
 
-
-export interface IGetFlightOptionsResponse {
-    flights: IFlightViewModel[];
-    message?: string;
-    lastDepartureTime?: Dayjs;
-}
-
-export interface IGetAgentOptionsResponse {
-    agents: IAgent[];
-    message?: string;
-}

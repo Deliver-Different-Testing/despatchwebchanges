@@ -43,18 +43,6 @@ export interface MapInstance {
     defaultLayers: any;
 }
 
-export interface MarkerState {
-    fromMarker: any | null;
-    toMarker: any | null;
-    courierMarker: any | null;
-    extraMarkers: any[];
-}
-
-export interface RouteState {
-    routeLine: any | null;
-    extraRouteLines: any[];
-}
-
 export interface Point {
     lat: number;
     lng: number;

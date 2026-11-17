@@ -501,38 +501,3 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
         </Popover>
     );
 };
-
-// Generic Icon Button - for custom toolbar actions
-export interface ToolbarIconButtonProps {
-    icon: React.ReactNode;
-    tooltip: string;
-    onClick: (event: React.MouseEvent) => void;
-    disabled?: boolean;
-}
-
-export const ToolbarIconButton: React.FC<ToolbarIconButtonProps> = ({
-    icon,
-    tooltip,
-    onClick,
-    disabled = false,
-}) => {
-    return (
-        <Tooltip label={tooltip}>
-            {/* span wrapper so the tooltip still works while the button is disabled */}
-            <span>
-                <ActionIcon
-                    variant="subtle"
-                    size="lg"
-                    radius="xl"
-                    onClick={onClick}
-                    disabled={disabled}
-                    className={toolbarIconButtonClassName}
-                    style={toolbarIconButtonStyle}
-                    aria-label={tooltip}
-                >
-                    {icon}
-                </ActionIcon>
-            </span>
-        </Tooltip>
-    );
-};

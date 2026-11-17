@@ -9,14 +9,8 @@
 
 import {accentPalette, aiColors, grossModeColor, sharedColors, shellColors} from './palettes';
 
-/** Ink-Blue shell colour (#0d0c2c) — app bar, side-nav header, dark chrome. */
-export const toolbarColor = shellColors.appBar;
-
 /** Full Ink-Blue shell token set (bar/panel/border/text). */
 export {shellColors};
-
-/** Surface / dialog body background (#FAFAFA) */
-export const surfaceDefault = sharedColors.surface.default;
 
 /**
  * AI + gross-mode accents now live in the framework-free palettes.ts (the single

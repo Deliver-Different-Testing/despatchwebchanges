@@ -150,7 +150,6 @@ const STATUS_BUCKETS: {status: StatusFilter; label: string; countKey?: keyof Sta
 export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                                         showToast,
                                                                         isUsCustomer,
-                                                                        setRefreshCallback,
                                                                     }) => {
     // Below `md` the fixed two-pane list-detail can't breathe; collapse to a
     // single pane and surface Job Details in a drawer instead.
@@ -283,12 +282,6 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
         });
     }, [rawTasks]);
 
-    // Register refresh callback for external use
-    useEffect(() => {
-        if (setRefreshCallback) {
-            setRefreshCallback(() => refetchTasks());
-        }
-    }, [setRefreshCallback, refetchTasks]);
 
     // Check if task is overdue
     const isTaskOverdue = useCallback((task: ExtendedTask): boolean => {

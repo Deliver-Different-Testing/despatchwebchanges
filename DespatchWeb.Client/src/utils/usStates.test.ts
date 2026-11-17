@@ -6,7 +6,6 @@
 import {
     US_STATES,
     getStateByAbbreviation,
-    getStateNameByAbbreviation,
     normalizeToStateAbbreviation,
 } from './usStates';
 
@@ -52,20 +51,6 @@ describe('usStates', () => {
 
         it('should be case-sensitive (lowercase returns undefined)', () => {
             expect(getStateByAbbreviation('ca')).toBeUndefined();
-        });
-    });
-
-    describe('getStateNameByAbbreviation', () => {
-        it('should return full name for valid abbreviation', () => {
-            expect(getStateNameByAbbreviation('TX')).toBe('Texas');
-        });
-
-        it('should return the abbreviation itself when not found', () => {
-            expect(getStateNameByAbbreviation('XX')).toBe('XX');
-        });
-
-        it('should return empty string for empty input', () => {
-            expect(getStateNameByAbbreviation('')).toBe('');
         });
     });
 

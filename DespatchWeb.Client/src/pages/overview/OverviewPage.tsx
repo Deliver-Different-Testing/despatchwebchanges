@@ -2,8 +2,6 @@ import React, {useState, useCallback, useMemo, useEffect} from 'react';
 import {getContactId} from '../../api/session';
 import {Box, Card, Collapse, Flex, Group, TextInput} from '@mantine/core';
 import {HeaderActionIcon, PANEL_CONTROL_GLYPH_SIZE} from '../../components/common/panel-controls';
-import {useQueryClient} from '@tanstack/react-query';
-import {queryKeys} from '../../api';
 import {
     useOverviewJobs,
     useOverviewRegions,
@@ -36,9 +34,7 @@ const OVERVIEW_LIMIT_KEY = () => `overviewJobLimitDisplay-${getContactId()}`;
 
 export const OverviewPage: React.FC<OverviewPageProps> = ({
                                                               onOpenJobDetail,
-                                                              setRefreshCallback,
                                                           }) => {
-    const queryClient = useQueryClient();
 
     // ── State ──
     const [activeTab, setActiveTab] = useState(0);
@@ -142,13 +138,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     const total = jobsData?.total ?? 0;
 
     // ── Refresh callback (exposed to AngularJS) ──
-    const handleRefresh = useCallback(() => {
-        queryClient.invalidateQueries({queryKey: queryKeys.overview.all});
-    }, [queryClient]);
-
-    useEffect(() => {
-        setRefreshCallback(handleRefresh);
-    }, [setRefreshCallback, handleRefresh]);
 
     // ── Filter handlers ──
     const allRegionsSelected = regions.length > 0 && selectedRegionIds.size === regions.length;
