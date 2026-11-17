@@ -225,9 +225,9 @@ describe('toast theme', () => {
         await show(() => toastService.showInfoToast('Branded'));
 
         expect(await screen.findByText('Branded')).toBeInTheDocument();
-        const brandShade = createDfrntTheme({primary, highContrast: false}).colors.brand?.[6];
+        const brandShade = createDfrntTheme({primary, highContrast: false}).colors?.brand?.[6];
         expect(brandShade).toBeDefined();
-        expect(brandShade).not.toBe(dfrntTheme.colors.brand?.[6]);
+        expect(brandShade).not.toBe(dfrntTheme.colors?.brand?.[6]);
         const styles = [...document.querySelectorAll('style')].map(el => el.textContent ?? '').join('');
         expect(styles.toLowerCase()).toContain(brandShade!.toLowerCase());
     });

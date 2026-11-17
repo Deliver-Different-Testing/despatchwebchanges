@@ -17,6 +17,7 @@ import {
     getRestorePodImpact,
     restoreJobs,
     restoreSplitJobs,
+    lockTargetFor,
     sendToPartner,
     setJobLocked,
     unSplitJob,
@@ -470,7 +471,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 case 'lock':
                 case 'unlock': {
                     const locked = actionId === 'lock';
-                    await setJobLocked(job.id, locked, !!job.preBook);
+                    const target = lockTargetFor(job);
+                    if (!target) {
+                        showToast(`${job.jobNo} has no live job yet, so there's nothing to ${actionId}.`, 'warning');
+                        return;
+                    }
+                    await setJobLocked(target.jobId, locked, target.isRecurring);
                     showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;

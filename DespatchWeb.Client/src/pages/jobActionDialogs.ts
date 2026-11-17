@@ -2,7 +2,7 @@ import type {DispatchJob} from '../types/dispatchJob';
 import type {ShowToastFn} from '../services/toastService';
 import {loadDialog} from '../components/dialogs/dialogRegistry';
 import {openAddEventDialog} from '../components/dialogs/add-event-dialog';
-import {setJobLocked} from '../api/jobListApi';
+import {lockTargetFor, setJobLocked} from '../api/jobListApi';
 
 /** A bulk row's own `id` is a BulkJobId; every job-keyed action must target the live job behind it. */
 const liveJobId = (job: DispatchJob): number => job.linkedJobId ?? job.id;
@@ -63,8 +63,12 @@ export async function runSharedJobAction(
         case 'lock':
         case 'unlock': {
             const locked = actionId === 'lock';
-            // Recurring rows lock the template by its BulkJobId (isRecurring), so the row's own id is right here.
-            await setJobLocked(job.id, locked, !!job.preBook);
+            const target = lockTargetFor(job);
+            if (!target) {
+                showToast(`${job.jobNo} has no live job yet, so there's nothing to ${actionId}.`, 'warning');
+                return true;
+            }
+            await setJobLocked(target.jobId, locked, target.isRecurring);
             showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
             await refreshLists();
             refreshDetail();
