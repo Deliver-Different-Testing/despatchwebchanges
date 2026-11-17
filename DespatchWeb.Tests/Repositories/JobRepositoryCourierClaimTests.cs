@@ -65,7 +65,9 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
         { "status", (int)JobStatus.GroundAgentAssigned }, { "status", (int)JobStatus.Dispatched },
         { "status", (int)JobStatus.Accepted }, { "status", (int)JobStatus.PickedUp }, { "status", (int)JobStatus.InTransit },
         { "status", (int)JobStatus.Completed }, { "status", (int)JobStatus.Undeliverable }, { "status", (int)JobStatus.Void },
-        { "status", (int)JobStatus.Missing }, { "status", (int)JobStatus.Acknowledge }, { "completed", 0 }
+        { "status", (int)JobStatus.Missing }, { "status", (int)JobStatus.Acknowledge }, { "status", (int)JobStatus.LateDelivery },
+        { "status", (int)JobStatus.AwaitingPod }, { "status", (int)JobStatus.AssumingCompleted },
+        { "status", (int)JobStatus.OutForDelivery }, { "completed", 0 }
     };
 
     private static void Block(TucJob job, string reason, int status)

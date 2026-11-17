@@ -148,19 +148,26 @@ public sealed class HubTenantTimeZoneSource(IHttpClientFactory httpClientFactory
 
     public async Task<string?> GetAsync(int tenantId, CancellationToken cancellationToken)
     {
-        if (_cache.TryGetValue(tenantId, out var cached) && DateTimeOffset.UtcNow - cached.FetchedAt < CacheLifetime)
+        var hasCached = _cache.TryGetValue(tenantId, out var cached);
+        if (hasCached && DateTimeOffset.UtcNow - cached.FetchedAt < CacheLifetime)
             return cached.TimeZone;
-        if (string.IsNullOrWhiteSpace(options.HubApiKey)) return null;
+        var stale = hasCached ? cached.TimeZone : null;
+        if (string.IsNullOrWhiteSpace(options.HubApiKey)) return stale;
 
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{options.HubAuthority.TrimEnd('/')}/api/tenants/{tenantId}/time-zone");
             request.Headers.Add("X-Api-Key", options.HubApiKey);
             using var response = await httpClientFactory.CreateClient(HttpClientName).SendAsync(request, cancellationToken);
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode) return stale;
 
             var body = await response.Content.ReadFromJsonAsync<TimeZoneResponse>(cancellationToken);
-            if (string.IsNullOrWhiteSpace(body?.TimeZone)) return null;
+            if (string.IsNullOrWhiteSpace(body?.TimeZone)) return stale;
+            if (!IsResolvable(body.TimeZone))
+            {
+                Log.Warning("VoiceAgentAssign: Hub gave tenant {TenantId} the unknown time zone {TimeZone}", tenantId, body.TimeZone);
+                return stale;
+            }
 
             _cache[tenantId] = (body.TimeZone, DateTimeOffset.UtcNow);
             return body.TimeZone;
@@ -168,9 +175,15 @@ public sealed class HubTenantTimeZoneSource(IHttpClientFactory httpClientFactory
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             Log.Warning(ex, "VoiceAgentAssign: Hub could not give tenant {TenantId}'s time zone", tenantId);
-            return null;
+            return stale;
         }
     }
+
+    // TenantInfoService silently falls back to UTC for an id it cannot resolve, which would stamp UTC dispatch times.
+    private static bool IsResolvable(string timeZone) =>
+        TimeZoneInfo.TryFindSystemTimeZoneById(timeZone, out _)
+        || (TimeZoneInfo.TryConvertIanaIdToWindowsId(timeZone, out var windowsId)
+            && TimeZoneInfo.TryFindSystemTimeZoneById(windowsId, out _));
 
     private sealed record TimeZoneResponse(string? TimeZone);
 }

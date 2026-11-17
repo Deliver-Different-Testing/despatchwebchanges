@@ -374,16 +374,28 @@ public class VoiceAgentAssignTests : IAsyncDisposable
     [Fact]
     public void TheAudience_IsDespatchweb() => Assert.Equal("despatchweb", VoiceAgentAssignOptions.Audience);
 
+    [Theory]
+    [InlineData("Pacific/Auckland", "Pacific/Auckland")]
+    [InlineData("Not/AZone", null)]
+    public async Task OnlyAResolvableHubTimeZone_IsUsed(string fromHub, string? expected)
+    {
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient(HubTenantTimeZoneSource.HttpClientName).Returns(_ => new HttpClient(new StubHandler(fromHub)));
+        var source = new HubTenantTimeZoneSource(factory, new AgentAccessOptions { AppName = "DespatchWeb", HubAuthority = Hub, HubApiKey = "key" });
+
+        Assert.Equal(expected, await source.GetAsync(1, CancellationToken.None));
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_app is not null) await _app.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 
-    private sealed class StubHandler : HttpMessageHandler
+    private sealed class StubHandler(string timeZone = "Pacific/Auckland") : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { timeZone = "Pacific/Auckland" }) });
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { timeZone }) });
     }
 
     private sealed class StubTicketFormat : ISecureDataFormat<AuthenticationTicket>
