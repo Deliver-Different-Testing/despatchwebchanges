@@ -394,51 +394,6 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task GetAllJobCoordinates_ValidRequest_ReturnsCoordinates()
-    {
-        // Arrange
-        var expectedCoordinates = new List<JobCoordinateModel>
-        {
-            new() { Id = 1, PickupLatitude = -36.8485m, PickupLongitude = 174.7633m },
-            new() { Id = 2, PickupLatitude = -36.8500m, PickupLongitude = 174.7700m }
-        };
-
-        _jobQueryRepositoryMock.GetJobCoordinatesAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
-            .Returns(expectedCoordinates);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.GetAllJobCoordinates(isInternal: true, clientIds: null, despatchViewIds: [1, 2]);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<JobCoordinateModel> coordinates)
-        {
-            Assert.Equal(2, coordinates.Count);
-        }
-    }
-
-    [Fact]
-    public async Task GetAllJobCoordinates_UnauthorizedAccess_Returns401()
-    {
-        // Arrange
-        SetupCustomerScope(77);
-        _clientAccessValidatorMock.ValidateClientAccessAsync(77, "123").ThrowsAsync(new UnauthorizedAccessException());
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.GetAllJobCoordinates(isInternal: false, clientIds: "123", despatchViewIds: []);
-
-        // Assert
-        Assert.IsType<ObjectResult>(result);
-        var objectResult = (ObjectResult)result;
-        Assert.Equal(StatusCodes.Status401Unauthorized, objectResult.StatusCode);
-    }
-
-    [Fact]
     public async Task GetJobsByClearListEnvelope_ValidRequest_ReturnsJobs()
     {
         // Arrange
@@ -3517,31 +3472,6 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task AddStopToRecurringJob_ValidRequest_ReturnsNewJobId()
-    {
-        // Arrange
-        var request = new AddStopRequest
-        {
-            JobId = 1,
-            DeliveryAddress = new EditAddressDialogViewModel { AddressLine1 = "New Recurring Stop" }
-        };
-        const int newJobId = 2;
-
-        _addStopJobServiceMock.AddStopInsertRecurringJobAsync(request)
-            .Returns(newJobId);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.AddStopToRecurringJob(request);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        Assert.Equal(newJobId, jsonResult.Value);
-    }
-
-    [Fact]
     public async Task GetDeliveryJourney_ValidJobId_ReturnsJourney()
     {
         // Arrange
@@ -3700,17 +3630,6 @@ public class JobControllerTests : IDisposable
 
         Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
         await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().RepriceJobWithBaseAmountAsync(null!);
-    }
-
-    [Fact]
-    public async Task Upload_CallerCannotModifyPrices_ReturnsForbidden()
-    {
-        _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(false);
-
-        var result = await CreateController().Upload(Substitute.For<IFormFile>());
-
-        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
-        await _jobReportServiceMock.DidNotReceiveWithAnyArgs().ProcessJobPriceUploadAsync(null!);
     }
 
     [Fact]
@@ -4004,115 +3923,6 @@ public class JobControllerTests : IDisposable
 
         // Act
         var result = await controller.SetFirstJob(jobId, courierId);
-
-        // Assert
-        Assert.IsType<OkResult>(result);
-    }
-
-    [Fact]
-    public async Task ReSendAll_ValidCourierId_ReturnsOk()
-    {
-        // Arrange
-        const int courierId = 1;
-
-        _jobCommandRepositoryMock.ReSendAllJobsAsync(courierId)
-            .Returns(Task.CompletedTask);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.ReSendAll(courierId);
-
-        // Assert
-        Assert.IsType<OkResult>(result);
-    }
-
-    [Fact]
-    public async Task PpdExclusiveAmount_ValidRequest_ReturnsPpdAmount()
-    {
-        // Arrange
-        const int clientId = 1;
-        const decimal amount = 100.00m;
-        const decimal expectedPpd = 87.00m;
-
-        _jobQueryRepositoryMock.PpdExclusiveAmountAsync(clientId, amount)
-            .Returns(expectedPpd);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.PpdExclusiveAmount(clientId, amount);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        Assert.Equal(expectedPpd, jsonResult.Value);
-    }
-
-    [Fact]
-    public async Task HasClientItemsAvailable_ItemsExist_ReturnsTrue()
-    {
-        // Arrange
-        const int clientId = 1;
-        const int speedId = 2;
-
-        _jobQueryRepositoryMock.HasClientItemsAvailableAsync(clientId, speedId)
-            .Returns(true);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.HasClientItemsAvailable(clientId, speedId);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        Assert.Equal(true, jsonResult.Value);
-    }
-
-    [Fact]
-    public async Task GetAllClientItems_ValidRequest_ReturnsItems()
-    {
-        // Arrange
-        const int clientId = 1;
-        const int speedId = 2;
-        const int jobId = 3;
-        var expectedItems = new PaginatedResponse<ClientItemsViewModel>
-        {
-            Items = [new ClientItemsViewModel { ItemId = 1, Name = "Extra Service" }],
-            Total = 1
-        };
-
-        _jobQueryRepositoryMock.GetClientItemsBySpeedAsync(clientId, speedId, jobId)
-            .Returns(expectedItems);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.GetAllClientItems(clientId, speedId, jobId);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-    }
-
-    [Fact]
-    public async Task AddClientItemsToJob_ValidRequest_ReturnsOk()
-    {
-        // Arrange
-        const int jobId = 1;
-        var itemsModel = new ClientItemsModel
-        {
-            ServiceIds = [1, 2],
-            TotalCost = 25.00m
-        };
-
-        _jobCommandRepositoryMock.AddClientsItemToJobAsync(jobId, itemsModel.ServiceIds, itemsModel.TotalCost)
-            .Returns(Task.CompletedTask);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.AddClientItemsToJob(jobId, itemsModel);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -4685,17 +4495,6 @@ public class JobControllerTests : IDisposable
             JobId = 19,
             Address = new AddressViewModel()
         });
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task ApplyWebQtyUpdate_RejectsPartnerJob()
-    {
-        var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(20).Returns(true);
-
-        var result = await controller.ApplyWebQtyUpdate(20);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

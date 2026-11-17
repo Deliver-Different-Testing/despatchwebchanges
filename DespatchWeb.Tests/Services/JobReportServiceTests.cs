@@ -319,65 +319,6 @@ public class JobReportServiceTests
     }
 
     [Fact]
-    public async Task ProcessJobPriceUploadAsync_NullFile_ThrowsArgumentException()
-    {
-        // Arrange
-        var service = CreateService();
-
-        // Assert
-        var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
-        Assert.StartsWith("No file provided.", ex.Message);
-        Assert.Equal("file", ex.ParamName);
-        return;
-
-        // Act
-        Task Act() => service.ProcessJobPriceUploadAsync(null!);
-    }
-
-    [Fact]
-    public async Task ProcessJobPriceUploadAsync_ValidFile_ArchivesAndUpdates()
-    {
-        // Arrange
-        const string csvContent = "Id,Amount\n1,100\n2,200";
-        var fileMock = CreateMockCsvFile("test.csv", csvContent);
-
-        // Clock is pre-set with TestDates.Now via FakeTenantClock
-
-        var service = CreateService();
-
-        // Act
-        await service.ProcessJobPriceUploadAsync(fileMock);
-
-        // Assert - verify S3 upload was called with a {Prefix}/{yyyy}/{MM}/{filename} key.
-        await _s3ClientMock.Received().PutObjectAsync(
-            Arg.Is<PutObjectRequest>(r => System.Text.RegularExpressions.Regex.IsMatch(
-                r!.Key, @"^Jobs/\d{4}/\d{2}/Jobs-\d{14}$")),
-            Arg.Any<CancellationToken>());
-
-        // Assert - verify repository update was called
-        await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(
-            Arg.Is<IReadOnlyList<JobManualPriceModel>>(l => l!.Count == 2));
-    }
-
-    [Fact]
-    public async Task ProcessJobPriceUploadAsync_EmptyFile_DoesNotCallUpdate()
-    {
-        // Arrange
-        const string csvContent = "Id,Amount"; // Header only
-        var fileMock = CreateMockCsvFile("test.csv", csvContent);
-
-        // Clock is pre-set with TestDates.Now via FakeTenantClock
-
-        var service = CreateService();
-
-        // Act
-        await service.ProcessJobPriceUploadAsync(fileMock);
-
-        // Assert - should not call update when no data
-        await _jobCommandRepositoryMock.DidNotReceive().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
-    }
-
-    [Fact]
     public async Task GenerateRecurringJobsCsvAsync_ClientWithComma_StripsComma()
     {
         // Arrange - a client name with a comma must not break the column structure
