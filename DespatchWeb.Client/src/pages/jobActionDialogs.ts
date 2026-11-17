@@ -4,12 +4,15 @@ import {loadDialog} from '../components/dialogs/dialogRegistry';
 import {openAddEventDialog} from '../components/dialogs/add-event-dialog';
 import {setJobLocked} from '../api/jobListApi';
 
+/** A bulk row's own `id` is a BulkJobId; every job-keyed action must target the live job behind it. */
+const liveJobId = (job: DispatchJob): number => job.linkedJobId ?? job.id;
+
 /** Resolves false without opening anything when the job has no accessorial charge group. */
 export async function openAccessorialChargesForJob(job: DispatchJob, showToast: ShowToastFn): Promise<boolean> {
     if (!job.accessorialChargeGroupId) return false;
     await (await loadDialog('AccessorialCharges')).open({
         job: {
-            id: job.id,
+            id: liveJobId(job),
             accessorialChargeGroupId: job.accessorialChargeGroupId,
             amount: job.amount,
             weight: job.weight,
@@ -21,12 +24,12 @@ export async function openAccessorialChargesForJob(job: DispatchJob, showToast: 
 }
 
 export async function openAttachmentsForJob(job: DispatchJob): Promise<void> {
-    await (await loadDialog('JobFileUpload')).open(job.id);
+    await (await loadDialog('JobFileUpload')).open(liveJobId(job));
 }
 
 export async function openAddTaskForJob(job: DispatchJob, showToast: ShowToastFn): Promise<void> {
     await openAddEventDialog({
-        job: {id: job.id, jobNo: job.jobNo, client: job.client ?? '', clientId: job.clientId},
+        job: {id: liveJobId(job), jobNo: job.jobNo, client: job.client ?? '', clientId: job.clientId},
         toastService: {showToast},
     });
 }
@@ -60,6 +63,7 @@ export async function runSharedJobAction(
         case 'lock':
         case 'unlock': {
             const locked = actionId === 'lock';
+            // Recurring rows lock the template by its BulkJobId (isRecurring), so the row's own id is right here.
             await setJobLocked(job.id, locked, !!job.preBook);
             showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
             await refreshLists();

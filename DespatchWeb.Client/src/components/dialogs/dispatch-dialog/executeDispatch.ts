@@ -55,13 +55,21 @@ export async function executeDispatchConfirmation(
 
         // Sequenced after the assignment so a ConNote failure can't leave the job
         // unassigned. Mirrors the Nationwide flow this replaced.
+        // The assignment has already landed, so an AWB failure is a warning, not a failed dispatch
+        // (throwing would invite a retry that re-assigns and re-emails the agent).
+        let awbNote = '';
         if (awb) {
-            await updateJobDetail(job.id, JobProperty.ConNote, awb, false);
+            try {
+                await updateJobDetail(job.id, JobProperty.ConNote, awb, false);
+            } catch (error) {
+                console.error('Failed to save AWB after agent assignment:', error);
+                awbNote = ` — AWB ${awb} could not be saved, add it on the job`;
+            }
         }
 
-        const base = `Job ${job.jobNo} assigned to ${destination.text}`;
+        const base = `Job ${job.jobNo} assigned to ${destination.text}${awbNote}`;
         if (result.willEmail) {
-            return {message: `${base} — inbound link emailed to ${result.agentEmail}`, severity: 'success'};
+            return {message: `${base} — inbound link emailed to ${result.agentEmail}`, severity: awbNote ? 'warning' : 'success'};
         }
         if (result.status === 'NoAgentEmail') {
             return {message: `${base} — agent has no email on file, no link sent`, severity: 'warning'};

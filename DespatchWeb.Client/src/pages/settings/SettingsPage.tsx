@@ -145,35 +145,27 @@ export const SettingsPage: React.FC = () => {
     }, []);
 
     const toggleAiEnabled = () => {
-        setAiEnabledState((prev) => {
-            const next = !prev;
-            setAiEnabled(next);
-            return next;
-        });
+        const next = !aiEnabled;
+        setAiEnabledState(next);
+        setAiEnabled(next);
     };
 
     const toggleAiAutoOpen = () => {
-        setAiAutoOpenState((prev) => {
-            const next = !prev;
-            setAiAutoOpenEnabled(next);
-            return next;
-        });
+        const next = !aiAutoOpen;
+        setAiAutoOpenState(next);
+        setAiAutoOpenEnabled(next);
     };
 
     const toggleAiChat = () => {
-        setAiChatState((prev) => {
-            const next = !prev;
-            setAiChatEnabled(next);
-            return next;
-        });
+        const next = !aiChat;
+        setAiChatState(next);
+        setAiChatEnabled(next);
     };
 
     const toggleHideButtonEnabled = () => {
-        setHideButtonEnabledState((prev) => {
-            const next = !prev;
-            setPanelHideButtonEnabled(next);
-            return next;
-        });
+        const next = !hideButtonEnabled;
+        setHideButtonEnabledState(next);
+        setPanelHideButtonEnabled(next);
     };
 
     const saveAddressFormat = useCallback(async (pickup: AddressLineFormat, delivery: AddressLineFormat) => {

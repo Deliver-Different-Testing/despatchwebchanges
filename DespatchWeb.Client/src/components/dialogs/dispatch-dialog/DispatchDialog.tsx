@@ -11,7 +11,7 @@
  * PartnerRatePanel; for other radios it renders a destination Autocomplete.
  */
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Alert, Box, Button, Checkbox, Paper, Select, Stack, Text, TextInput} from '@mantine/core';
 import {useDebouncedValue} from '@mantine/hooks';
 import {SegmentedToggle} from '../../common/segmented-toggle';
@@ -128,6 +128,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     // DFRNT Partner state
     const [partnerOptions, setPartnerOptions] = useState<EventGroupItem[]>([]);
     const [partnerOptionsLoading, setPartnerOptionsLoading] = useState(false);
+    const partnerOptionsRequested = useRef(false);
     const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('');
     const [partnerLaneUnserviceable, setPartnerLaneUnserviceable] = useState(false);
     const [agreedRate, setAgreedRate] = useState(0);
@@ -153,6 +154,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setIncludeStopJobs(false);
         setAwb('');
         setSelectedPartnerId('');
+        setPartnerLaneUnserviceable(false);
         setAgreedRate(0);
         setAgreedRateValid(false);
     }, [open, initialType, dfrntState.disabled, existingDestination, isNetworkPartner]);
@@ -161,13 +163,15 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     useEffect(() => {
         if (!open) return;
         if (selectedType !== 'DfrntPartner') return;
-        if (partnerOptions.length > 0 || partnerOptionsLoading) return;
+        // An empty or failed list must not re-trigger the load, or it loops forever.
+        if (partnerOptionsRequested.current) return;
+        partnerOptionsRequested.current = true;
         setPartnerOptionsLoading(true);
         getPartnerOptions()
             .then((opts) => setPartnerOptions(opts))
             .catch(() => setPartnerOptions([]))
             .finally(() => setPartnerOptionsLoading(false));
-    }, [open, selectedType, partnerOptions.length, partnerOptionsLoading, getPartnerOptions]);
+    }, [open, selectedType, getPartnerOptions]);
 
     const [debouncedTerm] = useDebouncedValue(inputValue, 300);
 
@@ -307,7 +311,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     // explicit that confirming now overrides a known objection rather than proceeding normally.
     const confirmLabel = submitting
         ? CONFIRM_LABELS[selectedType].busy
-        : (selectedType === 'DfrntPartner' && partnerLaneUnserviceable)
+        : (showPartnerRatePanel && partnerLaneUnserviceable)
             ? 'Send anyway'
             : CONFIRM_LABELS[selectedType].idle;
     const confirmIcon = CONFIRM_ICONS[selectedType];
@@ -397,7 +401,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                                 <Stack gap="sm">
                                     <TextInput
                                         label="AWB number"
-                                        value={existingConNote ?? awb}
+                                        value={existingConNote || awb}
                                         onChange={(event) => setAwb(event.currentTarget.value)}
                                         disabled={submitting || Boolean(existingConNote)}
                                         description={existingConNote
