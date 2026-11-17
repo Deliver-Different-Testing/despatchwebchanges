@@ -501,6 +501,8 @@ public class AiController(
         const int maxIds = 50;
         if (request is null
             || request.JobId <= 0
+            || request.SuggestedChargeIds is null
+            || request.AcceptedChargeIds is null
             || request.SuggestedChargeIds.Count > maxIds
             || request.AcceptedChargeIds.Count > maxIds)
         {

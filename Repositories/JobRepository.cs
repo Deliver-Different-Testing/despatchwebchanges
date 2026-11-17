@@ -2638,8 +2638,10 @@ public partial class JobRepository(
         }
 
         var currentQty = job.UcjbQty;
+        // Conditional on the qty just read, so a concurrent edit or a second concurrent apply is not overwritten or
+        // audited twice.
         var rowsAffected = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
+            .Where(j => j.UcjbId == jobId && j.UcjbQty == currentQty)
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, newQty));
 
         if (rowsAffected == 0)
