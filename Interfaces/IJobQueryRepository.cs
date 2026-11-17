@@ -11,6 +11,15 @@ namespace DespatchWeb.Interfaces;
 
 public interface IJobQueryRepository
 {
+    /// <summary>True only for a branch-limited caller who cannot see the job. Everyone else always gets false.</summary>
+    Task<bool> IsJobHiddenByBranchScopeAsync(int jobId);
+
+    /// <summary>
+    /// True only for a branch-limited caller when the S3 media key does not belong to a job they can see (a key whose job
+    /// id cannot be read counts as hidden). Everyone else always gets false.
+    /// </summary>
+    Task<bool> IsJobMediaKeyHiddenByBranchScopeAsync(string key);
+
     Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId);
     Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId);
 
