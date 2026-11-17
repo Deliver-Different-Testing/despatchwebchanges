@@ -21,7 +21,6 @@ namespace DespatchWeb.Services;
 /// </summary>
 public sealed class JobReportService(
     IJobQueryRepository jobQueryRepository,
-    IJobCommandRepository jobCommandRepository,
     IRecurringJobRepository recurringJobRepository,
     ITenantClock clock,
     IAmazonS3 s3Client,

@@ -1402,6 +1402,54 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         ShortName = $"RT{id}"
     };
 
+    [Fact]
+    public async Task ApplyWebQtyUpdateAsync_PendingWebChange_AppliesQty()
+    {
+        await using var context = CreateContext();
+        var job = CreateJob(100, "J100");
+        job.UcjbQty = 2;
+        context.TucJobs.Add(job);
+        context.JobDeliveryJourneys.Add(QtyJourney(100, "2", "5", "Customer", TestDates.Now));
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var applied = await CreateRepository().ApplyWebQtyUpdateAsync(100);
+
+        await using var verify = CreateContext();
+        Assert.True(applied);
+        Assert.Equal((short)5, (await verify.TucJobs.SingleAsync(j => j.UcjbId == 100, TestContext.Current.CancellationToken)).UcjbQty);
+    }
+
+    [Fact]
+    public async Task ApplyWebQtyUpdateAsync_StaffChangedQtyAfterWebChange_DoesNotRevertIt()
+    {
+        await using var context = CreateContext();
+        var job = CreateJob(100, "J100");
+        job.UcjbQty = 7;
+        context.TucJobs.Add(job);
+        context.JobDeliveryJourneys.Add(QtyJourney(100, "2", "5", "Customer", TestDates.Now));
+        context.JobDeliveryJourneys.Add(QtyJourney(100, "2", "5", "Staff", TestDates.Now.AddMinutes(1)));
+        context.JobDeliveryJourneys.Add(QtyJourney(100, "5", "7", "Staff", TestDates.Now.AddMinutes(2)));
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var applied = await CreateRepository().ApplyWebQtyUpdateAsync(100);
+
+        await using var verify = CreateContext();
+        Assert.False(applied);
+        Assert.Equal((short)7, (await verify.TucJobs.SingleAsync(j => j.UcjbId == 100, TestContext.Current.CancellationToken)).UcjbQty);
+    }
+
+    private static JobDeliveryJourney QtyJourney(int jobId, string oldValue, string newValue, string updatedByType,
+        DateTime updatedAt) => new()
+    {
+        JobId = jobId,
+        ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+        FieldName = "ucjbQty",
+        OldValue = oldValue,
+        NewValue = newValue,
+        UpdatedByType = updatedByType,
+        UpdatedAt = updatedAt
+    };
+
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
         UcjbId = id,

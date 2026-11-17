@@ -30,7 +30,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -72,7 +72,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -113,7 +113,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -154,7 +154,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -195,7 +195,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -236,7 +236,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -278,7 +278,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -324,7 +324,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -366,7 +366,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -408,7 +408,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -444,6 +444,7 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> TriageChangeRequest(int requestId, int jobId, CancellationToken ct)
     {
         try
@@ -451,7 +452,7 @@ public class AiController(
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(RateLimitUserId(), tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -517,8 +518,7 @@ public class AiController(
     public async Task Chat(
         [FromBody] AutoMateChatRequest request, [FromServices] IAutoMateChatService chatService, CancellationToken ct)
     {
-        // Customers and partners have no staff id; their contact id, negated, keeps them out of the staff key space.
-        var userId = tenantInfo.GetStaffIdOrNull() ?? -tenantInfo.GetContactId();
+        var userId = RateLimitUserId();
         var tenantId = tenantInfo.GetCurrentTenantId();
 
         if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
@@ -579,4 +579,7 @@ public class AiController(
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
+
+    // Customers and partners have no staff id; their contact id, negated, keeps them out of the staff key space.
+    private int RateLimitUserId() => tenantInfo.GetStaffIdOrNull() ?? -tenantInfo.GetContactId();
 }

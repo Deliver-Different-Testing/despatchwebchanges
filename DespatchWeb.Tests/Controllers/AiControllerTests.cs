@@ -24,6 +24,7 @@ public class AiControllerTests
     public AiControllerTests()
     {
         _tenantInfo.GetStaffId().Returns(1);
+        _tenantInfo.GetStaffIdOrNull().Returns(1);
         _tenantInfo.GetCurrentTenantId().Returns("tenant-7");
 
         _rateLimiter
@@ -55,6 +56,19 @@ public class AiControllerTests
 
         var statusResult = result as ObjectResult;
         Assert.Equal(429, statusResult!.StatusCode);
+    }
+
+    [Fact]
+    public async Task SummarizeJob_CustomerCaller_RateLimitsByNegatedContactId()
+    {
+        _tenantInfo.GetStaffId().Returns(0);
+        _tenantInfo.GetStaffIdOrNull().Returns((int?)null);
+        _tenantInfo.GetContactId().Returns(42);
+        _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
+
+        await CreateController().SummarizeJob(1, TestContext.Current.CancellationToken);
+
+        await _rateLimiter.Received(1).TryAcquireAsync(-42, "tenant-7");
     }
 
     [Fact]

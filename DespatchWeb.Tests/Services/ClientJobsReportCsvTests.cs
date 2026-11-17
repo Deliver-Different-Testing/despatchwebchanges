@@ -16,7 +16,6 @@ namespace DespatchWeb.Tests.Services;
 public class ClientJobsReportCsvTests
 {
     private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
-    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
@@ -25,7 +24,6 @@ public class ClientJobsReportCsvTests
     private JobReportService CreateService() =>
         new(
             _jobQueryRepositoryMock,
-            _jobCommandRepositoryMock,
             _recurringJobRepositoryMock,
             _clock,
             _s3ClientMock,

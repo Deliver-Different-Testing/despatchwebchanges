@@ -2608,15 +2608,16 @@ public partial class JobRepository(
     /// </summary>
     public async Task<bool> ApplyWebQtyUpdateAsync(int jobId)
     {
+        // Only the latest qty entry can be pending: once staff have changed or applied the qty, an older external
+        // change is superseded and must not overwrite it.
         var pendingChange = await Context.JobDeliveryJourneys
-            .Where(j => j.JobId == jobId &&
-                        j.FieldName == "ucjbQty" &&
-                        j.UpdatedByType != nameof(DeliveryJourneyUpdatedByType.Staff) &&
-                        j.NewValue != null)
-            .OrderByDescending(j => j.UpdatedAt)
+            .Where(j => j.JobId == jobId && j.FieldName == "ucjbQty")
+            .OrderByDescending(j => j.JourneyId)
             .FirstOrDefaultAsync();
 
-        if (pendingChange == null)
+        if (pendingChange == null ||
+            pendingChange.UpdatedByType == nameof(DeliveryJourneyUpdatedByType.Staff) ||
+            pendingChange.NewValue == null)
         {
             return false;
         }
