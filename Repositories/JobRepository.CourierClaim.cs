@@ -16,6 +16,7 @@ public partial class JobRepository
         (int)JobStatus.Accepted,
         (int)JobStatus.PickedUp,
         (int)JobStatus.InTransit,
+        (int)JobStatus.Acknowledge,
         (int)JobStatus.Completed,
         (int)JobStatus.Undeliverable,
         (int)JobStatus.Preassigned,
@@ -35,6 +36,7 @@ public partial class JobRepository
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
             var tenantTime = _clock.TenantNow;
+            var localTenantId = _infoService.GetCurrentTenantId();
             await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
             var claimed = await context.TucJobs
@@ -47,6 +49,8 @@ public partial class JobRepository
                             && !j.UcjbJobDone
                             && j.UcjbComplTime == null
                             && (j.UcjbStatus == null || !UnclaimableStatuses.Contains(j.UcjbStatus.Value))
+                            // Same rule as JobController.Allocate: a job sent out to a partner is managed from the pairing.
+                            && (localTenantId == null || j.PartnerPairing == null || j.PartnerPairing.OwnerTenantId != localTenantId)
                             // Re-checked here, not only before the claim, so a courier or staff member made inactive
                             // in between is never written to the job.
                             && context.TucCouriers.Any(c => c.UccrId == courierId && c.Active)
@@ -80,11 +84,12 @@ public partial class JobRepository
     {
         var current = await context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => new { j.UcjbCourierId })
+            .Select(j => new { j.UcjbCourierId, j.UcjbVoid, j.UcjbJobDone, j.UcjbComplTime })
             .FirstOrDefaultAsync(cancellationToken);
 
         return current is null ? CourierClaimOutcome.NotFound
-            : current.UcjbCourierId == courierId ? CourierClaimOutcome.AlreadyYours
+            : current.UcjbCourierId == courierId && !current.UcjbVoid && !current.UcjbJobDone && current.UcjbComplTime == null
+                ? CourierClaimOutcome.AlreadyYours
             : CourierClaimOutcome.Unavailable;
     }
 

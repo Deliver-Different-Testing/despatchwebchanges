@@ -24,9 +24,11 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
         await _db.DisposeAsync();
     }
 
+    private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
+
     private JobRepository CreateRepository() => new(
         _db.CreateFactoryMock(),
-        Substitute.For<ITenantInfoService>(),
+        _tenantInfo,
         _clock,
         Substitute.For<IClearListEnvelopeService>(),
         Substitute.For<ICreateJobService>(),
@@ -63,7 +65,7 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
         { "status", (int)JobStatus.GroundAgentAssigned }, { "status", (int)JobStatus.Dispatched },
         { "status", (int)JobStatus.Accepted }, { "status", (int)JobStatus.PickedUp }, { "status", (int)JobStatus.InTransit },
         { "status", (int)JobStatus.Completed }, { "status", (int)JobStatus.Undeliverable }, { "status", (int)JobStatus.Void },
-        { "status", (int)JobStatus.Missing }, { "completed", 0 }
+        { "status", (int)JobStatus.Missing }, { "status", (int)JobStatus.Acknowledge }, { "completed", 0 }
     };
 
     private static void Block(TucJob job, string reason, int status)
@@ -206,6 +208,45 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
         Assert.Equal(CourierClaimOutcome.Unavailable, outcome);
         Assert.Null((await Reload()).UcjbCourierId);
         await _courierRepository.DidNotReceiveWithAnyArgs().ResetClearListAreaOrderAsync(default, default!);
+    }
+
+    [Theory]
+    [InlineData("100", false)]
+    [InlineData("200", true)]
+    public async Task Claim_OnAJobSentOutToAPartner_IsUnavailable_ButAnInboundOneCanBeClaimed(string ownerTenantId, bool claimable)
+    {
+        _tenantInfo.GetCurrentTenantId().Returns("100");
+        await using (var context = _db.CreateContext())
+        {
+            context.Set<IntMgrPartnerPairing>().Add(new IntMgrPartnerPairing
+            {
+                Id = 7, PartnerTenantId = "300", PartnerTenantName = "Acme Couriers", PartnerBaseUrl = "https://peer.example.com",
+                Status = "Active", OwnerTenantId = ownerTenantId, CreatedAtUtc = TestDates.Now, UpdatedAtUtc = TestDates.Now
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await Seed(j => j.PartnerPairingId = 7);
+
+        var outcome = await CreateRepository().ClaimJobForCourierAsync(JobId, CourierId, StaffId, TestContext.Current.CancellationToken);
+
+        Assert.Equal(claimable ? CourierClaimOutcome.Assigned : CourierClaimOutcome.Unavailable, outcome);
+    }
+
+    [Theory]
+    [InlineData("void")]
+    [InlineData("done")]
+    [InlineData("completed")]
+    public async Task Claim_OnTheirOwnFinishedJob_IsUnavailable_NotAlreadyYours(string reason)
+    {
+        await Seed(j =>
+        {
+            j.UcjbCourierId = CourierId;
+            Block(j, reason, 0);
+        });
+
+        Assert.Equal(CourierClaimOutcome.Unavailable,
+            await CreateRepository().ClaimJobForCourierAsync(JobId, CourierId, StaffId, TestContext.Current.CancellationToken));
     }
 
     [Fact]

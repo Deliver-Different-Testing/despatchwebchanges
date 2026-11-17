@@ -143,11 +143,13 @@ public sealed class VoiceAgentAssignOptions
 public sealed class HubTenantTimeZoneSource(IHttpClientFactory httpClientFactory, AgentAccessOptions options)
 {
     public const string HttpClientName = "DespatchWeb.HubTimeZone";
-    private readonly ConcurrentDictionary<int, string> _cache = new();
+    private static readonly TimeSpan CacheLifetime = TimeSpan.FromHours(1);
+    private readonly ConcurrentDictionary<int, (string TimeZone, DateTimeOffset FetchedAt)> _cache = new();
 
     public async Task<string?> GetAsync(int tenantId, CancellationToken cancellationToken)
     {
-        if (_cache.TryGetValue(tenantId, out var cached)) return cached;
+        if (_cache.TryGetValue(tenantId, out var cached) && DateTimeOffset.UtcNow - cached.FetchedAt < CacheLifetime)
+            return cached.TimeZone;
         if (string.IsNullOrWhiteSpace(options.HubApiKey)) return null;
 
         try
@@ -160,10 +162,10 @@ public sealed class HubTenantTimeZoneSource(IHttpClientFactory httpClientFactory
             var body = await response.Content.ReadFromJsonAsync<TimeZoneResponse>(cancellationToken);
             if (string.IsNullOrWhiteSpace(body?.TimeZone)) return null;
 
-            _cache[tenantId] = body.TimeZone;
+            _cache[tenantId] = (body.TimeZone, DateTimeOffset.UtcNow);
             return body.TimeZone;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             Log.Warning(ex, "VoiceAgentAssign: Hub could not give tenant {TenantId}'s time zone", tenantId);
             return null;
