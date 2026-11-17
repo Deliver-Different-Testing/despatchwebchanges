@@ -72,6 +72,21 @@ public class AiControllerTests
     }
 
     [Fact]
+    public async Task SummarizeJob_CustomerCaller_RecordsUsageUnderNegatedContactId()
+    {
+        _tenantInfo.GetStaffId().Returns(0);
+        _tenantInfo.GetStaffIdOrNull().Returns((int?)null);
+        _tenantInfo.GetContactId().Returns(42);
+        var usage = new AiUsageInfo { InputTokens = 10, OutputTokens = 5 };
+        _summarizationService.SummarizeJobAsync(1, Arg.Any<CancellationToken>())
+            .Returns(new StructuredSummaryResponse { Verdict = "ok", Usage = usage });
+
+        await CreateController().SummarizeJob(1, TestContext.Current.CancellationToken);
+
+        await _rateLimiter.Received(1).RecordTokenUsageAsync(-42, "tenant-7", "SummarizeJob", AiTaskClass.Judgment, usage);
+    }
+
+    [Fact]
     public async Task SummarizeTaskDashboard_ValidRequest_ReturnsJson()
     {
         _summarizationService.SummarizeTaskDashboardAsync(Arg.Any<CancellationToken>()).Returns(

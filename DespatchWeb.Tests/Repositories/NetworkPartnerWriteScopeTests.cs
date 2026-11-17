@@ -237,6 +237,9 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
         { typeof(AiController), nameof(AiController.DraftNote), ScopedRecord.Job, "request.JobId" },
         { typeof(AiController), nameof(AiController.ExtractBlockers), ScopedRecord.Job, "jobId" },
         { typeof(AiController), nameof(AiController.AnalyzePricing), ScopedRecord.Job, "jobId" },
+        { typeof(AiController), nameof(AiController.TriageChangeRequest), ScopedRecord.Job, "jobId" },
+        { typeof(AiController), nameof(AiController.DraftMessage), ScopedRecord.Job, "request.JobId" },
+        { typeof(AiController), nameof(AiController.RecordPricingOutcome), ScopedRecord.Job, "request.JobId" },
     };
 
     [Theory]
