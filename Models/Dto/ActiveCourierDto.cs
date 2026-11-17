@@ -7,6 +7,4 @@ public sealed class ActiveCourierDto
     public string Name { get; init; }
     public bool DangerousGoods { get; init; }
     public DateTime? DgLicenseExpiry { get; init; }
-    public int JobCount { get; set; }
-    public string VehicleType { get; init; }
 }

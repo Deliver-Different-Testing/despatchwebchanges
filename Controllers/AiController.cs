@@ -499,7 +499,8 @@ public class AiController(
     public IActionResult RecordPricingOutcome([FromBody] AiPricingOutcomeRequest request)
     {
         const int maxIds = 50;
-        if (request.JobId <= 0
+        if (request is null
+            || request.JobId <= 0
             || request.SuggestedChargeIds.Count > maxIds
             || request.AcceptedChargeIds.Count > maxIds)
         {

@@ -61,7 +61,7 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
         // is doing nothing.
         Log.Information(
             "AI token usage - Feature: {Feature}, TaskClass: {TaskClass}, Model: {Model}, " +
-            "Staff: {StaffId}, Tenant: {TenantId}, " +
+            "User: {UserId}, Tenant: {TenantId}, " +
             "Input: {InputTokens}, Output: {OutputTokens}, CacheRead: {CacheReadTokens}, " +
             "CacheWrite: {CacheCreationTokens}, CostUsd: {CostUsd:F6}",
             feature, taskClass.ToString(), profile.Model,

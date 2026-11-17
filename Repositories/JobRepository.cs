@@ -15,7 +15,6 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Repositories;
@@ -2603,8 +2602,8 @@ public partial class JobRepository(
         await createJobService.CreateJobAsync(data, cancellationToken);
 
     /// <summary>
-    /// Reads the most recent external (non-Staff) qty change from JobDeliveryJourney and applies
-    /// it to TucJob.UcjbQty, then records a Staff journey entry so to apply is auditable.
+    /// Applies the latest JobDeliveryJourney qty entry to TucJob.UcjbQty when it came from outside staff,
+    /// then records a journey entry for the caller so the apply is auditable.
     /// </summary>
     public async Task<bool> ApplyWebQtyUpdateAsync(int jobId)
     {
