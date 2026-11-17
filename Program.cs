@@ -155,7 +155,7 @@ builder.Services.AddStackExchangeRedisCache(redisCacheConfig =>
 });
 
 builder.Services.AddAppAuthentication(domain, AuthServiceCollectionExtensions.AgentAccessOptionsFrom(builder.Configuration),
-    VoiceAgentAssignOptions.From(builder.Configuration));
+    VoiceAgentAssignOptions.Resolve());
 
 
 var app = builder.Build();

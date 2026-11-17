@@ -12,30 +12,46 @@ using Serilog;
 namespace DespatchWeb.Extensions;
 
 /// <summary>
-/// Settings for the one endpoint Integration Manager's voice agent calls. Nothing is required: the allowed subject is
-/// derived from this pod's namespace and the cluster issuer from its own projected token (as DfrntMcp does);
-/// VoiceAgentAssign__ServiceAccounts and VoiceAgentAssign__ClusterIssuer override them.
+/// Who may call the one endpoint Integration Manager's voice agent uses. Nothing is configurable: the allowed subject
+/// is derived from this pod's namespace and the issuer from its own projected token (as DfrntMcp does). Anything that
+/// cannot be worked out leaves the endpoint closed, with the reason for the startup log.
 /// </summary>
 public sealed class VoiceAgentAssignOptions
 {
-    public const string Section = "VoiceAgentAssign";
+    public const string Audience = "despatchweb";
+    public const string DefaultServiceAccountTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token";
+    public const string DefaultNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace";
     private const string SubjectPrefix = "system:serviceaccount:";
-
     private const string DeploymentNamespacePrefix = "despatchweb-594-";
     private const string ImNamespacePrefix = "integration-manager-788-";
 
-    public string Audience { get; set; } = "despatchweb";
-    public string ClusterIssuer { get; set; } = string.Empty;
-    public string ServiceAccountTokenPath { get; set; } = "/var/run/secrets/kubernetes.io/serviceaccount/token";
-    public string NamespacePath { get; set; } = "/var/run/secrets/kubernetes.io/serviceaccount/namespace";
+    private readonly string _serviceAccountTokenPath = DefaultServiceAccountTokenPath;
+    private readonly string _namespacePath = DefaultNamespacePath;
+
+    public VoiceAgentAssignOptions()
+    {
+    }
+
+    /// <summary>For tests: fixed subjects and issuer, no files read.</summary>
+    public VoiceAgentAssignOptions(IEnumerable<string> allowedSubjects, string clusterIssuer)
+    {
+        AllowedSubjects = new HashSet<string>(allowedSubjects, StringComparer.Ordinal);
+        ClusterIssuer = clusterIssuer;
+    }
+
+    private VoiceAgentAssignOptions(string namespacePath, string serviceAccountTokenPath)
+    {
+        _namespacePath = namespacePath;
+        _serviceAccountTokenPath = serviceAccountTokenPath;
+    }
+
+    public string ClusterIssuer { get; private set; } = string.Empty;
     public string ClusterIssuerNote { get; private set; } = string.Empty;
 
     /// <summary>Exact service-account subjects that may call.</summary>
     public IReadOnlySet<string> AllowedSubjects { get; private set; } = new HashSet<string>();
 
     public string AllowedSubjectsNote { get; private set; } = string.Empty;
-
-    public IReadOnlyList<string> InvalidEntries { get; private set; } = [];
 
     public bool IsConfigured => ClusterIssuer.Length > 0 && AllowedSubjects.Count > 0;
 
@@ -54,73 +70,25 @@ public sealed class VoiceAgentAssignOptions
             : $"{SubjectPrefix}{ImNamespacePrefix}{rest}:default";
     }
 
-    public static VoiceAgentAssignOptions From(IConfiguration configuration)
+    public static VoiceAgentAssignOptions Resolve(string namespacePath = DefaultNamespacePath, string serviceAccountTokenPath = DefaultServiceAccountTokenPath)
     {
-        var section = configuration.GetSection(Section);
-        var options = new VoiceAgentAssignOptions();
-        if (!string.IsNullOrWhiteSpace(section["Audience"])) options.Audience = section["Audience"]!.Trim();
-        if (!string.IsNullOrWhiteSpace(section["ServiceAccountTokenPath"])) options.ServiceAccountTokenPath = section["ServiceAccountTokenPath"]!;
-        if (!string.IsNullOrWhiteSpace(section["NamespacePath"])) options.NamespacePath = section["NamespacePath"]!;
-
-        var entries = new List<string>();
-        var accounts = section.GetSection("ServiceAccounts");
-        if (!string.IsNullOrWhiteSpace(accounts.Value))
-        {
-            entries.AddRange(accounts.Value.Split([',', ';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-        }
-
-        entries.AddRange(accounts.GetChildren().Select(c => c.Value).Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v!.Trim()));
-        options.ResolveSubjects(entries);
-
-        var configuredIssuer = section["ClusterIssuer"];
-        if (!string.IsNullOrWhiteSpace(configuredIssuer))
-        {
-            if (IsHttpsUrl(configuredIssuer.Trim()))
-            {
-                options.ClusterIssuer = configuredIssuer.Trim();
-                options.ClusterIssuerNote = "from VoiceAgentAssign:ClusterIssuer";
-            }
-            else
-            {
-                options.ClusterIssuerNote = "VoiceAgentAssign:ClusterIssuer is not an https URL";
-            }
-        }
-        else
-        {
-            options.ResolveClusterIssuer();
-        }
-
+        var options = new VoiceAgentAssignOptions(namespacePath, serviceAccountTokenPath);
+        options.ResolveSubjects();
+        options.ResolveClusterIssuer();
         return options;
     }
 
-    private void ResolveSubjects(IReadOnlyList<string> overrides)
+    private void ResolveSubjects()
     {
-        if (overrides.Count > 0)
-        {
-            var valid = new HashSet<string>(StringComparer.Ordinal);
-            var invalid = new List<string>();
-            foreach (var entry in overrides)
-            {
-                var parts = entry.StartsWith(SubjectPrefix, StringComparison.Ordinal) ? entry[SubjectPrefix.Length..].Split(':') : [];
-                if (parts is [{ Length: > 0 } ns, { Length: > 0 } name] && !ns.Contains('*') && !name.Contains('*') && !entry.Contains('=')) valid.Add(entry);
-                else invalid.Add(entry);
-            }
-
-            AllowedSubjects = valid;
-            InvalidEntries = invalid;
-            AllowedSubjectsNote = "from VoiceAgentAssign:ServiceAccounts";
-            return;
-        }
-
         try
         {
-            if (!File.Exists(NamespacePath))
+            if (!File.Exists(_namespacePath))
             {
-                AllowedSubjectsNote = $"no namespace file at {NamespacePath}";
+                AllowedSubjectsNote = $"no namespace file at {_namespacePath}";
                 return;
             }
 
-            var ns = File.ReadAllText(NamespacePath).Trim();
+            var ns = File.ReadAllText(_namespacePath).Trim();
             var derived = DeriveSubject(ns);
             if (derived is null)
             {
@@ -129,11 +97,11 @@ public sealed class VoiceAgentAssignOptions
             }
 
             AllowedSubjects = new HashSet<string>(StringComparer.Ordinal) { derived };
-            AllowedSubjectsNote = $"derived from namespace {ns} in {NamespacePath}";
+            AllowedSubjectsNote = $"derived from namespace {ns} in {_namespacePath}";
         }
         catch (Exception ex)
         {
-            AllowedSubjectsNote = $"{NamespacePath} could not be read ({ex.GetType().Name})";
+            AllowedSubjectsNote = $"{_namespacePath} could not be read ({ex.GetType().Name})";
         }
     }
 
@@ -141,26 +109,26 @@ public sealed class VoiceAgentAssignOptions
     {
         try
         {
-            if (!File.Exists(ServiceAccountTokenPath))
+            if (!File.Exists(_serviceAccountTokenPath))
             {
                 ClusterIssuerNote = "no service-account token is mounted";
                 return;
             }
 
-            var issuer = new JsonWebToken(File.ReadAllText(ServiceAccountTokenPath).Trim()).Issuer;
+            var issuer = new JsonWebToken(File.ReadAllText(_serviceAccountTokenPath).Trim()).Issuer;
             if (IsHttpsUrl(issuer))
             {
                 ClusterIssuer = issuer;
-                ClusterIssuerNote = $"from {ServiceAccountTokenPath}";
+                ClusterIssuerNote = $"from {_serviceAccountTokenPath}";
             }
             else
             {
-                ClusterIssuerNote = $"{ServiceAccountTokenPath} has issuer '{issuer}', not an https URL";
+                ClusterIssuerNote = $"{_serviceAccountTokenPath} has issuer '{issuer}', not an https URL";
             }
         }
         catch (Exception ex)
         {
-            ClusterIssuerNote = $"{ServiceAccountTokenPath} could not be read ({ex.GetType().Name})";
+            ClusterIssuerNote = $"{_serviceAccountTokenPath} could not be read ({ex.GetType().Name})";
         }
     }
 
@@ -232,8 +200,8 @@ public static class VoiceAgentAssignAuthentication
         if (!options.IsConfigured)
         {
             Log.Warning(
-                "{Path}* refuses every call: cluster issuer ({IssuerNote}); allowed service accounts ({AccountsNote}), {Accounts} valid, invalid: {Invalid}",
-                PathPrefix, options.ClusterIssuerNote, options.AllowedSubjectsNote, options.AllowedSubjects.Count, string.Join("; ", options.InvalidEntries));
+                "{Path}* refuses every call: cluster issuer ({IssuerNote}); allowed service accounts ({AccountsNote})",
+                PathPrefix, options.ClusterIssuerNote, options.AllowedSubjectsNote);
         }
         else if (agentAccess is null)
         {
@@ -253,7 +221,7 @@ public static class VoiceAgentAssignAuthentication
             o.TokenValidationParameters.ValidateIssuer = true;
             o.TokenValidationParameters.ValidIssuer = o.Authority;
             o.TokenValidationParameters.ValidateAudience = true;
-            o.TokenValidationParameters.ValidAudience = options.Audience;
+            o.TokenValidationParameters.ValidAudience = VoiceAgentAssignOptions.Audience;
             o.TokenValidationParameters.ValidateLifetime = true;
             o.TokenValidationParameters.RequireExpirationTime = true;
             o.TokenValidationParameters.ClockSkew = TimeSpan.FromSeconds(30);
