@@ -46,6 +46,7 @@ import JobInternalStatusEnum from "../../types/enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../constants/constants";
 import {requireDialog} from '../dialogs/dialogRegistry';
 import {errorMessageOf} from '../../utils/errorMessage';
+import {pendingChangeMessage} from '../../utils/pendingChangeMessage';
 
 // Nationwide speed constant
 const INTERNAL_STATUS_REPRICE = JobInternalStatusEnum.Reprice;
@@ -246,7 +247,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         try {
             const response = await api.moveJobToReprice(activeJob.id);
-            if (response?.pending) showToast(`${activeJob.jobNo}: change requested — awaiting partner approval`, 'info');
+            if (response?.pending) showToast(pendingChangeMessage(activeJob.jobNo), 'info');
             else showToast(`Job ${activeJob.jobNo} sent for repricing`, 'success');
             refresh();
         } catch (err) {
@@ -504,7 +505,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         closeAll();
         try {
             const response = await api.markJobMissing(activeJob.id);
-            if (response?.pending) showToast(`${activeJob.jobNo}: change requested — awaiting partner approval`, 'info');
+            if (response?.pending) showToast(pendingChangeMessage(activeJob.jobNo), 'info');
             else showToast('Job marked as missing', 'success');
             refresh();
         } catch (err) {

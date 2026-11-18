@@ -20,6 +20,7 @@ import {
     applyJobRate,
 } from '../../../../api/jobDetailApi';
 import type {JobUpdateResponse} from '../../../../api/jobDetailApi';
+import {pendingChangeMessage} from '../../../../utils/pendingChangeMessage';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JobProperty} from '../../../../types/enums/job-property.enum';
 import {isNetworkPartnerSession} from '../../../dialogs/dispatch-dialog/dispatchSession';
@@ -250,7 +251,7 @@ export function useJobUpdate(
             // Partner-job responses: the gate either auto-applied (and forwarded to the
             // peer) or filed a Pending change request. Show the user what actually
             // happened rather than the generic "updated" toast.
-            await finishUpdate(job, response, `${job.jobNo}: change requested — awaiting partner approval`);
+            await finishUpdate(job, response, pendingChangeMessage(job.jobNo));
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
             if (!response?.pending && RERATE_FIELDS.has(field) && !job.ratedManually) {
                 await checkForRateChange(job);

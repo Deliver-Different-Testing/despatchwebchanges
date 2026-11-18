@@ -58,6 +58,7 @@ import {JobSearchPageProps} from "./JobSearchPageProps";
 import {openAccessorialChargesForJob, openAttachmentsForJob} from '../jobActionDialogs';
 import {loadDialog} from '../../components/dialogs/dialogRegistry';
 import {errorMessageOf} from '../../utils/errorMessage';
+import {pendingChangeMessage} from '../../utils/pendingChangeMessage';
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 showToast,
@@ -483,7 +484,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         return;
                     }
                     const response = await setJobLocked(target.jobId, locked, target.isRecurring);
-                    if (response?.pending) showToast(`${job.jobNo}: change requested — awaiting partner approval`, 'info');
+                    if (response?.pending) showToast(pendingChangeMessage(job.jobNo), 'info');
                     else showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;

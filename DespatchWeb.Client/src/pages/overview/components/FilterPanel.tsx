@@ -134,17 +134,19 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     }, [dateRange, hasDateFilter]);
 
     const handleOpenDateDialog = useCallback(async () => {
+        let result;
         try {
-            const result = await (await loadDialog('DateRange')).open({
+            result = await (await loadDialog('DateRange')).open({
                 start: dateRange.start,
                 end: dateRange.end,
             });
-            if (result) {
-                onDateRangeChange({start: result.start, end: result.end});
-            }
         } catch (error) {
             console.error('Failed to open the date range dialog:', error);
             toastService.showErrorToast("Couldn't open the date picker. Refresh the page and try again.");
+            return;
+        }
+        if (result) {
+            onDateRangeChange({start: result.start, end: result.end});
         }
     }, [dateRange, onDateRangeChange]);
 

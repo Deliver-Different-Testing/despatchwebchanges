@@ -3,6 +3,7 @@ import type {ShowToastFn} from '../services/toastService';
 import {loadDialog} from '../components/dialogs/dialogRegistry';
 import {openAddEventDialog} from '../components/dialogs/add-event-dialog';
 import {lockTargetFor, setJobLocked} from '../api/jobListApi';
+import {pendingChangeMessage} from '../utils/pendingChangeMessage';
 
 /** A bulk row's own `id` is a BulkJobId; every job-keyed action must target the live job behind it. */
 const liveJobId = (job: DispatchJob): number => job.linkedJobId ?? job.id;
@@ -69,7 +70,7 @@ export async function runSharedJobAction(
                 return true;
             }
             const response = await setJobLocked(target.jobId, locked, target.isRecurring);
-            if (response?.pending) showToast(`${job.jobNo}: change requested — awaiting partner approval`, 'info');
+            if (response?.pending) showToast(pendingChangeMessage(job.jobNo), 'info');
             else showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
             await refreshLists();
             refreshDetail();

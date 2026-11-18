@@ -162,6 +162,23 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
         });
     };
 
+    // While the focused courier is the selected job's, its live details win (they can load after the id).
+    const focusIsSelectedCourier = courierId !== undefined && courierId === selectedJobCourierId;
+    const courierName = (focusIsSelectedCourier ? selectedJobCourierName : undefined) ?? pickedCourierName;
+    const courierNumber = (focusIsSelectedCourier ? selectedJobCourierNumber : undefined) ?? pickedCourierNumber;
+    // Remember details that arrive after the drill-in, or the label loses them once the selection moves on.
+    // Declared before the drill-in effect so, when both run in one commit, the drill-in's full write lands last
+    // rather than this one re-persisting the pre-drill-in mode and courier.
+    useEffect(() => {
+        if (!focusIsSelectedCourier) return;
+        const name = selectedJobCourierName ?? pickedCourierName;
+        const number = selectedJobCourierNumber ?? pickedCourierNumber;
+        if (name === pickedCourierName && number === pickedCourierNumber) return;
+        setPickedCourierName(name);
+        setPickedCourierNumber(number);
+        persistFocus({pickedCourierName: name, pickedCourierNumber: number});
+    }, [focusIsSelectedCourier, selectedJobCourierName, selectedJobCourierNumber]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // Selecting a job elsewhere on the page drills into that job's courier here
     // (matches V1 selectJob → getCurrentJobs(job.courierData.courierId)). Keyed on the
     // job as well as its courier: keying on the courier alone ignored a click on another
@@ -191,20 +208,6 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
         persistFocus({courierId: courier.id, pickedCourierName: courier.text, pickedCourierNumber: undefined, mode: 'detail'});
     };
 
-    // While the focused courier is the selected job's, its live details win (they can load after the id).
-    const focusIsSelectedCourier = courierId !== undefined && courierId === selectedJobCourierId;
-    const courierName = (focusIsSelectedCourier ? selectedJobCourierName : undefined) ?? pickedCourierName;
-    const courierNumber = (focusIsSelectedCourier ? selectedJobCourierNumber : undefined) ?? pickedCourierNumber;
-    // Remember details that arrive after the drill-in, or the label loses them once the selection moves on.
-    useEffect(() => {
-        if (!focusIsSelectedCourier) return;
-        const name = selectedJobCourierName ?? pickedCourierName;
-        const number = selectedJobCourierNumber ?? pickedCourierNumber;
-        if (name === pickedCourierName && number === pickedCourierNumber) return;
-        setPickedCourierName(name);
-        setPickedCourierNumber(number);
-        persistFocus({pickedCourierName: name, pickedCourierNumber: number});
-    }, [focusIsSelectedCourier, selectedJobCourierName, selectedJobCourierNumber]); // eslint-disable-line react-hooks/exhaustive-deps
     const formattedCourierLabel = formatCourierDisplayLabel(courierDisplayMode, courierName, courierNumber);
     const courierLabel = formattedCourierLabel ?? 'Selected driver';
     const [truckStatusOpen, {open: openTruckStatus, close: closeTruckStatus}] = useDisclosure(false);
