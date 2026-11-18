@@ -950,6 +950,23 @@ describe('EditAddressDialog - AU tenant', () => {
         });
     });
 
+    it('falls back to the city as suburb when HERE gives no district', async () => {
+        const {district: _, ...noDistrict} = glebeResult.address;
+        mockAddressApi.getLocationDetailsById.mockResolvedValue({
+            title: glebeResult.title, id: glebeResult.id, resultType: 'houseNumber',
+            address: {...noDistrict, city: 'Millers Point'}, position: glebeResult.position,
+        });
+        renderWithProviders(createDefaultProps({isUsTenant: false}));
+
+        typeAddressSearch('1 Bridge');
+        fireEvent.click(await screen.findByRole('option', {name: /1 Bridge Road, Glebe/}));
+
+        await waitFor(() => {
+            expect((screen.getByLabelText(/Suburb/) as HTMLInputElement).value).toBe('Millers Point');
+            expect((screen.getByLabelText(/State/) as HTMLInputElement).value).toBe('NSW');
+        });
+    });
+
     it('asks for a State, not a City, when line 6 is empty', async () => {
         renderWithProviders(createDefaultProps({isUsTenant: false}));
 

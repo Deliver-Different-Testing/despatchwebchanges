@@ -434,7 +434,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             }
         } else {
             // NZ Format (AU: state in line 6)
-            setAddressLine5(address.district || '');
+            setAddressLine5(address.district || (isAuTenant ? address.city : '') || '');
             setAddressLine6(isAuTenant ? (address.stateCode || address.state || '') : (address.city || ''));
             setAddressLine7(address.postalCode || '');
         }

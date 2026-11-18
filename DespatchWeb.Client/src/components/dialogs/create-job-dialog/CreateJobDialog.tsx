@@ -51,6 +51,7 @@ import {useCourierSearch} from '../../../hooks/useCourierApi';
 import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
 import {addressApi} from '../../../api/addressApi';
 import {jobApi} from '../../../api/jobApi';
+import {isAuSession} from '../../../api/session';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import {dayjs, formatDateForApi, getIanaTimezone, getInputDateFormat} from '../../../utils/dateUtils';
 import {getStateByAbbreviation} from '../../../utils/usStates';
@@ -333,6 +334,11 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 // ZIP: first 5 digits
                 const zipMatch = addr.postalCode?.match(/^(\d{5})/);
                 line7 = zipMatch ? zipMatch[1] : (addr.postalCode || '');
+            } else if (isAuSession()) {
+                // AU keeps the state where NZ keeps the city, matching Booking; HERE often puts the suburb in city
+                line5 = addr.district || addr.city || '';
+                line6 = addr.stateCode || addr.state || '';
+                line7 = addr.postalCode || '';
             } else {
                 line5 = addr.district || '';
                 line6 = addr.city || '';
