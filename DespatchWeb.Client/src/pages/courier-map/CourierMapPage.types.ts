@@ -270,6 +270,13 @@ export const NZ_BOUNDS: RegionalBounds = {
     maxLat: -34,
 };
 
+export const AU_BOUNDS: RegionalBounds = {
+    minLng: 112,
+    maxLng: 154,
+    minLat: -44,
+    maxLat: -10,
+};
+
 export {MARKER_POSITION_THRESHOLD as POSITION_THRESHOLD} from '../../components/common/here-map/HereMap.types';
 
 /**

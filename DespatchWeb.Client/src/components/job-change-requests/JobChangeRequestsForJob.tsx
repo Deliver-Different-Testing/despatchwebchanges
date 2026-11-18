@@ -23,7 +23,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {
     Alert, Avatar, Badge, Box, Button, Divider, Flex, Group, Loader, Paper, Stack, Text, Textarea, Tooltip,
 } from '@mantine/core';
-import {CircleCheck, CircleX, Hourglass, Pencil, Quote, Ban} from 'lucide-react';
+import {CircleCheck, CircleX, Hourglass, Pencil, Quote, Ban, TriangleAlert} from 'lucide-react';
 import {Icon} from '../common/icon/Icon';
 import {jobChangeRequestApi} from '../../api/jobChangeRequestApi';
 import {useJobChangeRequests} from './useJobChangeRequests';
@@ -123,7 +123,7 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
     /** Most recently cancelled row, surfaced as an inline success banner so the
      * user gets explicit feedback (the row stays in the list with a Cancelled
      * chip, which on its own is too subtle for many dispatchers to notice). */
-    const [recentlyCancelledId, setRecentlyCancelledId] = useState<number | null>(null);
+    const [recentlyCancelled, setRecentlyCancelled] = useState<{id: number; notice: CancelledNotice} | null>(null);
 
     const invalidate = useCallback(() => {
         return queryClient.invalidateQueries({queryKey: ['jobChangeRequests', jobId]});
@@ -164,9 +164,9 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
     const handleConfirmCancel = useCallback(async (row: JobChangeRequestDto) => {
         setActingOn(row.id);
         try {
-            await jobChangeRequestApi.cancel({requestId: row.id, rowVersion: row.rowVersion});
+            const result = await jobChangeRequestApi.cancel({requestId: row.id, rowVersion: row.rowVersion});
             setCancellingId(null);
-            setRecentlyCancelledId(row.id);
+            setRecentlyCancelled({id: row.id, notice: describeCancellation(row, result.peerForwardWarning)});
             await invalidate();
             onChanged?.();
         } catch (e) {
@@ -187,7 +187,9 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
         if (!onModifyRequest) return;
         setActingOn(row.id);
         try {
-            await jobChangeRequestApi.cancel({requestId: row.id, rowVersion: row.rowVersion});
+            const result = await jobChangeRequestApi.cancel({requestId: row.id, rowVersion: row.rowVersion});
+            const notice = describeCancellation(row, result.peerForwardWarning);
+            setRecentlyCancelled(notice.warned ? {id: row.id, notice} : null);
             await invalidate();
             onModifyRequest({fieldName: row.fieldName, requestedValue: row.requestedValue});
         } catch (e) {
@@ -248,8 +250,8 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
                     onAbortCancel={() => setCancellingId(null)}
                     onConfirmCancel={handleConfirmCancel}
                     cancellingId={cancellingId}
-                    recentlyCancelled={recentlyCancelledId === r.id}
-                    onDismissCancelled={() => setRecentlyCancelledId(null)}
+                    cancelledNotice={recentlyCancelled?.id === r.id ? recentlyCancelled.notice : undefined}
+                    onDismissCancelled={() => setRecentlyCancelled(null)}
                     onModify={onModifyRequest ? handleModify : undefined}
                     pickUpTimezoneText={pickUpTimezoneText}
                     deliveryTimezoneText={deliveryTimezoneText}
@@ -258,6 +260,18 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
         </Stack>
     );
 };
+
+interface CancelledNotice {
+    message: string;
+    warned: boolean;
+}
+
+function describeCancellation(row: JobChangeRequestDto, peerForwardWarning?: string): CancelledNotice {
+    if (row.pairingId == null) return {message: 'Change request cancelled.', warned: false};
+    return peerForwardWarning
+        ? {message: `Change request cancelled, but the partner was not notified (${peerForwardWarning}).`, warned: true}
+        : {message: 'Change request cancelled. The partner has been notified.', warned: false};
+}
 
 interface ChangeRequestCardProps {
     row: JobChangeRequestDto;
@@ -274,7 +288,7 @@ interface ChangeRequestCardProps {
     onStartCancel: (id: number) => void;
     onAbortCancel: () => void;
     onConfirmCancel: (row: JobChangeRequestDto) => void;
-    recentlyCancelled: boolean;
+    cancelledNotice?: CancelledNotice;
     onDismissCancelled: () => void;
     onModify?: (row: JobChangeRequestDto) => void;
     pickUpTimezoneText?: string;
@@ -313,7 +327,7 @@ function ChangeRequestCard({
     onStartCancel,
     onAbortCancel,
     onConfirmCancel,
-    recentlyCancelled,
+    cancelledNotice,
     onDismissCancelled,
     onModify,
     pickUpTimezoneText,
@@ -434,18 +448,18 @@ function ChangeRequestCard({
                     </Paper>
                 )}
 
-                {recentlyCancelled && (
+                {cancelledNotice && (
                     <Alert
-                        color="green"
+                        color={cancelledNotice.warned ? 'orange' : 'green'}
                         variant="light"
-                        icon={<Icon lucide={CircleCheck} size={18}/>}
+                        icon={<Icon lucide={cancelledNotice.warned ? TriangleAlert : CircleCheck} size={18}/>}
                         withCloseButton
                         closeButtonLabel="Dismiss"
                         onClose={onDismissCancelled}
                         mt="xs"
                         py={2}
                     >
-                        Change request cancelled. {row.approvalPartyType === localPartyType ? '' : 'The partner has been notified.'}
+                        {cancelledNotice.message}
                     </Alert>
                 )}
 

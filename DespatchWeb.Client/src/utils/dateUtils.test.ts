@@ -220,6 +220,11 @@ describe('dateUtils', () => {
             expect(result?.format('YYYY-MM-DD')).toBe('2025-04-03');
         });
 
+        it('rejects a day the month does not have instead of rolling over', () => {
+            expect(parseInputDate('31/02/2025', false)).toBeNull();
+            expect(parseInputDate('02/30/2025', true)).toBeNull();
+        });
+
         it('accepts single-digit day/month', () => {
             const result = parseInputDate('3/4/2025', false);
             expect(result?.format('YYYY-MM-DD')).toBe('2025-04-03');

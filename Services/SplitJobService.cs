@@ -30,6 +30,9 @@ public class SplitJobService(
     ICreateJobService createJobService,
     IPricingBreakdownAllocationService pricingBreakdownAllocationService) : ISplitJobService
 {
+    // Named filter dropped for the configured parent courier lookup (kept in a field: expression trees cannot hold a collection expression).
+    private static readonly string[] BranchCouriersFilterKey = [DespatchContext.BranchCouriersFilter];
+
     private const string ParentSystemName = "SplitParent";
     private const string ChildSystemName = "SplitChild";
     private const int HandOffLeaveType = 23;
@@ -650,8 +653,11 @@ public class SplitJobService(
         CancellationToken ct) =>
         await context.TblSettings
             .Where(s => s.SettingId == 1)
+            // The configured parent courier is a system setting, not a courier the user picked, so a branch-limited user whose
+            // courier list excludes it must still get it on the split parent (only the branch list filter is dropped).
             .Select(s => s.ParentJobCourierId != null
-                         && context.TucCouriers.Any(c => c.UccrId == s.ParentJobCourierId)
+                         && context.TucCouriers.IgnoreQueryFilters(BranchCouriersFilterKey)
+                             .Any(c => c.UccrId == s.ParentJobCourierId)
                 ? s.ParentJobCourierId
                 : null)
             .FirstOrDefaultAsync(ct);

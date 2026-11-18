@@ -23,98 +23,14 @@ public class AiController(
     IAiAuditLog auditLog) : Controller
 {
     [HttpPost]
-    [RequireScope(ScopedRecord.Job, "jobId")]
-    public async Task<IActionResult> SummarizeJobNotes(int jobId, CancellationToken ct)
-    {
-        try
-        {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
-
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
-            {
-                return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
-            }
-
-            var response = await summarizationService.SummarizeJobNotesAsync(jobId, ct);
-
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(SummarizeJobNotes), AiTaskClass.Drafting, response.Usage);
-
-            return Json(response);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(499, "Request cancelled");
-        }
-        catch (AnthropicRateLimitException e)
-        {
-            Log.Warning(e, "Anthropic rate limit hit");
-            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
-        }
-        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
-        {
-            Log.Warning(e, "Anthropic service error");
-            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error summarizing job notes for job {JobId}: {Error}", jobId, e.Message);
-            return StatusCode(500, "An error occurred generating the summary");
-        }
-    }
-
-    [HttpPost]
-    [RequireScope(ScopedRecord.Job, "jobId")]
-    public async Task<IActionResult> SummarizeJobEvents(int jobId, CancellationToken ct)
-    {
-        try
-        {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
-
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
-            {
-                return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
-            }
-
-            var response = await summarizationService.SummarizeJobEventsAsync(jobId, ct);
-
-            await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(SummarizeJobEvents), AiTaskClass.Drafting, response.Usage);
-
-            return Json(response);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(499, "Request cancelled");
-        }
-        catch (AnthropicRateLimitException e)
-        {
-            Log.Warning(e, "Anthropic rate limit hit");
-            return StatusCode(429, "The AI service is busy. Please try again in a moment.");
-        }
-        catch (Exception e) when (e is Anthropic5xxException or AiUnavailableException)
-        {
-            Log.Warning(e, "Anthropic service error");
-            return StatusCode(503, "The AI service is temporarily unavailable. Please try again.");
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error summarizing job events for job {JobId}: {Error}", jobId, e.Message);
-            return StatusCode(500, "An error occurred generating the summary");
-        }
-    }
-
-    [HttpPost]
     public async Task<IActionResult> SummarizeTaskDashboard(CancellationToken ct)
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -122,7 +38,7 @@ public class AiController(
             var response = await summarizationService.SummarizeTaskDashboardAsync(ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(SummarizeTaskDashboard), AiTaskClass.Judgment, response.Usage);
+                userId, tenantId, nameof(SummarizeTaskDashboard), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
@@ -153,10 +69,10 @@ public class AiController(
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -164,7 +80,7 @@ public class AiController(
             var response = await summarizationService.SummarizeJobAsync(jobId, ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(SummarizeJob), AiTaskClass.Judgment, response.Usage);
+                userId, tenantId, nameof(SummarizeJob), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
@@ -194,10 +110,10 @@ public class AiController(
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -205,7 +121,7 @@ public class AiController(
             var response = await summarizationService.SummarizeOperationsAsync(ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(SummarizeOperations), AiTaskClass.Judgment, response.Usage);
+                userId, tenantId, nameof(SummarizeOperations), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
@@ -235,10 +151,10 @@ public class AiController(
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -246,7 +162,7 @@ public class AiController(
             var response = await summarizationService.SummarizeComplianceAsync(ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(SummarizeCompliance), AiTaskClass.Judgment, response.Usage);
+                userId, tenantId, nameof(SummarizeCompliance), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
@@ -272,14 +188,15 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> DraftMessage([FromBody] DraftMessageRequest request, CancellationToken ct)
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -287,7 +204,7 @@ public class AiController(
             var response = await draftingService.DraftCourierMessageAsync(request, ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(DraftMessage), AiTaskClass.Drafting, response.Usage);
+                userId, tenantId, nameof(DraftMessage), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
@@ -317,10 +234,10 @@ public class AiController(
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -328,7 +245,7 @@ public class AiController(
             var response = await draftingService.DraftEmailAsync(request, ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(DraftEmail), AiTaskClass.Drafting, response.Usage);
+                userId, tenantId, nameof(DraftEmail), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
@@ -359,10 +276,10 @@ public class AiController(
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -370,7 +287,7 @@ public class AiController(
             var response = await draftingService.DraftPodEmailAsync(jobId, ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(DraftPodEmail), AiTaskClass.Drafting, response.Usage);
+                userId, tenantId, nameof(DraftPodEmail), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
@@ -405,10 +322,10 @@ public class AiController(
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -416,7 +333,7 @@ public class AiController(
             var response = await draftingService.DraftNoteAsync(request, ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(DraftNote), AiTaskClass.Drafting, response.Usage);
+                userId, tenantId, nameof(DraftNote), AiTaskClass.Drafting, response.Usage);
 
             return Json(response);
         }
@@ -447,10 +364,10 @@ public class AiController(
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -458,7 +375,7 @@ public class AiController(
             var response = await insightsService.ExtractBlockersAsync(jobId, ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(ExtractBlockers), AiTaskClass.Judgment, response.Usage);
+                userId, tenantId, nameof(ExtractBlockers), AiTaskClass.Judgment, response.Usage);
 
             return Json(response);
         }
@@ -489,10 +406,10 @@ public class AiController(
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -500,9 +417,9 @@ public class AiController(
             var response = await insightsService.AnalyzePricingAsync(jobId, accessorialChargeGroupId, ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(AnalyzePricing), AiTaskClass.Judgment, response.Usage);
+                userId, tenantId, nameof(AnalyzePricing), AiTaskClass.Judgment, response.Usage);
 
-            auditLog.Suggested(nameof(AnalyzePricing), jobId, staffId, tenantId, response);
+            auditLog.Suggested(nameof(AnalyzePricing), jobId, tenantInfo.GetStaffId(), tenantId, response);
 
             return Json(response);
         }
@@ -528,14 +445,15 @@ public class AiController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> TriageChangeRequest(int requestId, int jobId, CancellationToken ct)
     {
         try
         {
-            var staffId = tenantInfo.GetStaffId();
-            var tenantId = tenantInfo.GetTenantTimeZone();
+            var userId = RateLimitUserId();
+            var tenantId = tenantInfo.GetCurrentTenantId();
 
-            if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
             {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
             }
@@ -543,9 +461,9 @@ public class AiController(
             var response = await insightsService.TriageChangeRequestAsync(requestId, jobId, ct);
 
             await rateLimiter.RecordTokenUsageAsync(
-                staffId, tenantId, nameof(TriageChangeRequest), AiTaskClass.Judgment, response.Usage);
+                userId, tenantId, nameof(TriageChangeRequest), AiTaskClass.Judgment, response.Usage);
 
-            auditLog.Suggested(nameof(TriageChangeRequest), jobId, staffId, tenantId,
+            auditLog.Suggested(nameof(TriageChangeRequest), jobId, tenantInfo.GetStaffId(), tenantId,
                 new { RequestId = requestId, Suggestion = response });
 
             return Json(response);
@@ -577,10 +495,14 @@ public class AiController(
     /// trusted — accepted ids that were never suggested are dropped.
     /// </summary>
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public IActionResult RecordPricingOutcome([FromBody] AiPricingOutcomeRequest request)
     {
         const int maxIds = 50;
-        if (request.JobId <= 0
+        if (request is null
+            || request.JobId <= 0
+            || request.SuggestedChargeIds is null
+            || request.AcceptedChargeIds is null
             || request.SuggestedChargeIds.Count > maxIds
             || request.AcceptedChargeIds.Count > maxIds)
         {
@@ -590,7 +512,7 @@ public class AiController(
         var accepted = request.AcceptedChargeIds.Where(request.SuggestedChargeIds.Contains).Distinct().ToList();
 
         auditLog.Decided(
-            nameof(AnalyzePricing), request.JobId, tenantInfo.GetStaffId(), tenantInfo.GetTenantTimeZone(),
+            nameof(AnalyzePricing), request.JobId, tenantInfo.GetStaffId(), tenantInfo.GetCurrentTenantId(),
             request.SuggestedChargeIds, accepted);
 
         return Json(new { recorded = true });
@@ -601,9 +523,8 @@ public class AiController(
     public async Task Chat(
         [FromBody] AutoMateChatRequest request, [FromServices] IAutoMateChatService chatService, CancellationToken ct)
     {
-        // Customers and partners have no staff id; their contact id, negated, keeps them out of the staff key space.
-        var userId = tenantInfo.GetStaffIdOrNull() ?? -tenantInfo.GetContactId();
-        var tenantId = tenantInfo.GetTenantTimeZone();
+        var userId = RateLimitUserId();
+        var tenantId = tenantInfo.GetCurrentTenantId();
 
         if (!await rateLimiter.TryAcquireAsync(userId, tenantId))
         {
@@ -663,4 +584,7 @@ public class AiController(
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
+
+    // Customers and partners have no staff id; their contact id, negated, keeps them out of the staff key space.
+    private int RateLimitUserId() => tenantInfo.GetStaffIdOrNull() ?? -tenantInfo.GetContactId();
 }

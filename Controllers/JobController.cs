@@ -122,47 +122,6 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> GetAllJobCoordinates(
-        bool isInternal,
-        string clientIds,
-        [FromQuery] List<int> despatchViewIds)
-    {
-        try
-        {
-            Log.Information(
-                "GetAllJobCoordinates endpoint called with Status: {Status}, IsInternal: {IsInternal}, "
-                + "ClientIds: {ClientIds}",
-                isInternal,
-                clientIds,
-                despatchViewIds
-            );
-
-            if (scopeProvider.Scope?.IsCustomerScoped == true)
-            {
-                await clientAccessValidator.ValidateClientAccessAsync(infoService.GetContactId(), clientIds);
-            }
-
-            var result = await jobQueryRepository.GetJobCoordinatesAsync(despatchViewIds);
-
-            Log.Information(
-                "Successfully retrieved {Count} job coordinates",
-                result.Count
-            );
-
-            return Json(result);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Log.Warning(ex, "Unauthorized access attempt");
-            return StatusCode(StatusCodes.Status401Unauthorized, "Unauthorized access");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error processing job coordinates request");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
     public async Task<IActionResult> GetJobsByClearListEnvelope(
         JobQueryParams queryParams,
         bool isInternal,
@@ -576,6 +535,12 @@ public class JobController(
         bool isPod = true,
         string podDescription = null)
     {
+        var hidden = await RejectIfJobHiddenAsync(jobId);
+        if (hidden != null)
+        {
+            return hidden;
+        }
+
         if (Debugger.IsAttached)
         {
             return Json(new
@@ -625,6 +590,12 @@ public class JobController(
     [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> DeleteJobDeliveryPhotoOrSignature(int jobId, string key)
     {
+        var hidden = await RejectIfJobHiddenAsync(jobId) ?? await RejectIfMediaKeyHiddenAsync(key);
+        if (hidden != null)
+        {
+            return hidden;
+        }
+
         if (Debugger.IsAttached)
         {
             return Json(new { success = true, message = "File deleted successfully" });
@@ -656,6 +627,12 @@ public class JobController(
 
     public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(int jobId, int year, int month)
     {
+        var hidden = await RejectIfJobHiddenAsync(jobId);
+        if (hidden != null)
+        {
+            return hidden;
+        }
+
         if (Debugger.IsAttached)
         {
             return Json(new[]
@@ -691,6 +668,12 @@ public class JobController(
 
     public async Task<IActionResult> GetJobPickupPhotos(int jobId, int year, int month)
     {
+        var hidden = await RejectIfJobHiddenAsync(jobId);
+        if (hidden != null)
+        {
+            return hidden;
+        }
+
         try
         {
             var allPickupPhotos = await podMediaService.GetPickupMediaAsync(jobId, year, month);
@@ -1008,31 +991,6 @@ public class JobController(
         {
             Log.Error(ex, "Error sending POD report email for job {JobId}", request.JobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Upload(IFormFile file)
-    {
-        try
-        {
-            if (!await pricingPermissionService.CanModifyPricesAsync())
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to upload prices");
-            }
-
-            await jobReportService.ProcessJobPriceUploadAsync(file);
-            return Ok();
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(Upload)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -1391,7 +1349,15 @@ public class JobController(
         var parsedIds = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(id => int.Parse(id.Trim()))
             .ToList();
-        await jobCommandRepository.ReSendSelectedJobsAsync(parsedIds);
+        try
+        {
+            await jobCommandRepository.ReSendSelectedJobsAsync(parsedIds);
+        }
+        catch (JobNotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+
         return Ok();
     }
 
@@ -1413,7 +1379,15 @@ public class JobController(
             }
         }
 
-        await jobCommandRepository.ReAssignSelectedJobsAsync(parsedIds);
+        try
+        {
+            await jobCommandRepository.ReAssignSelectedJobsAsync(parsedIds);
+        }
+        catch (JobNotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+
         return Ok();
     }
 
@@ -1429,7 +1403,15 @@ public class JobController(
             return partnerGuard;
         }
 
-        await jobCommandRepository.SetFirstJobAsync(jobId, courierId);
+        try
+        {
+            await jobCommandRepository.SetFirstJobAsync(jobId, courierId);
+        }
+        catch (JobNotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+
         return Ok();
     }
 
@@ -1576,28 +1558,6 @@ public class JobController(
     }
 
     [HttpPost]
-    [RequireScope(ScopedRecord.Courier, "courierId")]
-    [NetworkPartnerCapability(NpCapability.Dispatch)]
-    public async Task<IActionResult> ReSendAll(int courierId)
-    {
-        try
-        {
-            await jobCommandRepository.ReSendAllJobsAsync(courierId);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(
-                ex,
-                "Error resending jobs to CourierId {CourierId}. Error: {ErrorMessage}",
-                courierId,
-                ex.Message
-            );
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    [HttpPost]
     [RequireScope(ScopedRecord.Job, "jobIds")]
     [NetworkPartnerCapability(NpCapability.Restore)]
     public async Task<IActionResult> RestoreSplitJobs([FromQuery] List<int> jobIds)
@@ -1606,6 +1566,10 @@ public class JobController(
         {
             await jobCommandRepository.RestoreSplitJobsAsync(jobIds);
             return Ok();
+        }
+        catch (JobNotFoundException e)
+        {
+            return NotFound(e.Message);
         }
         catch (Exception ex)
         {
@@ -1847,8 +1811,15 @@ public class JobController(
     [NetworkPartnerCapability(NpCapability.Split)]
     public async Task<IActionResult> UnSplitJob(int jobId)
     {
-        var message = await jobCommandRepository.UnSplitJobAsync(jobId);
-        return Json(message);
+        try
+        {
+            var message = await jobCommandRepository.UnSplitJobAsync(jobId);
+            return Json(message);
+        }
+        catch (JobNotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
     }
 
     [HttpPost]
@@ -2027,12 +1998,6 @@ public class JobController(
         return Json(data);
     }
 
-    public async Task<IActionResult> PpdExclusiveAmount(int clientId, decimal amount)
-    {
-        var ppd = await jobQueryRepository.PpdExclusiveAmountAsync(clientId, amount);
-        return Json(ppd);
-    }
-
     [HttpPost]
     public async Task<IActionResult> UpdateRecurringJob(
         int jobId,
@@ -2078,6 +2043,10 @@ public class JobController(
             }
 
             return Ok();
+        }
+        catch (ClientNotFoundException e)
+        {
+            return BadRequest(new { message = e.Message });
         }
         catch (Exception e)
         {
@@ -2154,6 +2123,11 @@ public class JobController(
             Log.Information(e, "UpdateJob refused: job {JobId}, field {JobProperty}, reason",
                 jobId, field);
 
+            return BadRequest(new { message = e.Message });
+        }
+        catch (ClientNotFoundException e)
+        {
+            Log.Information(e, "UpdateJob refused: job {JobId}, field {JobProperty}, client not visible", jobId, field);
             return BadRequest(new { message = e.Message });
         }
         catch (Exception e)
@@ -2287,7 +2261,15 @@ public class JobController(
         string value
     )
     {
-        await jobCommandRepository.UpdateBulkJobAsync(bulkJobId, field, value);
+        try
+        {
+            await jobCommandRepository.UpdateBulkJobAsync(bulkJobId, field, value);
+        }
+        catch (ClientNotFoundException e)
+        {
+            return BadRequest(new { message = e.Message });
+        }
+
         return Ok();
     }
 
@@ -2331,6 +2313,10 @@ public class JobController(
 
             return Json(new { jobId = created.JobId, jobNumber = created.JobNumber });
         }
+        catch (ClientNotFoundException e)
+        {
+            return BadRequest(new { message = e.Message });
+        }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
@@ -2358,37 +2344,6 @@ public class JobController(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(InterCourierCharge)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-    }
-
-    public async Task<IActionResult> HasClientItemsAvailable(int clientId, int speedId)
-    {
-        var hasItems = await jobQueryRepository.HasClientItemsAvailableAsync(clientId, speedId);
-        return Json(hasItems);
-    }
-
-    public async Task<IActionResult> GetAllClientItems(int clientId, int speedId, int jobId)
-    {
-        var clientItems =
-            await jobQueryRepository.GetClientItemsBySpeedAsync(clientId, speedId, jobId);
-        return Json(clientItems);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> AddClientItemsToJob(
-        int jobId,
-        [FromBody] ClientItemsModel itemsModel
-    )
-    {
-        if (itemsModel != null)
-        {
-            await jobCommandRepository.AddClientsItemToJobAsync(
-                jobId,
-                itemsModel.ServiceIds,
-                itemsModel.TotalCost
-            );
-        }
-
-        return Ok();
     }
 
     public async Task<IActionResult> SendPod(int jobId, string toEmail)
@@ -2459,6 +2414,12 @@ public class JobController(
 
     public async Task<IActionResult> GetAttachedFiles(int jobId)
     {
+        var hidden = await RejectIfJobHiddenAsync(jobId);
+        if (hidden != null)
+        {
+            return hidden;
+        }
+
         if (Debugger.IsAttached)
         {
             return Ok(new[]
@@ -2505,6 +2466,12 @@ public class JobController(
     [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> UploadFile([FromForm] FileUploadRequest request)
     {
+        var hidden = request is null ? null : await RejectIfJobHiddenAsync(request.JobId);
+        if (hidden != null)
+        {
+            return hidden;
+        }
+
         if (Debugger.IsAttached)
         {
             if (request?.File == null)
@@ -2557,6 +2524,12 @@ public class JobController(
 
     public async Task<IActionResult> DownloadFile(string key)
     {
+        var hidden = await RejectIfMediaKeyHiddenAsync(key);
+        if (hidden != null)
+        {
+            return hidden;
+        }
+
         if (Debugger.IsAttached)
         {
             var png = Convert.FromBase64String(
@@ -2593,6 +2566,12 @@ public class JobController(
 
     public async Task<IActionResult> DeleteFile(string key)
     {
+        var hidden = await RejectIfMediaKeyHiddenAsync(key);
+        if (hidden != null)
+        {
+            return hidden;
+        }
+
         if (Debugger.IsAttached)
         {
             return Ok(new { message = "File deleted successfully" });
@@ -2911,7 +2890,7 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating job read status");
+            Log.Error(ex, "Error retrieving time zone options");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -2927,26 +2906,12 @@ public class JobController(
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error updating job read status");
+            Log.Error(ex, "Error adding a stop to Job {JobId}", data?.JobId);
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> AddStopToRecurringJob([FromBody] AddStopRequest data)
-    {
-        try
-        {
-            var newStopJobId = await addStopJobService.AddStopInsertRecurringJobAsync(data);
-            return Json(newStopJobId);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error updating job read status for Job {JobId}", data.JobId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> GetDeliveryJourney(int jobId, string timeZone = null)
     {
         try
@@ -2976,29 +2941,6 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error retrieving the recurring delivery journey for Booking {BookingId}", bookingId);
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
-    [HttpPost]
-    [RequireScope(ScopedRecord.Job, "jobId")]
-    public async Task<IActionResult> ApplyWebQtyUpdate(int jobId)
-    {
-        try
-        {
-            var partnerGuard = await RejectIfPartnerJobAsync(jobId);
-            if (partnerGuard != null)
-            {
-                return partnerGuard;
-            }
-
-            var applied = await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
-            return applied ? Ok() : NotFound("No pending web qty update found for this job.");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(ApplyWebQtyUpdate)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
@@ -3262,20 +3204,6 @@ public class JobController(
         return result;
     }
 
-    public async Task<IActionResult> GetPricingPermissions()
-    {
-        try
-        {
-            var permissions = await pricingPermissionService.GetPricingPermissionsAsync();
-            return Json(permissions);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting pricing permissions");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
     public async Task<IActionResult> GetActivePartnerOptions()
     {
         try
@@ -3386,6 +3314,23 @@ public class JobController(
         }
 
         return null;
+    }
+
+    // Branches (B2): photos and attachments live in S3, outside the EF filters. A branch-limited caller may only reach
+    // media of jobs they can see; a key whose job cannot be read is refused. Everyone else is unaffected.
+    private async Task<IActionResult> RejectIfJobHiddenAsync(int jobId) =>
+        await jobQueryRepository.IsJobHiddenByBranchScopeAsync(jobId) ? NotFound("Job not found.") : null;
+
+    // Every caller: a key with a backslash, a '..' or empty segment, or a leading slash is never a key we issued (an empty key
+    // falls through to the service's own "key is required" answer). Branch-limited callers are further held to the job in the key.
+    private async Task<IActionResult> RejectIfMediaKeyHiddenAsync(string key)
+    {
+        if (!string.IsNullOrEmpty(key) && !JobMediaKey.IsStructurallySafe(key))
+        {
+            return BadRequest("Invalid file key.");
+        }
+
+        return await jobQueryRepository.IsJobMediaKeyHiddenByBranchScopeAsync(key) ? NotFound("File not found.") : null;
     }
 
     private async Task<IActionResult> RejectIfOutboundPartnerJobAsync(int jobId)

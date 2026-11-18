@@ -69,16 +69,11 @@ export const ROUTES: readonly RouteEntry[] = [
 
 const byState = new Map(ROUTES.map(r => [r.state, r]));
 
-export const getRoute = (state: string): RouteEntry | undefined => byState.get(state);
-
 export function routePath(state: string): string {
     const route = byState.get(state);
     if (!route) throw new Error(`Unknown route state: ${state}`);
     return route.path;
 }
-
-/** ui-router url for states that take an optional `jobId` query param. */
-export const routeUrlWithJobId = (state: string): string => `${routePath(state)}?jobId`;
 
 /** The page an alias redirects to; non-aliases resolve to themselves. */
 export const resolveAlias = (state: string): string => byState.get(state)?.redirectTo ?? state;

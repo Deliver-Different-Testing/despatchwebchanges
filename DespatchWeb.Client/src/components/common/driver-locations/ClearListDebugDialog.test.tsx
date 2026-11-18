@@ -270,9 +270,19 @@ describe('ClearListDebugButton', () => {
     });
 
     describe('Error Handling', () => {
-        it('shows error message when API rejects', async () => {
+        it('shows the ApiError message when API rejects', async () => {
             const user = setupUser();
-            mockGet.mockRejectedValue({ status: 404, statusText: 'Not Found', message: 'Not Found' });
+            mockGet.mockRejectedValue({ status: 404, statusText: 'Not Found', message: 'Courier not found' });
+            renderWithTheme(<ClearListDebugButton courierId={42} />);
+
+            await user.click(screen.getByRole('button'));
+
+            expect(await screen.findByText('Courier not found')).toBeInTheDocument();
+        });
+
+        it('falls back to generic text when the rejection has no message', async () => {
+            const user = setupUser();
+            mockGet.mockRejectedValue({ status: 0, statusText: 'Network Error', message: '' });
             renderWithTheme(<ClearListDebugButton courierId={42} />);
 
             await user.click(screen.getByRole('button'));

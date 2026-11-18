@@ -24,6 +24,7 @@ import {
     moveJobToReprice,
     getActivePartnerOptions,
     sendToPartner,
+    lockTargetFor,
 } from './jobListApi';
 import {apiClient} from './client';
 
@@ -233,5 +234,24 @@ describe('jobListApi', () => {
             expect(mockedPost).toHaveBeenCalledWith('job/SendToPartner', {jobId: 42, partnerId: 5, agreedRate: 75.50});
             expect(result).toEqual(response);
         });
+    });
+});
+
+describe('lockTargetFor', () => {
+    it("locks a prebook row's own template through the recurring update", () => {
+        expect(lockTargetFor({id: 77, preBook: true})).toEqual({jobId: 77, isRecurring: true});
+    });
+
+    it('locks the live job behind a bulk row, never its BulkJobId', () => {
+        expect(lockTargetFor({id: 500, isBulkJob: true, linkedJobId: 9001}))
+            .toEqual({jobId: 9001, isRecurring: false});
+    });
+
+    it('has nothing to lock for a bulk row that has not generated a live job', () => {
+        expect(lockTargetFor({id: 500, isBulkJob: true})).toBeNull();
+    });
+
+    it('locks an ordinary live job by its own id', () => {
+        expect(lockTargetFor({id: 42})).toEqual({jobId: 42, isRecurring: false});
     });
 });

@@ -17,7 +17,6 @@ namespace DespatchWeb.Tests.Services;
 public class JobReportServiceTests
 {
     private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
-    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
@@ -28,7 +27,6 @@ public class JobReportServiceTests
 
     private JobReportService CreateService() => new(
         _jobQueryRepositoryMock,
-        _jobCommandRepositoryMock,
         _recurringJobRepositoryMock,
         _clock,
         _s3ClientMock,
@@ -316,65 +314,6 @@ public class JobReportServiceTests
         Assert.Single(result);
         Assert.Equal(1, result[0].Id);
         Assert.Equal(100m, result[0].Amount);
-    }
-
-    [Fact]
-    public async Task ProcessJobPriceUploadAsync_NullFile_ThrowsArgumentException()
-    {
-        // Arrange
-        var service = CreateService();
-
-        // Assert
-        var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
-        Assert.StartsWith("No file provided.", ex.Message);
-        Assert.Equal("file", ex.ParamName);
-        return;
-
-        // Act
-        Task Act() => service.ProcessJobPriceUploadAsync(null!);
-    }
-
-    [Fact]
-    public async Task ProcessJobPriceUploadAsync_ValidFile_ArchivesAndUpdates()
-    {
-        // Arrange
-        const string csvContent = "Id,Amount\n1,100\n2,200";
-        var fileMock = CreateMockCsvFile("test.csv", csvContent);
-
-        // Clock is pre-set with TestDates.Now via FakeTenantClock
-
-        var service = CreateService();
-
-        // Act
-        await service.ProcessJobPriceUploadAsync(fileMock);
-
-        // Assert - verify S3 upload was called with a {Prefix}/{yyyy}/{MM}/{filename} key.
-        await _s3ClientMock.Received().PutObjectAsync(
-            Arg.Is<PutObjectRequest>(r => System.Text.RegularExpressions.Regex.IsMatch(
-                r!.Key, @"^Jobs/\d{4}/\d{2}/Jobs-\d{14}$")),
-            Arg.Any<CancellationToken>());
-
-        // Assert - verify repository update was called
-        await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(
-            Arg.Is<IReadOnlyList<JobManualPriceModel>>(l => l!.Count == 2));
-    }
-
-    [Fact]
-    public async Task ProcessJobPriceUploadAsync_EmptyFile_DoesNotCallUpdate()
-    {
-        // Arrange
-        const string csvContent = "Id,Amount"; // Header only
-        var fileMock = CreateMockCsvFile("test.csv", csvContent);
-
-        // Clock is pre-set with TestDates.Now via FakeTenantClock
-
-        var service = CreateService();
-
-        // Act
-        await service.ProcessJobPriceUploadAsync(fileMock);
-
-        // Assert - should not call update when no data
-        await _jobCommandRepositoryMock.DidNotReceive().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
     }
 
     [Fact]

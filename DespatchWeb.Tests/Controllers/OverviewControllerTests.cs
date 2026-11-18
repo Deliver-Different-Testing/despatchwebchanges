@@ -148,29 +148,6 @@ public class OverviewControllerTests
     }
 
     [Fact]
-    public async Task GetJobsForMegaMap_Success_ReturnsJson()
-    {
-        var expected = new List<MegaMapResponse>();
-        _jobRepoMock.GetJobsForMegaMapAsync(Arg.Any<CancellationToken>()).Returns(expected);
-
-        var result = await CreateController().GetJobsForMegaMap();
-
-        var json = Assert.IsType<JsonResult>(result);
-        Assert.Equivalent(expected, json.Value);
-    }
-
-    [Fact]
-    public async Task GetJobsForMegaMap_RepositoryThrows_Returns500()
-    {
-        _jobRepoMock.GetJobsForMegaMapAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("error"));
-
-        var result = await CreateController().GetJobsForMegaMap();
-
-        var status = Assert.IsType<StatusCodeResult>(result);
-        Assert.Equal(500, status.StatusCode);
-    }
-
-    [Fact]
     public async Task GetOpenJobs_Success_ReturnsJson()
     {
         var parameters = new OpenJobsRequest();

@@ -85,12 +85,14 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
         const guard = flightSearchGuard({
             job,
             airports: {outbound: selectedOutboundAirport, inbound: selectedInboundAirport},
-            loading: false,
         });
 
         if (guard.action === 'skip') return;
 
         if (guard.action === 'block') {
+            // Supersede any search still in flight so its results can't land over the block message.
+            ++searchSeqRef.current;
+            setFlightsLoading(false);
             setFlightOptions([]);
             setFlightMessage(guard.message);
             return;
@@ -155,7 +157,7 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
             console.error('Error loading agents:', error);
             setAgentMessage("Couldn't load agents for this job. Check your connection and try again.");
         } finally {
-            setAgentsLoading(false);
+            if (jobIdRef.current === jobId) setAgentsLoading(false);
         }
     }, [job]);
 
@@ -175,6 +177,8 @@ export function useFlightAgentWidget({job, timeZone, onWarning}: UseFlightAgentW
         setSelectedInboundAirport(undefined);
         setOutboundAirportOptions([]);
         setInboundAirportOptions([]);
+        // The previous job's agent load no longer owns the spinner (its finally skips once the job moves on).
+        setAgentsLoading(false);
 
         if (!job) return;
 

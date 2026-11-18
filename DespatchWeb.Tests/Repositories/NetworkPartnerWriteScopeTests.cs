@@ -204,7 +204,6 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
         { typeof(JobController), nameof(JobController.ReAssignSelected), ScopedRecord.Job, "jobIds" },
         { typeof(JobController), nameof(JobController.SetFirstJob), ScopedRecord.Job, "jobId" },
         { typeof(JobController), nameof(JobController.SetFirstJob), ScopedRecord.Courier, "courierId" },
-        { typeof(JobController), nameof(JobController.ReSendAll), ScopedRecord.Courier, "courierId" },
         { typeof(JobController), nameof(JobController.Void), ScopedRecord.Job, "request.JobId" },
         { typeof(JobController), nameof(JobController.Void), ScopedRecord.JobOrBulkJob, "request.SelectedJobIds" },
         { typeof(JobController), nameof(JobController.RestoreSplitJobs), ScopedRecord.Job, "jobIds" },
@@ -222,7 +221,6 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
         { typeof(JobController), nameof(JobController.UpdateDeliveryAddress), ScopedRecord.Job, "request.JobId" },
         { typeof(JobController), nameof(JobController.UpdatePickupAddress), ScopedRecord.Job, "request.JobId" },
         { typeof(JobController), nameof(JobController.AddStopToJob), ScopedRecord.Job, "data.JobId" },
-        { typeof(JobController), nameof(JobController.ApplyWebQtyUpdate), ScopedRecord.Job, "jobId" },
         { typeof(JobController), nameof(JobController.BulkUpdateReadStatus), ScopedRecord.Job, "data.JobIds" },
         { typeof(JobController), nameof(JobController.RepriceJobWithBaseAmount), ScopedRecord.Job, "data.JobId" },
         { typeof(JobController), nameof(JobController.SendToPartner), ScopedRecord.Job, "request.JobId" },
@@ -234,13 +232,14 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
         { typeof(NationwideJobController), nameof(NationwideJobController.AssignFlightToJob), ScopedRecord.Job, "request.JobId" },
         { typeof(CourierController), nameof(CourierController.UpdateAfterHoursCourierSchedule), ScopedRecord.Courier, "request.CourierId" },
         { typeof(CourierController), nameof(CourierController.CreateAfterHoursCourierSchedule), ScopedRecord.Courier, "request.CourierId" },
-        { typeof(AiController), nameof(AiController.SummarizeJobNotes), ScopedRecord.Job, "jobId" },
-        { typeof(AiController), nameof(AiController.SummarizeJobEvents), ScopedRecord.Job, "jobId" },
         { typeof(AiController), nameof(AiController.SummarizeJob), ScopedRecord.Job, "jobId" },
         { typeof(AiController), nameof(AiController.DraftPodEmail), ScopedRecord.Job, "jobId" },
         { typeof(AiController), nameof(AiController.DraftNote), ScopedRecord.Job, "request.JobId" },
         { typeof(AiController), nameof(AiController.ExtractBlockers), ScopedRecord.Job, "jobId" },
         { typeof(AiController), nameof(AiController.AnalyzePricing), ScopedRecord.Job, "jobId" },
+        { typeof(AiController), nameof(AiController.TriageChangeRequest), ScopedRecord.Job, "jobId" },
+        { typeof(AiController), nameof(AiController.DraftMessage), ScopedRecord.Job, "request.JobId" },
+        { typeof(AiController), nameof(AiController.RecordPricingOutcome), ScopedRecord.Job, "request.JobId" },
     };
 
     [Theory]

@@ -63,22 +63,6 @@ export interface IAvailableCourierPosition {
     lastDeliveryTime?: string | null;
 }
 
-export interface IPotentialCouriers {
-    courierId: number;
-    code: string;
-    reason: string;
-    ruleNumber: number;
-    firstName: string;
-}
-
-export interface ICourierLocationRequest {
-    minLng: number;
-    minLat: number;
-    maxLng: number;
-    maxLat: number;
-    courierFleetIds?: number[];
-}
-
 export interface IDriverWorkOverview {
     courierId: number;
     name: string;

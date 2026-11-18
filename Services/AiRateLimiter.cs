@@ -19,18 +19,18 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
 
     private readonly AnthropicSettings _settings = settings.Value;
 
-    public async Task<bool> TryAcquireAsync(int staffId, string tenantId)
+    public async Task<bool> TryAcquireAsync(int userId, string tenantId)
     {
         var now = DateTimeOffset.UtcNow;
         var windowKey = now.ToString("yyyyMMddHHmm");
 
         // Check per-user limit
-        var userKey = $"ai_rate:user:{staffId}:{windowKey}";
+        var userKey = $"ai_rate:user:{tenantId}:{userId}:{windowKey}";
         var userCount = await IncrementCounterAsync(userKey);
         if (userCount > _settings.RateLimitPerUserPerMinute)
         {
-            Log.Warning("AI rate limit exceeded for user {StaffId}: {Count}/{Limit}",
-                staffId, userCount, _settings.RateLimitPerUserPerMinute);
+            Log.Warning("AI rate limit exceeded for user {UserId} in tenant {TenantId}: {Count}/{Limit}",
+                userId, tenantId, userCount, _settings.RateLimitPerUserPerMinute);
             return false;
         }
 
@@ -48,7 +48,7 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
     }
 
     public Task RecordTokenUsageAsync(
-        int staffId, string tenantId, string feature, AiTaskClass taskClass, AiUsageInfo usage)
+        int userId, string tenantId, string feature, AiTaskClass taskClass, AiUsageInfo usage)
     {
         var profile = _settings.For(taskClass);
 
@@ -61,11 +61,11 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
         // is doing nothing.
         Log.Information(
             "AI token usage - Feature: {Feature}, TaskClass: {TaskClass}, Model: {Model}, " +
-            "Staff: {StaffId}, Tenant: {TenantId}, " +
+            "User: {UserId}, Tenant: {TenantId}, " +
             "Input: {InputTokens}, Output: {OutputTokens}, CacheRead: {CacheReadTokens}, " +
             "CacheWrite: {CacheCreationTokens}, CostUsd: {CostUsd:F6}",
             feature, taskClass.ToString(), profile.Model,
-            staffId, tenantId,
+            userId, tenantId,
             usage.InputTokens, usage.OutputTokens,
             usage.CacheReadInputTokens, usage.CacheCreationInputTokens, costUsd);
 

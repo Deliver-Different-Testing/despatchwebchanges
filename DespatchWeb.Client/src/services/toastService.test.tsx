@@ -9,7 +9,8 @@
 import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import {notifications} from '@mantine/notifications';
 import {toastService, toastColor} from './toastService';
-import {dfrntTheme} from '../theme/dfrntMantineTheme';
+import {createDfrntTheme, dfrntTheme} from '../theme/dfrntMantineTheme';
+import {APPEARANCE_STORAGE_KEY} from '../hooks/useAppearance';
 
 /** The service renders into its own root, so every call needs a flush. */
 const show = async (fn: () => void) => {
@@ -202,5 +203,32 @@ describe('toastService', () => {
             warnSpy.mockRestore();
             errorSpy.mockRestore();
         });
+    });
+});
+
+describe('toast theme', () => {
+    afterEach(async () => {
+        localStorage.removeItem(APPEARANCE_STORAGE_KEY);
+        await act(async () => {
+            window.dispatchEvent(new Event('dd-appearance-change'));
+            notifications.clean();
+        });
+    });
+
+    it('follows the tenant colours rather than the fixed default theme', async () => {
+        const primary = '#b4005a';
+        localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify({user: null, tenant: {primary}}));
+        await act(async () => {
+            window.dispatchEvent(new Event('dd-appearance-change'));
+        });
+
+        await show(() => toastService.showInfoToast('Branded'));
+
+        expect(await screen.findByText('Branded')).toBeInTheDocument();
+        const brandShade = createDfrntTheme({primary, highContrast: false}).colors?.brand?.[6];
+        expect(brandShade).toBeDefined();
+        expect(brandShade).not.toBe(dfrntTheme.colors?.brand?.[6]);
+        const styles = [...document.querySelectorAll('style')].map(el => el.textContent ?? '').join('');
+        expect(styles.toLowerCase()).toContain(brandShade!.toLowerCase());
     });
 });

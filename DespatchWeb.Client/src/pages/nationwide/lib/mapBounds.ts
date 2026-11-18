@@ -61,7 +61,7 @@ export function zoomForSpan(maxDiff: number): number {
  * were never rendered on this page.
  */
 export function calculateMapBounds(
-    job: IDispatchJob,
+    job: IDispatchJob | undefined,
     options: MapBoundsOptions,
 ): MapBoundsResult {
     const {fallbackCentre} = options;

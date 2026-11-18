@@ -21,6 +21,7 @@ import {
     rejectPartnerRate,
 } from '../../../../api/jobListApi';
 import {formatCurrency} from '../../../../utils/currencyUtils';
+import {errorMessageOf} from '../../../../utils/errorMessage';
 
 interface RateAcceptanceBannerProps {
     jobId: number;
@@ -52,7 +53,7 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
             void queryClient.invalidateQueries({queryKey});
         },
         onError: (err: unknown) => {
-            setActionError(err instanceof Error ? err.message : "Couldn't accept the rate. Try again.");
+            setActionError(errorMessageOf(err, "Couldn't accept the rate. Try again."));
         },
     });
 
@@ -69,7 +70,7 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
             void queryClient.invalidateQueries({queryKey});
         },
         onError: (err: unknown) => {
-            setActionError(err instanceof Error ? err.message : "Couldn't reject the rate. Try again.");
+            setActionError(errorMessageOf(err, "Couldn't reject the rate. Try again."));
         },
     });
 

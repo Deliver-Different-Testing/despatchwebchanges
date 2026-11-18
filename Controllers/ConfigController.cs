@@ -14,13 +14,4 @@ public class ConfigController : Controller
         var apiKey = new ApiKeyResponse(Environment.GetEnvironmentVariable("HereMapsAPIKey"));
         return Json(apiKey);
     }
-
-    [HttpGet]
-    public IActionResult GetHereMapsConfig()
-    {
-        var appId = Environment.GetEnvironmentVariable("HereMapsID");
-        var appCode = Environment.GetEnvironmentVariable("HereMapsCode");
-
-        return Json(new { appId, appCode });
-    }
 }

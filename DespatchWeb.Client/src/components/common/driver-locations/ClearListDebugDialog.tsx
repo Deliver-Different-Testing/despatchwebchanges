@@ -9,6 +9,7 @@ import { DialogHeader, DialogShell } from '../../dialogs/shared/mantine';
 import { dialogContentBg } from '../../dialogs/shared/mantine/styles';
 import type { IClearListDebugViewModel } from '../../../types/interfaces/job.interface';
 import { apiClient } from '../../../api/client';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 async function fetchClearListDebug(courierId: number): Promise<IClearListDebugViewModel> {
     return apiClient.get<IClearListDebugViewModel>('/courier/ClearListDebug', { courierId });
@@ -54,7 +55,7 @@ export function ClearListDebugButton({ courierId }: { courierId: number }) {
             const result = await fetchClearListDebug(courierId);
             setData(result);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Couldn't load the debug info. Try again.");
+            setError(errorMessageOf(err, "Couldn't load the debug info. Try again."));
         } finally {
             setLoading(false);
         }

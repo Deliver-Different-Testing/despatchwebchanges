@@ -1,7 +1,7 @@
 import {glassClassNames} from '@deliver-different/glass';
-import { isLiquidGlassSupported } from './glassSupport';
+import { useGlassAllowed } from './useGlassStrategy';
 
-/** Frosted-panel class for floating map controls; undefined in a browser that can't render glass. */
+/** Frosted-panel class for floating map controls; undefined where glass is off (unsupported browser, high contrast). */
 export function useMapGlassClassName(): string | undefined {
-  return isLiquidGlassSupported() ? `${glassClassNames.glass} ${glassClassNames.panel}` : undefined;
+  return useGlassAllowed() ? `${glassClassNames.glass} ${glassClassNames.panel}` : undefined;
 }

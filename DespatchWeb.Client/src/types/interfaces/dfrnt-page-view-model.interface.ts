@@ -6,9 +6,3 @@ export interface DfrntPageViewModel {
     selected: boolean;
 }
 
-export interface ClearListEnvelopeViewModel {
-    minimumLatitude: number;
-    minimumLongitude: number;
-    maximumLatitude: number;
-    maximumLongitude: number;
-}

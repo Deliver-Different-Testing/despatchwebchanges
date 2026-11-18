@@ -45,6 +45,7 @@ import {openJobInSearch} from '../../services/navigationService';
 import JobInternalStatusEnum from "../../types/enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../constants/constants";
 import {requireDialog} from '../dialogs/dialogRegistry';
+import {errorMessageOf} from '../../utils/errorMessage';
 
 // Nationwide speed constant
 const INTERNAL_STATUS_REPRICE = JobInternalStatusEnum.Reprice;
@@ -307,7 +308,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             setDispatchDialog((s) => ({...s, open: false}));
             refresh();
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Couldn't dispatch the job. Check your connection and try again.";
+            const message = errorMessageOf(err, "Couldn't dispatch the job. Check your connection and try again.");
             throw new Error(message, {cause: err});
         }
     };

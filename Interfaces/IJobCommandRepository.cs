@@ -84,8 +84,6 @@ public interface IJobCommandRepository
     Task<QuickAddJobResult> QuickAddJobAsync(JobCreateViewModel request);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
 
-    Task AddClientsItemToJobAsync(int jobId, IReadOnlyList<int> clientItemIds, decimal totalCost);
-
     Task AddEntityAsync<T>(T entity) where T : class;
 
     Task UpdateJobNoteAsync(int jobId, string note);
@@ -112,6 +110,16 @@ public interface IJobCommandRepository
     Task<decimal> RepriceJobWithBaseAmountAsync(RepriceJobWithBaseAmountModel data);
     Task AssignCourierToJobAsync(IReadOnlyList<int> jobIds, int courierId);
     Task AssignCourierToChildJobsAsync(IReadOnlyList<int> jobIds, InternalJobStatus internalStatus);
+
+    /// <summary>
+    /// Gives an open, non-child job to a courier only if it is still unassigned: the claim and the clear-list reset
+    /// commit together or not at all. A dispatcher's allocation always wins.
+    /// </summary>
+    Task<CourierClaimOutcome> ClaimJobForCourierAsync(int jobId, int courierId, int staffId, CancellationToken cancellationToken = default);
+
+    Task<bool> IsActiveStaffAsync(int staffId, CancellationToken cancellationToken = default);
+
+    Task<bool> IsActiveCourierAsync(int courierId, CancellationToken cancellationToken = default);
 
     Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
         CancellationToken cancellationToken = default);

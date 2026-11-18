@@ -78,7 +78,6 @@ export interface AiCourierSuggestion {
  */
 export interface DispatchJob {
     // Core identifiers
-    angularId: string;
     selected?: boolean;
     showCourierSearch: boolean;
     id: number;
@@ -298,31 +297,6 @@ export interface FetchConfig {
     clientSideSearch?: boolean;
 }
 
-// ── Mount Configuration ──────────────────────────────────────────────
-
-export interface MountJobListConfig {
-    showToast: ShowToastFn;
-    isUsCustomer?: boolean;
-    appPage?: AppPage | number;
-    onJobSelect?: (job: DispatchJob) => void;
-    onJobDispatch?: (job: DispatchJob, courierId: number) => void;
-    onRefresh?: () => void;
-    onSearchChange?: (searchText: string) => void;
-    onCategoryChange?: (category: string) => void;
-    onBackendFilter?: (column: string, direction: string) => void;
-    onLoadMoreJobs?: (page: number, pageSize: number) => Promise<{ jobs: DispatchJob[]; totalCount: number; hasMore: boolean }>;
-    onAddStop?: (job: DispatchJob) => void;
-    /** Called when jobs are fetched/updated (fetchConfig mode) — used to sync map markers */
-    onJobsLoaded?: (jobs: DispatchJob[]) => void;
-    defaultCategory?: JobCategory;
-    /** Prefix for localStorage keys — prevents collisions between multiple instances */
-    storagePrefix?: string;
-    /** If provided, React manages its own data fetching via React Query */
-    fetchConfig?: FetchConfig;
-    /** Hide the "Logged-in only" toggle in the toolbar */
-    hideLoggedInSwitch?: boolean;
-}
-
 // ── React Component Props ────────────────────────────────────────────
 
 export interface JobListPanelProps {
@@ -336,11 +310,8 @@ export interface JobListPanelProps {
      */
     selectedJobId?: number | null;
     onJobDispatch?: (job: DispatchJob, courierId: number) => void;
-    onRefresh?: () => void;
     onSearchChange?: (searchText: string) => void;
     onCategoryChange?: (category: string) => void;
-    onBackendFilter?: (column: string, direction: string) => void;
-    onLoadMoreJobs?: (page: number, pageSize: number) => Promise<{ jobs: DispatchJob[]; totalCount: number; hasMore: boolean }>;
     onAddStop?: (job: DispatchJob) => void;
     /** Called when jobs are fetched/updated (fetchConfig mode) — used to sync map markers */
     onJobsLoaded?: (jobs: DispatchJob[]) => void;
@@ -359,8 +330,8 @@ export interface JobListPanelProps {
     hiddenCategories?: readonly JobCategory[];
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
-    /** If provided, React manages its own data fetching via React Query */
-    fetchConfig?: FetchConfig;
+    /** Drives the panel's React Query data fetching */
+    fetchConfig: FetchConfig;
     /** Hide the "Logged-in only" toggle in the toolbar */
     hideLoggedInSwitch?: boolean;
     /** File Undeliverable jobs under Done instead of Active (Current Work). */
@@ -376,12 +347,6 @@ export interface JobListPanelProps {
      * the dispatch page for the views rail; left unset elsewhere.
      */
     topSlot?: React.ReactNode;
-    /** Called by mount module to allow pushing jobs from AngularJS (legacy, used when no fetchConfig) */
-    setJobsCallback?: (cb: (jobs: DispatchJob[], totalCount: number) => void) => void;
-    /** Called by mount module to allow triggering refresh from AngularJS */
-    setRefreshCallback?: (cb: () => void) => void;
-    /** Called by mount module to allow setting selected job from AngularJS */
-    setSelectJobCallback?: (cb: (jobId: number) => void) => void;
-    /** Called by mount module to allow updating search params from AngularJS */
+    /** Hands the host page a function for pushing search params into the panel's data fetch */
     setUpdateSearchParamsCallback?: (cb: (params: Partial<JobListSearchParams>) => void) => void;
 }

@@ -1,8 +1,6 @@
 import {ISuggestion} from "../types/interfaces/job.interface";
 
 function countSubJobs(jobNumber: string, relatedJobs: ISuggestion[]): number {
-    console.log('[CountSubJobs] input: ', { jobNumber, relatedJobs });
-
     if (!relatedJobs || relatedJobs.length === 0) {
         return 0;
     }
@@ -11,7 +9,6 @@ function countSubJobs(jobNumber: string, relatedJobs: ISuggestion[]): number {
     const match = jobNumber.match(/^([A-Z0-9]+)([a-z]*)$/);
 
     if (!match) {
-        console.log('[CountSubJobs] Invalid job number format:', jobNumber);
         return 0;
     }
 
@@ -29,7 +26,6 @@ function countSubJobs(jobNumber: string, relatedJobs: ISuggestion[]): number {
         return jobMatch && jobMatch[2] !== ''; // Has a suffix
     }).length;
 
-    console.log('[CountSubJobs] result: ', subJobCount);
     return subJobCount;
 }
 

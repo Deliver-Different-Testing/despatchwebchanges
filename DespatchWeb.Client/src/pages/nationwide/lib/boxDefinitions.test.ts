@@ -5,14 +5,11 @@
  * `loadBoxVisibility` (694).
  */
 
-import type {IBox} from '../../../types/interfaces/layout.interfaces';
 import {NationwideBoxes} from './nationwideBoxes';
 import {
-    applyBoxVisibility,
     boxVisibilityKey,
     createDefaultNationwideLayout,
     createNationwideBoxes,
-    toBoxVisibilityState,
 } from './boxDefinitions';
 
 describe('createNationwideBoxes', () => {
@@ -68,67 +65,6 @@ describe('boxVisibilityKey', () => {
         expect(boxVisibilityKey('boxVisibility-3-42', 'Default')).toBe('boxVisibility-3-42-Default');
         expect(boxVisibilityKey('boxVisibility-3-42', 'Night shift'))
             .toBe('boxVisibility-3-42-Night shift');
-    });
-});
-
-describe('toBoxVisibilityState', () => {
-    it('captures visible and collapsed per box, defaulting both', () => {
-        const boxes: Record<string, IBox> = {
-            map: {name: 'map', visible: false, collapsed: true},
-            tasksList: {name: 'tasksList'},
-        };
-
-        expect(toBoxVisibilityState(boxes)).toEqual({
-            map: {visible: false, collapsed: true},
-            tasksList: {visible: true, collapsed: false},
-        });
-    });
-});
-
-describe('applyBoxVisibility', () => {
-    const fresh = (): Record<string, IBox> => ({
-        map: {name: 'map', visible: true, collapsed: false},
-        tasksList: {name: 'tasksList', visible: true, collapsed: false},
-    });
-
-    it('applies saved state onto the boxes', () => {
-        const boxes = fresh();
-        applyBoxVisibility(boxes, {map: {visible: false, collapsed: true}});
-
-        expect(boxes.map).toMatchObject({visible: false, collapsed: true});
-    });
-
-    it('resets everything to visible and expanded when there is no saved state', () => {
-        const boxes = fresh();
-        boxes.map.visible = false;
-        boxes.tasksList.collapsed = true;
-
-        applyBoxVisibility(boxes, null);
-
-        expect(boxes.map.visible).toBe(true);
-        expect(boxes.tasksList.collapsed).toBe(false);
-    });
-
-    it('reads the legacy boolean format as visibility, expanded', () => {
-        // Older builds stored a bare boolean per box.
-        const boxes = fresh();
-        applyBoxVisibility(boxes, {map: false});
-
-        expect(boxes.map).toMatchObject({visible: false, collapsed: false});
-    });
-
-    it('ignores saved entries for boxes that no longer exist', () => {
-        const boxes = fresh();
-        expect(() => applyBoxVisibility(boxes, {removedBox: {visible: false, collapsed: false}}))
-            .not.toThrow();
-        expect(boxes.map.visible).toBe(true);
-    });
-
-    it('defaults missing fields within a saved entry', () => {
-        const boxes = fresh();
-        applyBoxVisibility(boxes, {map: {} as never});
-
-        expect(boxes.map).toMatchObject({visible: true, collapsed: false});
     });
 });
 

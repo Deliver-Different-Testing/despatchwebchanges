@@ -12,6 +12,7 @@ import { Icon } from '../../common/icon/Icon';
 import { DialogShell, DialogHeader, DialogFooter, dialogContentBg } from '../shared/mantine';
 
 import { SelectDialogProps, SelectDialogResult, SelectDialogItem } from './types';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 export const SelectDialog: React.FC<SelectDialogProps> = ({
     open,
@@ -72,7 +73,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             await onSubmit(result);
         } catch (error: unknown) {
             console.error('Error submitting selection:', error);
-            showToast(error instanceof Error ? `Couldn't save selection. ${error.message}` : "Couldn't save selection. Try again.", 'error');
+            showToast(`Couldn't save selection. ${errorMessageOf(error, 'Try again.')}`, 'error');
         } finally {
             setIsLoading(false);
         }

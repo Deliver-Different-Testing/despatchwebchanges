@@ -284,24 +284,9 @@ export function transformPaginatedResponse(
     };
 }
 
-export interface MountRecurringJobsConfig {
-    /** Ignored: the module supplies toasts from the Mantine toastService. */
-    showToast?: ShowToastFn;
-    isUsCustomer?: boolean;
-    onAddStop?: (job: PrebookListModel, isPickup: boolean) => void;
-}
-
 export interface RecurringJobsPageProps {
     showToast: ShowToastFn;
     isUsCustomer?: boolean;
     onAddStop?: (job: PrebookListModel, isPickup: boolean) => void;
-    setRefreshCallback?: (callback: () => void) => void;
 }
 
-/**
- * Legacy type aliases for backward compatibility with AngularJS services.
- * These map to the React versions of the interfaces.
- */
-export type IPrebookListModel = PrebookListModel;
-export type IPrebookListModelDto = PrebookListModelDto;
-export type IRecurringJobQuery = RecurringJobQuery;

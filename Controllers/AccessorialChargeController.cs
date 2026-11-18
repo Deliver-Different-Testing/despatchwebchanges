@@ -1,3 +1,4 @@
+using DespatchWeb.Exceptions;
 using DespatchWeb.Filters;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Accessorial;
@@ -49,6 +50,10 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         {
             await accessorialChargeService.AddChargesAsync(jobId, charges);
             return Json(new { success = true });
+        }
+        catch (JobNotFoundException e)
+        {
+            return NotFound(e.Message);
         }
         catch (Exception ex)
         {

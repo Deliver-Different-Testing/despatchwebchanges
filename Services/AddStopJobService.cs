@@ -175,133 +175,6 @@ public sealed class AddStopJobService(
     }
 
     /// <summary>
-    /// Creates a new stop job as a child of an existing recurring (prebook) job.
-    /// Copies relevant data from the parent booking, adds notes and pricing breakdown.
-    /// </summary>
-    /// <param name="request">The request containing job ID and pickup/delivery address details.</param>
-    /// <returns>The ID of the newly created stop job booking.</returns>
-    public async Task<int> AddStopInsertRecurringJobAsync(AddStopRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var job = await queryRepository.GetByIdAsync<TucJobBooking>(request.JobId);
-        ArgumentNullException.ThrowIfNull(job);
-
-        var newStopJobNumber = await GenerateNewStopJobNumberAsync(job.UcbkJobNumber);
-        var parentId = job.ParentId ?? job.UcbkId;
-        var extras = request.PickUpAddress?.ShipmentDetails ?? request.DeliveryAddress?.ShipmentDetails;
-
-        var newStopJob = new TucJobBooking
-        {
-            UcbkJobNumber = newStopJobNumber,
-            UcbkDate = job.UcbkDate,
-            UcbkTime = job.UcbkTime,
-            UcbkType = job.UcbkType,
-            UcbkClientId = job.UcbkClientId,
-            UcbkContact = job.UcbkContact,
-            UcbkChargeType = job.UcbkChargeType,
-            UcbkAmount = ExtraStopAmount,
-            CourierPayment = ExtraStopCourierPayment,
-            UcbkSpeed = job.UcbkSpeed,
-            UcbkFrom = job.UcbkFrom,
-            UcbkFromAddr = AddressFormatter.GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcbkFromAddr),
-            UcbkTo = AirportSuburbId,
-            UcbkToSpecial = null,
-            UcbkToAddr = AddressFormatter.GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcbkFromAddr),
-            UcbkSize = job.UcbkSize,
-            Quantity = extras is { Quantity: not null } ? (short)extras.Quantity : job.Quantity,
-            UcbkCbd = false,
-            UcbkKm = 0,
-            UcbkWeight = extras?.Weight != null ? (int)extras.Weight : job.UcbkWeight,
-            CourierId = null,
-            UcbkDone = false,
-            UcbkClientRefa = job.UcbkClientRefa,
-            UcbkClientRefb = job.UcbkClientRefb,
-            UcbkOurRef = job.UcbkJobNumber,
-            UcbkVan = job.UcbkVan,
-            UcbkReturn = job.UcbkReturn,
-            UcbkAttention = true,
-            UcbkPickUpFrom = job.UcbkPickUpFrom,
-            UcbkClientCode = job.UcbkClientCode,
-            RefJobId = job.UcbkId,
-            SaturdayDelivery = false,
-            ClientNotes = job.ClientNotes,
-            ContactId = job.ContactId,
-            DeliverToPrivateBusiness = null,
-            DeliverToLeaveId = null,
-            ProofOfDelivery = null,
-            ProofOfDeliveryEmail = null,
-            ParentId = parentId,
-            JobRelationshipTypeId = JobRelationshipTypeId,
-            PickupFromContact = extras?.ContactName ?? job.PickupFromContact,
-            PickupFromPhone = extras?.ContactMobile ?? job.PickupFromPhone,
-            DeliverToContact = extras?.ContactName ?? job.DeliverToContact,
-            DeliverToPhone = extras?.ContactMobile ?? job.DeliverToPhone,
-            Dgclass = job.Dgclass,
-            Dgdocument = job.Dgdocument,
-            PickUpLatitude = job.PickUpLatitude,
-            PickUpLongitude = job.PickUpLongitude,
-            DeliveryLatitude = job.DeliveryLatitude,
-            DeliveryLongitude = job.DeliveryLongitude,
-            FuelSurchargeAmount = 0,
-            CourierFuel = ExtraStopFuel,
-            ShopId = job.ShopId,
-            ShopRef1 = CleanShopRef(job.ShopRef1),
-            ShopRef2 = CleanShopRef(job.ShopRef2),
-            ShopRef3 = CleanShopRef(job.ShopRef3),
-            ShopRef4 = CleanShopRef(job.ShopRef4),
-            ShopRef5 = CleanShopRef(job.ShopRef5),
-            CourierPercentageOverride = job.CourierPercentageOverride,
-            DryIceWeight = job.DryIceWeight,
-            PickupAddressLine1 = request?.PickUpAddress?.AddressLine1 ?? job.PickupAddressLine1,
-            PickupAddressLine2 = request?.PickUpAddress?.AddressLine2 ?? job.PickupAddressLine2,
-            PickupAddressLine3 = request?.PickUpAddress?.AddressLine3 ?? job.PickupAddressLine3,
-            PickupAddressLine4 = request?.PickUpAddress?.AddressLine4 ?? job.PickupAddressLine4,
-            PickupAddressLine5 = request?.PickUpAddress?.AddressLine5 ?? job.PickupAddressLine5,
-            PickupAddressLine6 = request?.PickUpAddress?.AddressLine6 ?? job.PickupAddressLine6,
-            PickupAddressLine7 = request?.PickUpAddress?.AddressLine7 ?? job.PickupAddressLine7,
-            PickupAddressLine8 = request?.PickUpAddress?.AddressLine8 ?? job.PickupAddressLine8,
-            DeliveryAddressLine1 = request?.DeliveryAddress?.AddressLine1 ?? job.DeliveryAddressLine1,
-            DeliveryAddressLine2 = request?.DeliveryAddress?.AddressLine2 ?? job.DeliveryAddressLine2,
-            DeliveryAddressLine3 = request?.DeliveryAddress?.AddressLine3 ?? job.DeliveryAddressLine3,
-            DeliveryAddressLine4 = request?.DeliveryAddress?.AddressLine4 ?? job.DeliveryAddressLine4,
-            DeliveryAddressLine5 = request?.DeliveryAddress?.AddressLine5 ?? job.DeliveryAddressLine5,
-            DeliveryAddressLine6 = request?.DeliveryAddress?.AddressLine6 ?? job.DeliveryAddressLine6,
-            DeliveryAddressLine7 = request?.DeliveryAddress?.AddressLine7 ?? job.DeliveryAddressLine7,
-            FromAirportId = job.FromAirportId,
-            ToAirportId = job.ToAirportId,
-            DeliverByTime = job.DeliverByTime,
-            PickupTimeZoneId = job.PickupTimeZoneId,
-            DeliverByTimeZoneId = job.DeliverByTimeZoneId,
-            TotalDistance = null,
-            RatedManually = true
-        };
-
-        // Insert the new job stop
-        await commandRepository.AddEntityAsync(newStopJob);
-        await commandRepository.SaveChangesAsync();
-
-        var staffId = infoService.GetStaffId();
-        var currentDate = clock.TenantNow;
-
-        // Pricing Breakdown
-        var pricingBreakdown = CreateBookingPricingBreakdown(newStopJob.UcbkId);
-        await commandRepository.AddEntityAsync(pricingBreakdown);
-
-        // Add note
-        if (!string.IsNullOrEmpty(extras.JobNotes))
-        {
-            var note = CreateBookingNote(job.UcbkId, extras.JobNotes, staffId, currentDate, clock.UtcNow);
-            await commandRepository.AddEntityAsync(note);
-        }
-
-        // Save changes to a database
-        await commandRepository.SaveChangesAsync();
-
-        return newStopJob.UcbkId;
-    }
-
-    /// <summary>
     /// Generates a unique job number for a stop job by appending a-z suffix to the base job number.
     /// </summary>
     /// <param name="baseJobNumber">The parent job number to use as a base.</param>
@@ -419,59 +292,17 @@ public sealed class AddStopJobService(
         };
 
     /// <summary>
-    /// Creates a note entity for a recurring job booking.
-    /// </summary>
-    private static TucNote CreateBookingNote(int jobBookingId, string noteText, int staffId, DateTime currentDate,
-        DateTime currentDateUtc) =>
-        new()
-        {
-            JobBookingId = jobBookingId,
-            NoteText = noteText,
-            CreatedBy = staffId,
-            CreatedDate = currentDate,
-            CreatedDateUtc = currentDateUtc,
-            NoteTypeId = (int)NoteType.InternalNote,
-            UpdatedBy = staffId,
-            UpdatedDate = currentDate,
-            UpdatedDateUtc = currentDateUtc
-        };
-
-    /// <summary>
     /// Creates a pricing breakdown for a live job stop.
     /// </summary>
     private static PricingBreakdown CreatePricingBreakdown(int stopJobId) =>
-        CreatePricingBreakdownCore(stopJobId, isRecurring: false);
-
-    /// <summary>
-    /// Creates a pricing breakdown for a recurring job booking stop.
-    /// </summary>
-    private static PricingBreakdown CreateBookingPricingBreakdown(int stopJobId) =>
-        CreatePricingBreakdownCore(stopJobId, isRecurring: true);
-
-    /// <summary>
-    /// Creates a pricing breakdown with extra stop charges.
-    /// </summary>
-    private static PricingBreakdown CreatePricingBreakdownCore(int stopJobId, bool isRecurring)
-    {
-        var breakdown = new PricingBreakdown
+        new()
         {
+            JobId = stopJobId,
             ChargeAmount = ExtraStopAmount,
             CostAmount = ExtraStopCourierPayment,
             Total = ExtraStopAmount - ExtraStopCourierPayment,
             ChargeName = "Extra Stop"
         };
-
-        if (isRecurring)
-        {
-            breakdown.PrebookJobId = stopJobId;
-        }
-        else
-        {
-            breakdown.JobId = stopJobId;
-        }
-
-        return breakdown;
-    }
 
     /// <summary>
     /// Creates package entities for the stop job based on the shipment details quantity.

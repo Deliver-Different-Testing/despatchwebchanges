@@ -113,6 +113,8 @@ export const queryKeys = {
             ['notes', 'job', jobId, isRecurring] as const,
         bulkJob: (bulkJobId: number) =>
             ['notes', 'bulkJob', bulkJobId] as const,
+        /** Every source's history for one note; a prefix of `history`. */
+        historyAll: (noteId: number) => ['notes', 'history', noteId] as const,
         history: (noteId: number, noteSource: string) =>
             ['notes', 'history', noteId, noteSource] as const,
     },

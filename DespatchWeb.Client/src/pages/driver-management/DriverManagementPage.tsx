@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {getContactId} from '../../api/session';
 import {Box, Button, Card, Group, Stack, Tabs, Text} from '@mantine/core';
 import {useFleetOptions} from '../../hooks/useDriverManagementApi';
@@ -33,8 +33,8 @@ const TAB_LABELS = [
 
 function getInitialTab(): number {
     try {
-        const stored = localStorage.getItem(TAB_KEY());
-        if (stored) return parseInt(stored, 10);
+        const stored = Number(localStorage.getItem(TAB_KEY()) ?? 0);
+        if (Number.isInteger(stored) && stored >= 0 && stored < TAB_LABELS.length) return stored;
     } catch { /* ignore */ }
     return 0;
 }
@@ -42,7 +42,6 @@ function getInitialTab(): number {
 export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
     showToast,
     isUsCustomer = false,
-    setRefreshCallback,
 }) => {
     const [selectedTab, setSelectedTab] = useState<number>(getInitialTab);
     const {data: fleetOptions = [], isError: fleetOptionsFailed, refetch: refetchFleetOptions} = useFleetOptions();
@@ -55,16 +54,6 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
         setSelectedTab(newValue);
         try { localStorage.setItem(TAB_KEY(), newValue.toString()); } catch { /* ignore */ }
     };
-
-    // Register refresh callback for AngularJS bridge
-    useEffect(() => {
-        if (setRefreshCallback) {
-            setRefreshCallback(() => {
-                // Force React Query to refetch on external refresh signal
-                // Individual tabs handle their own data fetching
-            });
-        }
-    }, [setRefreshCallback]);
 
     return (
         /*

@@ -205,7 +205,21 @@ public partial class CourierRepository(
 
     public async Task<IReadOnlyList<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
+        // Branch-limited staff: only for a job they can see, and only couriers in their own courier list. The stored
+        // procedure takes no scope, so the result is narrowed here.
+        if (Context.CurrentIsBranchScoped && !await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId))
+        {
+            return [];
+        }
+
         var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
+        if (Context.CurrentIsBranchScoped)
+        {
+            var ids = results.Select(c => c.CourierID ?? 0).ToList();
+            var allowed = (await Context.TucCouriers.Where(r => ids.Contains(r.UccrId)).Select(r => r.UccrId).ToListAsync()).ToHashSet();
+            results = [.. results.Where(c => allowed.Contains(c.CourierID ?? 0))];
+        }
+
         return
         [
             .. results.Select(c => new PotentialCouriersViewModel
@@ -223,7 +237,7 @@ public partial class CourierRepository(
     {
         try
         {
-            var results = await GetActiveCouriersAsync(includeJobCount: false);
+            var results = await Context.GetActiveCouriersAsync(clock.TenantToday);
             return
             [
                 .. results.Select(c => new ActiveCouriersViewModel
@@ -318,32 +332,6 @@ public partial class CourierRepository(
                 "Error in AllActiveCouriersAsync with search term {SearchTerm}",
                 searchTerm
             );
-            throw;
-        }
-    }
-
-    public async Task<IReadOnlyList<ActiveCouriersViewModel>> AllActiveCouriersAsync()
-    {
-        try
-        {
-            Log.Information("Retrieving all active couriers");
-
-            var results = await GetActiveCouriersAsync(includeJobCount: false);
-            var mappedResults = results.Select(c => new ActiveCouriersViewModel
-            {
-                Code = c.Code,
-                CourierId = c.CourierId,
-                Name = c.Name,
-                DangerousGoods = c.DangerousGoods,
-                DGLicenseExpiry = c.DgLicenseExpiry
-            }).ToList();
-
-            Log.Information("Retrieved {Count} active couriers", mappedResults.Count);
-            return mappedResults;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error retrieving all active couriers");
             throw;
         }
     }
@@ -1017,12 +1005,14 @@ public partial class CourierRepository(
         ];
     }
 
-    public async Task ResetClearListAreaOrderAsync(int courierId)
+    public Task ResetClearListAreaOrderAsync(int courierId) => ResetClearListAreaOrderAsync(courierId, Context);
+
+    public async Task ResetClearListAreaOrderAsync(int courierId, DespatchContext context)
     {
         var tenantTime = clock.TenantNow;
 
         // Count jobs for the courier that are not void and not done
-        var jobCount = await Context.TucJobs
+        var jobCount = await context.TucJobs
             .Where(j =>
                 j.UcjbVoid == false &&
                 j.UcjbJobDone == false &&
@@ -1033,7 +1023,7 @@ public partial class CourierRepository(
         {
             case 0:
                 // Update clear list area order - set status to 3 and format OrderTime
-                await Context.TblClearListAreaOrders
+                await context.TblClearListAreaOrders
                     .Where(c => c.CourierId == courierId)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(c => c.Status, 3)
@@ -1042,7 +1032,7 @@ public partial class CourierRepository(
             case > 0:
             {
                 // Check if jobs are only status 5 (picked up) or 8 (late delivery)
-                var jobsNotPickedUpOrLate = await Context.TucJobs
+                var jobsNotPickedUpOrLate = await context.TucJobs
                     .Where(j =>
                         j.UcjbVoid == false &&
                         j.UcjbJobDone == false &&
@@ -1054,7 +1044,7 @@ public partial class CourierRepository(
                 if (jobsNotPickedUpOrLate == 0)
                 {
                     // All jobs are only picked up or late delivery
-                    await Context.TblClearListAreaOrders
+                    await context.TblClearListAreaOrders
                         .Where(c => c.CourierId == courierId)
                         .ExecuteUpdateAsync(setters => setters
                             .SetProperty(c => c.Status, 5)
@@ -1481,40 +1471,6 @@ public partial class CourierRepository(
                     nameof(GetNzAvailableCourierPositionsAsync)));
             throw;
         }
-    }
-
-    private async Task<IReadOnlyList<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
-    {
-        var today = clock.TenantToday;
-        var results = await Context.GetActiveCouriersAsync(today);
-
-        if (!includeJobCount || results.Count == 0)
-        {
-            return results;
-        }
-
-        var courierIds = results.Select(c => c.CourierId).ToList();
-
-        var jobCounts = await Context.TucJobs
-            .Where(j => j.UcjbCourierId.HasValue &&
-                        courierIds.Contains(j.UcjbCourierId.Value) &&
-                        !j.UcjbVoid &&
-                        !j.UcjbJobDone &&
-                        j.UcjbDate.Date <= today.Date)
-            .GroupBy(j => j.UcjbCourierId.Value)
-            .Select(g => new { CourierId = g.Key, Count = g.Count() })
-            .TagWith("GetActiveCouriers - Job Counts")
-            .ToListAsync();
-
-        var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.Count);
-
-        // Update job counts in memory
-        foreach (var result in results)
-        {
-            result.JobCount = jobCountDict.GetValueOrDefault(result.CourierId, 0);
-        }
-
-        return results;
     }
 
     internal static List<ClearListResult> BuildClearListResultsInMemory(

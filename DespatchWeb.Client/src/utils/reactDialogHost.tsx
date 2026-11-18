@@ -46,6 +46,9 @@ export function createDialogHost<TPayload, TResult>({containerId, render}: {
     let hasPayload = false;
     let toastService: ToastService | null = null;
     let resolve: ((result: TResult) => void) | undefined;
+    // Bumped per open() so the dialog remounts with fresh state: the root outlives each
+    // session, and form state left from the last open would otherwise carry over.
+    let session = 0;
 
     const showToast: ShowToastFn = (message, type, action) => {
         const service = toastService ?? defaultToastService;
@@ -70,7 +73,11 @@ export function createDialogHost<TPayload, TResult>({containerId, render}: {
 
     function renderDialog(): void {
         if (!root || !hasPayload) return;
-        root.render(render({open, payload: payload as TPayload, close, settle, showToast}));
+        root.render(
+            <React.Fragment key={session}>
+                {render({open, payload: payload as TPayload, close, settle, showToast})}
+            </React.Fragment>,
+        );
     }
 
     function initialize(): void {
@@ -86,6 +93,7 @@ export function createDialogHost<TPayload, TResult>({containerId, render}: {
             initialize();
 
             return new Promise<TResult>(nextResolve => {
+                session += 1;
                 open = true;
                 payload = nextPayload;
                 hasPayload = true;

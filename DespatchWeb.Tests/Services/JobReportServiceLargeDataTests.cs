@@ -20,7 +20,6 @@ namespace DespatchWeb.Tests.Services;
 public class JobReportServiceLargeDataTests
 {
     private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
-    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
@@ -31,7 +30,6 @@ public class JobReportServiceLargeDataTests
         _scopeProviderMock.Scope.Returns(new ScopeContext(ClientTypeId: (int)ClientType.Tenant, ClientId: null, NpAgentId: null));
         return new JobReportService(
             _jobQueryRepositoryMock,
-            _jobCommandRepositoryMock,
             _recurringJobRepositoryMock,
             _clock,
             _s3ClientMock,

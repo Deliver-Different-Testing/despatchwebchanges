@@ -155,18 +155,6 @@ public sealed class PricingPermissionService(
         }
     }
 
-    /// <inheritdoc />
-    public Task<PricingPermissions> GetPricingPermissionsAsync() =>
-        // Return all permissions enabled
-        Task.FromResult(new PricingPermissions
-        {
-            CanModifyPrices = true,
-            CanBulkUpdate = true,
-            CanRecalculate = true,
-            CanSetBaseAmount = true,
-            CanManageBreakdown = true
-        });
-
     /// <summary>
     /// Gets the set of client IDs the current contact has access to.
     /// Results are cached for the duration of the request.

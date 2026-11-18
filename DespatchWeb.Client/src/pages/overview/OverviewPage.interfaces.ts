@@ -2,13 +2,6 @@ import type {Dayjs} from 'dayjs';
 
 // ── Mount config (passed from AngularJS controller) ──
 
-export interface MountOverviewConfig {
-    /** Ignored: the module supplies toasts from the Mantine toastService. */
-    showToast?: ShowToastFn;
-    isUsCustomer: boolean;
-    onOpenJobDetail: (jobId: number) => void;
-}
-
 export type ShowToastFn = {
     showSuccessToast: (message: string) => void;
     showWarningToast: (message: string) => void;
@@ -22,7 +15,6 @@ export interface OverviewPageProps {
     showToast: ShowToastFn;
     isUsCustomer: boolean;
     onOpenJobDetail: (jobId: number) => void;
-    setRefreshCallback: (cb: () => void) => void;
 }
 
 // ── API / Query types ──

@@ -62,7 +62,5 @@ export interface DeliveryJourneyDto {
     grandTotalAfter?: number | null;
     performedBy?: string | null;
 }
-// Backward compatibility aliases
-export type IDeliveryHistoryConfig = DeliveryHistoryConfig;
 export type IDeliveryJourney = DeliveryJourney;
 export type IDeliveryJourneyDto = DeliveryJourneyDto;

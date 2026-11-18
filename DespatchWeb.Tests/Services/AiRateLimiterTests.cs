@@ -91,6 +91,18 @@ public class AiRateLimiterTests
     }
 
     [Fact]
+    public async Task TryAcquireAsync_KeysTheUserCounterByTenant()
+    {
+        // Staff ids repeat across tenants, so one tenant's staff 1 must not spend another's budget.
+        _cacheMock.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((byte[]?)null);
+
+        await CreateService().TryAcquireAsync(1, "tenant-7");
+
+        await _cacheMock.Received(1).GetAsync(
+            Arg.Is<string>(k => k.StartsWith("ai_rate:user:tenant-7:1:")), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task RecordTokenUsageAsync_Completes()
     {
         // Arrange

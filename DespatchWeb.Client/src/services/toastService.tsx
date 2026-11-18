@@ -11,22 +11,29 @@
  * ~64 type-only consumers keep importing from this module.
  */
 
-import React from 'react';
+import React, {useMemo} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Button, Group, MantineProvider} from '@mantine/core';
 import {Notifications, notifications} from '@mantine/notifications';
-import {dfrntTheme, dfrntCssVariablesResolver} from '../theme/dfrntMantineTheme';
+import {createDfrntTheme, dfrntCssVariablesResolver} from '../theme/dfrntMantineTheme';
+import {toThemeAppearance} from '../theme/appearance';
+import {useAppearance} from '../hooks/useAppearance';
 import {ColorModeProvider, useColorMode} from '../hooks/useColorMode';
 import type {ToastAction, ToastHandle, ToastService, ToastType} from './toastTypes';
 
 export type {ShowToastFn, ToastAction, ToastHandle, ToastService, ToastType} from './toastTypes';
 
-/** Own root, so it reads the colour mode itself rather than inheriting an island's. */
+/** Own root, so it reads the colour mode and appearance itself rather than inheriting an island's. */
 const ToastHost: React.FC = () => {
     const {mode} = useColorMode();
+    const {resolved, systemPrefersMoreContrast} = useAppearance();
+    const theme = useMemo(
+        () => createDfrntTheme(toThemeAppearance(resolved, systemPrefersMoreContrast)),
+        [resolved, systemPrefersMoreContrast],
+    );
     return (
         <MantineProvider
-            theme={dfrntTheme}
+            theme={theme}
             cssVariablesResolver={dfrntCssVariablesResolver}
             forceColorScheme={mode}
         >

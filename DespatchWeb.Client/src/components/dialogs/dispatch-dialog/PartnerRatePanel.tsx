@@ -34,9 +34,12 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
         setSelectedQuoteIndex(0);
         setValidationError('');
         setLoading(true);
+        // Switching partner mid-request must not let the old partner's rate land on the new one.
+        let cancelled = false;
 
         fetchRate(partnerId, jobId)
             .then((result) => {
+                if (cancelled) return;
                 setRateResult(result);
                 // Pre-fill with the rate IM will actually use — for Mode 2/3 the
                 // operator's typed value is ignored, so showing the substituted
@@ -52,9 +55,14 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                 }
             })
             .catch(() => {
-                setRateResult({rateCardRate: null, liveQuotes: [], source: 'none'});
+                if (!cancelled) setRateResult({rateCardRate: null, liveQuotes: [], source: 'none'});
             })
-            .finally(() => setLoading(false));
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [partnerId, jobId, fetchRate]);
 
     useEffect(() => {

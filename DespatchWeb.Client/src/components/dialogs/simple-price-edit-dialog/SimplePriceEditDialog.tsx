@@ -8,6 +8,7 @@ import { Icon } from '../../common/icon/Icon';
 import { pricingModeColors } from '../../../theme/designTokens';
 
 import { SimplePriceEditDialogProps, PricingMode, ChildPriceUpdate } from './types';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 interface ModeOption {
     mode: PricingMode;
@@ -156,7 +157,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             setShowResult(true);
         } catch (error: unknown) {
             console.error('Error saving price:', error);
-            const msg = error instanceof Error ? `Couldn't save price. ${error.message}` : "Couldn't save price. Try again.";
+            const msg = `Couldn't save price. ${errorMessageOf(error, 'Try again.')}`;
             setErrorMessage(msg);
             showToast(msg, 'error');
         } finally {

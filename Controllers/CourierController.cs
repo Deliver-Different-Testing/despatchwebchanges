@@ -105,20 +105,6 @@ public class CourierController(
         }
     }
 
-    public async Task<IActionResult> AllActive()
-    {
-        try
-        {
-            var result = await courierRepository.AllActiveCouriersAsync();
-            return Json(result);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error getting all active couriers");
-            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
-        }
-    }
-
     public async Task<IActionResult> TruckCourierStatus(int courierId)
     {
         try
