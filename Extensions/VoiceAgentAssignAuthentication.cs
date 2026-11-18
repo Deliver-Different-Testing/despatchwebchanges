@@ -140,42 +140,56 @@ public sealed class VoiceAgentAssignOptions
 /// The tenant's wall-clock zone from Hub, which a service-account call has no claim for. Dispatch times are written in
 /// it, so an unknown zone refuses the call instead of stamping UTC.
 /// </summary>
-public sealed class HubTenantTimeZoneSource(IHttpClientFactory httpClientFactory, AgentAccessOptions options)
+public sealed class HubTenantTimeZoneSource(IHttpClientFactory httpClientFactory, AgentAccessOptions options, TimeProvider? timeProvider = null)
 {
     public const string HttpClientName = "DespatchWeb.HubTimeZone";
     private static readonly TimeSpan CacheLifetime = TimeSpan.FromHours(1);
+    private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromMinutes(1);
+    private readonly TimeProvider _time = timeProvider ?? TimeProvider.System;
     private readonly ConcurrentDictionary<int, (string TimeZone, DateTimeOffset FetchedAt)> _cache = new();
 
     public async Task<string?> GetAsync(int tenantId, CancellationToken cancellationToken)
     {
         var hasCached = _cache.TryGetValue(tenantId, out var cached);
-        if (hasCached && DateTimeOffset.UtcNow - cached.FetchedAt < CacheLifetime)
+        if (hasCached && _time.GetUtcNow() - cached.FetchedAt < CacheLifetime)
             return cached.TimeZone;
-        var stale = hasCached ? cached.TimeZone : null;
-        if (string.IsNullOrWhiteSpace(options.HubApiKey)) return stale;
+
+        var fresh = await FetchAsync(tenantId, cancellationToken);
+        if (fresh is not null)
+        {
+            _cache[tenantId] = (fresh, _time.GetUtcNow());
+            return fresh;
+        }
+
+        if (!hasCached) return null;
+
+        // Serve the last good zone and try Hub again in a minute, rather than waiting out its timeout on every call.
+        _cache[tenantId] = (cached.TimeZone, _time.GetUtcNow() - CacheLifetime + RetryAfterFailure);
+        return cached.TimeZone;
+    }
+
+    private async Task<string?> FetchAsync(int tenantId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(options.HubApiKey)) return null;
 
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{options.HubAuthority.TrimEnd('/')}/api/tenants/{tenantId}/time-zone");
             request.Headers.Add("X-Api-Key", options.HubApiKey);
             using var response = await httpClientFactory.CreateClient(HttpClientName).SendAsync(request, cancellationToken);
-            if (!response.IsSuccessStatusCode) return stale;
+            if (!response.IsSuccessStatusCode) return null;
 
             var body = await response.Content.ReadFromJsonAsync<TimeZoneResponse>(cancellationToken);
-            if (string.IsNullOrWhiteSpace(body?.TimeZone)) return stale;
-            if (!IsResolvable(body.TimeZone))
-            {
-                Log.Warning("VoiceAgentAssign: Hub gave tenant {TenantId} the unknown time zone {TimeZone}", tenantId, body.TimeZone);
-                return stale;
-            }
+            if (string.IsNullOrWhiteSpace(body?.TimeZone)) return null;
+            if (IsResolvable(body.TimeZone)) return body.TimeZone;
 
-            _cache[tenantId] = (body.TimeZone, DateTimeOffset.UtcNow);
-            return body.TimeZone;
+            Log.Warning("VoiceAgentAssign: Hub gave tenant {TenantId} the unknown time zone {TimeZone}", tenantId, body.TimeZone);
+            return null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             Log.Warning(ex, "VoiceAgentAssign: Hub could not give tenant {TenantId}'s time zone", tenantId);
-            return stale;
+            return null;
         }
     }
 

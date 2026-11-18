@@ -447,6 +447,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     [Theory]
     [InlineData((int)ClientType.Tenant)]
     [InlineData((int)ClientType.DfrntAdmin)]
+    [InlineData((int)ClientType.Internal)]
     public async Task ValidateJobAccessAsync_TenantOrDfAdminWithNoStaffId_AllowedWithoutContactLookup(int clientTypeId)
     {
         SetupAsStaff(clientTypeId, staffId: 0);
@@ -471,6 +472,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     [Theory]
     [InlineData((int)ClientType.Tenant)]
     [InlineData((int)ClientType.DfrntAdmin)]
+    [InlineData((int)ClientType.Internal)]
     public async Task ValidateJobsAccessAsync_TenantOrDfAdminWithNoStaffId_ReturnsEmptyWithoutContactLookup(int clientTypeId)
     {
         SetupAsStaff(clientTypeId, staffId: 0);

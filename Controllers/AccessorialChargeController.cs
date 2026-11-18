@@ -1,5 +1,6 @@
 using DespatchWeb.Exceptions;
 using DespatchWeb.Filters;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Accessorial;
 using Microsoft.AspNetCore.Authorization;
@@ -23,7 +24,7 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         catch (Exception ex)
         {
             Log.Error(ex, "Error in {Controller}.{Action}", nameof(AccessorialChargeController), nameof(GetAvailable));
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -38,12 +39,13 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         catch (Exception ex)
         {
             Log.Error(ex, "Error in {Controller}.{Action}", nameof(AccessorialChargeController), nameof(GetApplied));
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
     [HttpPost("Add")]
     [RequireScope(ScopedRecord.Job, "jobId")]
+    [NetworkPartnerCapability(NpCapability.AccessorialCharges)]
     public async Task<IActionResult> Add(int jobId, [FromBody] List<JobAccessorialChargeCreateRequest> charges)
     {
         try
@@ -58,11 +60,12 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         catch (Exception ex)
         {
             Log.Error(ex, "Error in {Controller}.{Action}", nameof(AccessorialChargeController), nameof(Add));
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
     [HttpPut("Update")]
+    [NetworkPartnerCapability(NpCapability.AccessorialCharges)]
     public async Task<IActionResult> Update(int jobAccessorialChargeId, [FromBody] JobAccessorialChargeUpdateRequest request)
     {
         try
@@ -73,7 +76,7 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         catch (Exception ex)
         {
             Log.Error(ex, "Error in {Controller}.{Action}", nameof(AccessorialChargeController), nameof(Update));
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -88,7 +91,7 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         catch (Exception ex)
         {
             Log.Error(ex, "Error in {Controller}.{Action}", nameof(AccessorialChargeController), nameof(JobAmount));
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -103,11 +106,12 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         catch (Exception ex)
         {
             Log.Error(ex, "Error in {Controller}.{Action}", nameof(AccessorialChargeController), nameof(GetPortions));
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
     [HttpDelete("Delete")]
+    [NetworkPartnerCapability(NpCapability.AccessorialCharges)]
     public async Task<IActionResult> Delete(int jobAccessorialChargeId)
     {
         try
@@ -118,7 +122,7 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         catch (Exception ex)
         {
             Log.Error(ex, "Error in {Controller}.{Action}", nameof(AccessorialChargeController), nameof(Delete));
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 }

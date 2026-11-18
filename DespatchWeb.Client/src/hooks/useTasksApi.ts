@@ -183,29 +183,30 @@ export function useTaskComponentServices(): {
     tasksService: TasksServiceInterface;
     dispatchService: DispatchServiceInterface & {getDeliveryJourney: (jobId: number) => Promise<DeliveryJourney[]>};
 } {
-    const markTaskAsClosedMutation = useMarkTaskAsClosed();
-    const updateTaskDateMutation = useUpdateTaskDate();
-    const updateTaskTimeMutation = useUpdateTaskTime();
-    const reassignTaskMutation = useReassignTask();
-    const unassignTaskMutation = useUnassignTask();
+    // mutateAsync is stable across renders; the mutation result objects are rebuilt every render.
+    const {mutateAsync: markTaskAsClosed} = useMarkTaskAsClosed();
+    const {mutateAsync: updateTaskDate} = useUpdateTaskDate();
+    const {mutateAsync: updateTaskTime} = useUpdateTaskTime();
+    const {mutateAsync: reassignTask} = useReassignTask();
+    const {mutateAsync: unassignTask} = useUnassignTask();
 
     const tasksService = useMemo(() => ({
         markTaskAsClosed: async (eventId: number, closed: boolean) => {
-            await markTaskAsClosedMutation.mutateAsync({eventId, closed});
+            await markTaskAsClosed({eventId, closed});
         },
         updateTaskDate: async (eventId: number, date: Dayjs, timezone?: string) => {
-            await updateTaskDateMutation.mutateAsync({eventId, date, timezone});
+            await updateTaskDate({eventId, date, timezone});
         },
         updateTaskTime: async (eventId: number, time: Dayjs, timezone?: string) => {
-            await updateTaskTimeMutation.mutateAsync({eventId, time, timezone});
+            await updateTaskTime({eventId, time, timezone});
         },
         reassignTaskToStaff: async (eventId: number, staffId: number) => {
-            await reassignTaskMutation.mutateAsync({eventId, staffId});
+            await reassignTask({eventId, staffId});
         },
         unassignTask: async (eventId: number) => {
-            await unassignTaskMutation.mutateAsync({eventId});
+            await unassignTask({eventId});
         },
-    }), [markTaskAsClosedMutation, updateTaskDateMutation, updateTaskTimeMutation, reassignTaskMutation, unassignTaskMutation]);
+    }), [markTaskAsClosed, updateTaskDate, updateTaskTime, reassignTask, unassignTask]);
 
     const dispatchService = useMemo(() => ({
         getActiveStaff: () => tasksApi.getActiveStaff(),

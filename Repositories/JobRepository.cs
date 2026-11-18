@@ -1386,7 +1386,8 @@ public partial class JobRepository(
             return false;
         }
 
-        var note = $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}";
+        var note = string.Create(_infoService.GetCulture(),
+            $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}");
 
         if (viewModel.PrebookJobId != null)
         {
@@ -6540,7 +6541,7 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
 
         await SetJobAsManuallyPriceAsync(effectiveParentId,
-            $"Breakdown updated: child job {childJobId} manually repriced to {newAmount:C}");
+            string.Create(_infoService.GetCulture(), $"Breakdown updated: child job {childJobId} manually repriced to {newAmount:C}"));
     }
 
     private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId,
@@ -6881,17 +6882,8 @@ public partial class JobRepository(
 
         return await Context.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(j => j.UcjbCourierId, courierId)
-                .SetProperty(j => j.AgentId, (int?)null)
-                .SetProperty(j => j.UcjbDispId, dispatcherStaffId > 0 ? dispatcherStaffId : null)
-                .SetProperty(j => j.DesCheck, false)
-                .SetProperty(j => j.FdcourierId, (int?)null)
-                .SetProperty(j => j.UcjbDispDate, tenantTime)
-                .SetProperty(j => j.UcjbDispTime, tenantTime)
-                .SetProperty(j => j.UcjbStatus, (int)JobStatus.Dispatched)
-                .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
-            );
+            .ExecuteUpdateAsync(setters =>
+                setters.AssignToCourier(courierId, dispatcherStaffId > 0 ? dispatcherStaffId : null, tenantTime));
     }
 
     private sealed record PodState(

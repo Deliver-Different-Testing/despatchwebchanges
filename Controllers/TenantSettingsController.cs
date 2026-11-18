@@ -1,3 +1,4 @@
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +25,7 @@ public class TenantSettingsController(ITenantSettingsService tenantSettingsServi
         catch (Exception e)
         {
             Log.Error(e, "Error getting tenant dispatch address format default: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -38,7 +39,7 @@ public class TenantSettingsController(ITenantSettingsService tenantSettingsServi
         catch (Exception e)
         {
             Log.Error(e, "Error getting tenant courier flag last delivery default: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -52,7 +53,7 @@ public class TenantSettingsController(ITenantSettingsService tenantSettingsServi
         catch (Exception e)
         {
             Log.Error(e, "Error getting tenant navigation style default: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -66,7 +67,7 @@ public class TenantSettingsController(ITenantSettingsService tenantSettingsServi
         catch (Exception e)
         {
             Log.Error(e, "Error getting tenant appearance default: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 }

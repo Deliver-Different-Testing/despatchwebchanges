@@ -27,13 +27,13 @@ public static class PriceDetailFindings
                 if (!hasFuelLine && Within(job.Header.HeaderAmount ?? 0m, implied))
                 {
                     findings.Add(new PriceFinding(no, "Header fuel, no fuel line",
-                        $"Header {job.Header.HeaderAmount ?? 0m:C} = lines {job.CurrentLinesTotal:C} x1.25 but no fuel breakdown line (+{gap:C}).",
+                        string.Create(data.Culture, $"Header {job.Header.HeaderAmount ?? 0m:C} = lines {job.CurrentLinesTotal:C} x1.25 but no fuel breakdown line (+{gap:C})."),
                         "High"));
                 }
                 else
                 {
                     findings.Add(new PriceFinding(no, "Header <> lines",
-                        $"Header {job.Header.HeaderAmount ?? 0m:C} vs sum of lines {job.CurrentLinesTotal:C} (gap {gap:C}).",
+                        string.Create(data.Culture, $"Header {job.Header.HeaderAmount ?? 0m:C} vs sum of lines {job.CurrentLinesTotal:C} (gap {gap:C})."),
                         "Medium"));
                 }
             }
@@ -50,7 +50,7 @@ public static class PriceDetailFindings
             findings.AddRange(from b in job.Booked
                 where !currentNames.Contains(b.ChargeName.Trim()) && b.Amount != 0
                 select new PriceFinding(no, "Deleted line",
-                    $"\"{b.ChargeName}\" ({b.Amount:C}) was booked but is not on the job now.", "Medium"));
+                    string.Create(data.Culture, $"\"{b.ChargeName}\" ({b.Amount:C}) was booked but is not on the job now."), "Medium"));
 
             // 4. Zone <-> Mileage restructure.
             if (!job.IsManual && job.RateBasis(booked: true) != job.RateBasis(booked: false))
@@ -81,7 +81,7 @@ public static class PriceDetailFindings
                 !data.Findings.Any(f => f.JobNo == job.Header.JobNo && f.Type.StartsWith("Header")))
             {
                 data.Findings.Add(new PriceFinding(job.Header.JobNo, "Invariant: lines<>header",
-                    $"Unexplained {job.HeaderVsLinesGap:C} gap.", "Medium"));
+                    string.Create(data.Culture, $"Unexplained {job.HeaderVsLinesGap:C} gap."), "Medium"));
             }
 
             if (!job.IsManual && job.Booked.Count == 0)
