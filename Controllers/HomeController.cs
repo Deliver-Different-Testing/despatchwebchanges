@@ -1,5 +1,4 @@
 ﻿#nullable enable
-using System.Diagnostics;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -28,7 +27,4 @@ public class HomeController(
         var result = await clientRepository.ActiveClientsAsync(searchTerm);
         return Json(result);
     }
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error() => View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 }

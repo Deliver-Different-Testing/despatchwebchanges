@@ -228,7 +228,6 @@ export const STALE_ADDRESS_LINES =
  */
 export function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
     return {
-        angularId: 'job-1',
         id: 1,
         jobNo: 'J001',
         hasBeenRead: true,

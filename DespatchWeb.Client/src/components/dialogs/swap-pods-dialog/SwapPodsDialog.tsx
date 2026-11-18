@@ -7,7 +7,7 @@ import {Icon} from '../../common/icon/Icon';
 import {SearchSelect} from '../../common/search-select/SearchSelect';
 import type {ShowToastFn} from '../../../services/toastService';
 import type {SwapPodCandidate, SwapPodCandidateQuery, SwapPodResult} from '../../../api/jobApi';
-import {dayjs, getInputDateFormat} from '../../../utils/dateUtils';
+import {dayjs, getInputDateFormat, tenantNow} from '../../../utils/dateUtils';
 import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps, ValueChip} from '../shared/mantine';
 
 const ISO_DATE = 'YYYY-MM-DD';
@@ -67,7 +67,7 @@ export function SwapPodsDialog({
     const [candidate, setCandidate] = useState<SwapPodCandidate | null>(null);
     const [statusFilter, setStatusFilter] = useState('');
     const [customerFilter, setCustomerFilter] = useState('');
-    const [dateFilter, setDateFilter] = useState<string | null>(() => dayjs().format(ISO_DATE));
+    const [dateFilter, setDateFilter] = useState<string | null>(() => tenantNow().format(ISO_DATE));
     const [debouncedCustomer] = useDebouncedValue(customerFilter.trim(), 300);
     const [phase, setPhase] = useState<Phase>('input');
     const [loading, setLoading] = useState(false);
@@ -80,7 +80,7 @@ export function SwapPodsDialog({
             setCandidate(null);
             setStatusFilter('');
             setCustomerFilter('');
-            setDateFilter(dayjs().format(ISO_DATE));
+            setDateFilter(tenantNow().format(ISO_DATE));
             setPhase('input');
             setLoading(false);
             setError(null);

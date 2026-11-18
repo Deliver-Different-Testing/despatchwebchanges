@@ -87,24 +87,6 @@ export interface AvailableTime {
     subtext: string;
 }
 
-// Dialog input options
-export interface FlightConfirmationDialogOptions {
-    jobId: number;
-    jobNumber: string;
-    flight: FlightViewModel;
-    existingAwb?: string;
-    dgClass?: number;
-}
-
-export interface AgentConfirmationDialogOptions {
-    jobId: number;
-    jobNumber: string;
-    agent: AgentSuggestion;
-    existingAwb?: string;
-    dgClass?: number;
-    stopJobCount?: number;
-}
-
 // Dialog result
 export interface FlightAgentDialogResult {
     shouldAssign: boolean;

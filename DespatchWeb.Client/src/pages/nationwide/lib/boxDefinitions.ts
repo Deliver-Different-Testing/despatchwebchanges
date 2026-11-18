@@ -9,15 +9,6 @@
 import {IBox, IColumn, ILayout} from '../../../types/interfaces/layout.interfaces';
 import {NationwideBoxes} from './nationwideBoxes';
 
-/** Persisted shape: what the operator has hidden or collapsed, per box. */
-export interface BoxVisibilityEntry {
-    visible: boolean;
-    collapsed: boolean;
-}
-
-/** Legacy builds persisted a bare boolean per box; still read for compatibility. */
-export type PersistedBoxVisibility = Record<string, BoxVisibilityEntry | boolean>;
-
 /**
  * The seven panels, all visible and expanded.
  *
@@ -138,54 +129,4 @@ export function createDefaultNationwideLayout(): ILayout {
  */
 export function boxVisibilityKey(baseKey: string, layoutName: string): string {
     return `${baseKey}-${layoutName}`;
-}
-
-/** The persistable visibility snapshot for a set of boxes. */
-export function toBoxVisibilityState(
-    boxes: Record<string, IBox>,
-): Record<string, BoxVisibilityEntry> {
-    const state: Record<string, BoxVisibilityEntry> = {};
-
-    for (const boxName of Object.keys(boxes)) {
-        state[boxName] = {
-            visible: boxes[boxName].visible ?? true,
-            collapsed: boxes[boxName].collapsed ?? false,
-        };
-    }
-
-    return state;
-}
-
-/**
- * Apply a saved visibility snapshot onto `boxes`, in place.
- *
- * `null`/`undefined` means this layout has no saved state, which resets every
- * panel to visible and expanded rather than leaving the previous layout's state
- * behind. Entries for boxes that no longer exist are ignored.
- */
-export function applyBoxVisibility(
-    boxes: Record<string, IBox>,
-    saved: PersistedBoxVisibility | null | undefined,
-): void {
-    if (!saved) {
-        for (const boxName of Object.keys(boxes)) {
-            boxes[boxName].visible = true;
-            boxes[boxName].collapsed = false;
-        }
-        return;
-    }
-
-    for (const boxName of Object.keys(saved)) {
-        const box = boxes[boxName];
-        if (!box) continue;
-
-        const entry = saved[boxName];
-        if (typeof entry === 'boolean') {
-            box.visible = entry;
-            box.collapsed = false;
-        } else {
-            box.visible = entry.visible ?? true;
-            box.collapsed = entry.collapsed ?? false;
-        }
-    }
 }

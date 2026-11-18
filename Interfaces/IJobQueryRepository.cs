@@ -11,6 +11,15 @@ namespace DespatchWeb.Interfaces;
 
 public interface IJobQueryRepository
 {
+    /// <summary>True only for a branch-limited caller who cannot see the job. Everyone else always gets false.</summary>
+    Task<bool> IsJobHiddenByBranchScopeAsync(int jobId);
+
+    /// <summary>
+    /// True only for a branch-limited caller when the S3 media key does not belong to a job they can see (a key whose job
+    /// id cannot be read counts as hidden). Everyone else always gets false.
+    /// </summary>
+    Task<bool> IsJobMediaKeyHiddenByBranchScopeAsync(string key);
+
     Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId);
     Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId);
 
@@ -62,7 +71,6 @@ public interface IJobQueryRepository
 
     Task<int> MaxAutoLatePickupAlertAsync();
     Task<int> MaxAutoLateDeliveryAlertAsync();
-    Task<decimal> PpdExclusiveAmountAsync(int clientId, decimal amount);
     Task<decimal> GetJobAmountAsync(int jobId, bool isBooking);
 
     Task<IReadOnlyList<Suggestion>> GetSpeedsAsync();
@@ -83,14 +91,6 @@ public interface IJobQueryRepository
 
     Task<SuggestedFuelChargeViewModel> GetSuggestedFuelChargeAsync(int jobId, decimal chargeAmount, bool isPrebook,
         bool isArchived = false);
-
-    Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
-
-    Task<PaginatedResponse<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
-        int clientId,
-        int speedId,
-        int jobId
-    );
 
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
@@ -115,11 +115,6 @@ public interface IJobQueryRepository
     Task<TucJobType> GetJobTypeByIdAsync(int speedId);
 
     Task<IReadOnlyList<AddressWithAgent>> GetClosestAirportsAsync(decimal latitude, decimal longitude);
-
-    Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
-        CancellationToken cancellationToken = default);
 
     Task<bool> IsJobParentAsync(int jobId);
     Task<bool> IsBulkJobParent(int bulkJobId);

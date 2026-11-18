@@ -10,8 +10,12 @@ const storageKey = () => `showPanelHideButton_${getContactId()}`;
  * behaviour until they opt out via Settings.
  */
 export function isPanelHideButtonEnabled(): boolean {
-    const stored = localStorage.getItem(storageKey());
-    return stored === null ? true : stored === 'true';
+    try {
+        const stored = localStorage.getItem(storageKey());
+        return stored === null ? true : stored === 'true';
+    } catch {
+        return true;
+    }
 }
 
 /** StaffPreference: source of truth is the server, localStorage is a synchronous read-through cache. */

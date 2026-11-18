@@ -5,7 +5,7 @@
  * Uses MUI components for styling and interactions.
  */
 
-import React, {useState, useMemo, useEffect, useCallback} from 'react';
+import React, {useState, useMemo, useEffect, useCallback, useRef} from 'react';
 import {
     ActionIcon,
     Box,
@@ -57,6 +57,14 @@ function generateTimeSlots(): string[] {
 
 const TIME_SLOTS = generateTimeSlots();
 
+interface ClosedOverride {
+    closed: boolean;
+    pending: boolean;
+    seq: number;
+    /** Last value the server confirmed in this view; undefined means the task prop is the truth. */
+    confirmed?: boolean;
+}
+
 function getTasksForDate(tasks: Task[] | undefined, date: Dayjs): Task[] {
     if (!tasks) return [];
     return tasks.filter(task => dayjs(task.dueDate).isSame(date, 'day'));
@@ -98,7 +106,7 @@ function formatWeekDayHeader(date: Dayjs): string {
 }
 
 export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
-    tasks,
+    tasks: sourceTasks,
     onTaskClick,
     onTaskStatusChange,
     onViewChange,
@@ -109,6 +117,20 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
     const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
     const [viewMode, setViewMode] = useState<ViewMode>('month');
     const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+    // Optimistic ticks, keyed by task id. A refetch drops settled ones but keeps those still saving.
+    const [closedOverrides, setClosedOverrides] = useState<Record<number, ClosedOverride>>({});
+    const [overriddenTasks, setOverriddenTasks] = useState(sourceTasks);
+    const overrideSeqRef = useRef(0);
+    if (overriddenTasks !== sourceTasks) {
+        setOverriddenTasks(sourceTasks);
+        setClosedOverrides(prev => Object.fromEntries(Object.entries(prev).filter(([, o]) => o.pending)));
+    }
+
+    const tasks = useMemo(
+        () => sourceTasks?.map(task =>
+            task.id in closedOverrides ? {...task, closed: closedOverrides[task.id].closed} : task),
+        [sourceTasks, closedOverrides],
+    );
 
     // Build calendar data reactively based on state
     const calendarWeeks = useMemo((): CalendarWeek[] => {
@@ -248,14 +270,33 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({
         event.stopPropagation();
 
         const newClosedState = !task.closed;
-        task.closed = newClosedState;
+        const seq = ++overrideSeqRef.current;
+        setClosedOverrides(prev => ({
+            ...prev,
+            [task.id]: {closed: newClosedState, pending: true, seq, confirmed: prev[task.id]?.confirmed},
+        }));
+
+        // A later click on the same task owns the override; an earlier request settling must not clobber it.
+        // A failure rolls back to the last confirmed value, never to another click's unsaved one.
+        const settle = (succeeded: boolean) => setClosedOverrides(prev => {
+            const current = prev[task.id];
+            if (current?.seq !== seq) return prev;
+            const confirmed = succeeded ? newClosedState : current.confirmed;
+            if (confirmed === undefined) {
+                const next = {...prev};
+                delete next[task.id];
+                return next;
+            }
+            return {...prev, [task.id]: {closed: confirmed, pending: false, seq, confirmed}};
+        });
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
+            settle(true);
             showSuccessToast?.('Task updated');
-            onTaskStatusChange?.(task);
+            onTaskStatusChange?.({...task, closed: newClosedState});
         } catch (error) {
-            task.closed = !newClosedState;
+            settle(false);
             showErrorToast?.(taskErrorMessage(error, "Couldn't update the task. Check your connection and try again."));
             console.error('Error updating task:', error);
         }

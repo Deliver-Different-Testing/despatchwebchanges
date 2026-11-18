@@ -671,19 +671,6 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task GetPricingPermissionsAsync_ReturnsAllPermissionsEnabled()
-    {
-        var service = CreateService();
-        var result = await service.GetPricingPermissionsAsync();
-
-        Assert.True(result.CanModifyPrices);
-        Assert.True(result.CanBulkUpdate);
-        Assert.True(result.CanRecalculate);
-        Assert.True(result.CanSetBaseAmount);
-        Assert.True(result.CanManageBreakdown);
-    }
-
-    [Fact]
     public async Task ValidateJobAccessAsync_CalledTwice_CachesClientIds()
     {
         SetupAsContact(contactId: 10, accessibleClientIds: [1]);

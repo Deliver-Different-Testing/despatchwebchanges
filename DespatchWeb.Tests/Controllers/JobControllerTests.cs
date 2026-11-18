@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Reflection;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
@@ -391,51 +391,6 @@ public class JobControllerTests : IDisposable
         Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
         Assert.Equal(500, objectResult.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetAllJobCoordinates_ValidRequest_ReturnsCoordinates()
-    {
-        // Arrange
-        var expectedCoordinates = new List<JobCoordinateModel>
-        {
-            new() { Id = 1, PickupLatitude = -36.8485m, PickupLongitude = 174.7633m },
-            new() { Id = 2, PickupLatitude = -36.8500m, PickupLongitude = 174.7700m }
-        };
-
-        _jobQueryRepositoryMock.GetJobCoordinatesAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
-            .Returns(expectedCoordinates);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.GetAllJobCoordinates(isInternal: true, clientIds: null, despatchViewIds: [1, 2]);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<JobCoordinateModel> coordinates)
-        {
-            Assert.Equal(2, coordinates.Count);
-        }
-    }
-
-    [Fact]
-    public async Task GetAllJobCoordinates_UnauthorizedAccess_Returns401()
-    {
-        // Arrange
-        SetupCustomerScope(77);
-        _clientAccessValidatorMock.ValidateClientAccessAsync(77, "123").ThrowsAsync(new UnauthorizedAccessException());
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.GetAllJobCoordinates(isInternal: false, clientIds: "123", despatchViewIds: []);
-
-        // Assert
-        Assert.IsType<ObjectResult>(result);
-        var objectResult = (ObjectResult)result;
-        Assert.Equal(StatusCodes.Status401Unauthorized, objectResult.StatusCode);
     }
 
     [Fact]
@@ -3517,31 +3472,6 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task AddStopToRecurringJob_ValidRequest_ReturnsNewJobId()
-    {
-        // Arrange
-        var request = new AddStopRequest
-        {
-            JobId = 1,
-            DeliveryAddress = new EditAddressDialogViewModel { AddressLine1 = "New Recurring Stop" }
-        };
-        const int newJobId = 2;
-
-        _addStopJobServiceMock.AddStopInsertRecurringJobAsync(request)
-            .Returns(newJobId);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.AddStopToRecurringJob(request);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        Assert.Equal(newJobId, jsonResult.Value);
-    }
-
-    [Fact]
     public async Task GetDeliveryJourney_ValidJobId_ReturnsJourney()
     {
         // Arrange
@@ -3568,6 +3498,18 @@ public class JobControllerTests : IDisposable
         {
             Assert.Equal(jobId, journey[0].JobId);
         }
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourney_AppliesWebQtyUpdate()
+    {
+        const int jobId = 10;
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)
+            .Returns(new List<DeliveryJourneyViewModel>());
+
+        await CreateController().GetDeliveryJourney(jobId);
+
+        await _jobCommandRepositoryMock.Received(1).ApplyWebQtyUpdateAsync(jobId);
     }
 
     [Fact]
@@ -3700,17 +3642,6 @@ public class JobControllerTests : IDisposable
 
         Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
         await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().RepriceJobWithBaseAmountAsync(null!);
-    }
-
-    [Fact]
-    public async Task Upload_CallerCannotModifyPrices_ReturnsForbidden()
-    {
-        _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(false);
-
-        var result = await CreateController().Upload(Substitute.For<IFormFile>());
-
-        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
-        await _jobReportServiceMock.DidNotReceiveWithAnyArgs().ProcessJobPriceUploadAsync(null!);
     }
 
     [Fact]
@@ -4004,115 +3935,6 @@ public class JobControllerTests : IDisposable
 
         // Act
         var result = await controller.SetFirstJob(jobId, courierId);
-
-        // Assert
-        Assert.IsType<OkResult>(result);
-    }
-
-    [Fact]
-    public async Task ReSendAll_ValidCourierId_ReturnsOk()
-    {
-        // Arrange
-        const int courierId = 1;
-
-        _jobCommandRepositoryMock.ReSendAllJobsAsync(courierId)
-            .Returns(Task.CompletedTask);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.ReSendAll(courierId);
-
-        // Assert
-        Assert.IsType<OkResult>(result);
-    }
-
-    [Fact]
-    public async Task PpdExclusiveAmount_ValidRequest_ReturnsPpdAmount()
-    {
-        // Arrange
-        const int clientId = 1;
-        const decimal amount = 100.00m;
-        const decimal expectedPpd = 87.00m;
-
-        _jobQueryRepositoryMock.PpdExclusiveAmountAsync(clientId, amount)
-            .Returns(expectedPpd);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.PpdExclusiveAmount(clientId, amount);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        Assert.Equal(expectedPpd, jsonResult.Value);
-    }
-
-    [Fact]
-    public async Task HasClientItemsAvailable_ItemsExist_ReturnsTrue()
-    {
-        // Arrange
-        const int clientId = 1;
-        const int speedId = 2;
-
-        _jobQueryRepositoryMock.HasClientItemsAvailableAsync(clientId, speedId)
-            .Returns(true);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.HasClientItemsAvailable(clientId, speedId);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        Assert.Equal(true, jsonResult.Value);
-    }
-
-    [Fact]
-    public async Task GetAllClientItems_ValidRequest_ReturnsItems()
-    {
-        // Arrange
-        const int clientId = 1;
-        const int speedId = 2;
-        const int jobId = 3;
-        var expectedItems = new PaginatedResponse<ClientItemsViewModel>
-        {
-            Items = [new ClientItemsViewModel { ItemId = 1, Name = "Extra Service" }],
-            Total = 1
-        };
-
-        _jobQueryRepositoryMock.GetClientItemsBySpeedAsync(clientId, speedId, jobId)
-            .Returns(expectedItems);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.GetAllClientItems(clientId, speedId, jobId);
-
-        // Assert
-        Assert.IsType<JsonResult>(result);
-    }
-
-    [Fact]
-    public async Task AddClientItemsToJob_ValidRequest_ReturnsOk()
-    {
-        // Arrange
-        const int jobId = 1;
-        var itemsModel = new ClientItemsModel
-        {
-            ServiceIds = [1, 2],
-            TotalCost = 25.00m
-        };
-
-        _jobCommandRepositoryMock.AddClientsItemToJobAsync(jobId, itemsModel.ServiceIds, itemsModel.TotalCost)
-            .Returns(Task.CompletedTask);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.AddClientItemsToJob(jobId, itemsModel);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -4689,17 +4511,6 @@ public class JobControllerTests : IDisposable
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
-    [Fact]
-    public async Task ApplyWebQtyUpdate_RejectsPartnerJob()
-    {
-        var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(20).Returns(true);
-
-        var result = await controller.ApplyWebQtyUpdate(20);
-
-        Assert.IsType<BadRequestObjectResult>(result);
-    }
-
     // ------------------------------------------------------------------
     // PreviewCreateAheadBackfill / CreateCreateAheadBackfill endpoints
     // ------------------------------------------------------------------
@@ -4832,5 +4643,126 @@ public class JobControllerTests : IDisposable
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, obj.StatusCode);
+    }
+
+    // ---- Branches (B2) review fixes: by-id actions, photos and attachments, hidden clients ----
+
+    [Fact]
+    public async Task ByIdJobActions_ReturnNotFound_WhenTheCallerCannotSeeTheJob()
+    {
+        var controller = CreateController();
+        _jobCommandRepositoryMock.ReSendSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>()).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>()).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.SetFirstJobAsync(5, 6).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.UnSplitJobAsync(5).Throws(new JobNotFoundException("nope"));
+        _jobCommandRepositoryMock.RestoreSplitJobsAsync(Arg.Any<IReadOnlyList<int>>()).Throws(new JobNotFoundException("nope"));
+
+        Assert.IsType<NotFoundObjectResult>(await controller.ReSendSelected("5"));
+        Assert.IsType<NotFoundObjectResult>(await controller.ReAssignSelected("5"));
+        Assert.IsType<NotFoundObjectResult>(await controller.SetFirstJob(5, 6));
+        Assert.IsType<NotFoundObjectResult>(await controller.UnSplitJob(5));
+        Assert.IsType<NotFoundObjectResult>(await controller.RestoreSplitJobs([5]));
+    }
+
+    [Fact]
+    public async Task PhotoAndAttachmentEndpoints_ReturnNotFound_WhenTheJobIsHidden_AndTouchNoFiles()
+    {
+        _jobQueryRepositoryMock.IsJobHiddenByBranchScopeAsync(5).Returns(true);
+        var controller = CreateController();
+        var file = Substitute.For<IFormFile>();
+
+        Assert.IsType<NotFoundObjectResult>(await controller.GetAttachedFiles(5));
+        Assert.IsType<NotFoundObjectResult>(await controller.UploadFile(new FileUploadRequest { JobId = 5, File = file }));
+        Assert.IsType<NotFoundObjectResult>(await controller.UploadJobDeliveryPhotoOrSignature(5, file));
+        Assert.IsType<NotFoundObjectResult>(await controller.GetJobDeliveryPhotosAndSignature(5, 2026, 11));
+        Assert.IsType<NotFoundObjectResult>(await controller.GetJobPickupPhotos(5, 2026, 11));
+        Assert.IsType<NotFoundObjectResult>(await controller.DeleteJobDeliveryPhotoOrSignature(5, "DeliveryPhotos/2026/11/5-1.jpg"));
+
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().GetAttachedFilesAsync(default);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().UploadJobAttachmentAsync(default, null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().UploadJobPhotoOrSignatureAsync(default, null!, default, default, default);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().ArchiveJobPhotoAsync(default, null!);
+        await _podMediaServiceMock.DidNotReceiveWithAnyArgs().GetDeliveryMediaAsync(default, default, default);
+        await _podMediaServiceMock.DidNotReceiveWithAnyArgs().GetPickupMediaAsync(default, default, default);
+    }
+
+    [Fact]
+    public async Task KeyedFileEndpoints_ReturnNotFound_WhenTheKeyBelongsToAHiddenJob_AndTouchNoFiles()
+    {
+        _jobQueryRepositoryMock.IsJobMediaKeyHiddenByBranchScopeAsync("JobAttachments/2026/11/5-1.pdf").Returns(true);
+        var controller = CreateController();
+
+        Assert.IsType<NotFoundObjectResult>(await controller.DownloadFile("JobAttachments/2026/11/5-1.pdf"));
+        Assert.IsType<NotFoundObjectResult>(await controller.DeleteFile("JobAttachments/2026/11/5-1.pdf"));
+        // The job id on the request is the caller's own, but the key points at somebody else's job.
+        Assert.IsType<NotFoundObjectResult>(await controller.DeleteJobDeliveryPhotoOrSignature(1, "JobAttachments/2026/11/5-1.pdf"));
+
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DownloadFileAsync(null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DeleteFileAsync(null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().ArchiveJobPhotoAsync(default, null!);
+    }
+
+    [Fact]
+    public async Task KeyedFileEndpoints_StillWork_WhenTheCallerCanSeeTheJob()
+    {
+        var controller = CreateController();
+        _jobPhotoServiceMock.DeleteFileAsync("JobAttachments/2026/11/1-1.pdf").Returns(true);
+
+        var result = await controller.DeleteFile("JobAttachments/2026/11/1-1.pdf");
+
+        Assert.IsType<OkObjectResult>(result);
+        await _jobPhotoServiceMock.Received(1).DeleteFileAsync("JobAttachments/2026/11/1-1.pdf");
+    }
+
+    // Every caller, branch-limited or not: a backslash, '..', empty segment or leading slash is never a key we issued.
+    [Theory]
+    [InlineData(@"DeliveryPhotos\2026\11\1-1.jpg")]
+    [InlineData("DeliveryPhotos/../JobAttachments/1-1.pdf")]
+    [InlineData("/DeliveryPhotos/2026/11/1-1.jpg")]
+    [InlineData("DeliveryPhotos//1-1.jpg")]
+    public async Task KeyedFileEndpoints_ReturnBadRequest_ForAKeyWeNeverIssue_AndTouchNoFiles(string key)
+    {
+        var controller = CreateController();
+
+        Assert.IsType<BadRequestObjectResult>(await controller.DownloadFile(key));
+        Assert.IsType<BadRequestObjectResult>(await controller.DeleteFile(key));
+        Assert.IsType<BadRequestObjectResult>(await controller.DeleteJobDeliveryPhotoOrSignature(1, key));
+
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DownloadFileAsync(null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().DeleteFileAsync(null!);
+        await _jobPhotoServiceMock.DidNotReceiveWithAnyArgs().ArchiveJobPhotoAsync(default, null!);
+    }
+
+    [Fact]
+    public async Task QuickCreateJob_ReturnsBadRequest_WhenTheClientIsNotOneTheCallerCanSee()
+    {
+        var request = new JobCreateViewModel { ClientId = 10, SpeedId = 3 };
+        _jobCommandRepositoryMock.QuickAddJobAsync(request).Throws(new ClientNotFoundException("Client 10 was not found."));
+
+        var result = await CreateController().QuickCreateJob(request);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateBulkJob_ReturnsBadRequest_WhenTheClientIsNotOneTheCallerCanSee()
+    {
+        _jobCommandRepositoryMock.UpdateBulkJobAsync(3, JobProperty.ClientID, "10")
+            .Throws(new ClientNotFoundException("Client 10 was not found."));
+
+        var result = await CreateController().UpdateBulkJob(3, JobProperty.ClientID, "10");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJob_ReturnsBadRequest_WhenTheClientIsNotOneTheCallerCanSee()
+    {
+        _recurringJobRepositoryMock.UpdateRecurringJobAsync(3, JobProperty.ClientID, "10")
+            .Throws(new ClientNotFoundException("Client 10 was not found."));
+
+        var result = await CreateController().UpdateRecurringJob(3, JobProperty.ClientID, "10");
+
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 }

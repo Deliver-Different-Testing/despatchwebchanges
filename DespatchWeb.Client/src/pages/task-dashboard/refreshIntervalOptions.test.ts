@@ -1,6 +1,5 @@
 import {
     DEFAULT_TASK_REFRESH_SECONDS,
-    formatRefreshButtonLabel,
     formatUpdatedAgo,
     getRefreshIntervalOptions,
     loadRefreshIntervalMs,
@@ -29,18 +28,6 @@ describe('refreshIntervalOptions', () => {
             expect(bySeconds.get(60)).toBe('1 min');
             expect(bySeconds.get(90)).toBe('1 min 30 seconds');
             expect(bySeconds.get(120)).toBe('2 mins');
-        });
-    });
-
-    describe('formatRefreshButtonLabel', () => {
-        it('shows "Auto-refresh" when off', () => {
-            expect(formatRefreshButtonLabel(false)).toBe('Auto-refresh');
-        });
-
-        it('formats seconds, whole minutes and mixed intervals compactly', () => {
-            expect(formatRefreshButtonLabel(30_000)).toBe('Auto: 30s');
-            expect(formatRefreshButtonLabel(60_000)).toBe('Auto: 1m');
-            expect(formatRefreshButtonLabel(90_000)).toBe('Auto: 1m 30s');
         });
     });
 

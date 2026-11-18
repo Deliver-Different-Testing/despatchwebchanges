@@ -67,14 +67,4 @@ public class HomeControllerTests
         var json = Assert.IsType<JsonResult>(result);
         Assert.Equivalent(expected, json.Value);
     }
-
-    [Fact]
-    public void Error_ReturnsViewWithRequestId()
-    {
-        var controller = CreateController();
-
-        var result = controller.Error();
-
-        Assert.IsType<ViewResult>(result);
-    }
 }

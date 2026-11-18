@@ -20,6 +20,7 @@ import {DialogShell, DialogHeader, DialogFooter, dialogContentBg} from '../share
 import {Icon} from '../../common/icon/Icon';
 import type { ShowToastFn } from '../../../services/toastService';
 import { formatDateForApi, getInputDateFormat } from '../../../utils/dateUtils';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -149,7 +150,7 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
             onClose();
         } catch (error: unknown) {
             console.error('Error adding event:', error);
-            showToast(error instanceof Error ? `Couldn't add task. ${error.message}` : "Couldn't add task. Try again.", 'error');
+            showToast(`Couldn't add task. ${errorMessageOf(error, 'Try again.')}`, 'error');
             setIsSubmitting(false);
         }
     };

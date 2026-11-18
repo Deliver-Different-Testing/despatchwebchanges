@@ -15,7 +15,6 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Repositories;
@@ -579,6 +578,8 @@ public partial class JobRepository(
             return;
         }
 
+        await EnsureJobsVisibleAsync(jobIds);
+
         foreach (var jobId in jobIds)
         {
             await Context.Procedures.uspReDespatchJobAsync(jobId);
@@ -596,6 +597,8 @@ public partial class JobRepository(
             return;
         }
 
+        await EnsureJobsVisibleAsync(jobIds);
+
         foreach (var jobId in jobIds)
         {
             await Context.Procedures.uspReassignJobAsync(jobId);
@@ -605,8 +608,37 @@ public partial class JobRepository(
     /// <summary>
     /// Sets a job as the first priority job for a courier.
     /// </summary>
-    public async Task SetFirstJobAsync(int jobId, int courierId) =>
+    public async Task SetFirstJobAsync(int jobId, int courierId)
+    {
+        await EnsureJobsVisibleAsync([jobId]);
+        await EnsureCourierVisibleAsync(courierId);
         await Context.Procedures.DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(jobId, courierId);
+    }
+
+    // Branches (B2): these actions run stored procedures by id, so the EF filters never see them. A branch-limited
+    // caller may only act on jobs and couriers the filters let them see; everyone else is unaffected.
+    private async Task EnsureJobsVisibleAsync(IReadOnlyCollection<int> jobIds)
+    {
+        if (!await Context.AllJobsVisibleAsync(jobIds))
+        {
+            throw new JobNotFoundException("One or more of the jobs were not found.");
+        }
+    }
+
+    private async Task EnsureCourierVisibleAsync(int courierId)
+    {
+        if (!await Context.CourierVisibleAsync(courierId))
+        {
+            throw new JobNotFoundException("The courier was not found.");
+        }
+    }
+
+    public async Task<bool> IsJobHiddenByBranchScopeAsync(int jobId) =>
+        Context.CurrentIsBranchScoped && !await Context.AllJobsVisibleAsync([jobId]);
+
+    public async Task<bool> IsJobMediaKeyHiddenByBranchScopeAsync(string key) =>
+        Context.CurrentIsBranchScoped
+        && (!JobMediaKey.TryGetJobId(key, out var keyJobId) || !await Context.AllJobsVisibleAsync([keyJobId]));
 
     /// <summary>
     /// Updates POD (proof of delivery) details including name, time, and status for a job and its related jobs.
@@ -721,8 +753,11 @@ public partial class JobRepository(
     /// <summary>
     /// Re-sends all jobs assigned to a courier to their device.
     /// </summary>
-    public async Task ReSendAllJobsAsync(int courierId) =>
+    public async Task ReSendAllJobsAsync(int courierId)
+    {
+        await EnsureCourierVisibleAsync(courierId);
         await Context.Procedures.uspReDespatchJobByCourierIDAsync(courierId);
+    }
 
     /// <summary>
     /// Resets the late notification flag for a job's pickup or delivery event.
@@ -883,6 +918,8 @@ public partial class JobRepository(
         {
             return;
         }
+
+        await EnsureJobsVisibleAsync(jobIds);
 
         foreach (var jobId in jobIds)
         {
@@ -1132,6 +1169,8 @@ public partial class JobRepository(
     /// <returns>Status message from the unsplit operation.</returns>
     public async Task<string> UnSplitJobAsync(int jobId)
     {
+        await EnsureJobsVisibleAsync([jobId]);
+
         var message = new OutputParameter<string>();
         var returnValue = new OutputParameter<int>();
 
@@ -1779,6 +1818,12 @@ public partial class JobRepository(
     /// <returns>The ID of the newly created job and the job number generated for it.</returns>
     public async Task<QuickAddJobResult> QuickAddJobAsync(JobCreateViewModel request)
     {
+        // The proc takes the client id as given; a branch-limited caller may only create for a client in their own list.
+        if (Context.CurrentIsBranchScoped && !await Context.TucClients.AnyAsync(c => c.UcclId == request.ClientId))
+        {
+            throw new ClientNotFoundException($"Client {request.ClientId} was not found.");
+        }
+
         try
         {
             var now = _infoService.GetCurrentTenantTime();
@@ -1834,27 +1879,6 @@ public partial class JobRepository(
                     nameof(AddInterCourierChargeAsync)));
             throw;
         }
-    }
-
-    /// <summary>
-    /// Associates client items with a job and updates the job amount.
-    /// </summary>
-    public async Task AddClientsItemToJobAsync(
-        int jobId,
-        IReadOnlyList<int> clientItemIds,
-        decimal totalCost
-    )
-    {
-        var clientItemsString =
-            clientItemIds.Count == 0
-                ? string.Empty
-                : string.Join(",", clientItemIds);
-
-        await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(j => j.ClientItemIds, clientItemsString)
-                .SetProperty(j => j.UcjbAmount, totalCost));
     }
 
     /// <summary>
@@ -2578,20 +2602,21 @@ public partial class JobRepository(
         await createJobService.CreateJobAsync(data, cancellationToken);
 
     /// <summary>
-    /// Reads the most recent external (non-Staff) qty change from JobDeliveryJourney and applies
-    /// it to TucJob.UcjbQty, then records a Staff journey entry so to apply is auditable.
+    /// Applies the latest JobDeliveryJourney qty entry to TucJob.UcjbQty when it came from outside staff,
+    /// then records a journey entry for the caller so the apply is auditable.
     /// </summary>
     public async Task<bool> ApplyWebQtyUpdateAsync(int jobId)
     {
+        // Only the latest qty entry can be pending: once staff have changed or applied the qty, an older external
+        // change is superseded and must not overwrite it.
         var pendingChange = await Context.JobDeliveryJourneys
-            .Where(j => j.JobId == jobId &&
-                        j.FieldName == "ucjbQty" &&
-                        j.UpdatedByType != nameof(DeliveryJourneyUpdatedByType.Staff) &&
-                        j.NewValue != null)
-            .OrderByDescending(j => j.UpdatedAt)
+            .Where(j => j.JobId == jobId && j.FieldName == "ucjbQty")
+            .OrderByDescending(j => j.JourneyId)
             .FirstOrDefaultAsync();
 
-        if (pendingChange == null)
+        if (pendingChange == null ||
+            pendingChange.UpdatedByType == nameof(DeliveryJourneyUpdatedByType.Staff) ||
+            pendingChange.NewValue == null)
         {
             return false;
         }
@@ -2601,18 +2626,22 @@ public partial class JobRepository(
             return false;
         }
 
-        var currentQty = await Context.TucJobs
+        // A partner job is managed by the partner, so its qty is never changed from here.
+        var job = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => j.UcjbQty)
+            .Select(j => new { j.UcjbQty, IsPartnerJob = j.PartnerJobGuid.HasValue })
             .FirstOrDefaultAsync();
 
-        if (currentQty == newQty)
+        if (job == null || job.IsPartnerJob || job.UcjbQty == newQty)
         {
             return false;
         }
 
+        var currentQty = job.UcjbQty;
+        // Conditional on the qty just read, so a concurrent edit or a second concurrent apply is not overwritten or
+        // audited twice.
         var rowsAffected = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
+            .Where(j => j.UcjbId == jobId && j.UcjbQty == currentQty)
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, newQty));
 
         if (rowsAffected == 0)
@@ -3696,13 +3725,6 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Calculates the PPD (Prepaid Discount) exclusive amount for a client.
-    /// </summary>
-    public async Task<decimal> PpdExclusiveAmountAsync(int clientId,
-        decimal amount) =>
-        await CalculateAmountAsync(clientId, amount);
-
-    /// <summary>
     /// Retrieves all available job speeds/types.
     /// </summary>
     public async Task<IReadOnlyList<Suggestion>> GetSpeedsAsync() =>
@@ -3752,6 +3774,13 @@ public partial class JobRepository(
                 (s, cc) => new { s, cc }
             )
             .Where(x => x.cc.ClientId == clientId && x.s.Active)
+            // Branch-limited staff: only a client they can see, or the client of a job they can see (a job shows its own
+            // client even when it belongs to another branch). Everyone else is unaffected.
+            .Where(_ => !Context.CurrentIsBranchScoped
+                        || Context.TucClients.Any(c => c.UcclId == clientId)
+                        || Context.TucJobs.Any(j => j.UcjbClientId == clientId)
+                        || Context.TucJobArchives.Any(j => j.UcjbClientId == clientId)
+                        || Context.TucJobBookings.Any(j => j.UcbkClientId == clientId))
             .Select(x => new Suggestion { Id = x.s.ContactId, Text = x.s.UcctFirstname + Space + x.s.UcctSurname })
             .Distinct()
             .ToListAsync();
@@ -4076,36 +4105,6 @@ public partial class JobRepository(
         .FirstOrDefaultAsync();
 
     /// <summary>
-    /// Checks if a client has any active items available for a specific speed.
-    /// </summary>
-    public async Task<bool> HasClientItemsAvailableAsync(int clientId,
-        int speedId) =>
-        await Context
-            .TblClientAvailableSpeeds.Where(cas =>
-                cas.ClientId == clientId && cas.SpeedId == speedId
-            )
-            .SelectMany(cas =>
-                cas.TblClientAvailableSpeedItems.Where(casi => casi.Active)
-                    .Select(casi => casi.ClientItem)
-            )
-            .AnyAsync();
-
-    /// <summary>
-    /// Retrieves paginated client items available for a specific speed, with selection state from a job.
-    /// </summary>
-    public async Task<PaginatedResponse<ClientItemsViewModel>> GetClientItemsBySpeedAsync(
-        int clientId,
-        int speedId,
-        int jobId
-    )
-    {
-        var job = await GetJobInfo(jobId);
-        var clientItemIds = GetClientItemIds(job?.ClientItemIds);
-        var clientItemsQuery = BuildClientItemsQuery(clientId, speedId, clientItemIds);
-        return await CreatePagedList(clientItemsQuery);
-    }
-
-    /// <summary>
     /// Retrieves job details needed for late call notification processing.
     /// </summary>
     public async Task<JobLateCallDto> GetJobForLateCallAsync(int jobId) =>
@@ -4417,99 +4416,6 @@ public partial class JobRepository(
             });
 
         return await active.Concat(archive).Concat(booking).ToListAsync();
-    }
-
-    /// <summary>
-    /// Retrieves all active jobs with location data for the mega map display.
-    /// </summary>
-    public async Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(
-        CancellationToken cancellationToken = default)
-    {
-        const int maxMapJobs = 5000;
-        var isUsCustomer = _infoService.IsUsTenant();
-
-        var jobs = await Context.TucJobs
-            .Where(j =>
-                j.UcjbStatus.HasValue
-                && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
-                && !j.UcjbVoid
-            )
-            .Take(maxMapJobs)
-            .Select(j => new MegaMapResponse
-            {
-                JobId = j.UcjbId,
-                JobNumber = j.UcjbNumber,
-                JobStatus = j.UcjbStatus != null ? j.UcjbStatusNavigation.UcjsName : "New",
-                EstimatedDelivery =
-                    j.UcjbSpeedNavigation.GroupingId ==
-                    (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
-                    && j.TucJobNationwides.Count != 0
-                        ? j.TucJobNationwides.OrderByDescending(n => n.UcnwLegNumber).First().UcnwEta.Value
-                        : j
-                            .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
-                            .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
-                IsFlightJob = j.UcjbSpeedNavigation.GroupingId ==
-                              (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
-                PickupLocation = new AddressViewModel
-                {
-                    Latitude = j.PickUpLatitude ?? 0,
-                    Longitude = j.PickUpLongitude ?? 0,
-                    AddressLine1 = j.PickupAddressLine1,
-                    AddressLine2 = j.PickupAddressLine2,
-                    AddressLine3 = j.PickupAddressLine3,
-                    AddressLine4 = j.PickupAddressLine4,
-                    AddressLine5 = j.PickupAddressLine5,
-                    AddressLine6 = j.PickupAddressLine6,
-                    AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8
-                },
-                DeliveryLocation = new AddressViewModel
-                {
-                    Latitude = j.DeliveryLatitude ?? 0,
-                    Longitude = j.DeliveryLongitude ?? 0,
-                    AddressLine1 = j.DeliveryAddressLine1,
-                    AddressLine2 = j.DeliveryAddressLine2,
-                    AddressLine3 = j.DeliveryAddressLine3,
-                    AddressLine4 = j.DeliveryAddressLine4,
-                    AddressLine5 = j.DeliveryAddressLine5,
-                    AddressLine6 = j.DeliveryAddressLine6,
-                    AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8
-                },
-                CourierLocation = j.UcjbCourierId.HasValue
-                    ? new CourierLocation
-                    {
-                        CourierId = j.UcjbCourier.UccrId,
-                        CourierName =
-                            $"{j.UcjbCourier.UccrName} {j.UcjbCourier.UccrSurname}".Trim(),
-                        Coordinates = j.UcjbCourier.CourierGpsid.HasValue
-                            ? new Coordinates
-                            {
-                                Lat = (decimal)j.UcjbCourier.CourierGps.Latitude,
-                                Lng = (decimal)j.UcjbCourier.CourierGps.Longitude
-                            }
-                            : null
-                    }
-                    : null,
-                FlightInfo =
-                    j.UcjbSpeedNavigation.GroupingId ==
-                    (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
-                        ? j.TucJobNationwides
-                            .OrderBy(n => n.UcnwLegNumber).Take(1)
-                            .SelectMany(
-                                first => j.TucJobNationwides.OrderByDescending(n => n.UcnwLegNumber).Take(1),
-                                (first, last) => new AssignedFlight
-                                {
-                                    FlightNumber = first.UcnwFlightNo,
-                                    ExpectedArrival = last.UcnwEta,
-                                    ExpectedDeparture = first.UcnwEtd
-                                })
-                            .FirstOrDefault()
-                        : null
-            })
-            .ToListAsync(cancellationToken);
-
-        return jobs;
     }
 
     /// <summary>
@@ -4863,10 +4769,6 @@ public partial class JobRepository(
 
     public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string localTenantId) =>
         await Context.IsOutboundPartnerJobAsync(jobId, localTenantId);
-
-    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
-        CancellationToken cancellationToken = default)
-        => await base.GetJobCoordinatesAsync(selectedViewIds, cancellationToken);
 
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
@@ -5372,7 +5274,10 @@ public partial class JobRepository(
 
         var courierIds = legs.Where(l => l.UcjbCourierId.HasValue)
             .Select(l => l.UcjbCourierId!.Value).Distinct().ToList();
+        // The legs above came through the job filter, so they are the caller's to see: their couriers' names show even when
+        // a courier belongs to another branch (only the branch list filter is dropped).
         var courierNames = await Context.TucCouriers
+            .IgnoreQueryFilters([DespatchContext.BranchCouriersFilter])
             .Where(c => courierIds.Contains(c.UccrId))
             .ToDictionaryAsync(c => c.UccrId, c => c.UccrName + " " + c.UccrSurname);
 
@@ -6669,70 +6574,6 @@ public partial class JobRepository(
             UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(staffId)
         });
         await Context.SaveChangesAsync();
-    }
-
-    private async Task<JobInfo> GetJobInfo(int jobId) =>
-        await Context
-            .TucJobs.Where(j => j.UcjbId == jobId)
-            .Select(j => new JobInfo { ClientItemIds = j.ClientItemIds, IsVan = j.UcjbSize == 3 })
-            .FirstOrDefaultAsync();
-
-    private static IEnumerable<int> GetClientItemIds(string clientItemIdsString)
-    {
-        if (string.IsNullOrEmpty(clientItemIdsString))
-        {
-            return [];
-        }
-
-        return clientItemIdsString
-            .Split(',')
-            .Where(s => !string.IsNullOrEmpty(s))
-            .Select(int.Parse);
-    }
-
-    private IQueryable<ClientItemsViewModel> BuildClientItemsQuery(
-        int clientId,
-        int speedId,
-        IEnumerable<int> clientItemIds
-    )
-    {
-        return Context
-            .TblClientAvailableSpeeds.Where(cas =>
-                cas.ClientId == clientId && cas.SpeedId == speedId
-            )
-            .SelectMany(cas =>
-                cas.TblClientAvailableSpeedItems.Where(casi => casi.Active)
-                    .Select(casi => new ClientItemsViewModel
-                    {
-                        ItemId = casi.ClientItem.ItemId,
-                        ClientId = casi.ClientItem.ClientId,
-                        Name = casi.ClientItem.Name,
-                        Description = casi.ClientItem.Description,
-                        PerItem = casi.ClientItem.PerItem,
-                        Rate = casi.ClientItem.Rate,
-                        VehicleSizeId = casi.ClientItem.VehicleSizeId,
-                        Selected = clientItemIds.Contains(casi.ClientItem.ItemId)
-                    })
-            );
-    }
-
-    private static async Task<PaginatedResponse<ClientItemsViewModel>> CreatePagedList(
-        IQueryable<ClientItemsViewModel> query
-    )
-    {
-        var count = await query.CountAsync();
-        var items = await query.ToListAsync();
-
-        return new PaginatedResponse<ClientItemsViewModel> { Items = items, Total = count };
-    }
-
-    private async Task<decimal> CalculateAmountAsync(int clientId,
-        decimal amount)
-    {
-        var outputParam = new OutputParameter<decimal?>();
-        await Context.Procedures.UTL_stpPPD_ExclusiveAmountAsync(clientId, amount, outputParam);
-
-        return outputParam.Value ?? 0m;
     }
 
     private async Task<string> GenerateJobNumberAsync(

@@ -4,7 +4,7 @@ import {ErrorBoundary} from '../../components/common/error-boundary';
 import {OverviewPage} from './OverviewPage';
 import {openJobInSearch} from '../../services/navigationService';
 import {getSession} from '../../api/session';
-import {noopRegisterRefresh, overviewToast} from '../pageToasts';
+import {overviewToast} from '../pageToasts';
 
 export const OverviewScreen: React.FC = () => (
     <PageFrame section="Dashboards" title="Overview" scrollable>
@@ -13,7 +13,6 @@ export const OverviewScreen: React.FC = () => (
                 showToast={overviewToast}
                 isUsCustomer={getSession().isUsCustomer ?? false}
                 onOpenJobDetail={(jobId) => openJobInSearch(jobId)}
-                setRefreshCallback={noopRegisterRefresh}
             />
         </ErrorBoundary>
     </PageFrame>

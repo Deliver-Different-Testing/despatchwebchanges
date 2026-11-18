@@ -154,7 +154,10 @@ public partial class JobRepository
             .Select(x => x.UcjbClientId!.Value).Distinct().ToList();
         var speedIdsForLookup = archiveHeadersRaw.Where(x => x.UcjbSpeed.HasValue).Select(x => x.UcjbSpeed!.Value)
             .Distinct().ToList();
+        // The headers above came through the job filter, so their clients' names show even when a client belongs to another
+        // branch (only the branch list filter is dropped).
         var clientNames = await InIdChunksAsync(clientIdsForLookup, chunk => hdrCtx.TucClients
+            .IgnoreQueryFilters([EntityClasses.DespatchContext.BranchClientsFilter])
             .Where(c => chunk.Contains(c.UcclId))
             .Select(c => new { c.UcclId, c.UcclName })
             .ToListAsync(ct));

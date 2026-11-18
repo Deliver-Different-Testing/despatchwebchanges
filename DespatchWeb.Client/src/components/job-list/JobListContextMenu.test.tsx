@@ -61,7 +61,6 @@ vi.mock('../../api/dispatchExecutorApi', () => ({
 }));
 vi.mock('../../services/navigationService', () => ({
     openJobInSearch: vi.fn(),
-    openJobDetail: vi.fn(),
     openHubUrl: vi.fn(),
 }));
 

@@ -53,7 +53,6 @@ public class NetworkPartnerCapabilityTests
         { nameof(JobController.ReSendSelected), NpCapability.Dispatch },
         { nameof(JobController.ReAssignSelected), NpCapability.Dispatch },
         { nameof(JobController.SetFirstJob), NpCapability.Dispatch },
-        { nameof(JobController.ReSendAll), NpCapability.Dispatch },
         { nameof(JobController.RestoreJobs), NpCapability.Restore },
         { nameof(JobController.RestoreSplitJobs), NpCapability.Restore },
         { nameof(JobController.Void), NpCapability.Void },

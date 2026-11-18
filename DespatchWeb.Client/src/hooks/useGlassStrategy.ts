@@ -21,8 +21,3 @@ export function useGlassAllowed(): boolean {
   const allowed = usePackageGlassAllowed();
   return isLiquidGlassSupported() && allowed;
 }
-
-/** Whether the live lens is available; otherwise the CSS glass applies. */
-export function useLiquidGlassSupport(): boolean {
-  return useGlassStrategy() !== 'css';
-}

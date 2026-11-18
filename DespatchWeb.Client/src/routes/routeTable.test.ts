@@ -1,13 +1,13 @@
 import {
     ROUTES,
-    getRoute,
     navRoutes,
     landingOrder,
     resolveAlias,
     routePath,
-    routeUrlWithJobId,
 } from './routeTable';
 import {dashboardFeatureKeys} from '../services/featureVisibility';
+
+const getRoute = (state: string) => ROUTES.find(r => r.state === state);
 
 const EXPECTED_PATHS: Record<string, string> = {
     home: '/',
@@ -79,10 +79,8 @@ describe('routeTable', () => {
         ]);
     });
 
-    it('builds paths and jobId urls', () => {
+    it('builds paths', () => {
         expect(routePath('nationwide')).toBe('/nationwide');
-        expect(routeUrlWithJobId('home')).toBe('/?jobId');
-        expect(routeUrlWithJobId('jobSearchV2')).toBe('/jobSearchV2?jobId');
         expect(() => routePath('nope')).toThrow();
     });
 

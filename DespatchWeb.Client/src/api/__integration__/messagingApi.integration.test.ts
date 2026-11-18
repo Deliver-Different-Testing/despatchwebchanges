@@ -14,7 +14,7 @@ import {server} from '../../test/utils/msw/setupIntegration';
 import {http, HttpResponse} from 'msw';
 import {messagingApi} from '../messagingApi';
 import {mockChatMessages,} from '../../test/utils/msw/handlers';
-import {MessageDeliveryType, OtherMessagePartyType} from '../../components/dialogs/messaging-dialog';
+import {MessageDeliveryType, OtherMessagePartyType} from '../../components/dialogs/messaging-dialog/types';
 
 describe('messagingApi integration', () => {
     describe('getRecentList', () => {

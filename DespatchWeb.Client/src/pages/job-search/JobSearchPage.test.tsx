@@ -14,7 +14,6 @@ const mockPanel: {
     onToDateChange?: (date: Dayjs) => void;
     onDownload?: (dates?: SearchActionDates) => void;
     onClientReport?: (dates?: SearchActionDates) => void;
-    onBackendFilter?: (column: string, direction: string) => void;
     onCourierSearch?: (text: string) => Promise<unknown[]>;
     onSpeedSearch?: (text: string) => Promise<unknown[]>;
     updateParams: Record<string, Mock>;
@@ -45,15 +44,13 @@ vi.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', () 
 }));
 
 vi.mock('../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, setUpdateSearchParamsCallback, onBackendFilter, onJobSelect}: {
+    JobListPanel: ({storagePrefix, setUpdateSearchParamsCallback, onJobSelect}: {
         storagePrefix: string;
         setUpdateSearchParamsCallback?: (cb: Mock) => void;
-        onBackendFilter?: (column: string, direction: string) => void;
         onJobSelect?: (job: unknown) => void;
     }) => {
         const fn = mockPanel.updateParams[storagePrefix] ?? (mockPanel.updateParams[storagePrefix] = vi.fn());
         setUpdateSearchParamsCallback?.(fn);
-        if (onBackendFilter) mockPanel.onBackendFilter = onBackendFilter;
         if (onJobSelect) mockPanel.onJobSelect[storagePrefix] = onJobSelect;
         return <div data-testid={`mock-job-list-${storagePrefix}`} />;
     },
@@ -121,7 +118,6 @@ describe('JobSearchPage', () => {
         mockPanel.onToDateChange = undefined;
         mockPanel.onDownload = undefined;
         mockPanel.onClientReport = undefined;
-        mockPanel.onBackendFilter = undefined;
         mockPanel.updateParams = {};
         mockPanel.onJobSelect = {};
     });
@@ -277,18 +273,6 @@ describe('JobSearchPage', () => {
 
             openSpy.mockRestore();
         });
-    });
-
-    it('re-pushes the active sort to the main list on search', () => {
-        renderPage();
-        act(() => {
-            mockPanel.onBackendFilter?.('jobNo', 'desc');
-        });
-        act(() => {
-            mockPanel.onSearch?.();
-        });
-        const mainCall = mockPanel.updateParams.jobSearchJobList.mock.calls.at(-1)?.[0];
-        expect(mainCall).toMatchObject({sortColumn: 'jobNo', sortDirection: 'desc'});
     });
 });
 

@@ -203,6 +203,10 @@ public class NoteController(
 
             return Ok();
         }
+        catch (JobNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "{Message}",

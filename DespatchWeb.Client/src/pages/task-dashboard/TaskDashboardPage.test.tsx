@@ -9,7 +9,7 @@ import React from 'react';
 import { renderWithMantine } from '../../test/utils';
 import { setupUser } from '../../test/utils/setupUser';
 import {act, render, screen, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClient} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {useMediaQuery} from '@mantine/hooks';
 import {TaskDashboardPage} from './TaskDashboardPage';
@@ -146,7 +146,6 @@ const mockEventTypes = [
 const createDefaultProps = (overrides?: Partial<TaskDashboardPageProps>): TaskDashboardPageProps => ({
     showToast: vi.fn(),
     isUsCustomer: true,
-    setRefreshCallback: vi.fn(),
     ...overrides,
 });
 
@@ -163,9 +162,8 @@ describe('TaskDashboardPage', () => {
     });
 
     // ── Default render assertions (single render) ───────────────────
-    it('renders page with all expected elements, stat counts, date groups, API calls, and refresh callback', async () => {
-        const setRefreshCallback = vi.fn();
-        const props = createDefaultProps({setRefreshCallback});
+    it('renders page with all expected elements, stat counts, date groups, and API calls', async () => {
+        const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         // View toggle buttons
@@ -208,10 +206,6 @@ describe('TaskDashboardPage', () => {
         expect(lastCall?.includeOverdue).toBe(true);
         expect(mockTasksApi.getActiveStaff).toHaveBeenCalled();
         expect(mockTasksApi.getEventTypes).toHaveBeenCalled();
-
-        // Refresh callback registered
-        expect(setRefreshCallback).toHaveBeenCalled();
-        expect(typeof setRefreshCallback.mock.calls[0][0]).toBe('function');
     });
 
     // ── List window is always relative to the tenant's today ────────

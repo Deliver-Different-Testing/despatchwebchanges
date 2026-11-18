@@ -15,8 +15,7 @@ import {
 import {ChevronRight, Search, SearchX, UserX} from 'lucide-react';
 import {Icon} from '../../../components/common/icon/Icon';
 import classes from './DriversPanel.module.css';
-import {glassClassNames} from '@deliver-different/glass';
-import {isLiquidGlassSupported} from '../../../hooks/glassSupport';
+import {useMapGlassClassName} from '../../../hooks/useMapGlassClassName';
 import {NoData} from '../../../components/common/no-data';
 import type {DriversPanelProps, FleetSelectorOption} from '../CourierMapPage.types';
 import {matchesCourierSearch} from '../CourierMapPage.types';
@@ -107,14 +106,14 @@ export function DriversPanel({
     );
     const selectedFleetValues = useMemo(() => selectedFleetIds.map(String), [selectedFleetIds]);
 
-    const glassEnabled = isLiquidGlassSupported();
+    const glassClassName = useMapGlassClassName();
 
     return (
         <Box
             w={PANEL_WIDTH}
             // Glass covers the card chrome (header, stats, filters); the list area below keeps
             // its own opaque surface so driver rows stay readable over the map.
-            className={glassEnabled ? `${glassClassNames.glass} ${glassClassNames.panel}` : undefined}
+            className={glassClassName}
             style={{
                 position: 'absolute',
                 top: 16,

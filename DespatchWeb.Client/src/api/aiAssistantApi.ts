@@ -8,7 +8,7 @@
  */
 
 import {
-    AiDraftResponse,  AiEmailDraftResponse, AiSummaryResponse,
+    AiDraftResponse,  AiEmailDraftResponse,
     ChangeRequestTriageResponse,
     DraftEmailRequest, DraftMessageRequest, DraftNoteRequest, ExtractBlockersResponse,
     PricingAnalysisResponse, StructuredSummaryResponse
@@ -16,19 +16,8 @@ import {
 import {apiClient} from './client';
 import {RequestOptions} from "./requestOptions";
 
-
 export type SummarySeverity = 'Ok' | 'Info' | 'Caution' | 'Urgent' | 'Critical';
 export type TimelineStatus = 'Ok' | 'Pending' | 'Warning' | 'Late';
-
-/** Summarize notes for a job (markdown) */
-export function summarizeJobNotes(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobNotes', null, {params: {jobId}});
-}
-
-/** Summarize event history for a job (markdown) */
-export function summarizeJobEvents(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobEvents', null, {params: {jobId}});
-}
 
 /** Structured task dashboard briefing */
 export function summarizeTaskDashboard(options?: RequestOptions): Promise<StructuredSummaryResponse> {
@@ -80,7 +69,6 @@ export function draftPodEmail(jobId: number, options?: RequestOptions): Promise<
 export function draftNote(request: DraftNoteRequest, options?: RequestOptions): Promise<AiDraftResponse> {
     return apiClient.post<AiDraftResponse>('/Ai/DraftNote', request, options);
 }
-
 
 /** Extract structured blockers/tags from a job's notes. */
 export function extractBlockers(jobId: number, options?: RequestOptions): Promise<ExtractBlockersResponse> {

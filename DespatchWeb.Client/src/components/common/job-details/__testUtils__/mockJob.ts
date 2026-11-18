@@ -104,7 +104,6 @@ export function createMockSuggestion(overrides?: Partial<ISuggestion>): ISuggest
 
 export function createMockJob(overrides?: Partial<IJob>): IJob {
     return {
-        angularId: 'job-1',
         id: 1001,
         hasBeenRead: false,
         jobNo: 'J-1001',

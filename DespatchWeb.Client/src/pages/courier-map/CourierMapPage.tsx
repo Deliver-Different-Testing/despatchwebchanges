@@ -13,11 +13,13 @@ import type { CourierMapPageProps } from './CourierMapPage.types';
 import {
     US_BOUNDS,
     NZ_BOUNDS,
+    AU_BOUNDS,
     REFRESH_INTERVAL_MS,
     SEARCH_DEBOUNCE_MS,
     matchesCourierSearch,
 } from './CourierMapPage.types';
 import { useCourierMap } from './useCourierMap';
+import { isAuSession } from '../../api/session';
 import { DriversPanel } from './components/DriversPanel';
 import { MapControls } from './components/MapControls';
 import { MapZoomViewControls } from '../../components/common/dispatch-map/MapZoomViewControls';
@@ -74,7 +76,8 @@ export function CourierMapPage({
         getPreference(StaffPreferenceKey.CourierMapDisplaySettings)
             .then((raw) => {
                 if (cancelled || !raw) return;
-                setDisplaySettings(JSON.parse(raw) as CourierMapDisplaySettings);
+                // Merged over the defaults so a preference saved before a setting existed still has it.
+                setDisplaySettings({...LIVE_TEMPLATE, ...(JSON.parse(raw) as Partial<CourierMapDisplaySettings>)});
             })
             .catch((err) => console.error('[CourierMapPage] failed to load display settings preference:', err));
         return () => { cancelled = true; };
@@ -105,7 +108,7 @@ export function CourierMapPage({
 
     // Get regional bounds
     const bounds = useMemo(
-        () => (isUsCustomer ? US_BOUNDS : NZ_BOUNDS),
+        () => (isUsCustomer ? US_BOUNDS : isAuSession() ? AU_BOUNDS : NZ_BOUNDS),
         [isUsCustomer]
     );
 

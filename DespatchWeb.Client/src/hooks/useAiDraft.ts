@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {errorMessageOf} from '../utils/errorMessage';
 
 /**
  * Shared lifecycle for one-shot Auto-Mate AI drafts. Wraps a fetch function with
@@ -30,7 +31,7 @@ export function useAiDraft() {
                 ) {
                     return null;
                 }
-                setError(e instanceof Error ? e.message : 'Failed to generate draft');
+                setError(errorMessageOf(e, 'Failed to generate draft'));
                 return null;
             } finally {
                 if (abortRef.current === controller) {

@@ -126,7 +126,6 @@ const mockedAddRestoreEvent = addRestoreEvent as Mock;
 
 function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
     return {
-        angularId: 'job-1',
         id: 1,
         jobNo: 'J001',
         hasBeenRead: true,
@@ -167,29 +166,43 @@ function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
 
 // ── Default Props ────────────────────────────────────────────────────
 
+let fetchKeySeq = 0;
+
+function createJobsFetchConfig(jobs: DispatchJob[] = [], clientSideSearch = false): FetchConfig {
+    const queryKeyId = fetchKeySeq++;
+    return {
+        fetchFn: vi.fn().mockResolvedValue({jobs, totalCount: jobs.length, hasMore: false} as JobSearchResult),
+        queryKeyFn: (params: JobListSearchParams) => ['jobListPanelTest', queryKeyId, params] as const,
+        initialParams: {order: 'time', orderDirection: 'asc', page: 0, pageSize: 50},
+        clientSideSearch,
+    };
+}
+
 function createDefaultProps(overrides?: Partial<JobListPanelProps>): JobListPanelProps {
     return {
         showToast: vi.fn(),
         appPage: AppPage.Dispatch,
+        fetchConfig: createJobsFetchConfig(),
         ...overrides,
     };
 }
 
+async function waitForJobsLoaded() {
+    await waitFor(() => expect(screen.queryByLabelText('Loading jobs')).not.toBeInTheDocument());
+}
+
 /**
- * Helper: render panel and push jobs via the setJobsCallback bridge
+ * Helper: render the panel with its fetch returning `jobs`, and wait for the list to load.
  */
-function renderAndPushJobs(
+async function renderWithJobs(
     jobs: DispatchJob[],
     propOverrides?: Partial<JobListPanelProps>,
 ) {
-    let pushJobs: (jobs: DispatchJob[], total: number) => void = () => {};
-    const props = createDefaultProps({
-        setJobsCallback: (cb) => { pushJobs = cb; },
-        ...propOverrides,
-    });
+    const props = createDefaultProps({fetchConfig: createJobsFetchConfig(jobs), ...propOverrides});
     const {unmount, rerender, ...rest} = renderWithMantineProviders(<JobListPanel {...props}/>);
-    act(() => pushJobs(jobs, jobs.length));
-    return {result: {unmount, rerender, ...rest}, pushJobs, props};
+    await waitFor(() => expect(props.fetchConfig.fetchFn).toHaveBeenCalled());
+    await waitForJobsLoaded();
+    return {result: {unmount, rerender, ...rest}, props};
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -218,26 +231,14 @@ describe('JobListPanel', () => {
         });
     });
 
-    describe('Rendering and AngularJS Bridge', () => {
-        it('renders all sections, pushes jobs via bridge, and supports refresh/select callbacks', () => {
-            const onJobSelect = vi.fn();
-            const onRefresh = vi.fn();
-            const setJobsCallbackSpy = vi.fn();
-            let refreshFn: () => void = () => {};
-            let selectJob: (id: number) => void = () => {};
-            let pushJobs: (j: DispatchJob[], t: number) => void = () => {};
+    describe('Rendering', () => {
+        it('renders all sections with an empty state, then the fetched jobs', async () => {
+            const jobs = [
+                createMockDispatchJob({id: 10, jobNo: 'J010'}),
+                createMockDispatchJob({id: 20, jobNo: 'J020'}),
+            ];
+            const {result, props} = await renderWithJobs([]);
 
-            renderWithMantineProviders(
-                <JobListPanel {...createDefaultProps({
-                    onJobSelect,
-                    onRefresh,
-                    setJobsCallback: (cb) => { pushJobs = cb; setJobsCallbackSpy(cb); },
-                    setRefreshCallback: (cb) => { refreshFn = cb; },
-                    setSelectJobCallback: (cb) => { selectJob = cb; },
-                })}/>
-            );
-
-            // Empty state checks
             expect(screen.getByText('Total')).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'Unassigned'})).toBeInTheDocument();
             expect(screen.getByRole('radio', {name: 'All'})).toBeInTheDocument();
@@ -246,28 +247,15 @@ describe('JobListPanel', () => {
             expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
             expect(screen.getByText('No jobs match the current view.')).toBeInTheDocument();
 
-            // setJobsCallback bridge registered
-            expect(setJobsCallbackSpy).toHaveBeenCalledWith(expect.any(Function));
-
-            // Push jobs via bridge
-            const jobs = [
-                createMockDispatchJob({id: 10, jobNo: 'J010'}),
-                createMockDispatchJob({id: 20, jobNo: 'J020'}),
-            ];
-            act(() => pushJobs(jobs, 2));
+            result.unmount();
+            await renderWithJobs(jobs, {selectedJobId: 10});
             expect(screen.getByText('J010')).toBeInTheDocument();
             expect(screen.getByText('J020')).toBeInTheDocument();
-
-            // Refresh bridge
-            act(() => refreshFn());
-            expect(onRefresh).toHaveBeenCalledTimes(1);
-
-            // Select job bridge
-            act(() => selectJob(10));
             const row = screen.getByText('J010').closest('tr');
             // The row's category rides on `data-variant` (see JobListTable.module.css),
             // not a class, so styling refactors do not break this assertion.
             expect(row).toHaveAttribute('data-variant', 'selected');
+            expect(props.fetchConfig.fetchFn).toHaveBeenCalled();
         });
 
         it('highlights only the controlled selectedJobId, ignoring its own clicks until the prop moves', async () => {
@@ -278,7 +266,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 20, jobNo: 'J020'}),
             ];
             const rowVariant = (jobNo: string) => screen.getByText(jobNo).closest('tr')?.getAttribute('data-variant');
-            const {result, props} = renderAndPushJobs(jobs, {onJobSelect, selectedJobId: 10});
+            const {result, props} = await renderWithJobs(jobs, {onJobSelect, selectedJobId: 10});
 
             expect(rowVariant('J010')).toBe('selected');
             expect(rowVariant('J020')).not.toBe('selected');
@@ -319,7 +307,7 @@ describe('JobListPanel', () => {
     });
 
     describe('Category Filtering', () => {
-        it('filters by category and calls onCategoryChange', () => {
+        it('filters by category and calls onCategoryChange', async () => {
             const onCategoryChange = vi.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'UNASSIGNED-1', statusId: 0}),
@@ -329,7 +317,7 @@ describe('JobListPanel', () => {
                 }),
                 createMockDispatchJob({id: 3, jobNo: 'DONE-1', statusId: 6}),
             ];
-            renderAndPushJobs(jobs, {onCategoryChange});
+            await renderWithJobs(jobs, {onCategoryChange});
 
             // Unassigned filter
             fireEvent.click(screen.getByRole('radio', {name: 'Unassigned'}));
@@ -357,8 +345,8 @@ describe('JobListPanel', () => {
             createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
         ];
 
-        it('files Undeliverable under Done, not Active, when set', () => {
-            renderAndPushJobs(jobs(), {undeliverableIsDone: true});
+        it('files Undeliverable under Done, not Active, when set', async () => {
+            await renderWithJobs(jobs(), {undeliverableIsDone: true});
 
             fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
             expect(screen.getByText('UNDELIVERABLE-1')).toBeInTheDocument();
@@ -368,8 +356,8 @@ describe('JobListPanel', () => {
             expect(screen.queryByText('UNDELIVERABLE-1')).not.toBeInTheDocument();
         });
 
-        it('leaves Undeliverable in Active by default', () => {
-            renderAndPushJobs(jobs());
+        it('leaves Undeliverable in Active by default', async () => {
+            await renderWithJobs(jobs());
 
             fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
             expect(screen.queryByText('UNDELIVERABLE-1')).not.toBeInTheDocument();
@@ -382,9 +370,9 @@ describe('JobListPanel', () => {
             createMockDispatchJob({id: 2, jobNo: 'DISPATCHED-1', statusId: 1, assignedCourier: {id: 5, text: '5 - Jane'}}),
         ];
 
-        it('ignores a remembered tab the list does not offer and lands on its default', () => {
+        it('ignores a remembered tab the list does not offer and lands on its default', async () => {
             localStorage.setItem('currentWork_selectedCategory_42', 'needs-dispatch');
-            renderAndPushJobs(assignedJobs(), {
+            await renderWithJobs(assignedJobs(), {
                 storagePrefix: 'currentWork',
                 defaultCategory: 'in-progress',
                 hiddenCategories: ['needs-dispatch'],
@@ -396,9 +384,9 @@ describe('JobListPanel', () => {
             expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
         });
 
-        it('still honours a remembered tab the list does offer', () => {
+        it('still honours a remembered tab the list does offer', async () => {
             localStorage.setItem('currentWork_selectedCategory_42', 'delivered');
-            renderAndPushJobs(assignedJobs(), {
+            await renderWithJobs(assignedJobs(), {
                 storagePrefix: 'currentWork',
                 defaultCategory: 'in-progress',
                 hiddenCategories: ['needs-dispatch'],
@@ -407,8 +395,8 @@ describe('JobListPanel', () => {
             expect(screen.getByRole('radio', {name: 'Done'})).toBeChecked();
         });
 
-        it('says the tab is hiding the rows and offers Show all, instead of claiming there are none', () => {
-            renderAndPushJobs(assignedJobs());
+        it('says the tab is hiding the rows and offers Show all, instead of claiming there are none', async () => {
+            await renderWithJobs(assignedJobs());
 
             fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
             expect(screen.getByText('No Done jobs')).toBeInTheDocument();
@@ -421,8 +409,8 @@ describe('JobListPanel', () => {
             expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
         });
 
-        it('keeps the plain empty state when the list itself is empty', () => {
-            renderAndPushJobs([]);
+        it('keeps the plain empty state when the list itself is empty', async () => {
+            await renderWithJobs([]);
 
             fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
             expect(screen.getByText('No jobs match the current view.')).toBeInTheDocument();
@@ -435,7 +423,7 @@ describe('JobListPanel', () => {
         // wall-clock waits. fireEvent (instead of user-event) keeps the input update
         // synchronous so flushDebounce just has to advance the debounce timer.
         beforeEach(() => {
-            vi.useFakeTimers();
+            vi.useFakeTimers({shouldAdvanceTime: true});
         });
         afterEach(() => {
             vi.useRealTimers();
@@ -459,7 +447,7 @@ describe('JobListPanel', () => {
                 }),
                 createMockDispatchJob({id: 2, jobNo: 'BETA-002', client: 'Gadget Inc', refA: 'PO-9912'}),
             ];
-            renderAndPushJobs(jobs, {onSearchChange});
+            await renderWithJobs(jobs, {onSearchChange, fetchConfig: createJobsFetchConfig(jobs, true)});
 
             const searchInput = screen.getByPlaceholderText('Search jobs…');
 
@@ -496,7 +484,7 @@ describe('JobListPanel', () => {
                     deliveryAddress: {addressLine5: 'Christchurch'} as any,
                 }),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs, {fetchConfig: createJobsFetchConfig(jobs, true)});
 
             const searchInput = screen.getByPlaceholderText('Search jobs…');
             await typeAndFlush(searchInput, 'wellington');
@@ -515,7 +503,7 @@ describe('JobListPanel', () => {
                     speed: undefined as any,
                 }),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs, {fetchConfig: createJobsFetchConfig(jobs, true)});
 
             const searchInput = screen.getByPlaceholderText('Search jobs…');
             await typeAndFlush(searchInput, 'anything');
@@ -528,7 +516,7 @@ describe('JobListPanel', () => {
     });
 
     describe('Stats, Footer, and Job Selection', () => {
-        it('computes stats, shows footer counts, and selects job on click', () => {
+        it('computes stats, shows footer counts, and selects job on click', async () => {
             const onJobSelect = vi.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'J1', statusId: 0}),
@@ -537,7 +525,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 4, jobNo: 'J4', statusId: 6}),
                 createMockDispatchJob({id: 5, jobNo: 'J5', statusId: 0, assignedCourier: {id: 3, text: 'C'}}),
             ];
-            renderAndPushJobs(jobs, {onJobSelect});
+            await renderWithJobs(jobs, {onJobSelect});
 
             // Each count predicts its tab: Unassigned = needs a courier, Active = not done (transit
             // is a subset of it), Done = delivered. J5 has a courier but isn't dispatched yet.
@@ -565,10 +553,10 @@ describe('JobListPanel', () => {
         const contactId = 42;
         const key = (suffix: string) => `${storagePrefix}_${suffix}_${contactId}`;
 
-        it('restores density mode and loggedInCouriersOnly from localStorage', () => {
+        it('restores density mode and loggedInCouriersOnly from localStorage', async () => {
             localStorage.setItem(key('densityMode'), 'normal');
             localStorage.setItem(key('loggedInCouriersOnly'), 'true');
-            renderAndPushJobs([createMockDispatchJob()], {storagePrefix});
+            await renderWithJobs([createMockDispatchJob()], {storagePrefix});
 
             // Density mode restored
             expect(screen.getByRole('radio', {name: 'Normal'})).toBeChecked();
@@ -578,8 +566,8 @@ describe('JobListPanel', () => {
             expect(toggle).toBeChecked();
         });
 
-        it('persists density mode, loggedInCouriersOnly, and sort state to localStorage', () => {
-            renderAndPushJobs([createMockDispatchJob()], {storagePrefix});
+        it('persists density mode, loggedInCouriersOnly, and sort state to localStorage', async () => {
+            await renderWithJobs([createMockDispatchJob()], {storagePrefix});
 
             // Persist density mode
             fireEvent.click(screen.getByRole('radio', {name: 'Normal'}));
@@ -596,9 +584,9 @@ describe('JobListPanel', () => {
             expect(saved).toEqual({column: 'jobNo', direction: 'asc'});
         });
 
-        it('restores the category filter from localStorage, preferring it over defaultCategory', () => {
+        it('restores the category filter from localStorage, preferring it over defaultCategory', async () => {
             localStorage.setItem(key('selectedCategory'), 'delivered');
-            renderAndPushJobs(
+            await renderWithJobs(
                 [
                     createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
                     createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
@@ -610,13 +598,13 @@ describe('JobListPanel', () => {
             expect(screen.queryByText('NEW-1')).not.toBeInTheDocument();
         });
 
-        it('lets forcedCategory outrank the stored category', () => {
+        it('lets forcedCategory outrank the stored category', async () => {
             // The clear-list scope on the dispatch page has to win over whatever the
             // operator last picked -- V1 forced 'needs-dispatch' when an area was
             // clicked. `defaultCategory` deliberately loses to storage on mount, so
             // this needs its own prop.
             localStorage.setItem(key('selectedCategory'), 'delivered');
-            renderAndPushJobs(
+            await renderWithJobs(
                 [
                     createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
                     createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
@@ -628,11 +616,11 @@ describe('JobListPanel', () => {
             expect(screen.queryByText('DONE-1')).not.toBeInTheDocument();
         });
 
-        it('does not persist forcedCategory over the stored choice', () => {
+        it('does not persist forcedCategory over the stored choice', async () => {
             // Leaving the clear-list scope must restore what the operator had picked,
             // so the forced value must not be written to storage on mount.
             localStorage.setItem(key('selectedCategory'), 'delivered');
-            renderAndPushJobs(
+            await renderWithJobs(
                 [createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0})],
                 {storagePrefix, forcedCategory: 'needs-dispatch'},
             );
@@ -640,9 +628,9 @@ describe('JobListPanel', () => {
             expect(localStorage.getItem(key('selectedCategory'))).toBe('delivered');
         });
 
-        it('falls back to defaultCategory when the stored category is hidden', () => {
+        it('falls back to defaultCategory when the stored category is hidden', async () => {
             localStorage.setItem(key('selectedCategory'), 'needs-dispatch');
-            renderAndPushJobs(
+            await renderWithJobs(
                 [
                     createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
                     createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
@@ -655,9 +643,9 @@ describe('JobListPanel', () => {
             expect(screen.queryByText('DONE-1')).not.toBeInTheDocument();
         });
 
-        it('persists the category filter and ignores an unrecognised stored value', () => {
+        it('persists the category filter and ignores an unrecognised stored value', async () => {
             localStorage.setItem(key('selectedCategory'), 'not-a-category');
-            renderAndPushJobs(
+            await renderWithJobs(
                 [
                     createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
                     createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
@@ -673,17 +661,17 @@ describe('JobListPanel', () => {
             expect(localStorage.getItem(key('selectedCategory'))).toBe('needs-dispatch');
         });
 
-        it('uses different keys per storagePrefix (multi-instance isolation)', () => {
+        it('uses different keys per storagePrefix (multi-instance isolation)', async () => {
             localStorage.setItem(`panelA_loggedInCouriersOnly_${contactId}`, 'true');
             localStorage.setItem(`panelB_loggedInCouriersOnly_${contactId}`, 'false');
 
-            const {result: resultA} = renderAndPushJobs([], {storagePrefix: 'panelA'});
+            const {result: resultA} = await renderWithJobs([], {storagePrefix: 'panelA'});
             const toggleA = screen.getByRole('switch');
             expect(toggleA).toBeChecked();
 
             resultA.unmount();
 
-            renderAndPushJobs([], {storagePrefix: 'panelB'});
+            await renderWithJobs([], {storagePrefix: 'panelB'});
             const toggleB = screen.getByRole('switch');
             expect(toggleB).not.toBeChecked();
         });
@@ -700,7 +688,7 @@ describe('JobListPanel', () => {
 
         it('opens this list\'s own column editor from its "Edit columns" button', async () => {
             const user = setupUser();
-            renderAndPushJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
+            await renderWithJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
 
             expect(screen.queryByRole('button', {name: 'Done'})).not.toBeInTheDocument();
 
@@ -709,20 +697,20 @@ describe('JobListPanel', () => {
             expect(screen.getByRole('button', {name: 'Done'})).toBeInTheDocument();
         });
 
-        it('loads this list\'s saved column layout from the server on mount', () => {
-            renderAndPushJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
+        it('loads this list\'s saved column layout from the server on mount', async () => {
+            await renderWithJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
 
             expect(mockedLoadColumns).toHaveBeenCalledWith('dispatchJobList');
         });
 
-        it('hydrates hidden columns from the server-saved layout', () => {
+        it('hydrates hidden columns from the server-saved layout', async () => {
             mockedLoadColumns.mockResolvedValue({
                 columnOrder: [],
                 columnWidths: {},
                 hiddenColumns: ['jobNo'],
             });
 
-            renderAndPushJobs([createMockDispatchJob({jobNo: 'J001'})], {storagePrefix: 'dispatchJobList'});
+            await renderWithJobs([createMockDispatchJob({jobNo: 'J001'})], {storagePrefix: 'dispatchJobList'});
 
             return waitFor(() => {
                 expect(screen.queryByText('J001')).not.toBeInTheDocument();
@@ -731,7 +719,7 @@ describe('JobListPanel', () => {
 
         it('saves the current column layout to the server when Done is clicked', async () => {
             const user = setupUser();
-            renderAndPushJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
+            await renderWithJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
 
             await user.click(screen.getByRole('button', {name: 'Edit columns'}));
             await user.click(screen.getByRole('button', {name: 'Done'}));
@@ -746,7 +734,7 @@ describe('JobListPanel', () => {
 
         it('resets columns to defaults and persists the reset to the server', async () => {
             const user = setupUser();
-            renderAndPushJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
+            await renderWithJobs([createMockDispatchJob()], {storagePrefix: 'dispatchJobList'});
 
             await user.click(screen.getByRole('button', {name: 'Reset columns'}));
 
@@ -769,7 +757,7 @@ describe('JobListPanel', () => {
                 pickup: {line1: ['streetNumber', 'streetName'], line2: []},
                 delivery: {line1: ['streetNumber', 'streetName'], line2: []},
             });
-            renderAndPushJobs([createMockDispatchJob()]);
+            await renderWithJobs([createMockDispatchJob()]);
 
             await waitFor(() => {
                 expect(screen.getByText('10, Queen St')).toBeInTheDocument(); // pickup
@@ -779,7 +767,7 @@ describe('JobListPanel', () => {
 
         it('keeps the legacy NZ/US format when nothing is configured', async () => {
             mockedLoadAddressFormat.mockResolvedValue({});
-            renderAndPushJobs([createMockDispatchJob()]);
+            await renderWithJobs([createMockDispatchJob()]);
 
             await waitFor(() => {
                 expect(screen.getByText('Auckland CBD')).toBeInTheDocument(); // NZ pickup: suburb only
@@ -788,10 +776,9 @@ describe('JobListPanel', () => {
     });
 
     describe('Sorting', () => {
-        it('toggles sort direction and calls onBackendFilter', () => {
+        it('toggles sort direction and persists it', async () => {
             const storagePrefix = 'sortTest';
-            const onBackendFilter = vi.fn();
-            renderAndPushJobs([createMockDispatchJob()], {storagePrefix, onBackendFilter});
+            await renderWithJobs([createMockDispatchJob()], {storagePrefix});
 
             const header = screen.getByText('Job no');
 
@@ -799,7 +786,6 @@ describe('JobListPanel', () => {
             fireEvent.click(header);
             let saved = JSON.parse(localStorage.getItem(`${storagePrefix}_sortState_42`)!);
             expect(saved).toEqual({column: 'jobNo', direction: 'asc'});
-            expect(onBackendFilter).toHaveBeenCalledWith('jobNo', 'asc');
 
             // Second click → desc
             fireEvent.click(header);
@@ -807,13 +793,13 @@ describe('JobListPanel', () => {
             expect(saved).toEqual({column: 'jobNo', direction: 'desc'});
         });
 
-        it('sorts jobs correctly by job number column', () => {
+        it('sorts jobs correctly by job number column', async () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'C-003'}),
                 createMockDispatchJob({id: 2, jobNo: 'A-001'}),
                 createMockDispatchJob({id: 3, jobNo: 'B-002'}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             // Click Job no header to sort asc
             fireEvent.click(screen.getByText('Job no'));
@@ -822,13 +808,13 @@ describe('JobListPanel', () => {
             expect(rows.map(el => el.textContent)).toEqual(['A-001', 'B-002', 'C-003']);
         });
 
-        it('sorts jobs correctly by Ref A column', () => {
+        it('sorts jobs correctly by Ref A column', async () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'J1', refA: 'PO-300'}),
                 createMockDispatchJob({id: 2, jobNo: 'J2', refA: 'PO-100'}),
                 createMockDispatchJob({id: 3, jobNo: 'J3', refA: 'PO-200'}),
             ];
-            renderAndPushJobs(jobs, {appPage: AppPage.JobSearch});
+            await renderWithJobs(jobs, {appPage: AppPage.JobSearch});
 
             fireEvent.click(screen.getByText('Ref A'));
 
@@ -836,13 +822,13 @@ describe('JobListPanel', () => {
             expect(rows.map(el => el.textContent)).toEqual(['PO-100', 'PO-200', 'PO-300']);
         });
 
-        it('sorts network partner jobs by partner name in the courier column', () => {
+        it('sorts network partner jobs by partner name in the courier column', async () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'J1', networkPartnerName: 'Zed Cabs'}),
                 createMockDispatchJob({id: 2, jobNo: 'J2', networkPartnerName: 'Alpha Cabs'}),
                 createMockDispatchJob({id: 3, jobNo: 'J3', networkPartnerName: 'Mid Cabs'}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             fireEvent.click(screen.getByText('Courier'));
 
@@ -850,13 +836,13 @@ describe('JobListPanel', () => {
             expect(rows.map(el => el.textContent)).toEqual(['NP · Alpha Cabs', 'NP · Mid Cabs', 'NP · Zed Cabs']);
         });
 
-        it('sorts jobs correctly by delivery address column', () => {
+        it('sorts jobs correctly by delivery address column', async () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'J1', deliveryAddress: {addressLine5: 'Zebra Town'} as any}),
                 createMockDispatchJob({id: 2, jobNo: 'J2', deliveryAddress: {addressLine5: 'Alpha City'} as any}),
                 createMockDispatchJob({id: 3, jobNo: 'J3', deliveryAddress: {addressLine5: 'Middle Park'} as any}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             // Click Delivery header to sort asc
             fireEvent.click(screen.getByText('Delivery'));
@@ -865,14 +851,14 @@ describe('JobListPanel', () => {
             expect(rows.map(el => el.textContent)).toEqual(['Alpha City', 'Middle Park', 'Zebra Town']);
         });
 
-        it('sorts by minutes remaining, most overdue first, with unknowns last in both directions', () => {
+        it('sorts by minutes remaining, most overdue first, with unknowns last in both directions', async () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'R-1', remain: 20}),
                 createMockDispatchJob({id: 2, jobNo: 'R-2', remain: undefined}),
                 createMockDispatchJob({id: 3, jobNo: 'R-3', remain: -45}),
                 createMockDispatchJob({id: 4, jobNo: 'R-4', remain: 120}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
             const header = screen.getByText('Remaining');
 
             fireEvent.click(header);
@@ -885,7 +871,7 @@ describe('JobListPanel', () => {
                 .toEqual(['R-4', 'R-1', 'R-3', 'R-2']);
         });
 
-        it('sorts by priority in the same order the row indicators are shown', () => {
+        it('sorts by priority in the same order the row indicators are shown', async () => {
             // The gutter has no sort control any more; a sort saved before it was
             // removed still loads and still orders the list.
             localStorage.setItem(
@@ -898,7 +884,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 3, jobNo: 'P-3', toAirportId: 12, booked: dayjs().add(8, 'hours')}),
                 createMockDispatchJob({id: 4, jobNo: 'P-4', booked: dayjs().add(10, 'minutes')}),
             ];
-            renderAndPushJobs(jobs, {storagePrefix: 'test'});
+            await renderWithJobs(jobs, {storagePrefix: 'test'});
 
             // flight → late delivery → urgent → no marker
             expect(screen.getAllByText(/^P-\d$/).map(el => el.textContent))
@@ -907,13 +893,12 @@ describe('JobListPanel', () => {
     });
 
     describe('Optimistic Dispatch', () => {
-        it('renders assign button for unassigned jobs on dispatch page', () => {
+        it('renders assign button for unassigned jobs on dispatch page', async () => {
             const showToast = vi.fn();
-            const onRefresh = vi.fn();
             mockedAllocateJobs.mockResolvedValue(undefined);
 
             const job = createMockDispatchJob({id: 5, jobNo: 'DISP-1', statusId: 0});
-            renderAndPushJobs([job], {showToast, onRefresh, appPage: AppPage.Dispatch});
+            await renderWithJobs([job], {showToast, appPage: AppPage.Dispatch});
 
             expect(screen.getByText('Assign')).toBeInTheDocument();
             expect(screen.getByText('DISP-1')).toBeInTheDocument();
@@ -921,8 +906,8 @@ describe('JobListPanel', () => {
     });
 
     describe('Default Category', () => {
-        it('uses defaultCategory prop as initial category', () => {
-            renderAndPushJobs(
+        it('uses defaultCategory prop as initial category', async () => {
+            await renderWithJobs(
                 [createMockDispatchJob({id: 1, statusId: 6, jobNo: 'DONE-1'})],
                 {defaultCategory: 'delivered'},
             );
@@ -930,20 +915,14 @@ describe('JobListPanel', () => {
             expect(screen.getByText('DONE-1')).toBeInTheDocument();
         });
 
-        it('updates category when defaultCategory prop changes', () => {
+        it('updates category when defaultCategory prop changes', async () => {
             const jobs = [
                 createMockDispatchJob({id: 1, jobNo: 'NEW-1', statusId: 0}),
                 createMockDispatchJob({id: 2, jobNo: 'DONE-1', statusId: 6}),
             ];
 
-            let pushJobs: (j: DispatchJob[], t: number) => void = () => {};
-            const props = createDefaultProps({
-                defaultCategory: 'all',
-                setJobsCallback: (cb) => { pushJobs = cb; },
-            });
-
-            const {rerender} = renderWithMantineProviders(<JobListPanel {...props}/>);
-            act(() => pushJobs(jobs, 2));
+            const {result, props} = await renderWithJobs(jobs, {defaultCategory: 'all'});
+            const {rerender} = result;
 
             // Both visible initially
             expect(screen.getByText('NEW-1')).toBeInTheDocument();
@@ -960,7 +939,7 @@ describe('JobListPanel', () => {
     });
 
     describe('ASAP Job Late Detection', () => {
-        it('does not treat ASAP jobs (null time) as having issues when overdue', () => {
+        it('does not treat ASAP jobs (null time) as having issues when overdue', async () => {
             // ASAP jobs have no delivery time — they should never appear as "late"
             const asapJob = createMockDispatchJob({
                 id: 1,
@@ -978,14 +957,14 @@ describe('JobListPanel', () => {
                 statusId: 0, // New
             });
 
-            renderAndPushJobs([asapJob, timedJob]);
+            await renderWithJobs([asapJob, timedJob]);
 
             // ASAP job should be visible — it's not "late" and shouldn't be filtered out
             expect(screen.getByText('ASAP-001')).toBeInTheDocument();
             expect(screen.getByText('TIMED-001')).toBeInTheDocument();
         });
 
-        it('does not flag ASAP job in transit as late delivery', () => {
+        it('does not flag ASAP job in transit as late delivery', async () => {
             const asapJob = createMockDispatchJob({
                 id: 1,
                 jobNo: 'ASAP-002',
@@ -1006,7 +985,7 @@ describe('JobListPanel', () => {
                 alertLateDelivery: 0,
             });
 
-            renderAndPushJobs([asapJob, timedLateJob]);
+            await renderWithJobs([asapJob, timedLateJob]);
 
             // Both jobs should render
             expect(screen.getByText('ASAP-002')).toBeInTheDocument();
@@ -1030,18 +1009,18 @@ describe('JobListPanel', () => {
             expect(toggle).not.toBeChecked();
         });
 
-        it('is hidden outside the live dispatch list', () => {
+        it('is hidden outside the live dispatch list', async () => {
             // Job search: courier assignment is available, but the logged-in filter is not.
-            const {result} = renderAndPushJobs([], {appPage: AppPage.JobSearch});
+            const {result} = await renderWithJobs([], {appPage: AppPage.JobSearch});
             expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
             result.unmount();
 
             // Current work box on dispatch opts out explicitly.
-            const {result: currentWork} = renderAndPushJobs([], {hideLoggedInSwitch: true});
+            const {result: currentWork} = await renderWithJobs([], {hideLoggedInSwitch: true});
             expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
             currentWork.unmount();
 
-            renderAndPushJobs([], {appPage: AppPage.Domestic});
+            await renderWithJobs([], {appPage: AppPage.Domestic});
             expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
         });
 
@@ -1052,7 +1031,7 @@ describe('JobListPanel', () => {
             mockedSearchCouriers.mockClear();
             const user = setupUser();
 
-            renderAndPushJobs([createMockDispatchJob()], {
+            await renderWithJobs([createMockDispatchJob()], {
                 appPage: AppPage.JobSearch,
                 storagePrefix: 'jobSearchJobList',
             });
@@ -1131,15 +1110,13 @@ describe('JobListPanel', () => {
                 .toEqual(['2', '1', '1', '1']);
         });
 
-        it('fetches jobs via React Query, skips setJobsCallback, and registers updateSearchParams', async () => {
+        it('fetches jobs via React Query and registers updateSearchParams', async () => {
             const fetchConfig = createMockFetchConfig();
-            const setJobsCallback = vi.fn();
             let updateParamsFn: ((params: Partial<JobListSearchParams>) => void) | null = null;
 
             renderWithMantineProviders(
                 <JobListPanel {...createDefaultProps({
                     fetchConfig,
-                    setJobsCallback,
                     setUpdateSearchParamsCallback: (cb) => { updateParamsFn = cb; },
                 })} />,
             );
@@ -1151,9 +1128,6 @@ describe('JobListPanel', () => {
                 fetchConfig.initialParams,
                 expect.objectContaining({signal: expect.any(AbortSignal)}),
             );
-
-            // setJobsCallback should not be called in fetchConfig mode
-            expect(setJobsCallback).not.toHaveBeenCalled();
 
             // setUpdateSearchParamsCallback should be registered
             expect(updateParamsFn).not.toBeNull();
@@ -1197,45 +1171,9 @@ describe('JobListPanel', () => {
             });
         });
 
-        it('refreshes via hookData when refresh callback is invoked', async () => {
-            const fetchConfig = createMockFetchConfig();
-            let refreshFn: () => void = () => {};
-
-            renderWithMantineProviders(
-                <JobListPanel {...createDefaultProps({
-                    fetchConfig,
-                    setRefreshCallback: (cb) => { refreshFn = cb; },
-                })} />,
-            );
-
-            expect(await screen.findByText('FETCHED-001')).toBeInTheDocument();
-
-            (fetchConfig.fetchFn as Mock).mockClear();
-            (fetchConfig.fetchFn as Mock).mockResolvedValue({
-                jobs: [createMockDispatchJob({id: 2, jobNo: 'REFRESHED'})],
-                totalCount: 1,
-                hasMore: false,
-            } as JobSearchResult);
-
-            act(() => {
-                refreshFn();
-            });
-
-            await waitFor(() => {
-                expect(fetchConfig.fetchFn).toHaveBeenCalled();
-            });
-        });
-
         it('updates sort via hookData when column header is clicked', async () => {
             const fetchConfig = createMockFetchConfig();
-            const onBackendFilter = vi.fn();
-
-            renderWithMantineProviders(
-                <JobListPanel {...createDefaultProps({
-                    fetchConfig,
-                    onBackendFilter,
-                })} />,
-            );
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({fetchConfig})} />);
 
             expect(await screen.findByText('FETCHED-001')).toBeInTheDocument();
 
@@ -1283,7 +1221,7 @@ describe('JobListPanel', () => {
 
             expect(await screen.findByText('INITIAL')).toBeInTheDocument();
 
-            // Simulate AngularJS selecting a clear list area
+            // Simulate the host page selecting a clear list area
             act(() => {
                 updateParamsFn({selectedClearListId: 42});
             });
@@ -1300,7 +1238,7 @@ describe('JobListPanel', () => {
                 expect.objectContaining({selectedClearListId: 42}),
             );
 
-            // Simulate AngularJS clearing the filter (the bug fix: passing undefined)
+            // Simulate the host page clearing the filter (the bug fix: passing undefined)
             act(() => {
                 updateParamsFn({selectedClearListId: undefined});
             });
@@ -1381,18 +1319,8 @@ describe('JobListPanel', () => {
             expect(onJobsLoaded).not.toHaveBeenCalled();
         });
 
-        it('does not call onJobsLoaded in pushed-data mode', () => {
-            const onJobsLoaded = vi.fn();
-            renderAndPushJobs(
-                [createMockDispatchJob({id: 1, jobNo: 'PUSHED-001'})],
-                {onJobsLoaded},
-            );
-
-            expect(onJobsLoaded).not.toHaveBeenCalled();
-        });
-
-        it('does not show loading indicator in pushed-data mode', () => {
-            renderAndPushJobs([createMockDispatchJob()]);
+        it('does not show loading indicator in pushed-data mode', async () => {
+            await renderWithJobs([createMockDispatchJob()]);
 
             expect(screen.queryByRole('progressbar', {name: 'Loading jobs'})).not.toBeInTheDocument();
         });
@@ -1478,44 +1406,44 @@ describe('JobListPanel', () => {
             mockedUpdateJobReadStatus.mockClear();
         });
 
-        it('calls updateJobReadStatus when clicking an unread job', () => {
+        it('calls updateJobReadStatus when clicking an unread job', async () => {
             const jobs = [
                 createMockDispatchJob({id: 10, jobNo: 'UNREAD1', hasBeenRead: false}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             fireEvent.click(screen.getByText('UNREAD1'));
 
             expect(mockedUpdateJobReadStatus).toHaveBeenCalledWith(10, true);
         });
 
-        it('sends the linked job id for a bulk row, whose own id is a BulkJobId', () => {
+        it('sends the linked job id for a bulk row, whose own id is a BulkJobId', async () => {
             const jobs = [
                 createMockDispatchJob({id: 900, linkedJobId: 55, isBulkJob: true, jobNo: 'BULK1', hasBeenRead: false}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             fireEvent.click(screen.getByText('BULK1'));
 
             expect(mockedUpdateJobReadStatus).toHaveBeenCalledWith(55, true);
         });
 
-        it('does not call updateJobReadStatus for an archived job (no tucJob row to track)', () => {
+        it('does not call updateJobReadStatus for an archived job (no tucJob row to track)', async () => {
             const jobs = [
                 createMockDispatchJob({id: 40, jobNo: 'ARCH1', hasBeenRead: false, isArchived: true}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             fireEvent.click(screen.getByText('ARCH1'));
 
             expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
         });
 
-        it('does not call updateJobReadStatus when clicking an already-read job', () => {
+        it('does not call updateJobReadStatus when clicking an already-read job', async () => {
             const jobs = [
                 createMockDispatchJob({id: 20, jobNo: 'READ1', hasBeenRead: true}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             fireEvent.click(screen.getByText('READ1'));
 
@@ -1527,7 +1455,7 @@ describe('JobListPanel', () => {
             const jobs = [
                 createMockDispatchJob({id: 30, jobNo: 'UNREAD2', hasBeenRead: false}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             await user.keyboard('{Control>}');
             await user.click(screen.getByText('UNREAD2'));
@@ -1548,7 +1476,7 @@ describe('JobListPanel', () => {
         /** Selects two jobs and opens the bulk dispatch dialog from the toolbar. */
         async function selectTwoAndOpenDispatch() {
             const user = setupUser();
-            renderAndPushJobs([
+            await renderWithJobs([
                 createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
                 createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
             ]);
@@ -1583,7 +1511,7 @@ describe('JobListPanel', () => {
                     {jobId: 2, succeeded: false, failureReason: 'Job not found', emailStatus: null},
                 ],
             });
-            const {props} = renderAndPushJobs([
+            const {props} = await renderWithJobs([
                 createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
                 createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
             ]);
@@ -1613,7 +1541,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
                 createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             // Plain click first job (no modifier)
             await user.click(screen.getByText('JOB-A'));
@@ -1634,7 +1562,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
                 createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             // Plain click JOB-A
             await user.click(screen.getByText('JOB-A'));
@@ -1656,7 +1584,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
                 createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             // Ctrl+click two jobs directly (no prior plain click)
             await user.keyboard('{Control>}');
@@ -1681,7 +1609,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 1, jobNo: 'JOB-LIVE', isArchived: false}),
                 createMockDispatchJob({id: 2, jobNo: 'JOB-ARCH', isArchived: true, done: true}),
             ];
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             await user.keyboard('{Control>}');
             await user.click(screen.getByText('JOB-LIVE'));
@@ -1704,7 +1632,7 @@ describe('JobListPanel', () => {
                 createMockDispatchJob({id: 1, jobNo: 'JOB-ARCH-1', isArchived: true, done: true}),
                 createMockDispatchJob({id: 2, jobNo: 'JOB-ARCH-2', isArchived: true, done: true}),
             ];
-            const {props} = renderAndPushJobs(jobs);
+            const {props} = await renderWithJobs(jobs);
 
             await user.keyboard('{Control>}');
             await user.click(screen.getByText('JOB-ARCH-1'));
@@ -1729,7 +1657,7 @@ describe('JobListPanel', () => {
                 {jobId: 1, podName: 'J. Smith', capturedImageCount: 2, imageCountKnown: true},
                 {jobId: 2, podName: 'A. Jones', capturedImageCount: 1, imageCountKnown: true},
             ]);
-            renderAndPushJobs(jobs);
+            await renderWithJobs(jobs);
 
             await user.keyboard('{Control>}');
             await user.click(screen.getByText('JOB-A'));
@@ -1753,7 +1681,7 @@ describe('JobListPanel', () => {
 
         it('restores straight through when the selection holds no POD', async () => {
             const user = setupUser();
-            renderAndPushJobs([createMockDispatchJob({id: 1, jobNo: 'JOB-A', isArchived: false})]);
+            await renderWithJobs([createMockDispatchJob({id: 1, jobNo: 'JOB-A', isArchived: false})]);
 
             await user.keyboard('{Control>}');
             await user.click(screen.getByText('JOB-A'));
@@ -1769,7 +1697,7 @@ describe('JobListPanel', () => {
         it('falls back to the completed-only rule when the POD pre-check fails', async () => {
             const user = setupUser();
             mockedGetRestorePodImpact.mockRejectedValue(new Error('offline'));
-            renderAndPushJobs([createMockDispatchJob({id: 1, jobNo: 'JOB-A', isArchived: false})]);
+            await renderWithJobs([createMockDispatchJob({id: 1, jobNo: 'JOB-A', isArchived: false})]);
 
             await user.keyboard('{Control>}');
             await user.click(screen.getByText('JOB-A'));

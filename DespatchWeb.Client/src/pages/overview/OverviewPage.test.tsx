@@ -98,7 +98,6 @@ function renderOverviewPage(overrides: Partial<React.ComponentProps<typeof Overv
         },
         isUsCustomer: false,
         onOpenJobDetail: vi.fn(),
-        setRefreshCallback: vi.fn(),
         ...overrides,
     };
 
@@ -202,15 +201,6 @@ describe('OverviewPage', () => {
             renderOverviewPage();
 
             expect(screen.getByRole('button', {name: 'Expand overview'})).toBeInTheDocument();
-        });
-    });
-
-    describe('setRefreshCallback', () => {
-        it('registers refresh callback', () => {
-            const setRefreshCallback = vi.fn();
-            renderOverviewPage({setRefreshCallback});
-
-            expect(setRefreshCallback).toHaveBeenCalledWith(expect.any(Function));
         });
     });
 

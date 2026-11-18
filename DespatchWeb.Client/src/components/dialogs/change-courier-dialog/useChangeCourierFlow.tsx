@@ -72,7 +72,12 @@ export function useChangeCourierFlow({showToast, onChanged}: ChangeCourierFlowOp
                 onSave={async (courierId) => {
                     if (!target) return;
                     await changeArchivedJobCourier(target.jobId, courierId);
-                    await onChanged?.(target.jobId);
+                    // The change has landed; a failed refresh must not be reported as a failed change.
+                    try {
+                        await onChanged?.(target.jobId);
+                    } catch (error) {
+                        console.error('Refreshing after the courier change failed:', error);
+                    }
                 }}
                 showToast={showToast}
                 searchCouriers={(s) => autocompleteSearch(s, '/courier/AllActiveSearch')}

@@ -101,6 +101,35 @@ describe('createDialogHost', () => {
         expect(resolved).toEqual(['one']);
     });
 
+    it('remounts the dialog on each open so state from the last session does not carry over', async () => {
+        const Stateful: React.FC = () => {
+            const [typed, setTyped] = React.useState('');
+            return <input data-testid="field" value={typed} onChange={e => setTyped(e.currentTarget.value)}/>;
+        };
+        const statefulHost = createDialogHost<Payload, string>({
+            containerId: 'react-stateful-dialog-root',
+            // Real dialogs keep rendering while closed so their exit transition runs.
+            render: () => <Stateful/>,
+        });
+        statefulHost.open({label: 'First'});
+        await act(async () => {});
+        const field = () => document.querySelector<HTMLInputElement>('[data-testid="field"]')!;
+        await act(async () => {
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+            setter.call(field(), 'customer-a@example.com');
+            field().dispatchEvent(new Event('input', {bubbles: true}));
+        });
+        expect(field().value).toBe('customer-a@example.com');
+
+        await act(async () => statefulHost.close('done'));
+        await act(async () => {
+            statefulHost.open({label: 'Second'});
+        });
+
+        expect(field().value).toBe('');
+        act(() => statefulHost.destroy());
+    });
+
     it('sends toasts to the service supplied at open time', async () => {
         const showToast = vi.fn();
         await act(async () => {

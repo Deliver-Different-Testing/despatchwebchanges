@@ -12,7 +12,6 @@ import {
     useCreateNote,
     useCreateBulkJobNote,
     useUpdateNote,
-    useUpdateBulkJobNote,
     useDeleteNote,
     useCreateNoteType,
     useNoteHistory,
@@ -267,30 +266,6 @@ describe('useUpdateNote', () => {
         });
 
         expect(mockNotesApi.updateNote).toHaveBeenCalled();
-    });
-});
-
-describe('useUpdateBulkJobNote', () => {
-    it('should update a bulk job note successfully', async () => {
-        mockNotesApi.updateBulkJobNote.mockResolvedValueOnce(undefined);
-
-        const {result} = renderHook(() => useUpdateBulkJobNote(), {wrapper: createQueryWrapper()});
-
-        await act(async () => {
-            result.current.mutate({
-                noteId: 1,
-                noteTypeId: 1,
-                noteText: 'Updated bulk note',
-                isImportant: false,
-                bulkJobId: 200,
-            });
-        });
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true);
-        });
-
-        expect(mockNotesApi.updateBulkJobNote).toHaveBeenCalled();
     });
 });
 

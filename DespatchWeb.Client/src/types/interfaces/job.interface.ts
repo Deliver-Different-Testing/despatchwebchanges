@@ -1,10 +1,8 @@
 import {JobStatus} from "../enums/job-status.enum";
-import {LateEventType} from "../enums/late-event-type.enum";
 import {DaysOfWeek} from "../enums/days-of-week.enum";
 import {Frequency} from "../enums/frequency.enum";
 import {HolidayDeliveryOptions} from "../enums/holiday-delivery-options.enum";
 import {IFlightSegment, IFlightSegmentDto} from "./nationwideFlight.interfaces";
-import {AirportViewModel} from "..";
 import {Dayjs} from "dayjs";
 
 export interface IJobGroupDto {
@@ -18,7 +16,6 @@ export interface IJobGroup {
 }
 
 export interface IJob {
-    angularId: string;
     id: number;
     rootParentId?: number;
     parentId?: number;
@@ -246,7 +243,6 @@ export interface IJob {
 }
 
 export interface IJobDto {
-    angularId: string;
     id: number;
     rootParentId?: number;
     hasBeenRead: boolean;
@@ -445,14 +441,6 @@ export interface IJobDto {
     isAgentAssigned: boolean;
 }
 
-export interface UpdateBulkJobPackagesRequest extends UpdateJobPackagesBase {
-    bulkJobId: number;
-}
-
-export interface UpdateJobPackagesRequest extends UpdateJobPackagesBase {
-    jobId: number;
-}
-
 interface UpdateJobPackagesBase {
     parcels: IParcelDimensions[];
 }
@@ -525,46 +513,14 @@ export interface IAddressViewModel {
     our_suburb?: string;
 }
 
-export interface IEditAddressDialogViewModel extends IAddressViewModel {
-    stateAbbreviation?: string;
-    shipmentDetails?: IShipmentDetails;
-}
-
-export interface IShipmentDetails {
-    contactName?: string;
-    contactMobile?: string;
-    weight?: number;
-    depth?: number;
-    length?: number;
-    height?: number;
-    quantity?: number;
-    jobNotes?: string;
-}
-
 export interface ISuggestion {
     id: number;
     text: string;
     selected?: boolean;
 }
 
-export interface IMultiSuggestion extends ISuggestion {
-    selected: boolean;
-}
-
 export interface IAiCourierSuggestion extends ISuggestion {
     isAiSuggestion: boolean;
-}
-
-export interface IAirlineSuggestion extends ISuggestion {
-    fullAirlineName: string;
-}
-
-export interface IAirportSuggestion extends ISuggestion {
-    timezone: string;
-}
-
-export interface ITimeZoneSuggestion extends ISuggestion {
-    timeZoneIana: string;
 }
 
 export interface IClearListViewModel {
@@ -649,35 +605,6 @@ export interface IAgent {
     agentEmail?: string;
 }
 
-export interface IAgentInfoDialog extends IAgent {
-    airports?: AirportViewModel[];
-    address?: IAddressViewModel;
-}
-
-export interface IJobQueryParams {
-    order?: string;
-    orderDirection?: string;
-    startDate?: Dayjs;
-    endDate?: Dayjs;
-    page?: number;
-    pageSize?: number;
-    searchText?: string;
-    useTime?: boolean;
-    statusFilter?: string; // 'needs-dispatch', 'all', 'active', etc.
-}
-
-export interface IJobQueryParamsDto {
-    order?: string;
-    orderDirection?: string;
-    startDate?: string;
-    endDate?: string;
-    page?: number;
-    pageSize?: number;
-    searchText?: string;
-    useTime?: boolean;
-    statusFilter?: string; // 'needs-dispatch', 'all', 'active', etc.
-}
-
 export interface PriceBreakdown {
     chargeId: number;
     name: string;
@@ -689,97 +616,13 @@ export interface PriceBreakdown {
     isArchived?: boolean;
 }
 
-export interface ClientItemsViewModel {
-    itemId: number;
-    clientId: number;
-    name: string;
-    description: string;
-    perItem: boolean;
-    rate: number;
-    onlyVan: boolean;
-    selected: boolean;
-}
-
-export interface JobCreateViewModelDto {
-    clientId: number;
-    deliverToContact: string;
-    podName: string;
-    pickUpAddress: IAddressViewModel;
-    deliveryAddress: IAddressViewModel;
-    date: string;
-    fromContactName: string;
-    refA: string;
-    refB: string;
-    deliveryNotes: string;
-    pickupNotes: string;
-    jobNotes: string;
-    van: boolean;
-    truck: boolean;
-    pedal: boolean;
-    attention: boolean;
-    vanOk: boolean;
-    reprice: boolean;
-    void: boolean;
-    done: boolean;
-    charge: number;
-    fromLat: number;
-    fromLong: number;
-    toLat: number;
-    toLong: number;
-    speedId: number;
-    vehicleId: number;
-}
-
 export interface InternalStatus extends ISuggestion {
     defaultSchedule: string;
     defaultMins: number | null;
 }
 
-export interface IJobNote {
-    noteId?: number;
-    noteTypeId: number;
-    noteTypeName?: string;
-    jobId?: number;
-    bulkJobId?: number;
-    jobNumber?: string;
-    jobBookingId?: number;
-    noteText: string;
-    isImportant: boolean;
-    createdDate?: Dayjs;
-    createdBy?: number;
-    createdByName?: string;
-    updatedDate?: Dayjs;
-    updatedBy?: number;
-    updatedByName?: string;
-    noteTextSummary?: string;
-    
-    // Private 
-    _createdDateStr?: string;
-    _updatedDateStr?: string;
-}
-
-export interface IJobNoteDto {
-    noteId?: number;
-    noteTypeId: number;
-    noteTypeName?: string;
-    jobId?: number;
-    bulkJobId?: number;
-    jobNumber?: string;
-    jobBookingId?: number;
-    noteText: string;
-    isImportant: boolean;
-    createdDate?: string;
-    createdBy?: number;
-    createdByName?: string;
-    updatedDate?: string;
-    updatedBy?: number;
-    updatedByName?: string;
-    noteTextSummary?: string;
-}
-
 export interface IDispatchJob {
     // Core identifiers
-    angularId: string;
     selected?: boolean;
     showCourierSearch: boolean;
     id: number;
@@ -912,7 +755,6 @@ export interface IDispatchJob {
 
 export interface IDispatchJobDto {
     // Core identifiers
-    angularId: string;
     selected?: boolean;
     showCourierSearch: boolean;
     id: number;
@@ -1025,13 +867,6 @@ export interface IDispatchJobDto {
     children?: IDispatchJobDto[];
 }
 
-export interface ILateCallRequest {
-    jobId: number;
-    lateType: LateEventType;
-    lateTime: number;
-    calculationRequired: boolean;
-}
-
 export interface IReadTrackerInfoDto {
     hasBeenRead: boolean;
     readBy: string;
@@ -1062,14 +897,6 @@ interface VoidJobRequestBase {
     voidReason?: string;
 }
 
-export interface IBulkUpdateRequest {
-    jobIds: number[];
-}
-
-export interface IBulkReadUpdateRequest extends IBulkUpdateRequest {
-    shouldMarkAsRead: boolean;
-}
-
 export interface IJobSearchResultDto {
     jobs: IDispatchJobDto[];
     totalCount: number;
@@ -1090,13 +917,6 @@ export interface IJobListStatusCounts {
     done: number;
 }
 
-export interface IJobSearchResult {
-    jobs: IDispatchJob[];
-    totalCount: number;
-    hasMore: boolean;
-    mapItems?: IDispatchMapItem[];
-}
-
 export interface IDispatchMapItem {
     jobId: number;
     jobNo: string;
@@ -1106,9 +926,3 @@ export interface IDispatchMapItem {
     statusId?: number; // Job status: 0 = New/Undispatched, 1 = Dispatched, etc.
 }
 
-export interface ISimpleRepriceJobModel {
-    jobId: number;
-    isPrebook: boolean;
-    isBulk: boolean;
-    newPrice: number
-}

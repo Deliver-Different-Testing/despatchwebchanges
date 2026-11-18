@@ -64,10 +64,6 @@ export function getStateByAbbreviation(abbr: string): StateInfo | undefined {
     return US_STATES.find(s => s.abbreviation === abbr);
 }
 
-export function getStateNameByAbbreviation(abbr: string): string {
-    return getStateByAbbreviation(abbr)?.name || abbr;
-}
-
 export function getStateByName(name: string): StateInfo | undefined {
     return US_STATES.find(s => s.name.toLowerCase() === name.toLowerCase());
 }

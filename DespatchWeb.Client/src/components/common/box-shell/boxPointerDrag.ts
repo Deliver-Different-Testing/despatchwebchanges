@@ -101,7 +101,8 @@ const buildGhost = (card: HTMLElement) => {
     ghost.className = classes.ghost;
     ghost.setAttribute('data-box-drag-ghost', '');
     ghost.setAttribute('aria-hidden', 'true');
-    if (isLiquidGlassSupported()) ghost.setAttribute('data-glass', '');
+    // High contrast turns glass off app-wide (DfrntMantineProvider); the ghost lives outside React, so read its flag.
+    if (isLiquidGlassSupported() && document.documentElement.dataset.ddContrast !== 'high') ghost.setAttribute('data-glass', '');
     ghost.style.width = `${width}px`;
     ghost.style.height = `${height}px`;
 

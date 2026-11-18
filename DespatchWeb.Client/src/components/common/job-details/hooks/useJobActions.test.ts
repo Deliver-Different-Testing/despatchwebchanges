@@ -2073,7 +2073,7 @@ describe('useJobActions — POD & document actions on bulk (scheduled) jobs', ()
 
         expect(getPodReportUrl).toHaveBeenCalledWith(987654);
         expect(getPodSpreadsheetUrl).toHaveBeenCalledWith(987654);
-        expect(uploadOpen).toHaveBeenCalledWith(987654, 'POD');
+        expect(uploadOpen).toHaveBeenCalledWith(987654, 'POD', null);
         expect(getOverlayDocumentUrl).toHaveBeenCalledWith(987654, 'Invoice');
         expect(getJobOverlayDocuments).toHaveBeenCalledWith(987654);
         expect(sendPodOpen).toHaveBeenCalledWith(expect.objectContaining({jobId: 987654}));
@@ -2091,7 +2091,7 @@ describe('useJobActions — POD & document actions on bulk (scheduled) jobs', ()
         });
 
         expect(getPodReportUrl).toHaveBeenCalledWith(1001);
-        expect(uploadOpen).toHaveBeenCalledWith(1001, 'POD');
+        expect(uploadOpen).toHaveBeenCalledWith(1001, 'POD', null);
         expect(getJobOverlayDocuments).toHaveBeenCalledWith(1001);
     });
 });

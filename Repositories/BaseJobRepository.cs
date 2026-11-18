@@ -851,50 +851,6 @@ public partial class BaseJobRepository(
         return new PagedJobIds(cappedIds, totalCount, capped);
     }
 
-    protected async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
-        CancellationToken cancellationToken = default)
-    {
-        const int maxMapCoordinates = 5000;
-
-        try
-        {
-            var isUsCustomer = infoService.IsUsTenant();
-            var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsCustomer);
-
-            var jobCoordinates = await (
-                    from job in Context.TucJobs
-                    join id in jobIdsQuery on job.UcjbId equals id
-                    where job.UcjbStatus != (int)JobStatus.AwaitingPod
-                    select new JobCoordinateModel
-                    {
-                        Id = job.UcjbId,
-                        JobNo = job.UcjbNumber,
-                        PickupLatitude = job.PickUpLatitude,
-                        PickupLongitude = job.PickUpLongitude,
-                        DeliveryLatitude = job.DeliveryLatitude,
-                        DeliveryLongitude = job.DeliveryLongitude,
-                        StatusId = job.UcjbStatus,
-                        StatusName = job.UcjbStatusNavigation.UcjsName,
-                        ClientId = job.UcjbClientId ?? 0,
-                        ClientName = job.UcjbClient.UcclName,
-                        Speed = job.UcjbSpeedNavigation.ShortName,
-                        FromAddress = job.UcjbFromAddr,
-                        ToAddress = job.UcjbToAddr
-                    })
-                .Take(maxMapCoordinates)
-                .ToListAsync(cancellationToken);
-
-            return jobCoordinates;
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
-                    nameof(GetJobCoordinatesAsync)));
-            throw;
-        }
-    }
-
     protected async Task SaveMultipleBulkNotesAsync(IReadOnlyList<int> bulkJobIds, string noteText,
         bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)

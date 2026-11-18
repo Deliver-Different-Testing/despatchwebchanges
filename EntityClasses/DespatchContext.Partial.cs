@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
+using DespatchWeb.Interceptors;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -21,8 +22,7 @@ public partial class DespatchContext
     public bool CurrentBypassFilters =>
         CurrentScope.BypassFilters
         || CurrentScope.IsDfAdmin
-        || CurrentScope.IsTenant
-        || CurrentScope.IsInternal;
+        || ((CurrentScope.IsTenant || CurrentScope.IsInternal) && !CurrentScope.IsBranchScoped);
 
     public int? CurrentNpAgentId => CurrentScope.NpAgentId;
     public bool CurrentIsNetworkPartner => CurrentScope.IsNetworkPartner;
@@ -149,9 +149,7 @@ public partial class DespatchContext
                     Code = c.Code,
                     Name = c.UccrName + " " + c.UccrSurname,
                     DangerousGoods = c.UccrDangerousGoods == 1,
-                    DgLicenseExpiry = c.DglicenseExpiry,
-                    VehicleType = c.UccrVehicle,
-                    JobCount = 0
+                    DgLicenseExpiry = c.DglicenseExpiry
                 }));
 
     private static readonly Func<DespatchContext, NoteType, Task<bool>> ConfirmNoteTypeExistsCompiled =
@@ -223,10 +221,14 @@ public partial class DespatchContext
 
     private static readonly Func<DespatchContext, string, Task<bool>> JobNumberExistsAsyncCompiled =
         EF.CompileAsyncQuery((DespatchContext context, string jobNumber) =>
-            context.TucJobs.Any(j => j.UcjbNumber == jobNumber));
+            // Job numbers are unique across the whole tenant, so this ignores the scope filters: a branch-limited user must
+            // not be handed a number that a job outside their branches already holds.
+            context.TucJobs.IgnoreQueryFilters().Any(j => j.UcjbNumber == jobNumber));
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
+        optionsBuilder.AddInterceptors(BranchJobContextInterceptor.Instance);
+
 #if DEBUG
         if (Debugger.IsAttached)
         {
@@ -313,6 +315,10 @@ public partial class DespatchContext
             entity.Property(e => e.MapCenterLongitude).HasColumnType("decimal(9, 6)");
         });
 
+        ConfigureBranches(modelBuilder);
+        ConfigureBranchFamilies(modelBuilder);
+        ConfigureBranchOnlyFilters(modelBuilder);
+
         modelBuilder.Entity<TucJobBooking>(entity =>
         {
             entity.HasOne(d => d.Route)
@@ -320,10 +326,11 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.RouteId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasQueryFilter(j =>
-                CurrentBypassFilters
-                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
-                || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcbkClientId == CurrentClientId));
+            entity.HasQueryFilter(OrBranch<TucJobBooking>(
+                j => CurrentBypassFilters
+                    || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
+                    || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcbkClientId == CurrentClientId),
+                Expanded(JobBookingBranchArm())));
         });
 
         modelBuilder.Entity<TblJob>(entity =>
@@ -391,10 +398,11 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.NpAgentId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasQueryFilter(j =>
-                CurrentBypassFilters
-                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
-                || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId));
+            entity.HasQueryFilter(OrBranch<TucJob>(
+                j => CurrentBypassFilters
+                    || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
+                    || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId),
+                Expanded(JobBranchArm())));
         });
 
         modelBuilder.Entity<TblBulkJob>(entity =>
@@ -410,10 +418,11 @@ public partial class DespatchContext
                 .HasPrincipalKey(cc => cc.UcctId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasQueryFilter(j =>
-                CurrentBypassFilters
-                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
-                || (CurrentIsCustomerScoped && CurrentClientId != null && j.ClientId == CurrentClientId));
+            entity.HasQueryFilter(OrBranch<TblBulkJob>(
+                j => CurrentBypassFilters
+                    || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
+                    || (CurrentIsCustomerScoped && CurrentClientId != null && j.ClientId == CurrentClientId),
+                Expanded(BulkJobBranchArm())));
         });
 
         modelBuilder.Entity<TblBulkRunSchedule>(entity =>
@@ -432,6 +441,7 @@ public partial class DespatchContext
                 .HasDefaultValueSql("(getdate())", "DF_tucEvent_ucevDueTime");
 
             modelBuilder.Entity<TblBulkRunSchedule>().ToTable("tblBulkRunSchedule");
+
         }
 
         modelBuilder.Entity<TucJobArchive>(entity =>
@@ -577,19 +587,35 @@ public partial class DespatchContext
                 .HasForeignKey(d => d.UcjbDispId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasQueryFilter(j =>
-                CurrentBypassFilters
-                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
-                || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId));
+            entity.HasQueryFilter(OrBranch<TucJobArchive>(
+                j => CurrentBypassFilters
+                    || (CurrentIsNetworkPartner && CurrentNpAgentId != null && j.NpAgentId == CurrentNpAgentId)
+                    || (CurrentIsCustomerScoped && CurrentClientId != null && j.UcjbClientId == CurrentClientId),
+                Expanded(JobArchiveBranchArm())));
         });
 
-        modelBuilder.Entity<TucCourier>().HasQueryFilter(c =>
-            CurrentBypassFilters
-            || (CurrentIsNetworkPartner && CurrentNpAgentId != null && c.NpAgentId == CurrentNpAgentId));
+        // Client and courier lists for a branch-limited user. Both are named so a query rooted at a job can drop them
+        // (BranchJobContextInterceptor): a visible job shows its client and the couriers on its legs even when they belong
+        // to another branch. Queries rooted at clients or couriers (pickers, dropdowns) keep both.
+        modelBuilder.Entity<TucClient>().HasQueryFilter(BranchClientsFilter, Expanded<TucClient>(c =>
+            !CurrentIsBranchScoped || ClientVisibleToBranch(c)));
 
+        modelBuilder.Entity<TucCourier>()
+            .HasQueryFilter(ScopeFilter, c =>
+                CurrentBypassFilters
+                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && c.NpAgentId == CurrentNpAgentId)
+                || CurrentIsBranchScoped)
+            .HasQueryFilter(BranchCouriersFilter, Expanded<TucCourier>(c =>
+                !CurrentIsBranchScoped || CourierVisibleToBranch(c)));
+
+        // Notes follow their job (or prebook). A note on neither is not branch data.
         modelBuilder.Entity<TucNote>().HasQueryFilter(n =>
             CurrentBypassFilters
-            || (CurrentIsNetworkPartner && CurrentNpAgentId != null && n.NpAgentId == CurrentNpAgentId));
+            || (CurrentIsNetworkPartner && CurrentNpAgentId != null && n.NpAgentId == CurrentNpAgentId)
+            || (CurrentIsBranchScoped
+                && (n.JobId != null
+                    ? Set<TucJob>().Any(j => j.UcjbId == n.JobId)
+                    : n.JobBookingId == null || Set<TucJobBooking>().Any(b => b.UcbkId == n.JobBookingId))));
 
         modelBuilder.Entity<TucNoteArchive>(entity =>
         {
@@ -610,7 +636,11 @@ public partial class DespatchContext
 
             entity.HasQueryFilter(n =>
                 CurrentBypassFilters
-                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && n.NpAgentId == CurrentNpAgentId));
+                || (CurrentIsNetworkPartner && CurrentNpAgentId != null && n.NpAgentId == CurrentNpAgentId)
+                || (CurrentIsBranchScoped
+                    && (n.JobId != null
+                        ? Set<TucJobArchive>().Any(j => j.UcjbId == n.JobId)
+                        : n.JobBookingId == null || Set<TucJobBooking>().Any(b => b.UcbkId == n.JobBookingId))));
         });
 
         modelBuilder.Entity<JobDeliveryJourneyArchive>(entity =>

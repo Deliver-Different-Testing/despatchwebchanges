@@ -186,6 +186,13 @@ describe('JobFileUploadDialog — POD-only mode', () => {
         expect(mockGetJobDeliveryPhotos.mock.calls[0][0]).toBe(1);
     });
 
+    it('fetches delivery photos for the completion month of an older job', async () => {
+        renderDialog({initialUploadType: 'pod', completedTime: '2025-03-14T10:00:00'});
+
+        await waitFor(() => expect(mockGetJobDeliveryPhotos).toHaveBeenCalled());
+        expect(mockGetJobDeliveryPhotos.mock.calls[0].slice(0, 3)).toEqual([1, 2025, 3]);
+    });
+
     it('merges delivery photos that are not already in the attached list', async () => {
         mockGetJobDeliveryPhotos.mockResolvedValue([{
             fileName: 'pod-extra.jpg',

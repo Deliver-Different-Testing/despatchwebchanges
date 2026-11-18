@@ -26,7 +26,7 @@ describe('flightSearchGuard', () => {
     const airports = {outbound: {id: 1}, inbound: {id: 2}};
 
     it('asks for a job when none is selected', () => {
-        expect(flightSearchGuard({job: undefined, airports, loading: false})).toEqual({
+        expect(flightSearchGuard({job: undefined, airports})).toEqual({
             action: 'block',
             clearFlights: true,
             message: 'Select a job to view flight options',
@@ -36,12 +36,8 @@ describe('flightSearchGuard', () => {
     it('does nothing when the job already has a flight', () => {
         // V1 returned early without clearing or messaging: the assigned-flight
         // message comes from the UI-state derivation instead.
-        expect(flightSearchGuard({job: {assignedFlight: {}}, airports, loading: false}))
+        expect(flightSearchGuard({job: {assignedFlight: {}}, airports}))
             .toEqual({action: 'skip'});
-    });
-
-    it('does nothing while a search is already in flight', () => {
-        expect(flightSearchGuard({job: {}, airports, loading: true})).toEqual({action: 'skip'});
     });
 
     it('asks for both airports when either is missing', () => {
@@ -51,21 +47,21 @@ describe('flightSearchGuard', () => {
             message: 'Select outbound and inbound airports to search for flights',
         };
 
-        expect(flightSearchGuard({job: {}, airports: {outbound: {id: 1}}, loading: false}))
+        expect(flightSearchGuard({job: {}, airports: {outbound: {id: 1}}}))
             .toEqual(expected);
-        expect(flightSearchGuard({job: {}, airports: {inbound: {id: 2}}, loading: false}))
+        expect(flightSearchGuard({job: {}, airports: {inbound: {id: 2}}}))
             .toEqual(expected);
-        expect(flightSearchGuard({job: {}, airports: {}, loading: false})).toEqual(expected);
+        expect(flightSearchGuard({job: {}, airports: {}})).toEqual(expected);
     });
 
-    it('proceeds when a job, both airports and no in-flight search line up', () => {
-        expect(flightSearchGuard({job: {}, airports, loading: false})).toEqual({action: 'search'});
+    it('proceeds when a job and both airports line up', () => {
+        expect(flightSearchGuard({job: {}, airports})).toEqual({action: 'search'});
     });
 
     it('checks the assigned flight before the airports', () => {
         // An assigned flight wins even with no airports picked, so the operator
         // is not told to choose airports for a job that is already flown.
-        expect(flightSearchGuard({job: {assignedFlight: {}}, airports: {}, loading: false}))
+        expect(flightSearchGuard({job: {assignedFlight: {}}, airports: {}}))
             .toEqual({action: 'skip'});
     });
 });

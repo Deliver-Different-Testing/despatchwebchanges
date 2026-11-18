@@ -84,14 +84,3 @@ export function formatUpdatedAgo(updatedAt: number, now: number): string {
     const hours = Math.floor(minutes / 60);
     return `Updated ${hours}h ago`;
 }
-
-/** Compact label for the toolbar button (e.g. "Auto-refresh", "Auto: 30s", "Auto: 1m"). */
-export function formatRefreshButtonLabel(refetchIntervalMs: number | false): string {
-    if (!refetchIntervalMs) return 'Auto-refresh';
-    const seconds = Math.round(refetchIntervalMs / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    if (minutes === 0) return `Auto: ${seconds}s`;
-    if (remainingSeconds === 0) return `Auto: ${minutes}m`;
-    return `Auto: ${minutes}m ${remainingSeconds}s`;
-}

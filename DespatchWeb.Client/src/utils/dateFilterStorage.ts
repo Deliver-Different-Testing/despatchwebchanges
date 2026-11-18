@@ -54,6 +54,7 @@ export function loadDateFilterFrom(
         const parsed = JSON.parse(raw) as {startDate: string; endDate: string; useTime?: boolean};
         const startDate = dayjs(parsed.startDate);
         let endDate = dayjs(parsed.endDate);
+        if (!startDate.isValid() || !endDate.isValid()) return defaults();
 
         if (startDate.valueOf() === 0) {
             const now = options.timeZone ? dayjs().tz(options.timeZone) : dayjs();

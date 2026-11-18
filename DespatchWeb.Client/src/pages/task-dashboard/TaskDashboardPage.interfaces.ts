@@ -42,14 +42,7 @@ export interface ExtendedTask extends Task {
     dueTimeStr?: string;
 }
 
-export interface MountTaskDashboardConfig {
-    /** Ignored: the module supplies toasts from the Mantine toastService. */
-    showToast?: ShowToastFn;
-    isUsCustomer: boolean;
-}
-
 export interface TaskDashboardPageProps {
     showToast: ShowToastFn;
     isUsCustomer: boolean;
-    setRefreshCallback?: (callback: () => void) => void;
 }

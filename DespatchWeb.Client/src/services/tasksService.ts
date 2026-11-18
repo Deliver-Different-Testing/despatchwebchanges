@@ -117,7 +117,7 @@ function getPageFilterNames(appPage: AppPage): PageFilterNames {
         },
         [AppPage.DriverManagement]: {
             staff: `selectedSupportType-${AppPage.DriverManagement}-Filter-${contactId}`,
-            eventType: `selectedSupportType-${AppPage.DriverManagement}-Filter-${contactId}`,
+            eventType: `selectedSupportType-${AppPage.DriverManagement}-EventTypeFilter-${contactId}`,
         },
     };
 

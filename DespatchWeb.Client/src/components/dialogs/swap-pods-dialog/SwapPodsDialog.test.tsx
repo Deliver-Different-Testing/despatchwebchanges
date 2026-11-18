@@ -9,7 +9,7 @@ import {act, screen, waitFor} from '@testing-library/react';
 import {setupUser} from '../../../test/utils/setupUser';
 import {renderWithMantine} from '../../../test/utils';
 import {SwapPodsDialog, SwapPodsDialogProps} from './SwapPodsDialog';
-import {dayjs, getInputDateFormat} from '../../../utils/dateUtils';
+import {getInputDateFormat, tenantNow} from '../../../utils/dateUtils';
 import type {SwapPodCandidate} from '../../../api/jobApi';
 
 // Shared fast userEvent instance (see setupUser).
@@ -65,7 +65,7 @@ describe('SwapPodsDialog', () => {
         expect(screen.getByLabelText(/Second job/i)).toBeInTheDocument();
         expect(screen.getByRole('combobox', {name: 'Status'})).toBeInTheDocument();
         expect(screen.getByLabelText('Customer')).toBeInTheDocument();
-        expect(screen.getByLabelText('Date')).toHaveValue(dayjs().format(getInputDateFormat()));
+        expect(screen.getByLabelText('Date')).toHaveValue(tenantNow().format(getInputDateFormat()));
         expect(screen.queryByLabelText('Same customer')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: /validate/i})).toBeDisabled();
         unmount();
@@ -83,7 +83,7 @@ describe('SwapPodsDialog', () => {
 
         expect(await screen.findByText('JOB-002')).toBeInTheDocument();
         expect(props.onSearch).toHaveBeenCalledWith(
-            expect.objectContaining({excludeJobNumber: 'JOB-001', date: dayjs().format('YYYY-MM-DD')}),
+            expect.objectContaining({excludeJobNumber: 'JOB-001', date: tenantNow().format('YYYY-MM-DD')}),
             expect.anything()
         );
         expect(screen.getAllByText('Completed')).toHaveLength(2);

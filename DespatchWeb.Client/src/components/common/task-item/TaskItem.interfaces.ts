@@ -28,9 +28,6 @@ export interface TaskItemConfig {
     customClass?: string;
 }
 
-// Alias for backward compatibility with AngularJS controllers
-export type ITaskListItemConfig = TaskItemConfig;
-
 export interface TasksServiceInterface {
     markTaskAsClosed(eventId: number, closed: boolean): Promise<void>;
     updateTaskDate(eventId: number, date: Dayjs): Promise<void>;

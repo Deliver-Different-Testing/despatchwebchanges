@@ -12,7 +12,7 @@ import {
 } from '../../../types';
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../api/addressApi';
-import {getSession} from '../../../api/session';
+import {isAuSession} from '../../../api/session';
 import {US_STATES, normalizeToStateAbbreviation} from '../../../utils/usStates';
 import {loadHereSdk} from '../../../utils/loadHereSdk';
 import type {ShowToastFn} from '../../../services/toastService';
@@ -98,7 +98,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     showToast,
 }) => {
     // AU keeps the state in line 6 (Booking sends it there); the NZ layout would put HERE's city ("Sydney") in it.
-    const isAuTenant = !isUsTenant && (getSession().countryCode ?? '').toUpperCase() === 'AU';
+    const isAuTenant = !isUsTenant && isAuSession();
     const markerIconUrl = addressType === AddressType.Delivery
         ? DELIVERY_MARKER_ICON_URL
         : PICKUP_MARKER_ICON_URL;

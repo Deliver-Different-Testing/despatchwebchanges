@@ -21,7 +21,6 @@ namespace DespatchWeb.Services;
 /// </summary>
 public sealed class JobReportService(
     IJobQueryRepository jobQueryRepository,
-    IJobCommandRepository jobCommandRepository,
     IRecurringJobRepository recurringJobRepository,
     ITenantClock clock,
     IAmazonS3 s3Client,
@@ -301,23 +300,6 @@ public sealed class JobReportService(
     }
 
     /// <summary>
-    /// Processes a job price upload file: archives to S3, parses data, and updates job prices.
-    /// </summary>
-    public async Task ProcessJobPriceUploadAsync(IFormFile file)
-    {
-        ValidateUploadedFile(file);
-
-        var currentDate = clock.TenantNow;
-        await ArchiveUploadedFileToS3Async(file, currentDate);
-
-        var parsedData = await ParseBulkPriceFileAsync(file);
-        if (parsedData.Count > 0)
-        {
-            await jobCommandRepository.UpdateManualPriceAsync(parsedData);
-        }
-    }
-
-    /// <summary>
     /// Generates a CSV export of all recurring jobs matching the search criteria.
     /// </summary>
     public async Task<(byte[] FileBytes, string FileName)> GenerateRecurringJobsCsvAsync(RecurringJobQueryRequest request)
@@ -492,37 +474,6 @@ public sealed class JobReportService(
         catch (Exception ex)
         {
             Log.Error(ex, "Error uploading to S3 with key: {Key}", key);
-        }
-    }
-
-    /// <summary>
-    /// Archives an uploaded file to S3 for record-keeping.
-    /// </summary>
-    private async Task ArchiveUploadedFileToS3Async(IFormFile file, DateTimeOffset currentDate)
-    {
-        var timestamp = currentDate.ToString("yyyyMMddHHmmss");
-        var key = $"Jobs/{currentDate:yyyy}/{currentDate:MM}/Jobs-{timestamp}";
-
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
-
-        try
-        {
-            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var putRequest = new PutObjectRequest
-            {
-                BucketName = bucketName,
-                Key = key,
-                ContentType = file.ContentType,
-                InputStream = memoryStream
-            };
-            putRequest.Metadata.Add("FileName", file.FileName);
-            await s3Client.PutObjectAsync(putRequest);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Error archiving job price upload file to S3");
         }
     }
 }
