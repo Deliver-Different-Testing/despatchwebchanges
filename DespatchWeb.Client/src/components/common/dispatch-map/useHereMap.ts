@@ -49,7 +49,7 @@ export function useHereMap({
     centerRef.current = center;
 
     // Fetch API key
-    const { data: apiKey, isLoading: isLoadingKey } = useQuery({
+    const { data: apiKey, isLoading: isLoadingKey, isError: keyFailed } = useQuery({
         queryKey: queryKeys.hereMaps.apiKey,
         queryFn: getHereMapsKey,
         staleTime: Infinity,
@@ -171,13 +171,16 @@ export function useHereMap({
         }
     }, [zoom]);
 
+    // Without a key the map can never initialise, so a failed key fetch ends loading as an error.
+    const failure = error ?? (keyFailed ? new Error('Failed to load the HERE Maps API key') : null);
+
     return {
         mapContainerRef,
         map: mapRef.current,
         platform: platformRef.current,
         ui: uiRef.current,
-        isLoading: isLoadingKey || (!isReady && !error),
+        isLoading: isLoadingKey || (!isReady && !failure),
         isReady,
-        error,
+        error: failure,
     };
 }

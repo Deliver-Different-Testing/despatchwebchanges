@@ -147,6 +147,20 @@ describe('OpenJobsList', () => {
         expect(screen.getByText('JOB-002')).toBeInTheDocument();
     });
 
+    it('shows the last page when the given page is past the end of a shrunken list', () => {
+        renderList({
+            openJobs: [
+                createMockOpenJob({jobId: 1, reference: 'JOB-001'}),
+                createMockOpenJob({jobId: 2, reference: 'JOB-002'}),
+            ],
+            limit: 1,
+            page: 5,
+        });
+
+        expect(screen.getByText('JOB-002')).toBeInTheDocument();
+        expect(screen.getByText('2–2 of 2')).toBeInTheDocument();
+    });
+
     it('writes nothing to localStorage', () => {
         const setItem = vi.spyOn(Storage.prototype, 'setItem');
         renderList({openJobs: [createMockOpenJob()]});

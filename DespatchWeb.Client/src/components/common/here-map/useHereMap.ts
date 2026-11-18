@@ -640,11 +640,13 @@ export function useHereMap({
             credentials &&
             mapId &&
             (!isInitialized ||
-                credentials !== prevCredentialsRef.current ||
+                credentials.apiKey !== prevCredentialsRef.current?.apiKey ||
                 mapId !== prevMapIdRef.current)
         ) {
             prevCredentialsRef.current = credentials;
             prevMapIdRef.current = mapId;
+            // A rebuilt map starts empty, so the config effect has to redraw the job rather than diff against it.
+            prevConfigRef.current = undefined;
 
             // Clean up existing map if reinitializing
             if (mapInstance?.map) {

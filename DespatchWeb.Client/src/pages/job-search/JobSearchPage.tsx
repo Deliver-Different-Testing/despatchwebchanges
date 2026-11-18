@@ -524,7 +524,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             }
         } catch (error) {
             console.error(`[JobSearchPage] Job action "${actionId}" failed:`, error);
-            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't complete that action. Check your connection and try again."), 'error');
         }
     }, [showToast, openChangeCourier]);
 

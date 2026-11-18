@@ -671,8 +671,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             // reset status, then refresh the list.
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             hookDataRef.current.refresh();
-        } catch {
-            showToast("Couldn't restore the jobs. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't restore the jobs. Check your connection and try again."), 'error');
         }
     }, [multiSelect, showToast, selectedRestorableIds]);
 
@@ -715,8 +715,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as read`, 'success');
             multiSelect.clear();
             hookDataRef.current.refresh();
-        } catch {
-            showToast("Couldn't mark the jobs as read. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't mark the jobs as read. Check your connection and try again."), 'error');
         }
     }, [multiSelect, showToast, selectedReadStatusIds]);
 
@@ -731,8 +731,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as unread`, 'success');
             multiSelect.clear();
             hookDataRef.current.refresh();
-        } catch {
-            showToast("Couldn't mark the jobs as unread. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't mark the jobs as unread. Check your connection and try again."), 'error');
         }
     }, [multiSelect, showToast, selectedReadStatusIds]);
 
@@ -805,8 +805,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             // Refresh data — invalidate job detail so the detail panel updates too
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             hookDataRef.current.refresh();
-        } catch {
-            showToast("Couldn't dispatch the job. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't dispatch the job. Check your connection and try again."), 'error');
         }
     }, [showToast]);
 

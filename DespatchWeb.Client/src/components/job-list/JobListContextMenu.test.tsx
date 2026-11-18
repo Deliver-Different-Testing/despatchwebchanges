@@ -430,15 +430,15 @@ describe('JobListContextMenu', () => {
             expect(mockedApi.updateJobReadStatus).not.toHaveBeenCalled();
         });
 
-        it('Mark read/Unread error shows error toast', async () => {
-            mockedApi.updateJobReadStatus.mockRejectedValueOnce(new Error('Network error'));
+        it('Mark read/Unread error shows the server message in an error toast', async () => {
+            mockedApi.updateJobReadStatus.mockRejectedValueOnce({status: 400, statusText: 'Bad Request', message: 'Job is locked'});
             const props = createDefaultProps();
             renderWithMantine(<JobListContextMenu {...props} />);
 
             fireEvent.click(screen.getByText('Mark as Unread'));
 
             await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith("Couldn't update the job's read status. Check your connection and try again.", 'error');
+                expect(props.showToast).toHaveBeenCalledWith('Job is locked', 'error');
             });
         });
 

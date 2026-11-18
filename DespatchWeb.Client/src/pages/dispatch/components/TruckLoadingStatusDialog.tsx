@@ -39,7 +39,7 @@ export const TruckLoadingStatusDialog: React.FC<TruckLoadingStatusDialogProps> =
 }) => {
     const weightUnit = isUsCustomer ? 'lbs' : 'kg';
 
-    const {data, isFetching, refetch} = useQuery({
+    const {data, isFetching, isError, refetch} = useQuery({
         queryKey: queryKeys.dispatch.truckCourierStatus(courierId ?? 0),
         queryFn: ({signal}) => fetchTruckCourierStatus(courierId!, {signal}),
         enabled: open && !!courierId,
@@ -67,6 +67,11 @@ export const TruckLoadingStatusDialog: React.FC<TruckLoadingStatusDialogProps> =
                 onClose={onClose}
             />
             <Box p="lg" style={{backgroundColor: dialogContentBg}}>
+                {isError && !isFetching && (
+                    <Text role="alert" size="sm" c="red" mb="sm">
+                        Couldn't load the truck status. Refresh to try again.
+                    </Text>
+                )}
                 <Paper {...sectionPaperProps}>
                     <SimpleGrid cols={3} spacing="md">
                         {fields.map(f => (

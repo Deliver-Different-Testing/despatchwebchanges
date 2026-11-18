@@ -41,7 +41,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
         enabled: open && delivery != null,
     });
 
-    const credentials: HereMapCredentials | undefined = apiKey ? {apiKey} : undefined;
+    const credentials = useMemo<HereMapCredentials | undefined>(() => (apiKey ? {apiKey} : undefined), [apiKey]);
 
     // Build the HERE map config, updating selectedJobIndex
     const hereMapConfig: HereMapConfig | undefined = useMemo(() => {

@@ -98,6 +98,18 @@ describe('SearchSelect', () => {
         await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
     });
 
+    it('says the search failed rather than that nothing matched', async () => {
+        mockSearch.mockRejectedValue({status: 500, message: 'boom'});
+        renderWithMantine(<Harness />);
+
+        const input = typeSearch('Co');
+        await flushDebounce();
+
+        const dropdown = dropdownFor(input);
+        expect(await within(dropdown).findByText(/Couldn't search/)).toBeInTheDocument();
+        expect(within(dropdown).queryByText(/No matches/)).not.toBeInTheDocument();
+    });
+
     it('does not search below the minimum term length, and prompts instead', async () => {
         renderWithMantine(<Harness />);
 

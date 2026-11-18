@@ -332,6 +332,17 @@ describe('useHereMap', () => {
             expect(result.current.isLoading).toBe(true);
         });
 
+        it('stops loading and reports an error when the API key fetch fails', async () => {
+            (configApi.getHereMapsKey as Mock).mockRejectedValue(new Error('500'));
+
+            const { result } = renderHook(() => useHereMap(), {
+                wrapper: createWrapper(),
+            });
+
+            await waitFor(() => expect(result.current.error).not.toBeNull());
+            expect(result.current.isLoading).toBe(false);
+        });
+
         it('isLoading reflects query loading state', async () => {
             const { result } = renderHook(() => useHereMap(), {
                 wrapper: createWrapper(),

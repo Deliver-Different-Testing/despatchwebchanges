@@ -53,6 +53,13 @@ describe('DriverLocationsBox', () => {
         fetchDriverLocationsMock.mockResolvedValue({areas: [{id: 7}]});
     });
 
+    it('shows an error, not the no-data state, when the fetch fails', async () => {
+        fetchDriverLocationsMock.mockRejectedValue({status: 500, statusText: 'Server Error', message: 'boom'});
+        renderBox({despatchViewIds: [1]});
+        expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't load driver locations");
+        expect(screen.queryByTestId('dl-no-data')).not.toBeInTheDocument();
+    });
+
     it('shows the no-data state and skips the fetch when no views are selected', () => {
         renderBox({despatchViewIds: []});
         expect(screen.getByTestId('dl-no-data')).toBeInTheDocument();

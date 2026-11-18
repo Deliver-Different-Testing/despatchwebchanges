@@ -71,6 +71,7 @@ import {StaffPreferenceKey} from '../../types/enums/staff-preference-key.enum';
 import {defaultCourierDisplayMode, type CourierDisplayMode} from './lib/courierDisplayMode';
 import {useCourierFlagLastDelivery} from '../../hooks/useCourierFlagLastDelivery';
 import {loadDialog} from '../../components/dialogs/dialogRegistry';
+import {errorMessageOf} from '../../utils/errorMessage';
 
 const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
 
@@ -526,7 +527,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             }
         } catch (error) {
             console.error(`[DispatchPage] FAB action "${actionId}" failed:`, error);
-            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't complete that action. Check your connection and try again."), 'error');
         }
     }, [showToast, isUsCustomer, jobCreated]);
 

@@ -156,8 +156,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             await api.updateJobReadStatus(activeJob.linkedJobId ?? activeJob.id, !activeJob.hasBeenRead);
             showToast(activeJob.hasBeenRead ? 'Job marked as unread' : 'Job marked as read', 'success');
             refresh();
-        } catch {
-            showToast("Couldn't update the job's read status. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't update the job's read status. Check your connection and try again."), 'error');
         }
     };
 
@@ -174,8 +174,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     await api.restoreNationwideJob(activeJob.id);
                     showToast(`${activeJob.assignedFlight?.flightNumber} unassigned`, 'success');
                     refresh();
-                } catch {
-                    showToast("Couldn't unassign the flight. Check your connection and try again.", 'error');
+                } catch (err) {
+                    showToast(errorMessageOf(err, "Couldn't unassign the flight. Check your connection and try again."), 'error');
                 }
             },
         });
@@ -195,8 +195,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     await api.restoreNationwideJob(activeJob.id);
                     showToast(`${activeJob.assignedAgent?.agentName} unassigned`, 'success');
                     refresh();
-                } catch {
-                    showToast("Couldn't unassign the agent. Check your connection and try again.", 'error');
+                } catch (err) {
+                    showToast(errorMessageOf(err, "Couldn't unassign the agent. Check your connection and try again."), 'error');
                 }
             },
         });
@@ -248,8 +248,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             await api.moveJobToReprice(activeJob.id);
             showToast(`Job ${activeJob.jobNo} sent for repricing`, 'success');
             refresh();
-        } catch {
-            showToast("Couldn't reprice the job. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't reprice the job. Check your connection and try again."), 'error');
         }
     };
 
@@ -446,8 +446,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         await api.setFirstJob(activeJob.id, activeJob.courierData.courierId);
                         showToast('Job set as first job', 'success');
                         refresh();
-                    } catch {
-                        showToast("Couldn't set the first job. Check your connection and try again.", 'error');
+                    } catch (err) {
+                        showToast(errorMessageOf(err, "Couldn't set the first job. Check your connection and try again."), 'error');
                     }
                 }
             },
@@ -471,8 +471,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             // reset status, then refresh the list.
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             refresh();
-        } catch {
-            showToast("Couldn't restore the job. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't restore the job. Check your connection and try again."), 'error');
         }
     };
 
@@ -505,8 +505,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             await api.markJobMissing(activeJob.id);
             showToast('Job marked as missing', 'success');
             refresh();
-        } catch {
-            showToast("Couldn't mark the job as missing. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't mark the job as missing. Check your connection and try again."), 'error');
         }
     };
 

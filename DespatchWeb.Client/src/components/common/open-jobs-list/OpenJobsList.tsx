@@ -178,10 +178,13 @@ export const OpenJobsList: React.FC<OpenJobsListProps> = ({
         return sorted;
     }, [viewJobs, sort]);
 
+    // A refetch or a narrower range can leave fewer pages than the stored page number.
+    const currentPage = Math.min(page, Math.max(1, Math.ceil(sortedTableJobs.length / limit)));
+
     const paginatedTableJobs = useMemo(() => {
-        const start = (page - 1) * limit;
+        const start = (currentPage - 1) * limit;
         return sortedTableJobs.slice(start, start + limit);
-    }, [sortedTableJobs, page, limit]);
+    }, [sortedTableJobs, currentPage, limit]);
 
     const handleSort = useCallback((columnKey: string) => {
         onSort({
@@ -262,7 +265,7 @@ export const OpenJobsList: React.FC<OpenJobsListProps> = ({
                     <Box style={{borderTop: '1px solid var(--mantine-color-default-border)'}}>
                         <TablePager
                             totalCount={sortedTableJobs.length}
-                            page={page}
+                            page={currentPage}
                             pageSize={limit}
                             onPageChange={onPageChange}
                             onPageSizeChange={onLimitChange}
