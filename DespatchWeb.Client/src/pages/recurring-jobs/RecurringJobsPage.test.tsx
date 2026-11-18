@@ -284,7 +284,7 @@ describe('RecurringJobsPage', () => {
             error: null,
             refetch: vi.fn(),
         } as any);
-        mockUpdateJobDetail.mockRejectedValueOnce(new Error('Server said no'));
+        mockUpdateJobDetail.mockRejectedValueOnce({status: 400, statusText: 'Bad Request', message: 'Server said no'});
         vi.spyOn(console, 'error').mockImplementation(() => {});
 
         renderWithProviders(createDefaultProps({showToast}));

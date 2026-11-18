@@ -38,6 +38,7 @@ import type {EventGroupItem} from '../../../api/jobListApi';
 import {PartnerRatePanel} from './PartnerRatePanel';
 import type {DispatchDialogProps, DispatchMode, DispatchType} from './types';
 
+import {errorMessageOf} from '../../../utils/errorMessage';
 // Per-type search backends. Mirrors the legacy useJobActions.handleCourierClick
 // type-options exactly so behaviour is identical to the old recurring-job picker.
 const SEARCH_FN: Record<'Courier' | 'Agent' | 'NP', (s: string) => Promise<ISuggestion[]>> = {
@@ -260,8 +261,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                 });
             }
         } catch (err) {
-            const message = err instanceof Error && err.message ? err.message : 'Dispatch failed.';
-            setSubmitError(message);
+            setSubmitError(errorMessageOf(err, 'Dispatch failed.'));
         } finally {
             setSubmitting(false);
         }
@@ -275,8 +275,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         try {
             await onUnassignCourier();
         } catch (err) {
-            const message = err instanceof Error && err.message ? err.message : 'Unassign failed.';
-            setSubmitError(message);
+            setSubmitError(errorMessageOf(err, 'Unassign failed.'));
         } finally {
             setSubmitting(false);
         }

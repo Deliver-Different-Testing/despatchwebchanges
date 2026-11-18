@@ -358,8 +358,8 @@ export function useJobUpdate(
             }
             await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
         },
-        onError: () => {
-            showToast("Couldn't dispatch the job. Check your connection and try again.", 'error');
+        onError: (error: unknown) => {
+            showToast(errorMessageOf(error, "Couldn't dispatch the job. Check your connection and try again."), 'error');
         },
     });
 

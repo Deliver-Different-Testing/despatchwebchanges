@@ -27,6 +27,7 @@ import {RecurringJobsToolbar, RecurringJobsFilters} from './components/Recurring
 import {RecurringJobsContextMenu} from './components/RecurringJobsContextMenu';
 import {InsertToLiveDialog} from './components/InsertToLiveDialog';
 import {RecurringDeliveryJourney} from '../../components/common/recurring-delivery-journey/RecurringDeliveryJourney';
+import {errorMessageOf} from '../../utils/errorMessage';
 
 const DEFAULT_QUERY: RecurringJobQuery = {
     order: 'booked',
@@ -119,11 +120,8 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         try {
             await updateJobDetail(job.id, 'RecurringMode', String(mode), true);
         } catch (error) {
-            const message = error instanceof Error
-                ? error.message
-                : `Couldn't change the mode to ${modeLabel}. Try again.`;
             console.error('Mode change failed:', error);
-            showToast(message, 'error');
+            showToast(errorMessageOf(error, `Couldn't change the mode to ${modeLabel}. Try again.`), 'error');
             return false;
         }
         showToast(`Mode changed to ${modeLabel}`, 'success');

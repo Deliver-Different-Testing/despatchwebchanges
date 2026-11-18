@@ -512,8 +512,22 @@ describe('useJobUpdate', () => {
             expect(mockShowToast).toHaveBeenCalledWith('Job dispatched', 'success');
         });
 
-        it('shows error toast when dispatch fails', async () => {
-            mockAllocateJob.mockRejectedValueOnce(new Error('fail'));
+        it('shows the server refusal when dispatch fails', async () => {
+            mockAllocateJob.mockRejectedValueOnce({status: 400, statusText: 'Bad Request', message: 'Partner job cannot be reassigned'});
+            const {result} = renderUseJobUpdate();
+            const job = createMockJob();
+
+            await act(async () => {
+                try {
+                    await result.current.dispatchJob({job, courierId: 5});
+                } catch { /* expected */ }
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith('Partner job cannot be reassigned', 'error');
+        });
+
+        it('shows the generic error toast when dispatch fails without a message', async () => {
+            mockAllocateJob.mockRejectedValueOnce({status: 0, statusText: 'Network Error', message: ''});
             const {result} = renderUseJobUpdate();
             const job = createMockJob();
 

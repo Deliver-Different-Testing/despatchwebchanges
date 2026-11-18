@@ -304,10 +304,6 @@ export function getUndeliverableList(options?: RequestOptions): Promise<ISuggest
 
 // ── Job Dispatch Operations ─────────────────────────────────────────
 
-export function restoreJobs(jobIds: number[], removeCapturedImages = false): Promise<void> {
-    return apiClient.post('job/RestoreJobs', {jobIds, removeCapturedImages});
-}
-
 export function allocateJob(courierId: number, jobIds: number[]): Promise<void> {
     return apiClient.post('job/Allocate', {courierId, jobIds});
 }

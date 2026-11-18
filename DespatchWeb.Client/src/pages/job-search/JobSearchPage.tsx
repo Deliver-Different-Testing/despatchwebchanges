@@ -57,6 +57,7 @@ import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {JobSearchPageProps} from "./JobSearchPageProps";
 import {openAccessorialChargesForJob, openAttachmentsForJob} from '../jobActionDialogs';
 import {loadDialog} from '../../components/dialogs/dialogRegistry';
+import {errorMessageOf} from '../../utils/errorMessage';
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 showToast,
@@ -758,7 +759,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 onConfirm={async (removeCapturedImages) => {
                     const {job} = restoreConfirm!;
                     setRestoreConfirm(null);
-                    await performRestore(job, removeCapturedImages);
+                    try {
+                        await performRestore(job, removeCapturedImages);
+                    } catch (error) {
+                        console.error('Restore failed:', error);
+                        showToast(errorMessageOf(error, `Couldn't restore ${job.jobNo}. Try again.`), 'error');
+                    }
                 }}
             />
             {currentJob && (
