@@ -6880,17 +6880,8 @@ public partial class JobRepository(
 
         return await Context.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(j => j.UcjbCourierId, courierId)
-                .SetProperty(j => j.AgentId, (int?)null)
-                .SetProperty(j => j.UcjbDispId, dispatcherStaffId > 0 ? dispatcherStaffId : null)
-                .SetProperty(j => j.DesCheck, false)
-                .SetProperty(j => j.FdcourierId, (int?)null)
-                .SetProperty(j => j.UcjbDispDate, tenantTime)
-                .SetProperty(j => j.UcjbDispTime, tenantTime)
-                .SetProperty(j => j.UcjbStatus, (int)JobStatus.Dispatched)
-                .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
-            );
+            .ExecuteUpdateAsync(setters =>
+                setters.AssignToCourier(courierId, dispatcherStaffId > 0 ? dispatcherStaffId : null, tenantTime));
     }
 
     private sealed record PodState(

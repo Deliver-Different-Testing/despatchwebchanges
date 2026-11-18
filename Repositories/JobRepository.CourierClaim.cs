@@ -1,36 +1,18 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
 {
-    private const int OnHoldStatus = 100;
+    // An allow-list, so a status added later is refused until someone decides it means "waiting for a courier".
+    private static readonly int[] ClaimableStatuses =
+        [(int)JobStatus.New, (int)JobStatus.Rejected, (int)JobStatus.LatePickup, (int)JobStatus.Warning];
 
-    // Everything JobListStatusBuckets keeps out of "needs dispatch" (on the road, completed, void), finished outcomes
-    // (Undeliverable, Missing), Preassigned (allocated, per JobChangeRequestService), held jobs and agent statuses.
-    private static readonly int[] UnclaimableStatuses =
-    [
-        (int)JobStatus.Dispatched,
-        (int)JobStatus.Accepted,
-        (int)JobStatus.PickedUp,
-        (int)JobStatus.InTransit,
-        (int)JobStatus.Acknowledge,
-        (int)JobStatus.LateDelivery,
-        (int)JobStatus.AwaitingPod,
-        (int)JobStatus.AssumingCompleted,
-        (int)JobStatus.OutForDelivery,
-        (int)JobStatus.Completed,
-        (int)JobStatus.Undeliverable,
-        (int)JobStatus.Preassigned,
-        OnHoldStatus,
-        (int)JobStatus.OutboundAgentAssigned,
-        (int)JobStatus.InboundAgentAssigned,
-        (int)JobStatus.GroundAgentAssigned,
-        (int)JobStatus.Void,
-        (int)JobStatus.Missing
-    ];
+    private static readonly int[] FinishedStatuses =
+        [(int)JobStatus.Completed, (int)JobStatus.Undeliverable, (int)JobStatus.Void, (int)JobStatus.Missing];
 
     public async Task<CourierClaimOutcome> ClaimJobForCourierAsync(int jobId, int courierId, int staffId,
         CancellationToken cancellationToken = default)
@@ -52,54 +34,50 @@ public partial class JobRepository
                             && !j.UcjbVoid
                             && !j.UcjbJobDone
                             && j.UcjbComplTime == null
-                            && (j.UcjbStatus == null || !UnclaimableStatuses.Contains(j.UcjbStatus.Value))
+                            && (j.UcjbStatus == null || ClaimableStatuses.Contains(j.UcjbStatus.Value))
                             // Same rule as JobController.Allocate: a job sent out to a partner is managed from the pairing.
                             && (localTenantId == null || j.PartnerPairing == null || j.PartnerPairing.OwnerTenantId != localTenantId)
-                            // Re-checked here, not only before the claim, so a courier or staff member made inactive
-                            // in between is never written to the job.
+                            // An inbound partner job may still be waiting on rate acceptance, which this caller can't check.
+                            && j.PartnerJobGuid == null
                             && context.TucCouriers.Any(c => c.UccrId == courierId && c.Active)
                             && context.TucStaffs.Any(s => s.UcstId == staffId && s.UcstActive))
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.UcjbCourierId, courierId)
-                    .SetProperty(j => j.AgentId, (int?)null)
-                    .SetProperty(j => j.UcjbDispId, staffId)
-                    .SetProperty(j => j.DesCheck, false)
-                    .SetProperty(j => j.FdcourierId, (int?)null)
-                    .SetProperty(j => j.UcjbDispDate, tenantTime)
-                    .SetProperty(j => j.UcjbDispTime, tenantTime)
-                    .SetProperty(j => j.UcjbStatus, (int)JobStatus.Dispatched)
-                    .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod), cancellationToken);
+                .ExecuteUpdateAsync(setters => setters.AssignToCourier(courierId, staffId, tenantTime), cancellationToken);
 
             if (claimed == 0)
             {
                 await transaction.RollbackAsync(cancellationToken);
-                return await ClassifyLostClaimAsync(context, jobId, courierId, cancellationToken);
+                return await ClassifyLostClaimAsync(context, jobId, courierId, staffId, cancellationToken);
             }
 
-            await courierRepository.ResetClearListAreaOrderAsync(courierId, context);
+            await courierRepository.ResetClearListAreaOrderAsync(courierId, context, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return CourierClaimOutcome.Assigned;
         });
     }
 
-    // The decision was made by the conditional UPDATE; this read only chooses the answer, so it takes no lock.
+    // The decision was made by the conditional UPDATE; these reads only choose the answer, so they take no lock.
     private static async Task<CourierClaimOutcome> ClassifyLostClaimAsync(DespatchContext context, int jobId,
-        int courierId, CancellationToken cancellationToken)
+        int courierId, int staffId, CancellationToken cancellationToken)
     {
+        if (!await context.TucStaffs.AnyAsync(s => s.UcstId == staffId && s.UcstActive, cancellationToken))
+        {
+            return CourierClaimOutcome.InvalidStaff;
+        }
+
+        if (!await context.TucCouriers.AnyAsync(c => c.UccrId == courierId && c.Active, cancellationToken))
+        {
+            return CourierClaimOutcome.InvalidCourier;
+        }
+
         var current = await context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(j => new { j.UcjbCourierId, j.UcjbVoid, j.UcjbJobDone, j.UcjbComplTime })
+            .Select(j => new { j.UcjbCourierId, j.UcjbVoid, j.UcjbJobDone, j.UcjbComplTime, j.UcjbStatus })
             .FirstOrDefaultAsync(cancellationToken);
 
         return current is null ? CourierClaimOutcome.NotFound
             : current.UcjbCourierId == courierId && !current.UcjbVoid && !current.UcjbJobDone && current.UcjbComplTime == null
+              && !(current.UcjbStatus is { } status && FinishedStatuses.Contains(status))
                 ? CourierClaimOutcome.AlreadyYours
             : CourierClaimOutcome.Unavailable;
     }
-
-    public async Task<bool> IsActiveStaffAsync(int staffId, CancellationToken cancellationToken = default) =>
-        await Context.TucStaffs.AnyAsync(s => s.UcstId == staffId && s.UcstActive, cancellationToken);
-
-    public async Task<bool> IsActiveCourierAsync(int courierId, CancellationToken cancellationToken = default) =>
-        await Context.TucCouriers.AnyAsync(c => c.UccrId == courierId && c.Active, cancellationToken);
 }
