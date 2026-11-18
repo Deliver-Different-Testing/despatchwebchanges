@@ -12,7 +12,10 @@ public class DispatchLayoutRepository(
 {
     public async Task<IReadOnlyList<DispatchLayoutDto>> GetLayoutsAsync(string page)
     {
-        var staffId = infoService.GetStaffId();
+        if (await ResolveStaffIdAsync() is not { } staffId)
+        {
+            return [];
+        }
 
         return await Context.StaffDispatchLayouts
             .Where(l => l.StaffId == staffId && l.Page == page)
@@ -28,7 +31,11 @@ public class DispatchLayoutRepository(
 
     public async Task ReplaceLayoutsAsync(string page, IReadOnlyList<DispatchLayoutDto> layouts)
     {
-        var staffId = infoService.GetStaffId();
+        if (await ResolveStaffIdAsync() is not { } staffId)
+        {
+            return;
+        }
+
         var now = tenantClock.UtcNow;
 
         var existing = await Context.StaffDispatchLayouts
@@ -69,4 +76,7 @@ public class DispatchLayoutRepository(
 
         await Context.SaveChangesAsync();
     }
+
+    // Layouts hang off a tucStaff row (FK_StaffDispatchLayout_Staff), which Tenant / DF Admin logins may not have.
+    private async Task<int?> ResolveStaffIdAsync() => (await infoService.GetStaffInfoAsync())?.Id;
 }

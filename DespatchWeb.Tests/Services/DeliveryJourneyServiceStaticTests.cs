@@ -1,3 +1,4 @@
+using System.Globalization;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Services;
 
@@ -78,7 +79,7 @@ public class DeliveryJourneyServiceStaticTests
     [InlineData("ucjbStatus", "", "")]
     public void FormatFieldValue_NullOrEmpty_ReturnsAsIs(string fieldName, string? value, string? expected)
     {
-        var result = DeliveryJourneyService.FormatFieldValue(fieldName, value);
+        var result = DeliveryJourneyService.FormatFieldValue(fieldName, value, CultureInfo.InvariantCulture);
 
         Assert.Equal(expected, result);
     }
@@ -90,24 +91,25 @@ public class DeliveryJourneyServiceStaticTests
     [InlineData("ucjbVoid", "false", "No")]
     public void FormatFieldValue_BooleanValues_ConvertedToYesNo(string fieldName, string value, string expected)
     {
-        var result = DeliveryJourneyService.FormatFieldValue(fieldName, value);
+        var result = DeliveryJourneyService.FormatFieldValue(fieldName, value, CultureInfo.InvariantCulture);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("en-NZ", "$150.50")]
+    [InlineData("en-GB", "£150.50")]
+    public void FormatFieldValue_CurrencyField_UsesTheTenantCulture_NotTheContainers(string culture, string expected)
+    {
+        var result = DeliveryJourneyService.FormatFieldValue("ucjbAmount", "150.50", new CultureInfo(culture));
 
         Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void FormatFieldValue_CurrencyField_FormattedAsCurrency()
-    {
-        var result = DeliveryJourneyService.FormatFieldValue("ucjbAmount", "150.50");
-
-        // Currency formatting is locale-dependent, so just verify it parses and formats
-        Assert.Contains("150.50", result);
-    }
-
-    [Fact]
     public void FormatFieldValue_WeightField_FormattedWithKg()
     {
-        var result = DeliveryJourneyService.FormatFieldValue("ucjbWeight", "5.75");
+        var result = DeliveryJourneyService.FormatFieldValue("ucjbWeight", "5.75", CultureInfo.InvariantCulture);
 
         Assert.Equal("5.75 kg", result);
     }
@@ -117,7 +119,7 @@ public class DeliveryJourneyServiceStaticTests
     [InlineData("TotalDistance", "8.0", "8.0 km")]
     public void FormatFieldValue_DistanceFields_FormattedWithKm(string fieldName, string value, string expected)
     {
-        var result = DeliveryJourneyService.FormatFieldValue(fieldName, value);
+        var result = DeliveryJourneyService.FormatFieldValue(fieldName, value, CultureInfo.InvariantCulture);
 
         Assert.Equal(expected, result);
     }
@@ -127,7 +129,7 @@ public class DeliveryJourneyServiceStaticTests
     {
         var longValue = new string('A', 60);
 
-        var result = DeliveryJourneyService.FormatFieldValue("ucjbNotes", longValue);
+        var result = DeliveryJourneyService.FormatFieldValue("ucjbNotes", longValue, CultureInfo.InvariantCulture);
 
         Assert.Equal(50, result.Length);
         Assert.EndsWith("...", result);
@@ -137,7 +139,7 @@ public class DeliveryJourneyServiceStaticTests
     [Fact]
     public void FormatFieldValue_NormalValue_ReturnedAsIs()
     {
-        var result = DeliveryJourneyService.FormatFieldValue("ucjbNotes", "Short note");
+        var result = DeliveryJourneyService.FormatFieldValue("ucjbNotes", "Short note", CultureInfo.InvariantCulture);
 
         Assert.Equal("Short note", result);
     }
@@ -145,7 +147,7 @@ public class DeliveryJourneyServiceStaticTests
     [Fact]
     public void FormatFieldValue_InvalidDecimalForCurrency_ReturnedAsIs()
     {
-        var result = DeliveryJourneyService.FormatFieldValue("ucjbAmount", "N/A");
+        var result = DeliveryJourneyService.FormatFieldValue("ucjbAmount", "N/A", CultureInfo.InvariantCulture);
 
         Assert.Equal("N/A", result);
     }

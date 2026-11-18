@@ -1386,7 +1386,8 @@ public partial class JobRepository(
             return false;
         }
 
-        var note = $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}";
+        var note = string.Create(_infoService.GetCulture(),
+            $"Updated price breakdown: {viewModel.Name} charge amount changed to {viewModel.Amount:C}");
 
         if (viewModel.PrebookJobId != null)
         {
@@ -6539,7 +6540,7 @@ public partial class JobRepository(
         await Context.SaveChangesAsync();
 
         await SetJobAsManuallyPriceAsync(effectiveParentId,
-            $"Breakdown updated: child job {childJobId} manually repriced to {newAmount:C}");
+            string.Create(_infoService.GetCulture(), $"Breakdown updated: child job {childJobId} manually repriced to {newAmount:C}"));
     }
 
     private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId,

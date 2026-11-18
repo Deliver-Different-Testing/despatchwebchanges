@@ -1,3 +1,4 @@
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
@@ -20,7 +21,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error getting unread message count: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -34,7 +35,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error getting recent messages: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -48,7 +49,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error getting messages: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -62,7 +63,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error getting staff messages: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -86,7 +87,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error sending messages: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -106,7 +107,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error sending multiple messages: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -126,7 +127,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error marking messages as read: {Error}", e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -140,7 +141,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error retrieving saved quick responses");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -156,7 +157,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error adding new quick response");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -176,7 +177,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error adding new quick response");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -195,7 +196,7 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         catch (Exception e)
         {
             Log.Error(e, "Error occured searching for message-able contacts");
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 }
