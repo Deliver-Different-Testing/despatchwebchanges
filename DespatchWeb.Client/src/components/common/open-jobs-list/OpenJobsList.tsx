@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Badge, Box, Card, Collapse, Divider, Group, Stack, Table, Text} from '@mantine/core';
 import dayjs from 'dayjs';
 import {SortableTh, TablePager} from '../data-table';
@@ -180,6 +180,13 @@ export const OpenJobsList: React.FC<OpenJobsListProps> = ({
 
     // A refetch or a narrower range can leave fewer pages than the stored page number.
     const currentPage = Math.min(page, Math.max(1, Math.ceil(sortedTableJobs.length / limit)));
+
+    // Write the clamp back once real rows are in, or the list jumps forward again when it regrows.
+    // Skipped while loading or empty, which are transient and say nothing about the page count.
+    const hasRows = sortedTableJobs.length > 0;
+    useEffect(() => {
+        if (!isLoading && hasRows && currentPage !== page) onPageChange(currentPage);
+    }, [isLoading, hasRows, currentPage, page, onPageChange]);
 
     const paginatedTableJobs = useMemo(() => {
         const start = (currentPage - 1) * limit;

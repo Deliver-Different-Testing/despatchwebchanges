@@ -43,6 +43,7 @@ interface CurrentWorkFocus {
     courierId?: number;
     mode: Mode;
     pickedCourierName?: string;
+    pickedCourierNumber?: string;
     appliedSelection?: string;
 }
 
@@ -137,9 +138,14 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     const [mode, setMode] = useState<Mode>(
         restoredFocus?.mode ?? ((isUsCustomer && !selectedJobCourierId) ? 'overview' : 'detail'),
     );
-    // Name of the focused courier (from the overview drill-in or the search field).
+    // Name and number of the focused courier, remembered when it is focused so the label still names
+    // them after the page selection moves to a job they aren't on (e.g. an unassigned one). A manual
+    // pick (overview drill-in or search) never carries a number.
     const [pickedCourierName, setPickedCourierName] = useState<string | undefined>(
         restoredFocus?.pickedCourierName,
+    );
+    const [pickedCourierNumber, setPickedCourierNumber] = useState<string | undefined>(
+        restoredFocus?.pickedCourierNumber,
     );
     // Last job selection we drilled in for; survives remounts via restore so a
     // replayed selection can't clobber a newer manual pick.
@@ -150,6 +156,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             courierId,
             mode,
             pickedCourierName,
+            pickedCourierNumber,
             appliedSelection: appliedSelectionRef.current,
             ...next,
         });
@@ -165,22 +172,29 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             appliedSelectionRef.current = selection;
             setCourierId(selectedJobCourierId);
             setMode('detail');
-            setPickedCourierName(undefined);
-            persistFocus({courierId: selectedJobCourierId, mode: 'detail', pickedCourierName: undefined});
+            setPickedCourierName(selectedJobCourierName);
+            setPickedCourierNumber(selectedJobCourierNumber);
+            persistFocus({
+                courierId: selectedJobCourierId,
+                mode: 'detail',
+                pickedCourierName: selectedJobCourierName,
+                pickedCourierNumber: selectedJobCourierNumber,
+            });
         }
     }, [selection]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleCourierSearchSelect = (courier: CourierSuggestion) => {
         setCourierId(courier.id);
         setPickedCourierName(courier.text);
+        setPickedCourierNumber(undefined);
         setMode('detail');
-        persistFocus({courierId: courier.id, pickedCourierName: courier.text, mode: 'detail'});
+        persistFocus({courierId: courier.id, pickedCourierName: courier.text, pickedCourierNumber: undefined, mode: 'detail'});
     };
 
-    // A manually-picked courier (search, or the US overview drill-in) never carries a
-    // number — only the currently selected job's assigned courier does.
-    const courierName = pickedCourierName ?? selectedJobCourierName;
-    const courierNumber = pickedCourierName ? undefined : selectedJobCourierNumber;
+    // While the focused courier is the selected job's, its live details win (they can load after the id).
+    const focusIsSelectedCourier = courierId !== undefined && courierId === selectedJobCourierId;
+    const courierName = (focusIsSelectedCourier ? selectedJobCourierName : undefined) ?? pickedCourierName;
+    const courierNumber = (focusIsSelectedCourier ? selectedJobCourierNumber : undefined) ?? pickedCourierNumber;
     const formattedCourierLabel = formatCourierDisplayLabel(courierDisplayMode, courierName, courierNumber);
     const courierLabel = formattedCourierLabel ?? 'Selected driver';
     const [truckStatusOpen, {open: openTruckStatus, close: closeTruckStatus}] = useDisclosure(false);
@@ -298,7 +312,7 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
             <TruckLoadingStatusDialog
                 open={truckStatusOpen}
                 courierId={courierId}
-                courierLabel={pickedCourierName ?? selectedJobCourierName}
+                courierLabel={courierName}
                 isUsCustomer={isUsCustomer}
                 onClose={closeTruckStatus}
             />
@@ -311,8 +325,9 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
                         onDriverSelect={(driver: IDriverWorkOverview) => {
                             setCourierId(driver.courierId);
                             setPickedCourierName(driver.name);
+                            setPickedCourierNumber(undefined);
                             setMode('detail');
-                            persistFocus({courierId: driver.courierId, pickedCourierName: driver.name, mode: 'detail'});
+                            persistFocus({courierId: driver.courierId, pickedCourierName: driver.name, pickedCourierNumber: undefined, mode: 'detail'});
                         }}
                     />
                 ) : (

@@ -87,6 +87,8 @@ export function SearchSelect<T>({
             return;
         }
 
+        // The failure belonged to the previous term; don't keep reporting it through the debounce.
+        setSearchFailed(false);
         const timer = setTimeout(async () => {
             searchChangeRef.current?.(inputValue);
             if (!searchRef.current) return;
@@ -96,7 +98,6 @@ export function SearchSelect<T>({
             abortRef.current = controller;
 
             setFetching(true);
-            setSearchFailed(false);
             try {
                 const results = await searchRef.current(inputValue, {signal: controller.signal});
                 if (!controller.signal.aborted) {

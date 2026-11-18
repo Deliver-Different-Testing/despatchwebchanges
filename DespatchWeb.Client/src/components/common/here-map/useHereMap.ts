@@ -89,6 +89,10 @@ export function useHereMap({
             newMapInstance.ui?.removeControl('zoom');
             newMapInstance.ui?.removeControl('mapsettings');
 
+            // A rebuilt map starts empty, so the config effect has to redraw the job rather than diff
+            // against it. Reset here, not when the rebuild starts: a credentials change re-runs the config
+            // effect against the old map first, which would record the config as already drawn.
+            prevConfigRef.current = undefined;
             setPlatform(newPlatform);
             setMapInstance(newMapInstance);
             setIsInitialized(true);
@@ -645,8 +649,6 @@ export function useHereMap({
         ) {
             prevCredentialsRef.current = credentials;
             prevMapIdRef.current = mapId;
-            // A rebuilt map starts empty, so the config effect has to redraw the job rather than diff against it.
-            prevConfigRef.current = undefined;
 
             // Clean up existing map if reinitializing
             if (mapInstance?.map) {

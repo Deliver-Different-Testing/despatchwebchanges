@@ -32,6 +32,12 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
     const [rejectDialogOpen, {open: openRejectDialog, close: closeRejectDialog}] = useDisclosure(false);
     const [reason, setReason] = useState('');
     const [actionError, setActionError] = useState<string | null>(null);
+    // The reject dialog covers the banner, so its failure is shown inside the dialog instead.
+    const [rejectError, setRejectError] = useState<string | null>(null);
+    const closeReject = () => {
+        setRejectError(null);
+        closeRejectDialog();
+    };
 
     const queryKey = ['partnerInboundRateAcceptance', jobId];
     const {data: state, isLoading} = useQuery({
@@ -61,18 +67,22 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
         mutationFn: (text: string) => rejectPartnerRate(jobId, text),
         onSuccess: (result) => {
             if (!result.success) {
-                setActionError(result.errorMessage ?? "Couldn't reject the rate. Try again.");
+                setRejectError(result.errorMessage ?? "Couldn't reject the rate. Try again.");
                 return;
             }
             setActionError(null);
-            closeRejectDialog();
+            closeReject();
             setReason('');
             void queryClient.invalidateQueries({queryKey});
         },
         onError: (err: unknown) => {
-            setActionError(errorMessageOf(err, "Couldn't reject the rate. Try again."));
+            setRejectError(errorMessageOf(err, "Couldn't reject the rate. Try again."));
         },
     });
+    // Escape or an overlay click must not drop the dialog while the rejection is still in flight.
+    const dismissReject = () => {
+        if (!rejectMutation.isPending) closeReject();
+    };
 
     if (isLoading || !state) return null;
 
@@ -121,14 +131,14 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
                 </Alert>
                 <DialogShell
                     opened={rejectDialogOpen}
-                    onClose={closeRejectDialog}
+                    onClose={dismissReject}
                     label="Reject partner rate"
                 >
                     <DialogHeader
                         icon={<Icon lucide={Ban}/>}
                         title="Reject partner rate"
                         variant="error"
-                        onClose={closeRejectDialog}
+                        onClose={dismissReject}
                         closeDisabled={rejectMutation.isPending}
                     />
                     <Box p="lg" bg={dialogContentBg}>
@@ -145,9 +155,12 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
                             onChange={(e) => setReason(e.currentTarget.value)}
                             disabled={rejectMutation.isPending}
                         />
+                        {rejectError && (
+                            <Text role="alert" size="xs" c="red" mt="xs">{rejectError}</Text>
+                        )}
                     </Box>
                     <DialogFooter
-                        onCancel={closeRejectDialog}
+                        onCancel={dismissReject}
                         onConfirm={() => rejectMutation.mutate(reason.trim())}
                         confirmLabel="Reject rate"
                         confirmColor="red"

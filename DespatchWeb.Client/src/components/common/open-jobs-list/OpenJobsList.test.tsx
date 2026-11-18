@@ -161,6 +161,27 @@ describe('OpenJobsList', () => {
         expect(screen.getByText('2–2 of 2')).toBeInTheDocument();
     });
 
+    it('moves the stored page back to the last page once loaded, so regrown data does not jump forward', () => {
+        const onPageChange = vi.fn();
+        const jobs = [createMockOpenJob({jobId: 1}), createMockOpenJob({jobId: 2})];
+
+        const {rerender} = renderList({openJobs: jobs, limit: 1, page: 5, isLoading: true, onPageChange});
+        expect(onPageChange).not.toHaveBeenCalled();
+
+        rerender(
+            <MantineTestProvider>
+                <OpenJobsList {...baseProps} openJobs={jobs} limit={1} page={5} isLoading={false} onPageChange={onPageChange} />
+            </MantineTestProvider>,
+        );
+        expect(onPageChange).toHaveBeenCalledWith(2);
+    });
+
+    it('leaves the stored page alone while the list is empty', () => {
+        const onPageChange = vi.fn();
+        renderList({openJobs: [], limit: 1, page: 5, isLoading: false, onPageChange});
+        expect(onPageChange).not.toHaveBeenCalled();
+    });
+
     it('writes nothing to localStorage', () => {
         const setItem = vi.spyOn(Storage.prototype, 'setItem');
         renderList({openJobs: [createMockOpenJob()]});

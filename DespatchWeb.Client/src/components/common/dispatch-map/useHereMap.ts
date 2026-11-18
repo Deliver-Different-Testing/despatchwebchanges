@@ -49,7 +49,7 @@ export function useHereMap({
     centerRef.current = center;
 
     // Fetch API key
-    const { data: apiKey, isLoading: isLoadingKey, isError: keyFailed } = useQuery({
+    const { data: apiKey, isLoading: isLoadingKey, isError: keyErrored, isSuccess: keySettled } = useQuery({
         queryKey: queryKeys.hereMaps.apiKey,
         queryFn: getHereMapsKey,
         staleTime: Infinity,
@@ -171,7 +171,9 @@ export function useHereMap({
         }
     }, [zoom]);
 
-    // Without a key the map can never initialise, so a failed key fetch ends loading as an error.
+    // Without a key the map can never initialise, so a failed key fetch ends loading as an error. An
+    // empty key counts too: the courier map caches a failed fetch as null under the same query key.
+    const keyFailed = keyErrored || (keySettled && !apiKey);
     const failure = error ?? (keyFailed ? new Error('Failed to load the HERE Maps API key') : null);
 
     return {

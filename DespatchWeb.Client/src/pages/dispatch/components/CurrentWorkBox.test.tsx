@@ -298,6 +298,37 @@ describe('CurrentWorkBox', () => {
             expect(screen.getByRole('radio', {name: '007'})).toBeInTheDocument();
         });
 
+        it('keeps naming the focused driver after an unassigned job is selected', () => {
+            const props = {
+                isUsCustomer: true,
+                selectedJobId: 7,
+                selectedJobCourierId: 42,
+                selectedJobCourierName: 'Jane Smith',
+            };
+            const {rerender} = renderBox(props);
+            expect(screen.getByRole('radio', {name: 'Jane Smith'})).toBeInTheDocument();
+
+            const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+            rerender(
+                <QueryClientProvider client={queryClient}>
+                    <MantineTestProvider>
+                        <CurrentWorkBox
+                            showToast={vi.fn()}
+                            startDate={defaultStart}
+                            endDate={defaultEnd}
+                            {...props}
+                            selectedJobId={8}
+                            selectedJobCourierId={undefined}
+                            selectedJobCourierName={undefined}
+                        />
+                    </MantineTestProvider>
+                </QueryClientProvider>,
+            );
+
+            expect(screen.getByRole('radio', {name: 'Jane Smith'})).toBeInTheDocument();
+            expect(screen.queryByRole('radio', {name: 'Selected driver'})).not.toBeInTheDocument();
+        });
+
         it('falls back to the driver name on the US toggle when number mode is requested but no number is available (manual pick)', async () => {
             renderBox({isUsCustomer: true, courierDisplayMode: 'number'});
 

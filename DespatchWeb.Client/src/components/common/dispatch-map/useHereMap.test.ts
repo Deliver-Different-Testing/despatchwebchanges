@@ -343,6 +343,18 @@ describe('useHereMap', () => {
             expect(result.current.isLoading).toBe(false);
         });
 
+        it('stops loading and reports an error when the cached API key is empty', async () => {
+            // The courier map caches a failed key fetch as null under the same query key.
+            (configApi.getHereMapsKey as Mock).mockResolvedValue(null);
+
+            const { result } = renderHook(() => useHereMap(), {
+                wrapper: createWrapper(),
+            });
+
+            await waitFor(() => expect(result.current.error).not.toBeNull());
+            expect(result.current.isLoading).toBe(false);
+        });
+
         it('isLoading reflects query loading state', async () => {
             const { result } = renderHook(() => useHereMap(), {
                 wrapper: createWrapper(),
