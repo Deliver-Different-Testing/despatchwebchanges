@@ -50,6 +50,10 @@ vi.mock('../../../../api/jobDetailApi', () => ({
     getJobOverlayDocuments: vi.fn().mockResolvedValue([]),
     saveRecurringFlight: vi.fn().mockResolvedValue(undefined),
     updateJobDetail: vi.fn().mockResolvedValue(undefined),
+    // jobListApi re-exports these from here.
+    updateJobReadStatus: vi.fn().mockResolvedValue(undefined),
+    allocateJob: vi.fn().mockResolvedValue(undefined),
+    reAllocateJob: vi.fn().mockResolvedValue(undefined),
     updateBulkJobDetail: vi.fn().mockResolvedValue(undefined),
     getFamilyForDateChange: vi.fn().mockResolvedValue({relationshipTypeId: null, members: []}),
 }));

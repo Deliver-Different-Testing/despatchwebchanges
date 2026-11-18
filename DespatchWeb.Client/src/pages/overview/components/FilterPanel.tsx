@@ -150,13 +150,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         }
     }, [dateRange, onDateRangeChange]);
 
-    const handleClearDateRange = useCallback(
-        (e: React.MouseEvent) => {
-            e.stopPropagation();
-            onDateRangeChange({});
-        },
-        [onDateRangeChange],
-    );
+    const handleClearDateRange = useCallback(() => onDateRangeChange({}), [onDateRangeChange]);
 
     return (
         <Card withBorder p={0} h="100%" style={{display: 'flex', flexDirection: 'column'}}>
@@ -178,31 +172,32 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 {/* Date Range */}
                 <Stack gap={CRITERION_LABEL_GAP} miw={0}>
                     <GroupLabel selected={hasDateFilter ? 1 : 0}>Date range</GroupLabel>
-                    <Button
-                        size="xs"
-                        h={34}
-                        fullWidth
-                        variant={hasDateFilter ? 'filled' : 'default'}
-                        onClick={handleOpenDateDialog}
-                        justify="flex-start"
-                        leftSection={<SymbolIcon name={hasDateFilter ? 'calendar_month' : 'date_range'} size={18} />}
-                        rightSection={
-                            hasDateFilter ? (
-                                <ActionIcon
-                                    component="span"
-                                    variant="transparent"
-                                    c="inherit"
-                                    size="sm"
-                                    onClick={handleClearDateRange}
-                                    aria-label="Clear date range"
-                                >
-                                    <SymbolIcon name="close" size={18} />
-                                </ActionIcon>
-                            ) : undefined
-                        }
-                    >
-                        {hasDateFilter ? getDateRangeDisplay() : 'Select dates'}
-                    </Button>
+                    {/* Clear is its own button beside the date button: a control nested inside
+                        another button can't be focused or announced on its own. */}
+                    <Group gap={4} wrap="nowrap">
+                        <Button
+                            size="xs"
+                            h={34}
+                            fullWidth
+                            variant={hasDateFilter ? 'filled' : 'default'}
+                            onClick={handleOpenDateDialog}
+                            justify="flex-start"
+                            leftSection={<SymbolIcon name={hasDateFilter ? 'calendar_month' : 'date_range'} size={18} />}
+                            style={{flex: 1, minWidth: 0}}
+                        >
+                            {hasDateFilter ? getDateRangeDisplay() : 'Select dates'}
+                        </Button>
+                        {hasDateFilter && (
+                            <ActionIcon
+                                variant="default"
+                                size={34}
+                                onClick={handleClearDateRange}
+                                aria-label="Clear date range"
+                            >
+                                <SymbolIcon name="close" size={18} />
+                            </ActionIcon>
+                        )}
+                    </Group>
                 </Stack>
 
                 {/*

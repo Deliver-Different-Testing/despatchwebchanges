@@ -4249,6 +4249,7 @@ public partial class JobRepository(
                 From = fs != null ? fs.UcsuName : null,
                 ToSuburbId = j.ToSuburbId,
                 JobNo = j.Number,
+                FromAddress = j.FromAddress,
                 ToAddress = j.ToAddress,
                 PickupAddress = new AddressViewModel
                 {

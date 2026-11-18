@@ -402,14 +402,15 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
 
         try {
             // Process pickup address
-            const pickupResult = await processAddress(selectedPickupAddress!);
+            // The two lookups are independent, so they run side by side.
+            const [pickupResult, deliveryResult] = await Promise.all([
+                processAddress(selectedPickupAddress!),
+                processAddress(selectedDeliveryAddress!),
+            ]);
             if (!pickupResult) {
                 showToast("Couldn't process the pickup address. Check it and try again.", 'error');
                 return;
             }
-
-            // Process delivery address
-            const deliveryResult = await processAddress(selectedDeliveryAddress!);
             if (!deliveryResult) {
                 showToast("Couldn't process the delivery address. Check it and try again.", 'error');
                 return;

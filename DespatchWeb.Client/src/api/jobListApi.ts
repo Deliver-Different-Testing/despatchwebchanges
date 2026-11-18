@@ -10,7 +10,11 @@ import {JobStatus} from '../types/enums/job-status.enum';
 import InternalJobStatus from "../types/enums/job-internal-status.enum";
 import type {EditAddressDialogViewModel} from '../types';
 import type {RestorePodImpactRow} from '../services/restorePodImpact';
+import {updateJobDetail, updateJobReadStatus, allocateJob as allocateJobs, reAllocateJob as reAllocateJobs} from './jobDetailApi';
 import type {JobUpdateResponse} from './jobDetailApi';
+
+// One implementation of each job write, shared with job details.
+export {updateJobDetail, updateJobReadStatus, allocateJobs, reAllocateJobs};
 
 // ── Add Stop ─────────────────────────────────────────────────────────
 
@@ -29,12 +33,6 @@ export async function addStopToJob(
 
 // ── Read Status ──────────────────────────────────────────────────────
 
-export async function updateJobReadStatus(jobId: number, hasBeenRead: boolean): Promise<void> {
-    await apiClient.post('job/UpdateJobReadStatus', null, {
-        params: {jobId, hasBeenRead},
-    });
-}
-
 export async function bulkUpdateReadStatus(jobIds: number[], shouldMarkAsRead: boolean): Promise<void> {
     await apiClient.post('job/BulkUpdateReadStatus', {jobIds, shouldMarkAsRead});
 }
@@ -43,20 +41,6 @@ export async function bulkUpdateReadStatus(jobIds: number[], shouldMarkAsRead: b
 
 export async function restoreNationwideJob(jobId: number): Promise<void> {
     await apiClient.post('nationwideJob/RestoreJob', {jobId});
-}
-
-// ── Job Updates ──────────────────────────────────────────────────────
-
-export async function updateJobDetail(
-    jobId: number,
-    field: string,
-    value: unknown,
-    isRecurring: boolean = false,
-): Promise<JobUpdateResponse> {
-    const url = isRecurring ? 'job/UpdateRecurringJob' : 'job/UpdateJob';
-    return apiClient.post<JobUpdateResponse>(url, null, {
-        params: {jobId, field, value, isRecurring},
-    });
 }
 
 // ── Late Call ────────────────────────────────────────────────────────
@@ -70,16 +54,6 @@ export interface LateCallRequest {
 
 export async function lateCall(request: LateCallRequest): Promise<void> {
     await apiClient.post('job/LateCall', request);
-}
-
-// ── Dispatch / Re-dispatch ───────────────────────────────────────────
-
-export async function allocateJobs(courierId: number, jobIds: number[]): Promise<void> {
-    await apiClient.post('job/Allocate', {courierId, jobIds});
-}
-
-export async function reAllocateJobs(courierId: number, jobIds: number[]): Promise<void> {
-    await apiClient.post('job/ReAllocate', {courierId, jobIds});
 }
 
 // ── Change paid courier (archived jobs) ──────────────────────────────

@@ -62,7 +62,7 @@ export function updateJobDetail(
     jobId: number,
     field: string,
     value: unknown,
-    isRecurring: boolean,
+    isRecurring = false,
     timezone?: string,
     options?: {cascadeToChildren?: boolean}
 ): Promise<JobUpdateResponse> {
