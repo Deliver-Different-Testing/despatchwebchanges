@@ -127,7 +127,9 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
     // use to give the user one line of "what's happening here" context.
     const subtitle = isLoading
         ? 'Loading partner change requests…'
-        : items.length === 0
+        : error && items.length === 0
+            ? "Couldn't load change requests"
+            : items.length === 0
             ? 'All clear · nothing to review'
             : `${items.length} change request${items.length === 1 ? '' : 's'} awaiting your decision${isFetching ? ' · refreshing…' : ''}`;
 

@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import {IconPackage} from '@tabler/icons-react';
 import {formatCurrency} from '../../../utils/currencyUtils';
+import {errorMessageOf} from '../../../utils/errorMessage';
 import type {ShowToastFn} from '../../../services/toastService';
 import {Icon} from '../../common/icon/Icon';
 import {
@@ -94,15 +95,8 @@ export interface PriceBreakdownDialogProps {
     showToast?: ShowToastFn;
 }
 
-const extractErrorMessage = (error: unknown, fallback: string): string => {
-    if (error instanceof Error && error.message) {
-        return error.message;
-    }
-    if (typeof error === 'string' && error.length > 0) {
-        return error;
-    }
-    return fallback;
-};
+const extractErrorMessage = (error: unknown, fallback: string): string =>
+    typeof error === 'string' && error.length > 0 ? error : errorMessageOf(error, fallback);
 
 const calculateMargin = (revenue: number, cost: number): number => {
     if (revenue <= 0) return 0;

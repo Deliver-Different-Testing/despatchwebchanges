@@ -32,7 +32,7 @@ export interface DispatchJobActionsMenuProps {
 
 const ACTIONS: JobAction<DispatchJobActionId>[] = [
     {id: 'dispatch', label: 'Dispatch to courier', icon: 'send_to_mobile',
-        available: job => !job.bulkJob && !job.preBook},
+        available: job => !job.isBulkJob && !job.preBook},
     {id: 'addStop', label: 'Add stop', icon: 'pin_drop',
         available: job => job.isAgentJob},
     {id: 'accessorialCharges', label: 'Accessorial charges', icon: 'receipt_long',
@@ -48,7 +48,7 @@ const ACTIONS: JobAction<DispatchJobActionId>[] = [
     {id: 'split', label: 'Split job', icon: 'shuffle',
         available: job => !!job.allowSplit && !isNetworkPartnerSession()},
     {id: 'swapPod', label: 'Swap POD', icon: 'swap_calls',
-        available: job => !!job.done && !job.bulkJob && !job.preBook},
+        available: job => !!job.done && !job.isBulkJob && !job.preBook},
 ];
 
 export const DispatchJobActionsMenu: React.FC<DispatchJobActionsMenuProps> = ({currentJob, onAction}) => (

@@ -55,6 +55,7 @@ public static partial class JobMappings
                     : null,
 
             From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : "Unknown",
+            FromAddress = j.UcjbFromAddr,
             ToAddress = j.UcjbToAddr,
             PickupAddress = new AddressViewModel
             {
@@ -217,6 +218,7 @@ public static partial class JobMappings
 
             From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
             ToSuburbId = j.UcjbTo,
+            FromAddress = j.UcjbFromAddr,
             ToAddress = j.UcjbToAddr,
 
             PickupAddress = new AddressViewModel

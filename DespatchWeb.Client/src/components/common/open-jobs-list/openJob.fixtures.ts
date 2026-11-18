@@ -13,7 +13,7 @@ export function createMockOpenJob(overrides: Partial<IOpenJobResponse> = {}): IO
         deliveryAddress: '456 High St',
         driverName: 'John Smith',
         completedToday: 5,
-        lastCompleted: '13:00',
+        lastCompleted: '2024-01-15T13:00:00+13:00',
         quantity: 2,
         packageType: 'Parcel',
         mileage: 15,

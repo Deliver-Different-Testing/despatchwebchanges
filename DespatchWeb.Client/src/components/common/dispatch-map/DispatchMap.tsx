@@ -8,7 +8,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {useQuery} from '@tanstack/react-query';
-import {Box, Progress} from '@mantine/core';
+import {Box, Progress, Text} from '@mantine/core';
 import type {DispatchMapProps} from './DispatchMap.types';
 import {COURIER_REFRESH_INTERVAL_MS} from './DispatchMap.types';
 import {useHereMap} from './useHereMap';
@@ -68,7 +68,7 @@ export function DispatchMap({
     );
 
     // Initialize HERE Map
-    const { mapContainerRef, map, isLoading, isReady } = useHereMap({
+    const { mapContainerRef, map, isLoading, isReady, error: mapError } = useHereMap({
         center: mapCenter,
         zoom: mapZoom,
         onMapReady: handleMapReady,
@@ -272,6 +272,11 @@ export function DispatchMap({
                 />
             )}
             <Box className={styles.dispatchMapContainer}>
+                {mapError && (
+                    <Text role="alert" fz="sm" c="dimmed" ta="center" className={styles.loadingOverlay}>
+                        Couldn't load the map. Refresh the page to try again.
+                    </Text>
+                )}
                 {/* HERE Maps renders info bubbles / tooltips inside this container at a
                     high z-index (~1001). Isolate its stacking context so those overlays
                     can never paint over the surrounding app chrome, and host the control

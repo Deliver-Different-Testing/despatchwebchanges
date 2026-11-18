@@ -395,6 +395,23 @@ describe('CreateJobDialog', () => {
             (jobApi.quickCreateJob as Mock).mockResolvedValue({jobId: 999, jobNumber: 'ABC123'});
         }
 
+        it('looks up the pickup and delivery addresses at the same time', async () => {
+            mockSelectableQuickCreate();
+            const pending: Array<() => void> = [];
+            (addressApi.getLocationDetailsById as Mock).mockImplementation(
+                () => new Promise(resolve => pending.push(() => resolve(mockLookupResponse))),
+            );
+            renderWithAllProviders(<CreateJobDialog {...createMockProps({isUsTenant: false})} />);
+            await fillRequiredFields(/weight \(kg\)/i);
+
+            fireEvent.click(screen.getByRole('button', {name: /create job/i}));
+
+            // Both are in flight before either answers.
+            await waitFor(() => expect(addressApi.getLocationDetailsById).toHaveBeenCalledTimes(2));
+            pending.forEach(resolve => resolve());
+            await waitFor(() => expect(jobApi.quickCreateJob).toHaveBeenCalledTimes(1));
+        });
+
         it('submits with US-tenant Lb weight, copies the job number and names it in the toast', async () => {
             const onSubmit = vi.fn();
             const showToast = vi.fn();

@@ -19,10 +19,17 @@ export function useUnreadMessageCount(): {count: number; refresh: () => Promise<
     useEffect(() => {
         mounted.current = true;
         void refresh();
-        const id = setInterval(() => void refresh(), POLL_INTERVAL_MS);
+        const id = setInterval(() => {
+            if (document.visibilityState !== 'hidden') void refresh();
+        }, POLL_INTERVAL_MS);
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'visible') void refresh();
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
         return () => {
             mounted.current = false;
             clearInterval(id);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
         };
     }, [refresh]);
 

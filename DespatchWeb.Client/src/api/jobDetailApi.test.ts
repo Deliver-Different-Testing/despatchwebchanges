@@ -29,7 +29,6 @@ import {
     getContactList,
     getActiveStaff,
     getUndeliverableList,
-    restoreJobs,
     allocateJob,
     getCourierById,
     downloadFile,
@@ -315,14 +314,6 @@ describe('jobDetailApi', () => {
     // ── Job Dispatch + Package Operations ───────────────────────────
 
     describe('Job Dispatch Operations', () => {
-        it('restoreJobs posts jobIds', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-
-            await restoreJobs([1, 2, 3]);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/RestoreJobs', {jobIds: [1, 2, 3], removeCapturedImages: false});
-        });
-
         it('allocateJob posts courierId and jobIds', async () => {
             mockApiClient.post.mockResolvedValueOnce(undefined);
 
@@ -508,7 +499,6 @@ describe('jobDetailApi', () => {
             ['updateDeliveryAddress', () => updateDeliveryAddress(1, false, {} as any), mockApiClient.post],
             ['updatePodDetails', () => updatePodDetails({} as any), mockApiClient.post],
             ['updateJobReadStatus', () => updateJobReadStatus(1, true), mockApiClient.post],
-            ['restoreJobs', () => restoreJobs([1]), mockApiClient.post],
             ['allocateJob', () => allocateJob(1, [1]), mockApiClient.post],
             ['deleteJobFile', () => deleteJobFile(1, 'key'), mockApiClient.delete],
             ['deleteJobDeliveryPhotoOrSignature', () => deleteJobDeliveryPhotoOrSignature(1, 'key'), mockApiClient.delete],

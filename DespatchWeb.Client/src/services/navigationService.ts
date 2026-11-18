@@ -7,12 +7,18 @@
 
 import {routePath} from '../routes/routeTable';
 
+/** The Hub twin of a Despatch URL: "despatch" becomes "hub" in the host only, never in the path or query. */
+export function toHubUrl(href: string): string {
+    const url = new URL(href);
+    url.hostname = url.hostname.replace(/despatch/g, 'hub');
+    return url.toString();
+}
+
 /**
- * Opens the Hub application in a new tab by replacing "despatch" in the current URL.
+ * Opens the Hub application in a new tab.
  */
 export function openHubUrl(): void {
-    const hubUrl = window.location.href.replace(/despatch/g, 'hub');
-    window.open(hubUrl, '_blank');
+    window.open(toHubUrl(window.location.href), '_blank');
 }
 
 /**

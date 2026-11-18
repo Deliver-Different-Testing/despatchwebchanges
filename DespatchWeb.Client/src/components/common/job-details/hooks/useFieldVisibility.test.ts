@@ -46,6 +46,15 @@ describe('useFieldVisibility', () => {
         expect(result.current.isFieldVisible('speedName')).toBe(true);
     });
 
+    it('hides a field missing from the defaults on its first toggle', () => {
+        const {result} = renderHook(() => useFieldVisibility(CONTACT_ID));
+
+        act(() => {
+            result.current.toggleField('notes');
+        });
+        expect(result.current.isFieldVisible('notes')).toBe(false);
+    });
+
     it('resetToDefaults restores default visibility', () => {
         const {result} = renderHook(() => useFieldVisibility(CONTACT_ID));
 

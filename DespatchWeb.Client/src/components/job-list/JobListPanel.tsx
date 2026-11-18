@@ -513,8 +513,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 // Plain click → set detail panel selection
                 setSelectedJobId(job.id);
                 if (onJobSelect) onJobSelect(job);
-                if (!job.hasBeenRead && !job.isArchived) {
-                    updateJobReadStatus(job.linkedJobId ?? job.id, true).then(() => {
+                const readStatusJobId = job.isBulkJob ? job.linkedJobId : job.id;
+                if (!job.hasBeenRead && !job.isArchived && readStatusJobId != null) {
+                    updateJobReadStatus(readStatusJobId, true).then(() => {
                         hookDataRef.current.refresh();
                     });
                 }
@@ -633,14 +634,32 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const [bulkRestoreConfirm, setBulkRestoreConfirm] = useState<RestorePodImpactSummary | null>(null);
     const [bulkRestoreChecking, setBulkRestoreChecking] = useState(false);
 
+    // A bulk ("scheduled") row's id is a BulkJobId, which the live-job endpoints would read as an
+    // unrelated tucJob: read status goes to the job it generated, and live-only actions skip it.
+    const selectedLiveJobIds = useCallback(
+        () => [...multiSelect.selectedIds].filter(id => !jobs.find(j => j.id === id)?.isBulkJob),
+        [multiSelect.selectedIds, jobs],
+    );
+    // Archived jobs live only in the archive tables and restore operates on live (tucJob) rows,
+    // so restoring one silently no-ops — exclude them.
+    const selectedRestorableIds = useCallback(
+        () => selectedLiveJobIds().filter(id => !jobs.find(j => j.id === id)?.isArchived),
+        [selectedLiveJobIds, jobs],
+    );
+    // A scheduled row not yet sent to live has no job to carry its read status, so it is skipped.
+    const selectedReadStatusIds = useCallback(
+        () => [...multiSelect.selectedIds].flatMap(id => {
+            const job = jobs.find(j => j.id === id);
+            if (!job?.isBulkJob) return [id];
+            return job.linkedJobId != null ? [job.linkedJobId] : [];
+        }),
+        [multiSelect.selectedIds, jobs],
+    );
+
     const performBulkRestore = useCallback(async (removeCapturedImages = false) => {
-        // Archived jobs live only in the archive tables; restore operates on live (tucJob)
-        // rows, so restoring an archived job silently no-ops — exclude them.
-        const ids = [...multiSelect.selectedIds].filter(
-            id => !jobs.find(j => j.id === id)?.isArchived,
-        );
+        const ids = selectedRestorableIds();
         if (ids.length === 0) {
-            showToast("Archived jobs can't be restored", 'warning');
+            showToast("Archived and scheduled jobs can't be restored", 'warning');
             return;
         }
         try {
@@ -652,18 +671,15 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             // reset status, then refresh the list.
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             hookDataRef.current.refresh();
-        } catch {
-            showToast("Couldn't restore the jobs. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't restore the jobs. Check your connection and try again."), 'error');
         }
-    }, [multiSelect, jobs, showToast]);
+    }, [multiSelect, showToast, selectedRestorableIds]);
 
     const handleBulkRestore = useCallback(async () => {
-        // Exclude archived jobs — restore only operates on live rows.
-        const restorableIds = [...multiSelect.selectedIds].filter(
-            id => !jobs.find(j => j.id === id)?.isArchived,
-        );
+        const restorableIds = selectedRestorableIds();
         if (restorableIds.length === 0) {
-            showToast("Archived jobs can't be restored", 'warning');
+            showToast("Archived and scheduled jobs can't be restored", 'warning');
             return;
         }
         if (bulkRestoreChecking) return;
@@ -686,31 +702,39 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             return;
         }
         void performBulkRestore();
-    }, [multiSelect, jobs, performBulkRestore, showToast, bulkRestoreChecking]);
+    }, [jobs, performBulkRestore, showToast, bulkRestoreChecking, selectedRestorableIds]);
 
     const handleBulkMarkRead = useCallback(async () => {
-        const ids = [...multiSelect.selectedIds];
+        const ids = selectedReadStatusIds();
+        if (ids.length === 0) {
+            showToast("Scheduled jobs that haven't been sent to live can't be marked as read", 'warning');
+            return;
+        }
         try {
             await bulkUpdateReadStatus(ids, true);
             showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as read`, 'success');
             multiSelect.clear();
             hookDataRef.current.refresh();
-        } catch {
-            showToast("Couldn't mark the jobs as read. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't mark the jobs as read. Check your connection and try again."), 'error');
         }
-    }, [multiSelect, showToast]);
+    }, [multiSelect, showToast, selectedReadStatusIds]);
 
     const handleBulkMarkUnread = useCallback(async () => {
-        const ids = [...multiSelect.selectedIds];
+        const ids = selectedReadStatusIds();
+        if (ids.length === 0) {
+            showToast("Scheduled jobs that haven't been sent to live can't be marked as unread", 'warning');
+            return;
+        }
         try {
             await bulkUpdateReadStatus(ids, false);
             showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as unread`, 'success');
             multiSelect.clear();
             hookDataRef.current.refresh();
-        } catch {
-            showToast("Couldn't mark the jobs as unread. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't mark the jobs as unread. Check your connection and try again."), 'error');
         }
-    }, [multiSelect, showToast]);
+    }, [multiSelect, showToast, selectedReadStatusIds]);
 
     // Bulk dispatch dialog state. The universal DispatchDialog is rendered at the
     // panel level so the toolbar's "Dispatch" button just toggles open=true.
@@ -722,7 +746,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const handleBulkDispatchCourier = useCallback(async (
         {type, destination, emailSubject, emailBody}: DispatchConfirmation,
     ) => {
-        const ids = [...multiSelect.selectedIds];
+        const ids = selectedLiveJobIds();
+        if (ids.length === 0) {
+            throw new Error("Scheduled jobs can't be dispatched. Send them to live first.");
+        }
         try {
             let message: string;
             let severity: 'success' | 'warning' = 'success';
@@ -759,7 +786,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             const message = errorMessageOf(err, "Couldn't dispatch the jobs. Check your connection and try again.");
             throw new Error(message, {cause: err});
         }
-    }, [multiSelect, showToast, closeBulkDispatch]);
+    }, [multiSelect, showToast, closeBulkDispatch, selectedLiveJobIds]);
 
     // Bulk DFRNT Partner is disabled in the dialog (per-job rates required),
     // so this should never fire — but the dialog still needs the prop.
@@ -778,8 +805,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             // Refresh data — invalidate job detail so the detail panel updates too
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             hookDataRef.current.refresh();
-        } catch {
-            showToast("Couldn't dispatch the job. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't dispatch the job. Check your connection and try again."), 'error');
         }
     }, [showToast]);
 
@@ -921,7 +948,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 mode={{
                     kind: 'bulk',
                     jobs: visibleJobs
-                        .filter(j => multiSelect.selectedIds.has(j.id))
+                        .filter(j => multiSelect.selectedIds.has(j.id) && !j.isBulkJob)
                         .map(j => ({id: j.id, jobNo: j.jobNo})),
                 }}
                 initialType="Courier"
@@ -937,7 +964,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 open={bulkRestoreConfirm !== null}
                 count={[...multiSelect.selectedIds].filter(id => {
                     const j = jobs.find(x => x.id === id);
-                    return j && !j.isArchived && j.done;
+                    return j && !j.isArchived && !j.isBulkJob && j.done;
                 }).length}
                 podImpact={bulkRestoreConfirm ?? undefined}
                 onClose={() => setBulkRestoreConfirm(null)}

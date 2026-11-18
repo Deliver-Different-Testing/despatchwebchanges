@@ -124,6 +124,7 @@ public static partial class JobMappings
 
         // Job characteristics
         Weight = j.Weight.HasValue ? (double)j.Weight : null,
+        FromAddress = j.FromAddress,
         ToAddress = j.ToAddress,
         JobType = j.JobRelationshipTypeId ?? 0,
         JobTypeDescription = GetJobTypeDescription(j.JobRelationshipTypeId ?? 0),

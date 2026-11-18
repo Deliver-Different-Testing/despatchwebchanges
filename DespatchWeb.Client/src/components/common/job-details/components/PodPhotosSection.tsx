@@ -131,6 +131,9 @@ function PhotoGrid({
     useEffect(() => {
         if (photos.length <= 1) return;
         const handleKeyDown = (e: KeyboardEvent) => {
+            // The listener is window-wide, so arrows typed into a field (or already handled by an open viewer) must not move the carousel.
+            const target = e.target as HTMLElement | null;
+            if (e.defaultPrevented || target?.isContentEditable || target?.closest('input, textarea, select, [role="textbox"], [role="combobox"]')) return;
             if (e.key === 'ArrowLeft') {
                 setSelectedIndex(prev => (prev - 1 + photos.length) % photos.length);
             } else if (e.key === 'ArrowRight') {

@@ -38,13 +38,16 @@ export interface SessionContextDto {
 }
 
 let fetchedContext: SessionContextDto | null = null;
+let session: Session | null = null;
 
 export const setSessionContext = (context: SessionContextDto): void => {
     fetchedContext = context;
+    session = null;
 };
 
 export const clearSessionContext = (): void => {
     fetchedContext = null;
+    session = null;
 };
 
 const fromContext = (c: SessionContextDto): Session => ({
@@ -80,11 +83,13 @@ const UNSET: Session = {
 };
 
 /**
- * The single reader of session data: the fetched /api/context store. Reads at call time (never
- * cached) so values can be set after import; before it is set, returns inert defaults.
+ * The single reader of session data: the fetched /api/context store. Reads at call time so values
+ * can be set after import, mapping once per context (it sits on per-cell formatting paths); before
+ * it is set, returns inert defaults.
  */
 export function getSession(): Session {
-    return fetchedContext ? fromContext(fetchedContext) : UNSET;
+    if (!fetchedContext) return UNSET;
+    return session ??= fromContext(fetchedContext);
 }
 
 export const getContactId = (): number => getSession().contactId;

@@ -183,7 +183,7 @@ describe('InsertToLiveDialog', () => {
         const user = setupUser();
         const showToast = vi.fn();
         const onSuccess = vi.fn();
-        mockInsertToLive.mockRejectedValue({response: {data: 'Booking is not in Manual mode.'}});
+        mockInsertToLive.mockRejectedValue({status: 400, statusText: 'Bad Request', message: 'Booking is not in Manual mode.'});
         const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         renderDialog(createProps({showToast, onSuccess}));
@@ -219,5 +219,23 @@ describe('InsertToLiveDialog scope colours', () => {
         expect(colourOf('route')).toBe(insertScopeColors.route);
         expect(screen.getByText(/Just this one/)).toBeInTheDocument();
         expect(screen.getByText(/Wider reach/)).toBeInTheDocument();
+    });
+    it('resets a Route scope when reopened for a job without a route', async () => {
+        const user = setupUser();
+        mockInsertToLive.mockResolvedValue(createResult());
+        const props = createProps();
+        const {rerender} = renderDialog(props);
+
+        await user.click(screen.getByRole('radio', {name: /All Manual bookings/i}));
+        await user.click(screen.getByRole('button', {name: /Insert to live/i}));
+        await waitFor(() => expect(props.onSuccess).toHaveBeenCalled());
+
+        rerender(<InsertToLiveDialog {...props} open={false} job={null}/>);
+        rerender(<InsertToLiveDialog {...props} job={createJob({id: 43, routeId: undefined, routeName: undefined})}/>);
+        await user.click(screen.getByRole('button', {name: /Insert to live/i}));
+
+        await waitFor(() => expect(mockInsertToLive).toHaveBeenLastCalledWith(
+            expect.objectContaining({jobId: 43, scope: InsertToLiveScope.Group}),
+        ));
     });
 });

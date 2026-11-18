@@ -85,11 +85,13 @@ async function save(
         savedAmount = amount;
     }
 
+    // Recorded before the child saves: if one of those fails the parent's new price is still
+    // committed, and closing must report it so the caller refreshes.
+    host.update(state => ({...state, saved: {mode, amount: savedAmount}}));
+
     await Promise.all(
         childUpdates.map(c => simpleRepriceJobManual(c.jobId, c.isPrebook, c.isBulkJob, c.newPrice))
     );
-
-    host.update(state => ({...state, saved: {mode, amount: savedAmount}}));
 
     return savedAmount;
 }

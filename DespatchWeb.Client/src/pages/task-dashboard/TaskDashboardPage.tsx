@@ -60,7 +60,7 @@ import {
 } from '../../components/common/panel-controls';
 import {SegmentedToggle} from '../../components/common/segmented-toggle';
 import {NoData} from '../../components/common/no-data/NoData';
-import {formatDateForApi, tenantNow} from '../../utils/dateUtils';
+import {formatDateForApi, getIanaTimezone, tenantNow} from '../../utils/dateUtils';
 import {
     useActiveStaff,
     useEventTypes,
@@ -286,14 +286,14 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     // Check if task is overdue
     const isTaskOverdue = useCallback((task: ExtendedTask): boolean => {
         if (task.closed) return false;
-        return task.dueDate.isBefore(dayjs());
-    }, []);
+        return task.dueDate.isBefore(nowTick);
+    }, [nowTick]);
 
     // Open, not-yet-overdue, and due before the end of today.
     const isTaskDueToday = useCallback((task: ExtendedTask): boolean => {
         if (task.closed || isTaskOverdue(task)) return false;
-        return !task.dueDate.isAfter(tenantNow().endOf('day'));
-    }, [isTaskOverdue]);
+        return !task.dueDate.isAfter(dayjs(nowTick).tz(getIanaTimezone()).endOf('day'));
+    }, [isTaskOverdue, nowTick]);
 
     // Apply the time-to-action filter. `All` is all active work; the four cards
     // each narrow to one bucket, and `Upcoming` is everything beyond today.
@@ -347,7 +347,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             }];
         }
 
-        const now = tenantNow();
+        const now = dayjs(nowTick).tz(getIanaTimezone());
         const todayStart = now.startOf('day');
         const todayEnd = now.endOf('day');
         const tomorrowEnd = todayStart.add(1, 'day').endOf('day');
@@ -386,7 +386,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
         return definitions
             .filter(d => groups[d.key].length > 0)
             .map(d => ({...d, tasks: groups[d.key]}));
-    }, [filteredTasks, statusFilter]);
+    }, [filteredTasks, statusFilter, nowTick]);
 
     // Handle view mode change
     const handleViewModeChange = useCallback((newView: string) => {

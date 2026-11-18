@@ -422,6 +422,23 @@ describe('SettingsPage', () => {
             expect(screen.getByRole('button', {name: 'Reset to default'})).toBeDisabled();
         });
 
+        it('falls back to the tenant default loaded on mount when the post-reset reload fails', async () => {
+            mockGetPreference.mockResolvedValue(
+                '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',
+            );
+            mockGetTenantAddressFormatDefault
+                .mockResolvedValueOnce('{"pickup":{"line1":["postcode"],"line2":[]},"delivery":{"line1":["postcode"],"line2":[]}}')
+                .mockRejectedValueOnce(new Error('network'));
+            const user = setupUser();
+            renderWithMantine(<SettingsPage />);
+            await waitFor(() => expect(radioFor('pickup', 'Street name', 'Line 1')).toBeChecked());
+
+            await user.click(screen.getByRole('button', {name: 'Reset to default'}));
+
+            await waitFor(() => expect(radioFor('pickup', 'Postcode', 'Line 1')).toBeChecked());
+            expect(radioFor('pickup', 'Street name', 'Hidden')).toBeChecked();
+        });
+
         it('keeps a working user override even when the tenant default fetch fails', async () => {
             mockGetPreference.mockResolvedValue(
                 '{"pickup":{"line1":["streetName"],"line2":[]},"delivery":{"line1":[],"line2":[]}}',

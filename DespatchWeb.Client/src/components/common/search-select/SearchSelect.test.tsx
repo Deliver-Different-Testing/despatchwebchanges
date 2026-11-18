@@ -98,6 +98,32 @@ describe('SearchSelect', () => {
         await waitFor(() => expect(input).toHaveAttribute('aria-expanded', 'true'));
     });
 
+    it('says the search failed rather than that nothing matched', async () => {
+        mockSearch.mockRejectedValue({status: 500, message: 'boom'});
+        renderWithMantine(<Harness />);
+
+        const input = typeSearch('Co');
+        await flushDebounce();
+
+        const dropdown = dropdownFor(input);
+        expect(await within(dropdown).findByText(/Couldn't search/)).toBeInTheDocument();
+        expect(within(dropdown).queryByText(/No matches/)).not.toBeInTheDocument();
+    });
+
+    it('stops reporting a failed search once the term changes', async () => {
+        mockSearch.mockRejectedValue({status: 500, message: 'boom'});
+        renderWithMantine(<Harness />);
+
+        const input = typeSearch('Co');
+        await flushDebounce();
+        const dropdown = dropdownFor(input);
+        expect(await within(dropdown).findByText(/Couldn't search/)).toBeInTheDocument();
+
+        fireEvent.change(input, {target: {value: 'Cou'}});
+
+        await waitFor(() => expect(within(dropdown).queryByText(/Couldn't search/)).not.toBeInTheDocument());
+    });
+
     it('does not search below the minimum term length, and prompts instead', async () => {
         renderWithMantine(<Harness />);
 
