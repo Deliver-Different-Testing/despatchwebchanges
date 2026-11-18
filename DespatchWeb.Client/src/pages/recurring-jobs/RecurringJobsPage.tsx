@@ -114,19 +114,21 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     // rule (Active|Manual → ucbkActive=1, Inactive → ucbkActive=0). After
     // the call we refetch so the row falls out of / into whichever tab is
     // currently open.
-    const handleSetMode = useCallback(async (job: PrebookListModel, mode: RecurringMode) => {
+    const handleSetMode = useCallback(async (job: PrebookListModel, mode: RecurringMode): Promise<boolean> => {
         const modeLabel = RecurringMode[mode];
         try {
             await updateJobDetail(job.id, 'RecurringMode', String(mode), true);
-            showToast(`Mode changed to ${modeLabel}`, 'success');
-            await refetch();
         } catch (error) {
             const message = error instanceof Error
                 ? error.message
                 : `Couldn't change the mode to ${modeLabel}. Try again.`;
             console.error('Mode change failed:', error);
             showToast(message, 'error');
+            return false;
         }
+        showToast(`Mode changed to ${modeLabel}`, 'success');
+        await refetch();
+        return true;
     }, [refetch, showToast]);
 
     const handleFiltersChange = useCallback((filters: RecurringJobsFilters) => {
@@ -189,8 +191,9 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         if (!jobToDeactivate) return;
 
         setIsDeactivating(true);
-        await handleSetMode(jobToDeactivate, RecurringMode.Inactive);
+        const changed = await handleSetMode(jobToDeactivate, RecurringMode.Inactive);
         setIsDeactivating(false);
+        if (!changed) return;
         setDeactivateDialogOpen(false);
         setJobToDeactivate(null);
         setSelectedJobId(null);

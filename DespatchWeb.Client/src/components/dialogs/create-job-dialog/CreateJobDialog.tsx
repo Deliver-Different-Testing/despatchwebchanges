@@ -54,6 +54,7 @@ import {jobApi} from '../../../api/jobApi';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import {dayjs, formatDateForApi, getIanaTimezone, getInputDateFormat} from '../../../utils/dateUtils';
 import {getStateByAbbreviation} from '../../../utils/usStates';
+import {errorMessageOf} from '../../../utils/errorMessage';
 import type {Dayjs} from 'dayjs';
 import type {ShowToastFn} from '../../../services/toastService';
 import {
@@ -477,15 +478,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             onSubmit(newJobId);
         } catch (error) {
             console.error('[CreateJobDialog] Job creation failed:', error);
-            const serverMessage = (() => {
-                const data = (error as {response?: {data?: unknown}})?.response?.data;
-                if (typeof data === 'string' && data.trim()) return data;
-                if (data && typeof data === 'object' && 'message' in data && typeof (data as {message: unknown}).message === 'string') {
-                    return (data as {message: string}).message;
-                }
-                return null;
-            })();
-            showToast(serverMessage || "Couldn't create job. Try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't create job. Try again."), 'error');
         } finally {
             setIsLoading(false);
         }

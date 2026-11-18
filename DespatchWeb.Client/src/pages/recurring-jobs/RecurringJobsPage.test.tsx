@@ -276,6 +276,26 @@ describe('RecurringJobsPage', () => {
         expect(refetch).toHaveBeenCalled();
     });
 
+    it('keeps the deactivate dialog open when the mode change fails', async () => {
+        const showToast = vi.fn();
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse([createMockJob(1)]),
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+        } as any);
+        mockUpdateJobDetail.mockRejectedValueOnce(new Error('Server said no'));
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        renderWithProviders(createDefaultProps({showToast}));
+
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate job'}));
+
+        await waitFor(() => expect(showToast).toHaveBeenCalledWith('Server said no', 'error'));
+        expect(screen.getByText('Deactivate recurring job')).toBeInTheDocument();
+    });
+
     // ── Search ──────────────────────────────────────────────────────
     it('should update query when search text changes', async () => {
         vi.useFakeTimers();

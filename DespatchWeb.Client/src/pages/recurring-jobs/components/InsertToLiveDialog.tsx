@@ -1,5 +1,5 @@
 import {pluralise} from '../../../utils/pluralise';
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {Alert, Box, Paper, Radio, Stack, Text} from '@mantine/core';
 import {DateInput} from '@mantine/dates';
 import {Rocket} from 'lucide-react';
@@ -41,8 +41,7 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
     onSuccess,
     showToast,
 }) => {
-    const defaultDate = useMemo(() => dayjs().startOf('day'), []);
-    const [insertDate, setInsertDate] = useState<Dayjs | null>(defaultDate);
+    const [insertDate, setInsertDate] = useState<Dayjs | null>(() => dayjs().startOf('day'));
     // Group is the default and the only single-booking scope — it pushes
     // the booking's full parent/child family. Standalone bookings (no
     // children) still resolve to a family of one via Group, so a Single
@@ -50,14 +49,20 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
     const [scope, setScope] = useState<InsertToLiveScope>(InsertToLiveScope.Group);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // The dialog stays mounted between uses, so each open starts from today and
+    // Group — a Route scope left over from a routed job must not carry to one without a route.
+    useEffect(() => {
+        if (!open) return;
+        setInsertDate(dayjs().startOf('day'));
+        setScope(InsertToLiveScope.Group);
+    }, [open, job]);
+
     const handleClose = useCallback(() => {
         if (isSubmitting) {
             return;
         }
-        setInsertDate(defaultDate);
-        setScope(InsertToLiveScope.Group);
         onClose();
-    }, [defaultDate, isSubmitting, onClose]);
+    }, [isSubmitting, onClose]);
 
     const handleInsert = useCallback(async () => {
         if (!job || !insertDate) {
@@ -91,11 +96,8 @@ export const InsertToLiveDialog: React.FC<InsertToLiveDialogProps> = ({
         } catch (error) {
             // Backend returns 400 with the validation message for
             // scope/mode failures so the operator sees what to fix.
-            const message =
-                (error as { response?: { data?: string } })?.response?.data
-                || errorMessageOf(error, "Couldn't insert the jobs to live. Try again.");
             console.error('Insert-to-live failed:', error);
-            showToast(message, 'error');
+            showToast(errorMessageOf(error, "Couldn't insert the jobs to live. Try again."), 'error');
         } finally {
             setIsSubmitting(false);
         }

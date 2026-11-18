@@ -211,20 +211,33 @@ export const SettingsPage: React.FC = () => {
             );
     };
 
+    const showTenantSides = (tenantSides: AddressFormatSides) => {
+        const pickup = tenantSides.pickup ?? EMPTY_FORMAT;
+        const delivery = tenantSides.delivery ?? EMPTY_FORMAT;
+        setPickupSaved(pickup);
+        setPickupDraft(pickup);
+        setDeliverySaved(delivery);
+        setDeliveryDraft(delivery);
+    };
+
     const applyTenantAddressFormat = () => {
         setHasAddressOverride(false);
         void getTenantAddressFormatDefault()
             .then((tenantJson) => {
                 const tenantSides = parseAddressFormatJson(tenantJson);
-                const pickup = tenantSides.pickup ?? EMPTY_FORMAT;
-                const delivery = tenantSides.delivery ?? EMPTY_FORMAT;
-                setPickupSaved(pickup);
-                setPickupDraft(pickup);
-                setDeliverySaved(delivery);
-                setDeliveryDraft(delivery);
+                showTenantSides(tenantSides);
                 setTenantDefaults(tenantSides);
             })
-            .catch((error) => console.error('Failed to load tenant address format default:', error));
+            .catch((error) => {
+                console.error('Failed to load tenant address format default:', error);
+                // The override is already gone server-side, so the user's old format must not stay
+                // on screen as if saved: fall back to the default loaded on mount.
+                if (tenantDefaults.pickup || tenantDefaults.delivery) {
+                    showTenantSides(tenantDefaults);
+                } else {
+                    toastService.showErrorToast("Address format reset, but the default couldn't load. Reload the page to see it.");
+                }
+            });
     };
 
     // Refs so the guard (registered once) and the beforeunload listener always
