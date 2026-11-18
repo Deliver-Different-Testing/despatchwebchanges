@@ -22,7 +22,7 @@ public class DispatchLayoutRepositoryTests : IAsyncDisposable
     public DispatchLayoutRepositoryTests()
     {
         _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetStaffId().Returns(StaffId);
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns(new Suggestion { Id = StaffId, Text = "Jo Bloggs" });
     }
 
     public async ValueTask DisposeAsync()
@@ -157,6 +157,21 @@ public class DispatchLayoutRepositoryTests : IAsyncDisposable
 
         await repository.ReplaceLayoutsAsync("JobSearch", []);
 
+        Assert.Empty(await repository.GetLayoutsAsync("JobSearch"));
+    }
+
+    [Fact]
+    public async Task WhenCallerHasNoStaffRecord_LayoutsAreNotStoredAndNothingThrows()
+    {
+        _tenantInfoServiceMock.GetStaffInfoAsync().Returns((Suggestion?)null);
+        var repository = CreateRepository();
+
+        await repository.ReplaceLayoutsAsync("JobSearch", [Layout("Wide")]);
+
+        await using (var context = _db.CreateContext())
+        {
+            Assert.Equal(0, await context.StaffDispatchLayouts.CountAsync(TestContext.Current.CancellationToken));
+        }
         Assert.Empty(await repository.GetLayoutsAsync("JobSearch"));
     }
 }

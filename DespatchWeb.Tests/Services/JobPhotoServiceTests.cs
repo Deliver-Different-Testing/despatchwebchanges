@@ -65,8 +65,22 @@ public class JobPhotoServiceTests
         // Assert
         Assert.True(result.Success);
         Assert.Contains(".jpg", result.FileName);
-        Assert.Matches(@"^DeliveryPhotos/\d{4}/\d{2}/1-\d{14}\.jpg$", result.S3Key);
+        Assert.Matches(@"^DeliveryPhotos/\d{4}/\d{2}/1-\d{14}-[0-9a-f]{8}\.jpg$", result.S3Key);
         await _s3ClientMock.Received().PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UploadJobPhotoOrSignatureAsync_TwoUploadsInTheSameSecond_GetDistinctKeys()
+    {
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
+
+        var first = await service.UploadJobPhotoOrSignatureAsync(1, CreateMockFile("a.jpg", "image/jpeg", 100), JobPhotoType.Delivery);
+        var second = await service.UploadJobPhotoOrSignatureAsync(1, CreateMockFile("b.jpg", "image/jpeg", 100), JobPhotoType.Delivery);
+
+        Assert.NotEqual(first.S3Key, second.S3Key);
     }
 
     [Fact]
@@ -85,7 +99,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Matches(@"^DeliverySignatures/\d{4}/\d{2}/1-\d{14}\.png$", result.S3Key);
+        Assert.Matches(@"^DeliverySignatures/\d{4}/\d{2}/1-\d{14}-[0-9a-f]{8}\.png$", result.S3Key);
     }
 
     [Fact]
@@ -104,7 +118,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Matches(@"^PickupPhotos/\d{4}/\d{2}/1-\d{14}\.jpg$", result.S3Key);
+        Assert.Matches(@"^PickupPhotos/\d{4}/\d{2}/1-\d{14}-[0-9a-f]{8}\.jpg$", result.S3Key);
     }
 
     // Pickup signatures belong in PickupSignatures, alongside DeliverySignatures. They were misfiled into
@@ -127,7 +141,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Matches(@"^PickupSignatures/\d{4}/\d{2}/1-\d{14}\.png$", result.S3Key);
+        Assert.Matches(@"^PickupSignatures/\d{4}/\d{2}/1-\d{14}-[0-9a-f]{8}\.png$", result.S3Key);
     }
 
     [Fact]
@@ -277,7 +291,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Matches(@"^JobAttachments/\d{4}/\d{2}/1-\d{14}\.pdf$", result.S3Key);
+        Assert.Matches(@"^JobAttachments/\d{4}/\d{2}/1-\d{14}-[0-9a-f]{8}\.pdf$", result.S3Key);
     }
 
     [Theory]

@@ -29,21 +29,9 @@ public sealed class DispatchJobService(IJobCommandRepository jobRepository, ICou
         await DispatchJobsInternalAsync(jobIds, courierId);
     }
 
-    public async Task<CourierClaimOutcome> ClaimJobForCourierAsync(int jobId, int courierId, int staffId,
-        CancellationToken cancellationToken = default)
-    {
-        if (!await jobRepository.IsActiveStaffAsync(staffId, cancellationToken))
-        {
-            return CourierClaimOutcome.InvalidStaff;
-        }
-
-        if (!await jobRepository.IsActiveCourierAsync(courierId, cancellationToken))
-        {
-            return CourierClaimOutcome.InvalidCourier;
-        }
-
-        return await jobRepository.ClaimJobForCourierAsync(jobId, courierId, staffId, cancellationToken);
-    }
+    public Task<CourierClaimOutcome> ClaimJobForCourierAsync(int jobId, int courierId, int staffId,
+        CancellationToken cancellationToken = default) =>
+        jobRepository.ClaimJobForCourierAsync(jobId, courierId, staffId, cancellationToken);
 
     /// <summary>
     /// Internal implementation that assigns courier to jobs, resets clear list order, and dispatches child jobs.

@@ -67,7 +67,9 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
         { "status", (int)JobStatus.Completed }, { "status", (int)JobStatus.Undeliverable }, { "status", (int)JobStatus.Void },
         { "status", (int)JobStatus.Missing }, { "status", (int)JobStatus.Acknowledge }, { "status", (int)JobStatus.LateDelivery },
         { "status", (int)JobStatus.AwaitingPod }, { "status", (int)JobStatus.AssumingCompleted },
-        { "status", (int)JobStatus.OutForDelivery }, { "completed", 0 }
+        { "status", (int)JobStatus.OutForDelivery }, { "status", (int)JobStatus.ReadyForPacking },
+        { "status", (int)JobStatus.ReadyToPickup }, { "status", (int)JobStatus.AwaitingProcessing },
+        { "status", 19 }, { "completed", 0 }, { "partner", 0 }
     };
 
     private static void Block(TucJob job, string reason, int status)
@@ -81,6 +83,7 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
             case "void": job.UcjbVoid = true; break;
             case "done": job.UcjbJobDone = true; break;
             case "completed": job.UcjbComplTime = TestDates.Now; break;
+            case "partner": job.PartnerJobGuid = Guid.NewGuid(); break;
             default: job.UcjbStatus = status; break;
         }
     }
@@ -121,13 +124,18 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
         Assert.Null(job.FdcourierId);
         Assert.Equal(TestDates.Now, job.UcjbDispDate);
         Assert.Equal(TestDates.Now, job.UcjbDispTime);
-        await _courierRepository.Received(1).ResetClearListAreaOrderAsync(CourierId, Arg.Any<DespatchContext>());
+        await _courierRepository.Received(1).ResetClearListAreaOrderAsync(CourierId, Arg.Any<DespatchContext>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task Claim_TreatsANullStatusAsOpen()
+    [Theory]
+    [InlineData(null)]
+    [InlineData((int)JobStatus.New)]
+    [InlineData((int)JobStatus.Rejected)]
+    [InlineData((int)JobStatus.LatePickup)]
+    [InlineData((int)JobStatus.Warning)]
+    public async Task Claim_OnAWaitingStatus_Assigns(int? status)
     {
-        await Seed(j => j.UcjbStatus = null);
+        await Seed(j => j.UcjbStatus = status);
 
         Assert.Equal(CourierClaimOutcome.Assigned,
             await CreateRepository().ClaimJobForCourierAsync(JobId, CourierId, StaffId, TestContext.Current.CancellationToken));
@@ -145,9 +153,13 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Claim_OnAMissingJob_IsNotFound() =>
+    public async Task Claim_OnAMissingJob_IsNotFound()
+    {
+        await Seed(j => j.UcjbId = JobId + 1);
+
         Assert.Equal(CourierClaimOutcome.NotFound,
             await CreateRepository().ClaimJobForCourierAsync(JobId, CourierId, StaffId, TestContext.Current.CancellationToken));
+    }
 
     [Fact]
     public async Task Claim_ASecondTime_IsAlreadyYours_SoARetryAfterAnUnknownCommitIsSafe()
@@ -165,7 +177,7 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
     public async Task Claim_WhenALaterStepFails_RollsBackTheClaimAndAnythingTheStepWroteOnTheSameContext()
     {
         await Seed(null, new TucJob { UcjbId = 11, UcjbNumber = "J11", UcjbStatus = (int)JobStatus.New });
-        _courierRepository.ResetClearListAreaOrderAsync(CourierId, Arg.Any<DespatchContext>()).Returns(async call =>
+        _courierRepository.ResetClearListAreaOrderAsync(CourierId, Arg.Any<DespatchContext>(), Arg.Any<CancellationToken>()).Returns(async call =>
         {
             await call.Arg<DespatchContext>().TucJobs.Where(j => j.UcjbId == 11)
                 .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbStatus, 77));
@@ -192,9 +204,10 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
     }
 
     [Theory]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task Claim_WhenTheCourierOrStaffIsNoLongerActive_ChangesNothing(bool courierActive, bool staffActive)
+    [InlineData(true, false, CourierClaimOutcome.InvalidStaff)]
+    [InlineData(false, true, CourierClaimOutcome.InvalidCourier)]
+    public async Task Claim_WhenTheCourierOrStaffIsNoLongerActive_SaysWho_AndChangesNothing(bool courierActive,
+        bool staffActive, CourierClaimOutcome expected)
     {
         await Seed();
         await using (var context = _db.CreateContext())
@@ -207,7 +220,7 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
 
         var outcome = await CreateRepository().ClaimJobForCourierAsync(JobId, CourierId, StaffId, TestContext.Current.CancellationToken);
 
-        Assert.Equal(CourierClaimOutcome.Unavailable, outcome);
+        Assert.Equal(expected, outcome);
         Assert.Null((await Reload()).UcjbCourierId);
         await _courierRepository.DidNotReceiveWithAnyArgs().ResetClearListAreaOrderAsync(default, default!);
     }
@@ -215,7 +228,7 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
     [Theory]
     [InlineData("100", false)]
     [InlineData("200", true)]
-    public async Task Claim_OnAJobSentOutToAPartner_IsUnavailable_ButAnInboundOneCanBeClaimed(string ownerTenantId, bool claimable)
+    public async Task Claim_OnAPartnerJobInEitherDirection_IsUnavailable(string ownerTenantId, bool inbound)
     {
         _tenantInfo.GetCurrentTenantId().Returns("100");
         await using (var context = _db.CreateContext())
@@ -228,46 +241,61 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        await Seed(j => j.PartnerPairingId = 7);
+        await Seed(j =>
+        {
+            j.PartnerPairingId = 7;
+            j.PartnerJobGuid = inbound ? Guid.NewGuid() : null;
+        });
 
         var outcome = await CreateRepository().ClaimJobForCourierAsync(JobId, CourierId, StaffId, TestContext.Current.CancellationToken);
 
-        Assert.Equal(claimable ? CourierClaimOutcome.Assigned : CourierClaimOutcome.Unavailable, outcome);
+        Assert.Equal(CourierClaimOutcome.Unavailable, outcome);
     }
 
     [Theory]
-    [InlineData("void")]
-    [InlineData("done")]
-    [InlineData("completed")]
-    public async Task Claim_OnTheirOwnFinishedJob_IsUnavailable_NotAlreadyYours(string reason)
+    [InlineData("void", 0)]
+    [InlineData("done", 0)]
+    [InlineData("completed", 0)]
+    [InlineData("status", (int)JobStatus.Completed)]
+    [InlineData("status", (int)JobStatus.Undeliverable)]
+    [InlineData("status", (int)JobStatus.Void)]
+    [InlineData("status", (int)JobStatus.Missing)]
+    public async Task Claim_OnTheirOwnFinishedJob_IsUnavailable_NotAlreadyYours(string reason, int status)
     {
         await Seed(j =>
         {
             j.UcjbCourierId = CourierId;
-            Block(j, reason, 0);
+            Block(j, reason, status);
         });
 
         Assert.Equal(CourierClaimOutcome.Unavailable,
             await CreateRepository().ClaimJobForCourierAsync(JobId, CourierId, StaffId, TestContext.Current.CancellationToken));
     }
 
-    [Fact]
-    public async Task ActiveChecks_RequireAnActiveRow()
+    [Theory]
+    [InlineData(StaffId, StaffId)]
+    [InlineData(0, null)]
+    public async Task AssignCourierToJob_WritesTheDispatchStamps(int dispatcherStaffId, int? expectedDispId)
     {
-        await using (var context = _db.CreateContext())
+        await Seed(j =>
         {
-            context.TucStaffs.AddRange(new TucStaff { UcstId = 1, UcstFirstName = "A", UcstLastName = "B", CreatedBy = "T", LastModifiedBy = "T", UcstActive = true }, new TucStaff { UcstId = 2, UcstFirstName = "C", UcstLastName = "D", CreatedBy = "T", LastModifiedBy = "T", UcstActive = false });
-            context.TucCouriers.AddRange(new TucCourier { UccrId = 1, Code = "C1", UccrName = "A", UccrSurname = "B", UccrEmail = "a@t.com", UccrMobile = "1", Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T", Active = true }, new TucCourier { UccrId = 2, Code = "C2", UccrName = "B", UccrSurname = "B", UccrEmail = "b@t.com", UccrMobile = "2", Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T", Active = false });
-            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
-        }
+            j.DesCheck = true;
+            j.AgentId = 3;
+            j.FdcourierId = 4;
+        });
+        _tenantInfo.GetStaffId().Returns(dispatcherStaffId);
 
-        var repository = CreateRepository();
-        var ct = TestContext.Current.CancellationToken;
-        Assert.True(await repository.IsActiveStaffAsync(1, ct));
-        Assert.False(await repository.IsActiveStaffAsync(2, ct));
-        Assert.False(await repository.IsActiveStaffAsync(3, ct));
-        Assert.True(await repository.IsActiveCourierAsync(1, ct));
-        Assert.False(await repository.IsActiveCourierAsync(2, ct));
-        Assert.False(await repository.IsActiveCourierAsync(3, ct));
+        await CreateRepository().AssignCourierToJobAsync([JobId], CourierId);
+
+        var job = await Reload();
+        Assert.Equal(CourierId, job.UcjbCourierId);
+        Assert.Equal(expectedDispId, job.UcjbDispId);
+        Assert.Equal((int)JobStatus.Dispatched, job.UcjbStatus);
+        Assert.Equal((int)InternalJobStatus.AwaitingPod, job.InternalStatus);
+        Assert.False(job.DesCheck);
+        Assert.Null(job.AgentId);
+        Assert.Null(job.FdcourierId);
+        Assert.Equal(TestDates.Now, job.UcjbDispDate);
+        Assert.Equal(TestDates.Now, job.UcjbDispTime);
     }
 }

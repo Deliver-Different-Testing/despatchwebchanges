@@ -12,6 +12,7 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Middleware;
 using DespatchWeb.Models;
+using DespatchWeb.Tests.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -70,6 +71,8 @@ public class VoiceAgentAssignTests : IAsyncDisposable
             options ?? Options());
         builder.Services.AddHttpClient(HubTenantTimeZoneSource.HttpClientName)
             .ConfigurePrimaryHttpMessageHandler(() => new StubHandler());
+        builder.Services.AddHttpClient(HubTenantConnectionSource.HttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(() => new CountingHandler { Fail = true });
         builder.Services.PostConfigure<JwtBearerOptions>(VoiceAgentAssignAuthentication.Scheme, o =>
         {
             var config = new OpenIdConnectConfiguration { Issuer = Cluster };
@@ -386,6 +389,25 @@ public class VoiceAgentAssignTests : IAsyncDisposable
         Assert.Equal(expected, await source.GetAsync(1, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task WhenHubFailsAfterTheCacheExpires_TheStaleZoneIsServed_WithoutAskingHubOnEveryCall()
+    {
+        var handler = new CountingHandler();
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient(HubTenantTimeZoneSource.HttpClientName).Returns(_ => new HttpClient(handler, disposeHandler: false));
+        var time = new ManualTimeProvider();
+        var source = new HubTenantTimeZoneSource(factory, new AgentAccessOptions { AppName = "DespatchWeb", HubAuthority = Hub, HubApiKey = "key" }, time);
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Equal("Pacific/Auckland", await source.GetAsync(1, ct));
+        time.Advance(TimeSpan.FromHours(2));
+        handler.Fail = true;
+
+        Assert.Equal("Pacific/Auckland", await source.GetAsync(1, ct));
+        Assert.Equal("Pacific/Auckland", await source.GetAsync(1, ct));
+        Assert.Equal(2, handler.Calls);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_app is not null) await _app.DisposeAsync();
@@ -396,6 +418,20 @@ public class VoiceAgentAssignTests : IAsyncDisposable
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { timeZone }) });
+    }
+
+    private sealed class CountingHandler : HttpMessageHandler
+    {
+        public bool Fail { get; set; }
+        public int Calls { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Calls++;
+            return Task.FromResult(Fail
+                ? new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { timeZone = "Pacific/Auckland" }) });
+        }
     }
 
     private sealed class StubTicketFormat : ISecureDataFormat<AuthenticationTicket>
