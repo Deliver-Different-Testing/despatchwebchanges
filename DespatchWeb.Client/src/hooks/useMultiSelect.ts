@@ -37,13 +37,16 @@ export function useMultiSelect(orderedIds: number[]): UseMultiSelectReturn {
     const toggle = useCallback((jobId: number, event: React.MouseEvent) => {
         const isCtrlOrCmd = event.ctrlKey || event.metaKey;
         const isShift = event.shiftKey;
+        // Read and write the ref outside the updater, which React may run more than once.
+        const anchorId = lastClickedIdRef.current;
+        lastClickedIdRef.current = jobId;
 
         setSelectedIds(prev => {
             const next = new Set(prev);
 
-            if (isShift && lastClickedIdRef.current !== null) {
+            if (isShift && anchorId !== null) {
                 // Range select from lastClickedId to jobId
-                const lastIdx = orderedIds.indexOf(lastClickedIdRef.current);
+                const lastIdx = orderedIds.indexOf(anchorId);
                 const currIdx = orderedIds.indexOf(jobId);
                 if (lastIdx !== -1 && currIdx !== -1) {
                     const start = Math.min(lastIdx, currIdx);
@@ -69,7 +72,6 @@ export function useMultiSelect(orderedIds: number[]): UseMultiSelectReturn {
                 }
             }
 
-            lastClickedIdRef.current = jobId;
             return next;
         });
     }, [orderedIds]);

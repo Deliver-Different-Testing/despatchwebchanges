@@ -79,11 +79,12 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         placeholderData: (previous) => previous,
     });
 
-    // Flatten all pages into a single jobs array
-    const jobs = useMemo(
-        () => data?.pages.flatMap(p => p.jobs) ?? [],
-        [data],
-    );
+    // A poll refetches each stored page by offset, so a job inserted mid-refetch pushes a row onto
+    // the next page as well; keep its first occurrence.
+    const jobs = useMemo(() => {
+        const seen = new Set<number>();
+        return (data?.pages.flatMap(p => p.jobs) ?? []).filter(j => !seen.has(j.id) && seen.add(j.id));
+    }, [data]);
 
     // The first page's count, not the last: the server re-counts on every page fetch, so
     // reading the newest one made the footer total jitter mid-scroll.

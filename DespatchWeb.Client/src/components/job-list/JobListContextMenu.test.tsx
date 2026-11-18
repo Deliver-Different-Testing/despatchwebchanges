@@ -634,6 +634,19 @@ describe('JobListContextMenu', () => {
             expect(restoreItem).not.toHaveAttribute('aria-disabled', 'true');
         });
 
+        it('disables live-job actions on a bulk row, whose id is a BulkJobId', () => {
+            const props = createDefaultProps({job: createMockDispatchJob({id: 900, isBulkJob: true, released: false})});
+            renderWithMantine(<JobListContextMenu {...props} />);
+
+            for (const label of ['Mark missing', 'Restore', 'Set first job', 'Assign…', 'Add task - Other', 'Late pickup']) {
+                expect(screen.getByText(label).closest('[role="menuitem"]')).toHaveAttribute('data-disabled', 'true');
+            }
+            expect(screen.getByText('Send to live').closest('[role="menuitem"]')).not.toHaveAttribute('data-disabled');
+
+            fireEvent.click(screen.getByText('Mark missing'));
+            expect(mockedApi.markJobMissing).not.toHaveBeenCalled();
+        });
+
         it('Mark missing calls markJobMissing with toast and refresh', async () => {
             const props = createDefaultProps();
             renderWithMantine(<JobListContextMenu {...props} />);

@@ -475,10 +475,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     }, [currentJob, showToast, invalidateAfterDispatch]);
 
     // ── Job-detail FAB actions ────────────────────────────────────────
-    // Mirrors home.controller.ts FAB handlers, reusing the existing React
-    // dialogs (window globals preloaded by the dispatch route) and APIs.
+    // Mirrors home.controller.ts FAB handlers, reusing the existing React dialogs and APIs.
     const fabAction = useCallback(async (actionId: DispatchJobActionId, job: DispatchJob) => {
-        const w = window as any;
         const refreshDetail = () => {
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.jobs.detail(job.id, job.isBulkJob ? 'bulk' : 'standard'),
@@ -505,7 +503,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 case 'split': {
                     const {executeSplitJobFlow} = await import('../../services/splitJobFlow');
                     await executeSplitJobFlow({
-                        job: job as any,
+                        job,
                         showToast,
                         onComplete: () => {
                             void refreshLists();
