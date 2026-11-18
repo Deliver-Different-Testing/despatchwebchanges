@@ -139,7 +139,7 @@ describe('FilterPanel', () => {
     });
 
     describe('Date Range section', () => {
-        it('shows formatted date range when dates are set', () => {
+        it('shows the date range in the tenant date format', () => {
             renderWithProviders(
                 <FilterPanel
                     {...defaultProps}
@@ -150,8 +150,8 @@ describe('FilterPanel', () => {
                 />,
             );
 
-            expect(screen.getByText(/Jan 15, 2024/)).toBeInTheDocument();
-            expect(screen.getByText(/Jan 31, 2024/)).toBeInTheDocument();
+            expect(screen.getByText(/15\/Jan\/2024/)).toBeInTheDocument();
+            expect(screen.getByText(/31\/Jan\/2024/)).toBeInTheDocument();
         });
 
         describe('opening the dialog', () => {

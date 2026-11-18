@@ -245,8 +245,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleReprice = async () => {
         closeAll();
         try {
-            await api.moveJobToReprice(activeJob.id);
-            showToast(`Job ${activeJob.jobNo} sent for repricing`, 'success');
+            const response = await api.moveJobToReprice(activeJob.id);
+            if (response?.pending) showToast(`${activeJob.jobNo}: change requested — awaiting partner approval`, 'info');
+            else showToast(`Job ${activeJob.jobNo} sent for repricing`, 'success');
             refresh();
         } catch (err) {
             showToast(errorMessageOf(err, "Couldn't reprice the job. Check your connection and try again."), 'error');
@@ -502,8 +503,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleMarkMissing = async () => {
         closeAll();
         try {
-            await api.markJobMissing(activeJob.id);
-            showToast('Job marked as missing', 'success');
+            const response = await api.markJobMissing(activeJob.id);
+            if (response?.pending) showToast(`${activeJob.jobNo}: change requested — awaiting partner approval`, 'info');
+            else showToast('Job marked as missing', 'success');
             refresh();
         } catch (err) {
             showToast(errorMessageOf(err, "Couldn't mark the job as missing. Check your connection and try again."), 'error');

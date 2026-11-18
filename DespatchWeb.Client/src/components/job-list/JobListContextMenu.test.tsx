@@ -109,11 +109,11 @@ beforeEach(() => {
     mockedApi.getActivePartnerOptions.mockResolvedValue([]);
     mockedApi.sendToPartner.mockResolvedValue({success: true, trackingNumber: 'TRK-123', message: 'OK'});
     mockedApi.updateJobReadStatus.mockResolvedValue(undefined);
-    mockedApi.moveJobToReprice.mockResolvedValue(undefined);
+    mockedApi.moveJobToReprice.mockResolvedValue({});
     mockedApi.reAllocateJobs.mockResolvedValue(undefined);
     mockedApi.restoreJobs.mockResolvedValue(undefined);
     mockedApi.getRestorePodImpact.mockResolvedValue([]);
-    mockedApi.markJobMissing.mockResolvedValue(undefined);
+    mockedApi.markJobMissing.mockResolvedValue({});
     mockedApi.restoreNationwideJob.mockResolvedValue(undefined);
     mockedApi.releaseBulkJob.mockResolvedValue({jobNumbers: ['J001']});
     mockedApi.setFirstJob.mockResolvedValue(undefined);
@@ -658,6 +658,19 @@ describe('JobListContextMenu', () => {
             });
             expect(props.showToast).toHaveBeenCalledWith('Job marked as missing', 'success');
             expect(props.onRefresh).toHaveBeenCalled();
+        });
+
+        it('Mark missing on a partner job awaiting approval says so instead of reporting success', async () => {
+            mockedApi.markJobMissing.mockResolvedValueOnce({pending: true});
+            const props = createDefaultProps();
+            renderWithMantine(<JobListContextMenu {...props} />);
+
+            fireEvent.click(screen.getByText('Mark missing'));
+
+            await waitFor(() => {
+                expect(props.showToast).toHaveBeenCalledWith(expect.stringContaining('awaiting partner approval'), 'info');
+            });
+            expect(props.showToast).not.toHaveBeenCalledWith('Job marked as missing', 'success');
         });
 
         it('Add task Other calls openAddEventDialog with correct shape and refreshes', async () => {

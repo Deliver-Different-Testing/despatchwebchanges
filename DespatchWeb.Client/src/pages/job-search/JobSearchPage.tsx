@@ -482,8 +482,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         showToast(`${job.jobNo} has no live job yet, so there's nothing to ${actionId}.`, 'warning');
                         return;
                     }
-                    await setJobLocked(target.jobId, locked, target.isRecurring);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
+                    const response = await setJobLocked(target.jobId, locked, target.isRecurring);
+                    if (response?.pending) showToast(`${job.jobNo}: change requested — awaiting partner approval`, 'info');
+                    else showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;
                 }

@@ -1,6 +1,5 @@
 import React, {useCallback} from 'react';
 import {ActionIcon, Button, Card, Checkbox, Divider, Group, Progress, SimpleGrid, Stack, Text} from '@mantine/core';
-import dayjs from 'dayjs';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 import {overviewApi} from '../../../api/overviewApi';
 import {PanelHeader} from '../../../components/common/panel-header';
@@ -12,6 +11,8 @@ import {
     GroupLabel,
 } from '../../../components/common/filter-fields';
 import {loadDialog} from '../../../components/dialogs/dialogRegistry';
+import {formatLongDate} from '../../../utils/dateUtils';
+import {toastService} from '../../../services/toastService';
 
 /**
  * The "select all" affordance beside a criterion's label. A checkbox rather than
@@ -126,19 +127,24 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     const getDateRangeDisplay = useCallback((): string => {
         if (!hasDateFilter) return '';
         if (dateRange.start && dateRange.end) {
-            return `${dayjs(dateRange.start).format('MMM D, YYYY')} - ${dayjs(dateRange.end).format('MMM D, YYYY')}`;
+            return `${formatLongDate(dateRange.start)} - ${formatLongDate(dateRange.end)}`;
         }
-        if (dateRange.start) return `From ${dayjs(dateRange.start).format('MMM D, YYYY')}`;
-        return `Until ${dayjs(dateRange.end).format('MMM D, YYYY')}`;
+        if (dateRange.start) return `From ${formatLongDate(dateRange.start)}`;
+        return dateRange.end ? `Until ${formatLongDate(dateRange.end)}` : '';
     }, [dateRange, hasDateFilter]);
 
     const handleOpenDateDialog = useCallback(async () => {
-        const result = await (await loadDialog('DateRange')).open({
-            start: dateRange.start,
-            end: dateRange.end,
-        });
-        if (result) {
-            onDateRangeChange({start: result.start, end: result.end});
+        try {
+            const result = await (await loadDialog('DateRange')).open({
+                start: dateRange.start,
+                end: dateRange.end,
+            });
+            if (result) {
+                onDateRangeChange({start: result.start, end: result.end});
+            }
+        } catch (error) {
+            console.error('Failed to open the date range dialog:', error);
+            toastService.showErrorToast("Couldn't open the date picker. Refresh the page and try again.");
         }
     }, [dateRange, onDateRangeChange]);
 

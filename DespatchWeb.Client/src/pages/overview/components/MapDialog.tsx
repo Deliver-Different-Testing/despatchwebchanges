@@ -53,8 +53,8 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
     }, [mapConfig, selectedJobIndex]);
 
     const childJobs = delivery?.childJobs ?? [];
-    // A failed key fetch is cached as an empty key (see the courier map), so a settled query without one
-    // is a failure too; either way the body would otherwise stay blank.
+    // A settled key query without a key (an error, or an empty key from the server) is a failure too;
+    // either way the body would otherwise stay blank.
     const loadFailed = isMapDataError || (!isKeyPending && !apiKey);
 
     return (

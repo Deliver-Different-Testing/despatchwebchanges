@@ -120,7 +120,7 @@ describe('RecurringJobsPage', () => {
             error: null,
         } as any);
 
-        mockUpdateJobDetail.mockResolvedValue(undefined);
+        mockUpdateJobDetail.mockResolvedValue({});
         mockRecurringJobsApi.exportToCsv.mockResolvedValue(undefined);
     });
 

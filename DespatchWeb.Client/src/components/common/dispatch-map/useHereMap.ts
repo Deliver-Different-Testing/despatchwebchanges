@@ -172,7 +172,7 @@ export function useHereMap({
     }, [zoom]);
 
     // Without a key the map can never initialise, so a failed key fetch ends loading as an error. An
-    // empty key counts too: the courier map caches a failed fetch as null under the same query key.
+    // empty key from the server counts too.
     const keyFailed = keyErrored || (keySettled && !apiKey);
     const failure = error ?? (keyFailed ? new Error('Failed to load the HERE Maps API key') : null);
 

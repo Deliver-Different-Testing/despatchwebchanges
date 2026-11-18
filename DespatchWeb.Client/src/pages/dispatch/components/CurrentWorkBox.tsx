@@ -195,6 +195,16 @@ export const CurrentWorkBox: React.FC<CurrentWorkBoxProps> = ({
     const focusIsSelectedCourier = courierId !== undefined && courierId === selectedJobCourierId;
     const courierName = (focusIsSelectedCourier ? selectedJobCourierName : undefined) ?? pickedCourierName;
     const courierNumber = (focusIsSelectedCourier ? selectedJobCourierNumber : undefined) ?? pickedCourierNumber;
+    // Remember details that arrive after the drill-in, or the label loses them once the selection moves on.
+    useEffect(() => {
+        if (!focusIsSelectedCourier) return;
+        const name = selectedJobCourierName ?? pickedCourierName;
+        const number = selectedJobCourierNumber ?? pickedCourierNumber;
+        if (name === pickedCourierName && number === pickedCourierNumber) return;
+        setPickedCourierName(name);
+        setPickedCourierNumber(number);
+        persistFocus({pickedCourierName: name, pickedCourierNumber: number});
+    }, [focusIsSelectedCourier, selectedJobCourierName, selectedJobCourierNumber]); // eslint-disable-line react-hooks/exhaustive-deps
     const formattedCourierLabel = formatCourierDisplayLabel(courierDisplayMode, courierName, courierNumber);
     const courierLabel = formattedCourierLabel ?? 'Selected driver';
     const [truckStatusOpen, {open: openTruckStatus, close: closeTruckStatus}] = useDisclosure(false);

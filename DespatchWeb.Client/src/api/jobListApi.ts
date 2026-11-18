@@ -10,6 +10,7 @@ import {JobStatus} from '../types/enums/job-status.enum';
 import InternalJobStatus from "../types/enums/job-internal-status.enum";
 import type {EditAddressDialogViewModel} from '../types';
 import type {RestorePodImpactRow} from '../services/restorePodImpact';
+import type {JobUpdateResponse} from './jobDetailApi';
 
 // ── Add Stop ─────────────────────────────────────────────────────────
 
@@ -51,9 +52,9 @@ export async function updateJobDetail(
     field: string,
     value: unknown,
     isRecurring: boolean = false,
-): Promise<void> {
+): Promise<JobUpdateResponse> {
     const url = isRecurring ? 'job/UpdateRecurringJob' : 'job/UpdateJob';
-    await apiClient.post(url, null, {
+    return apiClient.post<JobUpdateResponse>(url, null, {
         params: {jobId, field, value, isRecurring},
     });
 }
@@ -124,8 +125,8 @@ export async function addRestoreEvent(jobId: number): Promise<void> {
 
 // ── Lock / Unlock ────────────────────────────────────────────────────
 
-export async function setJobLocked(jobId: number, locked: boolean, isRecurring: boolean): Promise<void> {
-    await updateJobDetail(jobId, 'Locked', locked, isRecurring);
+export function setJobLocked(jobId: number, locked: boolean, isRecurring: boolean): Promise<JobUpdateResponse> {
+    return updateJobDetail(jobId, 'Locked', locked, isRecurring);
 }
 
 export interface LockableRow {
@@ -201,13 +202,13 @@ export async function getEventGroups(): Promise<EventGroupItem[]> {
 
 // ── Mark Missing ─────────────────────────────────────────────────────
 
-export async function markJobMissing(jobId: number): Promise<void> {
-    await updateJobDetail(jobId, 'Status', JobStatus.Missing);
+export function markJobMissing(jobId: number): Promise<JobUpdateResponse> {
+    return updateJobDetail(jobId, 'Status', JobStatus.Missing);
 }
 
 // ── Reprice ──────────────────────────────────────────────────────────
-export async function moveJobToReprice(jobId: number): Promise<void> {
-    await updateJobDetail(jobId, 'InternalStatusID', InternalJobStatus.Reprice);
+export function moveJobToReprice(jobId: number): Promise<JobUpdateResponse> {
+    return updateJobDetail(jobId, 'InternalStatusID', InternalJobStatus.Reprice);
 }
 
 // ── Partner Dispatch ────────────────────────────────────────────────

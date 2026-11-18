@@ -329,6 +329,30 @@ describe('CurrentWorkBox', () => {
             expect(screen.queryByRole('radio', {name: 'Selected driver'})).not.toBeInTheDocument();
         });
 
+        it('keeps a driver name that loaded after the drill-in once an unassigned job is selected', () => {
+            const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+            const renderWith = (overrides: Partial<React.ComponentProps<typeof CurrentWorkBox>>) => (
+                <QueryClientProvider client={queryClient}>
+                    <MantineTestProvider>
+                        <CurrentWorkBox
+                            showToast={vi.fn()}
+                            startDate={defaultStart}
+                            endDate={defaultEnd}
+                            isUsCustomer
+                            selectedJobId={7}
+                            selectedJobCourierId={42}
+                            {...overrides}
+                        />
+                    </MantineTestProvider>
+                </QueryClientProvider>
+            );
+            const {rerender} = render(renderWith({selectedJobCourierName: undefined}));
+            rerender(renderWith({selectedJobCourierName: 'Jane Smith'}));
+            rerender(renderWith({selectedJobId: 8, selectedJobCourierId: undefined, selectedJobCourierName: undefined}));
+
+            expect(screen.getByRole('radio', {name: 'Jane Smith'})).toBeInTheDocument();
+        });
+
         it('falls back to the driver name on the US toggle when number mode is requested but no number is available (manual pick)', async () => {
             renderBox({isUsCustomer: true, courierDisplayMode: 'number'});
 
