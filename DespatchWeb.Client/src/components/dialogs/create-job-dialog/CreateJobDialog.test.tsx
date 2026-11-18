@@ -15,7 +15,8 @@ const renderWithAllProviders = (ui: React.ReactElement) =>
 import { setupUser } from '../../../test/utils/setupUser';
 import {addressApi} from '../../../api/addressApi';
 import {jobApi} from '../../../api/jobApi';
-import {clearSessionContext, setSessionContext, SessionContextDto} from '../../../api/session';
+import {clearSessionContext, setSessionContext} from '../../../api/session';
+import {sessionContextFixture} from '../../../test/utils/sessionContextFixture';
 import type {HereMapsLookupResponse} from '../../../types';
 
 // Mock the hooks - must match the import paths used by the component
@@ -509,7 +510,9 @@ describe('CreateJobDialog', () => {
             afterEach(() => clearSessionContext());
 
             it('AU tenant saves suburb, state code and 4-digit postcode, not the NZ suburb/city layout', async () => {
-                setSessionContext(sessionFor('AU'));
+                setSessionContext(sessionContextFixture({
+                    countryCode: 'AU', timeZone: 'Australia/Sydney', currencyCode: 'AUD',
+                }));
 
                 const submittedJob = await submitWithLookups(
                     // HERE often gives no district for an AU suburb and puts it in city
@@ -531,7 +534,7 @@ describe('CreateJobDialog', () => {
             }, 30000);
 
             it('NZ tenant keeps suburb and city', async () => {
-                setSessionContext(sessionFor('NZ'));
+                setSessionContext(sessionContextFixture());
                 const nzAddress = lookup({
                     label: '1 Queen Street, Auckland Central, Auckland 1010, New Zealand', countryCode: 'NZL',
                     countryName: 'New Zealand', district: 'Auckland Central', city: 'Auckland',
@@ -547,10 +550,3 @@ describe('CreateJobDialog', () => {
     });
 });
 
-function sessionFor(countryCode: string): SessionContextDto {
-    return {
-        contactId: 1, staffId: 1, firstName: 'A', fullName: 'A B', email: null, dispatcher: null,
-        timeZone: 'Pacific/Auckland', countryCode, isUsTenant: false, currencyCode: 'NZD',
-        clientInternal: true, isNetworkPartner: false, visibleFeatures: null, npMapCenter: null, hubUrl: null,
-    };
-}

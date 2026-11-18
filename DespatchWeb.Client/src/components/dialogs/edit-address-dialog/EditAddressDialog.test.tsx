@@ -14,7 +14,8 @@ import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi'
 import {addressApi} from '../../../api/addressApi';
 import {renderWithMantine, suppressConsoleError} from '../../../test/utils';
 import {HERE_US_ADDRESS_FIELDS} from '../../../test/utils/mockData';
-import {clearSessionContext, setSessionContext, SessionContextDto} from '../../../api/session';
+import {clearSessionContext, setSessionContext} from '../../../api/session';
+import {sessionContextFixture} from '../../../test/utils/sessionContextFixture';
 
 // Mock the React Query hooks
 vi.mock('../../../hooks/useAddressApi', () => ({
@@ -899,11 +900,9 @@ describe('EditAddressDialog', () => {
 
 // AU keeps the state in line 6 (the Booking convention); HERE's "city" for an AU address is the metro name ("Sydney").
 describe('EditAddressDialog - AU tenant', () => {
-    const auContext: SessionContextDto = {
-        contactId: 1, staffId: 1, firstName: 'A', fullName: 'A B', email: null, dispatcher: null,
-        timeZone: 'Australia/Sydney', countryCode: 'AU', isUsTenant: false, currencyCode: 'AUD',
-        clientInternal: true, isNetworkPartner: false, visibleFeatures: null, npMapCenter: null, hubUrl: null,
-    };
+    const auContext = sessionContextFixture({
+        countryCode: 'AU', timeZone: 'Australia/Sydney', currencyCode: 'AUD',
+    });
 
     const glebeResult: HereMapsLocationResult = {
         title: '1 Bridge Road, Glebe NSW 2037',
