@@ -6,7 +6,7 @@
  * Migrated from AngularJS tasks.service.ts.
  */
 
-import {TaskFiltersRequest, Task, StaffSuggestion, EventTypeSuggestion} from '../types';
+import {TaskFiltersRequest, Task} from '../types';
 import {getSession} from '../api/session';
 
 /**
@@ -286,34 +286,6 @@ export function initializePageFilters(appPage: AppPage): {
 }
 
 /**
- * Get display names for active filters
- *
- * @param staffFilter - Current staff filter value
- * @param eventTypeFilter - Current event type filter value
- * @param staffList - List of staff options
- * @param eventTypesList - List of event type options
- * @returns Formatted string describing active filters
- */
-export function getActiveFilterNames(
-    staffFilter: string,
-    eventTypeFilter: string,
-    staffList?: StaffSuggestion[],
-    eventTypesList?: EventTypeSuggestion[]
-): string {
-    if (staffFilter === StatusFilterValue.All && eventTypeFilter === StatusFilterValue.All) {
-        return ' - (All Tasks)';
-    }
-
-    const staffText = staffList?.find((s) => s.id?.toString() === staffFilter)?.text ?? '';
-    const eventTypeText =
-        eventTypesList?.find((et) => et.id?.toString() === eventTypeFilter)?.text ?? '';
-
-    const filters = [staffText, eventTypeText].filter(Boolean).join(', ');
-
-    return `- (${filters})`;
-}
-
-/**
  * Find a task's job in multiple job lists
  *
  * @param taskJobId - The job ID to find
@@ -406,7 +378,6 @@ export const tasksService = {
     saveStaffFilter,
     saveEventTypeFilter,
     initializePageFilters,
-    getActiveFilterNames,
     findTaskJobInLists,
     validateTaskJobId,
     getViewPreferenceKey,

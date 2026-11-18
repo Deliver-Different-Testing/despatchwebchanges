@@ -5,8 +5,8 @@ import {OpenJobsList, OpenJobsListProps} from './OpenJobsList';
 import type {IOpenJobResponse} from './OpenJobsList.types';
 import {createMockOpenJob} from './openJob.fixtures';
 
-vi.mock('../../../utils/dateUtils', () => ({
-    formatMins: vi.fn((s: string) => s),
+vi.mock('../../../api/session', () => ({
+    getSession: () => ({timeZone: 'Pacific/Auckland', isUsCustomer: false}),
 }));
 
 const baseProps: OpenJobsListProps = {
@@ -111,6 +111,26 @@ describe('OpenJobsList', () => {
 
         const cells = screen.getAllByRole('cell').filter(c => c.textContent?.startsWith('JOB-'));
         expect(cells.map(c => c.textContent)).toEqual(['JOB-001', 'JOB-002']);
+    });
+
+    it('sorts the pickup column by time, not by its day-first display string', () => {
+        renderList({
+            openJobs: [
+                createMockOpenJob({jobId: 1, reference: 'JOB-FEB', pickupTime: '2024-02-01T10:00:00+13:00', _pickUpTimeStr: '01/Feb/2024 10:00'}),
+                createMockOpenJob({jobId: 2, reference: 'JOB-JAN', pickupTime: '2024-01-15T10:00:00+13:00', _pickUpTimeStr: '15/Jan/2024 10:00'}),
+            ],
+            sort: {column: 'pickup', direction: 'asc'},
+        });
+
+        const cells = screen.getAllByRole('cell').filter(c => c.textContent?.startsWith('JOB-'));
+        expect(cells.map(c => c.textContent)).toEqual(['JOB-JAN', 'JOB-FEB']);
+    });
+
+    it('counts minutes since a last completion on an earlier day from the real instant', () => {
+        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60_000).toISOString();
+        renderList({viewMode: 'cards', openJobs: [createMockOpenJob({lastCompleted: twoDaysAgo})]});
+
+        expect(screen.getByText(`${2 * 24 * 60} mins ago`)).toBeInTheDocument();
     });
 
     it('shows only the page it is given', () => {
