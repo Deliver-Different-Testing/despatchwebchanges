@@ -379,7 +379,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
 
     const performRestore = useCallback(async (job: DispatchJob, removeCapturedImages = false) => {
         await addRestoreEvent(job.id);
-        await restoreJobs([job.id], removeCapturedImages);
+        // Split jobs go through a different proc that has no image opt-in.
+        if (job.displaySplitJobDetail) {
+            await restoreSplitJobs([job.id]);
+        } else {
+            await restoreJobs([job.id], removeCapturedImages);
+        }
         showToast(`${job.jobNo} restored`, 'success');
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
@@ -428,13 +433,13 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     return;
 
                 case 'restore': {
-                    // Split jobs go through a different proc that has no image opt-in, so only the
-                    // plain restore is gated on what it would destroy.
+                    // The split restore has no image opt-in, so it is only gated on reopening a completed job.
                     if (job.displaySplitJobDetail) {
-                        await addRestoreEvent(job.id);
-                        await restoreSplitJobs([job.id]);
-                        showToast(`${job.jobNo} restored`, 'success');
-                        await Promise.all([invalidateLists(), invalidateDetail()]);
+                        if (job.done) {
+                            setRestoreConfirm({job, summary: {jobsWithPodName: 0, imageCount: 0}});
+                            return;
+                        }
+                        await performRestore(job);
                         return;
                     }
 

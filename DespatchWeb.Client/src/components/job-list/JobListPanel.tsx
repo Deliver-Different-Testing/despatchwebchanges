@@ -513,8 +513,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 // Plain click → set detail panel selection
                 setSelectedJobId(job.id);
                 if (onJobSelect) onJobSelect(job);
-                if (!job.hasBeenRead && !job.isArchived) {
-                    updateJobReadStatus(job.linkedJobId ?? job.id, true).then(() => {
+                const readStatusJobId = job.isBulkJob ? job.linkedJobId : job.id;
+                if (!job.hasBeenRead && !job.isArchived && readStatusJobId != null) {
+                    updateJobReadStatus(readStatusJobId, true).then(() => {
                         hookDataRef.current.refresh();
                     });
                 }
@@ -645,8 +646,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         () => selectedLiveJobIds().filter(id => !jobs.find(j => j.id === id)?.isArchived),
         [selectedLiveJobIds, jobs],
     );
+    // A scheduled row not yet sent to live has no job to carry its read status, so it is skipped.
     const selectedReadStatusIds = useCallback(
-        () => [...multiSelect.selectedIds].map(id => jobs.find(j => j.id === id)?.linkedJobId ?? id),
+        () => [...multiSelect.selectedIds].flatMap(id => {
+            const job = jobs.find(j => j.id === id);
+            if (!job?.isBulkJob) return [id];
+            return job.linkedJobId != null ? [job.linkedJobId] : [];
+        }),
         [multiSelect.selectedIds, jobs],
     );
 
@@ -700,6 +706,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const handleBulkMarkRead = useCallback(async () => {
         const ids = selectedReadStatusIds();
+        if (ids.length === 0) {
+            showToast("Scheduled jobs that haven't been sent to live can't be marked as read", 'warning');
+            return;
+        }
         try {
             await bulkUpdateReadStatus(ids, true);
             showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as read`, 'success');
@@ -712,6 +722,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const handleBulkMarkUnread = useCallback(async () => {
         const ids = selectedReadStatusIds();
+        if (ids.length === 0) {
+            showToast("Scheduled jobs that haven't been sent to live can't be marked as unread", 'warning');
+            return;
+        }
         try {
             await bulkUpdateReadStatus(ids, false);
             showToast(`${ids.length} ${pluralise(ids.length, 'job')} marked as unread`, 'success');

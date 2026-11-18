@@ -303,10 +303,13 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
      * Point the flight/agent widget at a related job without changing the page
      * selection, so the detail panel and lists stay where the operator left them.
      */
+    const widgetGeneration = useRef(0);
     const retargetWidget = useCallback(async (jobId: number) => {
+        const generation = widgetGeneration.current;
         try {
             const job = await getDispatchJobDetail(jobId);
-            if (job) setWidgetJob(job);
+            // A fetch that outlives a change of selection belongs to the old job's family.
+            if (job && generation === widgetGeneration.current) setWidgetJob(job);
         } catch (error) {
             console.error('Could not load related job', jobId, error);
         }
@@ -324,7 +327,10 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
 
     // A retarget belongs to the selected job's family; a new selection must not inherit it.
     const currentJobId = currentJob?.id;
-    useEffect(() => setWidgetJob(undefined), [currentJobId]);
+    useEffect(() => {
+        widgetGeneration.current++;
+        setWidgetJob(undefined);
+    }, [currentJobId]);
 
     /** Re-fetch the job the widget acts on, keeping the page selection where it is. */
     const refreshFlightAgentJob = useCallback(

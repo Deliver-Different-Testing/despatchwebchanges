@@ -168,10 +168,10 @@ export const OpenJobsList: React.FC<OpenJobsListProps> = ({
                 valB = b.delivery?.address || '';
             }
 
-            if (valA == null) return 1;
+            if (valA == null) return valB == null ? 0 : 1;
             if (valB == null) return -1;
             if (typeof valA === 'string' && typeof valB === 'string') return valA.localeCompare(valB) * dir;
-            if (typeof valA === 'number' && typeof valB === 'number') return (valA < valB ? -1 : 1) * dir;
+            if (typeof valA === 'number' && typeof valB === 'number') return (valA - valB) * dir;
             return String(valA).localeCompare(String(valB)) * dir;
         });
 

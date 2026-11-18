@@ -604,8 +604,12 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         icon: <Icon lucide={activeJob.hasBeenRead ? Mail : MailOpen} size={16}/>,
                         label: activeJob.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
                         onClick: handleMarkReadUnread,
-                        disabled: activeJob.isArchived,
-                        tooltip: activeJob.isArchived ? 'Archived jobs cannot be marked as read or unread' : undefined,
+                        disabled: activeJob.isArchived || (isScheduledJob && activeJob.linkedJobId == null),
+                        tooltip: activeJob.isArchived
+                            ? 'Archived jobs cannot be marked as read or unread'
+                            : isScheduledJob && activeJob.linkedJobId == null
+                                ? "Scheduled jobs can't be marked as read until they're sent to live"
+                                : undefined,
                     })}
 
                     <Menu.Divider/>

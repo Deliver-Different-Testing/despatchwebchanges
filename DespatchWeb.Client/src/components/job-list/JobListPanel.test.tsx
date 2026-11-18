@@ -1430,6 +1430,17 @@ describe('JobListPanel', () => {
             expect(mockedUpdateJobReadStatus).toHaveBeenCalledWith(55, true);
         });
 
+        it('does not call updateJobReadStatus for a bulk row not yet sent to live', async () => {
+            const jobs = [
+                createMockDispatchJob({id: 901, isBulkJob: true, jobNo: 'BULK2', hasBeenRead: false}),
+            ];
+            await renderWithJobs(jobs);
+
+            fireEvent.click(screen.getByText('BULK2'));
+
+            expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
+        });
+
         it('does not call updateJobReadStatus for an archived job (no tucJob row to track)', async () => {
             const jobs = [
                 createMockDispatchJob({id: 40, jobNo: 'ARCH1', hasBeenRead: false, isArchived: true}),
@@ -1667,6 +1678,27 @@ describe('JobListPanel', () => {
 
             await waitFor(() => {
                 expect(mockedBulkUpdateReadStatus).toHaveBeenCalledWith([1, 77], true);
+            });
+        });
+
+        it('skips a bulk row with no linked live job when marking read', async () => {
+            const user = setupUser();
+            mockedBulkUpdateReadStatus.mockClear();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-LIVE'}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-BULK', isBulkJob: true}),
+            ];
+            await renderWithJobs(jobs);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-LIVE'));
+            await user.click(screen.getByText('JOB-BULK'));
+            await user.keyboard('{/Control}');
+
+            await user.click(screen.getByText('Mark read'));
+
+            await waitFor(() => {
+                expect(mockedBulkUpdateReadStatus).toHaveBeenCalledWith([1], true);
             });
         });
 
