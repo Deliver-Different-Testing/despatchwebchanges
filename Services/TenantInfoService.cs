@@ -115,7 +115,7 @@ public sealed class TenantInfoService(
     /// <summary>
     /// Gets the CultureInfo for the tenant's country (US, GB, AU, NZ).
     /// </summary>
-    private CultureInfo GetCultureInfo()
+    public CultureInfo GetCulture()
     {
         if (_cachedCultureInfo != null)
         {
@@ -179,7 +179,7 @@ public sealed class TenantInfoService(
             return string.Empty;
         }
 
-        var culture = GetCultureInfo();
+        var culture = GetCulture();
         return dateTime.Value.ToString("g", culture);
     }
 

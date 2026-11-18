@@ -17,7 +17,8 @@ public enum NpCapability
     SendToPartner,
     ChangePaidCourier,
     InterCourierCharge,
-    Rerate
+    Rerate,
+    AccessorialCharges
 }
 
 /// <summary>
@@ -40,6 +41,7 @@ public static class NetworkPartnerCapabilities
         NpCapability.ChangePaidCourier => false,
         NpCapability.InterCourierCharge => false,
         NpCapability.Rerate => false,
+        NpCapability.AccessorialCharges => false,
         _ => throw new ArgumentOutOfRangeException(nameof(capability))
     };
 }
@@ -56,6 +58,7 @@ public sealed class NetworkPartnerCapabilityAttribute(NpCapability capability) :
         NpCapability.ChangePaidCourier => "change the paid courier",
         NpCapability.InterCourierCharge => "add inter-courier charges",
         NpCapability.Rerate => "re-rate jobs",
+        NpCapability.AccessorialCharges => "change accessorial charges",
         _ => "do this"
     };
 

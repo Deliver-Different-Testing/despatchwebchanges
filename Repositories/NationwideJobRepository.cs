@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -1184,11 +1183,6 @@ public class NationwideJobRepository(
 
     public async Task<bool> CanAssignAgentToJobAsync(int agentJobId)
     {
-        if (Debugger.IsAttached)
-        {
-            return true;
-        }
-
         var result = await Context.TucJobs
             .Where(j => j.UcjbId == agentJobId)
             .SelectMany(j => j.Parent.InverseParent)

@@ -117,10 +117,6 @@ public interface IJobCommandRepository
     /// </summary>
     Task<CourierClaimOutcome> ClaimJobForCourierAsync(int jobId, int courierId, int staffId, CancellationToken cancellationToken = default);
 
-    Task<bool> IsActiveStaffAsync(int staffId, CancellationToken cancellationToken = default);
-
-    Task<bool> IsActiveCourierAsync(int courierId, CancellationToken cancellationToken = default);
-
     Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
         CancellationToken cancellationToken = default);
 }

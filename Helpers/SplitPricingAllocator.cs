@@ -187,9 +187,11 @@ public static partial class SplitPricingAllocator
 
         var shares = Shares(legs);
         var overridesByLine = BuildLineShares(lineOverrides, legs);
+        // First wins on a repeated (line, leg), as BuildLineShares does, rather than throwing on a duplicate key.
         var costOverridesByLineAndSequence = (lineOverrides ?? [])
             .Where(o => o.CostOverride.HasValue)
-            .ToDictionary(o => (o.PricingBreakdownId, o.Sequence), o => o.CostOverride!.Value);
+            .GroupBy(o => (o.PricingBreakdownId, o.Sequence))
+            .ToDictionary(g => g.Key, g => g.First().CostOverride!.Value);
         var allocated = new List<AllocatedLine>(lines.Count * legs.Count);
 
         foreach (var line in lines)
