@@ -15,6 +15,7 @@ import {addressApi} from '../../../api/addressApi';
 import {isAuSession} from '../../../api/session';
 import {US_STATES, normalizeToStateAbbreviation} from '../../../utils/usStates';
 import {loadHereSdk} from '../../../utils/loadHereSdk';
+import {formatHereStreetName, hereNonUsLocalityLines} from '../../../utils/hereAddress';
 import type {ShowToastFn} from '../../../services/toastService';
 import {MapZoomViewControls} from '../../common/dispatch-map';
 import {safeRemoveObject} from '../../common/here-map/hereMapUtils';
@@ -382,32 +383,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         setAddressLine3(address.houseNumber || '');
 
         // Line 4: Street Name
-        if (location.streetInfo && location.streetInfo.length > 0) {
-            const streetInfo = location.streetInfo[0];
-            let formattedStreet = '';
-
-            if (streetInfo.prefix) {
-                formattedStreet += streetInfo.prefix + ' ';
-            }
-
-            if (streetInfo.streetTypePrecedes && streetInfo.streetType) {
-                formattedStreet += streetInfo.streetType + ' ';
-            }
-
-            formattedStreet += streetInfo.baseName;
-
-            if (!streetInfo.streetTypePrecedes && streetInfo.streetType) {
-                formattedStreet += ' ' + streetInfo.streetType;
-            }
-
-            if (streetInfo.suffix) {
-                formattedStreet += ' ' + streetInfo.suffix;
-            }
-
-            setAddressLine4(formattedStreet.trim());
-        } else {
-            setAddressLine4(address.street || '');
-        }
+        setAddressLine4(formatHereStreetName(location));
 
         if (isUsTenant) {
             // US Format
@@ -433,10 +409,10 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 setAddressLine7('');
             }
         } else {
-            // NZ Format (AU: state in line 6)
-            setAddressLine5(address.district || (isAuTenant ? address.city : '') || '');
-            setAddressLine6(isAuTenant ? (address.stateCode || address.state || '') : (address.city || ''));
-            setAddressLine7(address.postalCode || '');
+            const [line5, line6, line7] = hereNonUsLocalityLines(address, isAuTenant);
+            setAddressLine5(line5);
+            setAddressLine6(line6);
+            setAddressLine7(line7);
         }
 
         // Line 8: Country

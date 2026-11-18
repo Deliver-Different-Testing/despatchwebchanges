@@ -541,6 +541,7 @@ describe('CreateJobDialog', () => {
                 const submittedJob = await submitWithLookups(nzAddress, nzAddress);
 
                 expect(lines(submittedJob.pickUpAddress)).toEqual(['Auckland Central', 'Auckland', '1010']);
+                expect(lines(submittedJob.deliveryAddress)).toEqual(['Auckland Central', 'Auckland', '1010']);
             }, 30000);
         });
     });
