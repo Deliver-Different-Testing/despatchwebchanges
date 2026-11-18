@@ -21,7 +21,8 @@ export interface UploadOptions extends RequestOptions {
 /** Extract error message from various response formats */
 function extractErrorMessage(error: AxiosError): string {
     const data = error.response?.data;
-    if (typeof data === 'string') return data;
+    // A proxy/gateway error page (HTML) is not a message anyone should see in a toast.
+    if (typeof data === 'string' && data.trim() && !data.trimStart().startsWith('<')) return data;
     if (data && typeof data === 'object') {
         // Handle common error response formats
         const obj = data as Record<string, unknown>;

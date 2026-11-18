@@ -12,8 +12,8 @@ import {
     updateBulkJobAddress,
     updatePodDetails,
     updateJobReadStatus,
-    restoreJobs,
     allocateJob,
+    reAllocateJob,
     getCourierById,
     previewJobRate,
     previewJobRates,
@@ -23,6 +23,7 @@ import type {JobUpdateResponse} from '../../../../api/jobDetailApi';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JobProperty} from '../../../../types/enums/job-property.enum';
 import {isNetworkPartnerSession} from '../../../dialogs/dispatch-dialog/dispatchSession';
+import {errorMessageOf} from '../../../../utils/errorMessage';
 
 const RERATE_FIELDS = new Set<string>([
     JobProperty.Date,
@@ -274,7 +275,7 @@ export function useJobUpdate(
                 });
                 return;
             }
-            showToast(message ?? "Couldn't update the job. Check your connection and try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't update the job. Check your connection and try again."), 'error');
         },
     });
 
@@ -313,8 +314,7 @@ export function useJobUpdate(
         onError: (error: unknown) => {
             // A 404 carries an authored message from the backend (e.g. the job no longer
             // exists) — show it rather than a generic failure the operator can't act on.
-            const message = (error as {message?: string})?.message;
-            showToast(message || "Couldn't update the POD details. Check your connection and try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't update the POD details. Check your connection and try again."), 'error');
         },
     });
 
@@ -332,11 +332,11 @@ export function useJobUpdate(
 
     const dispatchJobMutation = useMutation({
         mutationFn: async ({job, courierId}: DispatchJobParams) => {
-            // If job already has a courier, restore first
             if (job.courierData?.courierId || job.assignedCourier?.id) {
-                await restoreJobs([job.id]);
+                await reAllocateJob(courierId, [job.id]);
+            } else {
+                await allocateJob(courierId, [job.id]);
             }
-            await allocateJob(courierId, [job.id]);
             // Try to get courier details for the toast
             try {
                 const courier = await getCourierById(courierId);

@@ -1,5 +1,5 @@
 import type {MockInstance} from 'vitest';
-import {openJobInSearch} from './navigationService';
+import {openJobInSearch, toHubUrl} from './navigationService';
 
 describe('navigationService', () => {
     let windowOpenSpy: MockInstance;
@@ -10,6 +10,13 @@ describe('navigationService', () => {
 
     afterEach(() => {
         windowOpenSpy.mockRestore();
+    });
+
+    describe('toHubUrl', () => {
+        it('swaps despatch for hub in the host only', () => {
+            expect(toHubUrl('https://acme.despatch.example.com/despatch/#/jobSearch?return=despatch'))
+                .toBe('https://acme.hub.example.com/despatch/#/jobSearch?return=despatch');
+        });
     });
 
     describe('openJobInSearch', () => {

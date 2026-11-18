@@ -154,7 +154,6 @@ export interface DispatchJob {
     allowSplit?: boolean;
     isActive?: boolean;
     done?: boolean;
-    bulkJob?: boolean;
     preBook?: boolean;
 
     // Special delivery options

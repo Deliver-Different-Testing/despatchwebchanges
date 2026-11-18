@@ -287,6 +287,15 @@ describe('ApiClient', () => {
             }).rejects.toBeDefined();
         });
 
+        it('does not use a proxy HTML error page as the message', async () => {
+            const errorHandler = mockResponseInterceptorUse.mock.calls[0][1];
+
+            await expect(errorHandler({
+                message: 'Request failed with status code 502',
+                response: {status: 502, statusText: 'Bad Gateway', data: '<html><body>502 Bad Gateway</body></html>'},
+            })).rejects.toMatchObject({status: 502, message: 'Request failed with status code 502'});
+        });
+
         it('should surface the x-auth-redirect header as authRedirect', async () => {
             const errorHandler = mockResponseInterceptorUse.mock.calls[0][1];
 
