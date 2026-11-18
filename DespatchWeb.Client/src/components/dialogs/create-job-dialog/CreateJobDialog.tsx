@@ -51,9 +51,11 @@ import {useCourierSearch} from '../../../hooks/useCourierApi';
 import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
 import {addressApi} from '../../../api/addressApi';
 import {jobApi} from '../../../api/jobApi';
+import {isAuSession} from '../../../api/session';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import {dayjs, formatDateForApi, getIanaTimezone, getInputDateFormat} from '../../../utils/dateUtils';
 import {getStateByAbbreviation} from '../../../utils/usStates';
+import {formatHereStreetName, hereNonUsLocalityLines} from '../../../utils/hereAddress';
 import type {Dayjs} from 'dayjs';
 import type {ShowToastFn} from '../../../services/toastService';
 import {
@@ -303,18 +305,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
 
             const addr = location.address;
 
-            // Street name from streetInfo (same logic as EditAddressDialog)
-            let streetName = addr.street || '';
-            if (location.streetInfo && location.streetInfo.length > 0) {
-                const si = location.streetInfo[0];
-                let formatted = '';
-                if (si.prefix) formatted += si.prefix + ' ';
-                if (si.streetTypePrecedes && si.streetType) formatted += si.streetType + ' ';
-                formatted += si.baseName;
-                if (!si.streetTypePrecedes && si.streetType) formatted += ' ' + si.streetType;
-                if (si.suffix) formatted += ' ' + si.suffix;
-                streetName = formatted.trim();
-            }
+            const streetName = formatHereStreetName(location);
 
             let line5: string;
             let line6: string;
@@ -334,9 +325,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 const zipMatch = addr.postalCode?.match(/^(\d{5})/);
                 line7 = zipMatch ? zipMatch[1] : (addr.postalCode || '');
             } else {
-                line5 = addr.district || '';
-                line6 = addr.city || '';
-                line7 = addr.postalCode || '';
+                [line5, line6, line7] = hereNonUsLocalityLines(addr, isAuSession());
             }
 
             const addressVm: AddressViewModel = {

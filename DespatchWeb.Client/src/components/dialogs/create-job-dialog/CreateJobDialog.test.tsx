@@ -15,6 +15,8 @@ const renderWithAllProviders = (ui: React.ReactElement) =>
 import { setupUser } from '../../../test/utils/setupUser';
 import {addressApi} from '../../../api/addressApi';
 import {jobApi} from '../../../api/jobApi';
+import {clearSessionContext, setSessionContext} from '../../../api/session';
+import {sessionContextFixture} from '../../../test/utils/sessionContextFixture';
 import type {HereMapsLookupResponse} from '../../../types';
 
 // Mock the hooks - must match the import paths used by the component
@@ -480,5 +482,70 @@ describe('CreateJobDialog', () => {
             expect(submittedJob.weightKg).toBe(12);
             expect(submittedJob.weightLb).toBeNull();
         }, 30000);
+
+        describe('address lines by tenant country', () => {
+            const lookup = (address: HereMapsLookupResponse['address']): HereMapsLookupResponse =>
+                ({...mockLookupResponse, address});
+
+            async function submitWithLookups(pickup: HereMapsLookupResponse, delivery: HereMapsLookupResponse) {
+                mockSelectableQuickCreate();
+                (addressApi.getLocationDetailsById as Mock)
+                    .mockResolvedValueOnce(pickup)
+                    .mockResolvedValueOnce(delivery);
+                mockClipboard(vi.fn().mockResolvedValue(undefined));
+
+                renderWithAllProviders(<CreateJobDialog {...createMockProps({isUsTenant: false})} />);
+                await fillRequiredFields(/weight \(kg\)/i);
+                fireEvent.click(screen.getByRole('button', {name: /create job/i}));
+
+                await waitFor(() => {
+                    expect(jobApi.quickCreateJob).toHaveBeenCalledTimes(1);
+                }, {timeout: 3000});
+                return (jobApi.quickCreateJob as Mock).mock.calls[0][0];
+            }
+
+            const lines = (address: {addressLine5: string; addressLine6: string; addressLine7: string}) =>
+                [address.addressLine5, address.addressLine6, address.addressLine7];
+
+            afterEach(() => clearSessionContext());
+
+            it('AU tenant saves suburb, state code and 4-digit postcode, not the NZ suburb/city layout', async () => {
+                setSessionContext(sessionContextFixture({
+                    countryCode: 'AU', timeZone: 'Australia/Sydney', currencyCode: 'AUD',
+                }));
+
+                const submittedJob = await submitWithLookups(
+                    // HERE often gives no district for an AU suburb and puts it in city
+                    lookup({
+                        label: '120 Collins St, Melbourne VIC 3000, Australia', countryCode: 'AUS',
+                        countryName: 'Australia', stateCode: 'VIC', state: 'Victoria', city: 'Melbourne',
+                        street: 'Collins St', houseNumber: '120', postalCode: '3000',
+                    }),
+                    lookup({
+                        label: '1 Smith St, Darwin City NT 0800, Australia', countryCode: 'AUS',
+                        countryName: 'Australia', stateCode: 'NT', state: 'Northern Territory',
+                        district: 'Darwin City', city: 'Darwin', street: 'Smith St', houseNumber: '1',
+                        postalCode: '0800',
+                    }),
+                );
+
+                expect(lines(submittedJob.pickUpAddress)).toEqual(['Melbourne', 'VIC', '3000']);
+                expect(lines(submittedJob.deliveryAddress)).toEqual(['Darwin City', 'NT', '0800']);
+            }, 30000);
+
+            it('NZ tenant keeps suburb and city', async () => {
+                setSessionContext(sessionContextFixture());
+                const nzAddress = lookup({
+                    label: '1 Queen Street, Auckland Central, Auckland 1010, New Zealand', countryCode: 'NZL',
+                    countryName: 'New Zealand', district: 'Auckland Central', city: 'Auckland',
+                    street: 'Queen Street', houseNumber: '1', postalCode: '1010',
+                });
+
+                const submittedJob = await submitWithLookups(nzAddress, nzAddress);
+
+                expect(lines(submittedJob.pickUpAddress)).toEqual(['Auckland Central', 'Auckland', '1010']);
+                expect(lines(submittedJob.deliveryAddress)).toEqual(['Auckland Central', 'Auckland', '1010']);
+            }, 30000);
+        });
     });
 });
