@@ -18,7 +18,7 @@ vi.mock('../../../../api/jobDetailApi', () => ({
     updateBulkJobAddress: vi.fn(),
     updatePodDetails: vi.fn(),
     updateJobReadStatus: vi.fn(),
-    restoreJobs: vi.fn(),
+    reAllocateJob: vi.fn(),
     allocateJob: vi.fn(),
     getCourierById: vi.fn(),
     previewJobRate: vi.fn(),
@@ -34,7 +34,7 @@ import {
     updateBulkJobAddress,
     updatePodDetails,
     updateJobReadStatus,
-    restoreJobs,
+    reAllocateJob,
     allocateJob,
     getCourierById,
     previewJobRate,
@@ -48,7 +48,7 @@ const mockUpdatePickupAddress = updatePickupAddress as MockedFunction<typeof upd
 const mockUpdateDeliveryAddress = updateDeliveryAddress as MockedFunction<typeof updateDeliveryAddress>;
 const mockUpdatePodDetails = updatePodDetails as MockedFunction<typeof updatePodDetails>;
 const mockUpdateJobReadStatus = updateJobReadStatus as MockedFunction<typeof updateJobReadStatus>;
-const mockRestoreJobs = restoreJobs as MockedFunction<typeof restoreJobs>;
+const mockReAllocateJob = reAllocateJob as MockedFunction<typeof reAllocateJob>;
 const mockAllocateJob = allocateJob as MockedFunction<typeof allocateJob>;
 const mockGetCourierById = getCourierById as MockedFunction<typeof getCourierById>;
 const mockPreviewJobRates = previewJobRates as MockedFunction<typeof previewJobRates>;
@@ -445,9 +445,8 @@ describe('useJobUpdate', () => {
     });
 
     describe('dispatchJob', () => {
-        it('restores job first when it already has a courier, then allocates', async () => {
-            mockRestoreJobs.mockResolvedValueOnce(undefined);
-            mockAllocateJob.mockResolvedValueOnce(undefined);
+        it('re-allocates in one guarded call when the job already has a courier', async () => {
+            mockReAllocateJob.mockResolvedValueOnce(undefined);
             mockGetCourierById.mockResolvedValueOnce({id: 'C5', name: 'Test Courier'});
             const {result} = renderUseJobUpdate();
             const job = createMockJob({courierData: {courierId: 99}});
@@ -456,11 +455,11 @@ describe('useJobUpdate', () => {
                 await result.current.dispatchJob({job, courierId: 5});
             });
 
-            expect(mockRestoreJobs).toHaveBeenCalledWith([1]);
-            expect(mockAllocateJob).toHaveBeenCalledWith(5, [1]);
+            expect(mockReAllocateJob).toHaveBeenCalledWith(5, [1]);
+            expect(mockAllocateJob).not.toHaveBeenCalled();
         });
 
-        it('does not restore when job has no existing courier', async () => {
+        it('allocates without re-allocating when the job has no existing courier', async () => {
             mockAllocateJob.mockResolvedValueOnce(undefined);
             mockGetCourierById.mockResolvedValueOnce({id: 'C5', name: 'Test Courier'});
             const {result} = renderUseJobUpdate();
@@ -470,7 +469,7 @@ describe('useJobUpdate', () => {
                 await result.current.dispatchJob({job, courierId: 5});
             });
 
-            expect(mockRestoreJobs).not.toHaveBeenCalled();
+            expect(mockReAllocateJob).not.toHaveBeenCalled();
             expect(mockAllocateJob).toHaveBeenCalledWith(5, [1]);
         });
 
@@ -513,8 +512,22 @@ describe('useJobUpdate', () => {
             expect(mockShowToast).toHaveBeenCalledWith('Job dispatched', 'success');
         });
 
-        it('shows error toast when dispatch fails', async () => {
-            mockAllocateJob.mockRejectedValueOnce(new Error('fail'));
+        it('shows the server refusal when dispatch fails', async () => {
+            mockAllocateJob.mockRejectedValueOnce({status: 400, statusText: 'Bad Request', message: 'Partner job cannot be reassigned'});
+            const {result} = renderUseJobUpdate();
+            const job = createMockJob();
+
+            await act(async () => {
+                try {
+                    await result.current.dispatchJob({job, courierId: 5});
+                } catch { /* expected */ }
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith('Partner job cannot be reassigned', 'error');
+        });
+
+        it('shows the generic error toast when dispatch fails without a message', async () => {
+            mockAllocateJob.mockRejectedValueOnce({status: 0, statusText: 'Network Error', message: ''});
             const {result} = renderUseJobUpdate();
             const job = createMockJob();
 

@@ -18,7 +18,7 @@ import {itHidesActionForNetworkPartner} from '../../dispatch/components/accessor
 // Minimal job with just the fields the action predicates read.
 const makeJob = (overrides: Partial<DispatchJob> = {}): DispatchJob => ({
     id: 1,
-    bulkJob: false,
+    isBulkJob: false,
     preBook: false,
     assignedCourier: {id: 5, text: 'Courier 5'},
     done: false,
@@ -63,9 +63,21 @@ describe('JobSearchJobActionsMenu', () => {
         expect(onAction).toHaveBeenCalledWith('attachments', job);
     });
 
-    it('offers Restore for a live, courier-assigned, not-done job', async () => {
+    it('offers Restore for a live, courier-assigned job', async () => {
         await openMenu(makeJob());
         expect(screen.getByRole('menuitem', {name: 'Restore job'})).toBeInTheDocument();
+    });
+
+    it('offers Restore for a completed live job, which the restore confirmation covers', async () => {
+        await openMenu(makeJob({done: true}));
+        expect(screen.getByRole('menuitem', {name: 'Restore job'})).toBeInTheDocument();
+    });
+
+    it('hides the live-job actions for a bulk row, whose id is a BulkJobId', async () => {
+        await openMenu(makeJob({isBulkJob: true, assignedCourier: undefined}));
+        expect(screen.queryByRole('menuitem', {name: 'Dispatch to courier'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Swap POD'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', {name: 'Lock job'})).not.toBeInTheDocument();
     });
 
     it('does not offer Restore for an archived job', async () => {

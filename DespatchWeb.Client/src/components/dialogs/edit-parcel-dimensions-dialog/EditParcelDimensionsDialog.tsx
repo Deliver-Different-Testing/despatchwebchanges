@@ -105,10 +105,11 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
             // further every time the dialog is reopened and re-saved).
             if (isPerJob) {
                 if (p.weight != null) {
-                    existing.weight = String((parseFloat(existing.weight || '0') || 0) + p.weight);
+                    // Rounded so summing divided shares shows 10, not 9.999999999999998.
+                    existing.weight = String(Number(((parseFloat(existing.weight || '0') || 0) + p.weight).toFixed(6)));
                 }
                 if (p.cubic != null) {
-                    existing.cubic = String((parseFloat(existing.cubic || '0') || 0) + p.cubic);
+                    existing.cubic = String(Number(((parseFloat(existing.cubic || '0') || 0) + p.cubic).toFixed(6)));
                 }
             }
         } else {

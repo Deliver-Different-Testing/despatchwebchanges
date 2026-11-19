@@ -187,6 +187,52 @@ public class JobMappingsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void JobMappingCore_MapsBothFreeTextAddresses(bool isUsCustomer)
+    {
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "JOB-001",
+            UcjbFromAddr = "1 Pickup St",
+            UcjbToAddr = "2 Delivery Rd",
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        var result = JobMappings.JobMappingCore(isUsCustomer).Compile()(job);
+
+        Assert.Equal("1 Pickup St", result.FromAddress);
+        Assert.Equal("2 Delivery Rd", result.ToAddress);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_MapsBothFreeTextAddresses()
+    {
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            UcjbNumber = "ARCH-001",
+            UcjbFromAddr = "1 Pickup St",
+            UcjbToAddr = "2 Delivery Rd",
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>()
+        };
+
+        var result = JobMappings.JobArchiveMapping.Compile()(archivedJob);
+
+        Assert.Equal("1 Pickup St", result.FromAddress);
+        Assert.Equal("2 Delivery Rd", result.ToAddress);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void JobMappingCore_MapsPickupArrivalTime(bool isUsCustomer)
     {
         // Arrange

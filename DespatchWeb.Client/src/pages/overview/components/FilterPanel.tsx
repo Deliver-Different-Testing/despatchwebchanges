@@ -1,6 +1,5 @@
 import React, {useCallback} from 'react';
 import {ActionIcon, Button, Card, Checkbox, Divider, Group, Progress, SimpleGrid, Stack, Text} from '@mantine/core';
-import dayjs from 'dayjs';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 import {overviewApi} from '../../../api/overviewApi';
 import {PanelHeader} from '../../../components/common/panel-header';
@@ -12,6 +11,8 @@ import {
     GroupLabel,
 } from '../../../components/common/filter-fields';
 import {loadDialog} from '../../../components/dialogs/dialogRegistry';
+import {formatLongDate} from '../../../utils/dateUtils';
+import {toastService} from '../../../services/toastService';
 
 /**
  * The "select all" affordance beside a criterion's label. A checkbox rather than
@@ -126,29 +127,30 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     const getDateRangeDisplay = useCallback((): string => {
         if (!hasDateFilter) return '';
         if (dateRange.start && dateRange.end) {
-            return `${dayjs(dateRange.start).format('MMM D, YYYY')} - ${dayjs(dateRange.end).format('MMM D, YYYY')}`;
+            return `${formatLongDate(dateRange.start)} - ${formatLongDate(dateRange.end)}`;
         }
-        if (dateRange.start) return `From ${dayjs(dateRange.start).format('MMM D, YYYY')}`;
-        return `Until ${dayjs(dateRange.end).format('MMM D, YYYY')}`;
+        if (dateRange.start) return `From ${formatLongDate(dateRange.start)}`;
+        return dateRange.end ? `Until ${formatLongDate(dateRange.end)}` : '';
     }, [dateRange, hasDateFilter]);
 
     const handleOpenDateDialog = useCallback(async () => {
-        const result = await (await loadDialog('DateRange')).open({
-            start: dateRange.start,
-            end: dateRange.end,
-        });
+        let result;
+        try {
+            result = await (await loadDialog('DateRange')).open({
+                start: dateRange.start,
+                end: dateRange.end,
+            });
+        } catch (error) {
+            console.error('Failed to open the date range dialog:', error);
+            toastService.showErrorToast("Couldn't open the date picker. Refresh the page and try again.");
+            return;
+        }
         if (result) {
             onDateRangeChange({start: result.start, end: result.end});
         }
     }, [dateRange, onDateRangeChange]);
 
-    const handleClearDateRange = useCallback(
-        (e: React.MouseEvent) => {
-            e.stopPropagation();
-            onDateRangeChange({});
-        },
-        [onDateRangeChange],
-    );
+    const handleClearDateRange = useCallback(() => onDateRangeChange({}), [onDateRangeChange]);
 
     return (
         <Card withBorder p={0} h="100%" style={{display: 'flex', flexDirection: 'column'}}>
@@ -170,31 +172,32 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 {/* Date Range */}
                 <Stack gap={CRITERION_LABEL_GAP} miw={0}>
                     <GroupLabel selected={hasDateFilter ? 1 : 0}>Date range</GroupLabel>
-                    <Button
-                        size="xs"
-                        h={34}
-                        fullWidth
-                        variant={hasDateFilter ? 'filled' : 'default'}
-                        onClick={handleOpenDateDialog}
-                        justify="flex-start"
-                        leftSection={<SymbolIcon name={hasDateFilter ? 'calendar_month' : 'date_range'} size={18} />}
-                        rightSection={
-                            hasDateFilter ? (
-                                <ActionIcon
-                                    component="span"
-                                    variant="transparent"
-                                    c="inherit"
-                                    size="sm"
-                                    onClick={handleClearDateRange}
-                                    aria-label="Clear date range"
-                                >
-                                    <SymbolIcon name="close" size={18} />
-                                </ActionIcon>
-                            ) : undefined
-                        }
-                    >
-                        {hasDateFilter ? getDateRangeDisplay() : 'Select dates'}
-                    </Button>
+                    {/* Clear is its own button beside the date button: a control nested inside
+                        another button can't be focused or announced on its own. */}
+                    <Group gap={4} wrap="nowrap">
+                        <Button
+                            size="xs"
+                            h={34}
+                            fullWidth
+                            variant={hasDateFilter ? 'filled' : 'default'}
+                            onClick={handleOpenDateDialog}
+                            justify="flex-start"
+                            leftSection={<SymbolIcon name={hasDateFilter ? 'calendar_month' : 'date_range'} size={18} />}
+                            style={{flex: 1, minWidth: 0}}
+                        >
+                            {hasDateFilter ? getDateRangeDisplay() : 'Select dates'}
+                        </Button>
+                        {hasDateFilter && (
+                            <ActionIcon
+                                variant="default"
+                                size={34}
+                                onClick={handleClearDateRange}
+                                aria-label="Clear date range"
+                            >
+                                <SymbolIcon name="close" size={18} />
+                            </ActionIcon>
+                        )}
+                    </Group>
                 </Stack>
 
                 {/*

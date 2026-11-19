@@ -11,7 +11,6 @@ import {
     saveStaffFilter,
     saveEventTypeFilter,
     initializePageFilters,
-    getActiveFilterNames,
     findTaskJobInLists,
     validateTaskJobId,
     getViewPreferenceKey,
@@ -318,47 +317,6 @@ describe('tasksService', () => {
         });
     });
 
-    describe('getActiveFilterNames', () => {
-        const staffList = [
-            {id: 1, text: 'John Doe'},
-            {id: 2, text: 'Jane Smith'},
-        ];
-        const eventTypesList = [
-            {id: 10, text: 'Call'},
-            {id: 20, text: 'Email'},
-        ];
-
-        it('should return "All Tasks" when both filters are "all"', () => {
-            const result = getActiveFilterNames('all', 'all', staffList, eventTypesList);
-
-            expect(result).toBe(' - (All Tasks)');
-        });
-
-        it('should show staff name when staff filter is set', () => {
-            const result = getActiveFilterNames('1', 'all', staffList, eventTypesList);
-
-            expect(result).toBe('- (John Doe)');
-        });
-
-        it('should show event type when event type filter is set', () => {
-            const result = getActiveFilterNames('all', '10', staffList, eventTypesList);
-
-            expect(result).toBe('- (Call)');
-        });
-
-        it('should show both when both filters are set', () => {
-            const result = getActiveFilterNames('2', '20', staffList, eventTypesList);
-
-            expect(result).toBe('- (Jane Smith, Email)');
-        });
-
-        it('should handle missing lists gracefully', () => {
-            const result = getActiveFilterNames('1', '10', undefined, undefined);
-
-            expect(result).toBe('- ()');
-        });
-    });
-
     describe('findTaskJobInLists', () => {
         const jobs1 = [{id: 1, name: 'Job 1'}, {id: 2, name: 'Job 2'}];
         const jobs2 = [{id: 3, name: 'Job 3'}, {id: 4, name: 'Job 4'}];
@@ -490,7 +448,6 @@ describe('tasksService', () => {
             expect(tasksService.saveStaffFilter).toBe(saveStaffFilter);
             expect(tasksService.saveEventTypeFilter).toBe(saveEventTypeFilter);
             expect(tasksService.initializePageFilters).toBe(initializePageFilters);
-            expect(tasksService.getActiveFilterNames).toBe(getActiveFilterNames);
             expect(tasksService.findTaskJobInLists).toBe(findTaskJobInLists);
             expect(tasksService.validateTaskJobId).toBe(validateTaskJobId);
             expect(tasksService.getViewPreferenceKey).toBe(getViewPreferenceKey);

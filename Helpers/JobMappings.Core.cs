@@ -171,6 +171,7 @@ public static partial class JobMappings
         // Job characteristics
         Weight = j.UcjbWeight,
         CalculateDimsOncePerJob = j.DimensionsType == 2,
+        FromAddress = j.UcjbFromAddr,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
         JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),

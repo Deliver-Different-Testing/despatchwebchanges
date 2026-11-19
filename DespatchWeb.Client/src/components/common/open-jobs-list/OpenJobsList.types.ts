@@ -50,5 +50,7 @@ export interface DriverViewModel {
     jobs: ViewJob[];
     completedToday: number;
     lastCompleted: string;
+    /** The raw API timestamp behind `lastCompleted`. */
+    lastCompletedAt?: string;
     expanded: boolean;
 }

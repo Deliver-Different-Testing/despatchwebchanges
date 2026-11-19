@@ -120,7 +120,7 @@ describe('RecurringJobsPage', () => {
             error: null,
         } as any);
 
-        mockUpdateJobDetail.mockResolvedValue(undefined);
+        mockUpdateJobDetail.mockResolvedValue({});
         mockRecurringJobsApi.exportToCsv.mockResolvedValue(undefined);
     });
 
@@ -274,6 +274,26 @@ describe('RecurringJobsPage', () => {
         });
         expect(mockUpdateJobDetail).toHaveBeenCalledWith(1, 'RecurringMode', '0', true);
         expect(refetch).toHaveBeenCalled();
+    });
+
+    it('keeps the deactivate dialog open when the mode change fails', async () => {
+        const showToast = vi.fn();
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse([createMockJob(1)]),
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+        } as any);
+        mockUpdateJobDetail.mockRejectedValueOnce({status: 400, statusText: 'Bad Request', message: 'Server said no'});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        renderWithProviders(createDefaultProps({showToast}));
+
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate job'}));
+
+        await waitFor(() => expect(showToast).toHaveBeenCalledWith('Server said no', 'error'));
+        expect(screen.getByText('Deactivate recurring job')).toBeInTheDocument();
     });
 
     // ── Search ──────────────────────────────────────────────────────

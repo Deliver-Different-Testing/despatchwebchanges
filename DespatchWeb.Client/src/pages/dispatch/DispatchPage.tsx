@@ -71,6 +71,7 @@ import {StaffPreferenceKey} from '../../types/enums/staff-preference-key.enum';
 import {defaultCourierDisplayMode, type CourierDisplayMode} from './lib/courierDisplayMode';
 import {useCourierFlagLastDelivery} from '../../hooks/useCourierFlagLastDelivery';
 import {loadDialog} from '../../components/dialogs/dialogRegistry';
+import {errorMessageOf} from '../../utils/errorMessage';
 
 const CLEAR_LIST_CATEGORY = 'needs-dispatch' as const;
 
@@ -475,10 +476,8 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     }, [currentJob, showToast, invalidateAfterDispatch]);
 
     // ── Job-detail FAB actions ────────────────────────────────────────
-    // Mirrors home.controller.ts FAB handlers, reusing the existing React
-    // dialogs (window globals preloaded by the dispatch route) and APIs.
+    // Mirrors home.controller.ts FAB handlers, reusing the existing React dialogs and APIs.
     const fabAction = useCallback(async (actionId: DispatchJobActionId, job: DispatchJob) => {
-        const w = window as any;
         const refreshDetail = () => {
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.jobs.detail(job.id, job.isBulkJob ? 'bulk' : 'standard'),
@@ -505,7 +504,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                 case 'split': {
                     const {executeSplitJobFlow} = await import('../../services/splitJobFlow');
                     await executeSplitJobFlow({
-                        job: job as any,
+                        job,
                         showToast,
                         onComplete: () => {
                             void refreshLists();
@@ -528,7 +527,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             }
         } catch (error) {
             console.error(`[DispatchPage] FAB action "${actionId}" failed:`, error);
-            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't complete that action. Check your connection and try again."), 'error');
         }
     }, [showToast, isUsCustomer, jobCreated]);
 

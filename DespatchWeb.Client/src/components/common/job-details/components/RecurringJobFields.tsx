@@ -155,6 +155,8 @@ export function RecurringJobFields({
         setPrevInitialDays(currentInitialDays);
         setInitialDaysDraft(String(currentInitialDays));
     }
+    // Enter commits and then blurs; the blur must not commit the same edit a second time.
+    const committingViaEnterRef = React.useRef(false);
 
     if (!job.preBook) return null;
 
@@ -328,7 +330,9 @@ export function RecurringJobFields({
                             mt="sm"
                             value={initialDaysDraft}
                             onChange={(value) => setInitialDaysDraft(String(value ?? ''))}
-                            onBlur={commitInitialDays}
+                            onBlur={() => {
+                                if (!committingViaEnterRef.current) commitInitialDays();
+                            }}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     // Commit inline as well as blurring the input
@@ -338,7 +342,9 @@ export function RecurringJobFields({
                                     // in jsdom, so we commit directly to make
                                     // the flow testable end-to-end.
                                     commitInitialDays();
+                                    committingViaEnterRef.current = true;
                                     (e.target as HTMLInputElement).blur();
+                                    committingViaEnterRef.current = false;
                                 }
                             }}
                             min={0}

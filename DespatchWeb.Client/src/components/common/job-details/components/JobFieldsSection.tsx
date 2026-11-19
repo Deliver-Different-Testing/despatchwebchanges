@@ -180,8 +180,8 @@ export const JobFieldsSection = React.memo(({
                             <EditableField
                                 icon="qr_code" label="Barcode" value={job.barcode}
                                 dense={dense} isEditMode={isEditMode}
-                                isVisible={isFieldVisible('dimensions')}
-                                onToggleVisibility={onToggleField} fieldKey="dimensions"
+                                isVisible={isFieldVisible('barcode')}
+                                onToggleVisibility={onToggleField} fieldKey="barcode"
                             />
                         </Collapse>
                     </Paper>
@@ -202,7 +202,7 @@ export const JobFieldsSection = React.memo(({
                                 isVisible={isFieldVisible('dgDocs')}
                                 onToggleVisibility={onToggleField} fieldKey="dgDocs"
                             />
-                            {job.dgClass && (
+                            {!!job.dgClass && (
                                 <EditableField
                                     icon="description" label="DG docs" value={hasDgDocs}
                                     dense={dense}

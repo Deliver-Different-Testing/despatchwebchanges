@@ -65,6 +65,7 @@ public class DispatchJobViewModel
 
     // Addresses
     public string From { get; set; }
+    public string FromAddress { get; set; }
     public string ToAddress { get; set; }
     public int? ToSuburbId { get; set; }
     public AddressViewModel PickupAddress { get; set; }

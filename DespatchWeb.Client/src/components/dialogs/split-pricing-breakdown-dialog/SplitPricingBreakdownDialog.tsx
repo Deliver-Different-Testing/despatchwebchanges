@@ -23,6 +23,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import {formatCurrency} from '../../../utils/currencyUtils';
+import {errorMessageOf} from '../../../utils/errorMessage';
 import type {ShowToastFn} from '../../../services/toastService';
 import {Icon} from '../../common/icon/Icon';
 import {
@@ -202,13 +203,6 @@ function normalizeSplitPreview(
         shareLocked: false,
     };
 }
-
-const extractErrorMessage = (error: unknown, fallback: string): string => {
-    if (error instanceof Error && error.message) {
-        return error.message;
-    }
-    return fallback;
-};
 
 const moneyIcon = <Icon lucide={DollarSign} size={16}/>;
 
@@ -450,7 +444,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             showToast?.('Split pricing breakdown saved', 'success');
             props.onClose();
         } catch (error) {
-            showToast?.(extractErrorMessage(error, "Couldn't save the split pricing breakdown. Try again."), 'error');
+            showToast?.(errorMessageOf(error, "Couldn't save the split pricing breakdown. Try again."), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -506,7 +500,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             setAddRevenue('');
             showToast?.(`Added "${addName}"`, 'success');
         } catch (error) {
-            showToast?.(extractErrorMessage(error, "Couldn't add price item. Try again."), 'error');
+            showToast?.(errorMessageOf(error, "Couldn't add price item. Try again."), 'error');
         } finally {
             setIsAddSaving(false);
         }
@@ -521,7 +515,7 @@ export const SplitPricingBreakdownDialog: React.FC<SplitPricingBreakdownDialogPr
             setConfirmDeleteItemId(null);
             showToast?.('Price item deleted', 'success');
         } catch (error) {
-            showToast?.(extractErrorMessage(error, "Couldn't delete price item. Try again."), 'error');
+            showToast?.(errorMessageOf(error, "Couldn't delete price item. Try again."), 'error');
         } finally {
             setIsDeleting(false);
         }

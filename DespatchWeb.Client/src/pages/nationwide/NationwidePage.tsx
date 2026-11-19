@@ -275,7 +275,9 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
      * server instead. `enabled` keeps it to a single fetch on mount.
      */
     useQuery({
-        queryKey: queryKeys.jobs.detail(deepLinkJobId ?? 0, 'standard'),
+        // Not queryKeys.jobs.detail: useJobDetail caches an IJobGroup under that key, and a
+        // DispatchJob landing there breaks the job-detail panel for the same job.
+        queryKey: ['nationwideDeepLinkJob', deepLinkJobId ?? 0],
         queryFn: async () => {
             const job = await getDispatchJobDetail(deepLinkJobId!);
             if (job) setCurrentJob(job);
@@ -301,10 +303,13 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
      * Point the flight/agent widget at a related job without changing the page
      * selection, so the detail panel and lists stay where the operator left them.
      */
+    const widgetGeneration = useRef(0);
     const retargetWidget = useCallback(async (jobId: number) => {
+        const generation = widgetGeneration.current;
         try {
             const job = await getDispatchJobDetail(jobId);
-            if (job) setWidgetJob(job);
+            // A fetch that outlives a change of selection belongs to the old job's family.
+            if (job && generation === widgetGeneration.current) setWidgetJob(job);
         } catch (error) {
             console.error('Could not load related job', jobId, error);
         }
@@ -319,6 +324,19 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     /** Agent picked for assignment; hands off to the shared dispatch dialog. */
     const [agentToDispatch, setAgentToDispatch] = useState<Agent | undefined>();
     const flightAgentJob = widgetJob ?? currentJob;
+
+    // A retarget belongs to the selected job's family; a new selection must not inherit it.
+    const currentJobId = currentJob?.id;
+    useEffect(() => {
+        widgetGeneration.current++;
+        setWidgetJob(undefined);
+    }, [currentJobId]);
+
+    /** Re-fetch the job the widget acts on, keeping the page selection where it is. */
+    const refreshFlightAgentJob = useCallback(
+        (jobId: number) => (widgetJob ? retargetWidget(jobId) : selectJobById(jobId)),
+        [widgetJob, retargetWidget, selectJobById],
+    );
 
     const onWarning = useCallback(
         (message: string) => showToast(message, 'warning'),
@@ -399,7 +417,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                 // V1 refetched and re-selected the job so the widget and job-detail
                 // panel immediately reflect the new assignedFlight, matching the
                 // other two mutation handlers in this file.
-                await selectJobById(flightAgentJob.id);
+                await refreshFlightAgentJob(flightAgentJob.id);
             } catch (error) {
                 console.error('Error finishing flight assignment follow-up:', error);
                 showToast(
@@ -411,7 +429,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             setIsAssigningFlight(false);
         }
     }, [flightAgentJob, isAssigningFlight, widget.selectedOutboundAirport, widget.selectedInboundAirport, showToast,
-        refreshLists, selectJobById]);
+        refreshLists, refreshFlightAgentJob]);
 
     const handleAddAgentToJob = useCallback(async (agent: Agent) => {
         if (!flightAgentJob) return;
@@ -478,8 +496,8 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         showToast(message, severity);
         closeDispatchDialog();
         refreshLists();
-        await selectJobById(flightAgentJob.id);
-    }, [flightAgentJob, isUsCustomer, showToast, closeDispatchDialog, refreshLists, selectJobById]);
+        await refreshFlightAgentJob(flightAgentJob.id);
+    }, [flightAgentJob, isUsCustomer, showToast, closeDispatchDialog, refreshLists, refreshFlightAgentJob]);
 
     const handleSendToPartner = useCallback(async (partner: ISuggestion, agreedRate: number) => {
         if (!flightAgentJob) return;
@@ -495,8 +513,8 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
             'success',
         );
         refreshLists();
-        await selectJobById(flightAgentJob.id);
-    }, [flightAgentJob, showToast, closeDispatchDialog, refreshLists, selectJobById]);
+        await refreshFlightAgentJob(flightAgentJob.id);
+    }, [flightAgentJob, showToast, closeDispatchDialog, refreshLists, refreshFlightAgentJob]);
 
     const handleOpenAgentSearchDialog = useCallback(async () => {
         if (!flightAgentJob) return;

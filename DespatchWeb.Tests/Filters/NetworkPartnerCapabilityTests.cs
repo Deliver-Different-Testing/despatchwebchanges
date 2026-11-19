@@ -32,6 +32,7 @@ public class NetworkPartnerCapabilityTests
     [InlineData(NpCapability.ChangePaidCourier, false)]
     [InlineData(NpCapability.InterCourierCharge, false)]
     [InlineData(NpCapability.Rerate, false)]
+    [InlineData(NpCapability.AccessorialCharges, false)]
     public void Table_MatchesTheProductDecision(NpCapability capability, bool allowed)
     {
         Assert.Equal(allowed, NetworkPartnerCapabilities.IsAllowed(capability));
@@ -80,6 +81,18 @@ public class NetworkPartnerCapabilityTests
         var attribute = typeof(JobController).GetMethod(action)!.GetCustomAttribute<NetworkPartnerCapabilityAttribute>();
 
         Assert.Equal(capability, attribute?.Capability);
+    }
+
+    [Theory]
+    [InlineData(nameof(AccessorialChargeController.Add))]
+    [InlineData(nameof(AccessorialChargeController.Update))]
+    [InlineData(nameof(AccessorialChargeController.Delete))]
+    public void AccessorialChargeWrite_DeclaresTheAccessorialCapability(string action)
+    {
+        var attribute = typeof(AccessorialChargeController).GetMethod(action)!
+            .GetCustomAttribute<NetworkPartnerCapabilityAttribute>();
+
+        Assert.Equal(NpCapability.AccessorialCharges, attribute?.Capability);
     }
 
     private static async Task<ActionExecutingContext> RunAsync(ClientType clientType, NpCapability capability)

@@ -23,7 +23,7 @@ import {
     getSpeedList,
     getLeaveList,
     getContactList,
-    restoreJobs,
+    reAllocateJob,
     allocateJob,
     getCourierById,
     downloadFile,
@@ -561,32 +561,32 @@ describe('jobDetailApi integration', () => {
 
     // ── Job Dispatch Operations ─────────────────────────────────────
 
-    describe('restoreJobs', () => {
-        it('sends job IDs in request body with CSRF header', async () => {
+    describe('reAllocateJob', () => {
+        it('sends courier and job IDs in request body with CSRF header', async () => {
             let capturedBody: unknown = null;
             let capturedCsrfHeader: string | null = null;
             server.use(
-                http.post('*/job/RestoreJobs', async ({ request }) => {
+                http.post('*/job/ReAllocate', async ({ request }) => {
                     capturedCsrfHeader = request.headers.get('X-Requested-With');
                     capturedBody = await request.json();
                     return new HttpResponse(null, { status: 200 });
                 })
             );
 
-            await restoreJobs([1, 2, 3]);
+            await reAllocateJob(5, [1, 2, 3]);
 
             expect(capturedCsrfHeader).toBe('XMLHttpRequest');
-            expect(capturedBody).toMatchObject({ jobIds: [1, 2, 3] });
+            expect(capturedBody).toMatchObject({ courierId: 5, jobIds: [1, 2, 3] });
         });
 
-        it('handles permission error', async () => {
+        it('surfaces the server refusal message', async () => {
             server.use(
-                http.post('*/job/RestoreJobs', () => {
-                    return HttpResponse.json({ message: 'Permission denied' }, { status: 403 });
+                http.post('*/job/ReAllocate', () => {
+                    return HttpResponse.json({ message: 'Partner job cannot be reassigned' }, { status: 400 });
                 })
             );
 
-            await expect(restoreJobs([1])).rejects.toMatchObject({ status: 403 });
+            await expect(reAllocateJob(5, [1])).rejects.toMatchObject({ status: 400, message: 'Partner job cannot be reassigned' });
         });
     });
 

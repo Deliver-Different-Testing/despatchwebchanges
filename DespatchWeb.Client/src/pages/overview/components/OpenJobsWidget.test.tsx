@@ -8,6 +8,7 @@ import {createMockOpenJob} from '../../../components/common/open-jobs-list/openJ
 // Mock formatMins
 vi.mock('../../../utils/dateUtils', () => ({
     formatMins: vi.fn((s: string) => s),
+    parseDateFromApi: vi.fn((s: string) => s),
 }));
 
 

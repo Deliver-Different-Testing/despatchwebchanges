@@ -27,7 +27,7 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
     }, [delivery?.jobId]);
 
     // Fetch HERE Maps API key
-    const {data: apiKey} = useQuery({
+    const {data: apiKey, isPending: isKeyPending} = useQuery({
         queryKey: queryKeys.hereMaps.apiKey,
         queryFn: () => configApi.getHereMapsKey(),
         staleTime: 10 * 60 * 1000,
@@ -35,13 +35,13 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
     });
 
     // Fetch map data for the job
-    const {data: mapConfig, isLoading} = useQuery({
+    const {data: mapConfig, isLoading, isError: isMapDataError} = useQuery({
         queryKey: queryKeys.overview.parentJobMap(delivery?.jobId ?? 0),
         queryFn: ({signal}) => overviewApi.getParentJobMap(delivery!.jobId, {signal}),
         enabled: open && delivery != null,
     });
 
-    const credentials: HereMapCredentials | undefined = apiKey ? {apiKey} : undefined;
+    const credentials = useMemo<HereMapCredentials | undefined>(() => (apiKey ? {apiKey} : undefined), [apiKey]);
 
     // Build the HERE map config, updating selectedJobIndex
     const hereMapConfig: HereMapConfig | undefined = useMemo(() => {
@@ -53,6 +53,9 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
     }, [mapConfig, selectedJobIndex]);
 
     const childJobs = delivery?.childJobs ?? [];
+    // A settled key query without a key (an error, or an empty key from the server) is a failure too;
+    // either way the body would otherwise stay blank.
+    const loadFailed = isMapDataError || (!isKeyPending && !apiKey);
 
     return (
         // The bespoke header built from the legacy sx tokens is now the shared
@@ -81,6 +84,14 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                     >
                         <Loader size={60} role="progressbar" aria-label="Loading map data"/>
                         <Text fz="sm">Loading map data…</Text>
+                    </Stack>
+                )}
+
+                {!isLoading && loadFailed && (
+                    <Stack align="center" justify="center" h="100%">
+                        <Text role="alert" fz="sm" c="dimmed">
+                            Couldn't load the map. Close this and try again.
+                        </Text>
                     </Stack>
                 )}
 

@@ -16,7 +16,7 @@ export interface ScanListProps {
 const scanIcon = <Icon tabler={IconQrcode}/>;
 
 export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = false, timeZoneShort}) => {
-    const {scans, isLoading} = useScanDetail({jobId, runDate, isBulkJob});
+    const {scans, isLoading, isError, refetch} = useScanDetail({jobId, runDate, isBulkJob});
 
     if (!jobId) {
         return (
@@ -33,6 +33,20 @@ export const ScanList: React.FC<ScanListProps> = ({jobId, runDate, isBulkJob = f
             <Group justify="center" p="md">
                 <Loader size="sm" aria-label="Loading scan records"/>
             </Group>
+        );
+    }
+
+    // A failed fetch must not read as "this job has no scans".
+    if (isError && scans.length === 0) {
+        return (
+            <NoData
+                title="Couldn't load scan records"
+                message="Check your connection and try again."
+                icon={scanIcon}
+                showAction
+                actionText="Try again"
+                onAction={refetch}
+            />
         );
     }
 

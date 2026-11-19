@@ -933,10 +933,7 @@ export function useJobActions({
                 await refreshAndNotify();
             })
             .catch((err: unknown) => {
-                const message = err instanceof Error && err.message
-                    ? err.message
-                    : `Couldn't send job ${j.jobNo} to ${partner.text}. Try again.`;
-                toast.update(message, 'error');
+                toast.update(errorMessageOf(err, `Couldn't send job ${j.jobNo} to ${partner.text}. Try again.`), 'error');
             });
     }, [refreshAndNotify]);
 

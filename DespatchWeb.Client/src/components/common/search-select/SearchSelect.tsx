@@ -52,6 +52,7 @@ export function SearchSelect<T>({
     const [inputValue, setInputValue] = useState(() => (value ? getOptionLabel(value) : ''));
     const [fetchedOptions, setFetchedOptions] = useState<T[]>([]);
     const [fetching, setFetching] = useState(false);
+    const [searchFailed, setSearchFailed] = useState(false);
 
     const options = controlledOptions ?? fetchedOptions;
     const loading = controlledLoading ?? fetching;
@@ -81,10 +82,13 @@ export function SearchSelect<T>({
             abortRef.current?.abort();
             setFetchedOptions([]);
             setFetching(false);
+            setSearchFailed(false);
             searchChangeRef.current?.('');
             return;
         }
 
+        // The failure belonged to the previous term; don't keep reporting it through the debounce.
+        setSearchFailed(false);
         const timer = setTimeout(async () => {
             searchChangeRef.current?.(inputValue);
             if (!searchRef.current) return;
@@ -103,6 +107,7 @@ export function SearchSelect<T>({
             } catch (err) {
                 if ((err as {name?: string})?.name !== 'AbortError' && !controller.signal.aborted) {
                     setFetchedOptions([]);
+                    setSearchFailed(true);
                 }
                 if (!controller.signal.aborted) setFetching(false);
             }
@@ -172,7 +177,9 @@ export function SearchSelect<T>({
                         ))
                     ) : (
                         <Combobox.Empty>
-                            {inputValue.length >= minSearchLength ? (
+                            {searchFailed && !controlledOptions ? (
+                                <Text fz="sm" c="dimmed">Couldn't search. Check your connection and try again.</Text>
+                            ) : inputValue.length >= minSearchLength ? (
                                 <Group gap="xs" justify="center">
                                     <Icon lucide={SearchX} size={18}/>
                                     <Text fz="sm" c="dimmed">No matches for &ldquo;{inputValue}&rdquo;</Text>

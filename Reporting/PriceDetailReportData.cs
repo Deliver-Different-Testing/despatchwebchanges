@@ -17,6 +17,7 @@ public sealed class PriceDetailReportData
     public IReadOnlyList<PriceDetailJob> Jobs { get; private init; } = [];
     public IReadOnlyList<PriceChangeLogEntry> ChangeLog { get; private init; } = [];
     public List<PriceFinding> Findings { get; set; } = [];
+    public CultureInfo Culture { get; private init; } = CultureInfo.InvariantCulture;
 
     public static PriceDetailReportData From(PriceDetailReportRaw raw, ITenantInfoService info)
     {
@@ -48,7 +49,7 @@ public sealed class PriceDetailReportData
             jobs.Add(new PriceDetailJob(h, booked, current, changes, AsBookedSourceOf(history), bookedAtStamp));
         }
 
-        return new PriceDetailReportData { Jobs = jobs, ChangeLog = changeLog, Findings = [] };
+        return new PriceDetailReportData { Jobs = jobs, ChangeLog = changeLog, Findings = [], Culture = info.GetCulture() };
     }
 
     // As-booked lines = the first PricingBreakdown insert batch (all inserts within
@@ -142,7 +143,7 @@ public sealed class PriceDetailReportData
                     }
 
                     line = TryParseNamed(r.NewValue, out var nm, out var amt)
-                        ? $"line added: {nm} {amt:C}"
+                        ? string.Create(info.GetCulture(), $"line added: {nm} {amt:C}")
                         : $"line added: {r.NewValue}";
                 }
                 else if (r.OldValue is not null && r.NewValue is null)
@@ -156,7 +157,8 @@ public sealed class PriceDetailReportData
             }
             else if (r.FieldName.StartsWith("Pricing: ", StringComparison.Ordinal))
             {
-                line = $"{r.FieldName[9..].Trim()}: {ParseDec(r.OldValue):C} -> {ParseDec(r.NewValue):C}";
+                line = string.Create(info.GetCulture(),
+                    $"{r.FieldName[9..].Trim()}: {ParseDec(r.OldValue):C} -> {ParseDec(r.NewValue):C}");
             }
             else
             {

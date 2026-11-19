@@ -799,7 +799,7 @@ public sealed partial class DeliveryJourneyService(
                         Title = GetTitle(first),
                         Description = isCreation ? creation.Description : GetDescription([.. group]),
                         Icon = GetIcon(first.ChangeType, first.FieldName),
-                        Tags = isCreation ? creation.Tags : [.. BuildTags(group)],
+                        Tags = isCreation ? creation.Tags : [.. BuildTags(group, infoService.GetCulture())],
                         PerformedBy = ResolvePerformedBy(group),
                         GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
                     };
@@ -860,7 +860,7 @@ public sealed partial class DeliveryJourneyService(
                         Title = GetTitle(first),
                         Description = isCreation ? creation.Description : GetDescription([.. group]),
                         Icon = GetIcon(first.ChangeType, first.FieldName),
-                        Tags = isCreation ? creation.Tags : [.. BuildTags(group)],
+                        Tags = isCreation ? creation.Tags : [.. BuildTags(group, infoService.GetCulture())],
                         PerformedBy = ResolvePerformedBy(group),
                         GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
                     };
@@ -899,14 +899,14 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Builds tag strings from live status update DTOs for display in the journey timeline.
     /// </summary>
-    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyDto> group) =>
+    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyDto> group, CultureInfo culture) =>
         group.SelectMany(s => new[]
             {
                 !string.IsNullOrEmpty(s.FlightNumber) ? $"Flight: {s.FlightNumber}" : null,
                 BuildAgentTag(s.OldAgentName, s.NewAgentName),
                 BuildCourierTag(s.OldCourierName, s.NewCourierName),
                 BuildStatusTag(s.OldJobStatusName, s.NewJobStatusName),
-                BuildFieldTag(s.FieldName, s.OldValue, s.NewValue)
+                BuildFieldTag(s.FieldName, s.OldValue, s.NewValue, culture)
             })
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct();
@@ -914,14 +914,14 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Builds tag strings from archived status update DTOs for display in the journey timeline.
     /// </summary>
-    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyArchiveDto> group) =>
+    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyArchiveDto> group, CultureInfo culture) =>
         group.SelectMany(s => new[]
             {
                 !string.IsNullOrEmpty(s.FlightNumber) ? $"Flight: {s.FlightNumber}" : null,
                 BuildAgentTag(s.OldAgentName, s.NewAgentName),
                 BuildCourierTag(s.OldCourierName, s.NewCourierName),
                 BuildStatusTag(s.OldJobStatusName, s.NewJobStatusName),
-                BuildFieldTag(s.FieldName, s.OldValue, s.NewValue)
+                BuildFieldTag(s.FieldName, s.OldValue, s.NewValue, culture)
             })
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct();
@@ -978,7 +978,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Builds a display tag for generic field value changes.
     /// </summary>
-    private static string BuildFieldTag(string fieldName, string oldValue, string newValue)
+    private static string BuildFieldTag(string fieldName, string oldValue, string newValue, CultureInfo culture)
     {
         if (string.IsNullOrEmpty(fieldName))
         {
@@ -989,16 +989,16 @@ public sealed partial class DeliveryJourneyService(
         if (!string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue))
         {
             return
-                $"{formattedName}: {FormatFieldValue(fieldName, oldValue)} → {FormatFieldValue(fieldName, newValue)}";
+                $"{formattedName}: {FormatFieldValue(fieldName, oldValue, culture)} → {FormatFieldValue(fieldName, newValue, culture)}";
         }
 
         if (!string.IsNullOrEmpty(newValue))
         {
-            return $"{formattedName}: {FormatFieldValue(fieldName, newValue)}";
+            return $"{formattedName}: {FormatFieldValue(fieldName, newValue, culture)}";
         }
 
         return !string.IsNullOrEmpty(oldValue)
-            ? $"{formattedName}: {FormatFieldValue(fieldName, oldValue)} → (cleared)"
+            ? $"{formattedName}: {FormatFieldValue(fieldName, oldValue, culture)} → (cleared)"
             : null;
     }
 
@@ -1392,7 +1392,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Formats a field value for display, applying appropriate formatting based on field type (currency, boolean, etc.).
     /// </summary>
-    internal static string FormatFieldValue(string fieldName, string value)
+    internal static string FormatFieldValue(string fieldName, string value, CultureInfo culture)
     {
         if (string.IsNullOrEmpty(value))
         {
@@ -1412,7 +1412,7 @@ public sealed partial class DeliveryJourneyService(
                 or "NWAmount" or "RawAmount" or "RebateAmt" or "PickupRawAmount" or "DropoffRawAmount"
                 or "NWRawAmount" or "RawBaseAmount" or "GSSAmount" or "PPDExclusiveAmount"
                 when decimal.TryParse(value, out var amount):
-                return amount.ToString("C2");
+                return amount.ToString("C2", culture);
             case "ucjbWeight" when decimal.TryParse(value, out var weight):
                 return $"{weight:F2} kg";
             case "ucjbKm" or "TotalDistance" when decimal.TryParse(value, out var distance):

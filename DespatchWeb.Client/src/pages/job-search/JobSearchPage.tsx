@@ -57,6 +57,8 @@ import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 import {JobSearchPageProps} from "./JobSearchPageProps";
 import {openAccessorialChargesForJob, openAttachmentsForJob} from '../jobActionDialogs';
 import {loadDialog} from '../../components/dialogs/dialogRegistry';
+import {errorMessageOf} from '../../utils/errorMessage';
+import {pendingChangeMessage} from '../../utils/pendingChangeMessage';
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 showToast,
@@ -379,7 +381,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
 
     const performRestore = useCallback(async (job: DispatchJob, removeCapturedImages = false) => {
         await addRestoreEvent(job.id);
-        await restoreJobs([job.id], removeCapturedImages);
+        // Split jobs go through a different proc that has no image opt-in.
+        if (job.displaySplitJobDetail) {
+            await restoreSplitJobs([job.id]);
+        } else {
+            await restoreJobs([job.id], removeCapturedImages);
+        }
         showToast(`${job.jobNo} restored`, 'success');
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
@@ -428,13 +435,13 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     return;
 
                 case 'restore': {
-                    // Split jobs go through a different proc that has no image opt-in, so only the
-                    // plain restore is gated on what it would destroy.
+                    // The split restore has no image opt-in, so it is only gated on reopening a completed job.
                     if (job.displaySplitJobDetail) {
-                        await addRestoreEvent(job.id);
-                        await restoreSplitJobs([job.id]);
-                        showToast(`${job.jobNo} restored`, 'success');
-                        await Promise.all([invalidateLists(), invalidateDetail()]);
+                        if (job.done) {
+                            setRestoreConfirm({job, summary: {jobsWithPodName: 0, imageCount: 0}});
+                            return;
+                        }
+                        await performRestore(job);
                         return;
                     }
 
@@ -476,8 +483,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         showToast(`${job.jobNo} has no live job yet, so there's nothing to ${actionId}.`, 'warning');
                         return;
                     }
-                    await setJobLocked(target.jobId, locked, target.isRecurring);
-                    showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
+                    const response = await setJobLocked(target.jobId, locked, target.isRecurring);
+                    if (response?.pending) showToast(pendingChangeMessage(job.jobNo), 'info');
+                    else showToast(`${job.jobNo} ${locked ? 'locked' : 'unlocked'}`, 'success');
                     await Promise.all([invalidateLists(), invalidateDetail()]);
                     return;
                 }
@@ -518,7 +526,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             }
         } catch (error) {
             console.error(`[JobSearchPage] Job action "${actionId}" failed:`, error);
-            showToast("Couldn't complete that action. Check your connection and try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't complete that action. Check your connection and try again."), 'error');
         }
     }, [showToast, openChangeCourier]);
 
@@ -753,7 +761,12 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 onConfirm={async (removeCapturedImages) => {
                     const {job} = restoreConfirm!;
                     setRestoreConfirm(null);
-                    await performRestore(job, removeCapturedImages);
+                    try {
+                        await performRestore(job, removeCapturedImages);
+                    } catch (error) {
+                        console.error('Restore failed:', error);
+                        showToast(errorMessageOf(error, `Couldn't restore ${job.jobNo}. Try again.`), 'error');
+                    }
                 }}
             />
             {currentJob && (

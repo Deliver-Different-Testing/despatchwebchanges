@@ -296,4 +296,15 @@ describe('RecurringJobFields', () => {
         fireEvent.keyDown(input, {key: 'Enter'});
         expect(onInitialDaysChange).toHaveBeenCalledWith(4);
     });
+    it('commits only once when Enter blurs a focused input', () => {
+        const onInitialDaysChange = vi.fn();
+        const job = createMockJob({preBook: true, recurringInitialDays: 0});
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({job, onInitialDaysChange})} />);
+        const input = screen.getByLabelText('Create bookings X days ahead') as HTMLInputElement;
+        input.focus();
+        fireEvent.change(input, {target: {value: '4'}});
+        fireEvent.keyDown(input, {key: 'Enter'});
+        expect(onInitialDaysChange).toHaveBeenCalledTimes(1);
+        expect(document.activeElement).not.toBe(input);
+    });
 });

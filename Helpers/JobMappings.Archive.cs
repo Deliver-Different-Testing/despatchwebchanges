@@ -144,6 +144,7 @@ public static partial class JobMappings
         // Job characteristics
         Weight = j.UcjbWeight,
         CalculateDimsOncePerJob = j.DimensionsType == 2,
+        FromAddress = j.UcjbFromAddr,
         ToAddress = j.UcjbToAddr,
         JobType = (int)(j.UcjbType ?? 0),
         JobTypeDescription = GetJobTypeDescription(j.UcjbType ?? 0),
@@ -403,6 +404,7 @@ public static partial class JobMappings
 
             From = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
             ToSuburbId = j.UcjbTo,
+            FromAddress = j.UcjbFromAddr,
             ToAddress = j.UcjbToAddr,
 
             PickupAddress = new AddressViewModel

@@ -48,6 +48,13 @@ describe('TruckLoadingStatusDialog', () => {
         expect(fetchTruckCourierStatusMock).toHaveBeenCalledWith(42, expect.anything());
     });
 
+    it('says the status failed to load instead of showing blank values', async () => {
+        fetchTruckCourierStatusMock.mockRejectedValue({status: 500, message: 'boom'});
+        renderDialog();
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't load the truck status");
+    });
+
     it('does not fetch when closed', () => {
         renderDialog({open: false});
         expect(fetchTruckCourierStatusMock).not.toHaveBeenCalled();

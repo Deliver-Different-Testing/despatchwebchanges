@@ -106,6 +106,7 @@ vi.mock('../../api/jobListApi', () => ({
 import {
     allocateJobs,
     updateJobReadStatus,
+    bulkUpdateReadStatus,
     restoreJobs,
     getRestorePodImpact,
     addRestoreEvent,
@@ -119,6 +120,7 @@ const mockedSearchCouriers = searchActiveCouriersExtended as Mock;
 const mockedAllocateJobs = allocateJobs as Mock;
 const mockedUpdateJobReadStatus = updateJobReadStatus as Mock;
 const mockedRestoreJobs = restoreJobs as Mock;
+const mockedBulkUpdateReadStatus = bulkUpdateReadStatus as Mock;
 const mockedGetRestorePodImpact = getRestorePodImpact as Mock;
 const mockedAddRestoreEvent = addRestoreEvent as Mock;
 
@@ -1428,6 +1430,17 @@ describe('JobListPanel', () => {
             expect(mockedUpdateJobReadStatus).toHaveBeenCalledWith(55, true);
         });
 
+        it('does not call updateJobReadStatus for a bulk row not yet sent to live', async () => {
+            const jobs = [
+                createMockDispatchJob({id: 901, isBulkJob: true, jobNo: 'BULK2', hasBeenRead: false}),
+            ];
+            await renderWithJobs(jobs);
+
+            fireEvent.click(screen.getByText('BULK2'));
+
+            expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
+        });
+
         it('does not call updateJobReadStatus for an archived job (no tucJob row to track)', async () => {
             const jobs = [
                 createMockDispatchJob({id: 40, jobNo: 'ARCH1', hasBeenRead: false, isArchived: true}),
@@ -1626,6 +1639,69 @@ describe('JobListPanel', () => {
             expect(mockedAddRestoreEvent).not.toHaveBeenCalledWith(2);
         });
 
+        it('excludes bulk rows, whose id is a BulkJobId, from the restore call', async () => {
+            const user = setupUser();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-LIVE', isArchived: false}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-BULK', isBulkJob: true, linkedJobId: 77}),
+            ];
+            await renderWithJobs(jobs);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-LIVE'));
+            await user.click(screen.getByText('JOB-BULK'));
+            await user.keyboard('{/Control}');
+
+            await user.click(screen.getByText('Restore'));
+
+            await waitFor(() => {
+                expect(mockedRestoreJobs).toHaveBeenCalledWith([1], false);
+            });
+            expect(mockedAddRestoreEvent).not.toHaveBeenCalledWith(2);
+        });
+
+        it('marks the linked live job read for a bulk row, not its BulkJobId', async () => {
+            const user = setupUser();
+            mockedBulkUpdateReadStatus.mockClear();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-LIVE'}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-BULK', isBulkJob: true, linkedJobId: 77}),
+            ];
+            await renderWithJobs(jobs);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-LIVE'));
+            await user.click(screen.getByText('JOB-BULK'));
+            await user.keyboard('{/Control}');
+
+            await user.click(screen.getByText('Mark read'));
+
+            await waitFor(() => {
+                expect(mockedBulkUpdateReadStatus).toHaveBeenCalledWith([1, 77], true);
+            });
+        });
+
+        it('skips a bulk row with no linked live job when marking read', async () => {
+            const user = setupUser();
+            mockedBulkUpdateReadStatus.mockClear();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-LIVE'}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-BULK', isBulkJob: true}),
+            ];
+            await renderWithJobs(jobs);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-LIVE'));
+            await user.click(screen.getByText('JOB-BULK'));
+            await user.keyboard('{/Control}');
+
+            await user.click(screen.getByText('Mark read'));
+
+            await waitFor(() => {
+                expect(mockedBulkUpdateReadStatus).toHaveBeenCalledWith([1], true);
+            });
+        });
+
         it('warns and restores nothing when only archived jobs are selected', async () => {
             const user = setupUser();
             const jobs = [
@@ -1641,7 +1717,7 @@ describe('JobListPanel', () => {
 
             await user.click(screen.getByText('Restore'));
 
-            expect(props.showToast).toHaveBeenCalledWith("Archived jobs can't be restored", 'warning');
+            expect(props.showToast).toHaveBeenCalledWith("Archived and scheduled jobs can't be restored", 'warning');
             expect(mockedRestoreJobs).not.toHaveBeenCalled();
             expect(mockedAddRestoreEvent).not.toHaveBeenCalled();
             expect(mockedGetRestorePodImpact).not.toHaveBeenCalled();

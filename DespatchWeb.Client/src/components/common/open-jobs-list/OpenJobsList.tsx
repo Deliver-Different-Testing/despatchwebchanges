@@ -1,10 +1,10 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Badge, Box, Card, Collapse, Divider, Group, Stack, Table, Text} from '@mantine/core';
 import dayjs from 'dayjs';
 import {SortableTh, TablePager} from '../data-table';
 import type {SortState} from '../data-table';
 import {SymbolIcon} from '../symbol-icon';
-import {formatMins} from '../../../utils/dateUtils';
+import {formatMins, parseDateFromApi} from '../../../utils/dateUtils';
 import type {DriverViewModel, IOpenJobResponse, ViewJob} from './OpenJobsList.types';
 
 export type OpenJobsViewMode = 'cards' | 'table';
@@ -48,11 +48,17 @@ const TABLE_COLUMNS = [
 
 export const PAGE_SIZE_OPTIONS = [5, 10, 15, 20];
 
-function getTimeSinceLastCompleted(lastCompletedTime: string): number {
-    if (lastCompletedTime === 'N/A') return 0;
-    const lastCompleted = dayjs(lastCompletedTime, 'HH:mm');
-    const now = dayjs();
-    return Math.round(now.diff(lastCompleted, 'minute'));
+/** Minutes since the instant itself: the server looks back 30 days, so a bare HH:mm would misread an earlier day as today. */
+function getMinutesSince(lastCompletedAt: string): number | null {
+    const instant = dayjs(lastCompletedAt);
+    if (!instant.isValid()) return null;
+    return Math.max(0, dayjs().diff(instant, 'minute'));
+}
+
+function timeValue(time: string | undefined): number | undefined {
+    if (!time) return undefined;
+    const instant = dayjs(time);
+    return instant.isValid() ? instant.valueOf() : undefined;
 }
 
 function toViewJob(job: IOpenJobResponse): ViewJob {
@@ -130,7 +136,8 @@ export const OpenJobsList: React.FC<OpenJobsListProps> = ({
                     name: job.driverName,
                     jobs: [],
                     completedToday: job.completedToday,
-                    lastCompleted: job.lastCompleted ? formatMins(job.lastCompleted) : 'N/A',
+                    lastCompleted: job.lastCompleted ? formatMins(parseDateFromApi(job.lastCompleted)) : 'N/A',
+                    lastCompletedAt: job.lastCompleted,
                     expanded: false,
                 };
             }
@@ -150,8 +157,9 @@ export const OpenJobsList: React.FC<OpenJobsListProps> = ({
             let valB: string | number | undefined | Record<string, unknown> = b[column as keyof ViewJob] as string | number | undefined | Record<string, unknown>;
 
             if (column === 'pickup' || column === 'delivery') {
-                valA = a[column]?.timeString || '';
-                valB = b[column]?.timeString || '';
+                // The display string is day-first on non-US tenants, so it would sort alphabetically, not chronologically.
+                valA = timeValue(a[column]?.time);
+                valB = timeValue(b[column]?.time);
             } else if (column === 'pickupAddress') {
                 valA = a.pickup?.address || '';
                 valB = b.pickup?.address || '';
@@ -160,20 +168,30 @@ export const OpenJobsList: React.FC<OpenJobsListProps> = ({
                 valB = b.delivery?.address || '';
             }
 
-            if (valA == null) return 1;
+            if (valA == null) return valB == null ? 0 : 1;
             if (valB == null) return -1;
             if (typeof valA === 'string' && typeof valB === 'string') return valA.localeCompare(valB) * dir;
-            if (typeof valA === 'number' && typeof valB === 'number') return (valA < valB ? -1 : 1) * dir;
+            if (typeof valA === 'number' && typeof valB === 'number') return (valA - valB) * dir;
             return String(valA).localeCompare(String(valB)) * dir;
         });
 
         return sorted;
     }, [viewJobs, sort]);
 
+    // A refetch or a narrower range can leave fewer pages than the stored page number.
+    const currentPage = Math.min(page, Math.max(1, Math.ceil(sortedTableJobs.length / limit)));
+
+    // Write the clamp back once real rows are in, or the list jumps forward again when it regrows.
+    // Skipped while loading or empty, which are transient and say nothing about the page count.
+    const hasRows = sortedTableJobs.length > 0;
+    useEffect(() => {
+        if (!isLoading && hasRows && currentPage !== page) onPageChange(currentPage);
+    }, [isLoading, hasRows, currentPage, page, onPageChange]);
+
     const paginatedTableJobs = useMemo(() => {
-        const start = (page - 1) * limit;
+        const start = (currentPage - 1) * limit;
         return sortedTableJobs.slice(start, start + limit);
-    }, [sortedTableJobs, page, limit]);
+    }, [sortedTableJobs, currentPage, limit]);
 
     const handleSort = useCallback((columnKey: string) => {
         onSort({
@@ -254,7 +272,7 @@ export const OpenJobsList: React.FC<OpenJobsListProps> = ({
                     <Box style={{borderTop: '1px solid var(--mantine-color-default-border)'}}>
                         <TablePager
                             totalCount={sortedTableJobs.length}
-                            page={page}
+                            page={currentPage}
                             pageSize={limit}
                             onPageChange={onPageChange}
                             onPageSizeChange={onLimitChange}
@@ -285,9 +303,8 @@ const DriverCard: React.FC<{
     // Avoid running dayjs() per render — only recompute when the timestamp changes.
     // For a 60-driver list each render previously triggered 60 dayjs() + diff() calls.
     const minsSinceLastCompleted = useMemo(() => {
-        if (initialDriver.lastCompleted === 'N/A') return null;
-        return getTimeSinceLastCompleted(initialDriver.lastCompleted);
-    }, [initialDriver.lastCompleted]);
+        return initialDriver.lastCompletedAt ? getMinutesSince(initialDriver.lastCompletedAt) : null;
+    }, [initialDriver.lastCompletedAt]);
 
     return (
         <Card withBorder p={0} radius="lg" mb={8}>

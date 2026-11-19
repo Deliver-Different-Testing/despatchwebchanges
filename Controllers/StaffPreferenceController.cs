@@ -1,4 +1,5 @@
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +38,7 @@ public class StaffPreferenceController(IStaffPreferenceRepository staffPreferenc
         catch (Exception e)
         {
             Log.Error(e, "Error getting staff preference {Key}: {Error}", key, e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -62,7 +63,7 @@ public class StaffPreferenceController(IStaffPreferenceRepository staffPreferenc
         catch (Exception e)
         {
             Log.Error(e, "Error saving staff preference {Key}: {Error}", request.PreferenceKey, e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -82,7 +83,7 @@ public class StaffPreferenceController(IStaffPreferenceRepository staffPreferenc
         catch (Exception e)
         {
             Log.Error(e, "Error deleting staff preference {Key}: {Error}", key, e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 }

@@ -264,7 +264,7 @@ public sealed class PriceDetailSpreadsheet(PriceDetailReportData data, ReportBra
         ws.Cell(r++, 1).Value = "   a 25% fuel surcharge sits in the header with NO fuel breakdown line.";
         if (fuelGapJobs.Count > 0)
         {
-            ws.Cell(r++, 1).Value = $"   Total header-over-lines across these jobs: {section1Total:C}";
+            ws.Cell(r++, 1).Value = string.Create(data.Culture, $"   Total header-over-lines across these jobs: {section1Total:C}");
             r++;
             WriteTableHeader(ws, r++, "Job", "Customer", "Header Amount", "Lines Sum", "Gap (25%)");
             foreach (var j in fuelGapJobs.OrderBy(j => j.Header.ClientName).ThenBy(j => j.Header.JobNo))

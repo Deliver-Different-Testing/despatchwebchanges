@@ -5,8 +5,8 @@ import {OpenJobsList, OpenJobsListProps} from './OpenJobsList';
 import type {IOpenJobResponse} from './OpenJobsList.types';
 import {createMockOpenJob} from './openJob.fixtures';
 
-vi.mock('../../../utils/dateUtils', () => ({
-    formatMins: vi.fn((s: string) => s),
+vi.mock('../../../api/session', () => ({
+    getSession: () => ({timeZone: 'Pacific/Auckland', isUsCustomer: false}),
 }));
 
 const baseProps: OpenJobsListProps = {
@@ -113,6 +113,26 @@ describe('OpenJobsList', () => {
         expect(cells.map(c => c.textContent)).toEqual(['JOB-001', 'JOB-002']);
     });
 
+    it('sorts the pickup column by time, not by its day-first display string', () => {
+        renderList({
+            openJobs: [
+                createMockOpenJob({jobId: 1, reference: 'JOB-FEB', pickupTime: '2024-02-01T10:00:00+13:00', _pickUpTimeStr: '01/Feb/2024 10:00'}),
+                createMockOpenJob({jobId: 2, reference: 'JOB-JAN', pickupTime: '2024-01-15T10:00:00+13:00', _pickUpTimeStr: '15/Jan/2024 10:00'}),
+            ],
+            sort: {column: 'pickup', direction: 'asc'},
+        });
+
+        const cells = screen.getAllByRole('cell').filter(c => c.textContent?.startsWith('JOB-'));
+        expect(cells.map(c => c.textContent)).toEqual(['JOB-JAN', 'JOB-FEB']);
+    });
+
+    it('counts minutes since a last completion on an earlier day from the real instant', () => {
+        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60_000).toISOString();
+        renderList({viewMode: 'cards', openJobs: [createMockOpenJob({lastCompleted: twoDaysAgo})]});
+
+        expect(screen.getByText(`${2 * 24 * 60} mins ago`)).toBeInTheDocument();
+    });
+
     it('shows only the page it is given', () => {
         renderList({
             openJobs: [
@@ -125,6 +145,41 @@ describe('OpenJobsList', () => {
 
         expect(screen.queryByText('JOB-001')).not.toBeInTheDocument();
         expect(screen.getByText('JOB-002')).toBeInTheDocument();
+    });
+
+    it('shows the last page when the given page is past the end of a shrunken list', () => {
+        renderList({
+            openJobs: [
+                createMockOpenJob({jobId: 1, reference: 'JOB-001'}),
+                createMockOpenJob({jobId: 2, reference: 'JOB-002'}),
+            ],
+            limit: 1,
+            page: 5,
+        });
+
+        expect(screen.getByText('JOB-002')).toBeInTheDocument();
+        expect(screen.getByText('2–2 of 2')).toBeInTheDocument();
+    });
+
+    it('moves the stored page back to the last page once loaded, so regrown data does not jump forward', () => {
+        const onPageChange = vi.fn();
+        const jobs = [createMockOpenJob({jobId: 1}), createMockOpenJob({jobId: 2})];
+
+        const {rerender} = renderList({openJobs: jobs, limit: 1, page: 5, isLoading: true, onPageChange});
+        expect(onPageChange).not.toHaveBeenCalled();
+
+        rerender(
+            <MantineTestProvider>
+                <OpenJobsList {...baseProps} openJobs={jobs} limit={1} page={5} isLoading={false} onPageChange={onPageChange} />
+            </MantineTestProvider>,
+        );
+        expect(onPageChange).toHaveBeenCalledWith(2);
+    });
+
+    it('leaves the stored page alone while the list is empty', () => {
+        const onPageChange = vi.fn();
+        renderList({openJobs: [], limit: 1, page: 5, isLoading: false, onPageChange});
+        expect(onPageChange).not.toHaveBeenCalled();
     });
 
     it('writes nothing to localStorage', () => {

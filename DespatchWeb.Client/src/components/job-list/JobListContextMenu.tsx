@@ -46,6 +46,7 @@ import JobInternalStatusEnum from "../../types/enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../constants/constants";
 import {requireDialog} from '../dialogs/dialogRegistry';
 import {errorMessageOf} from '../../utils/errorMessage';
+import {pendingChangeMessage} from '../../utils/pendingChangeMessage';
 
 // Nationwide speed constant
 const INTERNAL_STATUS_REPRICE = JobInternalStatusEnum.Reprice;
@@ -156,8 +157,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             await api.updateJobReadStatus(activeJob.linkedJobId ?? activeJob.id, !activeJob.hasBeenRead);
             showToast(activeJob.hasBeenRead ? 'Job marked as unread' : 'Job marked as read', 'success');
             refresh();
-        } catch {
-            showToast("Couldn't update the job's read status. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't update the job's read status. Check your connection and try again."), 'error');
         }
     };
 
@@ -174,8 +175,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     await api.restoreNationwideJob(activeJob.id);
                     showToast(`${activeJob.assignedFlight?.flightNumber} unassigned`, 'success');
                     refresh();
-                } catch {
-                    showToast("Couldn't unassign the flight. Check your connection and try again.", 'error');
+                } catch (err) {
+                    showToast(errorMessageOf(err, "Couldn't unassign the flight. Check your connection and try again."), 'error');
                 }
             },
         });
@@ -195,8 +196,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     await api.restoreNationwideJob(activeJob.id);
                     showToast(`${activeJob.assignedAgent?.agentName} unassigned`, 'success');
                     refresh();
-                } catch {
-                    showToast("Couldn't unassign the agent. Check your connection and try again.", 'error');
+                } catch (err) {
+                    showToast(errorMessageOf(err, "Couldn't unassign the agent. Check your connection and try again."), 'error');
                 }
             },
         });
@@ -245,11 +246,12 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleReprice = async () => {
         closeAll();
         try {
-            await api.moveJobToReprice(activeJob.id);
-            showToast(`Job ${activeJob.jobNo} sent for repricing`, 'success');
+            const response = await api.moveJobToReprice(activeJob.id);
+            if (response?.pending) showToast(pendingChangeMessage(activeJob.jobNo), 'info');
+            else showToast(`Job ${activeJob.jobNo} sent for repricing`, 'success');
             refresh();
-        } catch {
-            showToast("Couldn't reprice the job. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't reprice the job. Check your connection and try again."), 'error');
         }
     };
 
@@ -446,8 +448,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         await api.setFirstJob(activeJob.id, activeJob.courierData.courierId);
                         showToast('Job set as first job', 'success');
                         refresh();
-                    } catch {
-                        showToast("Couldn't set the first job. Check your connection and try again.", 'error');
+                    } catch (err) {
+                        showToast(errorMessageOf(err, "Couldn't set the first job. Check your connection and try again."), 'error');
                     }
                 }
             },
@@ -471,8 +473,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             // reset status, then refresh the list.
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             refresh();
-        } catch {
-            showToast("Couldn't restore the job. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't restore the job. Check your connection and try again."), 'error');
         }
     };
 
@@ -502,11 +504,12 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const handleMarkMissing = async () => {
         closeAll();
         try {
-            await api.markJobMissing(activeJob.id);
-            showToast('Job marked as missing', 'success');
+            const response = await api.markJobMissing(activeJob.id);
+            if (response?.pending) showToast(pendingChangeMessage(activeJob.jobNo), 'info');
+            else showToast('Job marked as missing', 'success');
             refresh();
-        } catch {
-            showToast("Couldn't mark the job as missing. Check your connection and try again.", 'error');
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't mark the job as missing. Check your connection and try again."), 'error');
         }
     };
 
@@ -528,6 +531,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const isOutboundPartnerJob = isPartnerJob && Boolean(activeJob.sentToPartnerName);
     const partnerDisabledTooltip = 'This job is managed by a partner';
     const outboundPartnerDisabledTooltip = 'This job has already been sent to a partner';
+    // A bulk ("scheduled") row's id is a BulkJobId, which the live-job endpoints would read as an
+    // unrelated tucJob, so actions that write to a live job are blocked on it.
+    const isScheduledJob = Boolean(activeJob.isBulkJob);
+    const scheduledDisabledTooltip = "This action isn't available for scheduled jobs";
 
     /**
      * Mantine's Menu positions against a target element, but a context menu is
@@ -545,7 +552,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
      */
     const menuItem = (
         key: string,
-        {icon, label, onClick, disabled, tooltip, rightSection, closeMenuOnClick}: {
+        {icon, label, onClick, disabled, tooltip, rightSection, closeMenuOnClick, liveJobOnly}: {
             icon: React.ReactNode;
             label: React.ReactNode;
             onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -553,8 +560,13 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             tooltip?: string;
             rightSection?: React.ReactNode;
             closeMenuOnClick?: boolean;
+            liveJobOnly?: boolean;
         },
     ) => {
+        if (liveJobOnly && isScheduledJob) {
+            disabled = true;
+            tooltip = scheduledDisabledTooltip;
+        }
         const item = (
             <Menu.Item
                 leftSection={icon}
@@ -595,14 +607,19 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         icon: <Icon lucide={activeJob.hasBeenRead ? Mail : MailOpen} size={16}/>,
                         label: activeJob.hasBeenRead ? 'Mark as Unread' : 'Mark as Read',
                         onClick: handleMarkReadUnread,
-                        disabled: activeJob.isArchived,
-                        tooltip: activeJob.isArchived ? 'Archived jobs cannot be marked as read or unread' : undefined,
+                        disabled: activeJob.isArchived || (isScheduledJob && activeJob.linkedJobId == null),
+                        tooltip: activeJob.isArchived
+                            ? 'Archived jobs cannot be marked as read or unread'
+                            : isScheduledJob && activeJob.linkedJobId == null
+                                ? "Scheduled jobs can't be marked as read until they're sent to live"
+                                : undefined,
                     })}
 
                     <Menu.Divider/>
 
                     {/* Unassign Flight (Domestic only) */}
                     {appPage === AppPageDomestic && activeJob.assignedFlight && activeJob.isFlightJob && menuItem('unassign-flight', {
+                        liveJobOnly: true,
                         icon: <Icon tabler={IconPlaneOff} size={16}/>,
                         label: 'Unassign flight',
                         onClick: handleUnassignFlight,
@@ -610,6 +627,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Unassign Agent (Domestic only) */}
                     {appPage === AppPageDomestic && activeJob.assignedAgent && menuItem('unassign-agent', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={UserMinus} size={16}/>,
                         label: 'Unassign agent',
                         onClick: handleUnassignAgent,
@@ -625,6 +643,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Late Pickup / Delivery (Dispatch or JobSearch) */}
                     {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && [
                         menuItem('late-pickup', {
+                            liveJobOnly: true,
                             icon: <Icon lucide={Clock} size={16}/>,
                             label: 'Late pickup',
                             onClick: handleLatePickup,
@@ -632,6 +651,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                             tooltip: isPartnerJob ? partnerDisabledTooltip : undefined,
                         }),
                         menuItem('late-delivery', {
+                            liveJobOnly: true,
                             icon: <Icon tabler={IconTruck} size={16}/>,
                             label: 'Late delivery',
                             onClick: handleLateDelivery,
@@ -644,6 +664,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Reprice (Nationwide only) */}
                     {isNationwideSpeed && notReprice && !activeJob.preBook && menuItem('reprice', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={BadgeDollarSign} size={16}/>,
                         label: 'Reprice job',
                         onClick: handleReprice,
@@ -653,11 +674,13 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Add Task / Task Groups */}
                     {menuItem('add-task', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={Plus} size={16}/>,
                         label: 'Add task - Other',
                         onClick: handleAddTaskOther,
                     })}
                     {menuItem('task-groups', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={Calendar} size={16}/>,
                         label: 'Task groups',
                         // Opening the submenu must not close the parent — closing it
@@ -682,6 +705,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Send to DFRNT Partner — opens the universal dispatch dialog with
                         the DFRNT Partner radio pre-selected. */}
                     {!isNetworkPartner && menuItem('send-to-partner', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={Send} size={16}/>,
                         label: 'Send to partner',
                         onClick: () => openDispatchDialog('DfrntPartner'),
@@ -709,6 +733,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Split Job */}
                     {activeJob.allowSplit && !hasChildren && !isPartnerJob && !isNetworkPartner && menuItem('split', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={Split} size={16}/>,
                         label: 'Split job',
                         onClick: handleSplitJob,
@@ -718,6 +743,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Set First Job */}
                     {!isOutboundPartnerJob && menuItem('set-first', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={ChevronFirst} size={16}/>,
                         label: 'Set first job',
                         onClick: handleSetFirstJob,
@@ -727,6 +753,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         only appears once a courier exists, so without this a job that has
                         never been assigned has no route to the dialog from the row. */}
                     {!isOutboundPartnerJob && menuItem('assign', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={UserPlus} size={16}/>,
                         label: 'Assign…',
                         onClick: () => openDispatchDialog('Courier'),
@@ -734,6 +761,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Re-Dispatch */}
                     {activeJob.assignedCourier && !isOutboundPartnerJob && menuItem('redispatch', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={Redo2} size={16}/>,
                         label: 'Re-Dispatch',
                         onClick: handleRedispatch,
@@ -751,6 +779,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     {/* Restore — disabled for archived jobs: restore only operates on live
                         (tucJob) rows, so restoring an archived job silently does nothing. */}
                     {menuItem('restore', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={Redo2} size={16}/>,
                         label: 'Restore',
                         onClick: () => void handleRestore(),
@@ -760,6 +789,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                     {/* Mark Missing */}
                     {menuItem('mark-missing', {
+                        liveJobOnly: true,
                         icon: <Icon lucide={CircleHelp} size={16}/>,
                         label: 'Mark missing',
                         onClick: handleMarkMissing,

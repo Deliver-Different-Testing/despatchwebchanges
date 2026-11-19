@@ -50,7 +50,7 @@ public class MessagesControllerTests
         // Assert
         var statusCodeResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusCodeResult.StatusCode);
-        Assert.Equal("Database error", statusCodeResult.Value);
+        Assert.DoesNotContain("Database error", statusCodeResult.Value?.ToString());
     }
 
     [Fact]

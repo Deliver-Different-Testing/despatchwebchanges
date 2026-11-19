@@ -123,6 +123,22 @@ public class SplitPricingAllocatorTests
     }
 
     [Fact]
+    public void Allocate_RepeatedCostOverrideForTheSameLeg_FirstWinsInsteadOfThrowing()
+    {
+        var overrides = new List<LineShareOverride>
+        {
+            new(Congestion.PricingBreakdownId, 1, 70m, CostOverride: 1.00m),
+            new(Congestion.PricingBreakdownId, 1, 70m, CostOverride: 2.00m),
+            new(Congestion.PricingBreakdownId, 2, 30m)
+        };
+
+        var allocated = Allocate(Kt1314VLines(), Legs(7m, 3m), overrides);
+
+        var legA = allocated.Single(l => l.PricingBreakdownId == Congestion.PricingBreakdownId && l.LetterSuffix == "A");
+        Assert.Equal(1.00m, legA.CostOverride);
+    }
+
+    [Fact]
     public void Allocate_PreservesEachLinesTotal_SoTheParentTotalIsUnchanged()
     {
         var lines = Kt1314VLines();

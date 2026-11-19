@@ -1,6 +1,6 @@
 import React from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {Box} from '@mantine/core';
+import {Box, Text} from '@mantine/core';
 import type {Dayjs} from 'dayjs';
 import {DriverLocations} from '../../../components/common/driver-locations';
 import type {
@@ -51,7 +51,7 @@ export const DriverLocationsBox: React.FC<DriverLocationsBoxProps> = ({
 }) => {
     const viewIds = despatchViewIds;
 
-    const {data, isLoading} = useQuery({
+    const {data, isLoading, isError} = useQuery({
         queryKey: queryKeys.dispatch.driverLocations(viewIds, startDate.toISOString(), endDate.toISOString(), useTime),
         queryFn: ({signal}) => fetchDriverLocations({despatchViewIds: viewIds, startDate, endDate, useTime}, {signal}),
         enabled: viewIds.length > 0,
@@ -59,6 +59,15 @@ export const DriverLocationsBox: React.FC<DriverLocationsBoxProps> = ({
     });
 
     const hasAreas = !!data?.areas?.length;
+
+    // A failed fetch with nothing cached must not read as "no drivers"; stale areas stay on show.
+    if (isError && !hasAreas) {
+        return (
+            <Text role="alert" size="sm" c="red" p="sm">
+                Couldn't load driver locations. Refresh to try again.
+            </Text>
+        );
+    }
 
     // Truck-mode filtering (On / Off / Only) is driven from the panel header menu;
     // here it's just forwarded to the presentational component (shouldShowCourier).

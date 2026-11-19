@@ -18,7 +18,6 @@ public class MessageRepository(
     IMemoryCache cache) : BaseRepository(contextFactory), IMessageRepository
 {
     private const int RecentMessageDays = 90;
-    private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
 
     public async Task<int> GetUnreadMessageCountAsync()
     {
@@ -31,9 +30,7 @@ public class MessageRepository(
             return cachedCount;
         }
 
-        // Use compiled query
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        var unreadCount = await Context.GetUnreadMessageCountAsync(currentStaffId, context);
+        var unreadCount = await Context.GetUnreadMessageCountAsync(currentStaffId, null);
 
         // Cache with sliding expiration matching poll interval
         cache.Set(

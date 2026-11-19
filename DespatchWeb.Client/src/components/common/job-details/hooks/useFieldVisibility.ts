@@ -37,7 +37,7 @@ export function useFieldVisibility(contactId: number) {
 
     const toggleField = useCallback((fieldKey: string) => {
         setFieldVisibility(prev => {
-            const updated = {...prev, [fieldKey]: !prev[fieldKey]};
+            const updated = {...prev, [fieldKey]: !(prev[fieldKey] ?? true)};
             saveToStorage(contactId, updated);
             return updated;
         });
