@@ -111,8 +111,9 @@ extraVolumes:
             audience: https://api.anthropic.com
             expirationSeconds: 600
             path: token
-  # Hub capabilities lookup (DeliverDifferent.AgentAccess): the pod's own token instead of PartnerDirectoryApiKey.
-  # Hub validates it against the cluster issuer and AgentAccess:CapabilityServiceAccounts. Kubelet rotates it in place.
+  # Hub capabilities lookup (DeliverDifferent.AgentAccess): the pod's own token instead of PartnerDirectoryApiKey
+  # (the key is still needed for the tenant connection lookup). Hub validates it against the cluster issuer and
+  # AgentAccess:CapabilityServiceAccounts. Kubelet rotates it in place.
   - name: dfrnt-hub-token
     projected:
       sources:
