@@ -1,3 +1,4 @@
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Authorization;
@@ -33,7 +34,7 @@ public class DispatchLayoutController(IDispatchLayoutRepository dispatchLayoutRe
         catch (Exception e)
         {
             Log.Error(e, "Error getting dispatch layouts for page {Page}: {Error}", page, e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -69,7 +70,7 @@ public class DispatchLayoutController(IDispatchLayoutRepository dispatchLayoutRe
         catch (Exception e)
         {
             Log.Error(e, "Error saving dispatch layouts for page {Page}: {Error}", request.Page, e.Message);
-            return StatusCode(500, e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 }

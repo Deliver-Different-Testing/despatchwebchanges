@@ -404,4 +404,19 @@ describe('JobFieldsSection', () => {
             expect(screen.queryByText(/kg/)).toBeNull();
         });
     });
+    it('renders no stray 0 when the job has DG class 0', () => {
+        const {container} = renderWithTheme(
+            <JobFieldsSection {...createDefaultProps({job: createMockJob({dgClass: 0})})} />,
+        );
+        expect(screen.queryByText('DG docs')).not.toBeInTheDocument();
+        const textNodes = Array.from(container.querySelectorAll('*')).flatMap(el => Array.from(el.childNodes))
+            .filter(node => node.nodeType === Node.TEXT_NODE);
+        expect(textNodes.some(node => node.textContent === '0')).toBe(false);
+    });
+
+    it('toggles the barcode on its own key, not the quantity one', () => {
+        const isFieldVisible = (key: string) => key !== 'dimensions';
+        renderWithTheme(<JobFieldsSection {...createDefaultProps({isFieldVisible, isEditMode: true})} />);
+        expect(screen.getByText('Barcode')).toBeInTheDocument();
+    });
 });

@@ -139,7 +139,7 @@ describe('FilterPanel', () => {
     });
 
     describe('Date Range section', () => {
-        it('shows formatted date range when dates are set', () => {
+        it('shows the date range in the tenant date format', () => {
             renderWithProviders(
                 <FilterPanel
                     {...defaultProps}
@@ -150,8 +150,25 @@ describe('FilterPanel', () => {
                 />,
             );
 
-            expect(screen.getByText(/Jan 15, 2024/)).toBeInTheDocument();
-            expect(screen.getByText(/Jan 31, 2024/)).toBeInTheDocument();
+            expect(screen.getByText(/15\/Jan\/2024/)).toBeInTheDocument();
+            expect(screen.getByText(/31\/Jan\/2024/)).toBeInTheDocument();
+        });
+
+        it('clears the range from its own button, outside the date button', () => {
+            const onDateRangeChange = vi.fn();
+            renderWithProviders(
+                <FilterPanel
+                    {...defaultProps}
+                    dateRange={{start: new Date('2024-01-15'), end: new Date('2024-01-31')}}
+                    onDateRangeChange={onDateRangeChange}
+                />,
+            );
+
+            const clear = screen.getByRole('button', {name: 'Clear date range'});
+            expect(clear.parentElement?.closest('button')).toBeNull();
+
+            fireEvent.click(clear);
+            expect(onDateRangeChange).toHaveBeenCalledWith({});
         });
 
         describe('opening the dialog', () => {

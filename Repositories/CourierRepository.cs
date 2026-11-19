@@ -1007,7 +1007,8 @@ public partial class CourierRepository(
 
     public Task ResetClearListAreaOrderAsync(int courierId) => ResetClearListAreaOrderAsync(courierId, Context);
 
-    public async Task ResetClearListAreaOrderAsync(int courierId, DespatchContext context)
+    public async Task ResetClearListAreaOrderAsync(int courierId, DespatchContext context,
+        CancellationToken cancellationToken = default)
     {
         var tenantTime = clock.TenantNow;
 
@@ -1017,7 +1018,7 @@ public partial class CourierRepository(
                 j.UcjbVoid == false &&
                 j.UcjbJobDone == false &&
                 j.UcjbCourierId == courierId)
-            .CountAsync();
+            .CountAsync(cancellationToken);
 
         switch (jobCount)
         {
@@ -1027,7 +1028,7 @@ public partial class CourierRepository(
                     .Where(c => c.CourierId == courierId)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(c => c.Status, 3)
-                        .SetProperty(c => c.OrderTime, tenantTime));
+                        .SetProperty(c => c.OrderTime, tenantTime), cancellationToken);
                 break;
             case > 0:
             {
@@ -1039,7 +1040,7 @@ public partial class CourierRepository(
                         j.UcjbCourierId == courierId &&
                         j.UcjbStatus != (int)JobStatus.PickedUp &&
                         j.UcjbStatus != (int)JobStatus.LateDelivery)
-                    .CountAsync();
+                    .CountAsync(cancellationToken);
 
                 if (jobsNotPickedUpOrLate == 0)
                 {
@@ -1048,7 +1049,7 @@ public partial class CourierRepository(
                         .Where(c => c.CourierId == courierId)
                         .ExecuteUpdateAsync(setters => setters
                             .SetProperty(c => c.Status, 5)
-                            .SetProperty(c => c.OrderTime, tenantTime));
+                            .SetProperty(c => c.OrderTime, tenantTime), cancellationToken);
                 }
 
                 break;

@@ -1,4 +1,5 @@
 #nullable enable
+using System.Globalization;
 using DespatchWeb.Models;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
@@ -21,6 +22,9 @@ public interface ITenantInfoService : IDisposable
     string? GetCurrentTenantId();
     int GetContactId();
     bool IsUsTenant();
+
+    /// <summary>The tenant country's culture, for money and dates shown to people. The container's own culture is invariant.</summary>
+    CultureInfo GetCulture();
 
     /// <summary>True when the tenant's country code is "AU".</summary>
     bool IsAuTenant();

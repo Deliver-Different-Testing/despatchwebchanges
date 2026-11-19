@@ -98,6 +98,7 @@ function ContactCard({
     locked,
     dense,
     children,
+    action,
 }: {
     icon: LucideIcon;
     label: string;
@@ -106,6 +107,8 @@ function ContactCard({
     locked?: boolean;
     dense?: boolean;
     children?: React.ReactNode;
+    /** A separate control (e.g. a call link), kept out of the card's own button. */
+    action?: React.ReactNode;
 }) {
     const card = (
         <Box className={classes.contact} style={contactCardStyle(dense)}>
@@ -124,15 +127,25 @@ function ContactCard({
         </Box>
     );
 
-    if (onClick && !locked) {
-        return (
+    const body = onClick && !locked
+        ? (
             <UnstyledButton onClick={onClick} style={{width: '100%', display: 'block', textAlign: 'left'}}>
                 {card}
             </UnstyledButton>
-        );
-    }
+        )
+        : card;
 
-    return card;
+    if (!action) return body;
+
+    // The action is a control of its own, so it sits over the card rather than inside its button.
+    return (
+        <Box pos="relative">
+            {body}
+            <Box pos="absolute" top={dense ? 4 : 6} right={dense ? 4 : 8}>
+                {action}
+            </Box>
+        </Box>
+    );
 }
 
 function AddressBlock({
@@ -238,13 +251,7 @@ function AddressBlock({
                             onClick={onEditPhone}
                             locked={locked}
                             dense={dense}
-                        >
-                            {phoneSource && (
-                                <Badge size="sm" variant="default" tt="none" ml={4} style={{height: 20, fontSize: '0.6875rem'}}>
-                                    {phoneSource}
-                                </Badge>
-                            )}
-                            {contactPhone && (
+                            action={contactPhone && (
                                 <Tooltip label={`Call ${contactPhone}`}>
                                     <ActionIcon
                                         size="sm"
@@ -252,12 +259,16 @@ function AddressBlock({
                                         component="a"
                                         href={`tel:${contactPhone}`}
                                         aria-label={`Call ${contactPhone}`}
-                                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                        ml="auto"
                                     >
                                         <Icon lucide={PhoneCall} size={14} color="var(--mantine-primary-color-filled)"/>
                                     </ActionIcon>
                                 </Tooltip>
+                            )}
+                        >
+                            {phoneSource && (
+                                <Badge size="sm" variant="default" tt="none" ml={4} style={{height: 20, fontSize: '0.6875rem'}}>
+                                    {phoneSource}
+                                </Badge>
                             )}
                         </ContactCard>
                         {pendingPhone && (
@@ -307,6 +318,7 @@ export const AddressSection = React.memo(({
                 variant={AddressType.Pickup}
                 icon={addressIcon}
                 address={job.pickupAddress}
+                deviceAddress={job.fromAddress}
                 contactName={job.fromContactName}
                 contactPhone={job.fromContactNumber}
                 phoneSource={job.fromContactNumberSource}

@@ -98,6 +98,27 @@ describe('RateAcceptanceBanner', () => {
         await waitFor(() => expect(api.acceptPartnerRate).toHaveBeenCalledWith(123));
     });
 
+    it('shows a failed rejection inside the reject dialog, which stays open', async () => {
+        const user = setupUser();
+        api.getPartnerInboundRateAcceptance.mockResolvedValue({
+            status: 'PendingAcceptance',
+            proposedAgreedRate: 10,
+            rejectionReason: null,
+            actionedAtUtc: null,
+            partnerJobGuid: null,
+        });
+        api.rejectPartnerRate.mockResolvedValue({success: false, errorMessage: 'Job already actioned', newState: null});
+
+        renderBanner(99);
+
+        await user.click(await screen.findByRole('button', {name: /^Reject$/}));
+        const dialog = await screen.findByRole('dialog');
+        fireEvent.change(within(dialog).getByLabelText('Reason'), {target: {value: 'Rate too low'}});
+        await user.click(within(dialog).getByRole('button', {name: /Reject rate/}));
+
+        expect(await within(dialog).findByText('Job already actioned')).toBeInTheDocument();
+    });
+
     it('opens the reject dialog, requires a reason, and posts it', async () => {
         const user = setupUser();
         api.getPartnerInboundRateAcceptance.mockResolvedValue({

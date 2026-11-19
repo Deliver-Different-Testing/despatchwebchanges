@@ -12,6 +12,7 @@ vi.mock('../../../hooks/useOverviewApi', () => ({
 
 vi.mock('../../../utils/dateUtils', () => ({
     formatMins: vi.fn((s: string) => s),
+    parseDateFromApi: vi.fn((s: string) => s),
 }));
 
 import {useOverviewOpenJobs} from '../../../hooks/useOverviewApi';

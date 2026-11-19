@@ -70,6 +70,18 @@ describe('useJobListData', () => {
             expect(result.current.hasMore).toBe(false);
         });
 
+        it('drops a row repeated across pages after an offset shift', async () => {
+            const fetchFn = vi.fn()
+                .mockResolvedValueOnce({jobs: [{id: 1}, {id: 2}], totalCount: 3, hasMore: true})
+                .mockResolvedValueOnce({jobs: [{id: 2}, {id: 3}], totalCount: 3, hasMore: false});
+            const {result} = renderJobListData(createMockFetchConfig({fetchFn}));
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false));
+            act(() => result.current.fetchNextPage());
+
+            await waitFor(() => expect(result.current.jobs.map(j => j.id)).toEqual([1, 2, 3]));
+        });
+
         it('should return empty defaults while loading', () => {
             const fetchFn = vi.fn().mockReturnValue(new Promise(() => {})); // never resolves
             const config = createMockFetchConfig({fetchFn});

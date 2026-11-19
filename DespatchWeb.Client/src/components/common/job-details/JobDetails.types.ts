@@ -98,6 +98,7 @@ export const DEFAULT_FIELD_VISIBILITY: FieldVisibility = {
     deliveryLocation: true,
     totalMiles: true,
     dimensions: true,
+    barcode: true,
     weight: true,
     dgDocs: true,
     leaveParcel: true,

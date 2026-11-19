@@ -12,17 +12,19 @@ import {
     updateBulkJobAddress,
     updatePodDetails,
     updateJobReadStatus,
-    restoreJobs,
     allocateJob,
+    reAllocateJob,
     getCourierById,
     previewJobRate,
     previewJobRates,
     applyJobRate,
 } from '../../../../api/jobDetailApi';
 import type {JobUpdateResponse} from '../../../../api/jobDetailApi';
+import {pendingChangeMessage} from '../../../../utils/pendingChangeMessage';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JobProperty} from '../../../../types/enums/job-property.enum';
 import {isNetworkPartnerSession} from '../../../dialogs/dispatch-dialog/dispatchSession';
+import {errorMessageOf} from '../../../../utils/errorMessage';
 
 const RERATE_FIELDS = new Set<string>([
     JobProperty.Date,
@@ -249,7 +251,7 @@ export function useJobUpdate(
             // Partner-job responses: the gate either auto-applied (and forwarded to the
             // peer) or filed a Pending change request. Show the user what actually
             // happened rather than the generic "updated" toast.
-            await finishUpdate(job, response, `${job.jobNo}: change requested — awaiting partner approval`);
+            await finishUpdate(job, response, pendingChangeMessage(job.jobNo));
             // Pending changes haven't actually mutated the job — skip the rate-change probe.
             if (!response?.pending && RERATE_FIELDS.has(field) && !job.ratedManually) {
                 await checkForRateChange(job);
@@ -274,7 +276,7 @@ export function useJobUpdate(
                 });
                 return;
             }
-            showToast(message ?? "Couldn't update the job. Check your connection and try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't update the job. Check your connection and try again."), 'error');
         },
     });
 
@@ -313,8 +315,7 @@ export function useJobUpdate(
         onError: (error: unknown) => {
             // A 404 carries an authored message from the backend (e.g. the job no longer
             // exists) — show it rather than a generic failure the operator can't act on.
-            const message = (error as {message?: string})?.message;
-            showToast(message || "Couldn't update the POD details. Check your connection and try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't update the POD details. Check your connection and try again."), 'error');
         },
     });
 
@@ -332,11 +333,11 @@ export function useJobUpdate(
 
     const dispatchJobMutation = useMutation({
         mutationFn: async ({job, courierId}: DispatchJobParams) => {
-            // If job already has a courier, restore first
             if (job.courierData?.courierId || job.assignedCourier?.id) {
-                await restoreJobs([job.id]);
+                await reAllocateJob(courierId, [job.id]);
+            } else {
+                await allocateJob(courierId, [job.id]);
             }
-            await allocateJob(courierId, [job.id]);
             // Try to get courier details for the toast
             try {
                 const courier = await getCourierById(courierId);
@@ -358,8 +359,8 @@ export function useJobUpdate(
             }
             await Promise.all([invalidateJob(job.id), invalidateJobLists()]);
         },
-        onError: () => {
-            showToast("Couldn't dispatch the job. Check your connection and try again.", 'error');
+        onError: (error: unknown) => {
+            showToast(errorMessageOf(error, "Couldn't dispatch the job. Check your connection and try again."), 'error');
         },
     });
 

@@ -50,3 +50,12 @@ describe('ScanList date format', () => {
         expect(screen.getByText(/15\/Jan\/2024 14:30/)).toBeInTheDocument();
     });
 });
+
+describe('ScanList fetch failure', () => {
+    it('reports the failure instead of an empty scan history', () => {
+        mockUseScanDetail.mockReturnValue({scans: [], isLoading: false, isError: true, refetch: vi.fn()});
+        renderList();
+        expect(screen.getByText("Couldn't load scan records")).toBeInTheDocument();
+        expect(screen.queryByText('No scan records yet')).not.toBeInTheDocument();
+    });
+});

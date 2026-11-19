@@ -137,6 +137,16 @@ describe('AddressSection', () => {
             expect(screen.getByText(STALE_ADDRESS_LINES)).toBeInTheDocument();
         });
 
+        it('warns for pickup too when its two copies disagree', () => {
+            const job = createMockJob({
+                fromAddress: STALE_ADDRESS_DEVICE,
+                pickupAddress: createMockAddress({fullAddress: STALE_ADDRESS_LINES}),
+            });
+            renderWithTheme(<AddressSection {...createDefaultProps({job})} />);
+
+            expect(screen.getByRole('alert')).toHaveTextContent(STALE_ADDRESS_DEVICE);
+        });
+
         it('stays quiet when both copies describe the same place', () => {
             renderWithTheme(<AddressSection {...createDefaultProps()} />);
             expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -159,6 +169,13 @@ describe('AddressSection', () => {
             expect(onEditPickupAddress).toHaveBeenCalledTimes(1);
             fireEvent.click(screen.getByText(PICKUP_CONTACT));
             expect(onEditFromContact).toHaveBeenCalledTimes(1);
+        });
+
+        it('keeps each call link out of the editable phone card\'s button', () => {
+            renderWithTheme(<AddressSection {...createDefaultProps()} />);
+            const callLinks = screen.getAllByRole('link', {name: /Call/});
+            expect(callLinks.length).toBeGreaterThan(0);
+            callLinks.forEach(link => expect(link.closest('button')).toBeNull());
         });
 
         it('renders call links in dense mode', () => {

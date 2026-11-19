@@ -51,9 +51,12 @@ import {useCourierSearch} from '../../../hooks/useCourierApi';
 import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
 import {addressApi} from '../../../api/addressApi';
 import {jobApi} from '../../../api/jobApi';
+import {isAuSession} from '../../../api/session';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import {dayjs, formatDateForApi, getIanaTimezone, getInputDateFormat} from '../../../utils/dateUtils';
 import {getStateByAbbreviation} from '../../../utils/usStates';
+import {errorMessageOf} from '../../../utils/errorMessage';
+import {formatHereStreetName, hereNonUsLocalityLines} from '../../../utils/hereAddress';
 import type {Dayjs} from 'dayjs';
 import type {ShowToastFn} from '../../../services/toastService';
 import {
@@ -303,18 +306,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
 
             const addr = location.address;
 
-            // Street name from streetInfo (same logic as EditAddressDialog)
-            let streetName = addr.street || '';
-            if (location.streetInfo && location.streetInfo.length > 0) {
-                const si = location.streetInfo[0];
-                let formatted = '';
-                if (si.prefix) formatted += si.prefix + ' ';
-                if (si.streetTypePrecedes && si.streetType) formatted += si.streetType + ' ';
-                formatted += si.baseName;
-                if (!si.streetTypePrecedes && si.streetType) formatted += ' ' + si.streetType;
-                if (si.suffix) formatted += ' ' + si.suffix;
-                streetName = formatted.trim();
-            }
+            const streetName = formatHereStreetName(location);
 
             let line5: string;
             let line6: string;
@@ -334,9 +326,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 const zipMatch = addr.postalCode?.match(/^(\d{5})/);
                 line7 = zipMatch ? zipMatch[1] : (addr.postalCode || '');
             } else {
-                line5 = addr.district || '';
-                line6 = addr.city || '';
-                line7 = addr.postalCode || '';
+                [line5, line6, line7] = hereNonUsLocalityLines(addr, isAuSession());
             }
 
             const addressVm: AddressViewModel = {
@@ -401,14 +391,15 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
 
         try {
             // Process pickup address
-            const pickupResult = await processAddress(selectedPickupAddress!);
+            // The two lookups are independent, so they run side by side.
+            const [pickupResult, deliveryResult] = await Promise.all([
+                processAddress(selectedPickupAddress!),
+                processAddress(selectedDeliveryAddress!),
+            ]);
             if (!pickupResult) {
                 showToast("Couldn't process the pickup address. Check it and try again.", 'error');
                 return;
             }
-
-            // Process delivery address
-            const deliveryResult = await processAddress(selectedDeliveryAddress!);
             if (!deliveryResult) {
                 showToast("Couldn't process the delivery address. Check it and try again.", 'error');
                 return;
@@ -477,15 +468,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             onSubmit(newJobId);
         } catch (error) {
             console.error('[CreateJobDialog] Job creation failed:', error);
-            const serverMessage = (() => {
-                const data = (error as {response?: {data?: unknown}})?.response?.data;
-                if (typeof data === 'string' && data.trim()) return data;
-                if (data && typeof data === 'object' && 'message' in data && typeof (data as {message: unknown}).message === 'string') {
-                    return (data as {message: string}).message;
-                }
-                return null;
-            })();
-            showToast(serverMessage || "Couldn't create job. Try again.", 'error');
+            showToast(errorMessageOf(error, "Couldn't create job. Try again."), 'error');
         } finally {
             setIsLoading(false);
         }

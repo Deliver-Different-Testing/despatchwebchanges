@@ -712,7 +712,7 @@ public class JobController(
         {
             Log.Error(ex, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController), nameof(Detail)));
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1302,7 +1302,7 @@ public class JobController(
         catch (Exception ex)
         {
             Log.Error(ex, "Error allocating jobs");
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
     }
 
@@ -1445,7 +1445,7 @@ public class JobController(
 
             await jobCommandRepository.VoidJobAsync(request);
 
-            if (!parentId.HasValue || isParentBeingVoided || Debugger.IsAttached)
+            if (!parentId.HasValue || isParentBeingVoided)
             {
                 return Ok();
             }
@@ -1656,6 +1656,7 @@ public class JobController(
                     .ToList());
             }
 
+            using var throttle = new SemaphoreSlim(RestorePodImageProbeConcurrency);
             var impacts = await Task.WhenAll(details.Select(async detail =>
             {
                 if (detail.CompletedTime is not { } completed)
@@ -1665,8 +1666,6 @@ public class JobController(
                         JobId = detail.JobId, PodName = detail.PodName, ImageCountKnown = true
                     };
                 }
-
-                using var throttle = new SemaphoreSlim(RestorePodImageProbeConcurrency);
 
                 await throttle.WaitAsync();
                 try
@@ -1885,6 +1884,7 @@ public class JobController(
         }
     }
 
+    [HttpPost]
     public async Task<IActionResult> ExsalerateActivity(
         string eventName,
         string notes,
@@ -2008,11 +2008,6 @@ public class JobController(
         try
         {
             await recurringJobRepository.UpdateRecurringJobAsync(jobId, field, value);
-
-            if (Debugger.IsAttached)
-            {
-                return Ok();
-            }
 
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate)
@@ -2255,6 +2250,7 @@ public class JobController(
             _ => false
         };
 
+    [HttpPost]
     public async Task<IActionResult> UpdateBulkJob(
         int bulkJobId,
         JobProperty field,
@@ -2344,72 +2340,6 @@ public class JobController(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(InterCourierCharge)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
-    }
-
-    public async Task<IActionResult> SendPod(int jobId, string toEmail)
-    {
-        var selectedJob = await jobQueryRepository.GetSingleJobById(jobId);
-
-        if (selectedJob == null)
-        {
-            return NotFound();
-        }
-
-        var att = new Attachment(
-            new MemoryStream(selectedJob.PodPhoto),
-            selectedJob.JobNo + ".png"
-        );
-
-        SendEmail(
-            toEmail,
-            Environment.GetEnvironmentVariable("FromAddress"),
-            $"Hello, attached is the proof of delivery photo for job {selectedJob.JobNo}.",
-            $"Delivery Photo for {selectedJob.JobNo}",
-            att
-        );
-
-        return Ok();
-    }
-
-    private static void SendEmail(
-        string toAddress,
-        string fromAddress,
-        string body,
-        string subject,
-        Attachment attachment = null,
-        string replyTo = null
-    )
-    {
-        using var message = new MailMessage();
-        message.IsBodyHtml = true;
-        message.From = new MailAddress(fromAddress);
-        message.Subject = subject;
-        message.Body = body;
-        message.Priority = MailPriority.High;
-        message.To.Add(toAddress);
-        message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@DFRNT.com>");
-
-        if (attachment != null)
-        {
-            message.Attachments.Add(attachment);
-        }
-
-        if (!string.IsNullOrEmpty(replyTo))
-        {
-            message.ReplyToList.Add(new MailAddress(replyTo));
-        }
-
-        using var smtp = new SmtpClient();
-        smtp.Host = Environment.GetEnvironmentVariable("SMTPServer");
-        smtp.UseDefaultCredentials = false;
-        smtp.EnableSsl = true;
-        smtp.Credentials = new NetworkCredential(
-            Environment.GetEnvironmentVariable("SMTPUser"),
-            Environment.GetEnvironmentVariable("SMTPPass")
-        );
-        var smtpPortEnv = Environment.GetEnvironmentVariable("SMTP_Port");
-        smtp.Port = int.TryParse(smtpPortEnv, out var smtpPort) ? smtpPort : 587;
-        smtp.Send(message);
     }
 
     public async Task<IActionResult> GetAttachedFiles(int jobId)
@@ -2564,6 +2494,7 @@ public class JobController(
         }
     }
 
+    [HttpDelete]
     public async Task<IActionResult> DeleteFile(string key)
     {
         var hidden = await RejectIfMediaKeyHiddenAsync(key);
@@ -2653,6 +2584,7 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request,
         CancellationToken ct)
     {

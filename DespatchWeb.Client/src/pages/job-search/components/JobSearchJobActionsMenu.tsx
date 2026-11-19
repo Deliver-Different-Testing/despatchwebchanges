@@ -32,25 +32,26 @@ const ACTIONS: JobAction<JobSearchJobActionId>[] = [
     {id: 'attachments', label: 'Attachments', icon: 'cloud_upload',
         available: () => true},
     {id: 'dispatch', label: 'Dispatch to courier', icon: 'send_to_mobile',
-        available: job => !job.bulkJob && !job.preBook && job.assignedCourier == null},
+        available: job => !job.isBulkJob && !job.preBook && job.assignedCourier == null},
     {id: 'changeCourier', label: 'Change paid courier', icon: 'swap_horiz',
         // Only for archived, completed jobs — the live-job path is a normal re-dispatch.
         // Invoiced/settled jobs are refused by the server pre-check (DispatchJob rows
         // don't carry a populated invoiced flag), which shows an explanatory popup.
-        available: job => !job.bulkJob && !job.preBook && !!job.isArchived && !!job.done
+        available: job => !job.isBulkJob && !job.preBook && !!job.isArchived && !!job.done
             && !isNetworkPartnerSession()},
     {id: 'restore', label: 'Restore job', icon: 'undo',
         // Archived jobs live only in the archive tables; restore operates on live (tucJob)
-        // rows, so restoring an archived job silently no-ops — don't offer it.
-        available: job => !job.bulkJob && !job.preBook && job.assignedCourier != null && !job.done && !job.isArchived},
+        // rows, so restoring an archived job silently no-ops — don't offer it. A completed live job
+        // is offered; the page confirms before reopening it.
+        available: job => !job.isBulkJob && !job.preBook && job.assignedCourier != null && !job.isArchived},
     {id: 'swapPod', label: 'Swap POD', icon: 'swap_horiz',
-        available: job => !job.bulkJob && !job.preBook},
+        available: job => !job.isBulkJob && !job.preBook},
     {id: 'sendPod', label: 'Email photo POD', icon: 'send',
-        available: job => !job.bulkJob && !job.preBook},
+        available: job => !job.isBulkJob && !job.preBook},
     {id: 'unlock', label: 'Unlock job', icon: 'lock_open',
         available: job => !job.preBook && (!!job.locked && !job.invoiced)},
     {id: 'lock', label: 'Lock job', icon: 'lock',
-        available: job => !job.preBook && !job.bulkJob && !job.locked && !job.invoiced},
+        available: job => !job.preBook && !job.isBulkJob && !job.locked && !job.invoiced},
     {id: 'split', label: 'Split job', icon: 'shuffle',
         // Archived jobs are refused by executeSplitJobFlow, so offering it would be a dead end.
         available: job => !!job.allowSplit && !job.isArchived && !isNetworkPartnerSession()},

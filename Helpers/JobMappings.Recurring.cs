@@ -128,6 +128,7 @@ public static partial class JobMappings
                          && j.UcbkSpeedNavigation.GroupingId !=
                          (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight),
             CalculateDimsOncePerJob = j.DimensionsType == 2,
+            FromAddress = j.UcbkFromAddr,
             ToAddress = j.UcbkToAddr,
             JobType = j.UcbkType,
             JobTypeDescription = GetJobTypeDescription(j.UcbkType ?? 0),

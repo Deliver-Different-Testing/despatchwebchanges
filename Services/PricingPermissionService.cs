@@ -22,10 +22,10 @@ public sealed class PricingPermissionService(
     private bool CallerIsNetworkPartner => scopeProvider.Scope?.IsNetworkPartner ?? false;
 
     /// <summary>
-    /// Tenant (4) and DF Admin (5) are staff for every write in this service.
-    /// StaffID is an AdminManager account-manager link, not a staff signal.
+    /// Tenant (4), DF Admin (5) and transitional Internal (1) are staff for every write in this service, matching the
+    /// EF filter bypass (ScopeContext.IsInternal). StaffID is an AdminManager account-manager link, not a staff signal.
     /// </summary>
-    private bool CallerIsStaff => scopeProvider.Scope is { } s && (s.IsTenant || s.IsDfAdmin);
+    private bool CallerIsStaff => scopeProvider.Scope is { } s && (s.IsTenant || s.IsDfAdmin || s.IsInternal);
 
     // Valid pricing modes
     private static readonly HashSet<string> ValidPricingModes = new(StringComparer.OrdinalIgnoreCase)

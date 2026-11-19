@@ -96,6 +96,18 @@ describe('MapDialog', () => {
             expect(await screen.findByTestId('overviewMapContainer')).toBeInTheDocument();
         });
 
+        it('says the map could not load when the map data fetch fails', async () => {
+            mockConfigApi.getHereMapsKey.mockResolvedValueOnce('test-api-key');
+            mockOverviewApi.getParentJobMap.mockRejectedValueOnce(new Error('500'));
+
+            renderWithProviders(
+                <MapDialog open onClose={vi.fn()} delivery={createMockDelivery()} />,
+            );
+
+            expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't load the map");
+            expect(screen.queryByTestId('overviewMapContainer')).not.toBeInTheDocument();
+        });
+
         it('calls onClose when close button is clicked', () => {
             mockConfigApi.getHereMapsKey.mockResolvedValueOnce('test-api-key');
             mockOverviewApi.getParentJobMap.mockResolvedValueOnce(mockMapConfig);

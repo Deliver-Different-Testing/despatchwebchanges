@@ -104,9 +104,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             // Extract the file extension
             var fileExtension = Path.GetExtension(file.FileName);
 
-            // Generate a unique filename with timestamp
-            var timestamp = now.ToString("yyyyMMddHHmmss");
-            var filename = $"{jobId}-{timestamp}{fileExtension}";
+            var filename = UniqueMediaFileName(jobId, now, fileExtension);
 
             // Combine parts to form the full S3 key
             var key = $"{folder}/{monthFolder}{filename}";
@@ -445,9 +443,8 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
             var currentDate = clock.TenantNow;
             var monthFolder = $"{currentDate.Year}/{currentDate:MM}/";
-            var timestamp = currentDate.ToString("yyyyMMddHHmmss");
             var fileExtension = Path.GetExtension(file.FileName);
-            var key = $"JobAttachments/{monthFolder}{jobId}-{timestamp}{fileExtension}";
+            var key = $"JobAttachments/{monthFolder}{UniqueMediaFileName(jobId, currentDate, fileExtension)}";
 
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);
@@ -868,6 +865,11 @@ public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJ
             (JobPhotoType.Pickup, false) => "PickupSignatures",
             _ => throw new ArgumentOutOfRangeException(nameof(photoType), photoType, null)
         };
+
+    // The stamp is only to the second, so files uploaded back to back would share a key and S3 would silently
+    // overwrite the first. The random tail keeps every upload distinct; the leading "{jobId}-" stays for lookups.
+    private static string UniqueMediaFileName(int jobId, DateTime stamp, string fileExtension) =>
+        $"{jobId}-{stamp:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8]}{fileExtension}";
 
     /// <summary>
     /// Determines the MIME content type based on file extension.
