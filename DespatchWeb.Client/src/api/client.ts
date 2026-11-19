@@ -197,6 +197,17 @@ class ApiClient {
         const response = await this.instance.post(url, data, config);
         return { data: response.data, headers: response.headers as Record<string, unknown> };
     }
+
+    async getForBlob(url: string, params?: Record<string, unknown>, options?: RequestOptions): Promise<Blob> {
+        const config: AxiosRequestConfig = {
+            params: params ?? options?.params,
+            signal: options?.signal,
+            timeout: options?.timeout,
+            responseType: 'blob',
+        };
+        const response = await this.instance.get<Blob>(url, config);
+        return response.data;
+    }
 }
 
 // Singleton instance - lazy initialized on first access
@@ -218,6 +229,8 @@ export const apiClient = {
         getInstance().uploadFormData<T>(url, formData, options),
     postForBlob: (url: string, data?: unknown, options?: RequestOptions) =>
         getInstance().postForBlob(url, data, options),
+    getForBlob: (url: string, params?: Record<string, unknown>, options?: RequestOptions) =>
+        getInstance().getForBlob(url, params, options),
 };
 
 /** Download a blob response as a file */

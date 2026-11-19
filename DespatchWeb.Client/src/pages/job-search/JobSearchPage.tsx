@@ -59,6 +59,9 @@ import {openAccessorialChargesForJob, openAttachmentsForJob} from '../jobActionD
 import {loadDialog} from '../../components/dialogs/dialogRegistry';
 import {errorMessageOf} from '../../utils/errorMessage';
 import {pendingChangeMessage} from '../../utils/pendingChangeMessage';
+import {openPdf, printPdf} from '../../utils/printPdf';
+import {getJobLabel} from '../../api/jobDetailApi';
+import {toastService} from '../../services/toastService';
 
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 showToast,
@@ -457,6 +460,27 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         return;
                     }
                     await performRestore(job);
+                    return;
+                }
+
+                case 'printLabel': {
+                    const toast = toastService.showLoadingToast(`Preparing the label for ${job.jobNo}…`);
+                    let label: Blob;
+                    try {
+                        label = await getJobLabel(job.id, !!job.isBulkJob);
+                    } catch (error) {
+                        toast.update(errorMessageOf(error, `Couldn't load the label for ${job.jobNo}. Try again.`), 'error');
+                        return;
+                    }
+                    toast.dismiss();
+                    if (!await printPdf(label)) {
+                        showToast('Your browser blocked the label.', 'warning', {
+                            label: 'Open label',
+                            onClick: () => {
+                                if (!openPdf(label)) showToast('Allow pop-ups for this site to open labels.', 'error');
+                            },
+                        });
+                    }
                     return;
                 }
 

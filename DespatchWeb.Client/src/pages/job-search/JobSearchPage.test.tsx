@@ -88,11 +88,30 @@ vi.mock('./hooks/useScanDetail', () => ({
     useScanDetail: () => ({scans: [], isLoading: false, isError: false, refetch: vi.fn()}),
 }));
 
+vi.mock('../../api/jobDetailApi', async () => ({
+    ...(await vi.importActual<typeof import('../../api/jobDetailApi')>('../../api/jobDetailApi')),
+    getJobLabel: vi.fn(),
+}));
+
+vi.mock('../../utils/printPdf', () => ({
+    printPdf: vi.fn(),
+    openPdf: vi.fn(),
+}));
+
+const mockLoadingToast = {update: vi.fn(), dismiss: vi.fn()};
+vi.mock('../../services/toastService', async () => ({
+    ...(await vi.importActual<typeof import('../../services/toastService')>('../../services/toastService')),
+    toastService: {showLoadingToast: vi.fn(() => mockLoadingToast)},
+}));
+
 import {JobSearchPage} from './JobSearchPage';
 import type {JobSearchLayoutBridge} from './JobSearchLayoutBridge';
 import {getDispatchJobDetail, searchSpeedOptions} from '../../api/dispatchExecutorApi';
 import {searchActiveCouriers} from '../../api/courierApi';
 import {MantineTestProvider} from '../../test/utils';
+import {setupUser} from '../../test/utils/setupUser';
+import {getJobLabel} from '../../api/jobDetailApi';
+import {openPdf, printPdf} from '../../utils/printPdf';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof JobSearchPage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -137,6 +156,61 @@ describe('JobSearchPage', () => {
             .find(header => within(header).queryByText('Detail · J7'));
         expect(detailHeader).toBeDefined();
         expect(detailHeader).toContainElement(triggers[0]);
+    });
+
+    describe('Print labels', () => {
+        async function printLabelFor(job: Record<string, unknown>, showToast = vi.fn()) {
+            const user = setupUser();
+            renderPage({showToast});
+            act(() => {
+                mockPanel.onJobSelect.jobSearchJobList?.({jobNo: 'J7', ...job});
+            });
+            await user.click(screen.getByRole('button', {name: 'Job actions'}));
+            await user.click(screen.getByRole('menuitem', {name: 'Print labels'}));
+            return showToast;
+        }
+
+        const label = new Blob(['%PDF']);
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            (getJobLabel as Mock).mockResolvedValue(label);
+            (printPdf as Mock).mockResolvedValue(true);
+        });
+
+        it('prints the job label', async () => {
+            await printLabelFor({id: 7});
+            expect(getJobLabel).toHaveBeenCalledWith(7, false);
+            await vi.waitFor(() => expect(printPdf).toHaveBeenCalledWith(label));
+            expect(mockLoadingToast.dismiss).toHaveBeenCalled();
+        });
+
+        it('asks for a bulk row by its bulk id', async () => {
+            await printLabelFor({id: 8, isBulkJob: true});
+            expect(getJobLabel).toHaveBeenCalledWith(8, true);
+        });
+
+        it('shows the server reason in the loading toast and never prints', async () => {
+            (getJobLabel as Mock).mockRejectedValue(new Error("This job's label comes from the courier network."));
+
+            await printLabelFor({id: 7});
+
+            await vi.waitFor(() => expect(mockLoadingToast.update)
+                .toHaveBeenCalledWith("This job's label comes from the courier network.", 'error'));
+            expect(printPdf).not.toHaveBeenCalled();
+        });
+
+        it('offers an Open label button when the browser blocks printing', async () => {
+            (printPdf as Mock).mockResolvedValue(false);
+            (openPdf as Mock).mockReturnValue(true);
+
+            const showToast = await printLabelFor({id: 7});
+
+            await vi.waitFor(() => expect(showToast).toHaveBeenCalledWith(
+                'Your browser blocked the label.', 'warning', expect.objectContaining({label: 'Open label'})));
+            showToast.mock.calls.at(-1)![2].onClick();
+            expect(openPdf).toHaveBeenCalledWith(label);
+        });
     });
 
     it('opens a newly created job in the detail panel via the layout bridge', async () => {

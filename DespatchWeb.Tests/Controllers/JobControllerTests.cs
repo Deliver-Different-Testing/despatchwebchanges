@@ -221,6 +221,45 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Label_Found_ReturnsInlineUncachedPdf()
+    {
+        var labels = Substitute.For<IJobLabelService>();
+        labels.GetLabelAsync(42, false).Returns(new JobLabel([1, 2, 3], "Label-AB1DEL.pdf"));
+        var controller = CreateControllerWithHttpContext();
+
+        var result = await controller.Label(42, false, labels);
+
+        var file = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("application/pdf", file.ContentType);
+        Assert.Equal([1, 2, 3], file.FileContents);
+        var headers = controller.Response.Headers;
+        Assert.Equal("inline; filename=\"Label-AB1DEL.pdf\"", headers.ContentDisposition.ToString());
+        Assert.Equal("no-store", headers.CacheControl.ToString());
+    }
+
+    [Fact]
+    public async Task Label_NotFoundOrOutOfScope_ReturnsNotFound()
+    {
+        var labels = Substitute.For<IJobLabelService>();
+        labels.GetLabelAsync(42, true).Returns((JobLabel?)null);
+
+        var result = await CreateControllerWithHttpContext().Label(42, true, labels);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Label_Refused_ReturnsTheAuthoredMessage()
+    {
+        var labels = Substitute.For<IJobLabelService>();
+        labels.GetLabelAsync(42, false).ThrowsAsync(new JobLabelException("No label template."));
+
+        var result = await CreateControllerWithHttpContext().Label(42, false, labels);
+
+        Assert.Equal("No label template.", Assert.IsType<BadRequestObjectResult>(result).Value);
+    }
+
+    [Fact]
     public async Task OverlayDocument_RenderFails_ReturnsServerErrorNotNotFound()
     {
         // A real render-side failure (e.g. an undecodable delivery photo) must surface as a 500 with

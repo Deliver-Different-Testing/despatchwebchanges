@@ -340,6 +340,14 @@ export function getPodSpreadsheetUrl(jobId: number): string {
     return `/job/PodSpreadsheet?jobId=${jobId}`;
 }
 
+/**
+ * The job's printable label PDF. Linehaul and flight jobs come back as their DEL leg's label;
+ * a bulk row's `id` is a BulkJobId, so pass `isBulk` for those.
+ */
+export function getJobLabel(jobId: number, isBulk: boolean): Promise<Blob> {
+    return apiClient.getForBlob('/job/Label', {jobId, isBulk}, {timeout: 60000});
+}
+
 export function getOverlayDocumentUrl(jobId: number, documentType: string): string {
     return `/job/OverlayDocument?jobId=${jobId}&documentType=${encodeURIComponent(documentType)}`;
 }
