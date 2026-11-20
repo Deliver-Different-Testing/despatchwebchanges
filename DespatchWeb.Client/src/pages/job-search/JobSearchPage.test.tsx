@@ -88,11 +88,31 @@ vi.mock('./hooks/useScanDetail', () => ({
     useScanDetail: () => ({scans: [], isLoading: false, isError: false, refetch: vi.fn()}),
 }));
 
+vi.mock('../../api/jobDetailApi', async () => ({
+    ...(await vi.importActual<typeof import('../../api/jobDetailApi')>('../../api/jobDetailApi')),
+    getJobLabel: vi.fn(),
+}));
+
+vi.mock('../../utils/printPdf', () => ({
+    printPdf: vi.fn(),
+    openPdf: vi.fn(),
+}));
+
+const mockLoadingToast = {update: vi.fn(), dismiss: vi.fn()};
+vi.mock('../../services/toastService', async () => ({
+    ...(await vi.importActual<typeof import('../../services/toastService')>('../../services/toastService')),
+    toastService: {showLoadingToast: vi.fn(() => mockLoadingToast), showPersistentToast: vi.fn()},
+}));
+
 import {JobSearchPage} from './JobSearchPage';
 import type {JobSearchLayoutBridge} from './JobSearchLayoutBridge';
 import {getDispatchJobDetail, searchSpeedOptions} from '../../api/dispatchExecutorApi';
 import {searchActiveCouriers} from '../../api/courierApi';
 import {MantineTestProvider} from '../../test/utils';
+import {setupUser} from '../../test/utils/setupUser';
+import {getJobLabel} from '../../api/jobDetailApi';
+import {openPdf, printPdf} from '../../utils/printPdf';
+import {toastService} from '../../services/toastService';
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof JobSearchPage>> = {}) {
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -137,6 +157,109 @@ describe('JobSearchPage', () => {
             .find(header => within(header).queryByText('Detail · J7'));
         expect(detailHeader).toBeDefined();
         expect(detailHeader).toContainElement(triggers[0]);
+    });
+
+    describe('Print labels', () => {
+        async function printLabelFor(job: Record<string, unknown>, showToast = vi.fn()) {
+            const user = setupUser();
+            renderPage({showToast});
+            act(() => {
+                mockPanel.onJobSelect.jobSearchJobList?.({jobNo: 'J7', ...job});
+            });
+            await user.click(screen.getByRole('button', {name: 'Job actions'}));
+            await user.click(screen.getByRole('menuitem', {name: 'Print labels'}));
+            return showToast;
+        }
+
+        const label = new Blob(['%PDF']);
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            (getJobLabel as Mock).mockResolvedValue(label);
+            (printPdf as Mock).mockResolvedValue(true);
+        });
+
+        it('prints the job label', async () => {
+            await printLabelFor({id: 7});
+            expect(getJobLabel).toHaveBeenCalledWith(7, false);
+            await vi.waitFor(() => expect(printPdf).toHaveBeenCalledWith(label));
+            expect(mockLoadingToast.dismiss).toHaveBeenCalled();
+        });
+
+        it('asks for a bulk row by its bulk id', async () => {
+            await printLabelFor({id: 8, isBulkJob: true});
+            expect(getJobLabel).toHaveBeenCalledWith(8, true);
+        });
+
+        it('prints the live job behind a bulk row that has one', async () => {
+            await printLabelFor({id: 8, isBulkJob: true, linkedJobId: 70});
+            expect(getJobLabel).toHaveBeenCalledWith(70, false);
+        });
+
+        it('ignores a second click while the label is still loading', async () => {
+            (getJobLabel as Mock).mockReturnValue(new Promise(() => {}));
+            const user = setupUser();
+            renderPage();
+            act(() => {
+                mockPanel.onJobSelect.jobSearchJobList?.({jobNo: 'J7', id: 7});
+            });
+            for (let i = 0; i < 2; i++) {
+                await user.click(screen.getByRole('button', {name: 'Job actions'}));
+                await user.click(screen.getByRole('menuitem', {name: 'Print labels'}));
+            }
+            expect(getJobLabel).toHaveBeenCalledOnce();
+        });
+
+        it('shows the server reason in the loading toast and never prints', async () => {
+            (getJobLabel as Mock).mockRejectedValue(new Error("This job's label comes from the courier network."));
+
+            await printLabelFor({id: 7});
+
+            await vi.waitFor(() => expect(mockLoadingToast.update)
+                .toHaveBeenCalledWith("This job's label comes from the courier network.", 'error'));
+            expect(printPdf).not.toHaveBeenCalled();
+        });
+
+        it('keeps an Open label button up when the browser blocks printing', async () => {
+            (printPdf as Mock).mockResolvedValue(false);
+            (openPdf as Mock).mockReturnValue(true);
+
+            await printLabelFor({id: 7});
+
+            await vi.waitFor(() => expect(toastService.showPersistentToast).toHaveBeenCalledWith(
+                'Your browser blocked the label.', expect.objectContaining({label: 'Open label'})));
+            (toastService.showPersistentToast as Mock).mock.calls.at(-1)![1].onClick();
+            expect(openPdf).toHaveBeenCalledWith(label);
+        });
+
+        it('replaces an earlier blocked-label toast rather than stacking them', async () => {
+            (printPdf as Mock).mockResolvedValue(false);
+            const dismissFirst = vi.fn();
+            (toastService.showPersistentToast as Mock).mockReturnValueOnce(dismissFirst);
+            const user = setupUser();
+            renderPage();
+            act(() => {
+                mockPanel.onJobSelect.jobSearchJobList?.({jobNo: 'J7', id: 7});
+            });
+            for (let i = 0; i < 2; i++) {
+                await user.click(screen.getByRole('button', {name: 'Job actions'}));
+                await user.click(screen.getByRole('menuitem', {name: 'Print labels'}));
+                await vi.waitFor(() => expect(toastService.showPersistentToast).toHaveBeenCalledTimes(i + 1));
+            }
+            expect(dismissFirst).toHaveBeenCalledOnce();
+        });
+
+        it('keeps the loading toast up until printing has started', async () => {
+            let finishPrint!: (printed: boolean) => void;
+            (printPdf as Mock).mockReturnValue(new Promise(resolve => { finishPrint = resolve; }));
+
+            await printLabelFor({id: 7});
+            await vi.waitFor(() => expect(printPdf).toHaveBeenCalled());
+            expect(mockLoadingToast.dismiss).not.toHaveBeenCalled();
+
+            await act(async () => finishPrint(true));
+            expect(mockLoadingToast.dismiss).toHaveBeenCalled();
+        });
     });
 
     it('opens a newly created job in the detail panel via the layout bridge', async () => {

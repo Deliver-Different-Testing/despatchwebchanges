@@ -11,6 +11,7 @@ import {isNetworkPartnerSession} from '../../../components/dialogs/dispatch-dial
 export type JobSearchJobActionId =
     | 'accessorialCharges'
     | 'attachments'
+    | 'printLabel'
     | 'dispatch'
     | 'changeCourier'
     | 'restore'
@@ -31,6 +32,10 @@ const ACTIONS: JobAction<JobSearchJobActionId>[] = [
         available: job => !!job.accessorialChargeGroupId && !isNetworkPartnerSession()},
     {id: 'attachments', label: 'Attachments', icon: 'cloud_upload',
         available: () => true},
+    {id: 'printLabel', label: 'Print labels', icon: 'print',
+        // Every job, including network partners' (the server scopes the lookup), but not a pre-book:
+        // its id is a booking id, and there is no job to label yet.
+        available: job => !job.preBook},
     {id: 'dispatch', label: 'Dispatch to courier', icon: 'send_to_mobile',
         available: job => !job.isBulkJob && !job.preBook && job.assignedCourier == null},
     {id: 'changeCourier', label: 'Change paid courier', icon: 'swap_horiz',

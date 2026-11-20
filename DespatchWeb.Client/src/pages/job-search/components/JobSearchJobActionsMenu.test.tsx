@@ -80,6 +80,20 @@ describe('JobSearchJobActionsMenu', () => {
         expect(screen.queryByRole('menuitem', {name: 'Lock job'})).not.toBeInTheDocument();
     });
 
+    it.each([
+        ['a live job', makeJob()],
+        ['an archived job', makeJob({isArchived: true, done: true})],
+        ['a bulk row', makeJob({isBulkJob: true, assignedCourier: undefined})],
+    ])('offers Print labels for %s', async (_, job) => {
+        await openMenu(job);
+        expect(screen.getByRole('menuitem', {name: 'Print labels'})).toBeInTheDocument();
+    });
+
+    it('does not offer Print labels for a pre-book, which has no job yet', async () => {
+        await openMenu(makeJob({preBook: true}));
+        expect(screen.queryByRole('menuitem', {name: 'Print labels'})).not.toBeInTheDocument();
+    });
+
     it('does not offer Restore for an archived job', async () => {
         await openMenu(makeJob({isArchived: true}));
         expect(screen.queryByRole('menuitem', {name: 'Restore job'})).not.toBeInTheDocument();
