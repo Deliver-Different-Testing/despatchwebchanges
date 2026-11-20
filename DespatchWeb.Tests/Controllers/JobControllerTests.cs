@@ -233,7 +233,7 @@ public class JobControllerTests : IDisposable
         Assert.Equal("application/pdf", file.ContentType);
         Assert.Equal([1, 2, 3], file.FileContents);
         var headers = controller.Response.Headers;
-        Assert.Equal("inline; filename=\"Label-AB1DEL.pdf\"", headers.ContentDisposition.ToString());
+        Assert.Equal("inline; filename=Label-AB1DEL.pdf", headers.ContentDisposition.ToString());
         Assert.Equal("no-store", headers.CacheControl.ToString());
     }
 

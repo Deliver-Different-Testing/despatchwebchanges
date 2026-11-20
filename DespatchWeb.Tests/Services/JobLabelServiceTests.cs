@@ -106,6 +106,19 @@ public class JobLabelServiceTests : IAsyncDisposable
         Assert.Equal((90, 9), (_request!.JobId, _request.Mode));
     }
 
+    [Theory]
+    [InlineData("LH123")]
+    [InlineData("MODEL")]
+    [InlineData("ABDF2")]
+    public async Task ParentlessJobWithALegLikeNumber_PrintsItselfDatedFromItsParent(string number)
+    {
+        await Seed(Job(1, number));
+
+        await Service().GetLabelAsync(1, isBulk: false);
+
+        Assert.Equal((1, 7), (_request!.JobId, _request.Mode));
+    }
+
     [Fact]
     public async Task LegWithoutADelSibling_PrintsItselfDatedFromTheLeg()
     {

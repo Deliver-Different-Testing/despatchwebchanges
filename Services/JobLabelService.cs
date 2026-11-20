@@ -37,8 +37,8 @@ public sealed partial class JobLabelService(
         if (!string.IsNullOrWhiteSpace(job.CarrierConnote) || !string.IsNullOrWhiteSpace(target.CarrierConnote))
             throw new JobLabelException("This job's label comes from the courier network, so it can't be printed here.");
 
-        var settings = await context.TblSettings.Select(s => new { s.DefaultJobLabelId }).FirstOrDefaultAsync();
-        var templateId = await SpeedLabelIdAsync(context, target.Speed) ?? settings?.DefaultJobLabelId
+        var templateId = await SpeedLabelIdAsync(context, target.Speed)
+            ?? await context.TblSettings.Select(s => s.DefaultJobLabelId).FirstOrDefaultAsync()
             ?? throw new JobLabelException("No label template is set up for this service level or as the default job label.");
 
         var pdf = await alertLabels.GeneratePdfAsync(new AlertLabelRequest
@@ -59,8 +59,8 @@ public sealed partial class JobLabelService(
             .FirstOrDefaultAsync();
         if (bulkJob is null) return null;
 
-        var settings = await context.TblSettings.Select(s => new { s.DefaultBulkLabelId }).FirstOrDefaultAsync();
-        var templateId = await SpeedLabelIdAsync(context, bulkJob.Speed) ?? settings?.DefaultBulkLabelId
+        var templateId = await SpeedLabelIdAsync(context, bulkJob.Speed)
+            ?? await context.TblSettings.Select(s => s.DefaultBulkLabelId).FirstOrDefaultAsync()
             ?? throw new JobLabelException("No label template is set up for this service level or as the default bulk label.");
 
         var pdf = await alertLabels.GeneratePdfAsync(new AlertLabelRequest
@@ -85,6 +85,7 @@ public sealed partial class JobLabelService(
     internal static string? DeliveryLegNumber(string? number, bool hasParent)
     {
         if (string.IsNullOrEmpty(number)) return null;
+        if (!hasParent) return number.EndsWith("DF", StringComparison.OrdinalIgnoreCase) ? number + "3" : null;
 
         var linehaul = LinehaulLegSuffix().Match(number);
         if (linehaul.Success) return number[..linehaul.Index] + "DEL";
@@ -92,7 +93,7 @@ public sealed partial class JobLabelService(
         var flight = FlightLegSuffix().Match(number);
         if (flight.Success) return number[..flight.Index] + "DF3";
 
-        return !hasParent && number.EndsWith("DF", StringComparison.OrdinalIgnoreCase) ? number + "3" : null;
+        return null;
     }
 
     [GeneratedRegex("(LHP|LH[0-9]+|DEL)$", RegexOptions.IgnoreCase)]
