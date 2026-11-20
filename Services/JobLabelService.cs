@@ -36,7 +36,8 @@ public sealed partial class JobLabelService(
             : await Jobs(context).FirstOrDefaultAsync(j => j.Number == delNumber && j.ClientId == job.ClientId
                 && (j.RelationshipTypeId == FlightLeg || j.RelationshipTypeId == LinehaulLeg)) ?? job;
 
-        if (!string.IsNullOrWhiteSpace(job.CarrierConnote) || !string.IsNullOrWhiteSpace(target.CarrierConnote))
+        // Only the leg we print matters: a DEL leg we deliver ourselves gets our label even if the trunk went by carrier.
+        if (!string.IsNullOrWhiteSpace(target.CarrierConnote))
             throw new JobLabelException("This job's label comes from the courier network, so it can't be printed here.");
 
         var templateId = await SpeedLabelIdAsync(context, target.Speed)
@@ -50,7 +51,7 @@ public sealed partial class JobLabelService(
             Mode = delNumber is null || target.ParentId is null ? JobMode : LegMode,
             JobId = target.Id,
         });
-        return new JobLabel(pdf, $"Label-{target.Number}.pdf");
+        return new JobLabel(pdf, $"Label-{(string.IsNullOrWhiteSpace(target.Number) ? target.Id.ToString() : target.Number)}.pdf");
     }
 
     private async Task<JobLabel?> BulkLabelAsync(DespatchContext context, int bulkJobId)
@@ -72,7 +73,7 @@ public sealed partial class JobLabelService(
             Mode = BulkMode,
             JobId = bulkJobId,
         });
-        return new JobLabel(pdf, $"Label-{bulkJob.JobNumber}.pdf");
+        return new JobLabel(pdf, $"Label-{(string.IsNullOrWhiteSpace(bulkJob.JobNumber) ? bulkJobId.ToString() : bulkJob.JobNumber)}.pdf");
     }
 
     private static Task<int?> SpeedLabelIdAsync(DespatchContext context, int? speedId) =>
@@ -125,7 +126,7 @@ public sealed partial class JobLabelService(
     private sealed class LabelJob
     {
         public int Id { get; init; }
-        public string Number { get; init; } = "";
+        public string? Number { get; init; }
         public int? ParentId { get; init; }
         public int? RelationshipTypeId { get; init; }
         public int? ClientId { get; init; }

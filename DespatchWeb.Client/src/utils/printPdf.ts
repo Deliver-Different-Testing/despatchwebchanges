@@ -22,7 +22,8 @@ export function printPdf(blob: Blob): Promise<boolean> {
     const url = URL.createObjectURL(blob);
     const frame = document.createElement('iframe');
     frame.setAttribute('aria-hidden', 'true');
-    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    // Off-screen rather than 0x0 / hidden, so the browser's PDF viewer still lays the document out to print.
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:800px;height:600px;border:0';
 
     let released = false;
     let backstop: ReturnType<typeof setTimeout> | undefined;

@@ -229,6 +229,28 @@ public class JobLabelServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task CarrierTrunkLeg_StillPrintsOurOwnDelLeg()
+    {
+        var trunk = Job(21, "E15EDLHP", parentId: 30, relationshipType: 20);
+        trunk.Gssconnote = "GSS-1";
+        await Seed(trunk, Job(23, "E15EDDEL", parentId: 30, relationshipType: 20));
+
+        await Service().GetLabelAsync(21, isBulk: false);
+
+        Assert.Equal(23, _request!.JobId);
+    }
+
+    [Fact]
+    public async Task CarrierDelLeg_IsRefused()
+    {
+        var del = Job(23, "E15EDDEL", parentId: 30, relationshipType: 20);
+        del.Gssconnote = "GSS-1";
+        await Seed(Job(21, "E15EDLHP", parentId: 30, relationshipType: 20), del);
+
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(21, isBulk: false));
+    }
+
+    [Fact]
     public async Task NoTemplateAnywhere_IsRefused()
     {
         await using (var context = _db.CreateContext())

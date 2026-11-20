@@ -949,7 +949,7 @@ public class JobController(
                 return NotFound(JobNotFound);
             }
 
-            Log.Information("Printed label {FileName} for job {JobId} (bulk: {IsBulk})", label.FileName, jobId, isBulk);
+            Log.Information("Served label {FileName} for job {JobId} (bulk: {IsBulk})", label.FileName, jobId, isBulk);
             var disposition = new Microsoft.Net.Http.Headers.ContentDispositionHeaderValue("inline");
             disposition.SetHttpFileName(label.FileName);
             Response.Headers.ContentDisposition = disposition.ToString();

@@ -188,26 +188,18 @@ class ApiClient {
         data?: unknown,
         options?: RequestOptions
     ): Promise<{ data: Blob; headers: Record<string, unknown> }> {
-        const config: AxiosRequestConfig = {
-            params: options?.params,
-            signal: options?.signal,
-            timeout: options?.timeout,
-            responseType: 'blob',
-        };
-        const response = await this.instance.post(url, data, config);
+        const response = await this.instance.post(url, data, blobConfig(options));
         return { data: response.data, headers: response.headers as Record<string, unknown> };
     }
 
     async getForBlob(url: string, params?: Record<string, unknown>, options?: RequestOptions): Promise<Blob> {
-        const config: AxiosRequestConfig = {
-            params: params ?? options?.params,
-            signal: options?.signal,
-            timeout: options?.timeout,
-            responseType: 'blob',
-        };
-        const response = await this.instance.get<Blob>(url, config);
+        const response = await this.instance.get<Blob>(url, blobConfig({...options, params: params ?? options?.params}));
         return response.data;
     }
+}
+
+function blobConfig(options?: RequestOptions): AxiosRequestConfig {
+    return {params: options?.params, signal: options?.signal, timeout: options?.timeout, responseType: 'blob'};
 }
 
 // Singleton instance - lazy initialized on first access
