@@ -224,7 +224,7 @@ public class JobControllerTests : IDisposable
     public async Task Label_Found_ReturnsInlineUncachedPdf()
     {
         var labels = Substitute.For<IJobLabelService>();
-        labels.GetLabelAsync(42, false).Returns(new JobLabel([1, 2, 3], "Label-AB1DEL.pdf"));
+        labels.GetLabelAsync(42, false, Arg.Any<CancellationToken>()).Returns(new JobLabel([1, 2, 3], "Label-AB1DEL.pdf"));
         var controller = CreateControllerWithHttpContext();
 
         var result = await controller.Label(42, false, labels);
@@ -241,7 +241,7 @@ public class JobControllerTests : IDisposable
     public async Task Label_NotFoundOrOutOfScope_ReturnsNotFound()
     {
         var labels = Substitute.For<IJobLabelService>();
-        labels.GetLabelAsync(42, true).Returns((JobLabel?)null);
+        labels.GetLabelAsync(42, true, Arg.Any<CancellationToken>()).Returns((JobLabel?)null);
 
         var result = await CreateControllerWithHttpContext().Label(42, true, labels);
 
@@ -252,7 +252,7 @@ public class JobControllerTests : IDisposable
     public async Task Label_Refused_ReturnsTheAuthoredMessage()
     {
         var labels = Substitute.For<IJobLabelService>();
-        labels.GetLabelAsync(42, false).ThrowsAsync(new JobLabelException("No label template."));
+        labels.GetLabelAsync(42, false, Arg.Any<CancellationToken>()).ThrowsAsync(new JobLabelException("No label template."));
 
         var result = await CreateControllerWithHttpContext().Label(42, false, labels);
 

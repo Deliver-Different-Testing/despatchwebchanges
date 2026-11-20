@@ -18,52 +18,56 @@ public sealed partial class JobLabelService(
     private const int JobMode = 7;
     private const int LegMode = 9;
 
-    public async Task<JobLabel?> GetLabelAsync(int jobId, bool isBulk)
+    public async Task<JobLabel?> GetLabelAsync(int jobId, bool isBulk, CancellationToken ct = default)
     {
-        await using var context = await contextFactory.CreateDbContextAsync();
-        return isBulk ? await BulkLabelAsync(context, jobId) : await JobLabelAsync(context, jobId);
+        await using var context = await contextFactory.CreateDbContextAsync(ct);
+        return isBulk ? await BulkLabelAsync(context, jobId, ct) : await JobLabelAsync(context, jobId, ct);
     }
 
-    private async Task<JobLabel?> JobLabelAsync(DespatchContext context, int jobId)
+    private async Task<JobLabel?> JobLabelAsync(DespatchContext context, int jobId, CancellationToken ct)
     {
         // Every lookup goes through the EF scope filters: the renderer reads the DB directly and bypasses them.
-        var job = await Jobs(context).FirstOrDefaultAsync(j => j.Id == jobId);
+        var job = await Jobs(context).FirstOrDefaultAsync(j => j.Id == jobId, ct);
         if (job is null) return null;
 
         var delNumber = DeliveryLegNumber(job.Number, job.ParentId is not null, job.RelationshipTypeId);
         var target = delNumber is null || delNumber.Equals(job.Number, StringComparison.OrdinalIgnoreCase)
             ? job
             : await Jobs(context).FirstOrDefaultAsync(j => j.Number == delNumber && j.ClientId == job.ClientId
-                && (j.RelationshipTypeId == FlightLeg || j.RelationshipTypeId == LinehaulLeg)) ?? job;
+                && (j.RelationshipTypeId == FlightLeg || j.RelationshipTypeId == LinehaulLeg), ct)
+              ?? throw new JobLabelException($"The delivery leg {delNumber} wasn't found, so its label can't be printed yet.");
 
         // Only the leg we print matters: a DEL leg we deliver ourselves gets our label even if the trunk went by carrier.
         if (!string.IsNullOrWhiteSpace(target.CarrierConnote))
             throw new JobLabelException("This job's label comes from the courier network, so it can't be printed here.");
 
-        var templateId = await SpeedLabelIdAsync(context, target.Speed)
-            ?? await context.TblSettings.Select(s => s.DefaultJobLabelId).FirstOrDefaultAsync()
+        var templateId = await SpeedLabelIdAsync(context, target.Speed, ct)
+            ?? await context.TblSettings.Select(s => s.DefaultJobLabelId > 0 ? s.DefaultJobLabelId : null).FirstOrDefaultAsync(ct)
             ?? throw new JobLabelException("No label template is set up for this service level or as the default job label.");
 
         var pdf = await alertLabels.GeneratePdfAsync(new AlertLabelRequest
         {
             ConnectionString = context.Database.GetConnectionString()!,
             TemplateId = templateId,
-            Mode = delNumber is null || target.ParentId is null ? JobMode : LegMode,
+            // A bulk child's parent is a tblBulkJob, which the parent-dated mode can't join to.
+            Mode = (delNumber is not null && target.ParentId is not null) || target.RelationshipTypeId == LinehaulLeg
+                ? LegMode
+                : JobMode,
             JobId = target.Id,
         });
         return new JobLabel(pdf, $"Label-{(string.IsNullOrWhiteSpace(target.Number) ? target.Id.ToString() : target.Number)}.pdf");
     }
 
-    private async Task<JobLabel?> BulkLabelAsync(DespatchContext context, int bulkJobId)
+    private async Task<JobLabel?> BulkLabelAsync(DespatchContext context, int bulkJobId, CancellationToken ct)
     {
         var bulkJob = await context.TblBulkJobs
             .Where(b => b.BulkJobId == bulkJobId)
             .Select(b => new { b.JobNumber, b.Speed })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(ct);
         if (bulkJob is null) return null;
 
-        var templateId = await SpeedLabelIdAsync(context, bulkJob.Speed)
-            ?? await context.TblSettings.Select(s => s.DefaultBulkLabelId).FirstOrDefaultAsync()
+        var templateId = await SpeedLabelIdAsync(context, bulkJob.Speed, ct)
+            ?? await context.TblSettings.Select(s => s.DefaultBulkLabelId > 0 ? s.DefaultBulkLabelId : null).FirstOrDefaultAsync(ct)
             ?? throw new JobLabelException("No label template is set up for this service level or as the default bulk label.");
 
         var pdf = await alertLabels.GeneratePdfAsync(new AlertLabelRequest
@@ -76,10 +80,10 @@ public sealed partial class JobLabelService(
         return new JobLabel(pdf, $"Label-{(string.IsNullOrWhiteSpace(bulkJob.JobNumber) ? bulkJobId.ToString() : bulkJob.JobNumber)}.pdf");
     }
 
-    private static Task<int?> SpeedLabelIdAsync(DespatchContext context, int? speedId) =>
+    private static Task<int?> SpeedLabelIdAsync(DespatchContext context, int? speedId, CancellationToken ct) =>
         speedId is null or 0
             ? Task.FromResult<int?>(null)
-            : context.TucJobTypes.Where(t => t.UcjtId == speedId).Select(t => t.LabelId).FirstOrDefaultAsync();
+            : context.TucJobTypes.Where(t => t.UcjtId == speedId).Select(t => t.LabelId > 0 ? t.LabelId : null).FirstOrDefaultAsync(ct);
 
     private const int FlightParent = (int)JobRelationshipTypes.MedicalRun;
     private const int FlightLeg = (int)JobRelationshipTypes.MedicalRunSingle;

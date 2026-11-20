@@ -9,6 +9,6 @@ public interface IJobLabelService
     /// (its id is then a BulkJobId). A linehaul or flight job prints its DEL leg's label.
     /// </summary>
     /// <returns>The label, or null when the job doesn't exist or is outside the caller's scope.</returns>
-    /// <exception cref="Exceptions.JobLabelException">The job has no label we can print here.</exception>
-    Task<JobLabel?> GetLabelAsync(int jobId, bool isBulk);
+    /// <exception cref="Exceptions.JobLabelException">The job has no label we can print here, or its DEL leg isn't found.</exception>
+    Task<JobLabel?> GetLabelAsync(int jobId, bool isBulk, CancellationToken ct = default);
 }

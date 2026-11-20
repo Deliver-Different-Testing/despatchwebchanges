@@ -394,6 +394,8 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         await invalidateJob(job);
     }, [showToast, invalidateJob]);
 
+    const labelsInFlight = useRef(new Set<string>());
+
     const openSwapPod = useCallback(async (job: DispatchJob) => {
         await (await loadDialog('SwapPods')).open(job.jobNo, {showToast}, job.client);
         await invalidateJob(job);
@@ -464,22 +466,34 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 }
 
                 case 'printLabel': {
+                    // A bulk row that already has a live job prints that job; only an unmaterialised one prints the bulk label.
+                    const isBulkLabel = !!job.isBulkJob && !job.linkedJobId;
+                    const labelJobId = isBulkLabel ? job.id : (job.linkedJobId ?? job.id);
+                    const key = `${isBulkLabel ? 'bulk' : 'job'}:${labelJobId}`;
+                    if (labelsInFlight.current.has(key)) return;
+                    labelsInFlight.current.add(key);
+
                     const toast = toastService.showLoadingToast(`Preparing the label for ${job.jobNo}…`);
-                    let label: Blob;
                     try {
-                        label = await getJobLabel(job.id, !!job.isBulkJob);
-                    } catch (error) {
-                        toast.update(errorMessageOf(error, `Couldn't load the label for ${job.jobNo}. Try again.`), 'error');
-                        return;
-                    }
-                    toast.dismiss();
-                    if (!await printPdf(label)) {
-                        showToast('Your browser blocked the label.', 'warning', {
-                            label: 'Open label',
-                            onClick: () => {
-                                if (!openPdf(label)) showToast('Allow pop-ups for this site to open labels.', 'error');
-                            },
-                        });
+                        let label: Blob;
+                        try {
+                            label = await getJobLabel(labelJobId, isBulkLabel);
+                        } catch (error) {
+                            toast.update(errorMessageOf(error, `Couldn't load the label for ${job.jobNo}. Try again.`), 'error');
+                            return;
+                        }
+                        const printed = await printPdf(label);
+                        toast.dismiss();
+                        if (!printed) {
+                            toastService.showPersistentToast('Your browser blocked the label.', {
+                                label: 'Open label',
+                                onClick: () => {
+                                    if (!openPdf(label)) showToast('Allow pop-ups for this site to open labels.', 'error');
+                                },
+                            });
+                        }
+                    } finally {
+                        labelsInFlight.current.delete(key);
                     }
                     return;
                 }

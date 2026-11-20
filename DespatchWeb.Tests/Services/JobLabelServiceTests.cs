@@ -120,23 +120,32 @@ public class JobLabelServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task LegWithoutADelSibling_PrintsItselfDatedFromTheLeg()
+    public async Task LegWithoutADelSibling_IsRefused()
     {
         await Seed(Job(21, "E15EDLHP", parentId: 30, relationshipType: 20));
 
-        await Service().GetLabelAsync(21, isBulk: false);
+        var refusal = await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(21, isBulk: false));
 
-        Assert.Equal((21, 9), (_request!.JobId, _request.Mode));
+        Assert.Contains("E15EDDEL", refusal.Message);
+        await _alertLabels.DidNotReceive().GeneratePdfAsync(Arg.Any<AlertLabelRequest>());
     }
 
     [Fact]
-    public async Task FlightParentWithoutADf3Leg_PrintsItselfDatedFromItsParent()
+    public async Task FlightParentWithoutADf3Leg_IsRefused()
     {
         await Seed(Job(87, "KT161DF", relationshipType: 12));
 
-        await Service().GetLabelAsync(87, isBulk: false);
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(87, isBulk: false));
+    }
 
-        Assert.Equal((87, 7), (_request!.JobId, _request.Mode));
+    [Fact]
+    public async Task BulkChildWithoutALegSuffix_IsItsOwnParent()
+    {
+        await Seed(Job(40, "BK40", parentId: 7, relationshipType: 20));
+
+        await Service().GetLabelAsync(40, isBulk: false);
+
+        Assert.Equal((40, 9), (_request!.JobId, _request.Mode));
     }
 
     [Fact]
@@ -159,9 +168,7 @@ public class JobLabelServiceTests : IAsyncDisposable
             Job(21, "E15EDLHP", parentId: 30, relationshipType: 20),
             Job(23, "E15EDDEL", relationshipType: 1));
 
-        await Service().GetLabelAsync(21, isBulk: false);
-
-        Assert.Equal(21, _request!.JobId);
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(21, isBulk: false));
     }
 
     [Fact]
@@ -171,9 +178,7 @@ public class JobLabelServiceTests : IAsyncDisposable
             Job(21, "E15EDLHP", parentId: 30, relationshipType: 20),
             Job(23, "E15EDDEL", parentId: 30, relationshipType: 20, clientId: 99));
 
-        await Service().GetLabelAsync(21, isBulk: false);
-
-        Assert.Equal(21, _request!.JobId);
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(21, isBulk: false));
     }
 
     [Fact]
@@ -198,6 +203,19 @@ public class JobLabelServiceTests : IAsyncDisposable
         await Service().GetLabelAsync(1, isBulk: false);
 
         Assert.Equal(SpeedTemplate, _request!.TemplateId);
+    }
+
+    [Fact]
+    public async Task ZeroSpeedLabel_FallsBackToTheDefault()
+    {
+        await Seed(new TucJobType { UcjtId = 55, UcjtName = "Standard", ShortName = "ST", CreatedBy = "tests", LastModifiedBy = "tests", LabelId = 0 });
+        var job = Job(1, "AB100");
+        job.UcjbSpeed = 55;
+        await Seed(job);
+
+        await Service().GetLabelAsync(1, isBulk: false);
+
+        Assert.Equal(JobTemplate, _request!.TemplateId);
     }
 
     [Fact]

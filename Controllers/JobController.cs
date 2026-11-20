@@ -943,7 +943,7 @@ public class JobController(
         Response.Headers.CacheControl = "no-store";
         try
         {
-            var label = await labels.GetLabelAsync(jobId, isBulk);
+            var label = await labels.GetLabelAsync(jobId, isBulk, HttpContext.RequestAborted);
             if (label is null)
             {
                 return NotFound(JobNotFound);
