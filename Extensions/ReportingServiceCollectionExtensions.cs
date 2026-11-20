@@ -1,3 +1,4 @@
+using DeliverDifferent.AlertLabel.Data.Extensions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
 
@@ -12,6 +13,8 @@ public static class ReportingServiceCollectionExtensions
         services.AddScoped<IComplianceReminderService, ComplianceReminderService>();
         services.AddScoped<IPodReportService, PodReportService>();
         services.AddScoped<IPriceReportService, PriceReportService>();
+        services.AddScoped<IJobLabelService, JobLabelService>();
+        services.AddAlertLabelService();
         
         services.AddHttpClient<IPdfOverlayClient, PdfOverlayClient>();
 
