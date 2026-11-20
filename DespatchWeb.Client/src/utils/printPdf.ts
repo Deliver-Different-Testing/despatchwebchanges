@@ -25,9 +25,11 @@ export function printPdf(blob: Blob): Promise<boolean> {
     frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
 
     let released = false;
+    let backstop: ReturnType<typeof setTimeout> | undefined;
     const release = () => {
         if (released) return;
         released = true;
+        clearTimeout(backstop);
         frame.remove();
         URL.revokeObjectURL(url);
     };
@@ -49,11 +51,12 @@ export function printPdf(blob: Blob): Promise<boolean> {
         const loadTimeout = setTimeout(() => settle(false), PDF_FRAME_LOAD_TIMEOUT_MS);
 
         frame.onload = () => {
+            frame.onload = null;
             try {
                 const view = frame.contentWindow!;
                 // Some browsers return from print() while the dialog is still open; keep the frame until it closes.
                 view.addEventListener('afterprint', release, {once: true});
-                setTimeout(release, PRINT_FRAME_LIFETIME_MS);
+                backstop = setTimeout(release, PRINT_FRAME_LIFETIME_MS);
                 view.focus();
                 view.print();
                 settle(true);

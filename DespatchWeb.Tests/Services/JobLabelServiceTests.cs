@@ -130,6 +130,41 @@ public class JobLabelServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task FlightParentWithoutADf3Leg_PrintsItselfDatedFromItsParent()
+    {
+        await Seed(Job(87, "KT161DF", relationshipType: 12));
+
+        await Service().GetLabelAsync(87, isBulk: false);
+
+        Assert.Equal((87, 7), (_request!.JobId, _request.Mode));
+    }
+
+    [Fact]
+    public async Task SplitChildEndingInDel_IsNotTreatedAsALeg()
+    {
+        await Seed(
+            Job(1, "AB100", relationshipType: 8),
+            Job(2, "AB1DEL", parentId: 1, relationshipType: 9),
+            Job(3, "AB1DF3", parentId: 1, relationshipType: 9));
+
+        await Service().GetLabelAsync(2, isBulk: false);
+
+        Assert.Equal((2, 7), (_request!.JobId, _request.Mode));
+    }
+
+    [Fact]
+    public async Task DelNumberedJobOutsideTheFamilyTypes_IsNotPickedUp()
+    {
+        await Seed(
+            Job(21, "E15EDLHP", parentId: 30, relationshipType: 20),
+            Job(23, "E15EDDEL", relationshipType: 1));
+
+        await Service().GetLabelAsync(21, isBulk: false);
+
+        Assert.Equal(21, _request!.JobId);
+    }
+
+    [Fact]
     public async Task DelLegOfAnotherClient_IsNotPickedUp()
     {
         await Seed(

@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using DeliverDifferent.AlertLabel.Data.Models;
 using DeliverDifferent.AlertLabel.Data.Services;
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
 using DespatchWeb.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -29,10 +30,11 @@ public sealed partial class JobLabelService(
         var job = await Jobs(context).FirstOrDefaultAsync(j => j.Id == jobId);
         if (job is null) return null;
 
-        var delNumber = DeliveryLegNumber(job.Number, job.ParentId is not null);
+        var delNumber = DeliveryLegNumber(job.Number, job.ParentId is not null, job.RelationshipTypeId);
         var target = delNumber is null || delNumber.Equals(job.Number, StringComparison.OrdinalIgnoreCase)
             ? job
-            : await Jobs(context).FirstOrDefaultAsync(j => j.Number == delNumber && j.ClientId == job.ClientId) ?? job;
+            : await Jobs(context).FirstOrDefaultAsync(j => j.Number == delNumber && j.ClientId == job.ClientId
+                && (j.RelationshipTypeId == FlightLeg || j.RelationshipTypeId == LinehaulLeg)) ?? job;
 
         if (!string.IsNullOrWhiteSpace(job.CarrierConnote) || !string.IsNullOrWhiteSpace(target.CarrierConnote))
             throw new JobLabelException("This job's label comes from the courier network, so it can't be printed here.");
@@ -45,7 +47,7 @@ public sealed partial class JobLabelService(
         {
             ConnectionString = context.Database.GetConnectionString()!,
             TemplateId = templateId,
-            Mode = delNumber is null ? JobMode : LegMode,
+            Mode = delNumber is null || target.ParentId is null ? JobMode : LegMode,
             JobId = target.Id,
         });
         return new JobLabel(pdf, $"Label-{target.Number}.pdf");
@@ -78,14 +80,21 @@ public sealed partial class JobLabelService(
             ? Task.FromResult<int?>(null)
             : context.TucJobTypes.Where(t => t.UcjtId == speedId).Select(t => t.LabelId).FirstOrDefaultAsync();
 
+    private const int FlightParent = (int)JobRelationshipTypes.MedicalRun;
+    private const int FlightLeg = (int)JobRelationshipTypes.MedicalRunSingle;
+    private const int LinehaulLeg = (int)JobRelationshipTypes.BulkChild;
+
     /// <summary>
     /// The job number of the delivery leg in a linehaul (LHP / LHn / DEL) or flight (DF1-3) family,
-    /// or null when the job isn't part of one.
+    /// or null when the job isn't part of one. The number suffix alone isn't trusted: a leg must also
+    /// carry a leg relationship type, so a split or return child that happens to end in "DEL" isn't one.
     /// </summary>
-    internal static string? DeliveryLegNumber(string? number, bool hasParent)
+    internal static string? DeliveryLegNumber(string? number, bool hasParent, int? relationshipTypeId)
     {
         if (string.IsNullOrEmpty(number)) return null;
-        if (!hasParent) return number.EndsWith("DF", StringComparison.OrdinalIgnoreCase) ? number + "3" : null;
+        if (!hasParent)
+            return relationshipTypeId == FlightParent && number.EndsWith("DF", StringComparison.OrdinalIgnoreCase) ? number + "3" : null;
+        if (relationshipTypeId is not (FlightLeg or LinehaulLeg)) return null;
 
         var linehaul = LinehaulLegSuffix().Match(number);
         if (linehaul.Success) return number[..linehaul.Index] + "DEL";
@@ -106,11 +115,11 @@ public sealed partial class JobLabelService(
         context.TucJobs.Select(j => new LabelJob
         {
             Id = j.UcjbId, Number = j.UcjbNumber, ParentId = j.ParentId, ClientId = j.UcjbClientId,
-            Speed = j.UcjbSpeed, CarrierConnote = j.Gssconnote,
+            Speed = j.UcjbSpeed, CarrierConnote = j.Gssconnote, RelationshipTypeId = j.JobRelationshipTypeId,
         }).Concat(context.TucJobArchives.Select(j => new LabelJob
         {
             Id = j.UcjbId, Number = j.UcjbNumber, ParentId = j.ParentId, ClientId = j.UcjbClientId,
-            Speed = j.UcjbSpeed, CarrierConnote = j.Gssconnote,
+            Speed = j.UcjbSpeed, CarrierConnote = j.Gssconnote, RelationshipTypeId = j.JobRelationshipTypeId,
         }));
 
     private sealed class LabelJob
@@ -118,6 +127,7 @@ public sealed partial class JobLabelService(
         public int Id { get; init; }
         public string Number { get; init; } = "";
         public int? ParentId { get; init; }
+        public int? RelationshipTypeId { get; init; }
         public int? ClientId { get; init; }
         public int? Speed { get; init; }
         public string? CarrierConnote { get; init; }

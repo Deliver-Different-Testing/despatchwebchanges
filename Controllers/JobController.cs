@@ -950,7 +950,9 @@ public class JobController(
             }
 
             Log.Information("Printed label {FileName} for job {JobId} (bulk: {IsBulk})", label.FileName, jobId, isBulk);
-            Response.Headers.ContentDisposition = new ContentDispositionHeaderValue("inline") { FileName = label.FileName }.ToString();
+            var disposition = new Microsoft.Net.Http.Headers.ContentDispositionHeaderValue("inline");
+            disposition.SetHttpFileName(label.FileName);
+            Response.Headers.ContentDisposition = disposition.ToString();
             return File(label.Pdf, "application/pdf");
         }
         catch (JobLabelException e)
