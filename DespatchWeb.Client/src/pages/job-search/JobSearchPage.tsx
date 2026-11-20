@@ -482,8 +482,13 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                             toast.update(errorMessageOf(error, `Couldn't load the label for ${job.jobNo}. Try again.`), 'error');
                             return;
                         }
-                        const printed = await printPdf(label);
-                        toast.dismiss();
+                        let printed: boolean;
+                        try {
+                            printed = await printPdf(label);
+                        } finally {
+                            // The loading toast has no close button, so it must never outlive a print failure.
+                            toast.dismiss();
+                        }
                         if (!printed) {
                             toastService.showPersistentToast('Your browser blocked the label.', {
                                 label: 'Open label',

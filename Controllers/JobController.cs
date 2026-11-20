@@ -960,6 +960,10 @@ public class JobController(
             Log.Warning(e, "Label refused for job {JobId}: {Message}", jobId, e.Message);
             return BadRequest(e.Message);
         }
+        catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            return new EmptyResult();
+        }
         catch (Exception e)
         {
             Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(Label)));

@@ -12,6 +12,7 @@ namespace DespatchWeb.Tests.Services;
 
 public class JobLabelServiceTests : IAsyncDisposable
 {
+    private static readonly DateTime Today = new(2026, 11, 20);
     private const int JobTemplate = 11;
     private const int SpeedTemplate = 12;
     private const int BulkTemplate = 13;
@@ -53,7 +54,7 @@ public class JobLabelServiceTests : IAsyncDisposable
     {
         var provider = Substitute.For<IScopeProvider>();
         provider.Scope.Returns(scope ?? new ScopeContext((int)ClientType.Tenant, null, null));
-        return new JobLabelService(SqliteTestDatabase.CreateFactoryMock(new DespatchContext(_db.Options, provider)), _alertLabels);
+        return new JobLabelService(SqliteTestDatabase.CreateFactoryMock(new DespatchContext(_db.Options, provider)), _alertLabels, new FakeTenantClock(Today));
     }
 
     private static TucJob Job(int id, string number, int? parentId = null, int? relationshipType = null, int clientId = 10) =>
@@ -284,7 +285,7 @@ public class JobLabelServiceTests : IAsyncDisposable
     [Fact]
     public async Task BulkRow_PrintsTheBulkLabel()
     {
-        await Seed(new TblBulkJob { BulkJobId = 7, JobNumber = "BK7", ClientId = 10, Speed = 0 });
+        await Seed(Bulk());
 
         var label = await Service().GetLabelAsync(7, isBulk: true);
 
@@ -295,8 +296,39 @@ public class JobLabelServiceTests : IAsyncDisposable
     [Fact]
     public async Task OutOfScopeBulkRow_ReturnsNull()
     {
-        await Seed(new TblBulkJob { BulkJobId = 7, JobNumber = "BK7", ClientId = 10, Speed = 0 });
+        await Seed(Bulk());
 
         Assert.Null(await Service(new ScopeContext((int)ClientType.Customer, ClientId: 99, null)).GetLabelAsync(7, isBulk: true));
+    }
+
+    private static TblBulkJob Bulk(DateTime? bookDate = null, bool isVoid = false) =>
+        new() { BulkJobId = 7, JobNumber = "BK7", ClientId = 10, Speed = 0, BookDate = bookDate ?? Today, Void = isVoid };
+
+    [Fact]
+    public async Task VoidBulkRow_IsRefused()
+    {
+        await Seed(Bulk(isVoid: true));
+
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(7, isBulk: true, Ct));
+        await _alertLabels.DidNotReceive().GeneratePdfAsync(Arg.Any<AlertLabelRequest>());
+    }
+
+    [Fact]
+    public async Task BulkRowOlderThanAYear_IsRefused()
+    {
+        await Seed(Bulk(Today.AddYears(-1).AddDays(-1)));
+
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(7, isBulk: true, Ct));
+    }
+
+    [Fact]
+    public async Task VoidJob_IsRefused()
+    {
+        var job = Job(1, "AB100");
+        job.UcjbVoid = true;
+        await Seed(job);
+
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(1, isBulk: false, Ct));
+        await _alertLabels.DidNotReceive().GeneratePdfAsync(Arg.Any<AlertLabelRequest>());
     }
 }

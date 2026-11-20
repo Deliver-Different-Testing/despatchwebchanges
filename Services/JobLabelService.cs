@@ -11,7 +11,8 @@ namespace DespatchWeb.Services;
 
 public sealed partial class JobLabelService(
     IDbContextFactory<DespatchContext> contextFactory,
-    IAlertLabelService alertLabels) : IJobLabelService
+    IAlertLabelService alertLabels,
+    ITenantClock clock) : IJobLabelService
 {
     // AlertLabel modes: 2 = bulk job, 7 = job dated from its parent, 9 = leg dated from the leg itself.
     private const int BulkMode = 2;
@@ -36,6 +37,10 @@ public sealed partial class JobLabelService(
             : await Jobs(context).FirstOrDefaultAsync(j => j.Number == delNumber && j.ClientId == job.ClientId
                 && (j.RelationshipTypeId == FlightLeg || j.RelationshipTypeId == LinehaulLeg), ct)
               ?? throw new JobLabelException($"The delivery leg {delNumber} wasn't found, so its label can't be printed yet.");
+
+        // The renderer skips void jobs and would fail with an unexplained error.
+        if (target.Void)
+            throw new JobLabelException("This job is void, so it has no label to print.");
 
         // Only the leg we print matters: a DEL leg we deliver ourselves gets our label even if the trunk went by carrier.
         if (!string.IsNullOrWhiteSpace(target.CarrierConnote))
@@ -62,9 +67,16 @@ public sealed partial class JobLabelService(
     {
         var bulkJob = await context.TblBulkJobs
             .Where(b => b.BulkJobId == bulkJobId)
-            .Select(b => new { b.JobNumber, b.Speed })
+            .Select(b => new { b.JobNumber, b.Speed, b.Void, b.BookDate })
             .FirstOrDefaultAsync(ct);
         if (bulkJob is null) return null;
+
+        // The renderer's bulk mode only reads live bookings from the last year and would fail with an unexplained error.
+        if (bulkJob.Void)
+            throw new JobLabelException("This booking is void, so it has no label to print.");
+        // The renderer checks against the DB server's (NZ) clock, so this can disagree by up to a day at the boundary.
+        if (bulkJob.BookDate <= clock.TenantNow.AddYears(-1))
+            throw new JobLabelException("This booking is more than a year old, so its label can't be printed.");
 
         var templateId = await SpeedLabelIdAsync(context, bulkJob.Speed, ct)
             ?? await context.TblSettings.Select(s => s.DefaultBulkLabelId > 0 ? s.DefaultBulkLabelId : null).FirstOrDefaultAsync(ct)
@@ -121,10 +133,12 @@ public sealed partial class JobLabelService(
         {
             Id = j.UcjbId, Number = j.UcjbNumber, ParentId = j.ParentId, ClientId = j.UcjbClientId,
             Speed = j.UcjbSpeed, CarrierConnote = j.Gssconnote, RelationshipTypeId = j.JobRelationshipTypeId,
+            Void = j.UcjbVoid,
         }).Concat(context.TucJobArchives.Select(j => new LabelJob
         {
             Id = j.UcjbId, Number = j.UcjbNumber, ParentId = j.ParentId, ClientId = j.UcjbClientId,
             Speed = j.UcjbSpeed, CarrierConnote = j.Gssconnote, RelationshipTypeId = j.JobRelationshipTypeId,
+            Void = j.UcjbVoid,
         }));
 
     private sealed class LabelJob
@@ -136,5 +150,6 @@ public sealed partial class JobLabelService(
         public int? ClientId { get; init; }
         public int? Speed { get; init; }
         public string? CarrierConnote { get; init; }
+        public bool Void { get; init; }
     }
 }
