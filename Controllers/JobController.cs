@@ -937,6 +937,40 @@ public class JobController(
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Label(int jobId, bool isBulk, [FromServices] IJobLabelService labels)
+    {
+        Response.Headers.CacheControl = "no-store";
+        try
+        {
+            var label = await labels.GetLabelAsync(jobId, isBulk, HttpContext.RequestAborted);
+            if (label is null)
+            {
+                return NotFound(JobNotFound);
+            }
+
+            Log.Information("Served label {FileName} for job {JobId} (bulk: {IsBulk})", label.FileName, jobId, isBulk);
+            var disposition = new Microsoft.Net.Http.Headers.ContentDispositionHeaderValue("inline");
+            disposition.SetHttpFileName(label.FileName);
+            Response.Headers.ContentDisposition = disposition.ToString();
+            return File(label.Pdf, "application/pdf");
+        }
+        catch (JobLabelException e)
+        {
+            Log.Warning(e, "Label refused for job {JobId}: {Message}", jobId, e.Message);
+            return BadRequest(e.Message);
+        }
+        catch (OperationCanceledException) when (HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            return new EmptyResult();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}", ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(Label)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     [HttpPost]
     [RequireScope(ScopedRecord.Job, "request.JobId")]
     public async Task<IActionResult> SendPodReport([FromBody] SendPodReportRequest request)

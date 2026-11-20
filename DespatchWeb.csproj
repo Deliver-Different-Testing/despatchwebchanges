@@ -84,6 +84,7 @@
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="Magick.NET-Q8-AnyCPU" />
     <PackageReference Include="DeliverDifferent.AgentAccess" />
+    <PackageReference Include="DeliverDifferent.AlertLabel.Data" />
     <PackageReference Include="DeliverDifferentReporting" />
     <PackageReference Include="ExcelDataReader" />
     <PackageReference Include="PdfSharp" />
