@@ -192,8 +192,8 @@ class ApiClient {
         return { data: response.data, headers: response.headers as Record<string, unknown> };
     }
 
-    async getForBlob(url: string, params?: Record<string, unknown>, options?: RequestOptions): Promise<Blob> {
-        const response = await this.instance.get<Blob>(url, blobConfig({...options, params: params ?? options?.params}));
+    async getForBlob(url: string, options?: RequestOptions): Promise<Blob> {
+        const response = await this.instance.get<Blob>(url, blobConfig(options));
         return response.data;
     }
 }
@@ -221,8 +221,8 @@ export const apiClient = {
         getInstance().uploadFormData<T>(url, formData, options),
     postForBlob: (url: string, data?: unknown, options?: RequestOptions) =>
         getInstance().postForBlob(url, data, options),
-    getForBlob: (url: string, params?: Record<string, unknown>, options?: RequestOptions) =>
-        getInstance().getForBlob(url, params, options),
+    getForBlob: (url: string, options?: RequestOptions) =>
+        getInstance().getForBlob(url, options),
 };
 
 /** Download a blob response as a file */

@@ -345,7 +345,7 @@ export function getPodSpreadsheetUrl(jobId: number): string {
  * a bulk row's `id` is a BulkJobId, so pass `isBulk` for those.
  */
 export function getJobLabel(jobId: number, isBulk: boolean): Promise<Blob> {
-    return apiClient.getForBlob('/job/Label', {jobId, isBulk}, {timeout: 60000});
+    return apiClient.getForBlob('/job/Label', {params: {jobId, isBulk}, timeout: 60000});
 }
 
 export function getOverlayDocumentUrl(jobId: number, documentType: string): string {

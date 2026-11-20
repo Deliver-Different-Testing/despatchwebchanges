@@ -36,11 +36,13 @@ public sealed partial class JobLabelService(
             ? job
             : await Jobs(context).FirstOrDefaultAsync(j => j.Number == delNumber && j.ClientId == job.ClientId
                 && (j.RelationshipTypeId == FlightLeg || j.RelationshipTypeId == LinehaulLeg), ct)
-              ?? throw new JobLabelException($"The delivery leg {delNumber} wasn't found, so its label can't be printed yet.");
+              ?? throw new JobLabelException($"The delivery leg {delNumber} wasn't found, or you don't have access to it, so its label can't be printed.");
 
         // The renderer skips void jobs and would fail with an unexplained error.
         if (target.Void)
-            throw new JobLabelException("This job is void, so it has no label to print.");
+            throw new JobLabelException(target == job
+                ? "This job is void, so it has no label to print."
+                : $"The delivery leg {target.Number} is void, so it has no label to print.");
 
         // Only the leg we print matters: a DEL leg we deliver ourselves gets our label even if the trunk went by carrier.
         if (!string.IsNullOrWhiteSpace(target.CarrierConnote))
@@ -60,7 +62,7 @@ public sealed partial class JobLabelService(
                 : JobMode,
             JobId = target.Id,
         });
-        return new JobLabel(pdf, $"Label-{(string.IsNullOrWhiteSpace(target.Number) ? target.Id.ToString() : target.Number)}.pdf");
+        return Label(pdf, target.Number, target.Id);
     }
 
     private async Task<JobLabel?> BulkLabelAsync(DespatchContext context, int bulkJobId, CancellationToken ct)
@@ -89,8 +91,11 @@ public sealed partial class JobLabelService(
             Mode = BulkMode,
             JobId = bulkJobId,
         });
-        return new JobLabel(pdf, $"Label-{(string.IsNullOrWhiteSpace(bulkJob.JobNumber) ? bulkJobId.ToString() : bulkJob.JobNumber)}.pdf");
+        return Label(pdf, bulkJob.JobNumber, bulkJobId);
     }
+
+    private static JobLabel Label(byte[] pdf, string? number, int id) =>
+        new(pdf, $"Label-{(string.IsNullOrWhiteSpace(number) ? id.ToString() : number)}.pdf");
 
     private static Task<int?> SpeedLabelIdAsync(DespatchContext context, int? speedId, CancellationToken ct) =>
         speedId is null or 0

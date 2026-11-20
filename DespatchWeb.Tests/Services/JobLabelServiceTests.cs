@@ -331,4 +331,16 @@ public class JobLabelServiceTests : IAsyncDisposable
         await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(1, isBulk: false, Ct));
         await _alertLabels.DidNotReceive().GeneratePdfAsync(Arg.Any<AlertLabelRequest>());
     }
+
+    [Fact]
+    public async Task VoidDelLeg_IsRefusedNamingTheLeg()
+    {
+        var del = Job(23, "E15EDDEL", parentId: 30, relationshipType: 20);
+        del.UcjbVoid = true;
+        await Seed(Job(21, "E15EDLHP", parentId: 30, relationshipType: 20), del);
+
+        var refusal = await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(21, isBulk: false, Ct));
+
+        Assert.Contains("E15EDDEL", refusal.Message);
+    }
 }

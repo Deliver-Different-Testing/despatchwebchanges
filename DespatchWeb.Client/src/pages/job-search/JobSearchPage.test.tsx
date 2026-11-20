@@ -232,6 +232,23 @@ describe('JobSearchPage', () => {
             expect(openPdf).toHaveBeenCalledWith(label);
         });
 
+        it('replaces an earlier blocked-label toast rather than stacking them', async () => {
+            (printPdf as Mock).mockResolvedValue(false);
+            const dismissFirst = vi.fn();
+            (toastService.showPersistentToast as Mock).mockReturnValueOnce(dismissFirst);
+            const user = setupUser();
+            renderPage();
+            act(() => {
+                mockPanel.onJobSelect.jobSearchJobList?.({jobNo: 'J7', id: 7});
+            });
+            for (let i = 0; i < 2; i++) {
+                await user.click(screen.getByRole('button', {name: 'Job actions'}));
+                await user.click(screen.getByRole('menuitem', {name: 'Print labels'}));
+                await vi.waitFor(() => expect(toastService.showPersistentToast).toHaveBeenCalledTimes(i + 1));
+            }
+            expect(dismissFirst).toHaveBeenCalledOnce();
+        });
+
         it('keeps the loading toast up until printing has started', async () => {
             let finishPrint!: (printed: boolean) => void;
             (printPdf as Mock).mockReturnValue(new Promise(resolve => { finishPrint = resolve; }));

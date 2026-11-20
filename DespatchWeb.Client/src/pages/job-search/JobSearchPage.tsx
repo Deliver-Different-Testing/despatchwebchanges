@@ -395,6 +395,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     }, [showToast, invalidateJob]);
 
     const labelsInFlight = useRef(new Set<string>());
+    const dismissBlockedLabel = useRef<(() => void) | null>(null);
 
     const openSwapPod = useCallback(async (job: DispatchJob) => {
         await (await loadDialog('SwapPods')).open(job.jobNo, {showToast}, job.client);
@@ -490,7 +491,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                             toast.dismiss();
                         }
                         if (!printed) {
-                            toastService.showPersistentToast('Your browser blocked the label.', {
+                            // Only the latest blocked label keeps a toast (and its PDF) alive.
+                            dismissBlockedLabel.current?.();
+                            dismissBlockedLabel.current = toastService.showPersistentToast('Your browser blocked the label.', {
                                 label: 'Open label',
                                 onClick: () => {
                                     if (!openPdf(label)) showToast('Allow pop-ups for this site to open labels.', 'error');
