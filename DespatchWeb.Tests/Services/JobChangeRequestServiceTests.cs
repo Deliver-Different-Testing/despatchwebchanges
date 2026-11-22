@@ -724,6 +724,24 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Recall_outcome_that_cannot_reach_the_sender_fails_the_call_and_a_replay_sends_it_again()
+    {
+        var pairingId = await SeedPairingAsync(clientId: PairingClientId);
+        await SeedJobAsync(partnerPairingId: pairingId, clientId: PairingClientId, status: (int)JobStatus.Accepted);
+        var sourceUuid = Guid.NewGuid();
+        _partnerClient.ForwardAppliedAsync(Arg.Any<int>(), Arg.Any<Guid>(), Arg.Any<decimal?>(), Arg.Any<CancellationToken>())
+            .Returns(new PartnerForwardResult { Success = false, Message = "IM down" }, new PartnerForwardResult { Success = true });
+
+        await Assert.ThrowsAnyAsync<Exception>(() => ReceiveRecallAsync(sourceUuid));
+        var replay = await ReceiveRecallAsync(sourceUuid);
+
+        Assert.True(replay.Success, replay.Message);
+        Assert.Equal("Applied", replay.Request!.Status);
+        await _partnerClient.Received(2).ForwardAppliedAsync(pairingId, sourceUuid, null, Arg.Any<CancellationToken>());
+        await _jobCommandRepository.Received(1).VoidJobAsync(Arg.Any<VoidJobRequest>());
+    }
+
+    [Fact]
     public async Task Recall_from_the_partner_side_is_refused()
     {
         await SeedLinkedJobAsync(inboundCopy: false);

@@ -621,6 +621,23 @@ public sealed class JobChangeRequestService(
                                       && (payload.PairingId == null || r.UjcrPairingId == payload.PairingId), ct);
         if (existing is not null)
         {
+            // A recall whose first delivery failed before it was decided would otherwise stay Pending on every replay.
+            if (existing is { UjcrOrigin: "Peer", UjcrPairingId: { } existingPairingId }
+                && existing.UjcrFieldName == nameof(JobChangeField.Recall))
+            {
+                if (existing.UjcrStatus == JobChangeRequestStatus.Pending)
+                {
+                    ctx.Attach(existing);
+                    await ApplyInboundRecallAsync(ctx, existing, existingPairingId, ct);
+                }
+                else
+                {
+                    // Decided before, but the sender may never have heard: say it again (the sender ignores repeats).
+                    await NotifyRecallOutcomeAsync(existing, existingPairingId,
+                        existing.UjcrStatus == JobChangeRequestStatus.Applied ? null : existing.UjcrReason, ct);
+                }
+            }
+
             return new JobChangeRequestResult { Success = true, Request = ToDto(existing) };
         }
 
@@ -800,15 +817,26 @@ public sealed class JobChangeRequestService(
         row.UjcrRespondedAtUtc = now;
         await ctx.SaveChangesAsync(ct);
 
+        await NotifyRecallOutcomeAsync(row, pairingId, claimed ? null : rejection, ct);
+    }
+
+    /// <summary>
+    /// Throws when the sender can't be told, so the call fails and IM retries it; the replay then lands on the decided
+    /// row and calls this again.
+    /// </summary>
+    private async Task NotifyRecallOutcomeAsync(TucJobChangeRequest row, int pairingId, string? rejection, CancellationToken ct)
+    {
+        var applied = row.UjcrStatus == JobChangeRequestStatus.Applied;
         var decision = await partnerClient.ForwardDecisionAsync(pairingId, row.UjcrSourceRequestUuid,
-            claimed ? "Approved" : "Rejected", rejection, ct);
-        var applied = claimed
+            applied ? "Approved" : "Rejected", rejection, ct);
+        var notice = applied && decision.Success
             ? await partnerClient.ForwardAppliedAsync(pairingId, row.UjcrSourceRequestUuid, null, ct)
             : decision;
-        if (!decision.Success || !applied.Success)
+        if (!decision.Success || !notice.Success)
         {
-            Log.Error("Recall {SourceUuid}: telling the sender the outcome failed: {Message}", row.UjcrSourceRequestUuid,
-                decision.Message ?? applied.Message);
+            throw new InvalidOperationException(
+                $"Recall {row.UjcrSourceRequestUuid} was decided ({row.UjcrStatus}) but the sender couldn't be told: " +
+                (decision.Success ? notice.Message : decision.Message));
         }
     }
 
@@ -910,7 +938,8 @@ public sealed class JobChangeRequestService(
             // The row is already Applied, so a retried notice short-circuits above; failing the call can't help.
             try
             {
-                await partnerLinks.UnlinkAsync(partnerJobGuid, PartnerUnlinkReason.RecallApplied, null, pairingId, ct);
+                await partnerLinks.UnlinkAsync(partnerJobGuid, PartnerUnlinkReason.RecallApplied, null,
+                    pairingId ?? row.UjcrPairingId, ct);
             }
             catch (Exception ex)
             {

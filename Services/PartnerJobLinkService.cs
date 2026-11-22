@@ -105,12 +105,22 @@ public sealed class PartnerJobLinkService(
             }
 
             var partner = partnerName ?? copy.PartnerName;
-            await jobCommands.VoidJobAsync(new VoidJobRequest
+            try
             {
-                JobId = copy.UcjbId,
-                VoidSingleJobOnly = true,
-                VoidReason = $"Partnership with {partner} revoked"
-            });
+                await jobCommands.VoidJobAsync(new VoidJobRequest
+                {
+                    JobId = copy.UcjbId,
+                    VoidSingleJobOnly = true,
+                    VoidReason = $"Partnership with {partner} revoked"
+                });
+            }
+            catch (Exception ex)
+            {
+                // The claim already voided it, so a retried release skips it: carry on rather than strand the rest.
+                Log.Error(ex, "Revoke of pairing {PairingId}: job {JobId} is void but its void clean-up failed",
+                    pairingId, copy.UcjbId);
+            }
+
             voided++;
 
             if (pickedUp)
@@ -129,19 +139,25 @@ public sealed class PartnerJobLinkService(
     /// Marks the job void in one conditional UPDATE, so a pickup landing at the same moment either beats it (0 rows)
     /// or loses to it. The full void (amounts, courier slot, bulk rows) runs only once the claim is won.
     /// </summary>
-    internal static Task<int> ClaimForVoidAsync(DespatchContext ctx, int jobId, bool prePickupOnly, CancellationToken ct) =>
-        ctx.TucJobs
+    internal static Task<int> ClaimForVoidAsync(DespatchContext ctx, int jobId, bool prePickupOnly, CancellationToken ct)
+    {
+        // The void also takes the job's legs (the same family VoidJobAsync resolves), so a leg already under way
+        // counts as picked up.
+        var legsUnderWay = ctx.TucJobs
+            .Where(LiveJobFamily.ChildOf(ctx, jobId))
+            .Where(leg => leg.UcjbId != jobId && !leg.UcjbVoid && leg.UcjbStatus != null
+                          && !PrePickupStatuses.Contains(leg.UcjbStatus.Value));
+
+        return ctx.TucJobs
             .Where(j => j.UcjbId == jobId && !j.UcjbVoid && !j.UcjbJobDone && j.UcjbComplTime == null
                         && (j.UcjbStatus == null || !FinishedStatuses.Contains(j.UcjbStatus.Value)))
             .Where(j => !prePickupOnly
                         || ((j.UcjbStatus == null || PrePickupStatuses.Contains(j.UcjbStatus.Value))
-                            // The void also takes the job's legs, so a leg already under way counts as picked up.
-                            && !ctx.TucJobs.Any(leg => leg.ParentId == jobId && leg.UcjbId != jobId && !leg.UcjbVoid
-                                                       && leg.UcjbStatus != null
-                                                       && !PrePickupStatuses.Contains(leg.UcjbStatus.Value))))
+                            && !legsUnderWay.Any()))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
                 .SetProperty(j => j.UcjbVoid, true), ct);
+    }
 
     private async Task<bool> UnlinkOneAsync(DespatchContext ctx, LinkedJob job, PartnerUnlinkReason reason, string? partnerName,
         CancellationToken ct)
@@ -158,6 +174,8 @@ public sealed class PartnerJobLinkService(
         var strategy = ctx.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
+            // The context is reused across a release; a journey row left Added by a failed attempt must not be saved.
+            ctx.ChangeTracker.Clear();
             await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
             // Guarded on the GUID: whichever channel (status webhook, Applied notice, revoke) arrives first wins, and
