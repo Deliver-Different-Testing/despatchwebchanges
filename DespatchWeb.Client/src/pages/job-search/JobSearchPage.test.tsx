@@ -73,7 +73,7 @@ vi.mock('../../api/preferencesApi', () => ({
 }));
 
 vi.mock('../../components/common/task-history/TaskHistory', () => ({
-    TaskHistory: () => <div data-testid="mock-task-history" />,
+    TaskHistory: ({jobId}: {jobId: number}) => <div data-testid="mock-task-history" data-job-id={jobId} />,
 }));
 
 vi.mock('./components/ScanList', () => ({
@@ -86,6 +86,11 @@ vi.mock('../../components/common/dispatch-map/DispatchMap', () => ({
 
 vi.mock('./hooks/useScanDetail', () => ({
     useScanDetail: () => ({scans: [], isLoading: false, isError: false, refetch: vi.fn()}),
+}));
+
+vi.mock('../../api/jobSearchApi', async () => ({
+    ...(await vi.importActual<typeof import('../../api/jobSearchApi')>('../../api/jobSearchApi')),
+    fetchDispatchBulkJobDetail: vi.fn(() => new Promise(() => {})),
 }));
 
 vi.mock('../../api/jobDetailApi', async () => ({
@@ -111,6 +116,7 @@ import {searchActiveCouriers} from '../../api/courierApi';
 import {MantineTestProvider} from '../../test/utils';
 import {setupUser} from '../../test/utils/setupUser';
 import {getJobLabel} from '../../api/jobDetailApi';
+import {fetchDispatchBulkJobDetail} from '../../api/jobSearchApi';
 import {openPdf, printPdf} from '../../utils/printPdf';
 import {toastService} from '../../services/toastService';
 
@@ -275,6 +281,61 @@ describe('JobSearchPage', () => {
         const detailHeader = screen.getAllByTestId('panel-header')
             .find(header => within(header).queryByText('Detail · J42'));
         expect(detailHeader).toBeDefined();
+    });
+
+    describe('Delivery journey', () => {
+        it("shows a live job's own journey", () => {
+            renderPage();
+            act(() => mockPanel.onJobSelect.jobSearchJobList?.({id: 7, jobNo: 'J7'}));
+            expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '7');
+        });
+
+        it('shows the live job behind a bulk row, never the bulk id read as a live job', () => {
+            renderPage();
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100}));
+            expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '9100');
+        });
+
+        it('picks up the live job from the full bulk detail when the list row lacks it', async () => {
+            (fetchDispatchBulkJobDetail as Mock).mockResolvedValueOnce(
+                {id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100});
+            renderPage();
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true}));
+            expect(await screen.findByTestId('mock-task-history')).toHaveAttribute('data-job-id', '9100');
+        });
+
+        it('follows a newly created job even when it shares an id with the previously selected bulk row', async () => {
+            let bridge: JobSearchLayoutBridge | undefined;
+            renderPage({onLayoutBridgeReady: b => { bridge = b; }});
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100}));
+
+            await act(async () => {
+                bridge!.jobCreated(7782);
+            });
+
+            expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '7782');
+        });
+
+        it('ignores a late bulk detail once a live job with the same id is selected', async () => {
+            let resolveBulk!: (job: unknown) => void;
+            (fetchDispatchBulkJobDetail as Mock).mockReturnValueOnce(new Promise(resolve => { resolveBulk = resolve; }));
+            renderPage();
+
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true}));
+            act(() => mockPanel.onJobSelect.jobSearchJobList?.({id: 7782, jobNo: 'P3776'}));
+            await act(async () => {
+                resolveBulk({id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100});
+            });
+
+            expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '7782');
+        });
+
+        it('explains that a bulk row that has not gone live has no journey yet', () => {
+            renderPage();
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true}));
+            expect(screen.queryByTestId('mock-task-history')).not.toBeInTheDocument();
+            expect(screen.getByText(/hasn't gone live yet/i)).toBeInTheDocument();
+        });
     });
 
     it('renders the default layout: panels, lists, map, box headers, and empty placeholders', () => {

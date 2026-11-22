@@ -31,8 +31,8 @@ const host = createDialogHost<{job: VoidJobDialogJob}, VoidJobResult | null>({
             onClose={() => close(null)}
             onConfirm={close}
             onLoadRelatedJobs={loadRelatedJobs}
-            onVoidJob={(jobId, voidSingleJobOnly, voidReason, selectedJobIds) =>
-                jobApi.voidJob({jobId, voidSingleJobOnly, voidReason, selectedJobIds})}
+            onVoidJob={(jobId, voidSingleJobOnly, voidReason, selectedJobIds, selectedBulkJobIds) =>
+                jobApi.voidJob({jobId, voidSingleJobOnly, voidReason, selectedJobIds, selectedBulkJobIds})}
             onVoidBulkJob={(bulkJobId, voidSingleJobOnly, voidReason, selectedJobIds) =>
                 jobApi.voidBulkJob({bulkJobId, voidSingleJobOnly, voidReason, selectedJobIds})}
             showToast={showToast}

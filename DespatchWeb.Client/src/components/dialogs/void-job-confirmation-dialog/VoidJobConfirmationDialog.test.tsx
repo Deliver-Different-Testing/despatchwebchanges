@@ -114,7 +114,7 @@ describe('VoidJobConfirmationDialog', () => {
         await act(async () => { resolveVoid(); });
 
         await waitFor(() => {
-            expect(props.onVoidJob).toHaveBeenCalledWith(123, true, 'Customer requested cancellation', undefined);
+            expect(props.onVoidJob).toHaveBeenCalledWith(123, true, 'Customer requested cancellation', undefined, undefined);
             expect(props.showToast).toHaveBeenCalledWith('JOB-001 voided', 'success');
             expect(props.onConfirm).toHaveBeenCalledWith({success: true, voidedCount: 1});
         });
@@ -264,12 +264,66 @@ describe('VoidJobConfirmationDialog', () => {
         await userEvent.click(screen.getByRole('button', {name: /void 2 jobs/i}));
 
         await waitFor(() => {
-            expect(props.onVoidJob).toHaveBeenCalledWith(123, false, 'Multi-void reason', [123, 124]);
+            expect(props.onVoidJob).toHaveBeenCalledWith(123, false, 'Multi-void reason', [123, 124], []);
             expect(props.showToast).toHaveBeenCalledWith('2 jobs voided', 'success');
         });
     });
 
     // ── State Reset ─────────────────────────────────────────────────
+    it('sends a live leg and its booking\'s bulk rows as separate id lists', async () => {
+        const props = createMockProps({
+            job: {id: 9001, jobNo: 'E901BIOLH1', isBulkJob: false, isArchived: false},
+            onLoadRelatedJobs: vi.fn().mockResolvedValue([
+                {id: 9001, text: 'E901BIOLH1', selected: true},
+                {id: 7782, text: 'E901BIO', selected: false, isBulkJob: true},
+                {id: 7783, text: 'E901BIOLHP', selected: false, isBulkJob: true},
+            ]),
+        });
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+
+        fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Booking cancelled'}});
+        await userEvent.click(screen.getByRole('switch'));
+        expect(await screen.findByText('E901BIO')).toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', {name: /^select all$/i}));
+        await userEvent.click(screen.getByRole('button', {name: /void 3 jobs/i}));
+
+        await waitFor(() => {
+            expect(props.onVoidJob).toHaveBeenCalledWith(9001, false, 'Booking cancelled', [9001], [7782, 7783]);
+        });
+    });
+
+    it("shows the server's reason when a void is refused", async () => {
+        const props = createMockProps({
+            onVoidJob: vi.fn().mockRejectedValue(
+                new Error("Some of the selected jobs aren't part of this booking. Refresh and try again.")),
+        });
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+
+        fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Cancelled'}});
+        await userEvent.click(screen.getByRole('button', {name: /void job/i}));
+
+        await waitFor(() => expect(props.showToast).toHaveBeenCalledWith(
+            "Some of the selected jobs aren't part of this booking. Refresh and try again.", 'error'));
+    });
+
+    it('keeps a live job and a bulk row that share an id as separate choices', async () => {
+        renderWithTheme(<VoidJobConfirmationDialog {...createMockProps({
+            onLoadRelatedJobs: vi.fn().mockResolvedValue([
+                {id: 123, text: 'JOB-001', selected: true},
+                {id: 7782, text: 'P3776', selected: false},
+                {id: 7782, text: 'E901BIO', selected: false, isBulkJob: true},
+            ]),
+        })} />);
+
+        await userEvent.click(screen.getByRole('switch'));
+        await userEvent.click(await screen.findByRole('checkbox', {name: /E901BIO/}));
+
+        expect(screen.getByRole('checkbox', {name: /E901BIO/})).toBeChecked();
+        expect(screen.getByRole('checkbox', {name: /P3776/})).not.toBeChecked();
+        expect(screen.getByRole('button', {name: /void 2 jobs/i})).toBeInTheDocument();
+    });
+
     it('resets state when dialog reopens', async () => {
         const props = createMockProps();
         const {rerender} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
