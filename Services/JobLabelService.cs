@@ -28,7 +28,7 @@ public sealed partial class JobLabelService(
 
     private async Task<JobLabel?> JobLabelAsync(DespatchContext context, int jobId, CancellationToken ct)
     {
-        // Every lookup goes through the EF scope filters: the renderer reads the DB directly and bypasses them.
+        // Job lookups go through the EF scope filters: the renderer (and the template function) read the DB directly and bypass them.
         var job = await Jobs(context).FirstOrDefaultAsync(j => j.Id == jobId, ct);
         if (job is null) return null;
 
