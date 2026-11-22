@@ -89,9 +89,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
     const [currentJobId, setCurrentJobId] = useState<number | undefined>();
     const [isBulkJob, setIsBulkJob] = useState(false);
-    // A bulk row's id is a BulkJobId, which the journey endpoint would read as an unrelated live job,
-    // so the journey follows the row's live job (linkedJobId) and is empty until it has one.
-    const [journeyJobId, setJourneyJobId] = useState<number | undefined>();
     // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
     // layout column stepper in the shell and each list's column editor.
     const [columnEditMode, setColumnEditMode] = useState(false);
@@ -141,9 +138,14 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         setCurrentJob(job);          // optimistic: show the list row immediately
         setCurrentJobId(job.id);
         setIsBulkJob(bulk);
-        setJourneyJobId(bulk || job.isBulkJob ? job.linkedJobId : job.id);
         loadFullDetail(job.id, bulk); // then upgrade to the full detail record
     }, [loadFullDetail]);
+
+    // A bulk row's id is a BulkJobId, which the journey endpoint would read as an unrelated live job,
+    // so the journey follows the row's live job (linkedJobId) and is empty until it has one. Derived
+    // from currentJob so it picks up a linkedJobId that only the full detail record carries.
+    const selectedRow = currentJob?.id === currentJobId ? currentJob : undefined;
+    const journeyJobId = isBulkJob || selectedRow?.isBulkJob ? selectedRow?.linkedJobId : currentJobId;
 
     useDeepLinkJob({
         deepLinkJobId,
@@ -154,7 +156,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             selectedIdRef.current = jobId;
             setCurrentJobId(jobId);
             setIsBulkJob(false);
-            setJourneyJobId(jobId);
             loadFullDetail(jobId, false);
         },
     });
@@ -165,7 +166,6 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         selectedIdRef.current = jobId;
         setCurrentJobId(jobId);
         setIsBulkJob(false);
-        setJourneyJobId(jobId);
         loadFullDetail(jobId, false);
     }, [loadFullDetail]);
 

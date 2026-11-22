@@ -116,6 +116,7 @@ import {searchActiveCouriers} from '../../api/courierApi';
 import {MantineTestProvider} from '../../test/utils';
 import {setupUser} from '../../test/utils/setupUser';
 import {getJobLabel} from '../../api/jobDetailApi';
+import {fetchDispatchBulkJobDetail} from '../../api/jobSearchApi';
 import {openPdf, printPdf} from '../../utils/printPdf';
 import {toastService} from '../../services/toastService';
 
@@ -293,6 +294,14 @@ describe('JobSearchPage', () => {
             renderPage();
             act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100}));
             expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '9100');
+        });
+
+        it('picks up the live job from the full bulk detail when the list row lacks it', async () => {
+            (fetchDispatchBulkJobDetail as Mock).mockResolvedValueOnce(
+                {id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100});
+            renderPage();
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true}));
+            expect(await screen.findByTestId('mock-task-history')).toHaveAttribute('data-job-id', '9100');
         });
 
         it('explains that a bulk row that has not gone live has no journey yet', () => {

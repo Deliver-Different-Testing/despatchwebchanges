@@ -1321,7 +1321,10 @@ public partial class BaseJobRepository(
             var effectiveArchiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
 
             var archivedData = await Context.TucJobArchives
-                .Where(j => j.UcjbId == effectiveArchiveJobId || j.ParentId == effectiveArchiveJobId)
+                .Where(j => j.UcjbId == effectiveArchiveJobId
+                            || j.UcjbId == jobId
+                            || (j.ParentId == effectiveArchiveJobId
+                                && (j.BulkParentId == null || j.ParentId != j.BulkParentId)))
                 .Select(j => new MultiSuggestion
                 {
                     Id = j.UcjbId,

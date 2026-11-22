@@ -17,4 +17,8 @@ public static class LiveJobFamily
     /// <summary>A live child of <paramref name="parentJobId"/>, ignoring legs whose ParentId is a bulk id.</summary>
     public static Expression<Func<TucJob, bool>> ChildOf(int parentJobId) =>
         j => j.ParentId == parentJobId && (j.BulkParentId == null || j.ParentId != j.BulkParentId);
+
+    /// <summary>An archived child of <paramref name="parentJobId"/>, ignoring legs whose ParentId is a bulk id.</summary>
+    public static Expression<Func<TucJobArchive, bool>> ArchivedChildOf(int parentJobId) =>
+        j => j.ParentId == parentJobId && (j.BulkParentId == null || j.ParentId != j.BulkParentId);
 }

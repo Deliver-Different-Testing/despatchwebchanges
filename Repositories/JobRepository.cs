@@ -1067,6 +1067,12 @@ public partial class JobRepository(
     {
         try
         {
+            if (data.SelectedJobIds is { Count: > 0 })
+            {
+                var family = await GetRelatedJobsMultiSelectListAsync(data.JobId, true);
+                EnsureSubsetOf(data.SelectedJobIds, family.Select(f => f.Id));
+            }
+
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
                 ? data.SelectedJobIds
                 : data.VoidSingleJobOnly
@@ -5210,7 +5216,7 @@ public partial class JobRepository(
             return [data.JobId];
         }
 
-        var liveParentId = job == null ? null : await Context.GetJobParentIdAsync(data.JobId);
+        var liveParentId = await Context.GetJobParentIdAsync(data.JobId);
         if (role == JobLegRole.FinalMileDelivery && liveParentId is { } parentId)
         {
             var upstreamAlreadyMoving = await Context.TucJobs
@@ -6164,6 +6170,7 @@ public partial class JobRepository(
             .ToListAsync();
 
         relatedJobIds.Add(rootId);
+        relatedJobIds.Add(jobId);
         return relatedJobIds.Distinct().ToList();
     }
 
@@ -6227,7 +6234,7 @@ public partial class JobRepository(
     private async Task<IReadOnlyList<int>> GetArchivedJobWithChildrenAsync(int jobId)
     {
         var childIds = await Context.TucJobArchives
-            .Where(j => j.ParentId == jobId)
+            .Where(LiveJobFamily.ArchivedChildOf(jobId))
             .Select(j => j.UcjbId)
             .TagWith($"GetArchivedJobWithChildren - Get children for archived job {jobId}")
             .ToListAsync();
@@ -6241,27 +6248,20 @@ public partial class JobRepository(
     /// </summary>
     private async Task<IReadOnlyList<int>> GetAllRelatedArchivedJobIdsIncludingParentAsync(int jobId)
     {
-        var jobWithRelations = await Context.TucJobArchives
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                j.ParentId,
-                RelatedJobIds = j.ParentId.HasValue
-                    ? j.Parent.InverseParent.Select(child => child.UcjbId).ToList()
-                    : j.InverseParent.Select(child => child.UcjbId).ToList()
-            })
-            .FirstOrDefaultAsync();
-
-        if (jobWithRelations == null)
+        if (!await Context.TucJobArchives.AnyAsync(j => j.UcjbId == jobId))
         {
             return [];
         }
 
-        var relatedJobIds = jobWithRelations.RelatedJobIds;
+        var rootId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+        var relatedJobIds = await Context.TucJobArchives
+            .Where(LiveJobFamily.ArchivedChildOf(rootId))
+            .Select(j => j.UcjbId)
+            .ToListAsync();
 
-        relatedJobIds.Add(jobWithRelations.ParentId ?? jobId);
-
-        return relatedJobIds;
+        relatedJobIds.Add(rootId);
+        relatedJobIds.Add(jobId);
+        return relatedJobIds.Distinct().ToList();
     }
 
     private async Task SetJobAsManuallyPriceAsync(int jobId,

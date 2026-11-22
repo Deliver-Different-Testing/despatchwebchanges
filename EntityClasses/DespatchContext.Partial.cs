@@ -73,7 +73,13 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives
                 .Where(j => j.UcjbId == jobId)
-                .Select(j => j.ParentId ?? j.UcjbId)
+                .Select(j => j.BulkParentId != null && j.ParentId == j.BulkParentId
+                    ? context.TblBulkJobs
+                        .Where(b => b.BulkJobId == j.BulkParentId
+                                    && context.TucJobArchives.Any(p => p.UcjbId == b.JobId))
+                        .Select(b => b.JobId)
+                        .FirstOrDefault() ?? j.UcjbId
+                    : j.ParentId ?? j.UcjbId)
                 .FirstOrDefault());
 
     // A leg released from bulk before its parent keeps the parent's tblBulkJob id in ParentId, so the
@@ -84,7 +90,8 @@ public partial class DespatchContext
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => (int?)(j.BulkParentId != null && j.ParentId == j.BulkParentId
                     ? context.TblBulkJobs
-                        .Where(b => b.BulkJobId == j.BulkParentId)
+                        .Where(b => b.BulkJobId == j.BulkParentId
+                                    && context.TucJobs.Any(p => p.UcjbId == b.JobId))
                         .Select(b => b.JobId)
                         .FirstOrDefault() ?? j.UcjbId
                     : j.ParentId != null && context.TucJobs.Any(p => p.UcjbId == j.ParentId)
@@ -96,9 +103,15 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives
                 .Where(j => j.UcjbId == jobId)
-                .Select(j => (int?)(j.ParentId != null && context.TucJobArchives.Any(p => p.UcjbId == j.ParentId)
-                    ? j.ParentId.Value
-                    : j.UcjbId))
+                .Select(j => (int?)(j.BulkParentId != null && j.ParentId == j.BulkParentId
+                    ? context.TblBulkJobs
+                        .Where(b => b.BulkJobId == j.BulkParentId
+                                    && context.TucJobArchives.Any(p => p.UcjbId == b.JobId))
+                        .Select(b => b.JobId)
+                        .FirstOrDefault() ?? j.UcjbId
+                    : j.ParentId != null && context.TucJobArchives.Any(p => p.UcjbId == j.ParentId)
+                        ? j.ParentId.Value
+                        : j.UcjbId))
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveBulkJobIdCompiled =

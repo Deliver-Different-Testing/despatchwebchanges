@@ -260,6 +260,114 @@ public class JobRepositoryBulkIdCollisionTests : IAsyncDisposable
         Assert.False(await assertContext.TblBulkJobs.AnyAsync(b => b.Void, TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task VoidJobAsync_WholeFamilyOfALegWhoseParentWasReleasedButNotRepointed_IncludesThatLeg()
+    {
+        // Arrange - not a linehaul leg, so the whole-family path runs
+        await using (var context = _db.CreateContext())
+        {
+            var leg = Job(LiveLeg, "E901BIOA", parentId: BulkParentId);
+            leg.BulkParentId = BulkParentId;
+            context.TucJobs.AddRange(Job(BulkParentId, "P3776"), Job(9100, "E901BIO"), leg);
+            context.TblBulkJobs.Add(BulkJob(BulkParentId, "E901BIO", jobId: 9100));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        // Act
+        await CreateRepository().VoidJobAsync(new VoidJobRequest
+        {
+            JobId = LiveLeg,
+            VoidReason = "Cancelled",
+            VoidSingleJobOnly = false
+        });
+
+        // Assert
+        await using var assertContext = _db.CreateContext();
+        var jobs = await assertContext.TucJobs.ToDictionaryAsync(j => j.UcjbId, TestContext.Current.CancellationToken);
+        Assert.True(jobs[LiveLeg].UcjbVoid);
+        Assert.True(jobs[9100].UcjbVoid);
+        Assert.False(jobs[BulkParentId].UcjbVoid);
+    }
+
+    private async Task SeedArchivedCollisionAsync()
+    {
+        await using var context = _db.CreateContext();
+
+        context.TucJobArchives.AddRange(UnrelatedLiveFamily.Select(id =>
+            ArchivedJob(id, id == 7782 ? "P3776" : $"P3776-{id}", parentId: 7782)));
+
+        var leg = ArchivedJob(LiveLeg, "E901BIOLH1", parentId: BulkParentId);
+        leg.BulkParentId = BulkParentId;
+        context.TucJobArchives.Add(leg);
+
+        context.TblBulkJobs.Add(BulkJob(BulkParentId, "E901BIO"));
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetRelatedJobsMultiSelectListAsync_ArchivedLegWithParkedParent_DoesNotListTheCollidingFamily()
+    {
+        // Arrange
+        await SeedArchivedCollisionAsync();
+
+        // Act
+        var related = await CreateRepository().GetRelatedJobsMultiSelectListAsync(LiveLeg, true);
+
+        // Assert
+        Assert.Equal(["E901BIOLH1"], related.Select(r => r.Text));
+    }
+
+    [Fact]
+    public async Task VoidArchivedJobAsync_SelectionOutsideTheBooking_IsRejectedAndNothingIsVoided()
+    {
+        // Arrange
+        await SeedArchivedCollisionAsync();
+
+        // Act
+        var act = () => CreateRepository().VoidArchivedJobAsync(new VoidJobRequest
+        {
+            JobId = LiveLeg,
+            VoidReason = "Cancelled",
+            VoidSingleJobOnly = false,
+            SelectedJobIds = [LiveLeg, .. UnrelatedLiveFamily]
+        });
+
+        // Assert
+        await Assert.ThrowsAsync<VoidSelectionException>(act);
+        await using var assertContext = _db.CreateContext();
+        Assert.False(await assertContext.TucJobArchives.AnyAsync(j => j.UcjbVoid, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task VoidArchivedJobAsync_UnrelatedParentWithChildren_DoesNotSweepInALegPointingAtTheBulkId()
+    {
+        // Arrange
+        await SeedArchivedCollisionAsync();
+
+        // Act
+        await CreateRepository().VoidArchivedJobAsync(new VoidJobRequest
+        {
+            JobId = 7782,
+            VoidReason = "Cancelled",
+            VoidSingleJobOnly = true
+        });
+
+        // Assert
+        await using var assertContext = _db.CreateContext();
+        var jobs = await assertContext.TucJobArchives.ToDictionaryAsync(j => j.UcjbId, TestContext.Current.CancellationToken);
+        Assert.All(UnrelatedLiveFamily, id => Assert.True(jobs[id].UcjbVoid));
+        Assert.False(jobs[LiveLeg].UcjbVoid);
+    }
+
+    private static TucJobArchive ArchivedJob(int id, string jobNumber, int? parentId = null) =>
+        new()
+        {
+            UcjbId = id,
+            UcjbNumber = jobNumber,
+            UcjbStatus = (int)JobStatus.Completed,
+            ParentId = parentId ?? id
+        };
+
     private static TucJob Job(int id, string jobNumber, int? parentId = null) =>
         new()
         {
