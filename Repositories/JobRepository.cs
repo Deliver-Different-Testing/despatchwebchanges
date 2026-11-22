@@ -1067,10 +1067,12 @@ public partial class JobRepository(
     {
         try
         {
-            if (data.SelectedJobIds is { Count: > 0 })
+            if (data.SelectedJobIds is { Count: > 0 } || data.SelectedBulkJobIds is { Count: > 0 })
             {
+                // An archived family lists no bulk rows, so any bulk selection is refused rather than dropped.
                 var family = await GetRelatedJobsMultiSelectListAsync(data.JobId, true);
-                EnsureSubsetOf(data.SelectedJobIds, family.Select(f => f.Id));
+                EnsureSubsetOf(data.SelectedJobIds ?? [], family.Select(f => f.Id));
+                EnsureSubsetOf(data.SelectedBulkJobIds ?? [], []);
             }
 
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }

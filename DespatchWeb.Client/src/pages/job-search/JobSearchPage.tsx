@@ -63,6 +63,8 @@ import {openPdf, printPdf} from '../../utils/printPdf';
 import {getJobLabel} from '../../api/jobDetailApi';
 import {toastService} from '../../services/toastService';
 
+const selectionKey = (id: number, bulk: boolean): string => `${bulk ? 'bulk' : 'job'}:${id}`;
+
 export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                                                                 showToast,
                                                                 isUsCustomer,
@@ -113,9 +115,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const updateMainParamsRef = useRef<((p: Partial<JobListSearchParams>) => void) | null>(null);
     const updateBulkParamsRef = useRef<((p: Partial<JobListSearchParams>) => void) | null>(null);
 
-    // Tracks the currently-selected job id so async detail fetches only apply
-    // if the operator hasn't moved on to another job in the meantime.
-    const selectedIdRef = useRef<number | undefined>(undefined);
+    // Tracks the current selection so async detail fetches only apply if the operator hasn't moved on.
+    // Keyed by kind as well as id: bulk ids overlap live job ids.
+    const selectedIdRef = useRef<string | undefined>(undefined);
 
     // Fetch the full dispatch-shaped job detail (matches V1 selectJobDetail /
     // selectBulkJobDetail). Job action availability and the ScanList run date
@@ -125,7 +127,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         const request = bulk ? fetchDispatchBulkJobDetail(jobId) : getDispatchJobDetail(jobId);
         request
             .then(full => {
-                if (full && selectedIdRef.current === jobId) setCurrentJob(full);
+                if (full && selectedIdRef.current === selectionKey(jobId, bulk)) setCurrentJob(full);
             })
             .catch(err => {
                 console.error('[JobSearchPage] Failed to load job detail:', err);
@@ -134,7 +136,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     }, [showToast]);
 
     const selectJob = useCallback((job: DispatchJob, bulk: boolean) => {
-        selectedIdRef.current = job.id;
+        selectedIdRef.current = selectionKey(job.id, bulk);
         setCurrentJob(job);          // optimistic: show the list row immediately
         setCurrentJobId(job.id);
         setIsBulkJob(bulk);
@@ -153,7 +155,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             // Deep-link gives us only the id. Fetch the full detail so the
             // job-detail panel, actions menu and ScanList (booked run date) have real
             // data instead of waiting for the list results to land.
-            selectedIdRef.current = jobId;
+            selectedIdRef.current = selectionKey(jobId, false);
             setCurrentJob(undefined);   // the previous row is not this job, even if the ids match
             setCurrentJobId(jobId);
             setIsBulkJob(false);
@@ -164,7 +166,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     // A job created from the toolbar won't be in the current results, so open it
     // by id the same way a deep link does rather than waiting for the list.
     const jobCreated = useCallback((jobId: number) => {
-        selectedIdRef.current = jobId;
+        selectedIdRef.current = selectionKey(jobId, false);
         setCurrentJob(undefined);   // the previous row is not this job, even if the ids match
         setCurrentJobId(jobId);
         setIsBulkJob(false);

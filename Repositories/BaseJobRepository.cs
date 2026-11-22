@@ -1372,7 +1372,30 @@ public partial class BaseJobRepository(
             .TagWith($"GetRelatedJobs - Live Family {effectiveLiveJobId}")
             .ToListAsync();
 
-        return liveData;
+        // A booking released from bulk can still have legs waiting in tblBulkJob; they belong to it too.
+        var bulkFamilyRootId = await Context.TblBulkJobs
+            .Where(b => b.JobId == effectiveLiveJobId)
+            .Select(BulkJobFamily.RootIdOf)
+            .FirstOrDefaultAsync();
+
+        if (bulkFamilyRootId == 0)
+        {
+            return liveData;
+        }
+
+        var unreleasedBulkRows = await Context.TblBulkJobs
+            .Where(BulkJobFamily.MemberOf(bulkFamilyRootId))
+            .Where(b => b.JobId == null)
+            .Select(b => new MultiSuggestion
+            {
+                Id = b.BulkJobId,
+                Text = b.JobNumber,
+                IsBulkJob = true
+            })
+            .TagWith($"GetRelatedJobs - Unreleased bulk rows of {bulkFamilyRootId}")
+            .ToListAsync();
+
+        return [.. liveData, .. unreleasedBulkRows];
     }
 
     /// <summary>
@@ -1382,7 +1405,8 @@ public partial class BaseJobRepository(
     private async Task<IReadOnlyList<MultiSuggestion>> GetParkedBookingFamilyAsync(int jobId, int bulkParentId)
     {
         var liveLegs = await Context.TucJobs
-            .Where(j => j.BulkParentId == bulkParentId && j.ParentId == bulkParentId)
+            .Where(LiveJobFamily.HasParkedBulkParent)
+            .Where(j => j.BulkParentId == bulkParentId)
             .Select(j => new MultiSuggestion
             {
                 Id = j.UcjbId,

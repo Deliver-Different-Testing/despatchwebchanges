@@ -353,6 +353,42 @@ public class JobRepositoryBulkIdCollisionTests : IAsyncDisposable
         Assert.False(jobs[LiveLeg].UcjbVoid);
     }
 
+    [Fact]
+    public async Task GetRelatedJobsMultiSelectListAsync_ReleasedParent_StillListsTheBookingsUnreleasedBulkRows()
+    {
+        // Arrange - parent released as 9100; LH2 and DEL have not gone live yet
+        await SeedCollisionAsync(releasedParentJobId: 9100);
+
+        // Act
+        var related = await CreateRepository().GetRelatedJobsMultiSelectListAsync(9100, false);
+
+        // Assert
+        Assert.Equal(["E901BIO", "E901BIOLH1"], related.Where(r => !r.IsBulkJob).Select(r => r.Text).Order());
+        Assert.Equal(["E901BIODEL", "E901BIOLH2", "E901BIOLHP"], related.Where(r => r.IsBulkJob).Select(r => r.Text).Order());
+    }
+
+    [Fact]
+    public async Task VoidArchivedJobAsync_BulkSelection_IsRejectedRatherThanDropped()
+    {
+        // Arrange
+        await SeedArchivedCollisionAsync();
+
+        // Act
+        var act = () => CreateRepository().VoidArchivedJobAsync(new VoidJobRequest
+        {
+            JobId = LiveLeg,
+            VoidReason = "Cancelled",
+            VoidSingleJobOnly = false,
+            SelectedJobIds = [LiveLeg],
+            SelectedBulkJobIds = [BulkParentId]
+        });
+
+        // Assert
+        await Assert.ThrowsAsync<VoidSelectionException>(act);
+        await using var assertContext = _db.CreateContext();
+        Assert.False(await assertContext.TucJobArchives.AnyAsync(j => j.UcjbVoid, TestContext.Current.CancellationToken));
+    }
+
     private async Task SeedArchivedCollisionAsync()
     {
         await using var context = _db.CreateContext();

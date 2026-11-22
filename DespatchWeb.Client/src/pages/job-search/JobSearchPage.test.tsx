@@ -316,6 +316,20 @@ describe('JobSearchPage', () => {
             expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '7782');
         });
 
+        it('ignores a late bulk detail once a live job with the same id is selected', async () => {
+            let resolveBulk!: (job: unknown) => void;
+            (fetchDispatchBulkJobDetail as Mock).mockReturnValueOnce(new Promise(resolve => { resolveBulk = resolve; }));
+            renderPage();
+
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true}));
+            act(() => mockPanel.onJobSelect.jobSearchJobList?.({id: 7782, jobNo: 'P3776'}));
+            await act(async () => {
+                resolveBulk({id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100});
+            });
+
+            expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '7782');
+        });
+
         it('explains that a bulk row that has not gone live has no journey yet', () => {
             renderPage();
             act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true}));
