@@ -52,7 +52,7 @@ public sealed class InternalPartnerController(IJobChangeRequestService changeReq
             return BadRequest(new { error = "invalid_request" });
         }
 
-        var outcome = await links.UnlinkAsync(guid, reason, request.PartnerName, ct);
+        var outcome = await links.UnlinkAsync(guid, reason, request.PartnerName, AuthenticatedPairingId, ct);
         return Ok(new { outcome = outcome == PartnerUnlinkOutcome.Unlinked ? "unlinked" : "not_found" });
     }
 
@@ -62,6 +62,11 @@ public sealed class InternalPartnerController(IJobChangeRequestService changeReq
         if (!Enum.TryParse<PartnerReleaseScope>(request?.Scope, ignoreCase: true, out var scope) || !Enum.IsDefined(scope))
         {
             return BadRequest(new { error = "invalid_request" });
+        }
+
+        if (AuthenticatedPairingId is { } authenticated && authenticated != pairingId)
+        {
+            return NotFound();
         }
 
         var result = await links.ReleaseAsync(pairingId, scope, request!.PartnerName, ct);

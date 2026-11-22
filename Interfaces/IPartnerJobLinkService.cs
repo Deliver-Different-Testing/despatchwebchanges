@@ -27,7 +27,9 @@ public sealed record PartnerReleaseResult(int Unlinked, int Voided, int VoidedAf
 /// </summary>
 public interface IPartnerJobLinkService
 {
-    Task<PartnerUnlinkOutcome> UnlinkAsync(Guid partnerJobGuid, PartnerUnlinkReason reason, string? partnerName, CancellationToken ct);
+    /// <param name="pairingId">When set, only a job on this pairing is unlinked.</param>
+    Task<PartnerUnlinkOutcome> UnlinkAsync(Guid partnerJobGuid, PartnerUnlinkReason reason, string? partnerName, int? pairingId,
+        CancellationToken ct);
 
     Task<PartnerReleaseResult> ReleaseAsync(int pairingId, PartnerReleaseScope scope, string? partnerName, CancellationToken ct);
 }

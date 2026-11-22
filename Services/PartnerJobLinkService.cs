@@ -24,15 +24,15 @@ public sealed class PartnerJobLinkService(
         (int)JobStatus.ReadyToPickup, (int)JobStatus.AwaitingProcessing, (int)JobStatus.Preassigned
     ];
 
-    private static readonly int[] FinishedStatuses =
+    internal static readonly int[] FinishedStatuses =
         [(int)JobStatus.Completed, (int)JobStatus.AssumingCompleted, (int)JobStatus.Void];
 
     public async Task<PartnerUnlinkOutcome> UnlinkAsync(Guid partnerJobGuid, PartnerUnlinkReason reason, string? partnerName,
-        CancellationToken ct)
+        int? pairingId, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
         var job = await ctx.TucJobs
-            .Where(j => j.PartnerJobGuid == partnerJobGuid)
+            .Where(j => j.PartnerJobGuid == partnerJobGuid && (pairingId == null || j.PartnerPairingId == pairingId))
             .Where(PartnerJobDirection.IsOutbound)
             .Select(j => new LinkedJob(j.UcjbId, j.UcjbNumber, partnerJobGuid, j.PartnerPairing.PartnerTenantName))
             .FirstOrDefaultAsync(ct);
@@ -133,7 +133,12 @@ public sealed class PartnerJobLinkService(
         ctx.TucJobs
             .Where(j => j.UcjbId == jobId && !j.UcjbVoid && !j.UcjbJobDone && j.UcjbComplTime == null
                         && (j.UcjbStatus == null || !FinishedStatuses.Contains(j.UcjbStatus.Value)))
-            .Where(j => !prePickupOnly || j.UcjbStatus == null || PrePickupStatuses.Contains(j.UcjbStatus.Value))
+            .Where(j => !prePickupOnly
+                        || ((j.UcjbStatus == null || PrePickupStatuses.Contains(j.UcjbStatus.Value))
+                            // The void also takes the job's legs, so a leg already under way counts as picked up.
+                            && !ctx.TucJobs.Any(leg => leg.ParentId == jobId && leg.UcjbId != jobId && !leg.UcjbVoid
+                                                       && leg.UcjbStatus != null
+                                                       && !PrePickupStatuses.Contains(leg.UcjbStatus.Value))))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.UcjbStatus, (int)JobStatus.Void)
                 .SetProperty(j => j.UcjbVoid, true), ct);

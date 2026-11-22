@@ -198,7 +198,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             onConfirm: async () => {
                 try {
                     const result = await jobChangeRequestApi.create({jobId: activeJob.id, fieldName: 'Recall'});
-                    if (result.success) {
+                    if (result.success && result.peerForwardWarning) {
+                        showToast(`Recall saved, but ${partner} was not notified (${result.peerForwardWarning}). Contact support.`, 'warning');
+                        refresh();
+                    } else if (result.success) {
                         showToast(`Recall sent to ${partner}. ${activeJob.jobNo} comes back to your dispatch once they accept.`, 'info');
                         refresh();
                     } else {

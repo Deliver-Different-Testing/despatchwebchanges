@@ -86,7 +86,7 @@ public class PartnerJobLinkServiceTests : IAsyncDisposable
         await SeedPairingsAsync();
         var guid = await SeedJobAsync(1, inboundCopy: false);
 
-        var outcome = await Service().UnlinkAsync(guid, PartnerUnlinkReason.PartnerVoided, "OTG Cargo", TestContext.Current.CancellationToken);
+        var outcome = await Service().UnlinkAsync(guid, PartnerUnlinkReason.PartnerVoided, "OTG Cargo", null, TestContext.Current.CancellationToken);
 
         Assert.Equal(PartnerUnlinkOutcome.Unlinked, outcome);
         var job = await JobAsync(1);
@@ -110,8 +110,8 @@ public class PartnerJobLinkServiceTests : IAsyncDisposable
         var manual = await SeedJobAsync(2, inboundCopy: false);
         _queries.GetJobDetailsForRatingAsync(2).Returns(new JobRatingDetailsDto { IsManuallyRated = true });
 
-        await Service().UnlinkAsync(rated, PartnerUnlinkReason.RecallApplied, null, TestContext.Current.CancellationToken);
-        await Service().UnlinkAsync(manual, PartnerUnlinkReason.RecallApplied, null, TestContext.Current.CancellationToken);
+        await Service().UnlinkAsync(rated, PartnerUnlinkReason.RecallApplied, null, null, TestContext.Current.CancellationToken);
+        await Service().UnlinkAsync(manual, PartnerUnlinkReason.RecallApplied, null, null, TestContext.Current.CancellationToken);
 
         await _rating.Received(1).RateJobUsAsync(Arg.Any<JobRatingDetailsDto>());
     }
@@ -122,8 +122,8 @@ public class PartnerJobLinkServiceTests : IAsyncDisposable
         await SeedPairingsAsync();
         var guid = await SeedJobAsync(1, inboundCopy: false);
 
-        await Service().UnlinkAsync(guid, PartnerUnlinkReason.PartnerVoided, null, TestContext.Current.CancellationToken);
-        var second = await Service().UnlinkAsync(guid, PartnerUnlinkReason.RecallApplied, null, TestContext.Current.CancellationToken);
+        await Service().UnlinkAsync(guid, PartnerUnlinkReason.PartnerVoided, null, null, TestContext.Current.CancellationToken);
+        var second = await Service().UnlinkAsync(guid, PartnerUnlinkReason.RecallApplied, null, null, TestContext.Current.CancellationToken);
 
         Assert.Equal(PartnerUnlinkOutcome.NotFound, second);
         await _tasks.Received(1).AddEventAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int>());
@@ -135,7 +135,7 @@ public class PartnerJobLinkServiceTests : IAsyncDisposable
         await SeedPairingsAsync();
         var guid = await SeedJobAsync(1, inboundCopy: true);
 
-        var outcome = await Service().UnlinkAsync(guid, PartnerUnlinkReason.PartnerVoided, null, TestContext.Current.CancellationToken);
+        var outcome = await Service().UnlinkAsync(guid, PartnerUnlinkReason.PartnerVoided, null, null, TestContext.Current.CancellationToken);
 
         Assert.Equal(PartnerUnlinkOutcome.NotFound, outcome);
         Assert.Equal(guid, (await JobAsync(1)).PartnerJobGuid);
@@ -182,6 +182,40 @@ public class PartnerJobLinkServiceTests : IAsyncDisposable
         await _tasks.DidNotReceive().AddEventAsync(1, Arg.Any<string>(), Arg.Any<int>());
         Assert.False((await JobAsync(4)).UcjbVoid);
         Assert.False((await JobAsync(5)).UcjbVoid);
+    }
+
+    [Fact]
+    public async Task ReleaseInbound_TreatsACopyWithAPickedUpLegAsPickedUp()
+    {
+        await SeedPairingsAsync();
+        await SeedJobAsync(1, inboundCopy: true, status: JobStatus.Dispatched);
+        await using (var ctx = _db.CreateContext())
+        {
+            ctx.TucJobs.Add(new TucJob
+            {
+                UcjbId = 2, UcjbNumber = "JOB-1-L1", UcjbDate = DateTime.UtcNow, ParentId = 1,
+                UcjbStatus = (int)JobStatus.PickedUp, UcjbClientId = PairingClientId
+            });
+            await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var result = await Service().ReleaseAsync(PairingId, PartnerReleaseScope.Inbound, "Medical", TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, result.VoidedAfterPickup);
+        await _tasks.Received(1).AddEventAsync(1, Arg.Is<string>(n => n.Contains("picked up")), (int)EventType.Other);
+    }
+
+    [Fact]
+    public async Task Unlink_RefusesAJobOnAnotherPairingThanTheCallerNamed()
+    {
+        await SeedPairingsAsync();
+        var guid = await SeedJobAsync(1, inboundCopy: false);
+
+        var outcome = await Service().UnlinkAsync(guid, PartnerUnlinkReason.PartnerVoided, null, OtherPairingId,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(PartnerUnlinkOutcome.NotFound, outcome);
+        Assert.Equal(guid, (await JobAsync(1)).PartnerJobGuid);
     }
 
     [Fact]

@@ -194,6 +194,13 @@ public sealed class JobChangeRequestService(
             };
         }
 
+        // Approving would mark it Applied without voiding the copy, and the sender would then unlink its job.
+        if (field == JobChangeField.Recall)
+        {
+            return new JobChangeRequestResult
+                { Success = false, Message = "A recall is decided automatically when it arrives and can't be approved by hand" };
+        }
+
         if (request.RowVersion is not null)
         {
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
@@ -610,7 +617,8 @@ public sealed class JobChangeRequestService(
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
 
         var existing = await ctx.TucJobChangeRequests
-            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == payload.SourceRequestUuid, ct);
+            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == payload.SourceRequestUuid
+                                      && (payload.PairingId == null || r.UjcrPairingId == payload.PairingId), ct);
         if (existing is not null)
         {
             return new JobChangeRequestResult { Success = true, Request = ToDto(existing) };
@@ -743,19 +751,48 @@ public sealed class JobChangeRequestService(
     {
         var now = DateTime.UtcNow;
         var claimed = await PartnerJobLinkService.ClaimForVoidAsync(ctx, row.UjcrJobId, prePickupOnly: true, ct) == 1;
+        var copy = claimed
+            ? null
+            : await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId)
+                .Select(j => new { j.UcjbVoid, j.UcjbJobDone, j.UcjbComplTime, j.UcjbStatus })
+                .FirstOrDefaultAsync(ct);
+        // Already void: nobody is carrying it, which is what the recall asked for.
+        var alreadyVoid = copy is { UcjbVoid: true };
+        var delivered = copy is not null && !alreadyVoid
+                        && (copy.UcjbJobDone || copy.UcjbComplTime != null
+                            || (copy.UcjbStatus is { } status && PartnerJobLinkService.FinishedStatuses.Contains(status)));
         string? rejection = null;
-        if (claimed)
+        if (alreadyVoid)
         {
-            await jobCommandRepository.VoidJobAsync(new VoidJobRequest
+            claimed = true;
+            row.UjcrStatus = JobChangeRequestStatus.Applied;
+            row.UjcrAppliedAtUtc = now;
+        }
+        else if (claimed)
+        {
+            try
             {
-                JobId = row.UjcrJobId, VoidSingleJobOnly = true, VoidReason = "Recalled by the sender"
-            });
+                await jobCommandRepository.VoidJobAsync(new VoidJobRequest
+                {
+                    JobId = row.UjcrJobId, VoidSingleJobOnly = true, VoidReason = "Recalled by the sender"
+                });
+            }
+            catch (Exception ex)
+            {
+                // The claim already voided the copy; only the clean-up failed. Settle the request anyway: a replay
+                // returns the stored row, so a Pending one would leave the sender waiting forever.
+                Log.Error(ex, "Recall {SourceUuid}: job {JobId} is void but its void clean-up failed",
+                    row.UjcrSourceRequestUuid, row.UjcrJobId);
+            }
+
             row.UjcrStatus = JobChangeRequestStatus.Applied;
             row.UjcrAppliedAtUtc = now;
         }
         else
         {
-            rejection = $"Already picked up, so it can't be recalled (rule {JobChangePolicyService.RecallAfterPickupRule}). Contact the partner.";
+            rejection = delivered
+                ? "Already delivered, so it can't be recalled."
+                : $"Already picked up, so it can't be recalled (rule {JobChangePolicyService.RecallAfterPickupRule}). Contact the partner.";
             row.UjcrStatus = JobChangeRequestStatus.Rejected;
             row.UjcrReason = string.IsNullOrEmpty(row.UjcrReason) ? rejection : $"{row.UjcrReason}\n--\n{rejection}";
         }
@@ -870,7 +907,16 @@ public sealed class JobChangeRequestService(
             && await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId).Select(j => j.PartnerJobGuid).FirstOrDefaultAsync(ct)
                 is { } partnerJobGuid)
         {
-            await partnerLinks.UnlinkAsync(partnerJobGuid, PartnerUnlinkReason.RecallApplied, null, ct);
+            // The row is already Applied, so a retried notice short-circuits above; failing the call can't help.
+            try
+            {
+                await partnerLinks.UnlinkAsync(partnerJobGuid, PartnerUnlinkReason.RecallApplied, null, pairingId, ct);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Recall {SourceUuid}: unlinking job {JobId} failed; it stays linked until the partner's void arrives",
+                    row.UjcrSourceRequestUuid, row.UjcrJobId);
+            }
         }
 
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };

@@ -206,7 +206,7 @@ public class InternalPartnerControllerTests : IAsyncDisposable
     [InlineData(PartnerUnlinkOutcome.NotFound, "not_found")]
     public async Task Unlink_ReturnsItsOutcomeByName(PartnerUnlinkOutcome outcome, string name)
     {
-        _links.UnlinkAsync(PartnerJobGuid, PartnerUnlinkReason.PartnerVoided, null, Arg.Any<CancellationToken>()).Returns(outcome);
+        _links.UnlinkAsync(PartnerJobGuid, PartnerUnlinkReason.PartnerVoided, null, null, Arg.Any<CancellationToken>()).Returns(outcome);
 
         var response = await Post("/internal/partner/jobs/unlink", $$"""{"partnerJobGuid":"{{PartnerJobGuid}}","reason":"PartnerVoided"}""");
 
@@ -222,7 +222,7 @@ public class InternalPartnerControllerTests : IAsyncDisposable
         var response = await Post("/internal/partner/jobs/unlink", body);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        await _links.DidNotReceiveWithAnyArgs().UnlinkAsync(default, default, default, default);
+        await _links.DidNotReceiveWithAnyArgs().UnlinkAsync(default, default, default, default, default);
     }
 
     [Fact]
@@ -241,13 +241,32 @@ public class InternalPartnerControllerTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task AReleaseForAnotherPairingThanTheAuthenticatedOne_IsNotFound()
+    {
+        var response = await Post("/internal/partner/pairings/6/release", """{"scope":"inbound"}""", pairingHeader: "7");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        await _links.DidNotReceiveWithAnyArgs().ReleaseAsync(default, default, default, default);
+    }
+
+    [Fact]
+    public async Task Unlink_PassesTheAuthenticatedPairingOn()
+    {
+        _links.UnlinkAsync(default, default, default, default, default).ReturnsForAnyArgs(PartnerUnlinkOutcome.NotFound);
+
+        await Post("/internal/partner/jobs/unlink", $$"""{"partnerJobGuid":"{{PartnerJobGuid}}","reason":"PartnerVoided"}""", pairingHeader: "6");
+
+        await _links.Received(1).UnlinkAsync(PartnerJobGuid, PartnerUnlinkReason.PartnerVoided, null, 6, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task WithoutAToken_IsUnauthorized()
     {
         var response = await Post("/internal/partner/jobs/unlink", $$"""{"partnerJobGuid":"{{PartnerJobGuid}}","reason":"PartnerVoided"}""",
             token: false, csrfHeader: true);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        await _links.DidNotReceiveWithAnyArgs().UnlinkAsync(default, default, default, default);
+        await _links.DidNotReceiveWithAnyArgs().UnlinkAsync(default, default, default, default, default);
     }
 
     [Fact]

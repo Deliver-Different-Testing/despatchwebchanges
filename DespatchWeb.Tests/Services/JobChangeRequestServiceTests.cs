@@ -624,7 +624,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             nameof(JobChangeField.Recall), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string>(),
             Arg.Any<bool>(), Arg.Any<CancellationToken>());
         Assert.NotNull(await GetPartnerJobGuidAsync(1));
-        await _links.DidNotReceiveWithAnyArgs().UnlinkAsync(default, default, default, default);
+        await _links.DidNotReceiveWithAnyArgs().UnlinkAsync(default, default, default, default, default);
     }
 
     private async Task<JobChangeRequestResult> ReceiveRecallAsync(Guid sourceUuid) =>
@@ -673,6 +673,57 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Recall_of_a_copy_already_voided_counts_as_applied()
+    {
+        var pairingId = await SeedPairingAsync(clientId: PairingClientId);
+        await SeedJobAsync(partnerPairingId: pairingId, clientId: PairingClientId, status: (int)JobStatus.Void);
+        await using (var ctx = CreateContext())
+        {
+            await ctx.TucJobs.Where(j => j.UcjbId == 1).ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbVoid, true),
+                TestContext.Current.CancellationToken);
+        }
+
+        var result = await ReceiveRecallAsync(Guid.NewGuid());
+
+        Assert.Equal("Applied", result.Request!.Status);
+        await _jobCommandRepository.DidNotReceiveWithAnyArgs().VoidJobAsync(default!);
+    }
+
+    [Fact]
+    public async Task Recall_of_a_delivered_copy_says_it_was_delivered()
+    {
+        var pairingId = await SeedPairingAsync(clientId: PairingClientId);
+        await SeedJobAsync(partnerPairingId: pairingId, clientId: PairingClientId, status: (int)JobStatus.Completed);
+
+        var result = await ReceiveRecallAsync(Guid.NewGuid());
+
+        Assert.Equal("Rejected", result.Request!.Status);
+        await _partnerClient.Received(1).ForwardDecisionAsync(pairingId, Arg.Any<Guid>(), "Rejected",
+            Arg.Is<string?>(r => r!.Contains("delivered")), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task A_replayed_source_uuid_from_another_pairing_reveals_nothing()
+    {
+        var jobPairing = await SeedPairingAsync("200");
+        var otherPairing = await SeedPairingAsync("300");
+        await SeedJobAsync(partnerPairingId: jobPairing, clientId: 50);
+        var service = CreateService();
+        var payload = new PeerInboundChangeRequestPayload
+        {
+            PartnerJobGuid = (await GetPartnerJobGuidAsync(1))!.Value, SourceRequestUuid = Guid.NewGuid(),
+            FieldName = nameof(JobChangeField.Speed), RequestedValue = "42", PairingId = jobPairing
+        };
+        Assert.True((await service.RecordPeerCreateAsync(payload, CancellationToken.None)).Success);
+
+        payload.PairingId = otherPairing;
+        var replay = await service.RecordPeerCreateAsync(payload, CancellationToken.None);
+
+        Assert.False(replay.Success);
+        Assert.Null(replay.Request);
+    }
+
+    [Fact]
     public async Task Recall_from_the_partner_side_is_refused()
     {
         await SeedLinkedJobAsync(inboundCopy: false);
@@ -706,7 +757,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         Assert.True(result.Success, result.Message);
         Assert.Equal("Applied", result.Request!.Status);
-        await _links.Received(1).UnlinkAsync(guid, PartnerUnlinkReason.RecallApplied, Arg.Any<string?>(), Arg.Any<CancellationToken>());
+        await _links.Received(1).UnlinkAsync(guid, PartnerUnlinkReason.RecallApplied, Arg.Any<string?>(), Arg.Any<int?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
