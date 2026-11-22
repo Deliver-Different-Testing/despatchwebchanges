@@ -2,20 +2,22 @@ using System.Text;
 using DeliverDifferentReporting.Documents;
 using DeliverDifferentReporting.Models;
 using QuestPDF.Fluent;
-using QuestPDF.Infrastructure;
+using DespatchWeb.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DespatchWeb.Tests.Services;
 
 /// <summary>
 /// Renders through the real label renderer so the Linux CI image catches a renderer that only works on
 /// Windows (DeliverDifferentReporting 2.0.56 drew Code128 with System.Drawing and threw in the container).
+/// The QuestPDF license comes from the app's own registration, as it does at runtime.
 /// </summary>
 public class AlertLabelRenderingTests
 {
     [Fact]
     public void LabelWithBarcodes_RendersToPdf()
     {
-        QuestPDF.Settings.License = LicenseType.Community;
+        new ServiceCollection().AddReportingServices();
         var data = new AlertLabelData
         {
             Pages =
