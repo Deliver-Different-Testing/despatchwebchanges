@@ -243,6 +243,25 @@ public class BaseJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetRelatedJobsMultiSelectListAsync_BulkLegLinkedOnlyByParentId_IsListedWithItsFamily()
+    {
+        // Arrange - the void-all path reaches this leg through BulkJobFamily, so the dialog must list it too
+        const int parentId = 200;
+        _context.TblBulkJobs.AddRange(
+            CreateBulkJob(parentId, "BULK-PARENT"),
+            CreateBulkJobWithParent(201, "BULK-CHILD", parentId),
+            new TblBulkJob { BulkJobId = 202, JobNumber = "BULK-LEGACY", ParentId = parentId });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await CreateRepository().GetRelatedJobsMultiSelectListAsync(202, isArchived: false, isBulkJob: true);
+
+        // Assert
+        Assert.Equal([200, 201, 202], result.Select(j => j.Id).Order());
+        Assert.Contains(result, j => j is { Id: 202, Selected: true });
+    }
+
+    [Fact]
     public async Task GetRelatedJobsMultiSelectListAsync_WithSingleBulkJob_ReturnsSingleItem()
     {
         // Arrange

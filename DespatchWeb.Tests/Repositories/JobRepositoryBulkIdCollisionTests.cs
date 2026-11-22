@@ -289,6 +289,70 @@ public class JobRepositoryBulkIdCollisionTests : IAsyncDisposable
         Assert.False(jobs[BulkParentId].UcjbVoid);
     }
 
+    [Fact]
+    public async Task VoidJobAsync_ReleasedParentWholeFamily_IncludesLegsNotYetRepointed()
+    {
+        // Arrange
+        await SeedCollisionAsync(releasedParentJobId: 9100);
+        await using (var context = _db.CreateContext())
+        {
+            var sibling = Job(9002, "E901BIOA", parentId: BulkParentId);
+            sibling.BulkParentId = BulkParentId;
+            context.TucJobs.Add(sibling);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        // Act
+        await CreateRepository().VoidJobAsync(new VoidJobRequest
+        {
+            JobId = 9100,
+            VoidReason = "Cancelled",
+            VoidSingleJobOnly = false
+        });
+
+        // Assert
+        await using var assertContext = _db.CreateContext();
+        var jobs = await assertContext.TucJobs.ToDictionaryAsync(j => j.UcjbId, TestContext.Current.CancellationToken);
+        Assert.True(jobs[9100].UcjbVoid);
+        Assert.True(jobs[LiveLeg].UcjbVoid);
+        Assert.True(jobs[9002].UcjbVoid);
+        Assert.All(UnrelatedLiveFamily, id => Assert.False(jobs[id].UcjbVoid));
+    }
+
+    [Fact]
+    public async Task VoidJobAsync_FinalMileLegWhenAnUnrepointedLinehaulLegIsMoving_VoidsOnlyTheDelLeg()
+    {
+        // Arrange - parent released as 9100; LH1 still carries the bulk id but has been picked up
+        await using (var context = _db.CreateContext())
+        {
+            var movingLeg = Job(LiveLeg, "E901BIOLH1", parentId: BulkParentId);
+            movingLeg.BulkParentId = BulkParentId;
+            movingLeg.PickUpTime = TestDates.Now;
+            context.TucJobs.AddRange(
+                Job(BulkParentId, "P3776"),
+                Job(9100, "E901BIO"),
+                movingLeg,
+                Job(9102, "E901BIODEL", parentId: 9100));
+            context.TblBulkJobs.Add(BulkJob(BulkParentId, "E901BIO", jobId: 9100));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        // Act
+        await CreateRepository().VoidJobAsync(new VoidJobRequest
+        {
+            JobId = 9102,
+            VoidReason = "Delivery cancelled",
+            VoidSingleJobOnly = false
+        });
+
+        // Assert
+        await using var assertContext = _db.CreateContext();
+        var jobs = await assertContext.TucJobs.ToDictionaryAsync(j => j.UcjbId, TestContext.Current.CancellationToken);
+        Assert.True(jobs[9102].UcjbVoid);
+        Assert.False(jobs[9100].UcjbVoid);
+        Assert.False(jobs[LiveLeg].UcjbVoid);
+    }
+
     private async Task SeedArchivedCollisionAsync()
     {
         await using var context = _db.CreateContext();

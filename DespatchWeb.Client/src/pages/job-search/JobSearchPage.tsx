@@ -154,6 +154,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             // job-detail panel, actions menu and ScanList (booked run date) have real
             // data instead of waiting for the list results to land.
             selectedIdRef.current = jobId;
+            setCurrentJob(undefined);   // the previous row is not this job, even if the ids match
             setCurrentJobId(jobId);
             setIsBulkJob(false);
             loadFullDetail(jobId, false);
@@ -164,6 +165,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     // by id the same way a deep link does rather than waiting for the list.
     const jobCreated = useCallback((jobId: number) => {
         selectedIdRef.current = jobId;
+        setCurrentJob(undefined);   // the previous row is not this job, even if the ids match
         setCurrentJobId(jobId);
         setIsBulkJob(false);
         loadFullDetail(jobId, false);

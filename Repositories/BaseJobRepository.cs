@@ -1294,7 +1294,7 @@ public partial class BaseJobRepository(
             // Get parent bulk job ID (self if parented, or BulkParentId if child)
             var parentBulkJobId = await Context.TblBulkJobs
                 .Where(j => j.BulkJobId == jobId)
-                .Select(j => j.BulkParentId ?? j.BulkJobId)
+                .Select(BulkJobFamily.RootIdOf)
                 .FirstOrDefaultAsync();
 
             if (parentBulkJobId == 0)
@@ -1303,7 +1303,7 @@ public partial class BaseJobRepository(
             }
 
             return await Context.TblBulkJobs
-                .Where(j => j.BulkJobId == parentBulkJobId || j.BulkParentId == parentBulkJobId)
+                .Where(BulkJobFamily.MemberOf(parentBulkJobId))
                 .Select(j => new MultiSuggestion
                 {
                     Id = j.BulkJobId,
@@ -1320,11 +1320,14 @@ public partial class BaseJobRepository(
             // First, get the parent ID for this job (if it has one)
             var effectiveArchiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
 
+            var archivedChildIds = Context.TucJobArchives
+                .Where(LiveJobFamily.ArchivedChildOf(Context, effectiveArchiveJobId))
+                .Select(j => j.UcjbId);
+
             var archivedData = await Context.TucJobArchives
                 .Where(j => j.UcjbId == effectiveArchiveJobId
                             || j.UcjbId == jobId
-                            || (j.ParentId == effectiveArchiveJobId
-                                && (j.BulkParentId == null || j.ParentId != j.BulkParentId)))
+                            || archivedChildIds.Contains(j.UcjbId))
                 .Select(j => new MultiSuggestion
                 {
                     Id = j.UcjbId,
@@ -1352,11 +1355,14 @@ public partial class BaseJobRepository(
 
         var effectiveLiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
 
+        var liveChildIds = Context.TucJobs
+            .Where(LiveJobFamily.ChildOf(Context, effectiveLiveJobId))
+            .Select(j => j.UcjbId);
+
         var liveData = await Context.TucJobs
             .Where(j => j.UcjbId == effectiveLiveJobId
                         || j.UcjbId == jobId
-                        || (j.ParentId == effectiveLiveJobId
-                            && (j.BulkParentId == null || j.ParentId != j.BulkParentId)))
+                        || liveChildIds.Contains(j.UcjbId))
             .Select(j => new MultiSuggestion
             {
                 Id = j.UcjbId,

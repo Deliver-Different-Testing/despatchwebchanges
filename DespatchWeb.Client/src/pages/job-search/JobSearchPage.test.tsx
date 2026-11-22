@@ -304,6 +304,18 @@ describe('JobSearchPage', () => {
             expect(await screen.findByTestId('mock-task-history')).toHaveAttribute('data-job-id', '9100');
         });
 
+        it('follows a newly created job even when it shares an id with the previously selected bulk row', async () => {
+            let bridge: JobSearchLayoutBridge | undefined;
+            renderPage({onLayoutBridgeReady: b => { bridge = b; }});
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100}));
+
+            await act(async () => {
+                bridge!.jobCreated(7782);
+            });
+
+            expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '7782');
+        });
+
         it('explains that a bulk row that has not gone live has no journey yet', () => {
             renderPage();
             act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true}));
