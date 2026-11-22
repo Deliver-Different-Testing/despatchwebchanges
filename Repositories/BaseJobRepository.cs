@@ -1335,11 +1335,25 @@ public partial class BaseJobRepository(
             return archivedData;
         }
 
-        // Live job from TucJob
+        var parkedBulkParentId = await Context.TucJobs
+            .Where(LiveJobFamily.HasParkedBulkParent)
+            .Where(j => j.UcjbId == jobId)
+            .Where(j => !Context.TblBulkJobs.Any(b => b.BulkJobId == j.BulkParentId && b.JobId != null))
+            .Select(j => j.BulkParentId)
+            .FirstOrDefaultAsync();
+
+        if (parkedBulkParentId is { } bulkParentId)
+        {
+            return await GetParkedBookingFamilyAsync(jobId, bulkParentId);
+        }
+
         var effectiveLiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
 
         var liveData = await Context.TucJobs
-            .Where(j => j.UcjbId == effectiveLiveJobId || j.ParentId == effectiveLiveJobId)
+            .Where(j => j.UcjbId == effectiveLiveJobId
+                        || j.UcjbId == jobId
+                        || (j.ParentId == effectiveLiveJobId
+                            && (j.BulkParentId == null || j.ParentId != j.BulkParentId)))
             .Select(j => new MultiSuggestion
             {
                 Id = j.UcjbId,
@@ -1350,6 +1364,38 @@ public partial class BaseJobRepository(
             .ToListAsync();
 
         return liveData;
+    }
+
+    /// <summary>
+    /// The family of a live leg whose parent is still parked in tblBulkJob: the booking's other live
+    /// legs (same parked parent) and its unreleased bulk rows, flagged so they are voided as bulk.
+    /// </summary>
+    private async Task<IReadOnlyList<MultiSuggestion>> GetParkedBookingFamilyAsync(int jobId, int bulkParentId)
+    {
+        var liveLegs = await Context.TucJobs
+            .Where(j => j.BulkParentId == bulkParentId && j.ParentId == bulkParentId)
+            .Select(j => new MultiSuggestion
+            {
+                Id = j.UcjbId,
+                Text = j.UcjbNumber,
+                Selected = j.UcjbId == jobId
+            })
+            .TagWith($"GetRelatedJobs - Live legs of parked booking {bulkParentId}")
+            .ToListAsync();
+
+        var bulkRows = await Context.TblBulkJobs
+            .Where(BulkJobFamily.MemberOf(bulkParentId))
+            .Where(b => b.JobId == null)
+            .Select(b => new MultiSuggestion
+            {
+                Id = b.BulkJobId,
+                Text = b.JobNumber,
+                IsBulkJob = true
+            })
+            .TagWith($"GetRelatedJobs - Bulk rows of parked booking {bulkParentId}")
+            .ToListAsync();
+
+        return [.. liveLegs, .. bulkRows];
     }
 
     protected async Task<int?> GetJobParentIdAsync(int jobId) =>

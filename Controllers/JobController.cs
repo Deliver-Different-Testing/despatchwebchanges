@@ -1451,7 +1451,8 @@ public class JobController(
 
     [HttpPost]
     [RequireScope(ScopedRecord.Job, "request.JobId")]
-    [RequireScope(ScopedRecord.JobOrBulkJob, "request.SelectedJobIds")]
+    [RequireScope(ScopedRecord.Job, "request.SelectedJobIds")]
+    [RequireScope(ScopedRecord.BulkJob, "request.SelectedBulkJobIds")]
     [NetworkPartnerCapability(NpCapability.Void)]
     public async Task<IActionResult> Void([FromBody] VoidJobRequest request)
     {
@@ -1511,6 +1512,10 @@ public class JobController(
             }
 
             return Ok();
+        }
+        catch (VoidSelectionException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -1577,6 +1582,10 @@ public class JobController(
         {
             await jobCommandRepository.VoidBulkJobAsync(request);
             return Ok();
+        }
+        catch (VoidSelectionException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {

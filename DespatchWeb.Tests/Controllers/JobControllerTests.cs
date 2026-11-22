@@ -1229,6 +1229,42 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Void_SelectionOutsideTheBooking_Returns400WithTheAuthoredMessage()
+    {
+        // Arrange
+        var request = new VoidJobRequest { JobId = 1, SelectedJobIds = [1, 99] };
+        _jobCommandRepositoryMock.VoidJobAsync(request)
+            .ThrowsAsync(new VoidSelectionException("Some of the selected jobs aren't part of this booking."));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.Void(request);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Some of the selected jobs aren't part of this booking.", badRequest.Value);
+    }
+
+    [Fact]
+    public async Task VoidBulkJob_SelectionOutsideTheBooking_Returns400WithTheAuthoredMessage()
+    {
+        // Arrange
+        var request = new VoidBulkJobRequest { BulkJobId = 1, SelectedJobIds = [1, 99] };
+        _jobCommandRepositoryMock.VoidBulkJobAsync(request)
+            .ThrowsAsync(new VoidSelectionException("Some of the selected jobs aren't part of this booking."));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.VoidBulkJob(request);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Some of the selected jobs aren't part of this booking.", badRequest.Value);
+    }
+
+    [Fact]
     public async Task VoidBulkJob_ValidRequest_ReturnsOk()
     {
         // Arrange

@@ -73,7 +73,7 @@ vi.mock('../../api/preferencesApi', () => ({
 }));
 
 vi.mock('../../components/common/task-history/TaskHistory', () => ({
-    TaskHistory: () => <div data-testid="mock-task-history" />,
+    TaskHistory: ({jobId}: {jobId: number}) => <div data-testid="mock-task-history" data-job-id={jobId} />,
 }));
 
 vi.mock('./components/ScanList', () => ({
@@ -86,6 +86,11 @@ vi.mock('../../components/common/dispatch-map/DispatchMap', () => ({
 
 vi.mock('./hooks/useScanDetail', () => ({
     useScanDetail: () => ({scans: [], isLoading: false, isError: false, refetch: vi.fn()}),
+}));
+
+vi.mock('../../api/jobSearchApi', async () => ({
+    ...(await vi.importActual<typeof import('../../api/jobSearchApi')>('../../api/jobSearchApi')),
+    fetchDispatchBulkJobDetail: vi.fn(() => new Promise(() => {})),
 }));
 
 vi.mock('../../api/jobDetailApi', async () => ({
@@ -275,6 +280,27 @@ describe('JobSearchPage', () => {
         const detailHeader = screen.getAllByTestId('panel-header')
             .find(header => within(header).queryByText('Detail · J42'));
         expect(detailHeader).toBeDefined();
+    });
+
+    describe('Delivery journey', () => {
+        it("shows a live job's own journey", () => {
+            renderPage();
+            act(() => mockPanel.onJobSelect.jobSearchJobList?.({id: 7, jobNo: 'J7'}));
+            expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '7');
+        });
+
+        it('shows the live job behind a bulk row, never the bulk id read as a live job', () => {
+            renderPage();
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true, linkedJobId: 9100}));
+            expect(screen.getByTestId('mock-task-history')).toHaveAttribute('data-job-id', '9100');
+        });
+
+        it('explains that a bulk row that has not gone live has no journey yet', () => {
+            renderPage();
+            act(() => mockPanel.onJobSelect.jobSearchBulkList?.({id: 7782, jobNo: 'E901BIO', isBulkJob: true}));
+            expect(screen.queryByTestId('mock-task-history')).not.toBeInTheDocument();
+            expect(screen.getByText(/hasn't gone live yet/i)).toBeInTheDocument();
+        });
     });
 
     it('renders the default layout: panels, lists, map, box headers, and empty placeholders', () => {

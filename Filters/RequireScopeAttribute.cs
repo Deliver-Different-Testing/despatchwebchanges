@@ -13,8 +13,6 @@ public enum ScopedRecord
     Job,
     BulkJob,
 
-    /// <summary>A job id that may also be a parent bulk job's id (legs released from bulk keep it as ParentId).</summary>
-    JobOrBulkJob,
     Courier,
     Client,
 
@@ -72,15 +70,11 @@ public sealed class RequireScopeAttribute(ScopedRecord record, params string[] i
     {
         ScopedRecord.Job => db.IsJobVisibleAsync(id),
         ScopedRecord.BulkJob => db.TblBulkJobs.AnyAsync(b => b.BulkJobId == id),
-        ScopedRecord.JobOrBulkJob => IsJobOrBulkJobVisibleAsync(db, id),
         ScopedRecord.Courier => db.TucCouriers.AnyAsync(c => c.UccrId == id),
         ScopedRecord.Client => db.IsClientVisibleAsync(id),
         ScopedRecord.BookableClient => db.IsClientBookableAsync(id),
         _ => throw new ArgumentOutOfRangeException(nameof(Record))
     };
-
-    private static async Task<bool> IsJobOrBulkJobVisibleAsync(DespatchContext db, int id) =>
-        await db.IsJobVisibleAsync(id) || await db.TblBulkJobs.AnyAsync(b => b.BulkJobId == id);
 
     internal static IEnumerable<int> ReadIds(IDictionary<string, object> arguments, string path)
     {

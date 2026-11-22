@@ -60,6 +60,8 @@ export interface VoidJobRequest {
     voidSingleJobOnly: boolean;
     voidReason?: string;
     selectedJobIds?: number[];
+    /** tblBulkJob ids, sent apart from selectedJobIds because the two id spaces overlap. */
+    selectedBulkJobIds?: number[];
 }
 
 export interface VoidBulkJobRequest {

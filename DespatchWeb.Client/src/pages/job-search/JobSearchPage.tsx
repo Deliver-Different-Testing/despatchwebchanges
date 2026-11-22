@@ -89,6 +89,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const [currentJob, setCurrentJob] = useState<DispatchJob | undefined>();
     const [currentJobId, setCurrentJobId] = useState<number | undefined>();
     const [isBulkJob, setIsBulkJob] = useState(false);
+    // A bulk row's id is a BulkJobId, which the journey endpoint would read as an unrelated live job,
+    // so the journey follows the row's live job (linkedJobId) and is empty until it has one.
+    const [journeyJobId, setJourneyJobId] = useState<number | undefined>();
     // "Edit columns" mode, driven from the toolbar's Layouts menu: shows the
     // layout column stepper in the shell and each list's column editor.
     const [columnEditMode, setColumnEditMode] = useState(false);
@@ -138,6 +141,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         setCurrentJob(job);          // optimistic: show the list row immediately
         setCurrentJobId(job.id);
         setIsBulkJob(bulk);
+        setJourneyJobId(bulk || job.isBulkJob ? job.linkedJobId : job.id);
         loadFullDetail(job.id, bulk); // then upgrade to the full detail record
     }, [loadFullDetail]);
 
@@ -150,6 +154,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             selectedIdRef.current = jobId;
             setCurrentJobId(jobId);
             setIsBulkJob(false);
+            setJourneyJobId(jobId);
             loadFullDetail(jobId, false);
         },
     });
@@ -160,6 +165,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         selectedIdRef.current = jobId;
         setCurrentJobId(jobId);
         setIsBulkJob(false);
+        setJourneyJobId(jobId);
         loadFullDetail(jobId, false);
     }, [loadFullDetail]);
 
@@ -737,9 +743,18 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         />
                     );
                 }
+                if (!journeyJobId) {
+                    return (
+                        <NoData
+                            title="No delivery journey yet"
+                            message="This scheduled job hasn't gone live yet, so it has no delivery journey."
+                            icon={<Icon lucide={Route}/>}
+                        />
+                    );
+                }
                 return (
                     <TaskHistory
-                        jobId={currentJobId}
+                        jobId={journeyJobId}
                         showErrorToast={msg => showToast(msg, 'error')}
                         showInfoToast={msg => showToast(msg, 'info')}
                         showSuccessToast={msg => showToast(msg, 'success')}
@@ -749,7 +764,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             default:
                 return null;
         }
-    }, [searchCriteria, handleCriteriaChange, handleSearch, handleDownload, handleClientReport, handleUpload, handleClientSearch, handleCourierSearch, handleSpeedSearch, fetchConfigMain, fetchConfigBulk, showToast, isUsCustomer, selectJob, currentJob, isBulkJob, timeZoneShort, searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, handlePriceDetailReport, currentJob?.booked, currentJob?.pickupAddress]);
+    }, [searchCriteria, handleCriteriaChange, handleSearch, handleDownload, handleClientReport, handleUpload, handleClientSearch, handleCourierSearch, handleSpeedSearch, fetchConfigMain, fetchConfigBulk, showToast, isUsCustomer, selectJob, currentJob, isBulkJob, journeyJobId, timeZoneShort, searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, handlePriceDetailReport, currentJob?.booked, currentJob?.pickupAddress]);
 
     const subtitleFor = useCallback((boxName: string) => {
         if (boxName === JobSearchBoxes.JobDetail || boxName === JobSearchBoxes.ScanList) {
