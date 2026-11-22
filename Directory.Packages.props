@@ -15,7 +15,7 @@
     <PackageVersion Include="Magick.NET-Q8-AnyCPU" Version="14.17.2"/>
     <PackageVersion Include="DeliverDifferent.AgentAccess" Version="2.4.0" />
     <PackageVersion Include="DeliverDifferent.AlertLabel.Data" Version="1.0.10" />
-    <PackageVersion Include="DeliverDifferentReporting" Version="2.0.56" />
+    <PackageVersion Include="DeliverDifferentReporting" Version="2.0.57" />
     <PackageVersion Include="PdfSharp" Version="6.5.0" />
     <PackageVersion Include="ExcelDataReader" Version="$(ExcelDataReaderVersion)" />
     <PackageVersion Include="ExcelDataReader.DataSet" Version="$(ExcelDataReaderVersion)" />
