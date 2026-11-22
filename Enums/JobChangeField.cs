@@ -56,5 +56,8 @@ public enum JobChangeField
     // Manual — compound fields. RequestedValue carries a JSON-encoded payload.
     Packages,
     PickupAddress,
-    DeliveryAddress
+    DeliveryAddress,
+
+    // Owner-only: take the job back from the partner. The receiver voids its copy, the sender's job is unlinked.
+    Recall
 }

@@ -16,6 +16,7 @@ import {
     Redo2,
     Send,
     Split,
+    Undo2,
     UserMinus,
     UserPlus,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ import {Icon} from '../common/icon/Icon';
 import type {AppPage, DispatchJob} from '../../types/dispatchJob';
 import type {ShowToastFn} from '../../services/toastService';
 import * as api from '../../api/jobListApi';
+import {jobChangeRequestApi} from '../../api/jobChangeRequestApi';
 import {executeDispatchConfirmation} from '../dialogs/dispatch-dialog/executeDispatch';
 import {queryClient, queryKeys} from '../../api/queryClient';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
@@ -177,6 +179,33 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     refresh();
                 } catch (err) {
                     showToast(errorMessageOf(err, "Couldn't unassign the flight. Check your connection and try again."), 'error');
+                }
+            },
+        });
+        openConfirmDialog();
+    };
+
+    // The partner decides: it voids its copy if it hasn't picked the job up, and this job then comes back unlinked.
+    const handleRecallFromPartner = () => {
+        closeAll();
+        const partner = activeJob.sentToPartnerName ?? 'the partner';
+        setConfirmDialogConfig({
+            title: 'Recall job from partner?',
+            confirmLabel: 'Recall job',
+            message: `Ask ${partner} to hand ${activeJob.jobNo} back. If they haven't picked it up, their copy is voided and the job returns to your dispatch. If they have, the recall is refused.`,
+            icon: <Icon lucide={Undo2}/>,
+            variant: 'warning',
+            onConfirm: async () => {
+                try {
+                    const result = await jobChangeRequestApi.create({jobId: activeJob.id, fieldName: 'Recall'});
+                    if (result.success) {
+                        showToast(`Recall sent to ${partner}. ${activeJob.jobNo} comes back to your dispatch once they accept.`, 'info');
+                        refresh();
+                    } else {
+                        showToast(result.message ?? "Couldn't recall the job.", 'error');
+                    }
+                } catch (err) {
+                    showToast(errorMessageOf(err, "Couldn't recall the job. Check your connection and try again."), 'error');
                 }
             },
         });
@@ -523,11 +552,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const isNationwideSpeed = activeJob.speedId === NationwideSpeedId;
     const notReprice = activeJob.internalStatusId !== INTERNAL_STATUS_REPRICE;
     const isPartnerJob = Boolean(activeJob.isPartnerJob);
-    // Outbound = *this* tenant sent the job to a partner (sentToPartnerName is
-    // populated from JobPartnerDispatch). Courier-slot actions and Void mutate
-    // local state that, on the sender side, is reserved for the partner pairing —
-    // so we keep blocking those. The receiver side has no JobPartnerDispatch row
-    // and behaves like a normal local job.
+    // Outbound = *this* tenant sent the job to a partner (the server sets sentToPartnerName only then). Courier-slot
+    // actions and Void stay blocked there; the sender recalls instead. The receiver's copy behaves like a local job.
     const isOutboundPartnerJob = isPartnerJob && Boolean(activeJob.sentToPartnerName);
     const partnerDisabledTooltip = 'This job is managed by a partner';
     const outboundPartnerDisabledTooltip = 'This job has already been sent to a partner';
@@ -713,6 +739,13 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         tooltip: isOutboundPartnerJob
                             ? outboundPartnerDisabledTooltip
                             : activeJob.assignedCourier ? 'Restore job before sending to partner' : undefined,
+                    })}
+
+                    {isOutboundPartnerJob && menuItem('recall-from-partner', {
+                        liveJobOnly: true,
+                        icon: <Icon lucide={Undo2} size={16}/>,
+                        label: 'Recall from partner',
+                        onClick: handleRecallFromPartner,
                     })}
 
                     {/* Void Job */}

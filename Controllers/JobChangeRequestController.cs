@@ -161,7 +161,7 @@ public class JobChangeRequestController(IJobChangeRequestService service) : Cont
     {
         try
         {
-            var result = await service.RecordPeerDecisionAsync(sourceUuid, payload, ct);
+            var result = await service.RecordPeerDecisionAsync(sourceUuid, payload, pairingId: null, ct);
             return result.Success ? Ok(result) : NotFound(result);
         }
         catch (Exception ex)
@@ -178,7 +178,7 @@ public class JobChangeRequestController(IJobChangeRequestService service) : Cont
     {
         try
         {
-            var result = await service.RecordPeerAppliedAsync(sourceUuid, payload, ct);
+            var result = await service.RecordPeerAppliedAsync(sourceUuid, payload, pairingId: null, ct);
             return result.Success ? Ok(result) : NotFound(result);
         }
         catch (Exception ex)

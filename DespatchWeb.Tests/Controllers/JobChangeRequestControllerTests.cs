@@ -283,20 +283,20 @@ public class JobChangeRequestControllerTests
         var sourceUuid = Guid.NewGuid();
         var payload = new PeerInboundChangeDecisionPayload { Outcome = "Approved" };
         var expected = Ok();
-        _service.RecordPeerDecisionAsync(sourceUuid, payload, Arg.Any<CancellationToken>()).Returns(expected);
+        _service.RecordPeerDecisionAsync(sourceUuid, payload, null, Arg.Any<CancellationToken>()).Returns(expected);
 
         var result = await CreateController().PeerDecision(sourceUuid, payload, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
-        await _service.Received(1).RecordPeerDecisionAsync(sourceUuid, payload, Arg.Any<CancellationToken>());
+        await _service.Received(1).RecordPeerDecisionAsync(sourceUuid, payload, null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task PeerDecision_ServiceReturnsFailure_ReturnsNotFound()
     {
         _service.RecordPeerDecisionAsync(Arg.Any<Guid>(), Arg.Any<PeerInboundChangeDecisionPayload>(),
-                Arg.Any<CancellationToken>())
+                Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Fail("Unknown sourceUuid"));
 
         var result = await CreateController()
@@ -309,7 +309,7 @@ public class JobChangeRequestControllerTests
     public async Task PeerDecision_ServiceThrows_Returns500()
     {
         _service.RecordPeerDecisionAsync(Arg.Any<Guid>(), Arg.Any<PeerInboundChangeDecisionPayload>(),
-                Arg.Any<CancellationToken>())
+                Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception("boom"));
 
         var result = await CreateController()
@@ -325,20 +325,20 @@ public class JobChangeRequestControllerTests
         var sourceUuid = Guid.NewGuid();
         var payload = new PeerInboundChangeAppliedPayload { NewCommercialAmount = 123.45m };
         var expected = Ok();
-        _service.RecordPeerAppliedAsync(sourceUuid, payload, Arg.Any<CancellationToken>()).Returns(expected);
+        _service.RecordPeerAppliedAsync(sourceUuid, payload, null, Arg.Any<CancellationToken>()).Returns(expected);
 
         var result = await CreateController().PeerApplied(sourceUuid, payload, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
-        await _service.Received(1).RecordPeerAppliedAsync(sourceUuid, payload, Arg.Any<CancellationToken>());
+        await _service.Received(1).RecordPeerAppliedAsync(sourceUuid, payload, null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task PeerApplied_ServiceReturnsFailure_ReturnsNotFound()
     {
         _service.RecordPeerAppliedAsync(Arg.Any<Guid>(), Arg.Any<PeerInboundChangeAppliedPayload>(),
-                Arg.Any<CancellationToken>())
+                Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .Returns(Fail("Unknown sourceUuid"));
 
         var result = await CreateController()
@@ -351,7 +351,7 @@ public class JobChangeRequestControllerTests
     public async Task PeerApplied_ServiceThrows_Returns500()
     {
         _service.RecordPeerAppliedAsync(Arg.Any<Guid>(), Arg.Any<PeerInboundChangeAppliedPayload>(),
-                Arg.Any<CancellationToken>())
+                Arg.Any<int?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception("boom"));
 
         var result = await CreateController()

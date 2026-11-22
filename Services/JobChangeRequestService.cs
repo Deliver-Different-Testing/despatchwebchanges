@@ -17,7 +17,8 @@ public sealed class JobChangeRequestService(
     IJobChangeRequestPartnerClient partnerClient,
     ISendToPartnerService sendToPartner,
     ITenantInfoService tenantInfo,
-    IJobCommandRepository jobCommandRepository) : IJobChangeRequestService
+    IJobCommandRepository jobCommandRepository,
+    IPartnerJobLinkService partnerLinks) : IJobChangeRequestService
 {
     private const int ListForJobMaxRows = 100;
     private static readonly JsonSerializerOptions CompoundPayloadJsonOptions = new(JsonSerializerDefaults.Web);
@@ -81,10 +82,7 @@ public sealed class JobChangeRequestService(
 
         var stage = MapLifecycleStage(job.UcjbStatus);
 
-        var localTenantId = tenantInfo.GetCurrentTenantId();
-        var isLocalOwner = string.IsNullOrEmpty(localTenantId)
-                           || string.Equals(localTenantId, pairing.OwnerTenantId, StringComparison.Ordinal);
-        var requestingPartyType = isLocalOwner ? "OwnerTenant" : "PartnerTenant";
+        var requestingPartyType = IsInboundCopy(job.UcjbClientId, pairing) ? PartnerTenantParty : OwnerTenantParty;
         var decision = policyService.Evaluate(field, requestingPartyType, stage);
         if (!decision.Allowed)
         {
@@ -620,7 +618,7 @@ public sealed class JobChangeRequestService(
 
         var mirror = await ctx.TucJobs
             .Where(j => j.PartnerJobGuid == payload.PartnerJobGuid)
-            .Select(j => new { j.UcjbId, j.UcjbStatus })
+            .Select(j => new { j.UcjbId, j.UcjbStatus, j.UcjbClientId, j.PartnerPairingId })
             .FirstOrDefaultAsync(ct);
         if (mirror is null)
         {
@@ -645,15 +643,24 @@ public sealed class JobChangeRequestService(
                 payload.PartnerTenantId, recent.Count, recentGuids);
 
             return new JobChangeRequestResult
-                { Success = false, Message = $"No mirror job for PartnerJobGuid {payload.PartnerJobGuid}" };
+                { Success = false, NotFound = true, Message = $"No mirror job for PartnerJobGuid {payload.PartnerJobGuid}" };
         }
 
         var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, payload.PairingId,
             payload.PartnerTenantId, ct);
         if (pairing is null)
         {
-            return new JobChangeRequestResult { Success = false, Message = pairingError };
+            return new JobChangeRequestResult { Success = false, NotFound = true, Message = pairingError };
         }
+
+        if (mirror.PartnerPairingId is { } mirrorPairingId && mirrorPairingId != pairing.Id)
+        {
+            return new JobChangeRequestResult
+                { Success = false, NotFound = true, Message = $"No mirror job for PartnerJobGuid {payload.PartnerJobGuid} on pairing {pairing.Id}" };
+        }
+
+        // The peer is whichever party this tenant isn't: the owner when we hold the received copy.
+        var peerParty = IsInboundCopy(mirror.UcjbClientId, pairing) ? OwnerTenantParty : PartnerTenantParty;
 
         // Re-evaluate the policy against OUR local mirror's lifecycle stage. The originator
         // already checked their side, but our stage may have advanced (e.g., we've moved to
@@ -667,8 +674,11 @@ public sealed class JobChangeRequestService(
         if (isKnownField)
         {
             var localStage = MapLifecycleStage(mirror.UcjbStatus);
-            var localDecision = policyService.Evaluate(peerField, "PartnerTenant", localStage);
-            if (!localDecision.Allowed)
+            var localDecision = policyService.Evaluate(peerField, peerParty, localStage);
+            // A recall that's too late is still recorded, as Rejected, so the sender hears why instead of waiting.
+            var lateRecall = peerField == JobChangeField.Recall
+                             && localDecision.RuleCode == JobChangePolicyService.RecallAfterPickupRule;
+            if (!localDecision.Allowed && !lateRecall)
             {
                 return new JobChangeRequestResult
                 {
@@ -702,8 +712,8 @@ public sealed class JobChangeRequestService(
             UjcrPairingId = pairing.Id,
             UjcrSourceRequestUuid = payload.SourceRequestUuid,
             UjcrOrigin = "Peer",
-            UjcrRequestingPartyType = "PartnerTenant",
-            UjcrApprovalPartyType = "OwnerTenant",
+            UjcrRequestingPartyType = peerParty,
+            UjcrApprovalPartyType = peerParty == OwnerTenantParty ? PartnerTenantParty : OwnerTenantParty,
             UjcrFieldName = fieldName,
             UjcrCurrentValue = payload.CurrentValue,
             UjcrRequestedValue = payload.RequestedValue,
@@ -717,18 +727,64 @@ public sealed class JobChangeRequestService(
         await ctx.TucJobChangeRequests.AddAsync(row, ct);
         await ctx.SaveChangesAsync(ct);
 
+        if (isKnownField && peerField == JobChangeField.Recall)
+        {
+            await ApplyInboundRecallAsync(ctx, row, pairing.Id, ct);
+        }
+
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
 
+    /// <summary>
+    /// The receiver decides a recall on the spot: the copy is voided only if a conditional claim wins against a
+    /// concurrent pickup, and the sender is told either way.
+    /// </summary>
+    private async Task ApplyInboundRecallAsync(DespatchContext ctx, TucJobChangeRequest row, int pairingId, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var claimed = await PartnerJobLinkService.ClaimForVoidAsync(ctx, row.UjcrJobId, prePickupOnly: true, ct) == 1;
+        string? rejection = null;
+        if (claimed)
+        {
+            await jobCommandRepository.VoidJobAsync(new VoidJobRequest
+            {
+                JobId = row.UjcrJobId, VoidSingleJobOnly = true, VoidReason = "Recalled by the sender"
+            });
+            row.UjcrStatus = JobChangeRequestStatus.Applied;
+            row.UjcrAppliedAtUtc = now;
+        }
+        else
+        {
+            rejection = $"Already picked up, so it can't be recalled (rule {JobChangePolicyService.RecallAfterPickupRule}). Contact the partner.";
+            row.UjcrStatus = JobChangeRequestStatus.Rejected;
+            row.UjcrReason = string.IsNullOrEmpty(row.UjcrReason) ? rejection : $"{row.UjcrReason}\n--\n{rejection}";
+        }
+
+        row.UjcrRespondedAtUtc = now;
+        await ctx.SaveChangesAsync(ct);
+
+        var decision = await partnerClient.ForwardDecisionAsync(pairingId, row.UjcrSourceRequestUuid,
+            claimed ? "Approved" : "Rejected", rejection, ct);
+        var applied = claimed
+            ? await partnerClient.ForwardAppliedAsync(pairingId, row.UjcrSourceRequestUuid, null, ct)
+            : decision;
+        if (!decision.Success || !applied.Success)
+        {
+            Log.Error("Recall {SourceUuid}: telling the sender the outcome failed: {Message}", row.UjcrSourceRequestUuid,
+                decision.Message ?? applied.Message);
+        }
+    }
+
     public async Task<JobChangeRequestResult> RecordPeerDecisionAsync(Guid sourceUuid,
-        PeerInboundChangeDecisionPayload payload, CancellationToken ct)
+        PeerInboundChangeDecisionPayload payload, int? pairingId, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
         var row = await ctx.TucJobChangeRequests.AsTracking()
-            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid, ct);
+            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid
+                                      && (pairingId == null || r.UjcrPairingId == pairingId), ct);
         if (row is null)
         {
-            return new JobChangeRequestResult { Success = false, Message = $"No request for SourceUuid {sourceUuid}" };
+            return new JobChangeRequestResult { Success = false, NotFound = true, Message = $"No request for SourceUuid {sourceUuid}" };
         }
 
         // Terminal statuses short-circuit so a replayed inbound is idempotent. Approved
@@ -755,14 +811,15 @@ public sealed class JobChangeRequestService(
     }
 
     public async Task<JobChangeRequestResult> RecordPeerAppliedAsync(Guid sourceUuid,
-        PeerInboundChangeAppliedPayload payload, CancellationToken ct)
+        PeerInboundChangeAppliedPayload payload, int? pairingId, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
         var row = await ctx.TucJobChangeRequests.AsTracking()
-            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid, ct);
+            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid
+                                      && (pairingId == null || r.UjcrPairingId == pairingId), ct);
         if (row is null)
         {
-            return new JobChangeRequestResult { Success = false, Message = $"No request for SourceUuid {sourceUuid}" };
+            return new JobChangeRequestResult { Success = false, NotFound = true, Message = $"No request for SourceUuid {sourceUuid}" };
         }
 
         // Terminal short-circuit. Crucially includes Cancelled — if the originator
@@ -799,7 +856,7 @@ public sealed class JobChangeRequestService(
             }
 
             if (Enum.TryParse<JobChangeField>(row.UjcrFieldName, out var field)
-                && field != JobChangeField.PartnerAgreedRate)
+                && field is not (JobChangeField.PartnerAgreedRate or JobChangeField.Recall))
             {
                 await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
             }
@@ -807,6 +864,14 @@ public sealed class JobChangeRequestService(
             await ctx.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
         });
+
+        // After the commit: the unlink runs on its own connection and would block on this transaction's locks.
+        if (row.UjcrFieldName == nameof(JobChangeField.Recall)
+            && await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId).Select(j => j.PartnerJobGuid).FirstOrDefaultAsync(ct)
+                is { } partnerJobGuid)
+        {
+            await partnerLinks.UnlinkAsync(partnerJobGuid, PartnerUnlinkReason.RecallApplied, null, ct);
+        }
 
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
@@ -1169,6 +1234,13 @@ public sealed class JobChangeRequestService(
     // PartnerTenantId is signature-authoritative when the peer IM sets it. Tenants
     // with multiple active pairings and no disambiguator error loudly rather than
     // silently routing to whichever Active row comes back first.
+    private const string OwnerTenantParty = "OwnerTenant";
+    private const string PartnerTenantParty = "PartnerTenant";
+
+    // Same rule as PartnerJobDirection: the received copy is booked under the pairing's connected-tenant client.
+    private static bool IsInboundCopy(int? jobClientId, IntMgrPartnerPairing pairing) =>
+        pairing.ClientId is { } pairingClientId && jobClientId == pairingClientId;
+
     private static async Task<(IntMgrPartnerPairing? Pairing, string? Error)> ResolveActivePairingAsync(
         DespatchContext ctx, int? requestedPairingId, string? partnerTenantId, CancellationToken ct)
     {

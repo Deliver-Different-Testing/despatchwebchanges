@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mail;
@@ -1134,7 +1134,7 @@ public class JobController(
 
             if (firstJobId is { } firstId)
             {
-                if (!await jobQueryRepository.IsOutboundPartnerJobAsync(firstId, infoService.GetCurrentTenantId()))
+                if (!await jobQueryRepository.IsOutboundPartnerJobAsync(firstId))
                 {
                     await jobCommandRepository.ReAssignSelectedJobsAsync([firstId]);
                 }
@@ -3310,7 +3310,7 @@ public class JobController(
 
     private async Task<IActionResult> RejectIfOutboundPartnerJobAsync(int jobId)
     {
-        if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId, infoService.GetCurrentTenantId()))
+        if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId))
         {
             return BadRequest(new
             {

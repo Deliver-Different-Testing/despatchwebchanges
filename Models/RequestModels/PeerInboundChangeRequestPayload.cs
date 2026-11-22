@@ -18,7 +18,7 @@ public sealed class PeerInboundChangeRequestPayload
     /// when omitted, the service falls back to <see cref="PartnerTenantId"/> lookup, then
     /// finally to selecting the tenant's sole active pairing.
     /// </summary>
-    public int? PairingId { get; init; }
+    public int? PairingId { get; set; }
 
     /// <summary>
     /// Originator's tenant id, stamped by the peer IM's signature filter. Lets the local

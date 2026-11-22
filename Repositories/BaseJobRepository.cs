@@ -189,7 +189,7 @@ public partial class BaseJobRepository(
 
             var allJobs = await Context.TucJobs
                 .Where(j => pageJobIds.Contains(j.UcjbId))
-                .Select(JobMappings.JobDispatchMapping(isUsTenant, infoService.GetCurrentTenantId()))
+                .Select(JobMappings.JobDispatchMapping(isUsTenant))
                 .ToListAsync(cancellationToken);
 
             // A network partner sees their own pay, never the tenant's revenue, in every list
