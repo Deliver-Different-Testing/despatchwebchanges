@@ -12,6 +12,7 @@ namespace DespatchWeb.Services;
 public sealed partial class JobLabelService(
     IDbContextFactory<DespatchContext> contextFactory,
     IAlertLabelService alertLabels,
+    ILabelTemplateResolver templates,
     ITenantClock clock) : IJobLabelService
 {
     // AlertLabel modes: 2 = bulk job, 7 = job dated from its parent, 9 = leg dated from the leg itself.
@@ -48,9 +49,9 @@ public sealed partial class JobLabelService(
         if (!string.IsNullOrWhiteSpace(target.CarrierConnote))
             throw new JobLabelException("This job's label comes from the courier network, so it can't be printed here.");
 
-        var templateId = await SpeedLabelIdAsync(context, target.Speed, ct)
-            ?? await context.TblSettings.Select(s => s.DefaultJobLabelId > 0 ? s.DefaultJobLabelId : null).FirstOrDefaultAsync(ct)
-            ?? throw new JobLabelException("No label template is set up for this service level or as the default job label.");
+        var templateId = await templates.ResolveAsync(context, target.ClientId, target.Speed, isBulk: false, ct) is > 0 and var id
+            ? id
+            : throw new JobLabelException("No label template is set up for this client, its service level or as the default job label.");
 
         var pdf = await alertLabels.GeneratePdfAsync(new AlertLabelRequest
         {
@@ -69,7 +70,7 @@ public sealed partial class JobLabelService(
     {
         var bulkJob = await context.TblBulkJobs
             .Where(b => b.BulkJobId == bulkJobId)
-            .Select(b => new { b.JobNumber, b.Speed, b.Void, b.BookDate })
+            .Select(b => new { b.JobNumber, b.ClientId, b.Speed, b.Void, b.BookDate })
             .FirstOrDefaultAsync(ct);
         if (bulkJob is null) return null;
 
@@ -80,9 +81,9 @@ public sealed partial class JobLabelService(
         if (bulkJob.BookDate <= clock.TenantNow.AddYears(-1))
             throw new JobLabelException("This booking is more than a year old, so its label can't be printed.");
 
-        var templateId = await SpeedLabelIdAsync(context, bulkJob.Speed, ct)
-            ?? await context.TblSettings.Select(s => s.DefaultBulkLabelId > 0 ? s.DefaultBulkLabelId : null).FirstOrDefaultAsync(ct)
-            ?? throw new JobLabelException("No label template is set up for this service level or as the default bulk label.");
+        var templateId = await templates.ResolveAsync(context, bulkJob.ClientId, bulkJob.Speed, isBulk: true, ct) is > 0 and var id
+            ? id
+            : throw new JobLabelException("No label template is set up for this client, its service level or as the default bulk label.");
 
         var pdf = await alertLabels.GeneratePdfAsync(new AlertLabelRequest
         {
@@ -96,11 +97,6 @@ public sealed partial class JobLabelService(
 
     private static JobLabel Label(byte[] pdf, string? number, int id) =>
         new(pdf, $"Label-{(string.IsNullOrWhiteSpace(number) ? id.ToString() : number)}.pdf");
-
-    private static Task<int?> SpeedLabelIdAsync(DespatchContext context, int? speedId, CancellationToken ct) =>
-        speedId is null or 0
-            ? Task.FromResult<int?>(null)
-            : context.TucJobTypes.Where(t => t.UcjtId == speedId).Select(t => t.LabelId > 0 ? t.LabelId : null).FirstOrDefaultAsync(ct);
 
     private const int FlightParent = (int)JobRelationshipTypes.MedicalRun;
     private const int FlightLeg = (int)JobRelationshipTypes.MedicalRunSingle;

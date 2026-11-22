@@ -14,6 +14,7 @@ public static class ReportingServiceCollectionExtensions
         services.AddScoped<IPodReportService, PodReportService>();
         services.AddScoped<IPriceReportService, PriceReportService>();
         services.AddScoped<IJobLabelService, JobLabelService>();
+        services.AddSingleton<ILabelTemplateResolver, LabelTemplateResolver>();
         services.AddAlertLabelService();
         
         services.AddHttpClient<IPdfOverlayClient, PdfOverlayClient>();

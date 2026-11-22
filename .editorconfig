@@ -2,6 +2,7 @@ root = true
 
 [*.cs]
 dotnet_diagnostic.RS0030.severity = error
+dotnet_diagnostic.CA1416.severity = error   # Windows-only API (e.g. System.Drawing): the app runs in a Linux container
 
 # --- Tier 1: correctness analyzers (catch real bugs) ---
 dotnet_diagnostic.CA2016.severity = warning   # forward CancellationToken to methods that accept one

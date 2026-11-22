@@ -14,25 +14,18 @@ public class JobLabelServiceTests : IAsyncDisposable
 {
     private static readonly DateTime Today = new(2026, 11, 20);
     private const int JobTemplate = 11;
-    private const int SpeedTemplate = 12;
     private const int BulkTemplate = 13;
-    private const int SpeedWithLabel = 5;
 
     private readonly SqliteTestDatabase _db = new();
     private readonly IAlertLabelService _alertLabels = Substitute.For<IAlertLabelService>();
+    private readonly ILabelTemplateResolver _templates = Substitute.For<ILabelTemplateResolver>();
     private AlertLabelRequest? _request;
 
     public JobLabelServiceTests()
     {
         _alertLabels.GeneratePdfAsync(Arg.Do<AlertLabelRequest>(r => _request = r)).Returns([1, 2, 3]);
-
-        using var seed = _db.CreateContext();
-        var settings = TestSettings.Minimal();
-        settings.DefaultJobLabelId = JobTemplate;
-        settings.DefaultBulkLabelId = BulkTemplate;
-        seed.TblSettings.Add(settings);
-        seed.TucJobTypes.Add(new TucJobType { UcjtId = SpeedWithLabel, UcjtName = "Overnight", ShortName = "ON", CreatedBy = "tests", LastModifiedBy = "tests", LabelId = SpeedTemplate });
-        seed.SaveChanges();
+        _templates.ResolveAsync(Arg.Any<DespatchContext>(), Arg.Any<int?>(), Arg.Any<int?>(), false, Arg.Any<CancellationToken>()).Returns(JobTemplate);
+        _templates.ResolveAsync(Arg.Any<DespatchContext>(), Arg.Any<int?>(), Arg.Any<int?>(), true, Arg.Any<CancellationToken>()).Returns(BulkTemplate);
     }
 
     public async ValueTask DisposeAsync()
@@ -54,7 +47,7 @@ public class JobLabelServiceTests : IAsyncDisposable
     {
         var provider = Substitute.For<IScopeProvider>();
         provider.Scope.Returns(scope ?? new ScopeContext((int)ClientType.Tenant, null, null));
-        return new JobLabelService(SqliteTestDatabase.CreateFactoryMock(new DespatchContext(_db.Options, provider)), _alertLabels, new FakeTenantClock(Today));
+        return new JobLabelService(SqliteTestDatabase.CreateFactoryMock(new DespatchContext(_db.Options, provider)), _alertLabels, _templates, new FakeTenantClock(Today));
     }
 
     private static TucJob Job(int id, string number, int? parentId = null, int? relationshipType = null, int clientId = 10) =>
@@ -195,28 +188,30 @@ public class JobLabelServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SpeedLabel_WinsOverTheDefault()
+    public async Task Template_IsResolvedFromTheDelLegsClientAndSpeed()
     {
-        var job = Job(1, "AB100");
-        job.UcjbSpeed = SpeedWithLabel;
-        await Seed(job);
+        var lhp = Job(21, "E15EDLHP", parentId: 30, relationshipType: 20);
+        lhp.UcjbSpeed = 4;
+        var del = Job(23, "E15EDDEL", parentId: 30, relationshipType: 20, clientId: 10);
+        del.UcjbSpeed = 5;
+        await Seed(lhp, del);
 
-        await Service().GetLabelAsync(1, isBulk: false);
+        await Service().GetLabelAsync(21, isBulk: false, Ct);
 
-        Assert.Equal(SpeedTemplate, _request!.TemplateId);
+        await _templates.Received(1).ResolveAsync(Arg.Any<DespatchContext>(), 10, 5, false, Arg.Any<CancellationToken>());
+        Assert.Equal(JobTemplate, _request!.TemplateId);
     }
 
-    [Fact]
-    public async Task ZeroSpeedLabel_FallsBackToTheDefault()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    public async Task NoJobTemplate_IsRefused(int? resolved)
     {
-        await Seed(new TucJobType { UcjtId = 55, UcjtName = "Standard", ShortName = "ST", CreatedBy = "tests", LastModifiedBy = "tests", LabelId = 0 });
-        var job = Job(1, "AB100");
-        job.UcjbSpeed = 55;
-        await Seed(job);
+        _templates.ResolveAsync(Arg.Any<DespatchContext>(), Arg.Any<int?>(), Arg.Any<int?>(), false, Arg.Any<CancellationToken>()).Returns(resolved);
+        await Seed(Job(1, "AB100"));
 
-        await Service().GetLabelAsync(1, isBulk: false);
-
-        Assert.Equal(JobTemplate, _request!.TemplateId);
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(1, isBulk: false, Ct));
+        await _alertLabels.DidNotReceive().GeneratePdfAsync(Arg.Any<AlertLabelRequest>());
     }
 
     [Fact]
@@ -270,19 +265,6 @@ public class JobLabelServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task NoTemplateAnywhere_IsRefused()
-    {
-        await using (var context = _db.CreateContext())
-        {
-            context.TblSettings.Single().DefaultJobLabelId = null;
-            await context.SaveChangesAsync(Ct);
-        }
-        await Seed(Job(1, "AB100"));
-
-        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(1, isBulk: false));
-    }
-
-    [Fact]
     public async Task BulkRow_PrintsTheBulkLabel()
     {
         await Seed(Bulk());
@@ -291,6 +273,19 @@ public class JobLabelServiceTests : IAsyncDisposable
 
         Assert.Equal("Label-BK7.pdf", label!.FileName);
         Assert.Equal((7, 2, BulkTemplate), (_request!.JobId, _request.Mode, _request.TemplateId));
+        await _templates.Received(1).ResolveAsync(Arg.Any<DespatchContext>(), 10, 3, true, Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    public async Task NoBulkTemplate_IsRefused(int? resolved)
+    {
+        _templates.ResolveAsync(Arg.Any<DespatchContext>(), Arg.Any<int?>(), Arg.Any<int?>(), true, Arg.Any<CancellationToken>()).Returns(resolved);
+        await Seed(Bulk());
+
+        await Assert.ThrowsAsync<JobLabelException>(() => Service().GetLabelAsync(7, isBulk: true, Ct));
+        await _alertLabels.DidNotReceive().GeneratePdfAsync(Arg.Any<AlertLabelRequest>());
     }
 
     [Fact]
@@ -302,7 +297,7 @@ public class JobLabelServiceTests : IAsyncDisposable
     }
 
     private static TblBulkJob Bulk(DateTime? bookDate = null, bool isVoid = false) =>
-        new() { BulkJobId = 7, JobNumber = "BK7", ClientId = 10, Speed = 0, BookDate = bookDate ?? Today, Void = isVoid };
+        new() { BulkJobId = 7, JobNumber = "BK7", ClientId = 10, Speed = 3, BookDate = bookDate ?? Today, Void = isVoid };
 
     [Fact]
     public async Task VoidBulkRow_IsRefused()
