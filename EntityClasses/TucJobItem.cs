@@ -39,6 +39,8 @@ public partial class TucJobItem
 
     public byte? ItemStatus { get; set; }
 
+    public int? SortOrder { get; set; }
+
     public virtual TucJob ChildJob { get; set; }
 
     public virtual TucJob Job { get; set; }

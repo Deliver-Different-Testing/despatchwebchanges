@@ -110,6 +110,41 @@ public class JobMappingsTests
         Assert.Null(archiveResult.AssignedFlight);
     }
 
+    [Fact]
+    public void ParcelDimensions_AreInSortOrderThenItemIdOrder_ForLiveAndArchivedJobs()
+    {
+        TucJobItem Live(int itemId, int? sortOrder) =>
+            new() { JobId = 1, ItemId = itemId, SortOrder = sortOrder, Barcode = $"J-{itemId}" };
+        TucJobItemsArchive Archived(int itemId, int? sortOrder) =>
+            new() { JobId = 1, ItemId = itemId, SortOrder = sortOrder, Barcode = $"J-{itemId}" };
+
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem> { Live(1, 2), Live(5, null), Live(2, 3), Live(4, 1), Live(3, null) },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>
+                { Archived(1, 2), Archived(5, null), Archived(2, 3), Archived(4, 1), Archived(3, null) }
+        };
+
+        var live = JobMappings.JobMappingCore(false).Compile()(liveJob);
+        var archived = JobMappings.JobArchiveMapping.Compile()(archivedJob);
+
+        Assert.Equal([4, 1, 2, 3, 5], live.ParcelDimensions.Select(p => p.ItemId));
+        Assert.Equal([4, 1, 2, 3, 5], archived.ParcelDimensions.Select(p => p.ItemId));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

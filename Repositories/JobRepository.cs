@@ -2005,6 +2005,7 @@ public partial class JobRepository(
                     .AnyAsync(j => (j.UcjbId == jobId || j.UcjbId == effectiveJobId) && j.UcjbMobileSend);
 
                 var matched = MatchParcelsToLines(parcels, existing);
+                var submittedLines = new TucJobItem[parcels.Count];
 
                 for (var index = 0; index < parcels.Count; index++)
                 {
@@ -2012,7 +2013,7 @@ public partial class JobRepository(
                     var item = matched[index];
                     if (item == null)
                     {
-                        Context.TucJobItems.Add(new TucJobItem
+                        Context.TucJobItems.Add(submittedLines[index] = new TucJobItem
                         {
                             JobId = effectiveJobId,
                             ChildJobId = childJobId,
@@ -2029,6 +2030,7 @@ public partial class JobRepository(
                         continue;
                     }
 
+                    submittedLines[index] = item;
                     item.Height = p.Height ?? 0;
                     item.Length = p.Length ?? 0;
                     item.Depth = p.Depth ?? 0;
@@ -2044,6 +2046,12 @@ public partial class JobRepository(
                 // Lines already flagged are history and are kept either way.
                 var removedItemIds = scoped.Except(matched.Where(i => i != null)).Where(IsActiveLine)
                     .Select(i => i.ItemId).ToList();
+
+                // #1056: ItemID is the line's identity to the courier app, labels and APIs, so the
+                // on-screen order is stored in SortOrder instead.
+                var keptUnsubmitted = existing.Except(submittedLines)
+                    .Where(i => flagRemovals || !IsActiveLine(i)).ToHashSet();
+                ApplySortOrder(submittedLines, existing, keptUnsubmitted);
                 await Context.SaveChangesAsync();
 
                 // One set-based statement: RemoveRange/SaveChanges issues a DELETE per row, and the totals
@@ -5145,6 +5153,38 @@ public partial class JobRepository(
     }
 
     private static bool IsActiveLine(TucJobItem item) => (item.ItemStatus ?? 0) == (byte)JobItemStatus.Active;
+
+    /// <summary>
+    /// Readers order lines by SortOrder (unset last), then ItemID; keep in step with the JobMappings projections.
+    /// </summary>
+    private static IOrderedEnumerable<TucJobItem> InDisplayOrder(IEnumerable<TucJobItem> lines) =>
+        lines.OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId);
+
+    /// <summary>
+    /// Stores the scope's order: the submitted lines as sent, with each kept-but-unsubmitted (flagged) line
+    /// straight after the line it followed before, or first when nothing before it survives. SortOrder is
+    /// only written when that order differs from what readers already see, so an unchanged save writes nothing.
+    /// </summary>
+    private static void ApplySortOrder(IReadOnlyList<TucJobItem> submitted, IEnumerable<TucJobItem> previousLines,
+        IReadOnlySet<TucJobItem> keptUnsubmitted)
+    {
+        var ordered = submitted.ToList();
+        var submittedSet = submitted.ToHashSet();
+        TucJobItem anchor = null;
+        foreach (var line in InDisplayOrder(previousLines).ToList())
+        {
+            if (keptUnsubmitted.Contains(line))
+                ordered.Insert(anchor == null ? 0 : ordered.IndexOf(anchor) + 1, line);
+            else if (!submittedSet.Contains(line))
+                continue;
+            anchor = line;
+        }
+
+        if (InDisplayOrder(ordered).SequenceEqual(ordered)) return;
+
+        for (var index = 0; index < ordered.Count; index++)
+            ordered[index].SortOrder = index + 1;
+    }
 
     /// <summary>
     /// Pairs each submitted parcel with the line it edits. The dialog doesn't send ItemIds, so a parcel
