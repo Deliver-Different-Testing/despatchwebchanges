@@ -1993,7 +1993,7 @@ public partial class JobRepository(
                                 (childJobId == null || i.ChildJobId == childJobId))
                     .OrderBy(i => i.ItemId)
                     .ToListAsync();
-                var existing = scoped.Where(i => i.ChildJobId == childJobId).ToList();
+                var existing = InDisplayOrder(scoped.Where(i => i.ChildJobId == childJobId)).ToList();
 
                 var nextItemId = (await Context.TucJobItems
                     .Where(i => i.JobId == effectiveJobId)
@@ -2051,8 +2051,14 @@ public partial class JobRepository(
                 // on-screen order is stored in SortOrder instead.
                 var keptUnsubmitted = existing.Except(submittedLines)
                     .Where(i => flagRemovals || !IsActiveLine(i)).ToHashSet();
-                ApplySortOrder(submittedLines, existing, keptUnsubmitted);
+                var sortOrders = PlanSortOrder(submittedLines, existing, keptUnsubmitted);
+                var existingSet = existing.ToHashSet();
+                foreach (var (line, sortOrder) in sortOrders.Where(s => !existingSet.Contains(s.Line)))
+                    line.SortOrder = sortOrder;
                 await Context.SaveChangesAsync();
+                await WriteSortOrderAsync(effectiveJobId, sortOrders
+                    .Where(s => existingSet.Contains(s.Line) && s.Line.SortOrder != s.SortOrder)
+                    .Select(s => (s.Line.ItemId, s.SortOrder)).ToList());
 
                 // One set-based statement: RemoveRange/SaveChanges issues a DELETE per row, and the totals
                 // trigger then fires per row (qty stepping 486 -> 1, a courier note + journal rows each time).
@@ -5161,17 +5167,18 @@ public partial class JobRepository(
         lines.OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId);
 
     /// <summary>
-    /// Stores the scope's order: the submitted lines as sent, with each kept-but-unsubmitted (flagged) line
-    /// straight after the line it followed before, or first when nothing before it survives. SortOrder is
-    /// only written when that order differs from what readers already see, so an unchanged save writes nothing.
+    /// The scope's order after a save: the submitted lines as sent, with each kept-but-unsubmitted (flagged)
+    /// line straight after the line it followed before (<paramref name="previousLines"/> is in display order),
+    /// or first when nothing before it survives. Empty when that matches what readers already see, so an
+    /// unchanged save writes nothing.
     /// </summary>
-    private static void ApplySortOrder(IReadOnlyList<TucJobItem> submitted, IEnumerable<TucJobItem> previousLines,
-        IReadOnlySet<TucJobItem> keptUnsubmitted)
+    private static List<(TucJobItem Line, int SortOrder)> PlanSortOrder(IReadOnlyList<TucJobItem> submitted,
+        IReadOnlyList<TucJobItem> previousLines, IReadOnlySet<TucJobItem> keptUnsubmitted)
     {
         var ordered = submitted.ToList();
         var submittedSet = submitted.ToHashSet();
         TucJobItem anchor = null;
-        foreach (var line in InDisplayOrder(previousLines).ToList())
+        foreach (var line in previousLines)
         {
             if (keptUnsubmitted.Contains(line))
                 ordered.Insert(anchor == null ? 0 : ordered.IndexOf(anchor) + 1, line);
@@ -5180,16 +5187,40 @@ public partial class JobRepository(
             anchor = line;
         }
 
-        if (InDisplayOrder(ordered).SequenceEqual(ordered)) return;
+        return InDisplayOrder(ordered).SequenceEqual(ordered)
+            ? []
+            : ordered.Select((line, index) => (line, index + 1)).ToList();
+    }
 
-        for (var index = 0; index < ordered.Count; index++)
-            ordered[index].SortOrder = index + 1;
+    /// <summary>
+    /// Writes SortOrder for existing lines in one statement per chunk: tucJobItems' totals trigger runs per
+    /// statement, and SaveChanges would issue one UPDATE per line. No LINQ form sets a per-row value in one UPDATE.
+    /// </summary>
+    private async Task WriteSortOrderAsync(int jobId, IReadOnlyList<(int ItemId, int SortOrder)> sortOrders)
+    {
+        foreach (var chunk in sortOrders.Chunk(500))
+        {
+            var parameters = new List<object> { jobId };
+            var cases = new List<string>();
+            foreach (var (itemId, sortOrder) in chunk)
+            {
+                cases.Add($"WHEN {{{parameters.Count}}} THEN {{{parameters.Count + 1}}}");
+                parameters.Add(itemId);
+                parameters.Add(sortOrder);
+            }
+
+            var itemIds = string.Join(", ", chunk.Select((_, i) => $"{{{1 + 2 * i}}}"));
+            await Context.Database.ExecuteSqlRawAsync(
+                $"UPDATE tucJobItems SET SortOrder = CASE ItemID {string.Join(" ", cases)} END " +
+                $"WHERE JobID = {{0}} AND ItemID IN ({itemIds})",
+                parameters);
+        }
     }
 
     /// <summary>
     /// Pairs each submitted parcel with the line it edits. The dialog doesn't send ItemIds, so a parcel
     /// with a barcode takes the line with that barcode (re-activating it if it was flagged); the rest
-    /// take the remaining active lines in ItemId order, as before, but a barcoded parcel never takes a
+    /// take the remaining active lines in display order, but a barcoded parcel never takes a
     /// line that has a different barcode - that line was removed, and a new line is added instead.
     /// A null entry means "insert".
     /// </summary>

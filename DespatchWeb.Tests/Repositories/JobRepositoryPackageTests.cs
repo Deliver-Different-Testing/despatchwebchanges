@@ -1236,6 +1236,22 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdatePackagesForJobAsync_BarcodelessLinesInSortOrder_EditTheLineShownInThatSlot()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(956, "J956"));
+        ctx.TucJobItems.AddRange(Line(956, 1, null, weight: 1, sortOrder: 2), Line(956, 2, null, weight: 2, sortOrder: 1));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(956,
+            [new ParcelDimensions { Weight = 5 }, new ParcelDimensions { Weight = 1 }]);
+
+        var lines = await ReadDisplayOrderAsync(956);
+        Assert.Equal([2, 1], lines.Select(i => i.ItemId));
+        Assert.Equal([5.0, 1.0], lines.Select(i => i.Weight));
+    }
+
+    [Fact]
     public async Task UpdatePackagesForJobAsync_SentJob_RemovedLineKeepsItsSlotAfterThePrecedingLine()
     {
         await using var ctx = CreateContext();
