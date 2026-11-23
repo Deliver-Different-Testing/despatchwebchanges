@@ -209,6 +209,10 @@ export interface DriverListItemProps {
     onClick: () => void;
     /** Whether this driver is the currently selected one */
     isSelected: boolean;
+    /** Show the pay-period detail (behind by / minimum ending). Set for the selected driver and while searching. */
+    showTopUpDetail?: boolean;
+    /** Tenant wall-clock now in ms, for the minimum-ending window. */
+    nowMs?: number;
 }
 
 /**

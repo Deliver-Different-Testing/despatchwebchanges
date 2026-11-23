@@ -18,4 +18,7 @@ public sealed class CourierClearListDto
     public bool DangerousGoods { get; init; }
     public DateTime? DgLicenseExpiry { get; init; }
     public int JobCount { get; set; }
+    public decimal? EarningsBehindBy { get; set; }
+    public DateTime? MinimumEndsAt { get; set; }
+    public int? MinimumAlertMinutes { get; set; }
 }

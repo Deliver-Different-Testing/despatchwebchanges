@@ -11,6 +11,7 @@ import {useDriverEarnings} from '../../../hooks/useDriverManagementApi';
 // Mock the hooks
 vi.mock('../../../hooks/useDriverManagementApi', () => ({
     useDriverEarnings: vi.fn(),
+    useDriverPayPeriodOverview: vi.fn(() => ({data: undefined})),
 }));
 
 // Mock the API

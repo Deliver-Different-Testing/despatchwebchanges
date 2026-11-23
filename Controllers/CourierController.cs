@@ -16,7 +16,10 @@ public class CourierController(
     ITenantInfoService infoService,
     ITaskRepository taskRepository,
     ICourierReportService courierReportService,
-    IComplianceReminderService complianceReminderService
+    IComplianceReminderService complianceReminderService,
+    IDriverTopUpStatusService? topUpStatusService = null,
+    DespatchWeb.Services.IAccessKeyService? accessKeys = null,
+    IDriverEarlyFinishService? earlyFinishService = null
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -298,6 +301,102 @@ public class CourierController(
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
                     nameof(GetAllFleetOptions)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    /// <summary>Whether the caller may record a driver early finish, and the standard reasons to offer.</summary>
+    [HttpGet]
+    public async Task<IActionResult> GetEarlyFinishOptions()
+    {
+        try
+        {
+            if (earlyFinishService == null)
+            {
+                return Json(new EarlyFinishOptions { Available = false });
+            }
+
+            return Json(await earlyFinishService.GetOptionsAsync());
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetEarlyFinishOptions)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    /// <summary>Records that a driver finished early / disappeared / broke down at a time (informs the top-up approval).</summary>
+    [HttpPost]
+    public async Task<IActionResult> RecordEarlyFinish([FromBody] RecordEarlyFinishRequest request)
+    {
+        try
+        {
+            if (earlyFinishService == null)
+            {
+                return NotFound();
+            }
+
+            await earlyFinishService.RecordAsync(request);
+            return Ok();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(e.Message);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(RecordEarlyFinish)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    /// <summary>
+    /// The dispatcher's pay-period overview: days worked, deliveries and how far behind each eligible driver is.
+    /// Never returns rates, minimum hours or owed amounts; hours only when the tenant turns them on.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetDriverPayPeriodOverview()
+    {
+        try
+        {
+            var available = accessKeys != null && topUpStatusService != null
+                            && await accessKeys.HasAsync(DespatchWeb.Constants.DashboardFeatureKeys.DriverEarningsStatus);
+            if (!available)
+            {
+                return Json(new { available = false, showHours = false, items = Array.Empty<object>() });
+            }
+
+            var statuses = await topUpStatusService!.GetStatusesAsync();
+            var showHours = statuses.Any(s => s.ShowHours);
+            var items = statuses
+                .OrderByDescending(s => s.BehindBy)
+                .ThenBy(s => s.Name)
+                .Select(s => new
+                {
+                    courierId = s.CourierId,
+                    name = s.Name,
+                    code = s.Code,
+                    daysWorked = s.DaysWorked,
+                    deliveries = s.Deliveries,
+                    behindBy = s.BehindBy > 0 ? s.BehindBy : (decimal?)null,
+                    hours = showHours ? s.PaidHours : (decimal?)null
+                })
+                .ToList();
+            return Json(new { available = true, showHours, items });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
+                    nameof(GetDriverPayPeriodOverview)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

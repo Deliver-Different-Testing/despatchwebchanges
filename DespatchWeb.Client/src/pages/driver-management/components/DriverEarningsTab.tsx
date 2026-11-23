@@ -1,6 +1,7 @@
-import {Group, Stack} from '@mantine/core';
+import {Group, SegmentedControl, Stack} from '@mantine/core';
 import React, {useState} from 'react';
-import {useDriverEarnings} from '../../../hooks/useDriverManagementApi';
+import {useDriverEarnings, useDriverPayPeriodOverview} from '../../../hooks/useDriverManagementApi';
+import {DriverPayPeriodView} from './DriverPayPeriodView';
 import {CourierDailyEarnings, PaginatedRequest} from '../../../types';
 import {driverManagementApi} from '../../../api/driverManagementApi';
 import {DollarSign, TrendingUp, Truck, Users} from 'lucide-react';
@@ -28,6 +29,10 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
         orderBy: 'name', pageSize: 100, page: 1, searchTerm: '', sortDescending: false,
     });
     const [sort, setSort] = useState<SortState>({column: 'name', direction: 'asc'});
+    // "This pay period" is offered only to users holding dw-driver-earnings-status.
+    const [view, setView] = useState<'today' | 'payPeriod'>('today');
+    const {data: payPeriod} = useDriverPayPeriodOverview();
+    const payPeriodAvailable = payPeriod?.available === true;
 
     const {data, isLoading, isError, refetch} = useDriverEarnings(query);
     const items = isError ? [] : data?.items ?? [];
@@ -53,8 +58,28 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
         }
     };
 
+    if (payPeriodAvailable && view === 'payPeriod') {
+        return (
+            <Stack gap={16}>
+                <SegmentedControl
+                    value={view}
+                    onChange={(v) => setView(v as 'today' | 'payPeriod')}
+                    data={[{label: 'Today', value: 'today'}, {label: 'This pay period', value: 'payPeriod'}]}
+                />
+                <DriverPayPeriodView />
+            </Stack>
+        );
+    }
+
     return (
         <Stack gap={16}>
+            {payPeriodAvailable && (
+                <SegmentedControl
+                    value={view}
+                    onChange={(v) => setView(v as 'today' | 'payPeriod')}
+                    data={[{label: 'Today', value: 'today'}, {label: 'This pay period', value: 'payPeriod'}]}
+                />
+            )}
             {/* Stats */}
             <Group gap={16}>
                 <StatCard value={formatCurrency(stats.totalEarningsToday)} label="Total earnings today" color="var(--mantine-color-green-6)" icon={<Icon lucide={DollarSign}/>} />

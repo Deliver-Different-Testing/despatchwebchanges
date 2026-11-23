@@ -24,6 +24,9 @@ public static class RepositoryServiceCollectionExtensions
         services.AddScoped<IDispatchLayoutRepository, DispatchLayoutRepository>();
         services.AddScoped<IStaffPreferenceRepository, StaffPreferenceRepository>();
         services.AddScoped<ITenantSettingsService, TenantSettingsService>();
+        services.AddScoped<IAccessKeyService, AccessKeyService>();
+        services.AddScoped<IDriverTopUpStatusService, DriverTopUpStatusService>();
+        services.AddScoped<IDriverEarlyFinishService, DriverEarlyFinishService>();
 
         return services;
     }
