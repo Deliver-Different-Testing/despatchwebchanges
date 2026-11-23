@@ -42,7 +42,7 @@ export interface DispatchOutcome {
 
 export async function executeDispatchConfirmation(
     job: DispatchTargetJob,
-    {type, destination, emailSubject, emailBody, includeStopJobs, awb}: DispatchConfirmation,
+    {type, destination, emailSubject, emailBody, includeStopJobs, awb, resend}: DispatchConfirmation,
 ): Promise<DispatchOutcome> {
     if (type === 'Agent') {
         if (!await canAssignAgentToJob(job.id)) {
@@ -50,7 +50,7 @@ export async function executeDispatchConfirmation(
         }
 
         const result = await assignAgentToJob(
-            job.id, destination.id, includeStopJobs ?? false, emailSubject, emailBody,
+            job.id, destination.id, includeStopJobs ?? false, emailSubject, emailBody, resend ?? false,
         );
 
         // Sequenced after the assignment so a ConNote failure can't leave the job
@@ -76,6 +76,12 @@ export async function executeDispatchConfirmation(
         }
         if (result.status === 'NoInboundUrl') {
             return {message: `${base} — inbound portal URL not configured, no link sent`, severity: 'warning'};
+        }
+        if (result.status === 'AlreadySent') {
+            return {message: `${base} — agent already had the alert for this job, not sent again`, severity: awbNote ? 'warning' : 'success'};
+        }
+        if (result.status === 'AlertsOff') {
+            return {message: `${base} — agent alerts are switched off, no email sent`, severity: awbNote ? 'warning' : 'success'};
         }
         return {message: `${base} — inbound link could not be sent`, severity: 'warning'};
     }

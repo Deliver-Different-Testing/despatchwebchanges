@@ -36,6 +36,8 @@ export interface DispatchConfirmation {
     /** Agent only, and only when the inbound-agent link will actually be emailed. */
     emailSubject?: string;
     emailBody?: string;
+    /** Agent only: send the alert again although this agent already has it for this job. */
+    resend?: boolean;
     /** Agent only — cascade the assignment onto the job's stop jobs. */
     includeStopJobs?: boolean;
     /** Agent only — AWB captured at assign time; the caller writes it to ConNote afterwards. */

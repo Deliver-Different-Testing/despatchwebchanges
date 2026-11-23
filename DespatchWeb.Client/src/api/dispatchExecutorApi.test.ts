@@ -167,7 +167,7 @@ describe('dispatchExecutorApi', () => {
 
             expect(mockApiClient.post).toHaveBeenCalledWith(
                 'nationwideJob/AssignAgentToJob',
-                {jobId: 100, agentId: 7, includeStopJobs: false},
+                {jobId: 100, agentId: 7, includeStopJobs: false, resend: false},
             );
             expect(result).toEqual(outcome);
         });
@@ -179,7 +179,7 @@ describe('dispatchExecutorApi', () => {
 
             expect(mockApiClient.post).toHaveBeenCalledWith(
                 'nationwideJob/AssignAgentToJob',
-                {jobId: 100, agentId: 7, includeStopJobs: true},
+                {jobId: 100, agentId: 7, includeStopJobs: true, resend: false},
             );
         });
     });

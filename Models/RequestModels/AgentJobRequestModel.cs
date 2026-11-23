@@ -14,4 +14,7 @@ public sealed class AgentJobRequestModel
 
     /// <summary>Optional per-send override of the agent email body template; null uses the hardcoded default.</summary>
     public string? EmailBody { get; init; }
+
+    /// <summary>Send the alert even though this agent already has it for this job (the dialog's "Send again").</summary>
+    public bool Resend { get; init; }
 }

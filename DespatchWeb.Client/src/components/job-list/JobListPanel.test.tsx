@@ -1510,7 +1510,7 @@ describe('JobListPanel', () => {
             await user.click(screen.getByText('Stub Bulk Agent'));
 
             await waitFor(() => {
-                expect(assignAgentToJobs).toHaveBeenCalledWith([1, 2], 201, false, undefined, undefined);
+                expect(assignAgentToJobs).toHaveBeenCalledWith([1, 2], 201, false, undefined, undefined, false);
             });
         });
 

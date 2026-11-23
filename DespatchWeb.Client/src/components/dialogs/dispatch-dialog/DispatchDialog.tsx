@@ -120,7 +120,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     const [searchLoading, setSearchLoading] = useState(false);
 
     // Editable agent-email template (Agent option, single job). Fed by AgentEmailFields.
-    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: ''});
+    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: '', resend: false});
 
     // Agent extras carried over from the Nationwide flight/agent dialog.
     const [includeStopJobs, setIncludeStopJobs] = useState(false);
@@ -151,7 +151,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setDestination(existingDestination ?? null);
         setInputValue(existingDestination?.text ?? '');
         setOptions([]);
-        setAgentEmail({willEmail: false, subject: '', body: ''});
+        setAgentEmail({willEmail: false, subject: '', body: '', resend: false});
         setIncludeStopJobs(false);
         setAwb('');
         setSelectedPartnerId('');
@@ -209,7 +209,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setDestination(null);
         setInputValue('');
         setOptions([]);
-        setAgentEmail({willEmail: false, subject: '', body: ''});
+        setAgentEmail({willEmail: false, subject: '', body: '', resend: false});
         setIncludeStopJobs(false);
         setAwb('');
         setSubmitError('');
@@ -254,7 +254,11 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                     type: selectedType,
                     destination,
                     ...(isAgent && agentEmail.willEmail
-                        ? {emailSubject: agentEmail.subject, emailBody: agentEmail.body}
+                        ? {
+                            emailSubject: agentEmail.subject,
+                            emailBody: agentEmail.body,
+                            ...(agentEmail.resend ? {resend: true} : {}),
+                        }
                         : {}),
                     ...(isAgent && showStopJobCascade && includeStopJobs ? {includeStopJobs: true} : {}),
                     ...(isAgent && showAgentExtras && awb.trim() ? {awb: awb.trim()} : {}),
