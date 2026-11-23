@@ -8,8 +8,7 @@ namespace DespatchWeb.Helpers;
 
 public static partial class JobMappings
 {
-    public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(
-        bool isUsCustomer, string localTenantId = null) =>
+    public static Expression<Func<TucJob, DispatchJobViewModel>> JobDispatchMapping(bool isUsCustomer) =>
         j => new DispatchJobViewModel
         {
             Id = j.UcjbId,
@@ -139,13 +138,11 @@ public static partial class JobMappings
             IsAgentAssigned = j.Agent != null,
             NetworkPartnerName = j.NpAgent != null ? j.NpAgent.UcagName : null,
 
-            // SentToPartnerName is OUR outbound discriminator — populated only when
-            // the linked pairing's OwnerTenantId matches the local tenant (we sent the
-            // job out). Inbound mirrors leave it null; the frontend uses this to
-            // distinguish "courier column says: sent to Acme" from "this is Acme's job
-            // we received".
-            SentToPartnerName = j.PartnerPairing != null
-                                && j.PartnerPairing.OwnerTenantId == localTenantId
+            // Set only on jobs this tenant sent out (same rule as PartnerJobDirection.IsOutbound, inlined because
+            // this projection is translated by EF). The frontend gates Void and courier actions on it.
+            SentToPartnerName = j.PartnerJobGuid != null
+                                && j.PartnerPairing != null
+                                && (j.PartnerPairing.ClientId == null || j.UcjbClientId != j.PartnerPairing.ClientId)
                 ? j.PartnerPairing.PartnerTenantName
                 : null,
 

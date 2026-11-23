@@ -1032,6 +1032,30 @@ public class JobMappingsTests
         Assert.Equal("Proline Cabs", JobMappings.PodSearchArchivedMapping(isUsCustomer: false).Compile()(archivedJob).NetworkPartnerName);
     }
 
+    [Theory]
+    // Sender: a customer's job sent out on the pairing.
+    [InlineData(50, true, "Acme Couriers")]
+    // Receiver: the copy is booked under the pairing's connected-tenant client, and IM stamps OwnerTenantId = local
+    // tenant on this side too, so ownership must not make it look sent.
+    [InlineData(60, true, null)]
+    // Unlinked: PartnerJobGuid cleared, PartnerPairingId kept as audit.
+    [InlineData(50, false, null)]
+    public void JobDispatchMapping_SentToPartnerName_OnlyForJobsThisTenantSent(int clientId, bool linked, string? expected)
+    {
+        var pairing = new IntMgrPartnerPairing
+        {
+            Id = 7, PartnerTenantId = "200", PartnerTenantName = "Acme Couriers", PartnerBaseUrl = "https://peer.example.com",
+            Status = "Active", OwnerTenantId = "100", ClientId = 60, CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow
+        };
+        var job = new TucJob
+        {
+            UcjbId = 1, UcjbNumber = "JOB-1", UcjbDate = new DateTime(2024, 1, 15), UcjbClientId = clientId,
+            PartnerJobGuid = linked ? Guid.NewGuid() : null, PartnerPairingId = 7, PartnerPairing = pairing
+        };
+
+        Assert.Equal(expected, JobMappings.JobDispatchMapping(isUsCustomer: false).Compile()(job).SentToPartnerName);
+    }
+
     [Fact]
     public void JobListMappings_NetworkPartnerNameNull_WhenNoNpAgent()
     {

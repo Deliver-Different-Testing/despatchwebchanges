@@ -32,13 +32,13 @@ public interface IJobChangeRequestService
     Task<AgentInboundChangeRequestResult> RecordAgentCreateAsync(AgentInboundChangeRequestPayload payload, CancellationToken ct);
 
     /// <summary>Apply a peer-side approve/reject decision. Idempotent on <c>sourceUuid</c>.</summary>
-    Task<JobChangeRequestResult> RecordPeerDecisionAsync(Guid sourceUuid, PeerInboundChangeDecisionPayload payload, CancellationToken ct);
+    Task<JobChangeRequestResult> RecordPeerDecisionAsync(Guid sourceUuid, PeerInboundChangeDecisionPayload payload, int? pairingId, CancellationToken ct);
 
     /// <summary>
     /// Mark a row Applied after the peer has applied it on their side. Persists the
     /// new commercial amount if supplied. Idempotent on <c>sourceUuid</c>.
     /// </summary>
-    Task<JobChangeRequestResult> RecordPeerAppliedAsync(Guid sourceUuid, PeerInboundChangeAppliedPayload payload, CancellationToken ct);
+    Task<JobChangeRequestResult> RecordPeerAppliedAsync(Guid sourceUuid, PeerInboundChangeAppliedPayload payload, int? pairingId, CancellationToken ct);
 
     Task<IReadOnlyList<JobChangeRequestDto>> ListForJobAsync(int jobId, CancellationToken ct);
 

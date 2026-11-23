@@ -13,11 +13,13 @@ public class CsrfProtectionMiddleware(RequestDelegate next)
         var method = context.Request.Method;
         var isStateChangingRequest = method is "POST" or "PUT" or "PATCH" or "DELETE";
 
-        // Bearer-only machine endpoint: there is no ambient cookie credential for a forged request to ride on.
-        var isVoiceAgentCall = context.Request.Path.StartsWithSegments(VoiceAgentAssignAuthentication.PathPrefix.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
-                               && context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
+        // Integration Manager's bearer-only endpoints: their scheme never reads a cookie, so there is no ambient
+        // credential for a forged request to ride on.
+        var isImServiceCall = VoiceAgentAssignAuthentication.ImServicePathPrefixes.Any(prefix =>
+                                  context.Request.Path.StartsWithSegments(prefix.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                              && context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
 
-        if (isStateChangingRequest && !isVoiceAgentCall && !context.Request.Path.StartsWithSegments("/healthz"))
+        if (isStateChangingRequest && !isImServiceCall && !context.Request.Path.StartsWithSegments("/healthz"))
         {
             var hasXhrHeader = context.Request.Headers.XRequestedWith == "XMLHttpRequest";
             if (!hasXhrHeader)

@@ -1229,6 +1229,42 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Void_SelectionOutsideTheBooking_Returns400WithTheAuthoredMessage()
+    {
+        // Arrange
+        var request = new VoidJobRequest { JobId = 1, SelectedJobIds = [1, 99] };
+        _jobCommandRepositoryMock.VoidJobAsync(request)
+            .ThrowsAsync(new VoidSelectionException("Some of the selected jobs aren't part of this booking."));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.Void(request);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Some of the selected jobs aren't part of this booking.", badRequest.Value);
+    }
+
+    [Fact]
+    public async Task VoidBulkJob_SelectionOutsideTheBooking_Returns400WithTheAuthoredMessage()
+    {
+        // Arrange
+        var request = new VoidBulkJobRequest { BulkJobId = 1, SelectedJobIds = [1, 99] };
+        _jobCommandRepositoryMock.VoidBulkJobAsync(request)
+            .ThrowsAsync(new VoidSelectionException("Some of the selected jobs aren't part of this booking."));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.VoidBulkJob(request);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Some of the selected jobs aren't part of this booking.", badRequest.Value);
+    }
+
+    [Fact]
     public async Task VoidBulkJob_ValidRequest_ReturnsOk()
     {
         // Arrange
@@ -3884,7 +3920,7 @@ public class JobControllerTests : IDisposable
 
         _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns(10);
         _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns(20);
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10, Arg.Any<string?>()).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10).Returns(false);
 
         var controller = CreateController();
 
@@ -3909,7 +3945,7 @@ public class JobControllerTests : IDisposable
 
         _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns(10);
         _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns(20);
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10, Arg.Any<string?>()).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10).Returns(true);
 
         var controller = CreateController();
 
@@ -4156,7 +4192,7 @@ public class JobControllerTests : IDisposable
     public async Task Void_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1, Arg.Any<string?>()).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1).Returns(true);
 
         var result = await controller.Void(new VoidJobRequest { JobId = 1 });
 
@@ -4169,7 +4205,7 @@ public class JobControllerTests : IDisposable
         // Receiver-side mirror: PartnerJobGuid is set but no JobPartnerDispatch row,
         // so IsOutboundPartnerJobAsync returns false and the void runs locally.
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(2, Arg.Any<string?>()).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(2).Returns(false);
         _jobQueryRepositoryMock.IsJobArchived(2).Returns(false);
         _jobQueryRepositoryMock.GetJobParentIdAsync(2).Returns((int?)null);
 
@@ -4210,7 +4246,7 @@ public class JobControllerTests : IDisposable
     public async Task ChangeArchivedJobCourier_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1, Arg.Any<string?>()).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1).Returns(true);
 
         var result = await controller.ChangeArchivedJobCourier(
             new ChangeArchivedJobCourierRequest { JobId = 1, CourierId = 20 });
@@ -4285,7 +4321,7 @@ public class JobControllerTests : IDisposable
     public async Task Allocate_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(5, Arg.Any<string?>()).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(5).Returns(true);
 
         var result = await controller.Allocate(new AllocateJobsToCourierRequest { JobIds = [5], CourierId = 1 });
 
@@ -4298,7 +4334,7 @@ public class JobControllerTests : IDisposable
         // Tenant B (receiver) has no JobPartnerDispatch row for the job — they own
         // the courier slot locally and must be able to dispatch.
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(6, Arg.Any<string?>()).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(6).Returns(false);
 
         var result = await controller.Allocate(new AllocateJobsToCourierRequest { JobIds = [6], CourierId = 1 });
 
@@ -4311,7 +4347,7 @@ public class JobControllerTests : IDisposable
     public async Task ReAllocate_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(7, Arg.Any<string?>()).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(7).Returns(true);
 
         var result = await controller.ReAllocate(new AllocateJobsToCourierRequest { JobIds = [7], CourierId = 1 });
 
@@ -4328,7 +4364,7 @@ public class JobControllerTests : IDisposable
         // Auto-dispatch reassignment would swap the partner-placeholder courier on the
         // sender side and diverge from the partner's view of who owns the job.
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(31, Arg.Any<string?>()).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(31).Returns(true);
 
         var result = await controller.ReAssignSelected("31");
 
@@ -4341,8 +4377,8 @@ public class JobControllerTests : IDisposable
     public async Task ReAssignSelected_RejectsWhenAnyJobInBatchIsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(32, Arg.Any<string?>()).Returns(false);
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(33, Arg.Any<string?>()).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(32).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(33).Returns(true);
 
         var result = await controller.ReAssignSelected("32,33");
 
@@ -4355,7 +4391,7 @@ public class JobControllerTests : IDisposable
     public async Task ReAssignSelected_AllowsInboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(35, Arg.Any<string?>()).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(35).Returns(false);
 
         var result = await controller.ReAssignSelected("35");
 
@@ -4368,7 +4404,7 @@ public class JobControllerTests : IDisposable
     public async Task SetFirstJob_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(34, Arg.Any<string?>()).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(34).Returns(true);
 
         var result = await controller.SetFirstJob(jobId: 34, courierId: 1);
 
@@ -4380,7 +4416,7 @@ public class JobControllerTests : IDisposable
     public async Task SetFirstJob_AllowsInboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(36, Arg.Any<string?>()).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(36).Returns(false);
 
         var result = await controller.SetFirstJob(jobId: 36, courierId: 2);
 

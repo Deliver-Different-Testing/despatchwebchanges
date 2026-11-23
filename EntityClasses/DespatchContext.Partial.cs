@@ -48,24 +48,36 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
 
-    private static readonly Func<DespatchContext, int, string, Task<bool>> IsOutboundPartnerJobCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int jobId, string localTenantId) =>
-            context.TucJobs.Any(j => j.UcjbId == jobId
-                                     && j.PartnerPairing != null
-                                     && j.PartnerPairing.OwnerTenantId == localTenantId));
+    private static readonly Func<DespatchContext, int, Task<bool>> IsOutboundPartnerJobCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobs.Where(j => j.UcjbId == jobId).Any(PartnerJobDirection.IsOutbound));
 
+    // A leg that went live while its parent is still parked in tblBulkJob carries the bulk parent's
+    // id in ParentId (ParentId == BulkParentId) until the parent is released. Bulk ids overlap tucJob
+    // ids, so the parent is read through the bulk row's released JobId instead, or treated as absent.
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
                 .Where(j => j.UcjbId == jobId)
-                .Select(j => j.ParentId ?? j.UcjbId)
+                .Select(j => j.BulkParentId != null && j.ParentId == j.BulkParentId
+                    ? context.TblBulkJobs
+                        .Where(b => b.BulkJobId == j.BulkParentId)
+                        .Select(b => b.JobId)
+                        .FirstOrDefault() ?? j.UcjbId
+                    : j.ParentId ?? j.UcjbId)
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveArchiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives
                 .Where(j => j.UcjbId == jobId)
-                .Select(j => j.ParentId ?? j.UcjbId)
+                .Select(j => j.BulkParentId != null && j.ParentId == j.BulkParentId
+                    ? context.TblBulkJobs
+                        .Where(b => b.BulkJobId == j.BulkParentId
+                                    && context.TucJobArchives.Any(p => p.UcjbId == b.JobId))
+                        .Select(b => b.JobId)
+                        .FirstOrDefault() ?? j.UcjbId
+                    : j.ParentId ?? j.UcjbId)
                 .FirstOrDefault());
 
     // A leg released from bulk before its parent keeps the parent's tblBulkJob id in ParentId, so the
@@ -74,18 +86,30 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
                 .Where(j => j.UcjbId == jobId)
-                .Select(j => (int?)(j.ParentId != null && context.TucJobs.Any(p => p.UcjbId == j.ParentId)
-                    ? j.ParentId.Value
-                    : j.UcjbId))
+                .Select(j => (int?)(j.BulkParentId != null && j.ParentId == j.BulkParentId
+                    ? context.TblBulkJobs
+                        .Where(b => b.BulkJobId == j.BulkParentId
+                                    && context.TucJobs.Any(p => p.UcjbId == b.JobId))
+                        .Select(b => b.JobId)
+                        .FirstOrDefault() ?? j.UcjbId
+                    : j.ParentId != null && context.TucJobs.Any(p => p.UcjbId == j.ParentId)
+                        ? j.ParentId.Value
+                        : j.UcjbId))
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, int, Task<int?>> GetEffectiveExistingArchiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives
                 .Where(j => j.UcjbId == jobId)
-                .Select(j => (int?)(j.ParentId != null && context.TucJobArchives.Any(p => p.UcjbId == j.ParentId)
-                    ? j.ParentId.Value
-                    : j.UcjbId))
+                .Select(j => (int?)(j.BulkParentId != null && j.ParentId == j.BulkParentId
+                    ? context.TblBulkJobs
+                        .Where(b => b.BulkJobId == j.BulkParentId
+                                    && context.TucJobArchives.Any(p => p.UcjbId == b.JobId))
+                        .Select(b => b.JobId)
+                        .FirstOrDefault() ?? j.UcjbId
+                    : j.ParentId != null && context.TucJobArchives.Any(p => p.UcjbId == j.ParentId)
+                        ? j.ParentId.Value
+                        : j.UcjbId))
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveBulkJobIdCompiled =
@@ -110,7 +134,12 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
                 .Where(j => j.UcjbId == jobId)
-                .Select(j => j.ParentId)
+                .Select(j => j.BulkParentId != null && j.ParentId == j.BulkParentId
+                    ? context.TblBulkJobs
+                        .Where(b => b.BulkJobId == j.BulkParentId)
+                        .Select(b => b.JobId)
+                        .FirstOrDefault()
+                    : j.ParentId)
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, Task<int?>> GetEconomySpeedIdCompiled =
@@ -300,9 +329,7 @@ public partial class DespatchContext
         await IsLivePartnerJobCompiled(this, jobId)
         || await IsArchivedPartnerJobCompiled(this, jobId);
 
-    public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string? localTenantId) =>
-        !string.IsNullOrEmpty(localTenantId)
-        && await IsOutboundPartnerJobCompiled(this, jobId, localTenantId);
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId) => await IsOutboundPartnerJobCompiled(this, jobId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {

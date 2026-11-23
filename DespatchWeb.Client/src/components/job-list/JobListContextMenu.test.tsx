@@ -10,6 +10,7 @@ import {AppPage as AppPageEnum} from '../../types/dispatchJob';
 // ── Mocks ─────────────────────────────────────────────────────────────
 
 vi.mock('../../api/jobListApi');
+vi.mock('../../api/jobChangeRequestApi', () => ({jobChangeRequestApi: {create: vi.fn()}}));
 vi.mock('../../services/splitJobFlow', () => ({
     executeSplitJobFlow: vi.fn().mockResolvedValue(undefined),
 }));
@@ -65,6 +66,7 @@ vi.mock('../../services/navigationService', () => ({
 }));
 
 import * as api from '../../api/jobListApi';
+import {jobChangeRequestApi} from '../../api/jobChangeRequestApi';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
@@ -1294,5 +1296,59 @@ describe('JobListContextMenu', () => {
 
             expect(props.onClose).toHaveBeenCalled();
         });
+    });
+});
+
+// ── Partner hand-offs: recall and void ───────────────────────────────
+
+describe('Partner jobs', () => {
+    const sentJob = () => createMockDispatchJob({id: 42, jobNo: 'E911BIO', isPartnerJob: true, sentToPartnerName: 'OTG Cargo'});
+    const receivedCopy = () => createMockDispatchJob({id: 43, jobNo: 'E4315OTG', isPartnerJob: true, sentToPartnerName: null});
+
+    it('offers Recall from partner on a job this tenant sent, with Void still blocked', () => {
+        renderWithMantine(<JobListContextMenu {...createDefaultProps({job: sentJob()})} />);
+
+        expect(screen.getByText('Recall from partner')).toBeInTheDocument();
+        expect(screen.getByText('Void job').closest('[data-disabled]')).not.toBeNull();
+    });
+
+    it('lets the receiver void its copy and offers no recall', () => {
+        renderWithMantine(<JobListContextMenu {...createDefaultProps({job: receivedCopy()})} />);
+
+        expect(screen.queryByText('Recall from partner')).not.toBeInTheDocument();
+        expect(screen.getByText('Void job').closest('[data-disabled]')).toBeNull();
+    });
+
+    it('offers no recall on an ordinary job', () => {
+        renderWithMantine(<JobListContextMenu {...createDefaultProps()} />);
+
+        expect(screen.queryByText('Recall from partner')).not.toBeInTheDocument();
+    });
+
+    it('asks before recalling, then raises the recall and says the partner decides', async () => {
+        (jobChangeRequestApi.create as Mock).mockResolvedValue({success: true, request: {status: 'Pending'}});
+        const props = createDefaultProps({job: sentJob()});
+        renderWithMantine(<JobListContextMenu {...props} />);
+
+        await userEvent.click(screen.getByText('Recall from partner'));
+        expect(await screen.findByRole('dialog')).toHaveTextContent(/OTG Cargo/);
+        expect(jobChangeRequestApi.create).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: 'Recall job'}));
+
+        await waitFor(() => expect(jobChangeRequestApi.create).toHaveBeenCalledWith(
+            expect.objectContaining({jobId: 42, fieldName: 'Recall'})));
+        expect(props.showToast).toHaveBeenCalledWith(expect.stringContaining('OTG Cargo'), 'info');
+    });
+
+    it('shows why a recall was refused', async () => {
+        (jobChangeRequestApi.create as Mock).mockResolvedValue({success: false, message: 'A pending request for Recall already exists'});
+        const props = createDefaultProps({job: sentJob()});
+        renderWithMantine(<JobListContextMenu {...props} />);
+
+        await userEvent.click(screen.getByText('Recall from partner'));
+        await userEvent.click(await screen.findByRole('button', {name: 'Recall job'}));
+
+        await waitFor(() => expect(props.showToast).toHaveBeenCalledWith(
+            expect.stringContaining('already exists'), 'error'));
     });
 });

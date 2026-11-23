@@ -5,6 +5,7 @@ import {Icon, UI_ICON_SIZE} from '../../common/icon/Icon';
 import {DialogShell, DialogHeader, DialogFooter, dialogContentBg, sectionPaperProps} from '../shared/mantine';
 import {RelatedJob, VoidJobDialogJob, VoidJobResult} from '../../../types';
 import type {ShowToastFn} from '../../../services/toastService';
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 // Re-export types for backward compatibility
 export type {RelatedJob, VoidJobDialogJob, VoidJobResult};
@@ -15,10 +16,20 @@ export interface VoidJobConfirmationDialogProps {
     onClose: () => void;
     onConfirm: (result: VoidJobResult) => void;
     onLoadRelatedJobs: (jobId: number, isArchived: boolean, isBulkJob: boolean) => Promise<RelatedJob[]>;
-    onVoidJob: (jobId: number, voidSingleJobOnly: boolean, voidReason: string, selectedJobIds?: number[]) => Promise<void>;
+    onVoidJob: (
+        jobId: number,
+        voidSingleJobOnly: boolean,
+        voidReason: string,
+        selectedJobIds?: number[],
+        selectedBulkJobIds?: number[],
+    ) => Promise<void>;
     onVoidBulkJob: (bulkJobId: number, voidSingleJobOnly: boolean, voidReason: string, selectedJobIds?: number[]) => Promise<void>;
     showToast: ShowToastFn;
 }
+
+// Live job ids and bulk-job ids are separate sequences that overlap, so a choice is keyed by both.
+const choiceKey = (job: Pick<RelatedJob, 'id' | 'isBulkJob'>): string =>
+    `${job.isBulkJob ? 'bulk' : 'job'}:${job.id}`;
 
 export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps> = ({
     open,
@@ -48,7 +59,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
     }, [open]);
 
     const selectedCount = useMemo(() => relatedJobs.filter(j => j.selected).length, [relatedJobs]);
-    const selectedJobIds = useMemo(() => relatedJobs.filter(j => j.selected).map(j => j.id), [relatedJobs]);
+    const selectedChoiceKeys = useMemo(() => relatedJobs.filter(j => j.selected).map(choiceKey), [relatedJobs]);
 
     const isConfirmDisabled = useMemo(() => (
         !voidReasonText ||
@@ -86,8 +97,8 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
 
     // Checkbox.Group reports the whole selection as string values, so every
     // selection change — including Select/Deselect All — is the same setter.
-    const setSelectedJobIds = (ids: string[]): void => {
-        setRelatedJobs(prev => prev.map(j => ({...j, selected: ids.includes(String(j.id))})));
+    const setSelectedChoiceKeys = (ids: string[]): void => {
+        setRelatedJobs(prev => prev.map(j => ({...j, selected: ids.includes(choiceKey(j))})));
     };
 
     const selectAllJobs = (): void => {
@@ -106,9 +117,11 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
             return;
         }
 
-        const jobIds = voidSingleJobOnly ? undefined : selectedJobIds;
+        const selected = relatedJobs.filter(j => j.selected);
+        const jobIds = voidSingleJobOnly ? undefined : selected.filter(j => !j.isBulkJob).map(j => j.id);
+        const bulkJobIds = voidSingleJobOnly ? undefined : selected.filter(j => j.isBulkJob).map(j => j.id);
 
-        if (!voidSingleJobOnly && (!jobIds || jobIds.length === 0)) {
+        if (!voidSingleJobOnly && selected.length === 0) {
             showToast('Select at least one job to void', 'warning');
             return;
         }
@@ -117,20 +130,20 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
 
         try {
             if (job.isBulkJob) {
-                await onVoidBulkJob(job.id, voidSingleJobOnly, voidReasonText, jobIds);
+                await onVoidBulkJob(job.id, voidSingleJobOnly, voidReasonText, bulkJobIds);
             } else {
-                await onVoidJob(job.id, voidSingleJobOnly, voidReasonText, jobIds);
+                await onVoidJob(job.id, voidSingleJobOnly, voidReasonText, jobIds, bulkJobIds);
             }
 
-            const voidedCount = voidSingleJobOnly ? 1 : jobIds?.length ?? 1;
+            const voidedCount = voidSingleJobOnly ? 1 : selected.length;
             const message = voidedCount === 1
                 ? `${job.jobNo} voided`
                 : `${voidedCount} jobs voided`;
 
             showToast(message, 'success');
             onConfirm({success: true, voidedCount});
-        } catch {
-            showToast("Couldn't void the job. Try again.", 'error');
+        } catch (error) {
+            showToast(errorMessageOf(error, "Couldn't void the job. Try again."), 'error');
             setIsSubmitting(false);
         }
     };
@@ -226,12 +239,12 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                                         <Text fz="sm" c="dimmed" fs="italic">No related jobs found.</Text>
                                     </Box>
                                 ) : (
-                                    <Checkbox.Group value={selectedJobIds.map(String)} onChange={setSelectedJobIds}>
+                                    <Checkbox.Group value={selectedChoiceKeys} onChange={setSelectedChoiceKeys}>
                                         <Box mah={200} style={{overflowY: 'auto'}}>
                                             {relatedJobs.map((relatedJob) => (
                                                 <Checkbox
-                                                    key={relatedJob.id}
-                                                    value={String(relatedJob.id)}
+                                                    key={choiceKey(relatedJob)}
+                                                    value={choiceKey(relatedJob)}
                                                     disabled={isSubmitting}
                                                     size="sm"
                                                     px={12}
@@ -245,7 +258,7 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                                                     label={
                                                         <Group gap="xs" wrap="nowrap">
                                                             <Text fz="sm" style={{flex: 1}}>{relatedJob.text}</Text>
-                                                            {relatedJob.id === job.id && (
+                                                            {choiceKey(relatedJob) === choiceKey(job) && (
                                                                 <Badge size="sm" variant="light" color="gray">current</Badge>
                                                             )}
                                                             {relatedJob.isBulkJob && (

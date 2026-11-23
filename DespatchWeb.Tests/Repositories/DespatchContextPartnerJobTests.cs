@@ -73,107 +73,71 @@ public class DespatchContextPartnerJobTests : IAsyncDisposable
         Assert.False(result);
     }
 
-    [Fact]
-    public async Task IsOutboundPartnerJobAsync_PairingOwnedByLocalTenant_ReturnsTrue()
+    // IM writes every pairing row with OwnerTenantId = the local tenant, on both sides, so ownership can't say which
+    // side sent a job. The receiver's copy is booked under the pairing's connected-tenant client; the sender's job
+    // belongs to a real customer.
+    private const int PairingClientId = 60;
+    private const int CustomerClientId = 50;
+
+    private static IntMgrPartnerPairing Pairing(int id, int? clientId = PairingClientId) => new()
     {
-        // Sender side: the linked pairing's OwnerTenantId matches the local tenant.
+        Id = id,
+        PartnerTenantId = "200",
+        PartnerTenantName = "Partner Co",
+        PartnerBaseUrl = "https://peer.example.com",
+        Status = "Active",
+        OwnerTenantId = "100",
+        ClientId = clientId,
+        CreatedAtUtc = DateTime.UtcNow,
+        UpdatedAtUtc = DateTime.UtcNow
+    };
+
+    private async Task<bool> IsOutboundAsync(int? clientId, Guid? partnerJobGuid, int? pairingId, int? pairingClientId = PairingClientId)
+    {
         await using var context = _db.CreateContext();
-        context.IntMgrPartnerPairings.Add(new IntMgrPartnerPairing
+        if (pairingId is { } id)
         {
-            Id = 7,
-            PartnerTenantId = "200",
-            PartnerTenantName = "Partner Co",
-            PartnerBaseUrl = "https://peer.example.com",
-            Status = "Active",
-            OwnerTenantId = "100",
-            CreatedAtUtc = DateTime.UtcNow,
-            UpdatedAtUtc = DateTime.UtcNow
-        });
+            context.IntMgrPartnerPairings.Add(Pairing(id, pairingClientId));
+        }
+
         context.TucJobs.Add(new TucJob
         {
             UcjbId = 200,
             UcjbNumber = "JOB-200",
-            PartnerJobGuid = Guid.NewGuid(),
-            PartnerPairingId = 7
+            UcjbClientId = clientId,
+            PartnerJobGuid = partnerJobGuid,
+            PartnerPairingId = pairingId
         });
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var result = await context.IsOutboundPartnerJobAsync(200, localTenantId: "100");
-
-        Assert.True(result);
+        return await context.IsOutboundPartnerJobAsync(200);
     }
 
     [Fact]
-    public async Task IsOutboundPartnerJobAsync_PairingOwnedByOtherTenant_ReturnsFalse()
-    {
-        // Receiver side: the linked pairing's OwnerTenantId is the originating partner,
-        // not us. Outbound guard must not fire.
-        await using var context = _db.CreateContext();
-        context.IntMgrPartnerPairings.Add(new IntMgrPartnerPairing
-        {
-            Id = 8,
-            PartnerTenantId = "100",
-            PartnerTenantName = "Our Tenant",
-            PartnerBaseUrl = "https://us.example.com",
-            Status = "Active",
-            OwnerTenantId = "200",
-            CreatedAtUtc = DateTime.UtcNow,
-            UpdatedAtUtc = DateTime.UtcNow
-        });
-        context.TucJobs.Add(new TucJob
-        {
-            UcjbId = 201,
-            UcjbNumber = "JOB-201",
-            PartnerJobGuid = Guid.NewGuid(),
-            PartnerPairingId = 8
-        });
-        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        var result = await context.IsOutboundPartnerJobAsync(201, localTenantId: "100");
-
-        Assert.False(result);
-    }
+    public async Task IsOutboundPartnerJobAsync_CustomerJobSentToPartner_ReturnsTrue() =>
+        Assert.True(await IsOutboundAsync(CustomerClientId, Guid.NewGuid(), pairingId: 7));
 
     [Fact]
-    public async Task IsOutboundPartnerJobAsync_PartnerJobWithoutPairingId_ReturnsFalse()
-    {
-        // Stale-link case: partner job whose source pairing isn't recorded
-        // (e.g. created before TucJob.PartnerPairingId was populated). The
-        // outbound guard returns false so the controller's other partner
-        // guards still apply.
-        await using var context = _db.CreateContext();
-        context.TucJobs.Add(new TucJob
-        {
-            UcjbId = 202,
-            UcjbNumber = "JOB-202",
-            PartnerJobGuid = Guid.NewGuid()
-        });
-        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        var result = await context.IsOutboundPartnerJobAsync(202, localTenantId: "100");
-
-        Assert.False(result);
-    }
+    public async Task IsOutboundPartnerJobAsync_InboundCopyBookedUnderPairingClient_ReturnsFalse() =>
+        Assert.False(await IsOutboundAsync(PairingClientId, Guid.NewGuid(), pairingId: 7));
 
     [Fact]
-    public async Task IsOutboundPartnerJobAsync_NullOrEmptyLocalTenantId_ReturnsFalse()
-    {
-        // Defensive: a missing tenant id means we can't tell which side of the
-        // pairing we're on. Treat as non-outbound (matches the legacy
-        // JobPartnerDispatch-row check which returned false for missing rows).
-        await using var context = _db.CreateContext();
+    public async Task IsOutboundPartnerJobAsync_PairingWithoutClient_ReturnsTrue() =>
+        Assert.True(await IsOutboundAsync(CustomerClientId, Guid.NewGuid(), pairingId: 7, pairingClientId: null));
 
-        Assert.False(await context.IsOutboundPartnerJobAsync(999, localTenantId: null));
-        Assert.False(await context.IsOutboundPartnerJobAsync(999, localTenantId: ""));
-    }
+    [Fact]
+    public async Task IsOutboundPartnerJobAsync_UnlinkedJobKeepingPairingId_ReturnsFalse() =>
+        Assert.False(await IsOutboundAsync(CustomerClientId, partnerJobGuid: null, pairingId: 7));
+
+    [Fact]
+    public async Task IsOutboundPartnerJobAsync_PartnerJobWithoutPairingId_ReturnsFalse() =>
+        Assert.False(await IsOutboundAsync(CustomerClientId, Guid.NewGuid(), pairingId: null));
 
     [Fact]
     public async Task IsOutboundPartnerJobAsync_NoMatchingJob_ReturnsFalse()
     {
         await using var context = _db.CreateContext();
 
-        var result = await context.IsOutboundPartnerJobAsync(999, localTenantId: "100");
-
-        Assert.False(result);
+        Assert.False(await context.IsOutboundPartnerJobAsync(999));
     }
 }

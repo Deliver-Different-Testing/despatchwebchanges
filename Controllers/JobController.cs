@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mail;
@@ -1134,7 +1134,7 @@ public class JobController(
 
             if (firstJobId is { } firstId)
             {
-                if (!await jobQueryRepository.IsOutboundPartnerJobAsync(firstId, infoService.GetCurrentTenantId()))
+                if (!await jobQueryRepository.IsOutboundPartnerJobAsync(firstId))
                 {
                     await jobCommandRepository.ReAssignSelectedJobsAsync([firstId]);
                 }
@@ -1451,7 +1451,8 @@ public class JobController(
 
     [HttpPost]
     [RequireScope(ScopedRecord.Job, "request.JobId")]
-    [RequireScope(ScopedRecord.JobOrBulkJob, "request.SelectedJobIds")]
+    [RequireScope(ScopedRecord.Job, "request.SelectedJobIds")]
+    [RequireScope(ScopedRecord.BulkJob, "request.SelectedBulkJobIds")]
     [NetworkPartnerCapability(NpCapability.Void)]
     public async Task<IActionResult> Void([FromBody] VoidJobRequest request)
     {
@@ -1511,6 +1512,10 @@ public class JobController(
             }
 
             return Ok();
+        }
+        catch (VoidSelectionException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -1577,6 +1582,10 @@ public class JobController(
         {
             await jobCommandRepository.VoidBulkJobAsync(request);
             return Ok();
+        }
+        catch (VoidSelectionException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -3301,7 +3310,7 @@ public class JobController(
 
     private async Task<IActionResult> RejectIfOutboundPartnerJobAsync(int jobId)
     {
-        if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId, infoService.GetCurrentTenantId()))
+        if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId))
         {
             return BadRequest(new
             {
