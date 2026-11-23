@@ -20,6 +20,9 @@ namespace DespatchWeb.Services;
 /// </summary>
 public sealed class JobChangePolicyService : IJobChangePolicyService
 {
+    public const string RecallOwnerOnlyRule = "RECALL_OWNER_ONLY";
+    public const string RecallAfterPickupRule = "RECALL_AFTER_PICKUP";
+
     public JobChangePolicyDecision Evaluate(JobChangeField field, string requestingPartyType, JobLifecycleStage stage)
     {
         var approvalParty = OppositeParty(requestingPartyType);
@@ -78,6 +81,11 @@ public sealed class JobChangePolicyService : IJobChangePolicyService
                 or JobChangeField.PickupAddress
                 or JobChangeField.DeliveryAddress =>
                 Manual(approvalParty, $"{field}_CHANGE_{stage}", requiresCommercialRefresh: true),
+
+            JobChangeField.Recall when requestingPartyType != "OwnerTenant" => Prohibited(RecallOwnerOnlyRule),
+            JobChangeField.Recall when stage is JobLifecycleStage.InTransit or JobLifecycleStage.Delivered =>
+                Prohibited(RecallAfterPickupRule),
+            JobChangeField.Recall => Manual(approvalParty, $"RECALL_{stage}", requiresCommercialRefresh: false),
 
             _ => Prohibited("UNKNOWN_FIELD")
         };

@@ -42,7 +42,7 @@ import type {JobChangeRequestDto} from '../../types/jobChangeRequest';
 
 export interface JobChangeRequestsForJobProps {
     jobId: number;
-    /** Local tenant identity used to gate Approve / Reject. Default "OwnerTenant". */
+    /** Local tenant identity used to gate Approve / Reject. Omitted, any pending request the partner raised is ours to decide. */
     localPartyType?: string;
     /** Notify parent that a row was approved or rejected — for refreshing the surrounding job-detail view. */
     onChanged?: () => void;
@@ -105,7 +105,7 @@ const labelBadgeProps = {
 
 export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = ({
     jobId,
-    localPartyType = 'OwnerTenant',
+    localPartyType,
     onChanged,
     onModifyRequest,
     pickUpTimezoneText,
@@ -275,7 +275,7 @@ function describeCancellation(row: JobChangeRequestDto, peerForwardWarning?: str
 
 interface ChangeRequestCardProps {
     row: JobChangeRequestDto;
-    localPartyType: string;
+    localPartyType?: string;
     actingOn: number | null;
     rejectingId: number | null;
     rejectReason: string;
@@ -359,7 +359,8 @@ function ChangeRequestCard({
         [row.requestedAt],
     );
     const isOwnPending = row.status === 'Pending' && row.origin === 'Local';
-    const canApprove = row.status === 'Pending' && !isOwnPending && row.approvalPartyType === localPartyType;
+    const canApprove = row.status === 'Pending' && !isOwnPending
+        && (localPartyType === undefined || row.approvalPartyType === localPartyType);
     const isRejecting = rejectingId === row.id;
     const isCancelling = cancellingId === row.id;
     const aging = row.status === 'Pending' ? ageLevel(row.requestedAt) : 'fresh';

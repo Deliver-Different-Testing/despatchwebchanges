@@ -414,13 +414,13 @@ public class VoiceAgentAssignTests : IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
-    private sealed class StubHandler(string timeZone = "Pacific/Auckland") : HttpMessageHandler
+    internal sealed class StubHandler(string timeZone = "Pacific/Auckland") : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { timeZone }) });
     }
 
-    private sealed class CountingHandler : HttpMessageHandler
+    internal sealed class CountingHandler : HttpMessageHandler
     {
         public bool Fail { get; set; }
         public int Calls { get; private set; }
@@ -434,7 +434,7 @@ public class VoiceAgentAssignTests : IAsyncDisposable
         }
     }
 
-    private sealed class StubTicketFormat : ISecureDataFormat<AuthenticationTicket>
+    internal sealed class StubTicketFormat : ISecureDataFormat<AuthenticationTicket>
     {
         public string Protect(AuthenticationTicket data) => "x";
         public string Protect(AuthenticationTicket data, string? purpose) => "x";

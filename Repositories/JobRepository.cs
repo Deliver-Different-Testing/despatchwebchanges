@@ -3665,7 +3665,7 @@ public partial class JobRepository(
             .Where(CurrentWorkListJob(startDate, endDate));
 
         var jobs = await query
-            .Select(JobMappings.JobDispatchMapping(isUsCustomer, _infoService.GetCurrentTenantId()))
+            .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .ToListAsync();
 
         var totalCount = jobs.Count;
@@ -4198,7 +4198,7 @@ public partial class JobRepository(
 
         var activeJob = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobDispatchMapping(isUsCustomer, _infoService.GetCurrentTenantId()))
+            .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .FirstOrDefaultAsync();
 
         if (activeJob != null)
@@ -4791,8 +4791,8 @@ public partial class JobRepository(
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
         await Context.IsPartnerJobAsync(jobId);
 
-    public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string localTenantId) =>
-        await Context.IsOutboundPartnerJobAsync(jobId, localTenantId);
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId) =>
+        await Context.IsOutboundPartnerJobAsync(jobId);
 
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);

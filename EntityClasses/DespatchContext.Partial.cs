@@ -48,11 +48,9 @@ public partial class DespatchContext
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
 
-    private static readonly Func<DespatchContext, int, string, Task<bool>> IsOutboundPartnerJobCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int jobId, string localTenantId) =>
-            context.TucJobs.Any(j => j.UcjbId == jobId
-                                     && j.PartnerPairing != null
-                                     && j.PartnerPairing.OwnerTenantId == localTenantId));
+    private static readonly Func<DespatchContext, int, Task<bool>> IsOutboundPartnerJobCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobs.Where(j => j.UcjbId == jobId).Any(PartnerJobDirection.IsOutbound));
 
     // A leg that went live while its parent is still parked in tblBulkJob carries the bulk parent's
     // id in ParentId (ParentId == BulkParentId) until the parent is released. Bulk ids overlap tucJob
@@ -331,9 +329,7 @@ public partial class DespatchContext
         await IsLivePartnerJobCompiled(this, jobId)
         || await IsArchivedPartnerJobCompiled(this, jobId);
 
-    public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string? localTenantId) =>
-        !string.IsNullOrEmpty(localTenantId)
-        && await IsOutboundPartnerJobCompiled(this, jobId, localTenantId);
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId) => await IsOutboundPartnerJobCompiled(this, jobId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
