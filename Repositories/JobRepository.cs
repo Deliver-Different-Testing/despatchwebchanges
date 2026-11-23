@@ -2060,14 +2060,6 @@ public partial class JobRepository(
                     .Where(s => existingSet.Contains(s.Line) && s.Line.SortOrder != s.SortOrder).ToList();
                 await WriteSortOrderAsync(effectiveJobId,
                     existingSortOrders.Select(s => (s.Line.ItemId, s.SortOrder)).ToList());
-                // The context outlives this call and tracking queries return these instances as-is.
-                foreach (var (line, sortOrder) in existingSortOrders)
-                {
-                    var property = Context.Entry(line).Property(i => i.SortOrder);
-                    property.CurrentValue = sortOrder;
-                    property.OriginalValue = sortOrder;
-                    property.IsModified = false;
-                }
 
                 // One set-based statement: RemoveRange/SaveChanges issues a DELETE per row, and the totals
                 // trigger then fires per row (qty stepping 486 -> 1, a courier note + journal rows each time).
@@ -2125,6 +2117,16 @@ public partial class JobRepository(
                 }
 
                 await transaction.CommitAsync();
+
+                // The context outlives this call and tracking queries return these instances as-is. Synced only
+                // once committed, so a retried attempt still compares against the stored order.
+                foreach (var (line, sortOrder) in existingSortOrders)
+                {
+                    var property = Context.Entry(line).Property(i => i.SortOrder);
+                    property.CurrentValue = sortOrder;
+                    property.OriginalValue = sortOrder;
+                    property.IsModified = false;
+                }
             });
         }
         catch (Exception e)
@@ -5227,11 +5229,12 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Pairs each submitted parcel with the line it edits. The dialog doesn't send ItemIds, so a parcel
-    /// with a barcode takes the line with that barcode (re-activating it if it was flagged); the rest
-    /// take the remaining active lines in display order, but a barcoded parcel never takes a
-    /// line that has a different barcode - that line was removed, and a new line is added instead.
-    /// A null entry means "insert".
+    /// Pairs each submitted parcel with the line it edits. A parcel with an ItemId (the dialog sends one for
+    /// every parcel it loaded) takes that line. Otherwise a parcel with a barcode takes the line with that
+    /// barcode (re-activating it if it was flagged). When the caller sent ItemIds, any other parcel is new;
+    /// callers that don't send them fall back to giving the rest the remaining active lines in display order,
+    /// where a barcoded parcel never takes a line that has a different barcode - that line was removed, and
+    /// a new line is added instead. A null entry means "insert".
     /// </summary>
     private static TucJobItem[] MatchParcelsToLines(IReadOnlyList<ParcelDimensions> parcels, List<TucJobItem> lines)
     {
@@ -5240,6 +5243,17 @@ public partial class JobRepository(
 
         for (var index = 0; index < parcels.Count; index++)
         {
+            var itemId = parcels[index].ItemId;
+            if (itemId == null) continue;
+            var line = unmatched.FirstOrDefault(i => i.ItemId == itemId);
+            if (line == null) continue;
+            matched[index] = line;
+            unmatched.Remove(line);
+        }
+
+        for (var index = 0; index < parcels.Count; index++)
+        {
+            if (matched[index] != null) continue;
             var barcode = parcels[index].Barcode;
             if (string.IsNullOrEmpty(barcode)) continue;
             var line = unmatched.FirstOrDefault(i => i.Barcode == barcode);
@@ -5247,6 +5261,8 @@ public partial class JobRepository(
             matched[index] = line;
             unmatched.Remove(line);
         }
+
+        if (parcels.Any(p => p.ItemId != null)) return matched;
 
         var submittedBarcodes = parcels.Select(p => p.Barcode).Where(b => !string.IsNullOrEmpty(b)).ToHashSet();
         for (var index = 0; index < parcels.Count; index++)

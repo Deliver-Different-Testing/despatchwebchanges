@@ -1230,6 +1230,8 @@ public sealed class JobChangeRequestService(
             return;
         }
 
+        // ItemIds name lines in the requesting tenant's copy of the job, not this one's.
+        payload.Parcels.ForEach(p => p.ItemId = null);
         await jobCommandRepository.UpdatePackagesForJobAsync(jobId, payload.Parcels, payload.CalculateDimsOncePerJob);
         if (payload.Weight is > 0)
         {

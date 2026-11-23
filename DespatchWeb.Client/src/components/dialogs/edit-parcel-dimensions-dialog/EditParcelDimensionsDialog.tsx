@@ -29,6 +29,8 @@ interface ParcelBarcode {
     value: string;
     /** Position in the job's parcel list when the dialog opened; unset for parcels added here. */
     origin?: number;
+    /** The loaded parcel's line, so the save edits that line rather than matching by barcode or position. */
+    itemId?: number;
 }
 
 interface ParcelGroup {
@@ -42,6 +44,8 @@ interface ParcelGroup {
     barcodes: ParcelBarcode[];
     expandedBarcodes: boolean;
     representativeItemId?: number;
+    /** Job-list position of the row's first loaded parcel; places parcels added after all of those were removed. */
+    origin?: number;
 }
 
 interface PendingRemoval {
@@ -55,8 +59,8 @@ function newKey(): string {
     return Math.random().toString(36).slice(2);
 }
 
-function newBarcode(value: string, origin?: number): ParcelBarcode {
-    return {key: newKey(), value, origin};
+function newBarcode(value: string, origin?: number, itemId?: number): ParcelBarcode {
+    return {key: newKey(), value, origin, itemId};
 }
 
 function parcelLabel({barcode, itemNumber}: Pick<PendingRemoval, 'barcode' | 'itemNumber'>): string {
@@ -100,7 +104,7 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
         const key = `${p.itemName ?? ''}|${p.length ?? ''}|${p.depth ?? ''}|${p.height ?? ''}|${p.weight ?? ''}`;
         if (map.has(key)) {
             const existing = map.get(key)!;
-            existing.barcodes.push(newBarcode(p.barcode ?? '', origin));
+            existing.barcodes.push(newBarcode(p.barcode ?? '', origin, p.itemId));
             // Per Job: the stored per-parcel weight/volume were divided across barcodes when
             // saved — sum them back up so the row displays the job-total contribution again,
             // instead of the shrunken per-parcel value (which would otherwise keep dividing
@@ -123,9 +127,10 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
                 height: p.height != null ? String(p.height) : '',
                 weight: p.weight != null ? String(p.weight) : '',
                 cubic: p.cubic != null ? String(p.cubic) : '',
-                barcodes: [newBarcode(p.barcode ?? '', origin)],
+                barcodes: [newBarcode(p.barcode ?? '', origin, p.itemId)],
                 expandedBarcodes: false,
                 representativeItemId: p.itemId,
+                origin,
             });
         }
     }
@@ -162,8 +167,9 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
             ? `${length} × ${depth} × ${height} ${dimensionUnit}`
             : '';
 
-        return g.barcodes.map(({value: barcode}, index) => ({
+        return g.barcodes.map(({value: barcode, itemId}, index) => ({
             parcel: {
+                itemId,
                 itemName: g.itemName,
                 length,
                 depth,
@@ -173,7 +179,7 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
                 dimensions,
                 barcode: barcode || undefined,
             },
-            sortKey: saveOrderKey(g.barcodes, index),
+            sortKey: saveOrderKey(g, index),
         }));
     }).sort((a, b) => compareKeys(a.sortKey, b.sortKey))
         .map(entry => entry.parcel);
@@ -182,15 +188,17 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
 /**
  * Rows group identical parcels that weren't next to each other, so the save keeps the job's own order
  * (what the server stores) rather than the row order: each loaded parcel keeps its place, and an added
- * one goes before the next loaded parcel in its row, after the previous one, or last in a new row.
+ * one goes before the next loaded parcel in its row, after the previous one, in the row's old slot when
+ * every loaded parcel in it was removed, or last in a new row.
  */
-function saveOrderKey(barcodes: ParcelBarcode[], index: number): [number, number] {
+function saveOrderKey({barcodes, origin: rowOrigin}: ParcelGroup, index: number): [number, number] {
     const {origin} = barcodes[index];
     if (origin != null) return [origin, 0];
     const next = barcodes.slice(index + 1).find(b => b.origin != null);
     if (next) return [next.origin!, -1];
     const previous = barcodes.slice(0, index).reverse().find(b => b.origin != null);
-    return previous ? [previous.origin!, 1] : [Number.POSITIVE_INFINITY, 0];
+    if (previous) return [previous.origin!, 1];
+    return [rowOrigin ?? Number.POSITIVE_INFINITY, -1];
 }
 
 function compareKeys(a: [number, number], b: [number, number]): number {

@@ -405,6 +405,36 @@ describe('EditParcelDimensionsDialog insert a parcel mid-list', () => {
         expect(await savedBarcodes()).toEqual(['55-1', '55-2', '55-3', '55-5', '55-4']);
     });
 
+    it('sends each loaded parcel\'s item id so the save edits that line, and none for an inserted parcel', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55} parcels={[
+            mockParcel({weight: 5, itemId: 11}),
+            mockParcel({weight: 5, itemId: 12}),
+        ]} />);
+
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        await user.click(screen.getByRole('button', {name: 'Add parcel before item 2'}));
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        const saved = mockPost.mock.calls.find(c => c[0] === 'job/UpdateJobPackages')![1].parcels as ParcelDimensions[];
+        expect(saved.map(p => [p.itemId, p.barcode])).toEqual([[11, undefined], [undefined, '55-1'], [12, undefined]]);
+    });
+
+    it('saves a parcel added to a row whose loaded parcels were all removed in that row\'s old slot', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55} parcels={splitRowParcels()} />);
+
+        await user.click(screen.getAllByRole('button', {name: 'Show barcodes'})[1]);
+        await user.click(screen.getByRole('button', {name: 'Add parcel before parcel 55-2'}));
+        await user.click(screen.getByRole('button', {name: 'Remove parcel 55-2'}));
+        await user.click(within(screen.getByRole('dialog', {name: 'Remove parcel'}))
+            .getByRole('button', {name: /^remove parcel$/i}));
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+        expect(await savedBarcodes()).toEqual(['55-1', '55-4', '55-3']);
+    });
+
     it('inserts a blank parcel without a job number, and the insert makes Cancel ask to discard', async () => {
         const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel()]} />);

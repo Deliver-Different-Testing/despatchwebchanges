@@ -1268,6 +1268,43 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdatePackagesForJobAsync_BarcodedInsertAmongBarcodelessLines_KeepsEveryLineOnItsItemId()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(957, "J957"));
+        ctx.TucJobItems.AddRange(Line(957, 1, null, weight: 1), Line(957, 2, null, weight: 2), Line(957, 3, null, weight: 3));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(957,
+        [
+            new ParcelDimensions { ItemId = 1, Weight = 1 },
+            new ParcelDimensions { Barcode = "J957-4", Weight = 9 },
+            new ParcelDimensions { ItemId = 2, Weight = 2 },
+            new ParcelDimensions { ItemId = 3, Weight = 3 }
+        ]);
+
+        var lines = await ReadDisplayOrderAsync(957);
+        Assert.Equal([1, 4, 2, 3], lines.Select(i => i.ItemId));
+        Assert.Equal([1.0, 9.0, 2.0, 3.0], lines.Select(i => i.Weight));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_BarcodeTypedIntoLoadedParcel_StaysOnThatLine()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(959, "J959"));
+        ctx.TucJobItems.AddRange(Line(959, 1, null), Line(959, 2, null));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(959,
+            [new ParcelDimensions { ItemId = 1 }, new ParcelDimensions { ItemId = 2, Barcode = "J959-2" }]);
+
+        var lines = await ReadDisplayOrderAsync(959);
+        Assert.Equal([1, 2], lines.Select(i => i.ItemId));
+        Assert.Equal([null, "J959-2"], lines.Select(i => i.Barcode));
+    }
+
+    [Fact]
     public async Task UpdatePackagesForJobAsync_SentJob_RemovedLineKeepsItsSlotAfterThePrecedingLine()
     {
         await using var ctx = CreateContext();
