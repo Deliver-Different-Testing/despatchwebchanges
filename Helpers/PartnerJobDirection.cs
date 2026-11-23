@@ -21,4 +21,8 @@ public static class PartnerJobDirection
         && j.PartnerPairing != null
         && j.PartnerPairing.ClientId != null
         && j.UcjbClientId == j.PartnerPairing.ClientId;
+
+    /// <summary><see cref="IsInboundCopy"/> for a job and pairing already in memory.</summary>
+    public static bool IsInboundCopyOf(int? jobClientId, int? pairingClientId) =>
+        pairingClientId is { } clientId && jobClientId == clientId;
 }

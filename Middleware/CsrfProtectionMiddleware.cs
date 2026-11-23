@@ -15,7 +15,8 @@ public class CsrfProtectionMiddleware(RequestDelegate next)
 
         // Integration Manager's bearer-only endpoints: their scheme never reads a cookie, so there is no ambient
         // credential for a forged request to ride on.
-        var isImServiceCall = context.Request.Path.StartsWithSegments(VoiceAgentAssignAuthentication.InternalPathPrefix, StringComparison.OrdinalIgnoreCase)
+        var isImServiceCall = VoiceAgentAssignAuthentication.ImServicePathPrefixes.Any(prefix =>
+                                  context.Request.Path.StartsWithSegments(prefix.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
                               && context.Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
 
         if (isStateChangingRequest && !isImServiceCall && !context.Request.Path.StartsWithSegments("/healthz"))

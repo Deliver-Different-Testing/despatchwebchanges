@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -779,29 +780,15 @@ public sealed class JobChangeRequestService(
                         && (copy.UcjbJobDone || copy.UcjbComplTime != null
                             || (copy.UcjbStatus is { } status && PartnerJobLinkService.FinishedStatuses.Contains(status)));
         string? rejection = null;
-        if (alreadyVoid)
+        if (claimed || alreadyVoid)
         {
+            // Idempotent, so it also finishes a void whose clean-up failed on an earlier attempt. If it throws, the row
+            // stays Pending and IM's retry lands back here.
+            await jobCommandRepository.VoidJobAsync(new VoidJobRequest
+            {
+                JobId = row.UjcrJobId, VoidSingleJobOnly = true, VoidReason = "Recalled by the sender"
+            });
             claimed = true;
-            row.UjcrStatus = JobChangeRequestStatus.Applied;
-            row.UjcrAppliedAtUtc = now;
-        }
-        else if (claimed)
-        {
-            try
-            {
-                await jobCommandRepository.VoidJobAsync(new VoidJobRequest
-                {
-                    JobId = row.UjcrJobId, VoidSingleJobOnly = true, VoidReason = "Recalled by the sender"
-                });
-            }
-            catch (Exception ex)
-            {
-                // The claim already voided the copy; only the clean-up failed. Settle the request anyway: a replay
-                // returns the stored row, so a Pending one would leave the sender waiting forever.
-                Log.Error(ex, "Recall {SourceUuid}: job {JobId} is void but its void clean-up failed",
-                    row.UjcrSourceRequestUuid, row.UjcrJobId);
-            }
-
             row.UjcrStatus = JobChangeRequestStatus.Applied;
             row.UjcrAppliedAtUtc = now;
         }
@@ -894,6 +881,13 @@ public sealed class JobChangeRequestService(
             or JobChangeRequestStatus.Cancelled
             or JobChangeRequestStatus.Rejected)
         {
+            // The partner voided its copy whatever this side did since (cancelled, or a first unlink that failed),
+            // so the job must still come back. The unlink is guarded on the GUID, so a repeat is a no-op.
+            if (row.UjcrStatus is not JobChangeRequestStatus.Rejected)
+            {
+                await UnlinkRecalledJobAsync(ctx, row, pairingId, ct);
+            }
+
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
         }
 
@@ -931,24 +925,31 @@ public sealed class JobChangeRequestService(
         });
 
         // After the commit: the unlink runs on its own connection and would block on this transaction's locks.
-        if (row.UjcrFieldName == nameof(JobChangeField.Recall)
-            && await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId).Select(j => j.PartnerJobGuid).FirstOrDefaultAsync(ct)
-                is { } partnerJobGuid)
-        {
-            // The row is already Applied, so a retried notice short-circuits above; failing the call can't help.
-            try
-            {
-                await partnerLinks.UnlinkAsync(partnerJobGuid, PartnerUnlinkReason.RecallApplied, null,
-                    pairingId ?? row.UjcrPairingId, ct);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Recall {SourceUuid}: unlinking job {JobId} failed; it stays linked until the partner's void arrives",
-                    row.UjcrSourceRequestUuid, row.UjcrJobId);
-            }
-        }
+        await UnlinkRecalledJobAsync(ctx, row, pairingId, ct);
 
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+    }
+
+    private async Task UnlinkRecalledJobAsync(DespatchContext ctx, TucJobChangeRequest row, int? pairingId, CancellationToken ct)
+    {
+        if (row.UjcrFieldName != nameof(JobChangeField.Recall)
+            || await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId).Select(j => j.PartnerJobGuid).FirstOrDefaultAsync(ct)
+                is not { } partnerJobGuid)
+        {
+            return;
+        }
+
+        // A replayed notice retries this, and the partner's void webhook unlinks too, so the call itself never fails.
+        try
+        {
+            await partnerLinks.UnlinkAsync(partnerJobGuid, PartnerUnlinkReason.RecallApplied, null,
+                pairingId ?? row.UjcrPairingId, ct);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Recall {SourceUuid}: unlinking job {JobId} failed; it stays linked until the notice is replayed or the partner's void arrives",
+                row.UjcrSourceRequestUuid, row.UjcrJobId);
+        }
     }
 
     // Request rows carry no scope columns of their own, so visibility follows the job: the TucJobs
@@ -1312,9 +1313,8 @@ public sealed class JobChangeRequestService(
     private const string OwnerTenantParty = "OwnerTenant";
     private const string PartnerTenantParty = "PartnerTenant";
 
-    // Same rule as PartnerJobDirection: the received copy is booked under the pairing's connected-tenant client.
     private static bool IsInboundCopy(int? jobClientId, IntMgrPartnerPairing pairing) =>
-        pairing.ClientId is { } pairingClientId && jobClientId == pairingClientId;
+        PartnerJobDirection.IsInboundCopyOf(jobClientId, pairing.ClientId);
 
     private static async Task<(IntMgrPartnerPairing? Pairing, string? Error)> ResolveActivePairingAsync(
         DespatchContext ctx, int? requestedPairingId, string? partnerTenantId, CancellationToken ct)

@@ -208,8 +208,10 @@ public static class VoiceAgentAssignAuthentication
     public const string Policy = "VoiceAgentAssign";
     public const string PathPrefix = "/internal/voice-agent/";
 
-    /// <summary>Every route Integration Manager calls with this scheme lives under here.</summary>
-    public const string InternalPathPrefix = "/internal";
+    public const string PartnerPathPrefix = "/internal/partner/";
+
+    /// <summary>The route groups Integration Manager calls with this scheme.</summary>
+    public static readonly string[] ImServicePathPrefixes = [PathPrefix, PartnerPathPrefix];
     public const string TenantHeader = "X-Tenant-Id";
     public const string SubjectClaim = "voice_agent_sub";
     private const string AuthKindClaim = "auth_kind";

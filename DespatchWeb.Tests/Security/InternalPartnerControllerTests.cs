@@ -280,6 +280,10 @@ public class InternalPartnerControllerTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task ABearerOnSomeOtherInternalPath_StillHitsCsrf() =>
+        Assert.Equal(HttpStatusCode.BadRequest, (await Post("/internal/other/thing", "{}")).StatusCode);
+
+    [Fact]
     public async Task ACookieRequest_WithoutTheCsrfHeader_StillHitsCsrf() =>
         Assert.Equal(HttpStatusCode.BadRequest,
             (await Post("/internal/partner/job-change-requests", PeerCreateBody, token: false, cookie: ".AspNet.SharedCookie=anything")).StatusCode);
