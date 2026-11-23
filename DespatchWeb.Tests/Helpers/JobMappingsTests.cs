@@ -2002,6 +2002,41 @@ public class JobMappingsTests
     }
 
     [Fact]
+    public void JobMappingCore_AssignedFlight_ForwardAirRow_KeepsCarrierAndServiceCode()
+    {
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2026, 12, 1),
+            UcjbTime = new DateTime(2026, 12, 1, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>
+            {
+                new()
+                {
+                    UcnwLegNumber = 1,
+                    UcnwFlightNo = "GS-T2T",
+                    CarrierFsCode = "FWD",
+                    UcnwEtd = new DateTime(2026, 12, 1, 10, 0, 0),
+                    UcnwEta = new DateTime(2026, 12, 2, 9, 0, 0),
+                    DepartureAirportFsCode = "BNA",
+                    ArrivalAirportFsCode = "EWR",
+                    UcnwAirlineName = "Forward Air"
+                }
+            }
+        };
+
+        var result = JobMappings.JobMappingCore(false).Compile()(job);
+
+        Assert.Equal("GS-T2T", result.AssignedFlight!.FlightNumber);
+        var segment = Assert.Single(result.AssignedFlight.FlightSegments);
+        Assert.Equal("FWD", segment.CarrierFsCode);
+        Assert.Equal("GS-T2T", segment.FlightNumber);
+    }
+
+    [Fact]
     public void JobMappingCore_AssignedFlight_MapsMultipleSegments()
     {
         // Arrange

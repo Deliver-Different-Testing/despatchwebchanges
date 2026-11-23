@@ -23,6 +23,7 @@ export interface FlightDetailsDialogProps {
  */
 export interface FlightData {
     airline: string;
+    airlineCode?: string;
     flightNumber: string;
     departureTime: Dayjs;
     arrivalTime: Dayjs;

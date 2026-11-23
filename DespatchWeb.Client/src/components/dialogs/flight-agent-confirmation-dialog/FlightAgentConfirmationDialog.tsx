@@ -20,6 +20,7 @@ import {DateTimePicker} from '@mantine/dates';
 import {ArrowRight, Ban, CircleAlert, CircleCheck, Clock, Pencil, TriangleAlert, User} from 'lucide-react';
 import {IconPackage, IconPlane, IconTruck} from '@tabler/icons-react';
 import {Icon} from '../../common/icon/Icon';
+import {FORWARD_AIR_CARRIER_CODE, FORWARD_AIR_CARRIER_NAME} from '../../../constants/forwardAir';
 import dayjs, {Dayjs} from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import utc from 'dayjs/plugin/utc';
@@ -160,7 +161,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     const [_arrivalTimeZone, setArrivalTimeZone] = useState('');
 
     // Computed values
-    const isAwbDisabled = !!existingAwb;
+    const isForwardAir = mode === 'flight'
+        && !!flight?.flightSegments?.some(s => s.carrierFsCode === FORWARD_AIR_CARRIER_CODE);
+    const isAwbDisabled = !!existingAwb || isForwardAir;
     const showIncludeStopJobs = mode === 'agent' && (stopJobCount ?? 0) > 0;
     const dgClassName = getDangerousGoodsClassName(dgClass);
 
@@ -475,7 +478,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
         const sendsAgentEmail = mode === 'agent' && agentEmail.willEmail;
         const result: FlightAgentDialogResult = {
             shouldAssign: true,
-            awb: awb || undefined,
+            awb: isForwardAir ? undefined : awb || undefined,
             shouldAssignToStopJobs: assignToStopJobs,
             packageReadyTime: packageReadyTime ?? undefined,
             packageDeliverByTime: deliveryByTime ?? undefined,
@@ -703,6 +706,14 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
                 <Divider/>
 
+                {isForwardAir && (
+                    <Alert color="yellow" variant="light">
+                        <Text fz="sm">
+                            This books a real {FORWARD_AIR_CARRIER_NAME} airbill. Removing it later cancels the airbill.
+                        </Text>
+                    </Alert>
+                )}
+
                 {mode === 'agent' && agent && (
                     <AgentEmailFields
                         key={`${agent.id}-${jobId}`}
@@ -725,6 +736,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 <Group gap={16} align="flex-end" wrap="nowrap">
                     <TextInput
                         label="AWB number"
+                        description={isForwardAir ? `The airbill number comes back from ${FORWARD_AIR_CARRIER_NAME} once it is booked.` : undefined}
                         style={{flex: 1}}
                         value={awb}
                         onChange={(e) => setAwb(e.currentTarget.value)}

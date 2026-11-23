@@ -1463,7 +1463,9 @@ public class NationwideJobRepository(
             UcnwJobId = job.UcjbId,
             UcnwJobNumber = job.UcjbNumber,
             UcnwClientId = job.UcjbClientId ?? 0,
-            UcnwFlightNo = segment.CarrierFsCode + segment.FlightNumber,
+            UcnwFlightNo = segment.CarrierFsCode == ForwardAirCarrier.Code
+                ? segment.FlightNumber
+                : segment.CarrierFsCode + segment.FlightNumber,
             UcnwEtd = segment.DepartureTime.DateTime,
             UcnwEta = overrideEta?.DateTime ?? segment.ArrivalTime.DateTime,
             WebhookAlertId = webhookId,
@@ -1753,6 +1755,12 @@ public class NationwideJobRepository(
         await Context.FlightCarriers
             .Where(fc => fc.CarrierCode == carrierCode)
             .Select(fc => fc.FlightCarrierId)
+            .FirstOrDefaultAsync();
+
+    public async Task<int?> GetActiveFlightCarrierIdByCodeAsync(string carrierCode) =>
+        await Context.FlightCarriers
+            .Where(fc => fc.CarrierCode == carrierCode && fc.IsActive)
+            .Select(fc => (int?)fc.FlightCarrierId)
             .FirstOrDefaultAsync();
 
     private static void UpdateJobAddressWithAirportInfo(IReadOnlyList<AirportAddressInfoDto> airports, TucJob job,

@@ -15,10 +15,12 @@ vi.mock('../../../../api/nationwideApi', () => ({
     __esModule: true,
     default: {
         getFlightWebhookStatus: vi.fn(),
+        getForwardAirJob: vi.fn(),
     },
 }));
 
 const mockGetFlightWebhookStatus = nationwideApi.getFlightWebhookStatus as Mock;
+const mockGetForwardAirJob = nationwideApi.getForwardAirJob as Mock;
 
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -165,5 +167,122 @@ describe('FlightInformation', () => {
 
         resolve!({active: true});
         expect(await screen.findByText('Webhooks active')).toBeInTheDocument();
+    });
+});
+
+describe('FlightInformation - Forward Air', () => {
+    const forwardAirFlight = () => createMockFlight({
+        flightNumber: 'T2T',
+        flightSegments: [
+            {
+                flightNumber: 'T2T',
+                carrierFsCode: 'FWD',
+                airlineName: 'Forward Air',
+                departureAirportFsCode: 'BNA',
+                arrivalAirportFsCode: 'EWR',
+                departureTerminal: 'T1',
+                arrivalTerminal: 'T9',
+                aircraftName: 'Boeing 737',
+                departureTime: dayjs('2026-12-01T10:00:00'),
+                arrivalTime: dayjs('2026-12-02T09:00:00'),
+                _departureTimeStr: '10:00',
+                _arrivalTimeStr: '09:00',
+                _departureTimeZoneStr: 'CST',
+                _arrivalTimeZoneStr: 'EST',
+            } as any,
+        ],
+    });
+
+    const bookedJob = {
+        jobId: 55,
+        status: 'Booked',
+        serviceLevel: 'GS-T2T',
+        airbillNumber: '97880858',
+        lastStatusCode: 'DEP',
+        lastStatusDescription: 'Departed origin terminal',
+        lastStatusAtUtc: '2026-12-01T18:30:00Z',
+        etaLocal: '2026-12-02T09:00:00',
+        deliveryDocumentAvailable: false,
+    };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('shows service, airbill, last status with its time, and expected arrival', async () => {
+        mockGetForwardAirJob.mockResolvedValue(bookedJob);
+        renderWithTheme(<FlightInformation flight={forwardAirFlight()} jobId={55} />);
+
+        expect(await screen.findByText('97880858')).toBeInTheDocument();
+        expect(mockGetForwardAirJob).toHaveBeenCalledWith(55);
+        expect(screen.getByText('GS-T2T')).toBeInTheDocument();
+        expect(screen.getByText(/Departed origin terminal/)).toBeInTheDocument();
+        expect(screen.getByText(/Last status/i)).toBeInTheDocument();
+        expect(screen.getByText(/Expected arrival/i)).toBeInTheDocument();
+        expect(screen.getByText(/Dec 2, 09:00/)).toBeInTheDocument();
+    });
+
+    it('shows the booking error when there is one', async () => {
+        mockGetForwardAirJob.mockResolvedValue({
+            jobId: 55, status: 'Failed', lastError: 'Forward Air rejected the weight', deliveryDocumentAvailable: false,
+        });
+        renderWithTheme(<FlightInformation flight={forwardAirFlight()} jobId={55} />);
+
+        expect(await screen.findByText('Forward Air rejected the weight')).toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: 'BOL'})).not.toBeInTheDocument();
+    });
+
+    it('hides terminal, gate and aircraft and the webhook check', async () => {
+        mockGetForwardAirJob.mockResolvedValue(bookedJob);
+        renderWithTheme(<FlightInformation flight={forwardAirFlight()} jobId={55} />);
+
+        await screen.findByText('97880858');
+        expect(screen.queryByText(/Terminal/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Gate/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Boeing 737/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /check webhooks/i})).not.toBeInTheDocument();
+    });
+
+    it('opens BOL and Label in a new tab', async () => {
+        mockGetForwardAirJob.mockResolvedValue(bookedJob);
+        renderWithTheme(<FlightInformation flight={forwardAirFlight()} jobId={55} />);
+
+        const bol = await screen.findByRole('link', {name: 'BOL'});
+        const label = screen.getByRole('link', {name: 'Label'});
+        expect(bol).toHaveAttribute('href', '/api/nationwide/55/forwardair/documents/BOL');
+        expect(bol).toHaveAttribute('target', '_blank');
+        expect(label).toHaveAttribute('href', '/api/nationwide/55/forwardair/documents/LABEL');
+        expect(label).toHaveAttribute('target', '_blank');
+        expect(screen.queryByRole('link', {name: /delivery/i})).not.toBeInTheDocument();
+    });
+
+    it('offers the delivery receipt only when Forward Air has one', async () => {
+        mockGetForwardAirJob.mockResolvedValue({...bookedJob, deliveryDocumentAvailable: true});
+        renderWithTheme(<FlightInformation flight={forwardAirFlight()} jobId={55} />);
+
+        expect(await screen.findByRole('link', {name: /delivery receipt/i}))
+            .toHaveAttribute('href', '/api/nationwide/55/forwardair/documents/DELIVER');
+    });
+
+    it('says the airbill is not booked yet when Forward Air has no record', async () => {
+        mockGetForwardAirJob.mockResolvedValue(null);
+        renderWithTheme(<FlightInformation flight={forwardAirFlight()} jobId={55} />);
+
+        expect(await screen.findByText(/not booked yet/i)).toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: 'BOL'})).not.toBeInTheDocument();
+    });
+
+    it('keeps the flight visible and explains when Forward Air cannot be reached', async () => {
+        mockGetForwardAirJob.mockRejectedValue(new Error('boom'));
+        renderWithTheme(<FlightInformation flight={forwardAirFlight()} jobId={55} />);
+
+        expect(await screen.findByText(/Forward Air details are unavailable/i)).toBeInTheDocument();
+        expect(screen.getByText('BNA')).toBeInTheDocument();
+    });
+
+    it('does not call Forward Air for an airline flight', () => {
+        renderWithTheme(<FlightInformation flight={createMockFlight()} jobId={55} />);
+
+        expect(mockGetForwardAirJob).not.toHaveBeenCalled();
     });
 });

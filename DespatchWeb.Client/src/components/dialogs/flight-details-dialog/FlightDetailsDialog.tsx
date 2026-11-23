@@ -17,6 +17,7 @@ import {
     dialogSize,
 } from '../shared/mantine';
 import { FlightDetailsDialogProps, FlightSegmentData, FlightData } from './types';
+import {FORWARD_AIR_CARRIER_CODE, isForwardAirCarrier} from '../../../constants/forwardAir';
 import { FlightSummaryCard } from './FlightSummaryCard';
 import { FlightDetailsCard } from './FlightDetailsCard';
 import { FlightItinerary } from './FlightItinerary';
@@ -32,10 +33,11 @@ const FULLSCREEN_BELOW = '(max-width: 599px)';
  * Create a pseudo-segment from the main flight data for non-segmented flights
  */
 function createPseudoSegment(flight: FlightData): FlightSegmentData {
+    const isForwardAir = isForwardAirCarrier(flight.airlineCode);
     return {
         segmentOrder: 0,
-        carrierFsCode: flight.flightNumber.substring(0, 2),
-        flightNumber: flight.flightNumber.substring(2),
+        carrierFsCode: isForwardAir ? FORWARD_AIR_CARRIER_CODE : flight.flightNumber.substring(0, 2),
+        flightNumber: isForwardAir ? flight.flightNumber : flight.flightNumber.substring(2),
         departureTime: flight.departureTime,
         arrivalTime: flight.arrivalTime,
         departureAirportFsCode: flight.departureAirport,

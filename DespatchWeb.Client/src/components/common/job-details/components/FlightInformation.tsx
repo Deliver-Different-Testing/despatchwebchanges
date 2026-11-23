@@ -12,6 +12,8 @@ import {
 } from '../JobDetails.styles';
 import {SectionHeader} from './SectionHeader';
 import nationwideApi from '../../../../api/nationwideApi';
+import {FORWARD_AIR_CARRIER_CODE} from '../../../../constants/forwardAir';
+import {ForwardAirDetails} from './ForwardAirDetails';
 
 interface FlightInformationProps {
     flight: IAssignedFlight;
@@ -52,7 +54,7 @@ const routeRuleStyle: React.CSSProperties = {
 
 const terminalBadgeStyle: React.CSSProperties = {marginTop: 4, height: 20, fontSize: '0.625rem'};
 
-function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
+function FlightSegmentRow({segment, showTerminals}: {segment: IFlightSegment; showTerminals: boolean}) {
     const elapsed = formatElapsedTime(segment.elapsedTime);
 
     return (
@@ -82,7 +84,7 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                     <Text fz="xs" fw={500}>
                         {segment._departureTimeStr} {segment._departureTimeZoneStr}
                     </Text>
-                    {segment.departureTerminal && (
+                    {showTerminals && segment.departureTerminal && (
                         <Badge size="sm" variant="default" tt="none" style={terminalBadgeStyle}>
                             {`Terminal ${segment.departureTerminal}`}
                         </Badge>
@@ -111,7 +113,7 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                     <Text fz="xs" fw={500}>
                         {segment._arrivalTimeStr} {segment._arrivalTimeZoneStr}
                     </Text>
-                    {segment.arrivalTerminal && (
+                    {showTerminals && segment.arrivalTerminal && (
                         <Badge size="sm" variant="default" tt="none" style={terminalBadgeStyle}>
                             {`Terminal ${segment.arrivalTerminal}`}
                         </Badge>
@@ -138,13 +140,15 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
 
     if (!segments?.length) return null;
 
+    const isForwardAir = segments.some(s => s.carrierFsCode === FORWARD_AIR_CARRIER_CODE);
+
     return (
         <Paper {...cardContainerProps}>
             <SectionHeader
                 tabler={IconPlane}
                 title="Flight information"
                 subtitle={segments.length > 1 ? `${segments.length} segments` : undefined}
-                endAction={
+                endAction={isForwardAir ? undefined : (
                     <>
                         {webhookStatus === 'active' && (
                             <Badge size="sm" color="green" tt="none">Webhooks active</Badge>
@@ -163,11 +167,11 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
                             {webhookStatus === 'loading' ? 'Checking…' : 'Check webhooks'}
                         </Button>
                     </>
-                }
+                )}
             />
             {segments.map((segment, index) => (
                 <React.Fragment key={index}>
-                    <FlightSegmentRow segment={segment}/>
+                    <FlightSegmentRow segment={segment} showTerminals={!isForwardAir}/>
                     {index < segments.length - 1 && (
                         <Group
                             justify="center"
@@ -191,6 +195,7 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
                     )}
                 </React.Fragment>
             ))}
+            {isForwardAir && <ForwardAirDetails legId={jobId}/>}
             {flight.notes && (
                 <Box style={cardNotesContainerStyle}>
                     <Text fz="xs" c="dimmed" fw={500}>Notes:</Text>

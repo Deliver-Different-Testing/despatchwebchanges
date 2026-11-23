@@ -53,6 +53,8 @@ public interface INationwideJobRepository
     Task RestoreNationwideJobAsync(int jobId);
     Task<IReadOnlyList<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm, bool? isNetworkPartner = null);
     Task<IReadOnlyList<string>> GetFlightWebhookIdByJobIdAsync(int jobId);
+
+    Task<int?> GetActiveFlightCarrierIdByCodeAsync(string carrierCode);
     Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId);
 
     Task<string?> GetAgentNameAsync(int agentId);

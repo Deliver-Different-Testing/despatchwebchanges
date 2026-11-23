@@ -1,4 +1,5 @@
-﻿using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.Constants;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -3331,6 +3332,86 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         UcnwEtd = TestDates.Now,
         UcnwEta = TestDates.Now.AddHours(2)
     };
+
+    [Fact]
+    public async Task GetActiveFlightCarrierIdByCodeAsync_OnlyReturnsActiveCarriers()
+    {
+        _context.FlightCarriers.Add(CreateFlightCarrier(42, "FWD", "Forward Air", true));
+        _context.FlightCarriers.Add(CreateFlightCarrier(43, "NZ", "Air New Zealand", false));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+
+        Assert.Equal(42, await repository.GetActiveFlightCarrierIdByCodeAsync("FWD"));
+        Assert.Null(await repository.GetActiveFlightCarrierIdByCodeAsync("NZ"));
+        Assert.Null(await repository.GetActiveFlightCarrierIdByCodeAsync("XX"));
+    }
+
+    private static AssignFlightToJobRequest CreateForwardAirRequest(int jobId, string serviceCode = "T2T") => new()
+    {
+        JobId = jobId,
+        FromAirportId = 1,
+        ToAirportId = 1,
+        FlightNumber = serviceCode,
+        DepartureDate = new DateTimeOffset(2026, 12, 1, 10, 0, 0, TimeSpan.FromHours(-6)),
+        FlightSegments =
+        [
+            new FlightSegmentViewModel
+            {
+                SegmentOrder = 0,
+                CarrierFsCode = ForwardAirCarrier.Code,
+                FlightNumber = serviceCode,
+                DepartureTime = new DateTimeOffset(2026, 12, 1, 10, 0, 0, TimeSpan.FromHours(-6)),
+                ArrivalTime = new DateTimeOffset(2026, 12, 2, 9, 0, 0, TimeSpan.FromHours(-5)),
+                DepartureAirportFsCode = "BNA",
+                DepartureAirportTimeZone = "America/Chicago",
+                ArrivalAirportFsCode = "EWR",
+                ArrivalAirportTimeZone = "America/New_York",
+                AirlineName = ForwardAirCarrier.Name
+            }
+        ]
+    };
+
+    [Fact]
+    public async Task AddJobNationwideAsync_ForwardAirSegment_WritesServiceCodeRow_WithEmptyWebhookSlot()
+    {
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        _context.TucJobs.AddRange(parentJob, flightJob);
+        _context.TblAirports.Add(CreateAirportWithProcessingTime(1, "Nashville", "BNA", true, 60));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().AddJobNationwideAsync(
+            CreateForwardAirRequest(100, "GS-T2T"), [string.Empty], TestContext.Current.CancellationToken);
+
+        var row = await _context.TucJobNationwides.SingleAsync(f => f.UcnwJobId == 100,
+            TestContext.Current.CancellationToken);
+        Assert.Equal("GS-T2T", row.UcnwFlightNo);
+        Assert.Equal("FWD", row.CarrierFsCode);
+        Assert.Equal("Forward Air", row.UcnwAirlineName);
+        Assert.Equal(new DateTime(2026, 12, 1, 10, 0, 0), row.UcnwEtd);
+        Assert.Equal(new DateTime(2026, 12, 2, 9, 0, 0), row.UcnwEta);
+        Assert.True(string.IsNullOrEmpty(row.WebhookAlertId));
+        Assert.True(await _context.JobDeliveryJourneys.AnyAsync(
+            j => j.JobId == 100 && j.ChangeType == "FlightAssignment", TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task CanAssignAgentToJobAsync_AfterForwardAirAssignment_Passes()
+    {
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateAgentJob(100, "JOB001-F", parentJob, (int)SpeedGrouping.Flight);
+        var pickupJob = CreateAgentJob(101, "JOB001-P", parentJob, 99);
+        _context.TucJobs.AddRange(parentJob, flightJob, pickupJob);
+        _context.TblAirports.Add(CreateAirportWithProcessingTime(1, "Nashville", "BNA", true, 60));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repository = CreateRepository();
+        Assert.False(await repository.CanAssignAgentToJobAsync(101));
+
+        await repository.AddJobNationwideAsync(
+            CreateForwardAirRequest(100), [string.Empty], TestContext.Current.CancellationToken);
+
+        Assert.True(await repository.CanAssignAgentToJobAsync(101));
+    }
 
     private static TucJob CreateJobWithParent(int id, string jobNumber) => new()
     {

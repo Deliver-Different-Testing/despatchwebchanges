@@ -295,3 +295,26 @@ describe('FlightDetailsDialog', () => {
         expect(onClose).toHaveBeenCalled();
     });
 });
+
+describe('FlightDetailsDialog - Forward Air', () => {
+    it('labels a single-service Forward Air flight with its carrier and service code, without terminals or aircraft', () => {
+        renderWithTheme(
+            <FlightDetailsDialog
+                open
+                onClose={vi.fn()}
+                flight={createSingleSegmentFlight({
+                    airline: 'Forward Air',
+                    airlineCode: 'FWD',
+                    flightNumber: 'T2T',
+                    departureAirport: 'BNA',
+                    arrivalAirport: 'EWR',
+                    aircraft: 'Boeing 737',
+                })}
+            />
+        );
+
+        expect(screen.getByText('FWD T2T')).toBeInTheDocument();
+        expect(screen.queryByText('Aircraft')).not.toBeInTheDocument();
+        expect(screen.queryByText(/Terminal/)).not.toBeInTheDocument();
+    });
+});
