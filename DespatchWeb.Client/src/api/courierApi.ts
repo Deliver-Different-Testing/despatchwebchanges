@@ -15,6 +15,29 @@ import {formatDateForApiWithTzs} from '../utils/dateUtils';
 import type {Dayjs} from 'dayjs';
 import {RequestOptions} from "./requestOptions";
 
+export interface EarlyFinishReason {
+    id: number;
+    name: string;
+}
+
+export interface EarlyFinishOptions {
+    /** False when the caller lacks dw-driver-early-finish. */
+    available: boolean;
+    reasons: EarlyFinishReason[];
+}
+
+/** Whether the caller may record a driver early finish, and the reasons to offer. */
+export async function fetchEarlyFinishOptions(options?: RequestOptions): Promise<EarlyFinishOptions> {
+    return apiClient.get<EarlyFinishOptions>('courier/GetEarlyFinishOptions', undefined, options);
+}
+
+/** Record that a driver finished early / disappeared / broke down. `finishTime` is tenant-local "YYYY-MM-DDTHH:mm". */
+export async function recordEarlyFinish(
+    request: {courierId: number; reasonId: number; finishTime: string; note?: string},
+): Promise<void> {
+    await apiClient.post<void>('courier/RecordEarlyFinish', request);
+}
+
 /**
  * Search for active couriers
  */

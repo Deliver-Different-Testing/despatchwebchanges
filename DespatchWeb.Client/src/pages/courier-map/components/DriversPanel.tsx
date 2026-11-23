@@ -1,7 +1,9 @@
-import React, {useMemo} from 'react';
+import React, {useMemo, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
 import {
     alpha,
     Box,
+    Button,
     CloseButton,
     Group,
     Loader,
@@ -20,6 +22,10 @@ import {NoData} from '../../../components/common/no-data';
 import type {DriversPanelProps, FleetSelectorOption} from '../CourierMapPage.types';
 import {matchesCourierSearch} from '../CourierMapPage.types';
 import {DriverListItem} from './DriverListItem';
+import {EarlyFinishDialog} from './EarlyFinishDialog';
+import {fetchEarlyFinishOptions} from '../../../api/courierApi';
+import {isBehind, minutesUntilMinimumEnds, useTenantNowMs} from '../../../components/common/driver-locations/driverTopUp';
+import type {DriverAlertFilter} from '../../../components/common/driver-locations/driverTopUp';
 
 const PANEL_WIDTH = 340;
 const ANIMATION_DURATION = '300ms';
@@ -94,9 +100,30 @@ export function DriversPanel({
         return { totalJobs, overdueCount };
     }, [drivers]);
 
+    // Minimum hourly top-up alerts (only present when dw-driver-earnings-status + the tenant alert are on).
+    const nowMs = useTenantNowMs();
+    const [alertFilter, setAlertFilter] = useState<DriverAlertFilter>(null);
+
+    // Early-finish task: offered only to users holding dw-driver-early-finish.
+    const {data: earlyFinish} = useQuery({
+        queryKey: ['courier', 'earlyFinishOptions'],
+        queryFn: ({signal}) => fetchEarlyFinishOptions({signal}),
+        staleTime: 5 * 60_000,
+    });
+    const [earlyFinishDriver, setEarlyFinishDriver] = useState<{id: number; name: string} | null>(null);
+    const alertCounts = useMemo(() => ({
+        behind: drivers.filter((d) => isBehind(d)).length,
+        minimum: drivers.filter((d) => minutesUntilMinimumEnds(d, nowMs) !== null).length,
+    }), [drivers, nowMs]);
+    const toggleAlertFilter = (filter: Exclude<DriverAlertFilter, null>) =>
+        setAlertFilter((prev) => (prev === filter ? null : filter));
+
     const filteredDrivers = useMemo(
-        () => drivers.filter((driver) => matchesCourierSearch(driver, searchTerm)),
-        [drivers, searchTerm]
+        () => drivers.filter((driver) =>
+            matchesCourierSearch(driver, searchTerm)
+            && (alertFilter === null
+                || (alertFilter === 'behind' ? isBehind(driver) : minutesUntilMinimumEnds(driver, nowMs) !== null))),
+        [drivers, searchTerm, alertFilter, nowMs]
     );
 
     // MultiSelect speaks strings; the fleet ids are numbers.
@@ -161,6 +188,32 @@ export function DriversPanel({
                         highlight={stats.overdueCount > 0}
                     />
                 </Group>
+
+                {/* ── Earnings alerts (minimum hourly top-up) ─ */}
+                {(alertCounts.behind > 0 || alertCounts.minimum > 0) && (
+                    <Group gap={6} px={16} pb={8} style={{flexShrink: 0}} role="group" aria-label="Driver earnings alerts">
+                        {alertCounts.behind > 0 && (
+                            <Button
+                                size="compact-xs"
+                                color="red"
+                                variant={alertFilter === 'behind' ? 'filled' : 'light'}
+                                onClick={() => toggleAlertFilter('behind')}
+                            >
+                                {alertCounts.behind} behind on earnings
+                            </Button>
+                        )}
+                        {alertCounts.minimum > 0 && (
+                            <Button
+                                size="compact-xs"
+                                color="orange"
+                                variant={alertFilter === 'minimum' ? 'filled' : 'light'}
+                                onClick={() => toggleAlertFilter('minimum')}
+                            >
+                                {alertCounts.minimum} minimum ending soon
+                            </Button>
+                        )}
+                    </Group>
+                )}
 
                 {/* ── Fleet filter ──────────────────── */}
                 <Box px={16} pb={8} style={{flexShrink: 0}}>
@@ -250,13 +303,37 @@ export function DriversPanel({
                                         driver={driver}
                                         onClick={() => onDriverClick(driver)}
                                         isSelected={driver.courierId === selectedDriverId}
+                                        showTopUpDetail={driver.courierId === selectedDriverId || searchTerm.trim() !== ''}
+                                        nowMs={nowMs}
                                     />
+                                    {earlyFinish?.available && driver.courierId === selectedDriverId && (
+                                        <Box px={16} pb={6}>
+                                            <Button
+                                                size="compact-xs"
+                                                variant="subtle"
+                                                onClick={() => setEarlyFinishDriver({id: driver.courierId, name: driver.courierName})}
+                                            >
+                                                Record early finish…
+                                            </Button>
+                                        </Box>
+                                    )}
                                 </Box>
                             ))}
                         </Box>
                     )}
                 </Box>
             </Box>
+
+            {earlyFinish?.available && earlyFinishDriver && (
+                <EarlyFinishDialog
+                    key={earlyFinishDriver.id}
+                    opened
+                    onClose={() => setEarlyFinishDriver(null)}
+                    courierId={earlyFinishDriver.id}
+                    driverName={earlyFinishDriver.name}
+                    reasons={earlyFinish.reasons}
+                />
+            )}
 
             {/* ── Toggle handle ─────────────────── */}
             <UnstyledButton

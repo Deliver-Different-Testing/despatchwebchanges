@@ -11,6 +11,7 @@ import {
     CourierCompliancePaginated,
     CourierDailyEarningsPaginated,
     CourierDataDashboard,
+    DriverPayPeriodOverview,
     DriverEmail,
     FleetOption,
     GroupEmailData,
@@ -76,6 +77,15 @@ export function useDriverEmails(query: PaginatedRequest) {
         queryKey: queryKeys.driverManagement.driverEmails(query),
         queryFn: ({signal}) => driverManagementApi.getDriverEmails(query, {signal}),
         placeholderData: keepPreviousData,
+    });
+}
+
+export function useDriverPayPeriodOverview() {
+    return useQuery<DriverPayPeriodOverview, Error>({
+        queryKey: queryKeys.driverManagement.payPeriodOverview,
+        queryFn: ({signal}) => driverManagementApi.getPayPeriodOverview({signal}),
+        // The behind figure is refreshed nightly; a minute-old read is current.
+        staleTime: 60_000,
     });
 }
 

@@ -558,6 +558,12 @@ export interface ICourierData {
     courierNumber: string;
     latitude?: number;
     longitude?: number;
+    /** Dollars behind the minimum hourly guarantee this pay period; absent when on target or not permitted. */
+    earningsBehindBy?: number | null;
+    /** Tenant-local ISO time today's minimum paid block ends; absent unless the alert is on. */
+    minimumEndsAt?: string | null;
+    /** Warning window in minutes; absent = alert off. */
+    minimumAlertMinutes?: number | null;
 }
 
 export interface IDestination {
