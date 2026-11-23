@@ -1993,7 +1993,7 @@ public partial class JobRepository(
                                 (childJobId == null || i.ChildJobId == childJobId))
                     .OrderBy(i => i.ItemId)
                     .ToListAsync();
-                var existing = scoped.Where(i => i.ChildJobId == childJobId).ToList();
+                var existing = InDisplayOrder(scoped.Where(i => i.ChildJobId == childJobId)).ToList();
 
                 var nextItemId = (await Context.TucJobItems
                     .Where(i => i.JobId == effectiveJobId)
@@ -2005,6 +2005,7 @@ public partial class JobRepository(
                     .AnyAsync(j => (j.UcjbId == jobId || j.UcjbId == effectiveJobId) && j.UcjbMobileSend);
 
                 var matched = MatchParcelsToLines(parcels, existing);
+                var submittedLines = new TucJobItem[parcels.Count];
 
                 for (var index = 0; index < parcels.Count; index++)
                 {
@@ -2012,7 +2013,7 @@ public partial class JobRepository(
                     var item = matched[index];
                     if (item == null)
                     {
-                        Context.TucJobItems.Add(new TucJobItem
+                        Context.TucJobItems.Add(submittedLines[index] = new TucJobItem
                         {
                             JobId = effectiveJobId,
                             ChildJobId = childJobId,
@@ -2029,6 +2030,7 @@ public partial class JobRepository(
                         continue;
                     }
 
+                    submittedLines[index] = item;
                     item.Height = p.Height ?? 0;
                     item.Length = p.Length ?? 0;
                     item.Depth = p.Depth ?? 0;
@@ -2044,7 +2046,20 @@ public partial class JobRepository(
                 // Lines already flagged are history and are kept either way.
                 var removedItemIds = scoped.Except(matched.Where(i => i != null)).Where(IsActiveLine)
                     .Select(i => i.ItemId).ToList();
+
+                // #1056: ItemID is the line's identity to the courier app, labels and APIs, so the
+                // on-screen order is stored in SortOrder instead.
+                var keptUnsubmitted = existing.Except(submittedLines)
+                    .Where(i => flagRemovals || !IsActiveLine(i)).ToHashSet();
+                var sortOrders = PlanSortOrder(submittedLines, existing, keptUnsubmitted);
+                var existingSet = existing.ToHashSet();
+                foreach (var (line, sortOrder) in sortOrders.Where(s => !existingSet.Contains(s.Line)))
+                    line.SortOrder = sortOrder;
                 await Context.SaveChangesAsync();
+                var existingSortOrders = sortOrders
+                    .Where(s => existingSet.Contains(s.Line) && s.Line.SortOrder != s.SortOrder).ToList();
+                await WriteSortOrderAsync(effectiveJobId,
+                    existingSortOrders.Select(s => (s.Line.ItemId, s.SortOrder)).ToList());
 
                 // One set-based statement: RemoveRange/SaveChanges issues a DELETE per row, and the totals
                 // trigger then fires per row (qty stepping 486 -> 1, a courier note + journal rows each time).
@@ -2102,6 +2117,16 @@ public partial class JobRepository(
                 }
 
                 await transaction.CommitAsync();
+
+                // The context outlives this call and tracking queries return these instances as-is. Synced only
+                // once committed, so a retried attempt still compares against the stored order.
+                foreach (var (line, sortOrder) in existingSortOrders)
+                {
+                    var property = Context.Entry(line).Property(i => i.SortOrder);
+                    property.CurrentValue = sortOrder;
+                    property.OriginalValue = sortOrder;
+                    property.IsModified = false;
+                }
             });
         }
         catch (Exception e)
@@ -5147,11 +5172,69 @@ public partial class JobRepository(
     private static bool IsActiveLine(TucJobItem item) => (item.ItemStatus ?? 0) == (byte)JobItemStatus.Active;
 
     /// <summary>
-    /// Pairs each submitted parcel with the line it edits. The dialog doesn't send ItemIds, so a parcel
-    /// with a barcode takes the line with that barcode (re-activating it if it was flagged); the rest
-    /// take the remaining active lines in ItemId order, as before, but a barcoded parcel never takes a
-    /// line that has a different barcode - that line was removed, and a new line is added instead.
-    /// A null entry means "insert".
+    /// Readers order lines by SortOrder (unset last), then ItemID; keep in step with the JobMappings projections.
+    /// </summary>
+    private static IOrderedEnumerable<TucJobItem> InDisplayOrder(IEnumerable<TucJobItem> lines) =>
+        lines.OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId);
+
+    /// <summary>
+    /// The scope's order after a save: the submitted lines as sent, with each kept-but-unsubmitted (flagged)
+    /// line straight after the line it followed before (<paramref name="previousLines"/> is in display order),
+    /// or first when nothing before it survives. Empty when that matches what readers already see, so an
+    /// unchanged save writes nothing.
+    /// </summary>
+    private static List<(TucJobItem Line, int SortOrder)> PlanSortOrder(IReadOnlyList<TucJobItem> submitted,
+        IReadOnlyList<TucJobItem> previousLines, IReadOnlySet<TucJobItem> keptUnsubmitted)
+    {
+        var ordered = submitted.ToList();
+        var submittedSet = submitted.ToHashSet();
+        TucJobItem anchor = null;
+        foreach (var line in previousLines)
+        {
+            if (keptUnsubmitted.Contains(line))
+                ordered.Insert(anchor == null ? 0 : ordered.IndexOf(anchor) + 1, line);
+            else if (!submittedSet.Contains(line))
+                continue;
+            anchor = line;
+        }
+
+        return InDisplayOrder(ordered).SequenceEqual(ordered)
+            ? []
+            : ordered.Select((line, index) => (line, index + 1)).ToList();
+    }
+
+    /// <summary>
+    /// Writes SortOrder for existing lines in one statement per chunk: tucJobItems' totals trigger runs per
+    /// statement, and SaveChanges would issue one UPDATE per line. No LINQ form sets a per-row value in one UPDATE.
+    /// </summary>
+    private async Task WriteSortOrderAsync(int jobId, IReadOnlyList<(int ItemId, int SortOrder)> sortOrders)
+    {
+        foreach (var chunk in sortOrders.Chunk(500))
+        {
+            var parameters = new List<object> { jobId };
+            var cases = new List<string>();
+            foreach (var (itemId, sortOrder) in chunk)
+            {
+                cases.Add($"WHEN {{{parameters.Count}}} THEN {{{parameters.Count + 1}}}");
+                parameters.Add(itemId);
+                parameters.Add(sortOrder);
+            }
+
+            var itemIds = string.Join(", ", chunk.Select((_, i) => $"{{{1 + 2 * i}}}"));
+            await Context.Database.ExecuteSqlRawAsync(
+                $"UPDATE tucJobItems SET SortOrder = CASE ItemID {string.Join(" ", cases)} END " +
+                $"WHERE JobID = {{0}} AND ItemID IN ({itemIds})",
+                parameters);
+        }
+    }
+
+    /// <summary>
+    /// Pairs each submitted parcel with the line it edits. A parcel with an ItemId (the dialog sends one for
+    /// every parcel it loaded) takes that line. Otherwise a parcel with a barcode takes the line with that
+    /// barcode (re-activating it if it was flagged). When the caller sent ItemIds, any other parcel is new;
+    /// callers that don't send them fall back to giving the rest the remaining active lines in display order,
+    /// where a barcoded parcel never takes a line that has a different barcode - that line was removed, and
+    /// a new line is added instead. A null entry means "insert".
     /// </summary>
     private static TucJobItem[] MatchParcelsToLines(IReadOnlyList<ParcelDimensions> parcels, List<TucJobItem> lines)
     {
@@ -5160,6 +5243,17 @@ public partial class JobRepository(
 
         for (var index = 0; index < parcels.Count; index++)
         {
+            var itemId = parcels[index].ItemId;
+            if (itemId == null) continue;
+            var line = unmatched.FirstOrDefault(i => i.ItemId == itemId);
+            if (line == null) continue;
+            matched[index] = line;
+            unmatched.Remove(line);
+        }
+
+        for (var index = 0; index < parcels.Count; index++)
+        {
+            if (matched[index] != null) continue;
             var barcode = parcels[index].Barcode;
             if (string.IsNullOrEmpty(barcode)) continue;
             var line = unmatched.FirstOrDefault(i => i.Barcode == barcode);
@@ -5167,6 +5261,8 @@ public partial class JobRepository(
             matched[index] = line;
             unmatched.Remove(line);
         }
+
+        if (parcels.Any(p => p.ItemId != null)) return matched;
 
         var submittedBarcodes = parcels.Select(p => p.Barcode).Where(b => !string.IsNullOrEmpty(b)).ToHashSet();
         for (var index = 0; index < parcels.Count; index++)

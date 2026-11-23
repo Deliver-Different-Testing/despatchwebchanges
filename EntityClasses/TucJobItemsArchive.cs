@@ -39,6 +39,8 @@ public partial class TucJobItemsArchive
 
     public byte? ItemStatus { get; set; }
 
+    public int? SortOrder { get; set; }
+
     public virtual TucJobArchive ChildJob { get; set; }
 
     public virtual ICollection<TucJobItemTypesArchive> TucJobItemTypesArchives { get; set; } = new List<TucJobItemTypesArchive>();

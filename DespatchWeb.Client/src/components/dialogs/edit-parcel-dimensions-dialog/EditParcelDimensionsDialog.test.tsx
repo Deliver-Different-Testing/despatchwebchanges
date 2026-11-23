@@ -369,6 +369,72 @@ describe('EditParcelDimensionsDialog insert a parcel mid-list', () => {
         expect(saved.map(p => p.barcode)).toEqual(['55-1', '55-4', '55-2', '55-3']);
     });
 
+    // 55-1 and 55-3 match, so they share a row even though 55-2 sits between them in the job.
+    const splitRowParcels = () => [
+        mockParcel({weight: 10, barcode: '55-1'}),
+        mockParcel({weight: 5, barcode: '55-2'}),
+        mockParcel({weight: 10, barcode: '55-3'}),
+    ];
+
+    const savedBarcodes = async () => {
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        const call = mockPost.mock.calls.find(c => c[0] === 'job/UpdateJobPackages')!;
+        return (call[1].parcels as ParcelDimensions[]).map(p => p.barcode);
+    };
+
+    it('saves a parcel inserted into a merged row before the parcel it was added above, in job order', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55} parcels={splitRowParcels()} />);
+
+        await user.click(screen.getAllByRole('button', {name: 'Show barcodes'})[0]);
+        await user.click(screen.getByRole('button', {name: 'Add parcel before parcel 55-3'}));
+        expect(barcodeValues()).toEqual(['55-1', '55-4', '55-3']);
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+        expect(await savedBarcodes()).toEqual(['55-1', '55-2', '55-4', '55-3']);
+    });
+
+    it('saves a parcel added to the end of a merged row after that row\'s last parcel, in job order', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55}
+            parcels={[...splitRowParcels(), mockParcel({weight: 7, barcode: '55-4'})]} />);
+
+        await user.click(screen.getAllByRole('button', {name: 'Increase quantity'})[0]);
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+        expect(await savedBarcodes()).toEqual(['55-1', '55-2', '55-3', '55-5', '55-4']);
+    });
+
+    it('sends each loaded parcel\'s item id so the save edits that line, and none for an inserted parcel', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55} parcels={[
+            mockParcel({weight: 5, itemId: 11}),
+            mockParcel({weight: 5, itemId: 12}),
+        ]} />);
+
+        await user.click(screen.getByRole('button', {name: 'Show barcodes'}));
+        await user.click(screen.getByRole('button', {name: 'Add parcel before item 2'}));
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+        await waitFor(() => expect(mockPost).toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything()));
+        const saved = mockPost.mock.calls.find(c => c[0] === 'job/UpdateJobPackages')![1].parcels as ParcelDimensions[];
+        expect(saved.map(p => [p.itemId, p.barcode])).toEqual([[11, undefined], [undefined, '55-1'], [12, undefined]]);
+    });
+
+    it('saves a parcel added to a row whose loaded parcels were all removed in that row\'s old slot', async () => {
+        const user = setupUser();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} jobNumber={55} parcels={splitRowParcels()} />);
+
+        await user.click(screen.getAllByRole('button', {name: 'Show barcodes'})[1]);
+        await user.click(screen.getByRole('button', {name: 'Add parcel before parcel 55-2'}));
+        await user.click(screen.getByRole('button', {name: 'Remove parcel 55-2'}));
+        await user.click(within(screen.getByRole('dialog', {name: 'Remove parcel'}))
+            .getByRole('button', {name: /^remove parcel$/i}));
+        await user.click(screen.getByRole('button', {name: /^save changes$/i}));
+
+        expect(await savedBarcodes()).toEqual(['55-1', '55-4', '55-3']);
+    });
+
     it('inserts a blank parcel without a job number, and the insert makes Cancel ask to discard', async () => {
         const user = setupUser();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel()]} />);

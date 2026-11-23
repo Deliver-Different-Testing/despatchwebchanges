@@ -27,7 +27,19 @@ interface ParcelItemType {
 interface ParcelBarcode {
     key: string;
     value: string;
+    /** Set for parcels the dialog loaded; unset for parcels added here. */
+    loaded?: LoadedParcel;
 }
+
+interface LoadedParcel {
+    /** Position in the job's parcel list when the dialog opened. */
+    origin: number;
+    /** The parcel's line, so the save edits that line rather than matching by barcode or position. */
+    itemId?: number;
+}
+
+/** Where a parcel goes in the saved order: beside the loaded parcel at `anchor`, before (-1), on (0) or after (1) it. */
+type SaveOrderKey = readonly [anchor: number, side: -1 | 0 | 1];
 
 interface ParcelGroup {
     id: string;
@@ -40,6 +52,8 @@ interface ParcelGroup {
     barcodes: ParcelBarcode[];
     expandedBarcodes: boolean;
     representativeItemId?: number;
+    /** Job-list position of the row's first loaded parcel; places parcels added after all of those were removed. */
+    origin?: number;
 }
 
 interface PendingRemoval {
@@ -53,8 +67,8 @@ function newKey(): string {
     return Math.random().toString(36).slice(2);
 }
 
-function newBarcode(value: string): ParcelBarcode {
-    return {key: newKey(), value};
+function newBarcode(value: string, loaded?: LoadedParcel): ParcelBarcode {
+    return {key: newKey(), value, loaded};
 }
 
 function parcelLabel({barcode, itemNumber}: Pick<PendingRemoval, 'barcode' | 'itemNumber'>): string {
@@ -94,11 +108,11 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
 
     const map = new Map<string, ParcelGroup>();
 
-    for (const p of parcels) {
+    for (const [origin, p] of parcels.entries()) {
         const key = `${p.itemName ?? ''}|${p.length ?? ''}|${p.depth ?? ''}|${p.height ?? ''}|${p.weight ?? ''}`;
         if (map.has(key)) {
             const existing = map.get(key)!;
-            existing.barcodes.push(newBarcode(p.barcode ?? ''));
+            existing.barcodes.push(newBarcode(p.barcode ?? '', {origin, itemId: p.itemId}));
             // Per Job: the stored per-parcel weight/volume were divided across barcodes when
             // saved — sum them back up so the row displays the job-total contribution again,
             // instead of the shrunken per-parcel value (which would otherwise keep dividing
@@ -121,9 +135,10 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
                 height: p.height != null ? String(p.height) : '',
                 weight: p.weight != null ? String(p.weight) : '',
                 cubic: p.cubic != null ? String(p.cubic) : '',
-                barcodes: [newBarcode(p.barcode ?? '')],
+                barcodes: [newBarcode(p.barcode ?? '', {origin, itemId: p.itemId})],
                 expandedBarcodes: false,
                 representativeItemId: p.itemId,
+                origin,
             });
         }
     }
@@ -160,17 +175,44 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
             ? `${length} × ${depth} × ${height} ${dimensionUnit}`
             : '';
 
-        return g.barcodes.map(({value: barcode}) => ({
-            itemName: g.itemName,
-            length,
-            depth,
-            height,
-            weight,
-            cubic,
-            dimensions,
-            barcode: barcode || undefined,
+        return g.barcodes.map(({value: barcode, loaded}, index) => ({
+            parcel: {
+                itemId: loaded?.itemId,
+                itemName: g.itemName,
+                length,
+                depth,
+                height,
+                weight,
+                cubic,
+                dimensions,
+                barcode: barcode || undefined,
+            },
+            sortKey: saveOrderKey(g, index),
         }));
-    });
+    }).sort((a, b) => compareKeys(a.sortKey, b.sortKey))
+        .map(entry => entry.parcel);
+}
+
+/**
+ * Rows group identical parcels that weren't next to each other, so the save keeps the job's own order
+ * (what the server stores) rather than the row order: each loaded parcel keeps its place, and an added
+ * one goes before the next loaded parcel in its row, after the previous one, in the row's old slot when
+ * every loaded parcel in it was removed, or last in a new row.
+ */
+function saveOrderKey({barcodes, origin: rowOrigin}: ParcelGroup, index: number): SaveOrderKey {
+    const origins = barcodes.map(b => b.loaded?.origin);
+    const own = origins[index];
+    if (own != null) return [own, 0];
+    const isOrigin = (o: number | undefined): o is number => o != null;
+    const next = origins.slice(index + 1).find(isOrigin);
+    if (next != null) return [next, -1];
+    const previous = origins.slice(0, index).reverse().find(isOrigin);
+    if (previous != null) return [previous, 1];
+    return [rowOrigin ?? Number.POSITIVE_INFINITY, -1];
+}
+
+function compareKeys(a: SaveOrderKey, b: SaveOrderKey): number {
+    return a[0] === b[0] ? a[1] - b[1] : a[0] < b[0] ? -1 : 1;
 }
 
 /** One numeric cell of the dimensions grid — same field, different measurement. */
