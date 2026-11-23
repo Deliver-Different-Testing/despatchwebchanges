@@ -1,3 +1,4 @@
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -150,12 +151,16 @@ public static partial class JobMappings
                 return new FlightSegmentViewModel
                 {
                     SegmentOrder = segment.UcnwLegNumber - 1,
-                    CarrierFsCode = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2
-                        ? segment.UcnwFlightNo[..2]
-                        : "??",
-                    FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2
-                        ? segment.UcnwFlightNo[2..]
-                        : "????",
+                    CarrierFsCode = segment.CarrierFsCode == ForwardAirCarrier.Code
+                        ? ForwardAirCarrier.Code
+                        : !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length >= 2
+                            ? segment.UcnwFlightNo[..2]
+                            : "??",
+                    FlightNumber = segment.CarrierFsCode == ForwardAirCarrier.Code
+                        ? segment.UcnwFlightNo ?? "????"
+                        : !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2
+                            ? segment.UcnwFlightNo[2..]
+                            : "????",
                     DepartureTime = TimeZoneHelper.SetDateTimeWithTimeZone(
                         segment.UcnwEtd ?? throw new NullReferenceException(), segmentDepartureTimeZone),
                     ArrivalTime = TimeZoneHelper.SetDateTimeWithTimeZone(
@@ -192,7 +197,9 @@ public static partial class JobMappings
                 ArrivalTimeZone = arrivalTimeZone,
                 ExpectedDeparture = firstSegment.DepartureTime,
                 DepartureTimeZone = departureTimeZone,
-                FlightNumber = firstSegment.CarrierFsCode + firstSegment.FlightNumber,
+                FlightNumber = firstSegment.CarrierFsCode == ForwardAirCarrier.Code
+                    ? firstSegment.FlightNumber
+                    : firstSegment.CarrierFsCode + firstSegment.FlightNumber,
                 Notes = segments[0].UcnwNotes,
                 FlightSegments = flightSegments
             };

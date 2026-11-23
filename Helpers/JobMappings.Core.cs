@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
@@ -442,12 +443,16 @@ public static partial class JobMappings
                             .Select(n => new FlightSegmentViewModel
                             {
                                 SegmentOrder = n.UcnwLegNumber - 1,
-                                CarrierFsCode = n.UcnwFlightNo != null && n.UcnwFlightNo.Length >= 2
-                                    ? n.UcnwFlightNo.Substring(0, 2)
-                                    : "??",
-                                FlightNumber = n.UcnwFlightNo != null && n.UcnwFlightNo.Length > 2
-                                    ? n.UcnwFlightNo.Substring(2)
-                                    : "????",
+                                CarrierFsCode = n.CarrierFsCode == ForwardAirCarrier.Code
+                                    ? ForwardAirCarrier.Code
+                                    : n.UcnwFlightNo != null && n.UcnwFlightNo.Length >= 2
+                                        ? n.UcnwFlightNo.Substring(0, 2)
+                                        : "??",
+                                FlightNumber = n.CarrierFsCode == ForwardAirCarrier.Code
+                                    ? n.UcnwFlightNo ?? "????"
+                                    : n.UcnwFlightNo != null && n.UcnwFlightNo.Length > 2
+                                        ? n.UcnwFlightNo.Substring(2)
+                                        : "????",
                                 DepartureTime = n.UcnwEtd ?? SqlMinDateTime,
                                 ArrivalTime = n.UcnwEta ?? SqlMinDateTime,
                                 DepartureAirportFsCode = n.DepartureAirportFsCode,

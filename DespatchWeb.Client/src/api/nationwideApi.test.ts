@@ -702,4 +702,28 @@ describe('NationwideApiService flight and agent operations', () => {
             );
         });
     });
+
+    describe('getForwardAirJob', () => {
+        it('gets the leg booking from api/nationwide/{legId}/forwardair', async () => {
+            mockApiClient.get.mockResolvedValue({jobId: 5, airbillNumber: '123', deliveryDocumentAvailable: false});
+
+            const result = await nationwideApi.getForwardAirJob(5);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('api/nationwide/5/forwardair');
+            expect(result?.airbillNumber).toBe('123');
+        });
+
+        it('returns null when nothing is booked (404)', async () => {
+            mockApiClient.get.mockRejectedValue({status: 404, statusText: 'Not Found', message: 'x'});
+
+            await expect(nationwideApi.getForwardAirJob(5)).resolves.toBeNull();
+        });
+
+        it('rethrows other failures', async () => {
+            const error = {status: 502, statusText: 'Bad Gateway', message: 'x'};
+            mockApiClient.get.mockRejectedValue(error);
+
+            await expect(nationwideApi.getForwardAirJob(5)).rejects.toBe(error);
+        });
+    });
 });
