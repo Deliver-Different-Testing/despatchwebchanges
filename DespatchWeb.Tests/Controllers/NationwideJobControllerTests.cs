@@ -735,6 +735,47 @@ public class NationwideJobControllerTests
     }
 
     [Fact]
+    public async Task GetScheduledFlightOptions_FlightOrderDoesNotDependOnForwardAirAnswering()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        var later = new FlightViewModel
+        {
+            AirlineCode = "NZ", FlightNumber = "1", DepartureTime = DateTimeOffset.Now.AddHours(3),
+            ArrivalTime = DateTimeOffset.Now.AddHours(9), FlightSegments = []
+        };
+        var earlier = CreateTestFlight("QF", "2", "BNA", "EWR");
+        GivenFlights(later, earlier);
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(new ForwardAirQuoteResponseDto {Success = false, Error = "Forward Air did not respond in time."});
+
+        var response = await SearchAsync();
+
+        Assert.Equal(["2", "1"], response.Flights.Select(f => f.FlightNumber));
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_LeavesOutForwardAirServicesWithNoTimeZone_AndSaysSo()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        var noZone = T2T();
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(QuoteWith(new ForwardAirQuoteServiceDto
+            {
+                ServiceCode = noZone.ServiceCode, ServiceName = noZone.ServiceName, OriginAirport = "BNA",
+                DestinationAirport = "EWR", ShipDate = noZone.ShipDate, EstimatedArrival = noZone.EstimatedArrival,
+                OriginTimeZone = null, DestinationTimeZone = "America/New_York"
+            }));
+
+        var response = await SearchAsync();
+
+        Assert.DoesNotContain(response.Flights, f => f.AirlineCode == "FWD");
+        Assert.Contains("time zone", response.Message);
+    }
+
+    [Fact]
     public async Task GetScheduledFlightOptions_MergedRows_FollowExistingArrivalOrdering()
     {
         GivenForwardAirCarrierActive();

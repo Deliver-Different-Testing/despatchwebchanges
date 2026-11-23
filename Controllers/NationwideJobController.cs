@@ -159,15 +159,31 @@ public class NationwideJobController(
             if (forwardAirTask is not null)
             {
                 var quote = await forwardAirTask;
-                if (quote.Success && quote.Services.Count != 0)
+                var named = quote.Success
+                    ? quote.Services.Where(s => !string.IsNullOrWhiteSpace(s.ServiceCode)).ToList()
+                    : [];
+                var bookable = named
+                    .Where(s => !string.IsNullOrWhiteSpace(s.OriginTimeZone) && !string.IsNullOrWhiteSpace(s.DestinationTimeZone))
+                    .ToList();
+                if (bookable.Count != 0)
                 {
-                    flights = [.. (flights ?? []), .. quote.Services.Select(s => MapForwardAirService(s, departureAirportId, arrivalAirportId))];
-                    flights = [.. flights.OrderBy(f => f.ArrivalTime)];
+                    flights = [.. (flights ?? []), .. bookable.Select(s => MapForwardAirService(s, departureAirportId, arrivalAirportId))];
                 }
-                else if (!quote.Success)
+
+                if (!quote.Success)
                 {
                     forwardAirMessage = quote.Error;
                 }
+                else if (bookable.Count < named.Count)
+                {
+                    forwardAirMessage =
+                        "Some Forward Air services were left out because an airport on this route has no time zone set.";
+                }
+            }
+
+            if (flights is { Count: > 1 })
+            {
+                flights = [.. flights.OrderBy(f => f.ArrivalTime)];
             }
 
             if (flights is null || flights.Count == 0)
@@ -298,10 +314,9 @@ public class NationwideJobController(
         var unspecified = DateTime.SpecifyKind(local, DateTimeKind.Unspecified);
         try
         {
-            var zone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-            return new DateTimeOffset(unspecified, zone.GetUtcOffset(unspecified));
+            return TimeZoneHelper.SetDateTimeWithTimeZone(unspecified, timeZoneId);
         }
-        catch (Exception e) when (e is TimeZoneNotFoundException or InvalidTimeZoneException or ArgumentException)
+        catch (ArgumentException e)
         {
             Log.Warning(e, "Forward Air time zone {TimeZoneId} is unknown; treating {LocalTime} as UTC", timeZoneId, local);
             return new DateTimeOffset(unspecified, TimeSpan.Zero);
