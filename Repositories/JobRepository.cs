@@ -2056,9 +2056,18 @@ public partial class JobRepository(
                 foreach (var (line, sortOrder) in sortOrders.Where(s => !existingSet.Contains(s.Line)))
                     line.SortOrder = sortOrder;
                 await Context.SaveChangesAsync();
-                await WriteSortOrderAsync(effectiveJobId, sortOrders
-                    .Where(s => existingSet.Contains(s.Line) && s.Line.SortOrder != s.SortOrder)
-                    .Select(s => (s.Line.ItemId, s.SortOrder)).ToList());
+                var existingSortOrders = sortOrders
+                    .Where(s => existingSet.Contains(s.Line) && s.Line.SortOrder != s.SortOrder).ToList();
+                await WriteSortOrderAsync(effectiveJobId,
+                    existingSortOrders.Select(s => (s.Line.ItemId, s.SortOrder)).ToList());
+                // The context outlives this call and tracking queries return these instances as-is.
+                foreach (var (line, sortOrder) in existingSortOrders)
+                {
+                    var property = Context.Entry(line).Property(i => i.SortOrder);
+                    property.CurrentValue = sortOrder;
+                    property.OriginalValue = sortOrder;
+                    property.IsModified = false;
+                }
 
                 // One set-based statement: RemoveRange/SaveChanges issues a DELETE per row, and the totals
                 // trigger then fires per row (qty stepping 486 -> 1, a courier note + journal rows each time).

@@ -175,8 +175,7 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
             },
             sortKey: saveOrderKey(g.barcodes, index),
         }));
-    }).map((entry, seq) => ({...entry, seq}))
-        .sort((a, b) => compareKeys(a.sortKey, b.sortKey) || a.seq - b.seq)
+    }).sort((a, b) => compareKeys(a.sortKey, b.sortKey))
         .map(entry => entry.parcel);
 }
 

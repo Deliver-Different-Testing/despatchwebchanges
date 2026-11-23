@@ -1236,6 +1236,22 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdatePackagesForJobAsync_ReorderedThenRestoredOnTheSameRepository_PersistsTheRestoredOrder()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(957, "J957"));
+        ctx.TucJobItems.AddRange(Line(957, 1, "J957-1"), Line(957, 2, "J957-2"), Line(957, 3, "J957-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = CreateRepository();
+
+        await repo.UpdatePackagesForJobAsync(957, [Parcel("J957-2"), Parcel("J957-1"), Parcel("J957-3")]);
+        await repo.UpdatePackagesForJobAsync(957, [Parcel("J957-1"), Parcel("J957-2"), Parcel("J957-3")]);
+
+        var lines = await ReadDisplayOrderAsync(957);
+        Assert.Equal(["J957-1", "J957-2", "J957-3"], lines.Select(i => i.Barcode));
+    }
+
+    [Fact]
     public async Task UpdatePackagesForJobAsync_BarcodelessLinesInSortOrder_EditTheLineShownInThatSlot()
     {
         await using var ctx = CreateContext();
