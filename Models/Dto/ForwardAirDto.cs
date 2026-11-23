@@ -1,6 +1,13 @@
 #nullable enable
 namespace DespatchWeb.Models.Dto;
 
+public sealed class ForwardAirLegQuoteRequestDto
+{
+    public DateOnly? ShipDate { get; init; }
+    public int? OriginAirportId { get; init; }
+    public int? DestinationAirportId { get; init; }
+}
+
 public sealed class ForwardAirQuoteResponseDto
 {
     public bool Success { get; init; }

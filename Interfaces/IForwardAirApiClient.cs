@@ -5,7 +5,8 @@ namespace DespatchWeb.Interfaces;
 
 public interface IForwardAirApiClient
 {
-    Task<ForwardAirQuoteResponseDto> GetLegQuoteAsync(int legId, CancellationToken ct = default);
+    Task<ForwardAirQuoteResponseDto> GetLegQuoteAsync(int legId, ForwardAirLegQuoteRequestDto? search,
+        CancellationToken ct = default);
     Task<ForwardAirJobDto?> GetJobAsync(int legId, CancellationToken ct = default);
     Task<ForwardAirDocument?> GetDocumentAsync(int legId, string type, CancellationToken ct = default);
 }

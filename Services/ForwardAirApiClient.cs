@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 #nullable enable
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
@@ -20,14 +21,16 @@ public sealed class ForwardAirApiClient(
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly TimeSpan _quoteTimeout = quoteTimeout ?? DefaultQuoteTimeout;
 
-    public async Task<ForwardAirQuoteResponseDto> GetLegQuoteAsync(int legId, CancellationToken ct = default)
+    public async Task<ForwardAirQuoteResponseDto> GetLegQuoteAsync(int legId, ForwardAirLegQuoteRequestDto? search,
+        CancellationToken ct = default)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(_quoteTimeout);
 
         try
         {
-            using var response = await SendAsync(HttpMethod.Post, $"/api/v1/forwardair/quotes/leg/{legId}", timeout.Token);
+            using var response = await SendAsync(HttpMethod.Post, $"/api/v1/forwardair/quotes/leg/{legId}", timeout.Token,
+                search is null ? null : JsonContent.Create(search, options: JsonOptions));
             var body = await response.Content.ReadAsStringAsync(timeout.Token);
 
             if (!response.IsSuccessStatusCode)
@@ -99,7 +102,8 @@ public sealed class ForwardAirApiClient(
 
     private static ForwardAirQuoteResponseDto Failure(string error) => new() {Success = false, Error = error};
 
-    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, CancellationToken ct)
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, CancellationToken ct,
+        HttpContent? content = null)
     {
         var (baseUrl, bearerToken) = ResolveUrlAndToken();
         if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(bearerToken))
@@ -110,7 +114,7 @@ public sealed class ForwardAirApiClient(
                     : "Unable to authenticate with Integration Manager.");
         }
 
-        using var request = new HttpRequestMessage(method, $"{baseUrl}{path}");
+        using var request = new HttpRequestMessage(method, $"{baseUrl}{path}") {Content = content};
         request.Headers.Add("Authorization", $"Bearer {bearerToken}");
         request.Headers.Add("X-Requested-With", "XMLHttpRequest");
         request.Headers.Add("X-IM-Authorization", $"Bearer {bearerToken}");

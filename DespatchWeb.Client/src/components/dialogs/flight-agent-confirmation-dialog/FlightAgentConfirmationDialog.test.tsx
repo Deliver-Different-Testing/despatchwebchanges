@@ -920,7 +920,7 @@ describe('FlightAgentConfirmationDialog', () => {
             )).toBeInTheDocument();
         });
 
-        it('leaves the AWB empty, optional, and explains where it comes from', async () => {
+        it('leaves the AWB empty and locked, and explains where it comes from', async () => {
             renderWithTheme(
                 <FlightAgentConfirmationDialog {...defaultProps} mode="flight" flight={forwardAirFlight()}/>
             );
@@ -928,7 +928,7 @@ describe('FlightAgentConfirmationDialog', () => {
             const input = await screen.findByLabelText('AWB number');
             expect(input).toHaveValue('');
             expect(input).not.toBeRequired();
-            expect(input).not.toBeDisabled();
+            expect(input).toBeDisabled();
             expect(screen.getByText(/airbill (number )?comes back from Forward Air/i)).toBeInTheDocument();
         });
 

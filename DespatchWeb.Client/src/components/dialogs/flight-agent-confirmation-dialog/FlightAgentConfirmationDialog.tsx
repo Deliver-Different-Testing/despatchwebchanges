@@ -161,9 +161,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     const [_arrivalTimeZone, setArrivalTimeZone] = useState('');
 
     // Computed values
-    const isAwbDisabled = !!existingAwb;
     const isForwardAir = mode === 'flight'
         && !!flight?.flightSegments?.some(s => s.carrierFsCode === FORWARD_AIR_CARRIER_CODE);
+    const isAwbDisabled = !!existingAwb || isForwardAir;
     const showIncludeStopJobs = mode === 'agent' && (stopJobCount ?? 0) > 0;
     const dgClassName = getDangerousGoodsClassName(dgClass);
 
@@ -478,7 +478,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
         const sendsAgentEmail = mode === 'agent' && agentEmail.willEmail;
         const result: FlightAgentDialogResult = {
             shouldAssign: true,
-            awb: awb || undefined,
+            awb: isForwardAir ? undefined : awb || undefined,
             shouldAssignToStopJobs: assignToStopJobs,
             packageReadyTime: packageReadyTime ?? undefined,
             packageDeliverByTime: deliveryByTime ?? undefined,

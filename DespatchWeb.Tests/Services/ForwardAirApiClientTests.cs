@@ -1,3 +1,4 @@
+using DespatchWeb.Models.Dto;
 using System.Net;
 using System.Security.Claims;
 using System.Text;
@@ -50,7 +51,7 @@ public class ForwardAirApiClientTests
             "destinationTimeZone":"America/New_York","quotedTotal":123.45,"quoteId":"Q1"}]}
             """));
 
-        var result = await CreateClient().GetLegQuoteAsync(77, TestContext.Current.CancellationToken);
+        var result = await CreateClient().GetLegQuoteAsync(77, null, TestContext.Current.CancellationToken);
 
         var request = Assert.Single(_handler.Requests);
         Assert.Equal(HttpMethod.Post, request.Method);
@@ -66,12 +67,27 @@ public class ForwardAirApiClientTests
     }
 
     [Fact]
+    public async Task GetLegQuoteAsync_SendsTheSearchedDateAndAirports()
+    {
+        _handler.SetResponse(Json(HttpStatusCode.OK, """{"success":true,"services":[]}"""));
+
+        await CreateClient().GetLegQuoteAsync(77,
+            new ForwardAirLegQuoteRequestDto {ShipDate = new DateOnly(2026, 12, 3), OriginAirportId = 150, DestinationAirportId = 96},
+            TestContext.Current.CancellationToken);
+
+        using var body = System.Text.Json.JsonDocument.Parse(Assert.Single(_handler.RequestBodies));
+        Assert.Equal("2026-12-03", body.RootElement.GetProperty("shipDate").GetString());
+        Assert.Equal(150, body.RootElement.GetProperty("originAirportId").GetInt32());
+        Assert.Equal(96, body.RootElement.GetProperty("destinationAirportId").GetInt32());
+    }
+
+    [Fact]
     public async Task GetLegQuoteAsync_NotConnected_ReturnsFailureWithError()
     {
         _handler.SetResponse(Json(HttpStatusCode.OK,
             """{"success":false,"error":"Forward Air is not connected","services":[]}"""));
 
-        var result = await CreateClient().GetLegQuoteAsync(77, TestContext.Current.CancellationToken);
+        var result = await CreateClient().GetLegQuoteAsync(77, null, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Equal("Forward Air is not connected", result.Error);
@@ -82,7 +98,7 @@ public class ForwardAirApiClientTests
     {
         _handler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadGateway));
 
-        var result = await CreateClient().GetLegQuoteAsync(77, TestContext.Current.CancellationToken);
+        var result = await CreateClient().GetLegQuoteAsync(77, null, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.False(string.IsNullOrEmpty(result.Error));
@@ -93,7 +109,7 @@ public class ForwardAirApiClientTests
     {
         _handler.SetResponse(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
 
-        await CreateClient().GetLegQuoteAsync(77, TestContext.Current.CancellationToken);
+        await CreateClient().GetLegQuoteAsync(77, null, TestContext.Current.CancellationToken);
 
         Assert.Single(_handler.Requests);
     }
@@ -104,7 +120,7 @@ public class ForwardAirApiClientTests
         var client = new ForwardAirApiClient(new HttpClient(new HangingHandler()), _httpContextAccessor, _environment,
             TimeSpan.FromMilliseconds(50));
 
-        var result = await client.GetLegQuoteAsync(77, TestContext.Current.CancellationToken);
+        var result = await client.GetLegQuoteAsync(77, null, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("did not respond", result.Error);
@@ -118,7 +134,7 @@ public class ForwardAirApiClientTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             new ForwardAirApiClient(new HttpClient(new HangingHandler()), _httpContextAccessor, _environment)
-                .GetLegQuoteAsync(77, cts.Token));
+                .GetLegQuoteAsync(77, null, cts.Token));
     }
 
     [Fact]

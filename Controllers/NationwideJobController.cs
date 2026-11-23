@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using DespatchWeb.Constants;
 using DespatchWeb.Enums;
 using DespatchWeb.Filters;
@@ -111,6 +112,7 @@ public class NationwideJobController(
         }
     }
 
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> GetScheduledFlightOptions(
         DateTimeOffset departureDate,
         int jobId,
@@ -131,7 +133,12 @@ public class NationwideJobController(
             var forwardAirCarrierId = await repository.GetActiveFlightCarrierIdByCodeAsync(ForwardAirCarrier.Code);
             var forwardAirOnly = forwardAirCarrierId.HasValue && airlineId == forwardAirCarrierId;
             var forwardAirTask = forwardAirCarrierId.HasValue && (airlineId is null || forwardAirOnly)
-                ? QuoteForwardAirAsync(jobId)
+                ? QuoteForwardAirAsync(jobId, new ForwardAirLegQuoteRequestDto
+                {
+                    ShipDate = DateOnly.FromDateTime(departureDate.Date),
+                    OriginAirportId = departureAirportId,
+                    DestinationAirportId = arrivalAirportId
+                })
                 : null;
 
             IReadOnlyList<FlightViewModel> flights = forwardAirOnly
@@ -167,12 +174,14 @@ public class NationwideJobController(
             {
                 stopwatch.Stop();
                 var noFlightsMessage = forwardAirOnly
-                    ? "Forward Air has no services for the selected route and date."
-                    : "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter.";
+                    ? forwardAirMessage ?? "Forward Air has no services for the selected route and date."
+                    : JoinMessages(
+                        "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter.",
+                        forwardAirMessage);
                 return Json(new FlightSearchResponse
                 {
                     Flights = [],
-                    Message = JoinMessages(noFlightsMessage, forwardAirMessage)
+                    Message = noFlightsMessage
                 });
             }
 
@@ -224,11 +233,11 @@ public class NationwideJobController(
         }
     }
 
-    private async Task<ForwardAirQuoteResponseDto> QuoteForwardAirAsync(int legId)
+    private async Task<ForwardAirQuoteResponseDto> QuoteForwardAirAsync(int legId, ForwardAirLegQuoteRequestDto search)
     {
         try
         {
-            return await forwardAirClient.GetLegQuoteAsync(legId, HttpContext?.RequestAborted ?? CancellationToken.None);
+            return await forwardAirClient.GetLegQuoteAsync(legId, search, HttpContext?.RequestAborted ?? CancellationToken.None);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
@@ -294,6 +303,7 @@ public class NationwideJobController(
         }
         catch (Exception e) when (e is TimeZoneNotFoundException or InvalidTimeZoneException or ArgumentException)
         {
+            Log.Warning(e, "Forward Air time zone {TimeZoneId} is unknown; treating {LocalTime} as UTC", timeZoneId, local);
             return new DateTimeOffset(unspecified, TimeSpan.Zero);
         }
     }
@@ -307,7 +317,7 @@ public class NationwideJobController(
             var job = await forwardAirClient.GetJobAsync(legId, cancellationToken);
             return job is null ? NotFound() : Json(job);
         }
-        catch (Exception e) when (e is HttpRequestException or InvalidOperationException)
+        catch (Exception e) when (e is HttpRequestException or InvalidOperationException or JsonException)
         {
             Log.Warning(e, "Forward Air job lookup failed for leg {LegId}", legId);
             return StatusCode(502, "Forward Air details are unavailable right now.");

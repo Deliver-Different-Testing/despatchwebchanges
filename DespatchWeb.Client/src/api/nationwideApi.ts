@@ -6,7 +6,7 @@
  */
 
 import {apiClient} from './client';
-import dayjs from 'dayjs';
+import dayjs, {type Dayjs} from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -100,9 +100,10 @@ export class NationwideApiService {
             return {
                 flights,
                 message: response.message,
-                lastDepartureTime: flights.length > 0
-                    ? flights[flights.length - 1].departureTime
-                    : undefined,
+                lastDepartureTime: flights.reduce<Dayjs | undefined>(
+                    (latest, f) => (!latest || f.departureTime.isAfter(latest) ? f.departureTime : latest),
+                    undefined,
+                ),
             };
         } catch (error) {
             console.error('Error fetching scheduled flight options:', error);
