@@ -133,6 +133,7 @@ public class NationwideJobController(
             var forwardAirCarrierId = await repository.GetActiveFlightCarrierIdByCodeAsync(ForwardAirCarrier.Code);
             var forwardAirOnly = forwardAirCarrierId.HasValue && airlineId == forwardAirCarrierId;
             var forwardAirTask = forwardAirCarrierId.HasValue && (airlineId is null || forwardAirOnly)
+                && departureAirportId.HasValue && arrivalAirportId.HasValue
                 ? QuoteForwardAirAsync(jobId, new ForwardAirLegQuoteRequestDto
                 {
                     ShipDate = DateOnly.FromDateTime(departureDate.Date),
@@ -141,19 +142,30 @@ public class NationwideJobController(
                 })
                 : null;
 
-            IReadOnlyList<FlightViewModel> flights = forwardAirOnly
-                ? []
-                : await flightService.GetFlightsAsync(
-                    jobId,
-                    departureDate,
-                    airlineId,
-                    departureAirportId,
-                    arrivalAirportId,
-                    codeType: "FS",
-                    extendedOptions: null,
-                    minimumLayoverMinutes: minimumLayoverMinutes,
-                    allowNearbyDepartures: includeNearbyAirports,
-                    allowNearbyArrivals: includeNearbyAirports);
+            IReadOnlyList<FlightViewModel> flights = [];
+            string flightSearchMessage = null;
+            if (!forwardAirOnly)
+            {
+                try
+                {
+                    flights = await flightService.GetFlightsAsync(
+                        jobId,
+                        departureDate,
+                        airlineId,
+                        departureAirportId,
+                        arrivalAirportId,
+                        codeType: "FS",
+                        extendedOptions: null,
+                        minimumLayoverMinutes: minimumLayoverMinutes,
+                        allowNearbyDepartures: includeNearbyAirports,
+                        allowNearbyArrivals: includeNearbyAirports);
+                }
+                catch (HttpRequestException e) when (forwardAirTask is not null)
+                {
+                    Log.Error(e, "FlightStats API error for job {JobId}; still offering Forward Air", jobId);
+                    flightSearchMessage = "Flight search service is currently unavailable. Please try again later.";
+                }
+            }
 
             string forwardAirMessage = null;
             if (forwardAirTask is not null)
@@ -163,7 +175,8 @@ public class NationwideJobController(
                     ? quote.Services.Where(s => !string.IsNullOrWhiteSpace(s.ServiceCode)).ToList()
                     : [];
                 var bookable = named
-                    .Where(s => !string.IsNullOrWhiteSpace(s.OriginTimeZone) && !string.IsNullOrWhiteSpace(s.DestinationTimeZone))
+                    .Where(s => !string.IsNullOrWhiteSpace(s.OriginTimeZone) && !string.IsNullOrWhiteSpace(s.DestinationTimeZone)
+                                && s.EstimatedArrival.HasValue)
                     .ToList();
                 if (bookable.Count != 0)
                 {
@@ -177,7 +190,7 @@ public class NationwideJobController(
                 else if (bookable.Count < named.Count)
                 {
                     forwardAirMessage =
-                        "Some Forward Air services were left out because an airport on this route has no time zone set.";
+                        "Some Forward Air services were left out because Forward Air gave no arrival time or an airport on this route has no time zone set.";
                 }
             }
 
@@ -192,7 +205,8 @@ public class NationwideJobController(
                 var noFlightsMessage = forwardAirOnly
                     ? forwardAirMessage ?? "Forward Air has no services for the selected route and date."
                     : JoinMessages(
-                        "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter.",
+                        flightSearchMessage
+                        ?? "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter.",
                         forwardAirMessage);
                 return Json(new FlightSearchResponse
                 {
@@ -217,7 +231,11 @@ public class NationwideJobController(
                 "Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights",
                 stopwatch.ElapsedMilliseconds, jobId, flights.Count);
 
-            return Json(new FlightSearchResponse { Flights = [.. flights], Message = forwardAirMessage });
+            return Json(new FlightSearchResponse
+            {
+                Flights = [.. flights],
+                Message = flightSearchMessage is null ? forwardAirMessage : JoinMessages(flightSearchMessage, forwardAirMessage)
+            });
         }
         catch (ArgumentException e)
         {
@@ -273,6 +291,8 @@ public class NationwideJobController(
     {
         var departure = ToOffset(service.ShipDate, service.OriginTimeZone);
         var arrival = ToOffset(service.EstimatedArrival ?? service.ShipDate, service.DestinationTimeZone);
+        var duration = arrival.UtcDateTime - departure.UtcDateTime;
+        var elapsedMinutes = (int)duration.TotalMinutes;
 
         return new FlightViewModel
         {
@@ -286,7 +306,8 @@ public class NationwideJobController(
             ArrivalTimeZone = service.DestinationTimeZone,
             DepartureAirport = service.OriginAirport,
             ArrivalAirport = service.DestinationAirport,
-            Duration = arrival.UtcDateTime - departure.UtcDateTime,
+            Duration = duration,
+            ElapsedTime = elapsedMinutes,
             Stops = 0,
             FlightSegments =
             [
@@ -303,6 +324,7 @@ public class NationwideJobController(
                     ArrivalAirportFsCode = service.DestinationAirport,
                     DepartureAirportTimeZone = service.OriginTimeZone,
                     ArrivalAirportTimeZone = service.DestinationTimeZone,
+                    ElapsedTime = elapsedMinutes,
                     AirlineName = ForwardAirCarrier.Name
                 }
             ]

@@ -707,6 +707,7 @@ public class NationwideJobControllerTests
         Assert.Equal("America/New_York", fa.ArrivalTimeZone);
         Assert.Equal(new DateTimeOffset(2026, 12, 1, 10, 0, 0, TimeSpan.FromHours(-6)), fa.DepartureTime);
         Assert.Equal(new DateTimeOffset(2026, 12, 2, 9, 0, 0, TimeSpan.FromHours(-5)), fa.ArrivalTime);
+        Assert.Equal(1320, fa.ElapsedTime);
         Assert.Equal(0, fa.Stops);
         var segment = Assert.Single(fa.FlightSegments);
         Assert.Equal("FWD", segment.CarrierFsCode);
@@ -773,6 +774,45 @@ public class NationwideJobControllerTests
 
         Assert.DoesNotContain(response.Flights, f => f.AirlineCode == "FWD");
         Assert.Contains("time zone", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_FlightSearchDown_StillOffersForwardAir()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(), Arg.Any<DateTimeOffset?>(), Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<int?>(),
+                Arg.Any<string>(), Arg.Any<IReadOnlyList<string>>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<bool>())
+            .ThrowsAsync(new HttpRequestException("cirium down"));
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(QuoteWith(T2T()));
+
+        var response = await SearchAsync();
+
+        Assert.Single(response.Flights, f => f.AirlineCode == "FWD");
+        Assert.Contains("Flight search service is currently unavailable", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_LeavesOutForwardAirServicesWithNoArrival_AndSaysSo()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        var t2t = T2T();
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(QuoteWith(new ForwardAirQuoteServiceDto
+            {
+                ServiceCode = t2t.ServiceCode, ServiceName = t2t.ServiceName, OriginAirport = "BNA",
+                DestinationAirport = "EWR", ShipDate = t2t.ShipDate, EstimatedArrival = null,
+                OriginTimeZone = t2t.OriginTimeZone, DestinationTimeZone = t2t.DestinationTimeZone
+            }));
+
+        var response = await SearchAsync();
+
+        Assert.DoesNotContain(response.Flights, f => f.AirlineCode == "FWD");
+        Assert.Contains("arrival", response.Message);
     }
 
     [Fact]

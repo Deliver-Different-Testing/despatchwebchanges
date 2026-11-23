@@ -38,7 +38,6 @@ public sealed class ForwardAirJobDto
     public string? AirbillNumber { get; init; }
     public string? OriginAirportCode { get; init; }
     public string? DestinationAirportCode { get; init; }
-    public decimal? QuotedTotal { get; init; }
     public string? Remarks { get; init; }
     public string? LastStatusCode { get; init; }
     public string? LastStatusDescription { get; init; }
