@@ -675,6 +675,13 @@ public class NationwideJobRepository(
         {
             await using var transaction = await Context.Database.BeginTransactionAsync();
 
+            foreach (var stale in Context.ChangeTracker.Entries()
+                         .Where(e => e.State == EntityState.Added && e.Entity is TucManualMessage or AgentAlertLog)
+                         .ToList())
+            {
+                stale.State = EntityState.Detached;
+            }
+
             if (!resend && await AgentAlertAlreadySentAsync(jobId, agentId, alertType, lockRange: true))
             {
                 await transaction.RollbackAsync();
