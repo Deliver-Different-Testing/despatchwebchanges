@@ -1780,7 +1780,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
                 });
             });
 
-            expect(assignAgentToJob).toHaveBeenCalledWith(job.id, 201, true, undefined, undefined);
+            expect(assignAgentToJob).toHaveBeenCalledWith(job.id, 201, true, undefined, undefined, false);
             expect(updateJobDetail).toHaveBeenCalledWith(
                 job.id, JobProperty.ConNote, '123-45678901', false,
             );

@@ -832,7 +832,7 @@ export function useJobActions({
     //   - Non-recurring tucJob, type=Agent → assignAgentToJob (flight gate + email)
     //   - Non-recurring tucJob, type=NP → assignNpAgentToJob (stamps NpAgentId)
     const dispatchDialogConfirmCourier = useCallback(async (
-        {type, destination, emailSubject, emailBody, includeStopJobs, awb}: DispatchConfirmation,
+        {type, destination, emailSubject, emailBody, includeStopJobs, awb, resend}: DispatchConfirmation,
     ) => {
         const j = jobRef.current;
         if (!j) return;
@@ -845,7 +845,7 @@ export function useJobActions({
             try {
                 const {message, severity} = await executeDispatchConfirmation(
                     {id: j.id, jobNo: j.jobNo, assignedCourierId: j.assignedCourier?.id},
-                    {type, destination, emailSubject, emailBody, includeStopJobs, awb},
+                    {type, destination, emailSubject, emailBody, includeStopJobs, awb, resend},
                 );
                 await refreshAndNotify();
                 setDispatchDialog((s) => ({...s, open: false}));

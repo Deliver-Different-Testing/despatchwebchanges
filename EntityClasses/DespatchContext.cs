@@ -19,6 +19,10 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<AccessorialChargeGroupMember> AccessorialChargeGroupMembers { get; set; }
 
+    public virtual DbSet<AgentAlertLog> AgentAlertLogs { get; set; }
+
+    public virtual DbSet<AgentAlertSetting> AgentAlertSettings { get; set; }
+
     public virtual DbSet<AgentVehicle> AgentVehicles { get; set; }
 
     public virtual DbSet<AirFreightRate> AirFreightRates { get; set; }
@@ -346,6 +350,40 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.AccessorialChargeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Accessori__Acces__50BCA3B7");
+        });
+
+        modelBuilder.Entity<AgentAlertLog>(entity =>
+        {
+            entity.ToTable("AgentAlertLog");
+
+            entity.HasIndex(e => new { e.CreatedByStaffId, e.CreatedUtc }, "IX_AgentAlertLog_CreatedByStaffId_CreatedUtc");
+
+            entity.HasIndex(e => e.CreatedUtc, "IX_AgentAlertLog_CreatedUtc");
+
+            entity.HasIndex(e => new { e.JobId, e.AgentId, e.AlertType }, "IX_AgentAlertLog_JobId_AgentId_AlertType");
+
+            entity.Property(e => e.CreatedUtc).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.OpenedIp).HasMaxLength(45);
+            entity.Property(e => e.OpenedUserAgent).HasMaxLength(400);
+            entity.Property(e => e.Source)
+                .IsRequired()
+                .HasMaxLength(30)
+                .HasDefaultValue("DespatchWeb");
+            entity.Property(e => e.ToEmail)
+                .IsRequired()
+                .HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<AgentAlertSetting>(entity =>
+        {
+            entity.ToTable("AgentAlertSetting");
+
+            entity.Property(e => e.DeliverySubject).HasMaxLength(200);
+            entity.Property(e => e.DispatchPhone).HasMaxLength(50);
+            entity.Property(e => e.DoorToDoorSubject).HasMaxLength(200);
+            entity.Property(e => e.ModifiedUtc).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.PickupSubject).HasMaxLength(200);
+            entity.Property(e => e.ReplyToEmail).HasMaxLength(255);
         });
 
         modelBuilder.Entity<AgentVehicle>(entity =>

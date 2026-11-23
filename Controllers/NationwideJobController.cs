@@ -545,13 +545,14 @@ public class NationwideJobController(
 
             var result = await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value,
                 jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false,
-                jobRequestModel.EmailSubject, jobRequestModel.EmailBody);
+                jobRequestModel.EmailSubject, jobRequestModel.EmailBody, jobRequestModel.Resend);
 
             return Ok(new
             {
                 status = result.Status.ToString(),
                 agentEmail = result.AgentEmail,
-                willEmail = result.WillEmail
+                willEmail = result.WillEmail,
+                alertType = result.AlertType?.ToString()
             });
         }
         catch (Exception ex)
@@ -610,7 +611,7 @@ public class NationwideJobController(
             }
 
             var results = await repository.AssignAgentToJobsAsync(request.AgentId.Value, request.JobIds,
-                request.IncludeStopJobs ?? false, request.EmailSubject, request.EmailBody);
+                request.IncludeStopJobs ?? false, request.EmailSubject, request.EmailBody, request.Resend);
 
             return Ok(BulkAssignmentResponse(results));
         }
@@ -690,7 +691,8 @@ public class NationwideJobController(
                 throw new ArgumentNullException(nameof(data));
             }
 
-            await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value);
+            // An explicit send by the dispatcher, so it goes even if the agent already has this alert.
+            await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value, resend: true);
             return Ok();
         }
         catch (Exception e)
@@ -936,6 +938,7 @@ public class NationwideJobController(
                 status = preview.Status.ToString(),
                 agentEmail = preview.AgentEmail,
                 willEmail = preview.WillEmail,
+                alertType = preview.AlertType?.ToString(),
                 defaultSubject = AgentEmailTemplates.DefaultSubject,
                 defaultBody = AgentEmailTemplates.DefaultBody
             });

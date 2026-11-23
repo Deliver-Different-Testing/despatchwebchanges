@@ -302,7 +302,7 @@ public class NationwideJobRepository(
     }
 
     public async Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false,
-        string emailSubject = null, string emailBody = null)
+        string emailSubject = null, string emailBody = null, bool resend = false)
     {
         var job = await Context.TucJobs
             .AsTracking()
@@ -396,13 +396,15 @@ public class NationwideJobRepository(
         // send when there is actually a link to include (agent email + InboundUrl present).
         try
         {
-            var preview = await EvaluateAgentInboundEmailAsync(agentId, jobId);
-            if (preview.WillEmail)
+            var preview = await EvaluateAgentInboundEmailAsync(agentId, jobId, resend);
+            if (!preview.WillEmail)
             {
-                await SendAgentRequestMessageAsync(agentId, jobId, emailSubject, emailBody);
+                return preview;
             }
 
-            return preview;
+            // The check above has no lock; the send re-checks under one, so a double-click still sends once.
+            var status = await SendAgentRequestMessageAsync(agentId, jobId, emailSubject, emailBody, resend);
+            return preview with { Status = status };
         }
         catch (Exception ex)
         {
@@ -417,12 +419,12 @@ public class NationwideJobRepository(
     }
 
     public Task<AgentInboundEmailResult> GetAgentInboundEmailPreviewAsync(int agentId, int jobId) =>
-        EvaluateAgentInboundEmailAsync(agentId, jobId);
+        EvaluateAgentInboundEmailAsync(agentId, jobId, resend: false);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<BulkAssignmentResult>> AssignAgentToJobsAsync(int agentId,
         IReadOnlyList<int> jobIds, bool includeStopJobs = false,
-        string emailSubject = null, string emailBody = null)
+        string emailSubject = null, string emailBody = null, bool resend = false)
     {
         var results = new List<BulkAssignmentResult>(jobIds.Count);
 
@@ -440,7 +442,7 @@ public class NationwideJobRepository(
                     continue;
                 }
 
-                var email = await AddAgentToJobAsync(agentId, jobId, includeStopJobs, emailSubject, emailBody);
+                var email = await AddAgentToJobAsync(agentId, jobId, includeStopJobs, emailSubject, emailBody, resend);
                 results.Add(new BulkAssignmentResult(jobId, true, null, email.Status));
             }
             catch (Exception ex)
@@ -573,8 +575,8 @@ public class NationwideJobRepository(
             .Select(fc => fc.CarrierCode)
             .FirstOrDefaultAsync();
 
-    public async Task SendAgentRequestMessageAsync(int agentId, int jobId, string emailSubject = null,
-        string emailBody = null)
+    public async Task<AgentInboundEmailStatus> SendAgentRequestMessageAsync(int agentId, int jobId,
+        string emailSubject = null, string emailBody = null, bool resend = false)
     {
         var agentEmail = await Context.TucAgents
             .Where(a => a.UcagId == agentId)
@@ -585,7 +587,7 @@ public class NationwideJobRepository(
         {
             Log.Information("Agent {AgentId} has no email; skipping agent message for job {JobId}",
                 agentId, jobId);
-            return;
+            return AgentInboundEmailStatus.NoAgentEmail;
         }
 
         var replyToAddress = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
@@ -599,6 +601,8 @@ public class NationwideJobRepository(
             {
                 j.UcjbNumber,
                 j.ParentId,
+                j.FromAirportId,
+                j.ToAirportId,
                 DeliveryCompany = j.DeliveryAddressLine1,
                 DeliveryStreetNumber = j.DeliveryAddressLine3,
                 DeliveryStreetName = j.DeliveryAddressLine4,
@@ -660,20 +664,80 @@ public class NationwideJobRepository(
         // branded, inline-styled fragment; otherwise the newlines collapse onto a single line.
         var htmlBody = AgentEmailTemplates.RenderHtmlBody(body, inboundUrl);
 
-        var request = new TucManualMessage
-        {
-            JobId = jobId,
-            UcmmDate = _clock.TenantNow,
-            UcmmCreatedAtUtc = _clock.UtcNow,
-            Subject = subject,
-            ReplyToEmailAddress = replyToAddress,
-            UcmmMessage = htmlBody,
-            UcmmStaffId = staffId,
-            SendToEmailAddress = agentEmail
-        };
+        var alertType = AgentAlertTypes.Resolve(jobData.UcjbNumber, jobData.FromAirportId, jobData.ToAirportId);
 
-        await Context.AddAsync(request);
-        await Context.SaveChangesAsync();
+        // The duplicate check, the message and its log row commit together, so a re-assign or double-click sends
+        // once and every sent alert has a log row. There is no unique index (legacy DB rules, and "Send again" adds
+        // a second row on purpose), so on SQL Server the check takes UPDLOCK + HOLDLOCK: a second caller waits on
+        // the key range until the first commits, then sees its row.
+        var strategy = Context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await Context.Database.BeginTransactionAsync();
+
+            foreach (var stale in Context.ChangeTracker.Entries()
+                         .Where(e => e.State == EntityState.Added && e.Entity is TucManualMessage or AgentAlertLog)
+                         .ToList())
+            {
+                stale.State = EntityState.Detached;
+            }
+
+            if (!resend && await AgentAlertAlreadySentAsync(jobId, agentId, alertType, lockRange: true))
+            {
+                await transaction.RollbackAsync();
+                Log.Information("Job {JobId}: agent {AgentId} already has the {AlertType} alert; not sent again",
+                    jobId, agentId, alertType);
+                return AgentInboundEmailStatus.AlreadySent;
+            }
+
+            var message = new TucManualMessage
+            {
+                JobId = jobId,
+                UcmmDate = _clock.TenantNow,
+                UcmmCreatedAtUtc = _clock.UtcNow,
+                Subject = subject,
+                ReplyToEmailAddress = replyToAddress,
+                UcmmMessage = htmlBody,
+                UcmmStaffId = staffId,
+                SendToEmailAddress = agentEmail
+            };
+            await Context.AddAsync(message);
+            await Context.SaveChangesAsync();
+
+            await Context.AddAsync(new AgentAlertLog
+            {
+                ManualMessageId = message.UcmmId,
+                JobId = jobId,
+                AgentId = agentId,
+                AlertType = (byte)alertType,
+                ToEmail = agentEmail,
+                IsResend = resend,
+                Source = "DespatchWeb",
+                CreatedUtc = _clock.UtcNow,
+                CreatedByStaffId = _infoService.GetStaffIdOrNull()
+            });
+            await Context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+            return AgentInboundEmailStatus.Queued;
+        });
+    }
+
+    private async Task<bool> AgentAlertAlreadySentAsync(int jobId, int agentId, AgentAlertType alertType, bool lockRange)
+    {
+        var type = (byte)alertType;
+        if (lockRange && Context.Database.IsSqlServer())
+        {
+            var count = await Context.Database.SqlQuery<int>($"""
+                SELECT COUNT(*) AS [Value]
+                FROM dbo.AgentAlertLog WITH (UPDLOCK, HOLDLOCK)
+                WHERE JobId = {jobId} AND AgentId = {agentId} AND AlertType = {type} AND IsTest = 0
+                """).ToListAsync();
+            return count.Single() > 0;
+        }
+
+        return await Context.AgentAlertLogs.AnyAsync(l =>
+            l.JobId == jobId && l.AgentId == agentId && l.AlertType == type && !l.IsTest);
     }
 
     public async Task RestoreNationwideJobAsync(int jobId)
@@ -1259,8 +1323,15 @@ public class NationwideJobRepository(
         ];
     }
 
-    private async Task<AgentInboundEmailResult> EvaluateAgentInboundEmailAsync(int agentId, int jobId)
+    private async Task<AgentInboundEmailResult> EvaluateAgentInboundEmailAsync(int agentId, int jobId, bool resend)
     {
+        // No settings row means the tenant hasn't saved Agent alerts yet: they send as before.
+        var enabled = await Context.AgentAlertSettings.OrderBy(s => s.Id).Select(s => (bool?)s.Enabled).FirstOrDefaultAsync();
+        if (enabled == false)
+        {
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.AlertsOff, null);
+        }
+
         var agentEmail = await Context.TucAgents
             .Where(a => a.UcagId == agentId)
             .Select(a => a.UcagFax)
@@ -1272,9 +1343,20 @@ public class NationwideJobRepository(
         }
 
         var link = await inboundAgentLinkService.BuildJobLinkAsync(jobId);
-        return string.IsNullOrWhiteSpace(link)
-            ? new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail)
-            : new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail);
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail);
+        }
+
+        var leg = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new { j.UcjbNumber, j.FromAirportId, j.ToAirportId })
+            .FirstOrDefaultAsync();
+        var alertType = AgentAlertTypes.Resolve(leg?.UcjbNumber, leg?.FromAirportId, leg?.ToAirportId);
+
+        return !resend && await AgentAlertAlreadySentAsync(jobId, agentId, alertType, lockRange: false)
+            ? new AgentInboundEmailResult(AgentInboundEmailStatus.AlreadySent, agentEmail, alertType)
+            : new AgentInboundEmailResult(AgentInboundEmailStatus.Queued, agentEmail, alertType);
     }
 
     private static void UpdateFlightJobStatus(TucJob job, FlightSegmentViewModel primaryFlight)

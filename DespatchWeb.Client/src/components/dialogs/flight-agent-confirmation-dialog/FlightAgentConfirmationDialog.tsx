@@ -132,7 +132,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     const [deliveryNotes, setDeliveryNotes] = useState('');
 
     // Agent-email template (editable per-send; owned by AgentEmailFields, reported back here)
-    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: ''});
+    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: '', resend: false});
     const [packageReadyTime, setPackageReadyTime] = useState<Dayjs | null>(null);
     const [deliveryByTime, setDeliveryByTime] = useState<Dayjs | null>(null);
     const [packageTimeEditEnabled, setPackageTimeEditEnabled] = useState(false);
@@ -431,7 +431,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setAwb(existingAwb || '');
             setAssignToStopJobs(false);
             setDeliveryNotes('');
-            setAgentEmail({willEmail: false, subject: '', body: ''});
+            setAgentEmail({willEmail: false, subject: '', body: '', resend: false});
             setPackageTimeEditEnabled(false);
             setShowWarning(false);
             setCargoProcessing(null);
