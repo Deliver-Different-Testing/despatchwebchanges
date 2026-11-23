@@ -96,14 +96,18 @@ export function getNetworkPartnerMapCenter(): { lat: number; lng: number } | nul
     return getSession().npMapCenter;
 }
 
-export function getDefaultMapCenter(): { lat: number; lng: number } {
+/**
+ * `nzFallback` lets a map keep its own NZ opening city: the courier map opens on Auckland, where most
+ * NZ fleets run, while the other maps use the country centre.
+ */
+export function getDefaultMapCenter(nzFallback = NZ_MAP_CENTER): { lat: number; lng: number } {
     // A network partner works one address, not a country, so their own address is
     // a better opening view than the geographic centre of the tenant's country. After that the
     // tenant's own centre (SignUpPageSettings), so an AU tenant doesn't open on NZ; the hard-coded
     // US/AU/NZ centres are only the fallback when the tenant has none.
     return getNetworkPartnerMapCenter()
         ?? getSession().tenantMapCenter
-        ?? (getSession().isUsCustomer ? US_MAP_CENTER : isAuSession() ? AU_MAP_CENTER : NZ_MAP_CENTER);
+        ?? (getSession().isUsCustomer ? US_MAP_CENTER : isAuSession() ? AU_MAP_CENTER : nzFallback);
 }
 
 export const DEFAULT_MAP_CONFIG: HereMapConfig = {

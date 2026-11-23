@@ -957,11 +957,18 @@ public partial class JobRepository(
     {
         try
         {
-            var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
-                ? data.SelectedJobIds
-                : await ResolveJobsToVoidAsync(data);
+            var hasSelection = data.SelectedJobIds is { Count: > 0 } || data.SelectedBulkJobIds is { Count: > 0 };
+            if (hasSelection)
+            {
+                await EnsureSelectionBelongsToFamilyAsync(data);
+            }
 
-            if (jobsToVoid.Count == 0)
+            IReadOnlyList<int> jobsToVoid = hasSelection
+                ? data.SelectedJobIds ?? []
+                : await ResolveJobsToVoidAsync(data);
+            IReadOnlyList<int> selectedBulkJobIds = data.SelectedBulkJobIds ?? [];
+
+            if (jobsToVoid.Count == 0 && selectedBulkJobIds.Count == 0)
             {
                 return;
             }
@@ -1004,7 +1011,8 @@ public partial class JobRepository(
                     .SetProperty(p => p.CostAmount, 0));
 
             var linkedBulkJobIds = await Context.TblBulkJobs
-                .Where(b => b.JobId.HasValue && jobsToVoid.Contains(b.JobId.Value) && !b.Void)
+                .Where(b => ((b.JobId.HasValue && jobsToVoid.Contains(b.JobId.Value))
+                             || selectedBulkJobIds.Contains(b.BulkJobId)) && !b.Void)
                 .Select(b => b.BulkJobId)
                 .TagWith($"VoidJob - Find linked bulk jobs for {jobsToVoid.Count} jobs")
                 .ToListAsync();
@@ -1042,7 +1050,7 @@ public partial class JobRepository(
 
             await Context.SaveChangesAsync();
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not VoidSelectionException)
         {
             Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})",
                 data.JobId, data.VoidSingleJobOnly);
@@ -1059,6 +1067,14 @@ public partial class JobRepository(
     {
         try
         {
+            if (data.SelectedJobIds is { Count: > 0 } || data.SelectedBulkJobIds is { Count: > 0 })
+            {
+                // An archived family lists no bulk rows, so any bulk selection is refused rather than dropped.
+                var family = await GetRelatedJobsMultiSelectListAsync(data.JobId, true);
+                EnsureSubsetOf(data.SelectedJobIds ?? [], family.Select(f => f.Id));
+                EnsureSubsetOf(data.SelectedBulkJobIds ?? [], []);
+            }
+
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
                 ? data.SelectedJobIds
                 : data.VoidSingleJobOnly
@@ -1113,7 +1129,7 @@ public partial class JobRepository(
 
             await Context.SaveChangesAsync();
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not VoidSelectionException)
         {
             Log.Error(e, "Error voiding archived job {JobId} (SingleOnly: {VoidSingleJobOnly})",
                 data.JobId, data.VoidSingleJobOnly);
@@ -1129,6 +1145,12 @@ public partial class JobRepository(
     {
         try
         {
+            if (data.SelectedJobIds is { Count: > 0 })
+            {
+                var family = await GetRelatedJobsMultiSelectListAsync(data.BulkJobId, false, isBulkJob: true);
+                EnsureSubsetOf(data.SelectedJobIds, family.Select(f => f.Id));
+            }
+
             var jobsToVoid = data.SelectedJobIds is { Count: > 0 }
                 ? data.SelectedJobIds
                 : data.VoidSingleJobOnly
@@ -1154,7 +1176,7 @@ public partial class JobRepository(
             await CloseAllBulkJobTasksAsync(jobsToVoid);
             await SaveMultipleBulkNotesAsync(jobsToVoid, data.VoidReason);
         }
-        catch (Exception e)
+        catch (Exception e) when (e is not VoidSelectionException)
         {
             Log.Error(e, "Error voiding job {JobId} (SingleOnly: {VoidSingleJobOnly})",
                 data.BulkJobId, data.VoidSingleJobOnly);
@@ -3643,7 +3665,7 @@ public partial class JobRepository(
             .Where(CurrentWorkListJob(startDate, endDate));
 
         var jobs = await query
-            .Select(JobMappings.JobDispatchMapping(isUsCustomer, _infoService.GetCurrentTenantId()))
+            .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .ToListAsync();
 
         var totalCount = jobs.Count;
@@ -4176,7 +4198,7 @@ public partial class JobRepository(
 
         var activeJob = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobDispatchMapping(isUsCustomer, _infoService.GetCurrentTenantId()))
+            .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .FirstOrDefaultAsync();
 
         if (activeJob != null)
@@ -4769,8 +4791,8 @@ public partial class JobRepository(
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
         await Context.IsPartnerJobAsync(jobId);
 
-    public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string localTenantId) =>
-        await Context.IsOutboundPartnerJobAsync(jobId, localTenantId);
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId) =>
+        await Context.IsOutboundPartnerJobAsync(jobId);
 
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
@@ -5183,7 +5205,7 @@ public partial class JobRepository(
     {
         var job = await Context.TucJobs
             .Where(j => j.UcjbId == data.JobId)
-            .Select(j => new { j.UcjbNumber, j.ParentId })
+            .Select(j => new { j.UcjbNumber })
             .FirstOrDefaultAsync();
 
         var role = JobLegRoles.FromJobNumber(job?.UcjbNumber);
@@ -5196,10 +5218,12 @@ public partial class JobRepository(
             return [data.JobId];
         }
 
-        if (role == JobLegRole.FinalMileDelivery && job?.ParentId != null)
+        var liveParentId = await Context.GetJobParentIdAsync(data.JobId);
+        if (role == JobLegRole.FinalMileDelivery && liveParentId is { } parentId)
         {
             var upstreamAlreadyMoving = await Context.TucJobs
-                .Where(j => j.ParentId == job.ParentId && j.UcjbId != data.JobId && !j.UcjbVoid)
+                .Where(LiveJobFamily.ChildOf(Context, parentId))
+                .Where(j => j.UcjbId != data.JobId && !j.UcjbVoid)
                 .Select(j => new { j.UcjbNumber, j.PickUpTime })
                 .ToListAsync();
 
@@ -6125,7 +6149,7 @@ public partial class JobRepository(
     private async Task<IReadOnlyList<int>> GetJobWithChildrenAsync(int jobId)
     {
         var childIds = await Context.TucJobs
-            .Where(j => j.ParentId == jobId)
+            .Where(LiveJobFamily.ChildOf(Context, jobId))
             .Select(j => j.UcjbId)
             .TagWith($"GetJobWithChildren - Get children for job {jobId}")
             .ToListAsync();
@@ -6136,27 +6160,42 @@ public partial class JobRepository(
 
     private async Task<IReadOnlyList<int>> GetAllRelatedJobIdsIncludingParentAsync(int jobId)
     {
-        var jobWithRelations = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                j.ParentId,
-                RelatedJobIds = j.ParentId.HasValue
-                    ? j.Parent.InverseParent.Select(child => child.UcjbId).ToList()
-                    : j.InverseParent.Select(child => child.UcjbId).ToList()
-            })
-            .FirstOrDefaultAsync();
-
-        if (jobWithRelations == null)
+        if (!await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId))
         {
             return [];
         }
 
-        var relatedJobIds = jobWithRelations.RelatedJobIds;
+        var rootId = await Context.GetJobParentIdAsync(jobId) ?? jobId;
+        var relatedJobIds = await Context.TucJobs
+            .Where(LiveJobFamily.ChildOf(Context, rootId))
+            .Select(j => j.UcjbId)
+            .ToListAsync();
 
-        relatedJobIds.Add(jobWithRelations.ParentId ?? jobId);
+        relatedJobIds.Add(rootId);
+        relatedJobIds.Add(jobId);
+        return relatedJobIds.Distinct().ToList();
+    }
 
-        return relatedJobIds;
+    /// <summary>
+    /// The dialog's selection is client data: re-derive the target job's family and refuse the void if
+    /// any selected id is outside it, so a stale or wrong list can never void another booking's jobs.
+    /// </summary>
+    private async Task EnsureSelectionBelongsToFamilyAsync(VoidJobRequest data)
+    {
+        var family = await GetRelatedJobsMultiSelectListAsync(data.JobId, false);
+        EnsureSubsetOf(data.SelectedJobIds ?? [], family.Where(f => !f.IsBulkJob).Select(f => f.Id));
+        EnsureSubsetOf(data.SelectedBulkJobIds ?? [], family.Where(f => f.IsBulkJob).Select(f => f.Id));
+    }
+
+    private static void EnsureSubsetOf(IEnumerable<int> selected, IEnumerable<int> allowed)
+    {
+        var outside = selected.Except(allowed).ToList();
+        if (outside.Count > 0)
+        {
+            Log.Warning("Void refused: selected ids {OutsideIds} are not in the target job's family", outside);
+            throw new VoidSelectionException(
+                "Some of the selected jobs aren't part of this booking. Refresh and try again.");
+        }
     }
 
     private async Task<IReadOnlyList<int>> GetAllRelatedBulkJobIdsIncludingParentAsync(int bulkJobId)
@@ -6197,7 +6236,7 @@ public partial class JobRepository(
     private async Task<IReadOnlyList<int>> GetArchivedJobWithChildrenAsync(int jobId)
     {
         var childIds = await Context.TucJobArchives
-            .Where(j => j.ParentId == jobId)
+            .Where(LiveJobFamily.ArchivedChildOf(Context, jobId))
             .Select(j => j.UcjbId)
             .TagWith($"GetArchivedJobWithChildren - Get children for archived job {jobId}")
             .ToListAsync();
@@ -6211,27 +6250,20 @@ public partial class JobRepository(
     /// </summary>
     private async Task<IReadOnlyList<int>> GetAllRelatedArchivedJobIdsIncludingParentAsync(int jobId)
     {
-        var jobWithRelations = await Context.TucJobArchives
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                j.ParentId,
-                RelatedJobIds = j.ParentId.HasValue
-                    ? j.Parent.InverseParent.Select(child => child.UcjbId).ToList()
-                    : j.InverseParent.Select(child => child.UcjbId).ToList()
-            })
-            .FirstOrDefaultAsync();
-
-        if (jobWithRelations == null)
+        if (!await Context.TucJobArchives.AnyAsync(j => j.UcjbId == jobId))
         {
             return [];
         }
 
-        var relatedJobIds = jobWithRelations.RelatedJobIds;
+        var rootId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
+        var relatedJobIds = await Context.TucJobArchives
+            .Where(LiveJobFamily.ArchivedChildOf(Context, rootId))
+            .Select(j => j.UcjbId)
+            .ToListAsync();
 
-        relatedJobIds.Add(jobWithRelations.ParentId ?? jobId);
-
-        return relatedJobIds;
+        relatedJobIds.Add(rootId);
+        relatedJobIds.Add(jobId);
+        return relatedJobIds.Distinct().ToList();
     }
 
     private async Task SetJobAsManuallyPriceAsync(int jobId,

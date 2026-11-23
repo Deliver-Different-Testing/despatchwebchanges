@@ -147,6 +147,13 @@ describe('JobChangeRequestsForJob', () => {
         expect(screen.getByRole('button', {name: /^Reject$/})).toBeInTheDocument();
     });
 
+    it('shows Approve on the receiver for a sender request (approval party PartnerTenant) when no local party is given', async () => {
+        mockApi.forJob.mockResolvedValueOnce([{...baseRow, requestingPartyType: 'OwnerTenant', approvalPartyType: 'PartnerTenant'}]);
+        renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
+
+        expect(await screen.findByRole('button', {name: /Approve/})).toBeInTheDocument();
+    });
+
     it('hides Approve on our own request even when its approval party matches the local default', async () => {
         mockApi.forJob.mockResolvedValueOnce([{...baseRow, origin: 'Local', approvalPartyType: 'OwnerTenant'}]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="OwnerTenant"/>);

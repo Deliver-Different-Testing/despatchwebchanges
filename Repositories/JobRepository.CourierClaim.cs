@@ -22,7 +22,6 @@ public partial class JobRepository
         return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
             var tenantTime = _clock.TenantNow;
-            var localTenantId = _infoService.GetCurrentTenantId();
             await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
             var claimed = await context.TucJobs
@@ -35,9 +34,8 @@ public partial class JobRepository
                             && !j.UcjbJobDone
                             && j.UcjbComplTime == null
                             && (j.UcjbStatus == null || ClaimableStatuses.Contains(j.UcjbStatus.Value))
-                            // Same rule as JobController.Allocate: a job sent out to a partner is managed from the pairing.
-                            && (localTenantId == null || j.PartnerPairing == null || j.PartnerPairing.OwnerTenantId != localTenantId)
-                            // An inbound partner job may still be waiting on rate acceptance, which this caller can't check.
+                            // Any linked partner job is out: a sent one is managed from the pairing, and a received one may
+                            // still be waiting on rate acceptance, which this caller can't check.
                             && j.PartnerJobGuid == null
                             && context.TucCouriers.Any(c => c.UccrId == courierId && c.Active)
                             && context.TucStaffs.Any(s => s.UcstId == staffId && s.UcstActive))

@@ -7,6 +7,9 @@ public sealed class JobChangeRequestResult
     public string? Message { get; init; }
     public JobChangeRequestDto? Request { get; init; }
 
+    /// <summary>The job, pairing or request the call names doesn't exist here (as opposed to a rule refusing it).</summary>
+    public bool NotFound { get; init; }
+
     /// <summary>
     /// Populated when the local row was saved but the IM enqueue/forward step
     /// failed. The local state is consistent; the cross-tenant relay needs a

@@ -86,4 +86,37 @@ public class JobChangePolicyServiceTests
         Assert.Contains("Allocated", allocated.RuleCode);
         Assert.Contains("InTransit", inTransit.RuleCode);
     }
+
+    [Theory]
+    [InlineData(JobLifecycleStage.PreAllocation)]
+    [InlineData(JobLifecycleStage.Allocated)]
+    public void Recall_by_the_owner_before_pickup_goes_to_the_partner(JobLifecycleStage stage)
+    {
+        var decision = _service.Evaluate(JobChangeField.Recall, "OwnerTenant", stage);
+
+        Assert.True(decision.Allowed);
+        Assert.Equal(JobChangeApprovalMode.Manual, decision.Mode);
+        Assert.Equal("PartnerTenant", decision.ApprovalPartyType);
+        Assert.False(decision.RequiresCommercialRefresh);
+    }
+
+    [Theory]
+    [InlineData(JobLifecycleStage.InTransit)]
+    [InlineData(JobLifecycleStage.Delivered)]
+    public void Recall_after_pickup_is_prohibited(JobLifecycleStage stage)
+    {
+        var decision = _service.Evaluate(JobChangeField.Recall, "OwnerTenant", stage);
+
+        Assert.False(decision.Allowed);
+        Assert.Equal("RECALL_AFTER_PICKUP", decision.RuleCode);
+    }
+
+    [Fact]
+    public void Only_the_owner_can_recall()
+    {
+        var decision = _service.Evaluate(JobChangeField.Recall, "PartnerTenant", JobLifecycleStage.Allocated);
+
+        Assert.False(decision.Allowed);
+        Assert.Equal("RECALL_OWNER_ONLY", decision.RuleCode);
+    }
 }

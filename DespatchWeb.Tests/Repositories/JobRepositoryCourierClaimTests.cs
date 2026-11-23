@@ -225,10 +225,12 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
         await _courierRepository.DidNotReceiveWithAnyArgs().ResetClearListAreaOrderAsync(default, default!);
     }
 
+    // Both sides carry PartnerJobGuid while linked; the receiver's copy is booked under the pairing's client.
     [Theory]
-    [InlineData("100", false)]
-    [InlineData("200", true)]
-    public async Task Claim_OnAPartnerJobInEitherDirection_IsUnavailable(string ownerTenantId, bool inbound)
+    [InlineData(false, true, CourierClaimOutcome.Unavailable)] // sent out
+    [InlineData(true, true, CourierClaimOutcome.Unavailable)] // received copy
+    [InlineData(false, false, CourierClaimOutcome.Assigned)] // unlinked: an ordinary local job again
+    public async Task Claim_OnAPartnerJob_DependsOnWhetherItIsStillLinked(bool inboundCopy, bool linked, CourierClaimOutcome expected)
     {
         _tenantInfo.GetCurrentTenantId().Returns("100");
         await using (var context = _db.CreateContext())
@@ -236,7 +238,7 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
             context.Set<IntMgrPartnerPairing>().Add(new IntMgrPartnerPairing
             {
                 Id = 7, PartnerTenantId = "300", PartnerTenantName = "Acme Couriers", PartnerBaseUrl = "https://peer.example.com",
-                Status = "Active", OwnerTenantId = ownerTenantId, CreatedAtUtc = TestDates.Now, UpdatedAtUtc = TestDates.Now
+                Status = "Active", OwnerTenantId = "100", ClientId = 60, CreatedAtUtc = TestDates.Now, UpdatedAtUtc = TestDates.Now
             });
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
@@ -244,12 +246,13 @@ public class JobRepositoryCourierClaimTests : IAsyncDisposable
         await Seed(j =>
         {
             j.PartnerPairingId = 7;
-            j.PartnerJobGuid = inbound ? Guid.NewGuid() : null;
+            j.PartnerJobGuid = linked ? Guid.NewGuid() : null;
+            if (inboundCopy) j.UcjbClientId = 60;
         });
 
         var outcome = await CreateRepository().ClaimJobForCourierAsync(JobId, CourierId, StaffId, TestContext.Current.CancellationToken);
 
-        Assert.Equal(CourierClaimOutcome.Unavailable, outcome);
+        Assert.Equal(expected, outcome);
     }
 
     [Theory]
