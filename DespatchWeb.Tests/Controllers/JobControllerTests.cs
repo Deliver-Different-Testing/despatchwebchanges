@@ -3217,6 +3217,40 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateRecurringJobPackages_SavesToTheBooking_NeverTheLiveJobPath()
+    {
+        var request = new UpdateRecurringJobPackagesRequest
+        {
+            BookingId = 7,
+            Parcels = [new ParcelDimensions { ItemId = 1, Weight = 3 }],
+            CalculateDimsOncePerJob = false
+        };
+        var controller = CreateController();
+
+        var result = await controller.UpdateRecurringJobPackages(request);
+
+        Assert.IsType<OkResult>(result);
+        await _recurringJobRepositoryMock.Received(1)
+            .UpdatePackagesForBookingAsync(7, request.Parcels, false);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs()
+            .UpdatePackagesForJobAsync(default, default, default);
+        await _jobCommandRepositoryMock.DidNotReceiveWithAnyArgs().UpdateJobWeightAsync(default, default);
+    }
+
+    [Fact]
+    public async Task UpdateRecurringJobPackages_UnknownBooking_ReturnsNotFound()
+    {
+        _recurringJobRepositoryMock.UpdatePackagesForBookingAsync(9, Arg.Any<IReadOnlyList<ParcelDimensions>>(), null)
+            .Returns(Task.FromException(new ArgumentException("Recurring booking 9 not found")));
+        var controller = CreateController();
+
+        var result = await controller.UpdateRecurringJobPackages(
+            new UpdateRecurringJobPackagesRequest { BookingId = 9, Parcels = [] });
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
     public async Task IsJobParent_ParentJob_ReturnsTrue()
     {
         // Arrange

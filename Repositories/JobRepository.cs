@@ -4414,13 +4414,27 @@ public partial class JobRepository(
             .Select(j => j.ParentId.HasValue || j.BulkParentId.HasValue)
             .FirstOrDefaultAsync();
 
-    public async Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId)
+    public async Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId, int? bookingId = null)
     {
         if (bulkJobId.HasValue)
         {
             var id = bulkJobId.Value;
             return await Context.TblBulkJobItemTypes
                 .Where(jit => jit.JobId == id)
+                .Select(jit => new JobItemTypeDto
+                {
+                    ItemId = jit.ItemId,
+                    Name = jit.ItemType.Name,
+                    Quantity = jit.Quantity
+                })
+                .ToListAsync();
+        }
+
+        if (bookingId.HasValue)
+        {
+            var effectiveBookingId = await Context.GetEffectiveJobBookingIdAsync(bookingId.Value);
+            return await Context.TucJobBookingItemTypes
+                .Where(jit => jit.BookingId == effectiveBookingId)
                 .Select(jit => new JobItemTypeDto
                 {
                     ItemId = jit.ItemId,
@@ -4455,16 +4469,7 @@ public partial class JobRepository(
                 Quantity = jit.Quantity
             });
 
-        var booking = Context.TucJobBookingItemTypes
-            .Where(jit => jit.BookingId == jid)
-            .Select(jit => new JobItemTypeDto
-            {
-                ItemId = jit.ItemId,
-                Name = jit.ItemType.Name,
-                Quantity = jit.Quantity
-            });
-
-        return await active.Concat(archive).Concat(booking).ToListAsync();
+        return await active.Concat(archive).ToListAsync();
     }
 
     /// <summary>

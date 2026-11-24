@@ -3106,4 +3106,25 @@ public class JobMappingsTests
         Assert.False(result.IsFlightJob);
         Assert.False(result.IsAgentJob);
     }
+
+    [Fact]
+    public void JobRecurringMapping_ParcelDimensions_CarryEachParcelsWeightAndBarcode()
+    {
+        var booking = new TucJobBooking
+        {
+            UcbkId = 1,
+            TucJobBookingItemBookings =
+            [
+                new TucJobBookingItem { BookingId = 1, ItemId = 3, Items = 1, Weight = 4.5, Barcode = "BC3", Notes = "Box" }
+            ]
+        };
+
+        var result = JobMappings.JobRecurringMapping(false).Compile()(booking);
+
+        var parcel = Assert.Single(result.ParcelDimensions);
+        Assert.Equal(3, parcel.ItemId);
+        Assert.Equal(4.5, parcel.Weight);
+        Assert.Equal("BC3", parcel.Barcode);
+        Assert.Equal("Box", parcel.ItemName);
+    }
 }

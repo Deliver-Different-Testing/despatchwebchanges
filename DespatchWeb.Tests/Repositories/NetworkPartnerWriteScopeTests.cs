@@ -77,6 +77,9 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
         seed.TblBulkJobs.AddRange(
             new TblBulkJob { BulkJobId = 1, JobNumber = "BULK-OWN", NpAgentId = OwnAgentId },
             new TblBulkJob { BulkJobId = 2, JobNumber = "BULK-OTHER", NpAgentId = OtherAgentId });
+        seed.TucJobBookings.AddRange(
+            new TucJobBooking { UcbkId = 1, UcbkJobNumber = "BOOK-OWN", NpAgentId = OwnAgentId, UcbkAttention = false },
+            new TucJobBooking { UcbkId = 2, UcbkJobNumber = "BOOK-OTHER", NpAgentId = OtherAgentId, UcbkAttention = false });
         seed.TucCouriers.AddRange(Courier(1, OwnAgentId), Courier(2, OtherAgentId));
         await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -133,17 +136,21 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
             new RequireScopeAttribute(ScopedRecord.Courier, "courierId"), new() { ["courierId"] = 1 });
         var (bulk, bulkNext) = await RunFilterAsync(NpScope(),
             new RequireScopeAttribute(ScopedRecord.BulkJob, "bulkJobId"), new() { ["bulkJobId"] = 1 });
+        var (booking, bookingNext) = await RunFilterAsync(NpScope(),
+            new RequireScopeAttribute(ScopedRecord.Booking, "bookingId"), new() { ["bookingId"] = 1 });
 
         Assert.Null(jobs.Result);
         Assert.Null(couriers.Result);
         Assert.Null(bulk.Result);
-        Assert.True(jobsNext && couriersNext && bulkNext);
+        Assert.Null(booking.Result);
+        Assert.True(jobsNext && couriersNext && bulkNext && bookingNext);
     }
 
     [Theory]
     [InlineData(ScopedRecord.Job, "100,200")]
     [InlineData(ScopedRecord.Courier, 2)]
     [InlineData(ScopedRecord.BulkJob, 2)]
+    [InlineData(ScopedRecord.Booking, 2)]
     public async Task RequireScope_Np_RefusesAnotherAgentsRecord(ScopedRecord record, object id)
     {
         await SeedJobsAsync();
@@ -220,6 +227,7 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
         { typeof(JobController), nameof(JobController.InterCourierCharge), ScopedRecord.Client, "viewModel.ClientId" },
         { typeof(JobController), nameof(JobController.UpdateBulkJobPackages), ScopedRecord.BulkJob, "request.BulkJobId" },
         { typeof(JobController), nameof(JobController.UpdateJobPackages), ScopedRecord.Job, "request.JobId" },
+        { typeof(JobController), nameof(JobController.UpdateRecurringJobPackages), ScopedRecord.Booking, "request.BookingId" },
         { typeof(JobController), nameof(JobController.UpdateDeliveryAddress), ScopedRecord.Job, "request.JobId" },
         { typeof(JobController), nameof(JobController.UpdatePickupAddress), ScopedRecord.Job, "request.JobId" },
         { typeof(JobController), nameof(JobController.AddStopToJob), ScopedRecord.Job, "data.JobId" },

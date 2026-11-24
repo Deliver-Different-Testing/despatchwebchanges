@@ -21,13 +21,21 @@ export interface ParcelDimensions {
 }
 
 /**
+ * The record whose parcels are being edited. Live jobs, bulk jobs and recurring bookings are
+ * numbered independently, so the same number can name all three: the kind picks the endpoints.
+ */
+export type ParcelDimensionsTarget =
+    | {kind: 'job'; jobId: number}
+    | {kind: 'bulk'; bulkJobId: number}
+    | {kind: 'booking'; bookingId: number};
+
+/**
  * Props for the EditParcelDimensionsDialog component
  */
 export interface EditParcelDimensionsDialogProps {
     open: boolean;
     parcels: ParcelDimensions[];
-    jobId?: number;
-    bulkJobId?: number;
+    target: ParcelDimensionsTarget;
     /** Human-facing job number, used to auto-fill barcodes as `{jobNumber}-N` when items are added. */
     jobNumber?: string | number;
     isUsCustomer: boolean;
@@ -57,8 +65,7 @@ export interface EditParcelDimensionsDialogProps {
  */
 export interface EditParcelDimensionsDialogOptions {
     parcels: ParcelDimensions[];
-    jobId?: number;
-    bulkJobId?: number;
+    target: ParcelDimensionsTarget;
     jobNumber?: string | number;
     isUsCustomer: boolean;
     jobWeight?: number;

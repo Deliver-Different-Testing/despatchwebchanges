@@ -146,6 +146,100 @@ public class RecurringJobRepository(
         }
     }
 
+    /// <summary>
+    /// Reconciles a recurring booking's parcels (tucJobBookingItems) to <paramref name="parcels"/>, one row
+    /// per parcel. trg_UpdateJobBookingTotals derives the booking's Quantity, ucbkWeight and Cubic from these
+    /// rows, and both job-creation paths read them, so jobs created from now on carry the new parcels.
+    /// </summary>
+    public async Task UpdatePackagesForBookingAsync(int bookingId, IReadOnlyList<ParcelDimensions> parcels,
+        bool? calculateDimsOncePerJob)
+    {
+        try
+        {
+            parcels ??= [];
+
+            var effectiveBookingId = await Context.GetEffectiveJobBookingIdAsync(bookingId);
+            if (effectiveBookingId == 0)
+            {
+                throw new ArgumentException($"Recurring booking {bookingId} not found", nameof(bookingId));
+            }
+
+            Log.Information(
+                "UpdatePackages for recurring booking {BookingId} (effective {EffectiveBookingId}): {Count} parcels",
+                bookingId, effectiveBookingId, parcels.Count);
+
+            var strategy = Context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                Context.ChangeTracker.Clear();
+                await using var transaction = await Context.Database.BeginTransactionAsync();
+
+                var existing = await Context.TucJobBookingItems.AsTracking()
+                    .Where(i => i.BookingId == effectiveBookingId)
+                    .ToListAsync();
+                var existingById = existing.ToDictionary(i => i.ItemId);
+                var keptIds = parcels
+                    .Where(p => p.ItemId.HasValue && existingById.ContainsKey(p.ItemId.Value))
+                    .Select(p => p.ItemId!.Value)
+                    .ToHashSet();
+
+                var removed = existing.Where(i => !keptIds.Contains(i.ItemId)).ToList();
+                if (removed.Count > 0)
+                {
+                    var removedIds = removed.Select(i => i.ItemId).ToList();
+                    await Context.TucJobBookingItemTypes
+                        .Where(t => t.BookingId == effectiveBookingId && removedIds.Contains(t.ItemId))
+                        .ExecuteDeleteAsync();
+                    Context.TucJobBookingItems.RemoveRange(removed);
+                }
+
+                var nextItemId = (existing.Count == 0 ? 0 : existing.Max(i => i.ItemId)) + 1;
+                foreach (var parcel in parcels)
+                {
+                    var row = parcel.ItemId is { } itemId && keptIds.Contains(itemId)
+                        ? existingById[itemId]
+                        : Context.TucJobBookingItems.Add(new TucJobBookingItem
+                        {
+                            BookingId = effectiveBookingId,
+                            ItemId = nextItemId++
+                        }).Entity;
+
+                    row.Items = 1;
+                    row.Weight = parcel.Weight ?? 0;
+                    row.Length = parcel.Length;
+                    row.Height = parcel.Height;
+                    row.Depth = parcel.Depth;
+                    row.Cubic = parcel.Cubic;
+                    row.Notes = parcel.ItemName;
+                    row.Barcode = parcel.Barcode;
+                }
+
+                await Context.SaveChangesAsync();
+
+                if (calculateDimsOncePerJob.HasValue)
+                {
+                    int? dimensionsType = calculateDimsOncePerJob.Value ? 2 : null;
+                    await Context.TucJobBookings
+                        .Where(b => b.UcbkId == effectiveBookingId || b.BookingParentId == effectiveBookingId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(b => b.DimensionsType, dimensionsType));
+                }
+
+                await transaction.CommitAsync();
+            });
+
+            var totalWeight = parcels.Sum(p => p.Weight ?? 0);
+            await CreateNewRecurringJobNote(effectiveBookingId,
+                $"Changed Parcels to {parcels.Count} (total weight {totalWeight:0.##})", false);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(RecurringJobRepository),
+                    nameof(UpdatePackagesForBookingAsync)));
+            throw;
+        }
+    }
+
     public async Task<IReadOnlyList<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobBookingId)
     {
         var effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobBookingId);

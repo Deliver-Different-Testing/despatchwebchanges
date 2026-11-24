@@ -16,6 +16,7 @@ vi.mock('../../../api/client', () => ({
 }));
 
 const mockPost = apiClient.post as Mock;
+const mockGet = apiClient.get as Mock;
 
 const mockParcel = (overrides?: Partial<ParcelDimensions>): ParcelDimensions => ({
     itemName: 'Box',
@@ -29,7 +30,7 @@ const mockParcel = (overrides?: Partial<ParcelDimensions>): ParcelDimensions => 
 const defaultProps = {
     open: true,
     parcels: [mockParcel()],
-    jobId: 1,
+    target: {kind: 'job', jobId: 1} as const,
     isUsCustomer: false,
     onClose: vi.fn(),
     onSubmit: vi.fn(),
@@ -562,5 +563,48 @@ describe('EditParcelDimensionsDialog partnerMode', () => {
                 expect.objectContaining({jobId: 1}),
             ),
         );
+    });
+});
+
+// ── Recurring booking target (ticket #846) ─────────────────────────
+
+describe('EditParcelDimensionsDialog recurring booking target', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    const bookingProps = {...defaultProps, target: {kind: 'booking', bookingId: 7} as const};
+
+    it('loads item types by bookingId and never asks the live-job endpoints about the booking id', async () => {
+        mockGet.mockResolvedValue([]);
+        renderWithTheme(<EditParcelDimensionsDialog {...bookingProps} />);
+
+        await waitFor(() => expect(mockGet).toHaveBeenCalledWith('job/GetJobItemTypes', {bookingId: 7}));
+        expect(mockGet).not.toHaveBeenCalledWith('job/IsJobParent', expect.anything());
+        expect(mockGet).not.toHaveBeenCalledWith('job/GetJobItemTypes', expect.objectContaining({jobId: 7}));
+    });
+
+    it('saves to the recurring-booking endpoint, never UpdateJobPackages, and says which jobs it affects', async () => {
+        mockGet.mockResolvedValue([]);
+        const user = setupUser();
+        const onSubmit = vi.fn();
+        const showToast = vi.fn();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...bookingProps}
+                parcels={[mockParcel({itemId: 3, weight: 5})]}
+                onSubmit={onSubmit}
+                showToast={showToast}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /save/i}));
+
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+        expect(mockPost).toHaveBeenCalledWith('job/UpdateRecurringJobPackages', {
+            bookingId: 7,
+            parcels: [expect.objectContaining({itemId: 3, weight: 5})],
+            calculateDimsOncePerJob: false,
+        });
+        expect(mockPost).not.toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything());
+        expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/jobs created from now on/i), 'success');
     });
 });
