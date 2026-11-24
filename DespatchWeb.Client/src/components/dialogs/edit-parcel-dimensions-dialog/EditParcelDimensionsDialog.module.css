@@ -11,6 +11,7 @@
  */
 .seamRow {
     position: relative;
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
 }
 
 .seam {
@@ -45,4 +46,19 @@
 
 tr:has(.insert:not(:disabled):focus-visible) > td {
     box-shadow: inset 0 2px 0 var(--mantine-primary-color-filled);
+}
+
+/* Forced colours drop the fill and the keyline's box-shadow; outline the target row instead. */
+@media (forced-colors: active) {
+    tr:has(.insert:not(:disabled):focus-visible) {
+        outline: 2px solid Highlight;
+        outline-offset: -2px;
+    }
+}
+
+@media (forced-colors: active) and (hover: hover) {
+    tr:has(.insert:not(:disabled):hover) {
+        outline: 2px solid Highlight;
+        outline-offset: -2px;
+    }
 }

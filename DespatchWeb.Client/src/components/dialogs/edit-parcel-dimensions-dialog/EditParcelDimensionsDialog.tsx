@@ -722,7 +722,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                 </Table.Tr>
 
                                 {g.expandedBarcodes && g.barcodes.map((barcode, i) => (
-                                    <Table.Tr key={barcode.key} bg="var(--mantine-color-gray-0)" className={classes.seamRow}>
+                                    <Table.Tr key={barcode.key} className={classes.seamRow}>
                                         <Table.Td pl={32}>
                                             <Tooltip label="Add parcel here">
                                                 <span className={classes.seam}>
