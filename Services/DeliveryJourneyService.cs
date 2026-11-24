@@ -178,10 +178,9 @@ public sealed partial class DeliveryJourneyService(
 
         foreach (var j in parentRuns)
         {
-            // ucjbDate carries the date part; ucjbTime is a DATETIME with a
-            // 1900-01-01 anchor for the time-of-day. Combine in C# rather
-            // than in EF to avoid datetime+datetime translation surprises.
-            var serviceLocal = j.UcjbDate + (j.UcjbTime?.TimeOfDay ?? TimeSpan.Zero);
+            // ucjbDate carries the date part and ucjbTime the time of day on an anchor date; either column can
+            // also hold a full datetime, so take only the part each one owns.
+            var serviceLocal = j.UcjbDate.CombineWithTime(j.UcjbTime);
 
             var status = MapStatusBucket(j.UcjbStatus);
             switch (status)
@@ -757,6 +756,7 @@ public sealed partial class DeliveryJourneyService(
         decimal currentBreakdownTotal)
     {
         var orderedGroups = journeyTemps
+            .Where(s => !IsUnchangedDateTimeRow(s.FieldName, s.OldValue, s.NewValue))
             .GroupBy(s => s.UpdatedAt)
             .OrderByDescending(g => g.Key)
             .ToList();
@@ -797,7 +797,7 @@ public sealed partial class DeliveryJourneyService(
                         JobId = jobId,
                         Date = localDate,
                         Title = GetTitle(first),
-                        Description = isCreation ? creation.Description : GetDescription([.. group]),
+                        Description = isCreation ? creation.Description : GetDescription([.. group], infoService.GetCulture()),
                         Icon = GetIcon(first.ChangeType, first.FieldName),
                         Tags = isCreation ? creation.Tags : [.. BuildTags(group, infoService.GetCulture())],
                         PerformedBy = ResolvePerformedBy(group),
@@ -818,6 +818,7 @@ public sealed partial class DeliveryJourneyService(
         decimal currentBreakdownTotal)
     {
         var orderedGroups = dtoList
+            .Where(s => !IsUnchangedDateTimeRow(s.FieldName, s.OldValue, s.NewValue))
             .GroupBy(s => s.UpdatedAt)
             .OrderByDescending(g => g.Key)
             .ToList();
@@ -858,7 +859,7 @@ public sealed partial class DeliveryJourneyService(
                         JobId = jobId,
                         Date = localDate,
                         Title = GetTitle(first),
-                        Description = isCreation ? creation.Description : GetDescription([.. group]),
+                        Description = isCreation ? creation.Description : GetDescription([.. group], infoService.GetCulture()),
                         Icon = GetIcon(first.ChangeType, first.FieldName),
                         Tags = isCreation ? creation.Tags : [.. BuildTags(group, infoService.GetCulture())],
                         PerformedBy = ResolvePerformedBy(group),
@@ -1071,7 +1072,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Builds a detailed description from a list of live status updates.
     /// </summary>
-    internal static string GetDescription(List<JobDeliveryJourneyDto> updates)
+    internal static string GetDescription(List<JobDeliveryJourneyDto> updates, CultureInfo culture = null)
     {
         var descriptions = new List<string>();
 
@@ -1111,17 +1112,19 @@ public sealed partial class DeliveryJourneyService(
             if (!string.IsNullOrEmpty(dto.FieldName))
             {
                 var fieldDesc = FormatFieldName(dto.FieldName);
-                if (!string.IsNullOrEmpty(dto.OldValue) && !string.IsNullOrEmpty(dto.NewValue))
+                var oldValue = FormatDateTimeField(dto.FieldName, dto.OldValue, culture ?? CultureInfo.InvariantCulture);
+                var newValue = FormatDateTimeField(dto.FieldName, dto.NewValue, culture ?? CultureInfo.InvariantCulture);
+                if (!string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue))
                 {
-                    descriptions.Add($"{fieldDesc}: {dto.OldValue} → {dto.NewValue}");
+                    descriptions.Add($"{fieldDesc}: {oldValue} → {newValue}");
                 }
-                else if (!string.IsNullOrEmpty(dto.NewValue))
+                else if (!string.IsNullOrEmpty(newValue))
                 {
-                    descriptions.Add($"{fieldDesc} set to: {dto.NewValue}");
+                    descriptions.Add($"{fieldDesc} set to: {newValue}");
                 }
-                else if (!string.IsNullOrEmpty(dto.OldValue))
+                else if (!string.IsNullOrEmpty(oldValue))
                 {
-                    descriptions.Add($"{fieldDesc} cleared (was: {dto.OldValue})");
+                    descriptions.Add($"{fieldDesc} cleared (was: {oldValue})");
                 }
             }
 
@@ -1137,7 +1140,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Builds a detailed description from a list of archived status updates.
     /// </summary>
-    internal static string GetDescription(List<JobDeliveryJourneyArchiveDto> updates)
+    internal static string GetDescription(List<JobDeliveryJourneyArchiveDto> updates, CultureInfo culture = null)
     {
         var descriptions = new List<string>();
 
@@ -1177,17 +1180,19 @@ public sealed partial class DeliveryJourneyService(
             if (!string.IsNullOrEmpty(dto.FieldName))
             {
                 var fieldDesc = FormatFieldName(dto.FieldName);
-                if (!string.IsNullOrEmpty(dto.OldValue) && !string.IsNullOrEmpty(dto.NewValue))
+                var oldValue = FormatDateTimeField(dto.FieldName, dto.OldValue, culture ?? CultureInfo.InvariantCulture);
+                var newValue = FormatDateTimeField(dto.FieldName, dto.NewValue, culture ?? CultureInfo.InvariantCulture);
+                if (!string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue))
                 {
-                    descriptions.Add($"{fieldDesc}: {dto.OldValue} → {dto.NewValue}");
+                    descriptions.Add($"{fieldDesc}: {oldValue} → {newValue}");
                 }
-                else if (!string.IsNullOrEmpty(dto.NewValue))
+                else if (!string.IsNullOrEmpty(newValue))
                 {
-                    descriptions.Add($"{fieldDesc} set to: {dto.NewValue}");
+                    descriptions.Add($"{fieldDesc} set to: {newValue}");
                 }
-                else if (!string.IsNullOrEmpty(dto.OldValue))
+                else if (!string.IsNullOrEmpty(oldValue))
                 {
-                    descriptions.Add($"{fieldDesc} cleared (was: {dto.OldValue})");
+                    descriptions.Add($"{fieldDesc} cleared (was: {oldValue})");
                 }
             }
 
@@ -1405,6 +1410,12 @@ public sealed partial class DeliveryJourneyService(
             return value.Equals("True", StringComparison.OrdinalIgnoreCase) ? "Yes" : "No";
         }
 
+        var dateTime = FormatDateTimeField(fieldName, value, culture);
+        if (!ReferenceEquals(dateTime, value))
+        {
+            return dateTime;
+        }
+
         switch (fieldName)
         {
             case "ucjbAmount" or "FuelSurchargeAmount" or "PPDAmount" or "PickupAmount"
@@ -1426,6 +1437,45 @@ public sealed partial class DeliveryJourneyService(
 
         return value;
     }
+
+    private const string BookedDateField = "ucjbDate";
+    private const string BookedTimeField = "ucjbTime";
+
+    /// <summary>
+    /// ucjbDate owns only the booked date and ucjbTime only the time of day (the booking page anchors it on
+    /// 1899-12-30), so each is shown as just its own part rather than the raw journalled datetime (#1023).
+    /// Returns <paramref name="value"/> itself for any other field or an unparseable value.
+    /// </summary>
+    internal static string FormatDateTimeField(string fieldName, string value, CultureInfo culture)
+    {
+        if (fieldName is not (BookedDateField or BookedTimeField) || !TryParseJournalDateTime(value, out var parsed))
+        {
+            return value;
+        }
+
+        return fieldName == BookedDateField
+            ? parsed.ToString(culture.DateTimeFormat.ShortDatePattern, culture)
+            : parsed.ToString(parsed.Second == 0 ? "HH:mm" : "HH:mm:ss", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// True for a booked date or time journal row whose own part didn't change. The trigger journals the raw
+    /// column, so a date row that only lost a stray time, or a time row that only moved its anchor date, is noise.
+    /// </summary>
+    internal static bool IsUnchangedDateTimeRow(string fieldName, string oldValue, string newValue)
+    {
+        if (fieldName is not (BookedDateField or BookedTimeField)
+            || !TryParseJournalDateTime(oldValue, out var before)
+            || !TryParseJournalDateTime(newValue, out var after))
+        {
+            return false;
+        }
+
+        return fieldName == BookedDateField ? before.Date == after.Date : before.TimeOfDay == after.TimeOfDay;
+    }
+
+    private static bool TryParseJournalDateTime(string value, out DateTime parsed) =>
+        DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed);
 
     [GeneratedRegex("(\\B[A-Z])")]
     private static partial Regex TitleCaseRegex();

@@ -1505,7 +1505,7 @@ public partial class CourierRepository(
                         TotalJobs = jobs?.Count ?? 0,
                         OverDueJobs = jobs?.TimedJobs.Count(j =>
                             j.UcjbTime != null &&
-                            j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
+                            j.UcjbDate.CombineWithTime(j.UcjbTime).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
                         DisplayOrder = c.DisplayOrder,
                         CourierFleetId = c.CourierFleetId,
                         CourierFleetName = c.CourierFleetName,

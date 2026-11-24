@@ -162,7 +162,7 @@ public sealed class CreateJobService(
         return new TucJob
         {
             UcjbNumber = data.JobNumber,
-            UcjbDate = bookDate,
+            UcjbDate = bookDate.Date,
             UcjbTime = bookDate,
             UcjbType = resolved.TypeId,
             UcjbClientId = resolved.ClientId,

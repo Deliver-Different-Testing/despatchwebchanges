@@ -3,6 +3,8 @@ using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
+using DespatchWeb.Extensions;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
@@ -246,10 +248,7 @@ public partial class JobRepository
                 break;
 
             case JobProperty.BookedTime:
-                var bookedTime = DateTimeOffset.Parse(value).DateTime;
-                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
-                    .SetProperty(j => j.UcjbDate, bookedTime)
-                    .SetProperty(j => j.UcjbTime, bookedTime));
+                rowsAffected = await baseQuery.UpdateBookedTimeAsync(DateTimeOffset.Parse(value).DateTime);
                 break;
 
             case JobProperty.PickupArrivalTime:
@@ -997,9 +996,10 @@ public partial class JobRepository
                 archive.DeliverByTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.BookedTime:
-                var archivedBookedTime = DateTimeOffset.Parse(value).DateTime;
-                archive.UcjbDate = archivedBookedTime;
-                archive.UcjbTime = archivedBookedTime;
+                var (archivedDate, archivedTime) = BookedDateTime.Split(
+                    DateTimeOffset.Parse(value).DateTime, archive.UcjbDate, archive.UcjbTime);
+                archive.UcjbDate = archivedDate ?? archive.UcjbDate;
+                archive.UcjbTime = archivedTime ?? archive.UcjbTime;
                 break;
             case JobProperty.PickupArrivalTime:
                 archive.PickupArrivalTime = DateTimeOffset.Parse(value).DateTime;

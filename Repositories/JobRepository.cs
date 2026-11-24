@@ -4,6 +4,7 @@ using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
+using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -814,7 +815,7 @@ public partial class JobRepository(
             return;
         }
 
-        var jobDateTime = job.UcjbDate.Add(job.UcjbTime.Value.TimeOfDay);
+        var jobDateTime = job.UcjbDate.CombineWithTime(job.UcjbTime);
         var windowValue = job.UcjbLatePick ?? time;
 
         if (!windowValue.HasValue)
@@ -875,7 +876,7 @@ public partial class JobRepository(
             return;
         }
 
-        var jobDateTime = job.UcjbDate.Add(value: job.UcjbTime.Value.TimeOfDay);
+        var jobDateTime = job.UcjbDate.CombineWithTime(job.UcjbTime);
         var windowValue = job.UcjbLateDel ?? time;
 
         if (!windowValue.HasValue)
