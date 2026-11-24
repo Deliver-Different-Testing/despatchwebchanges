@@ -9,6 +9,7 @@
 import type React from 'react';
 import type {Dayjs} from 'dayjs';
 import type {AddressViewModel} from './address';
+import type {JobNumberMatchMode} from './interfaces/job.interface';
 import type {ShowToastFn} from '../services/toastService';
 
 import {RequestOptions} from "../api/requestOptions";
@@ -79,6 +80,8 @@ export interface AiCourierSuggestion {
 export interface DispatchJob {
     // Core identifiers
     selected?: boolean;
+    /** Job search: an exact job-number match dated outside the searched window. */
+    outsideDateRange?: boolean;
     showCourierSearch: boolean;
     id: number;
     jobNo: string;
@@ -249,6 +252,8 @@ export interface JobListSearchParams {
     speedIds?: number[];
     wild?: string;
     job?: string;
+    /** Job search: skip the exact/prefix job-number tiers and match anywhere in the number. */
+    forceContains?: boolean;
     jobId?: number;
     bulkJobId?: number;
     sortColumn?: string;
@@ -269,6 +274,24 @@ export interface JobSearchResult {
     hasMore: boolean;
     /** Stats-header counts over every match. Present on the first page only. */
     statusCounts?: JobListStatusCounts | null;
+    /** Job search: how the job-number term matched, and what to tell the operator about it. */
+    searchNotice?: JobSearchNotice | null;
+}
+
+/** What a job search tells the operator beyond the rows themselves. */
+export interface JobSearchNotice {
+    /** The job-number term this result was searched with, so the notice never pairs with a newer term. */
+    jobTerm: string | null;
+    /** How a job-number term matched; null when no job number was searched. */
+    matchMode: JobNumberMatchMode | null;
+    /** Empty job-number search: jobs starting with the term outside the dates (51 means "over 50"). */
+    outsideWindowCount: number | null;
+    /** Span of those out-of-window matches; only set when every one of them was found. */
+    outsideWindowRange: {from: Dayjs; to: Dayjs} | null;
+    /** The search hit its match cap, so the total is a lower bound. */
+    totalIsCapped: boolean;
+    /** The search was too broad to run (term too short, or it timed out). */
+    searchTooBroad: boolean;
 }
 
 export interface JobListStatusCounts {
@@ -348,4 +371,6 @@ export interface JobListPanelProps {
     topSlot?: React.ReactNode;
     /** Hands the host page a function for pushing search params into the panel's data fetch */
     setUpdateSearchParamsCallback?: (cb: (params: Partial<JobListSearchParams>) => void) => void;
+    /** Job search: widen the page's date filter to take in this span, and search again. */
+    onWidenDates?: (range: {from: Dayjs; to: Dayjs}) => void;
 }

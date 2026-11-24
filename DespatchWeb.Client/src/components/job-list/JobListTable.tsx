@@ -15,7 +15,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useVirtualizer} from '@tanstack/react-virtual';
 import {ActionIcon, Badge, Box, Group, Text, Tooltip} from '@mantine/core';
 import {useDisclosure, useInterval} from '@mantine/hooks';
-import {Briefcase, ChevronUp, Info, TriangleAlert, UserPlus, UserSearch, Zap} from 'lucide-react';
+import {Briefcase, CalendarX, ChevronUp, Info, TriangleAlert, UserPlus, UserSearch, Zap} from 'lucide-react';
 
 import {Icon} from '../common/icon/Icon';
 import {isNetworkPartnerSession} from '../dialogs/dispatch-dialog/dispatchSession';
@@ -846,6 +846,13 @@ const CellContent: React.FC<{
                 <>
                     <Text component="span" fw="inherit" fz="inherit" style={{display: 'inline-flex', alignItems: 'center'}}>
                         {job.jobNo}
+                        {job.outsideDateRange && (
+                            <Tooltip label="Outside your dates. Shown because you searched this exact job number." withArrow>
+                                <Box component="span" ml={4} style={{display: 'inline-flex'}} aria-label="Outside your dates" data-testid="outside-date-range">
+                                    <Icon lucide={CalendarX} size={14} color="var(--mantine-color-dimmed)"/>
+                                </Box>
+                            </Tooltip>
+                        )}
                         {job.direct && (
                             <Tooltip label="Direct" withArrow>
                                 <Box component="span" ml={4} style={{display: 'inline-flex'}}>

@@ -867,6 +867,63 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Detail_ClientAborted_Returns499InsteadOf500()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        _jobQueryRepositoryMock.GetJobByIdAsync(1, cts.Token)
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        var result = await CreateController().Detail(1, cts.Token);
+
+        Assert.Equal(499, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task PodSearch_ClientAborted_PassesTheTokenAndReturns499()
+    {
+        using var cts = new CancellationTokenSource();
+        var request = new PodSearchRequest();
+        _jobQueryRepositoryMock.PodSearchAsync(request, cts.Token)
+            .Returns(async _ =>
+            {
+                await cts.CancelAsync();
+                throw new InvalidOperationException("SqlClient surfaces an abort as an arbitrary exception");
+            });
+
+        var result = await CreateController().PodSearch(request, cts.Token);
+
+        Assert.Equal(499, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task BulkSearch_ClientAborted_Returns499()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var request = new PodSearchRequest();
+        _jobQueryRepositoryMock.BulkSearchAsync(request, cts.Token)
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        var result = await CreateController().BulkSearch(request, cts.Token);
+
+        Assert.Equal(499, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task DispatchJobDetail_ClientAborted_Returns499()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        _jobQueryRepositoryMock.GetDispatchJobDetailAsync(1, cts.Token)
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        var result = await CreateController().DispatchJobDetail(1, cts.Token);
+
+        Assert.Equal(499, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
     public async Task DispatchJobDetail_ValidJobId_ReturnsDispatchDetails()
     {
         // Arrange

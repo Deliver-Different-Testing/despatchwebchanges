@@ -10,6 +10,7 @@ import {getDispatchJobDetail, searchSpeedOptions} from '../../api/dispatchExecut
 import {queryClient, queryKeys} from '../../api/queryClient';
 import {IDispatchMapItem, ISuggestion} from '../../types/interfaces/job.interface';
 import JobSearchBoxes from './lib/jobSearchBoxes';
+import JobSearchDateRange from './lib/jobSearchDateRange';
 import {searchActiveClients} from '../../api/jobApi';
 import {searchActiveCouriers} from '../../api/courierApi';
 import {
@@ -256,6 +257,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             speedIds: searchCriteria.selectedSpeedIds,
             wild: searchCriteria.criteria.wild,
             job: searchCriteria.criteria.job,
+            forceContains: false,
             jobId: searchCriteria.criteria.jobId,
             disabled: byBulkJobId,
             page: 0,
@@ -274,6 +276,18 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             page: 0,
         });
     }, [resolveDates, searchCriteria.criteria.bulkJobId, searchCriteria.selectedCourierIds, searchCriteria.selectedClientIds, searchCriteria.selectedSpeedIds, searchCriteria.criteria.wild, searchCriteria.criteria.job, searchCriteria.criteria.jobId]);
+
+    // "Include those dates" from an empty job-number search: widen the visible date filter just far
+    // enough to take in the matches, rather than relaxing it behind the operator's back, then search again.
+    const handleWidenDates = useCallback((range: {from: dayjs.Dayjs; to: dayjs.Dayjs}) => {
+        const {from_date: currentFrom, to_date: currentTo} = searchCriteria.criteria;
+        const fromDate = range.from.isBefore(currentFrom) ? range.from : currentFrom;
+        const toDate = range.to.isAfter(currentTo) ? range.to : currentTo;
+        searchCriteria.setDateSearchRange(JobSearchDateRange.Custom);
+        searchCriteria.setFromDate(fromDate);
+        searchCriteria.setToDate(toDate);
+        handleSearch({fromDate, toDate});
+    }, [searchCriteria, handleSearch]);
 
     const handleRefreshBox = useCallback(async (boxName: string) => {
         switch (boxName) {
@@ -660,6 +674,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                         setUpdateSearchParamsCallback={(cb) => {
                             updateMainParamsRef.current = cb;
                         }}
+                        onWidenDates={handleWidenDates}
                     />
                 );
 
@@ -768,7 +783,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             default:
                 return null;
         }
-    }, [searchCriteria, handleCriteriaChange, handleSearch, handleDownload, handleClientReport, handleUpload, handleClientSearch, handleCourierSearch, handleSpeedSearch, fetchConfigMain, fetchConfigBulk, showToast, isUsCustomer, selectJob, currentJob, isBulkJob, journeyJobId, timeZoneShort, searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, handlePriceDetailReport, currentJob?.booked, currentJob?.pickupAddress]);
+    }, [searchCriteria, handleCriteriaChange, handleSearch, handleWidenDates, handleDownload, handleClientReport, handleUpload, handleClientSearch, handleCourierSearch, handleSpeedSearch, fetchConfigMain, fetchConfigBulk, showToast, isUsCustomer, selectJob, currentJob, isBulkJob, journeyJobId, timeZoneShort, searchCriteria.criteria.from_date, searchCriteria.criteria.to_date, handlePriceDetailReport, currentJob?.booked, currentJob?.pickupAddress]);
 
     const subtitleFor = useCallback((boxName: string) => {
         if (boxName === JobSearchBoxes.JobDetail || boxName === JobSearchBoxes.ScanList) {

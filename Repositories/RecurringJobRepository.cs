@@ -78,7 +78,7 @@ public class RecurringJobRepository(
         var allJobsInGroup = await Context.TucJobBookings
             .Where(j => j.UcbkId == effectiveJobId || j.BookingParentId == effectiveJobId)
             .Select(JobMappings.JobRecurringMapping(_infoService.IsUsTenant()))
-            .TagWith($"GetRecurringJob - Complete Booking Group {effectiveJobId}")
+            .TagWith("GetRecurringJob - Complete Booking Group")
             .ToListAsync();
 
         var mainJob = allJobsInGroup.FirstOrDefault(j => j.Id == jobId);
