@@ -326,7 +326,7 @@ public static class AiJobPromptFormatter
         {
             var totalQty = pallets.Sum(p => p.Quantity);
             var totalWeight = pallets.Sum(p => p.Weight);
-            sb.AppendLine($"Pallets: {pallets.Count} row(s), total qty {totalQty}, total weight {totalWeight.ToString("N1", CultureInfo.InvariantCulture)}");
+            sb.AppendLine($"Item lines: {pallets.Count}, total qty {totalQty}, total weight {totalWeight.ToString("N1", CultureInfo.InvariantCulture)}");
         }
 
         // References / pricing

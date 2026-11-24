@@ -168,6 +168,7 @@ public class RecurringJobRepository(
                 "UpdatePackages for recurring booking {BookingId} (effective {EffectiveBookingId}): {Count} parcels",
                 bookingId, effectiveBookingId, parcels.Count);
 
+            string? changeNote = null;
             var strategy = Context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
@@ -177,6 +178,9 @@ public class RecurringJobRepository(
                 var existing = await Context.TucJobBookingItems.AsTracking()
                     .Where(i => i.BookingId == effectiveBookingId)
                     .ToListAsync();
+                changeNote = PackageChangeNoteText(existing
+                    .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                    .ToList(), parcels);
                 var existingById = existing.ToDictionary(i => i.ItemId);
                 var keptIds = parcels
                     .Where(p => p.ItemId.HasValue && existingById.ContainsKey(p.ItemId.Value))
@@ -227,9 +231,8 @@ public class RecurringJobRepository(
                 await transaction.CommitAsync();
             });
 
-            var totalWeight = parcels.Sum(p => p.Weight ?? 0);
-            await CreateNewRecurringJobNote(effectiveBookingId,
-                $"Changed Parcels to {parcels.Count} (total weight {totalWeight:0.##})", false);
+            if (changeNote != null)
+                await CreateNewRecurringJobNote(effectiveBookingId, changeNote, false);
         }
         catch (Exception e)
         {

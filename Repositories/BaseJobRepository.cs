@@ -1047,6 +1047,13 @@ public partial class BaseJobRepository(
     // Helper Methods
     protected async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
 
+    /// <summary>The internal note for a package edit, or null when the packages didn't change.</summary>
+    protected string? PackageChangeNoteText(IEnumerable<PackageChangeNote.Line> before,
+        IReadOnlyList<ParcelDimensions> parcels) =>
+        PackageChangeNote.Build(before,
+            parcels.Select(p => new PackageChangeNote.Line(p.ItemName, p.Length, p.Depth, p.Height, p.Weight, 1)),
+            infoService.IsUsTenant());
+
     /// <summary>
     /// A network partner's pay (CourierPayment + CourierFuel) for a batch of jobs, live rows
     /// first then archive for any not found live. Shared by every list/export surface that

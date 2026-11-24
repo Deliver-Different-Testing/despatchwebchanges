@@ -152,6 +152,36 @@ public class RecurringJobRepositoryPackagesTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdatePackagesForBookingAsync_ChangedPackages_WritesABookingNoteNamingThem()
+    {
+        _context.TucJobBookings.Add(Booking(BookingId));
+        _context.TucJobBookingItems.Add(Item(BookingId, 1, weight: 5));
+        await _context.SaveChangesAsync(Ct);
+
+        await _repository.UpdatePackagesForBookingAsync(BookingId,
+            [new ParcelDimensions { ItemId = 1, ItemName = "Banana box", Weight = 8, Length = 53, Depth = 39, Height = 24 }],
+            calculateDimsOncePerJob: null);
+
+        _context.ChangeTracker.Clear();
+        var note = await _context.TucNotes.SingleAsync(n => n.JobBookingId == BookingId, Ct);
+        Assert.Equal("Packages updated from 1 × Item, 5 kg to 1 × Banana box 53 x 39 x 24 cm, 8 kg", note.NoteText);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForBookingAsync_UnchangedPackages_WritesNoNote()
+    {
+        _context.TucJobBookings.Add(Booking(BookingId));
+        _context.TucJobBookingItems.Add(Item(BookingId, 1, weight: 5));
+        await _context.SaveChangesAsync(Ct);
+
+        await _repository.UpdatePackagesForBookingAsync(BookingId,
+            [new ParcelDimensions { ItemId = 1, Weight = 5 }], calculateDimsOncePerJob: null);
+
+        _context.ChangeTracker.Clear();
+        Assert.False(await _context.TucNotes.AnyAsync(n => n.JobBookingId == BookingId, Ct));
+    }
+
+    [Fact]
     public async Task UpdatePackagesForBookingAsync_UnknownBooking_Throws()
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>

@@ -1994,6 +1994,9 @@ public partial class JobRepository(
                     .OrderBy(i => i.ItemId)
                     .ToListAsync();
                 var existing = InDisplayOrder(scoped.Where(i => i.ChildJobId == childJobId)).ToList();
+                var changeNote = PackageChangeNoteText(existing.Where(IsActiveLine)
+                    .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                    .ToList(), parcels);
 
                 var nextItemId = (await Context.TucJobItems
                     .Where(i => i.JobId == effectiveJobId)
@@ -2055,6 +2058,8 @@ public partial class JobRepository(
                 var existingSet = existing.ToHashSet();
                 foreach (var (line, sortOrder) in sortOrders.Where(s => !existingSet.Contains(s.Line)))
                     line.SortOrder = sortOrder;
+                if (changeNote != null)
+                    await SaveNoteAsync(jobId, changeNote, saveChanges: false);
                 await Context.SaveChangesAsync();
                 var existingSortOrders = sortOrders
                     .Where(s => existingSet.Contains(s.Line) && s.Line.SortOrder != s.SortOrder).ToList();
@@ -2182,6 +2187,12 @@ public partial class JobRepository(
             {
                 await using var transaction = await Context.Database.BeginTransactionAsync();
 
+                var before = await Context.TblBulkJobItems
+                    .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                    .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                    .ToListAsync();
+                var changeNote = PackageChangeNoteText(before, parcels);
+
                 await Context.TblBulkJobItems
                     .Where(i => i.JobId == effectiveJobId &&
                                 (childJobId == null || i.ChildJobId == childJobId))
@@ -2213,6 +2224,9 @@ public partial class JobRepository(
                     await Context.TblBulkJobItems.AddRangeAsync(newItems);
                     await Context.SaveChangesAsync();
                 }
+
+                if (changeNote != null)
+                    await SaveMultipleBulkNotesAsync([bulkJobId], changeNote);
 
                 var parentLines = Context.TblBulkJobItems
                     .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
@@ -5844,6 +5858,12 @@ public partial class JobRepository(
         {
             await using var transaction = await Context.Database.BeginTransactionAsync();
 
+            var before = await Context.TucJobItemsArchives
+                .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                .ToListAsync();
+            var changeNote = PackageChangeNoteText(before, parcels);
+
             await Context.TucJobItemsArchives
                 .Where(i => i.JobId == effectiveJobId &&
                             (childJobId == null || i.ChildJobId == childJobId))
@@ -5873,8 +5893,11 @@ public partial class JobRepository(
                 }).ToList();
 
                 await Context.TucJobItemsArchives.AddRangeAsync(newItems);
-                await Context.SaveChangesAsync();
             }
+
+            if (changeNote != null)
+                await SaveNoteToMultipleArchivedJobsAsync([jobId], changeNote);
+            await Context.SaveChangesAsync();
 
             var parentLines = Context.TucJobItemsArchives
                 .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
