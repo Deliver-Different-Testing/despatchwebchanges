@@ -109,17 +109,20 @@ public partial class CourierRepository
                     CourierId = c.UccrId, Code = c.Code, Name = c.UccrName + " " + c.UccrSurname,
                     FirstName = c.UccrName, TypeKey = CourierCompliance.DgEndorsement, Expiry = c.DglicenseExpiry
                 }),
-            CourierCompliance.Wof => couriers.Where(c => !string.IsNullOrWhiteSpace(c.UccrReg)).Select(c => new ComplianceItemRow
+            CourierCompliance.Wof => WithVehicle(couriers).Select(c => new ComplianceItemRow
             {
                 CourierId = c.UccrId, Code = c.Code, Name = c.UccrName + " " + c.UccrSurname, FirstName = c.UccrName,
                 TypeKey = CourierCompliance.Wof, Expiry = c.Wofexpiry
             }),
-            _ => couriers.Where(c => !string.IsNullOrWhiteSpace(c.UccrReg)).Select(c => new ComplianceItemRow
+            _ => WithVehicle(couriers).Select(c => new ComplianceItemRow
             {
                 CourierId = c.UccrId, Code = c.Code, Name = c.UccrName + " " + c.UccrSurname, FirstName = c.UccrName,
                 TypeKey = CourierCompliance.Registration, Expiry = c.RegistrationExpiry
             })
         };
+
+    private static IQueryable<TucCourier> WithVehicle(IQueryable<TucCourier> couriers) =>
+        couriers.Where(c => !string.IsNullOrWhiteSpace(c.UccrReg));
 
     private readonly record struct ComplianceQuery(
         IQueryable<ComplianceItemRow> Scope,
