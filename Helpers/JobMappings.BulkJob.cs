@@ -192,7 +192,7 @@ public static partial class JobMappings
 
         // Parcel dimensions - 3-tier: stop child items → own items → parent items
         ParcelDimensions = j.TblBulkJobItemChildJobs.Any()
-            ? j.TblBulkJobItemChildJobs.Select(i => new ParcelDimensions
+            ? j.TblBulkJobItemChildJobs.OrderBy(i => i.ItemId).Select(i => new ParcelDimensions
             {
                 ItemId = i.ItemId,
                 ItemName = i.Notes,
@@ -204,7 +204,7 @@ public static partial class JobMappings
                 Barcode = i.Barcode
             }).ToList()
             : j.TblBulkJobItemJobs.Any(i => i.ChildJobId == null)
-                ? j.TblBulkJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new ParcelDimensions
+                ? j.TblBulkJobItemJobs.Where(i => i.ChildJobId == null).OrderBy(i => i.ItemId).Select(i => new ParcelDimensions
                 {
                     ItemId = i.ItemId,
                     ItemName = i.Notes,
@@ -217,7 +217,7 @@ public static partial class JobMappings
                 }).ToList()
                 : j.Parent != null
                     ? j.Parent.TblBulkJobItemJobs.Where(i => i.ChildJobId == null)
-                        .Select(i => new ParcelDimensions
+                        .OrderBy(i => i.ItemId).Select(i => new ParcelDimensions
                         {
                             ItemId = i.ItemId,
                             ItemName = i.Notes,

@@ -1006,10 +1006,10 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     // ── #860/#861: removed lines are flagged once the job is with a driver ──
 
     private static TucJobItem Line(int jobId, int itemId, string barcode, double weight = 1,
-        JobItemStatus? status = null) => new()
+        JobItemStatus? status = null, int? sortOrder = null, int? childJobId = null) => new()
     {
         JobId = jobId, ItemId = itemId, Barcode = barcode, Notes = barcode, Weight = weight, Items = 1,
-        ItemStatus = (byte?)status
+        ItemStatus = (byte?)status, SortOrder = sortOrder, ChildJobId = childJobId
     };
 
     private static ParcelDimensions Parcel(string barcode, double weight = 1) =>
@@ -1137,6 +1137,353 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         var lines = await ReadLinesAsync(905);
         Assert.Equal(2, lines.Count);
         Assert.All(lines, l => Assert.Equal((byte)JobItemStatus.NotForDelivery, l.ItemStatus));
+    }
+
+    // ── #1056: the saved order is the order on screen; ItemIDs never change ──
+
+    private async Task<List<TucJobItem>> ReadDisplayOrderAsync(int jobId)
+    {
+        var lines = await ReadLinesAsync(jobId);
+        return lines.OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId).ToList();
+    }
+
+    private static Dictionary<string, int> ItemIdsByBarcode(IEnumerable<TucJobItem> lines) =>
+        lines.ToDictionary(i => i.Barcode, i => i.ItemId);
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ParcelInsertedMidList_KeepsItsPositionAndEveryItemId()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(950, "J950"));
+        ctx.TucJobItems.AddRange(Line(950, 1, "J950-1"), Line(950, 2, "J950-2"), Line(950, 3, "J950-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(950,
+            [Parcel("J950-1"), Parcel("J950-4"), Parcel("J950-2"), Parcel("J950-3")]);
+
+        var lines = await ReadDisplayOrderAsync(950);
+        Assert.Equal(["J950-1", "J950-4", "J950-2", "J950-3"], lines.Select(i => i.Barcode));
+        Assert.Equal(new Dictionary<string, int> { ["J950-1"] = 1, ["J950-2"] = 2, ["J950-3"] = 3, ["J950-4"] = 4 },
+            ItemIdsByBarcode(lines));
+        Assert.Equal((short)4, (await ReadJobAsync(950)).UcjbQty);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ParcelsReordered_PersistsTheNewOrder()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(951, "J951"));
+        ctx.TucJobItems.AddRange(Line(951, 1, "J951-1"), Line(951, 2, "J951-2"), Line(951, 3, "J951-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(951, [Parcel("J951-3"), Parcel("J951-1"), Parcel("J951-2")]);
+
+        var lines = await ReadDisplayOrderAsync(951);
+        Assert.Equal(["J951-3", "J951-1", "J951-2"], lines.Select(i => i.Barcode));
+        Assert.Equal([3, 1, 2], lines.Select(i => i.ItemId));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_OrderMatchesItemIdOrder_LeavesSortOrderUnset()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(952, "J952"));
+        ctx.TucJobItems.AddRange(Line(952, 1, "J952-1"), Line(952, 2, "J952-2"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(952, [Parcel("J952-1"), Parcel("J952-2"), Parcel("J952-3")]);
+
+        var lines = await ReadDisplayOrderAsync(952);
+        Assert.Equal(["J952-1", "J952-2", "J952-3"], lines.Select(i => i.Barcode));
+        Assert.All(lines, l => Assert.Null(l.SortOrder));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_UnchangedResave_DoesNotRewriteTheJobTotals()
+    {
+        await using var ctx = CreateContext();
+        await InstallJobTotalsAuditAsync(ctx);
+        ctx.TucJobs.Add(CreateJob(958, "J958"));
+        foreach (var (itemId, sortOrder) in new[] { (1, 2), (2, 1) })
+        {
+            var line = Line(958, itemId, $"J958-{itemId}", status: JobItemStatus.Active, sortOrder: sortOrder);
+            line.Height = line.Length = line.Depth = 0;
+            ctx.TucJobItems.Add(line);
+        }
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var before = await ReadAuditedQtysAsync(ctx, 958);
+
+        await CreateRepository().UpdatePackagesForJobAsync(958, [Parcel("J958-2"), Parcel("J958-1")]);
+
+        Assert.Equal(before, await ReadAuditedQtysAsync(ctx, 958));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ReorderedThenAppended_KeepsTheEarlierOrder()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(955, "J955"));
+        ctx.TucJobItems.AddRange(Line(955, 1, "J955-1"), Line(955, 2, "J955-2"), Line(955, 3, "J955-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = CreateRepository();
+
+        await repo.UpdatePackagesForJobAsync(955, [Parcel("J955-2"), Parcel("J955-1"), Parcel("J955-3")]);
+        await repo.UpdatePackagesForJobAsync(955,
+            [Parcel("J955-2"), Parcel("J955-1"), Parcel("J955-3"), Parcel("J955-4")]);
+
+        var lines = await ReadDisplayOrderAsync(955);
+        Assert.Equal(["J955-2", "J955-1", "J955-3", "J955-4"], lines.Select(i => i.Barcode));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ReorderedThenRestoredOnTheSameRepository_PersistsTheRestoredOrder()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(957, "J957"));
+        ctx.TucJobItems.AddRange(Line(957, 1, "J957-1"), Line(957, 2, "J957-2"), Line(957, 3, "J957-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var repo = CreateRepository();
+
+        await repo.UpdatePackagesForJobAsync(957, [Parcel("J957-2"), Parcel("J957-1"), Parcel("J957-3")]);
+        await repo.UpdatePackagesForJobAsync(957, [Parcel("J957-1"), Parcel("J957-2"), Parcel("J957-3")]);
+
+        var lines = await ReadDisplayOrderAsync(957);
+        Assert.Equal(["J957-1", "J957-2", "J957-3"], lines.Select(i => i.Barcode));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_BarcodelessLinesInSortOrder_EditTheLineShownInThatSlot()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(956, "J956"));
+        ctx.TucJobItems.AddRange(Line(956, 1, null, weight: 1, sortOrder: 2), Line(956, 2, null, weight: 2, sortOrder: 1));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(956,
+            [new ParcelDimensions { Weight = 5 }, new ParcelDimensions { Weight = 1 }]);
+
+        var lines = await ReadDisplayOrderAsync(956);
+        Assert.Equal([2, 1], lines.Select(i => i.ItemId));
+        Assert.Equal([5.0, 1.0], lines.Select(i => i.Weight));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_BarcodedInsertAmongBarcodelessLines_KeepsEveryLineOnItsItemId()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(957, "J957"));
+        ctx.TucJobItems.AddRange(Line(957, 1, null, weight: 1), Line(957, 2, null, weight: 2), Line(957, 3, null, weight: 3));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(957,
+        [
+            new ParcelDimensions { ItemId = 1, Weight = 1 },
+            new ParcelDimensions { Barcode = "J957-4", Weight = 9 },
+            new ParcelDimensions { ItemId = 2, Weight = 2 },
+            new ParcelDimensions { ItemId = 3, Weight = 3 }
+        ]);
+
+        var lines = await ReadDisplayOrderAsync(957);
+        Assert.Equal([1, 4, 2, 3], lines.Select(i => i.ItemId));
+        Assert.Equal([1.0, 9.0, 2.0, 3.0], lines.Select(i => i.Weight));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_BarcodeTypedIntoLoadedParcel_StaysOnThatLine()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(959, "J959"));
+        ctx.TucJobItems.AddRange(Line(959, 1, null), Line(959, 2, null));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(959,
+            [new ParcelDimensions { ItemId = 1 }, new ParcelDimensions { ItemId = 2, Barcode = "J959-2" }]);
+
+        var lines = await ReadDisplayOrderAsync(959);
+        Assert.Equal([1, 2], lines.Select(i => i.ItemId));
+        Assert.Equal([null, "J959-2"], lines.Select(i => i.Barcode));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_SentJob_RemovedLineKeepsItsSlotAfterThePrecedingLine()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateSentJob(953, "J953"));
+        ctx.TucJobItems.AddRange(Line(953, 1, "J953-1"), Line(953, 2, "J953-2"), Line(953, 3, "J953-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(953, [Parcel("J953-4"), Parcel("J953-1"), Parcel("J953-3")]);
+
+        var lines = await ReadDisplayOrderAsync(953);
+        Assert.Equal(["J953-4", "J953-1", "J953-2", "J953-3"], lines.Select(i => i.Barcode));
+        Assert.Equal((byte)JobItemStatus.NotForDelivery, lines[2].ItemStatus);
+        Assert.Equal(new Dictionary<string, int> { ["J953-1"] = 1, ["J953-2"] = 2, ["J953-3"] = 3, ["J953-4"] = 4 },
+            ItemIdsByBarcode(lines));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_FlaggedLineWithNoEarlierSurvivor_StaysFirst()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateSentJob(954, "J954"));
+        ctx.TucJobItems.AddRange(
+            Line(954, 1, "J954-1", status: JobItemStatus.NotForDelivery),
+            Line(954, 2, "J954-2"),
+            Line(954, 3, "J954-3"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(954, [Parcel("J954-3"), Parcel("J954-2")]);
+
+        var lines = await ReadDisplayOrderAsync(954);
+        Assert.Equal(["J954-1", "J954-3", "J954-2"], lines.Select(i => i.Barcode));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_StopJobReordered_LeavesParentLinesUnordered()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(960, "J960"));
+        ctx.TucJobs.Add(CreateJobWithParent(961, "J960a", 960));
+        ctx.TucJobItems.AddRange(
+            Line(960, 1, "J960-1"),
+            Line(960, 2, "J960a-1", childJobId: 961),
+            Line(960, 3, "J960a-2", childJobId: 961));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(961, [Parcel("J960a-2"), Parcel("J960a-1")]);
+
+        var lines = await ReadDisplayOrderAsync(960);
+        Assert.Null(lines.Single(i => i.ChildJobId == null).SortOrder);
+        Assert.Equal(["J960a-2", "J960a-1"], lines.Where(i => i.ChildJobId == 961).Select(i => i.Barcode));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ArchivedJob_ParcelInsertedMidList_KeepsItsPosition()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobArchives.Add(CreateArchiveJob(970, "ARC970"));
+        ctx.TucJobItemsArchives.AddRange(
+            new TucJobItemsArchive { JobId = 970, ItemId = 1, Barcode = "ARC970-1", Items = 1 },
+            new TucJobItemsArchive { JobId = 970, ItemId = 2, Barcode = "ARC970-2", Items = 1 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(970,
+            [Parcel("ARC970-1"), Parcel("ARC970-3"), Parcel("ARC970-2")]);
+
+        await using var verify = CreateContext();
+        var lines = (await verify.TucJobItemsArchives.Where(i => i.JobId == 970)
+                .ToListAsync(TestContext.Current.CancellationToken))
+            .OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId);
+        Assert.Equal(["ARC970-1", "ARC970-3", "ARC970-2"], lines.Select(i => i.Barcode));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForBulkJobAsync_ParcelInsertedMidList_KeepsItsPosition()
+    {
+        await using var ctx = CreateContext();
+        ctx.TblBulkJobs.Add(CreateBulkJob(980, "B980"));
+        ctx.TblBulkJobItems.AddRange(
+            new TblBulkJobItem { JobId = 980, ItemId = 1, Barcode = "B980-1", Items = 1 },
+            new TblBulkJobItem { JobId = 980, ItemId = 2, Barcode = "B980-2", Items = 1 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForBulkJobAsync(980,
+            [Parcel("B980-1"), Parcel("B980-3"), Parcel("B980-2")]);
+
+        await using var verify = CreateContext();
+        var lines = await verify.TblBulkJobItems.Where(i => i.JobId == 980).OrderBy(i => i.ItemId)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(["B980-1", "B980-3", "B980-2"], lines.Select(i => i.Barcode));
+    }
+
+    // ── #955: the edit leaves a note naming the packages ─────────────
+
+    private static List<ParcelDimensions> BananaBoxes() =>
+    [
+        new() { ItemName = "Banana box", Length = 53, Depth = 39, Height = 24, Weight = 8 },
+        new() { ItemName = "Banana box", Length = 53, Depth = 39, Height = 24, Weight = 8 }
+    ];
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ChangedPackages_WritesOneInternalNoteNamingThem()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(955, "J955"));
+        ctx.TucJobItems.Add(new TucJobItem
+            { JobId = 955, ItemId = 1, Items = 2, Notes = "Pallet", Length = 53, Depth = 39, Height = 24, Weight = 8 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(955, BananaBoxes());
+
+        await using var verify = CreateContext();
+        var note = Assert.Single(await verify.TucNotes.Where(n => n.JobId == 955)
+            .ToListAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("Packages updated from 2 × Pallet 53 x 39 x 24 cm, 8 kg to 2 × Banana box 53 x 39 x 24 cm, 8 kg",
+            note.NoteText);
+        Assert.Equal((int)NoteType.InternalNote, note.NoteTypeId);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_UnchangedPackages_WritesNoNote()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(956, "J956"));
+        ctx.TucJobItems.AddRange(
+            new TucJobItem { JobId = 956, ItemId = 1, Items = 1, Notes = "Banana box", Length = 53, Depth = 39, Height = 24, Weight = 8 },
+            new TucJobItem { JobId = 956, ItemId = 2, Items = 1, Notes = "Banana box", Length = 53, Depth = 39, Height = 24, Weight = 8 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(956, BananaBoxes());
+
+        await using var verify = CreateContext();
+        Assert.False(await verify.TucNotes.AnyAsync(n => n.JobId == 956, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_UsTenant_NamesPackagesInInchesAndPounds()
+    {
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(957, "J957"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(957, BananaBoxes());
+
+        await using var verify = CreateContext();
+        Assert.Equal("Packages updated to 2 × Banana box 53 x 39 x 24 in, 8 lb",
+            (await verify.TucNotes.SingleAsync(n => n.JobId == 957, TestContext.Current.CancellationToken)).NoteText);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ArchivedJob_WritesTheNoteToTheArchive()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobArchives.Add(CreateArchiveJob(958, "A958"));
+        ctx.TucJobItemsArchives.Add(new TucJobItemsArchive { JobId = 958, ItemId = 1, Items = 1, Notes = "Pallet", Weight = 8 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(958, BananaBoxes());
+
+        await using var verify = CreateContext();
+        var note = Assert.Single(await verify.TucNoteArchives.Where(n => n.JobId == 958)
+            .ToListAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("Packages updated from 1 × Pallet, 8 kg to 2 × Banana box 53 x 39 x 24 cm, 8 kg", note.NoteText);
+        Assert.False(await verify.TucNotes.AnyAsync(n => n.JobId == 958, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForBulkJobAsync_ChangedPackages_WritesABulkNote()
+    {
+        await using var ctx = CreateContext();
+        ctx.TblBulkJobs.Add(CreateBulkJob(959, "B959"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForBulkJobAsync(959, BananaBoxes());
+
+        await using var verify = CreateContext();
+        var note = Assert.Single(await verify.TblBulkJobNotes.Where(n => n.BulkJobId == 959)
+            .ToListAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("Packages updated to 2 × Banana box 53 x 39 x 24 cm, 8 kg", note.NoteText);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────

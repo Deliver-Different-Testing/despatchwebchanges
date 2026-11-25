@@ -28,8 +28,6 @@ function tintsIn(file: string): Tint[] {
     const css = fs.readFileSync(path.join(file.startsWith('node_modules/') ? repoRoot : react, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     const found: Tint[] = [];
     for (const [, selector, body] of css.matchAll(/([^{}@]+)\{([^{}]*)\}/g)) {
-        // The lens backdrop layer (formerly glassLayer.module.css, never covered here) sits beneath the pane.
-        if (selector.includes('dfrnt-glass-backdrop')) continue;
         const scheme = selector.includes('dark') ? 'dark' : 'light';
         for (const [, token, percent] of body.matchAll(/color-mix\(in srgb,\s*var\((--dd-[\w-]+)(?:,[^)]*)?\)\s+(\d+)%/g)) {
             found.push({file, selector: selector.trim().replace(/\s+/g, ' '), scheme, token: token as Tint['token'], percent: Number(percent)});
@@ -38,11 +36,30 @@ function tintsIn(file: string): Tint[] {
     return found;
 }
 
-const tints = cssFiles.flatMap(tintsIn);
+const allTints = cssFiles.flatMap(tintsIn);
+// The lens backdrop layer only ever shows beneath the host's own tint, so it is checked combined with it below.
+const isLensBackdrop = (t: Tint) => t.selector.includes('dfrnt-glass-backdrop');
+const isLensHost = (t: Tint) => t.selector.includes("[data-liquid-glass='svg']");
+const tints = allTints.filter(t => !isLensBackdrop(t));
+
+/** The Chromium lens stacks the host tint over the backdrop layer's, so what shows through is the product of both gaps. */
+function lensCoverage(scheme: Tint['scheme']): number {
+    const backdrop = allTints.find(t => isLensBackdrop(t) && t.scheme === scheme);
+    const host = allTints.find(t => isLensHost(t) && t.scheme === scheme);
+    if (!backdrop || !host) throw new Error(`lens tints missing for ${scheme}`);
+    return 1 - (1 - backdrop.percent / 100) * (1 - host.percent / 100);
+}
 
 describe('glass tint contrast', () => {
     it('finds the glass tints this guard is meant to cover', () => {
         expect(tints.length).toBeGreaterThanOrEqual(8);
+    });
+
+    it.each(['light', 'dark'] as const)('keeps body text at 4.5:1 or better on the Chromium lens pane (%s)', scheme => {
+        const md3 = scheme === 'light' ? light : dark;
+        const backdrop = scheme === 'light' ? '#000000' : '#ffffff';
+        const pane = mix(tokens[scheme]['--dd-surface-container-high'], lensCoverage(scheme), backdrop);
+        expect(contrastRatio(md3.onSurface, pane)).toBeGreaterThanOrEqual(4.5);
     });
 
     // Blur averages the backdrop, so a flat black (light mode, dark text) or white (dark mode,

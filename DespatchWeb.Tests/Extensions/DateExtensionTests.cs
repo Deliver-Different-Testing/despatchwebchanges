@@ -288,4 +288,13 @@ public class DateExtensionTests
         Assert.Contains("10:00:00", jsonString); // Local time
     }
 
+    [Fact]
+    public void CombineWithTime_TakesOnlyTheDateFromTheDateAndOnlyTheTimeFromTheTime()
+    {
+        // #1023: ucjbDate can carry a time from an earlier save and ucjbTime sits on an 1899 anchor; adding
+        // the time of day to the raw date would count the time twice.
+        var combined = new DateTime(2026, 11, 11, 15, 30, 0).CombineWithTime(new DateTime(1899, 12, 30, 15, 30, 0));
+
+        Assert.Equal(new DateTime(2026, 11, 11, 15, 30, 0), combined);
+    }
 }

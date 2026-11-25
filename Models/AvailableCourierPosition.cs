@@ -32,4 +32,13 @@ public class AvailableCourierPosition
     /// must keep counting between polls, so the instant travels rather than a precomputed age.
     /// </summary>
     public DateTimeOffset? LastDeliveryTime { get; init; }
+
+    /// <summary>Dollars behind the minimum hourly guarantee this pay period; null when on target, not eligible or not permitted.</summary>
+    public decimal? EarningsBehindBy { get; set; }
+
+    /// <summary>Tenant-local time today's minimum paid block ends; null unless the alert is on.</summary>
+    public DateTime? MinimumEndsAt { get; set; }
+
+    /// <summary>Warning window in minutes; null = alert off.</summary>
+    public int? MinimumAlertMinutes { get; set; }
 }

@@ -312,4 +312,37 @@ describe('FlightDetailsCard', () => {
             expect(miaElements.length).toBeGreaterThanOrEqual(2);
         });
     });
+
+    describe('Forward Air', () => {
+        const forwardAirSegment = () => createSegment({
+            carrierFsCode: 'FWD',
+            flightNumber: 'T2T',
+            airlineName: 'Forward Air',
+            departureTerminal: 'T1',
+            arrivalTerminal: 'T9',
+            aircraftName: 'Boeing 737',
+        });
+
+        it('hides terminal and aircraft for a Forward Air segment', () => {
+            renderWithTheme(
+                <FlightDetailsCard
+                    segment={forwardAirSegment()}
+                    flight={createFlight({airlineCode: 'FWD', aircraft: 'Boeing 737'})}
+                    isOverview={false}
+                />
+            );
+
+            expect(screen.getByText('Departure')).toBeInTheDocument();
+            expect(screen.queryByText(/Terminal/)).not.toBeInTheDocument();
+            expect(screen.queryByText('Aircraft')).not.toBeInTheDocument();
+            expect(screen.queryByText('Boeing 737')).not.toBeInTheDocument();
+        });
+
+        it('still shows terminal and aircraft for an airline', () => {
+            renderWithTheme(<FlightDetailsCard {...defaultProps} />);
+
+            expect(screen.getAllByText(/Terminal/).length).toBeGreaterThan(0);
+            expect(screen.getByText('Aircraft')).toBeInTheDocument();
+        });
+    });
 });

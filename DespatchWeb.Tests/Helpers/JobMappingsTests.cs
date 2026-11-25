@@ -110,6 +110,41 @@ public class JobMappingsTests
         Assert.Null(archiveResult.AssignedFlight);
     }
 
+    [Fact]
+    public void ParcelDimensions_AreInSortOrderThenItemIdOrder_ForLiveAndArchivedJobs()
+    {
+        TucJobItem Live(int itemId, int? sortOrder) =>
+            new() { JobId = 1, ItemId = itemId, SortOrder = sortOrder, Barcode = $"J-{itemId}" };
+        TucJobItemsArchive Archived(int itemId, int? sortOrder) =>
+            new() { JobId = 1, ItemId = itemId, SortOrder = sortOrder, Barcode = $"J-{itemId}" };
+
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem> { Live(1, 2), Live(5, null), Live(2, 3), Live(4, 1), Live(3, null) },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 1, 15),
+            UcjbTime = new DateTime(2024, 1, 15, 10, 0, 0),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>
+                { Archived(1, 2), Archived(5, null), Archived(2, 3), Archived(4, 1), Archived(3, null) }
+        };
+
+        var live = JobMappings.JobMappingCore(false).Compile()(liveJob);
+        var archived = JobMappings.JobArchiveMapping.Compile()(archivedJob);
+
+        Assert.Equal([4, 1, 2, 3, 5], live.ParcelDimensions.Select(p => p.ItemId));
+        Assert.Equal([4, 1, 2, 3, 5], archived.ParcelDimensions.Select(p => p.ItemId));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -2002,6 +2037,41 @@ public class JobMappingsTests
     }
 
     [Fact]
+    public void JobMappingCore_AssignedFlight_ForwardAirRow_KeepsCarrierAndServiceCode()
+    {
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2026, 12, 1),
+            UcjbTime = new DateTime(2026, 12, 1, 10, 0, 0),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>
+            {
+                new()
+                {
+                    UcnwLegNumber = 1,
+                    UcnwFlightNo = "GS-T2T",
+                    CarrierFsCode = "FWD",
+                    UcnwEtd = new DateTime(2026, 12, 1, 10, 0, 0),
+                    UcnwEta = new DateTime(2026, 12, 2, 9, 0, 0),
+                    DepartureAirportFsCode = "BNA",
+                    ArrivalAirportFsCode = "EWR",
+                    UcnwAirlineName = "Forward Air"
+                }
+            }
+        };
+
+        var result = JobMappings.JobMappingCore(false).Compile()(job);
+
+        Assert.Equal("GS-T2T", result.AssignedFlight!.FlightNumber);
+        var segment = Assert.Single(result.AssignedFlight.FlightSegments);
+        Assert.Equal("FWD", segment.CarrierFsCode);
+        Assert.Equal("GS-T2T", segment.FlightNumber);
+    }
+
+    [Fact]
     public void JobMappingCore_AssignedFlight_MapsMultipleSegments()
     {
         // Arrange
@@ -3035,5 +3105,26 @@ public class JobMappingsTests
 
         Assert.False(result.IsFlightJob);
         Assert.False(result.IsAgentJob);
+    }
+
+    [Fact]
+    public void JobRecurringMapping_ParcelDimensions_CarryEachParcelsWeightAndBarcode()
+    {
+        var booking = new TucJobBooking
+        {
+            UcbkId = 1,
+            TucJobBookingItemBookings =
+            [
+                new TucJobBookingItem { BookingId = 1, ItemId = 3, Items = 1, Weight = 4.5, Barcode = "BC3", Notes = "Box" }
+            ]
+        };
+
+        var result = JobMappings.JobRecurringMapping(false).Compile()(booking);
+
+        var parcel = Assert.Single(result.ParcelDimensions);
+        Assert.Equal(3, parcel.ItemId);
+        Assert.Equal(4.5, parcel.Weight);
+        Assert.Equal("BC3", parcel.Barcode);
+        Assert.Equal("Box", parcel.ItemName);
     }
 }

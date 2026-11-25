@@ -10,6 +10,7 @@ import {DoorOpen, Info} from 'lucide-react';
 import {IconPlane, IconPlaneArrival, IconPlaneDeparture} from '@tabler/icons-react';
 import {Icon} from '../../common/icon/Icon';
 import { FlightDetailsCardProps } from './types';
+import {isForwardAirCarrier} from '../../../constants/forwardAir';
 
 /** Airport, code, city, local time and terminal — the same block for each end of the leg. */
 function Endpoint({icon, title, info}: {
@@ -71,6 +72,8 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
     flight,
     isOverview,
 }) => {
+    const isForwardAir = isForwardAirCarrier(segment.carrierFsCode) || isForwardAirCarrier(flight.airlineCode);
+
     // Get arrival info - for overview with multi-segment, show final destination
     const getArrivalInfo = () => {
         if (isOverview && flight.isMultiSegment && flight.flightSegments && flight.flightSegments.length > 0) {
@@ -81,7 +84,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                 city: lastSegment.arrivalAirportCity,
                 country: lastSegment.arrivalAirportCountry,
                 time: lastSegment.arrivalTime || flight.arrivalTime,
-                terminal: lastSegment.arrivalTerminal,
+                terminal: isForwardAir ? undefined : lastSegment.arrivalTerminal,
             };
         }
         return {
@@ -90,7 +93,7 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
             city: segment.arrivalAirportCity,
             country: segment.arrivalAirportCountry,
             time: segment.arrivalTime || flight.arrivalTime,
-            terminal: segment.arrivalTerminal,
+            terminal: isForwardAir ? undefined : segment.arrivalTerminal,
         };
     };
 
@@ -100,11 +103,11 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
         city: segment.departureAirportCity,
         country: segment.departureAirportCountry,
         time: segment.departureTime || flight.departureTime,
-        terminal: segment.departureTerminal,
+        terminal: isForwardAir ? undefined : segment.departureTerminal,
     };
 
     const arrivalInfo = getArrivalInfo();
-    const aircraftName = segment.aircraftName || flight.aircraft;
+    const aircraftName = isForwardAir ? undefined : segment.aircraftName || flight.aircraft;
 
     return (
         <Paper withBorder radius="md" p={24} bg="var(--mantine-color-body)">

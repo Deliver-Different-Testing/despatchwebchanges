@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
@@ -325,7 +326,7 @@ public static partial class JobMappings
         // Parcel dimensions - 3-tier: stop child items → own items → parent items. Active lines only:
         // this feeds the edit dialog, and flagged lines (#860/#861) are kept by UpdatePackagesForJobAsync.
         ParcelDimensions = j.TucJobItemChildJobs.Any()
-            ? j.TucJobItemChildJobs.Where(i => (i.ItemStatus ?? 0) == 0).Select(i => new ParcelDimensions
+            ? j.TucJobItemChildJobs.Where(i => (i.ItemStatus ?? 0) == 0).OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId).Select(i => new ParcelDimensions
             {
                 ItemId = i.ItemId,
                 ItemName = i.Notes,
@@ -337,7 +338,7 @@ public static partial class JobMappings
                 Barcode = i.Barcode
             }).ToList()
             : j.TucJobItemJobs.Any(i => i.ChildJobId == null)
-                ? j.TucJobItemJobs.Where(i => i.ChildJobId == null && (i.ItemStatus ?? 0) == 0).Select(i => new ParcelDimensions
+                ? j.TucJobItemJobs.Where(i => i.ChildJobId == null && (i.ItemStatus ?? 0) == 0).OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId).Select(i => new ParcelDimensions
                 {
                     ItemId = i.ItemId,
                     ItemName = i.Notes,
@@ -350,7 +351,7 @@ public static partial class JobMappings
                 }).ToList()
                 : j.Parent != null
                     ? j.Parent.TucJobItemJobs.Where(i => i.ChildJobId == null && (i.ItemStatus ?? 0) == 0)
-                        .Select(i => new ParcelDimensions
+                        .OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId).Select(i => new ParcelDimensions
                         {
                             ItemId = i.ItemId,
                             ItemName = i.Notes,
@@ -442,12 +443,16 @@ public static partial class JobMappings
                             .Select(n => new FlightSegmentViewModel
                             {
                                 SegmentOrder = n.UcnwLegNumber - 1,
-                                CarrierFsCode = n.UcnwFlightNo != null && n.UcnwFlightNo.Length >= 2
-                                    ? n.UcnwFlightNo.Substring(0, 2)
-                                    : "??",
-                                FlightNumber = n.UcnwFlightNo != null && n.UcnwFlightNo.Length > 2
-                                    ? n.UcnwFlightNo.Substring(2)
-                                    : "????",
+                                CarrierFsCode = n.CarrierFsCode == ForwardAirCarrier.Code
+                                    ? ForwardAirCarrier.Code
+                                    : n.UcnwFlightNo != null && n.UcnwFlightNo.Length >= 2
+                                        ? n.UcnwFlightNo.Substring(0, 2)
+                                        : "??",
+                                FlightNumber = n.CarrierFsCode == ForwardAirCarrier.Code
+                                    ? n.UcnwFlightNo ?? "????"
+                                    : n.UcnwFlightNo != null && n.UcnwFlightNo.Length > 2
+                                        ? n.UcnwFlightNo.Substring(2)
+                                        : "????",
                                 DepartureTime = n.UcnwEtd ?? SqlMinDateTime,
                                 ArrivalTime = n.UcnwEta ?? SqlMinDateTime,
                                 DepartureAirportFsCode = n.DepartureAirportFsCode,

@@ -61,6 +61,12 @@ export interface IAvailableCourierPosition {
     lastDeliveryRegion?: string | null;
     /** When that delivery was completed, ISO 8601 in tenant time. */
     lastDeliveryTime?: string | null;
+    /** Dollars behind the minimum hourly guarantee this pay period; absent when on target or not permitted. */
+    earningsBehindBy?: number | null;
+    /** Tenant-local ISO time today's minimum paid block ends; absent unless the alert is on. */
+    minimumEndsAt?: string | null;
+    /** Warning window in minutes; absent = alert off. */
+    minimumAlertMinutes?: number | null;
 }
 
 export interface IDriverWorkOverview {

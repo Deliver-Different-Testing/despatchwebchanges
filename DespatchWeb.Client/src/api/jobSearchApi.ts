@@ -8,6 +8,7 @@
 
 import {apiClient} from './client';
 import {transformDispatchJobDTO} from '../utils/dtoMappings';
+import dayjs from 'dayjs';
 import {formatDateForApiWithTzs} from '../utils/dateUtils';
 import type {IJobSearchResultDto, IDispatchJobDto} from '../types/interfaces/job.interface';
 import type {DispatchJob, JobListSearchParams, JobSearchResult} from '../types/dispatchJob';
@@ -15,12 +16,22 @@ import {RequestOptions} from "./requestOptions";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function transformResult(dto: IJobSearchResultDto): JobSearchResult {
+function transformResult(dto: IJobSearchResultDto, jobTerm?: string): JobSearchResult {
     return {
         jobs: dto.jobs.map(transformDispatchJobDTO) as any,
         totalCount: dto.totalCount,
         hasMore: dto.hasMore,
         statusCounts: dto.statusCounts ?? null,
+        searchNotice: {
+            jobTerm: jobTerm?.trim() || null,
+            matchMode: dto.matchMode ?? null,
+            outsideWindowCount: dto.outsideWindowCount ?? null,
+            outsideWindowRange: dto.outsideWindowFrom && dto.outsideWindowTo
+                ? {from: dayjs(dto.outsideWindowFrom).startOf('day'), to: dayjs(dto.outsideWindowTo).startOf('day')}
+                : null,
+            totalIsCapped: !!dto.totalIsCapped,
+            searchTooBroad: !!dto.searchTooBroad,
+        },
     };
 }
 
@@ -41,6 +52,7 @@ export async function fetchPodJobs(
         speedIds: params.speedIds,
         wild: params.wild,
         job: params.job,
+        forceContains: params.forceContains || undefined,
         jobId: params.jobId,
         page: params.page ?? 0,
         pageSize: params.pageSize ?? 50,
@@ -50,7 +62,7 @@ export async function fetchPodJobs(
         sortDirection: params.sortDirection ?? params.orderDirection,
     }, options);
 
-    return transformResult(dto);
+    return transformResult(dto, params.job);
 }
 
 // ── Bulk Search (Job Search page) ────────────────────────────────────

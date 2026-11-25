@@ -17,5 +17,11 @@ public enum AgentInboundEmailStatus
     NoInboundUrl,
 
     /// <summary>An unexpected failure occurred while sending (logged); nothing was sent.</summary>
-    Failed
+    Failed,
+
+    /// <summary>This agent already has this alert for this job; nothing was sent unless the dispatcher asks to send it again.</summary>
+    AlreadySent,
+
+    /// <summary>The tenant switched agent alerts off (Settings > Agent alerts); nothing was sent.</summary>
+    AlertsOff
 }

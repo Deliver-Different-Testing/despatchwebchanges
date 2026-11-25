@@ -12,4 +12,13 @@ public sealed class CourierData
     public int? CourierId { get; set; }
     public string CourierName { get; set; }
     public string CourierMobile { get; set; }
+
+    /// <summary>Dollars behind the minimum hourly guarantee for the pay period so far; null when on target, not eligible or the caller lacks dw-driver-earnings-status.</summary>
+    public decimal? EarningsBehindBy { get; set; }
+
+    /// <summary>Tenant-local time today's minimum paid block ends; null unless the alert is on. The client decides when to warn.</summary>
+    public DateTime? MinimumEndsAt { get; set; }
+
+    /// <summary>Warning window in minutes (the tenant setting); null = alert off.</summary>
+    public int? MinimumAlertMinutes { get; set; }
 }

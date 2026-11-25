@@ -186,6 +186,7 @@ export const queryKeys = {
         courierDetails: (courierId: number) =>
             ['driverManagement', 'courierDetails', courierId] as const,
         fleetOptions: ['driverManagement', 'fleetOptions'] as const,
+        payPeriodOverview: ['driverManagement', 'payPeriodOverview'] as const,
         todayActive: (query: PaginatedRequest, filters: TodayActiveDriverFilter) =>
             ['driverManagement', 'todayActive', query, filters] as const,
         compliance: (query: PaginatedRequest, filters: ComplianceFilter) =>

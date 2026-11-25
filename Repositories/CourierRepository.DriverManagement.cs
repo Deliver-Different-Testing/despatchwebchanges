@@ -39,7 +39,7 @@ public partial class CourierRepository
                 },
                 VehicleInformation = new VehicleInformation
                 {
-                    Rego = c.VehiclePlateNnumber,
+                    Rego = c.UccrReg,
                     VehicleYear = c.UccrVehicleYear,
                     VehicleModel = c.UccrVehicleModel,
                     VehicleInsurance = c.UccrInsurance != null ? c.UccrInsurance.UcicName : "None"
@@ -109,17 +109,20 @@ public partial class CourierRepository
                     CourierId = c.UccrId, Code = c.Code, Name = c.UccrName + " " + c.UccrSurname,
                     FirstName = c.UccrName, TypeKey = CourierCompliance.DgEndorsement, Expiry = c.DglicenseExpiry
                 }),
-            CourierCompliance.Wof => couriers.Where(c => !string.IsNullOrWhiteSpace(c.VehiclePlateNnumber)).Select(c => new ComplianceItemRow
+            CourierCompliance.Wof => WithVehicle(couriers).Select(c => new ComplianceItemRow
             {
                 CourierId = c.UccrId, Code = c.Code, Name = c.UccrName + " " + c.UccrSurname, FirstName = c.UccrName,
                 TypeKey = CourierCompliance.Wof, Expiry = c.Wofexpiry
             }),
-            _ => couriers.Where(c => !string.IsNullOrWhiteSpace(c.VehiclePlateNnumber)).Select(c => new ComplianceItemRow
+            _ => WithVehicle(couriers).Select(c => new ComplianceItemRow
             {
                 CourierId = c.UccrId, Code = c.Code, Name = c.UccrName + " " + c.UccrSurname, FirstName = c.UccrName,
                 TypeKey = CourierCompliance.Registration, Expiry = c.RegistrationExpiry
             })
         };
+
+    private static IQueryable<TucCourier> WithVehicle(IQueryable<TucCourier> couriers) =>
+        couriers.Where(c => !string.IsNullOrWhiteSpace(c.UccrReg));
 
     private readonly record struct ComplianceQuery(
         IQueryable<ComplianceItemRow> Scope,
@@ -323,7 +326,7 @@ public partial class CourierRepository
                 EF.Functions.Like(c.Courier.UccrName, searchPattern) ||
                 EF.Functions.Like(c.Courier.Code, searchPattern) ||
                 EF.Functions.Like(c.Courier.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.Courier.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.Courier.UccrReg, searchPattern) ||
                 EF.Functions.Like(c.Courier.UccrMobile, searchPattern) ||
                 EF.Functions.Like(c.Courier.PersonalMobile, searchPattern) ||
                 EF.Functions.Like(c.Courier.UccrEmail, searchPattern) ||

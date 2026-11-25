@@ -399,4 +399,29 @@ public class DeliveryJourneyServiceStaticTests
 
         Assert.Equal("Test Field", result);
     }
+
+    [Theory]
+    [InlineData("ucjbTime", "1899-12-30 14:30:00", "en-NZ", "14:30")]
+    [InlineData("ucjbTime", "2026-11-11 15:30:45", "en-US", "15:30:45")]
+    [InlineData("ucjbDate", "2026-11-11 15:30:00", "en-US", "11/11/2026")]
+    [InlineData("ucjbDate", "2026-11-12 00:00:00", "en-NZ", "12/11/2026")]
+    public void FormatFieldValue_BookedDateAndTime_ShowOnlyTheirOwnPart(string field, string value, string culture,
+        string expected)
+    {
+        Assert.Equal(expected, DeliveryJourneyService.FormatFieldValue(field, value, new CultureInfo(culture)));
+    }
+
+    [Theory]
+    [InlineData("ucjbDate", "2026-11-11 00:00:00", "2026-11-11 15:30:00", true)]
+    [InlineData("ucjbDate", "2026-11-11 00:00:00", "2026-11-12 00:00:00", false)]
+    [InlineData("ucjbTime", "2026-11-11 15:30:00", "2026-11-12 15:30:00", true)]
+    [InlineData("ucjbTime", "1899-12-30 14:30:00", "2026-11-11 15:30:00", false)]
+    [InlineData("ucjbTime", "2026-11-11 14:30:00", "2026-11-11 14:30:45", false)]
+    [InlineData("ucjbTime", null, "2026-11-11 14:30:00", false)]
+    [InlineData("PickUpTime", "2026-11-11 14:30:00", "2026-11-12 14:30:00", false)]
+    public void IsUnchangedDateTimeRow_ComparesOnlyTheColumnsOwnPart(string field, string? oldValue, string newValue,
+        bool expected)
+    {
+        Assert.Equal(expected, DeliveryJourneyService.IsUnchangedDateTimeRow(field, oldValue!, newValue));
+    }
 }

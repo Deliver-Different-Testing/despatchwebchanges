@@ -16,7 +16,8 @@
     <PackageVersion Include="DeliverDifferent.AgentAccess" Version="2.4.0" />
     <PackageVersion Include="DeliverDifferent.AlertLabel.Data" Version="1.0.10" />
     <PackageVersion Include="DeliverDifferentReporting" Version="2.0.57" />
-    <PackageVersion Include="PdfSharp" Version="6.5.0" />
+    <!-- 6.2.4 is the last MIT release; 6.5+ is AGPL or a paid licence - don't upgrade without a commercial key. -->
+    <PackageVersion Include="PdfSharp" Version="[6.2.4]" />
     <PackageVersion Include="ExcelDataReader" Version="$(ExcelDataReaderVersion)" />
     <PackageVersion Include="ExcelDataReader.DataSet" Version="$(ExcelDataReaderVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.14" />

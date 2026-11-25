@@ -6,7 +6,7 @@
  */
 
 import {apiClient} from './client';
-import dayjs from 'dayjs';
+import dayjs, {type Dayjs} from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -16,6 +16,8 @@ import {
 } from '../components/dialogs/flight-agent-confirmation-dialog/types';
 import {parseDateFromApi} from '../utils/dateUtils';
 import type {Agent} from '../types/agent';
+import type {ApiError} from '../types';
+import type {ForwardAirJob} from '../types/forwardAir';
 import {
     AddAgentRecoveryRequest,
     AirlineSuggestion, AirportSuggestion, AssignFlightToJobRequest,
@@ -98,9 +100,10 @@ export class NationwideApiService {
             return {
                 flights,
                 message: response.message,
-                lastDepartureTime: flights.length > 0
-                    ? flights[flights.length - 1].departureTime
-                    : undefined,
+                lastDepartureTime: flights.reduce<Dayjs | undefined>(
+                    (latest, f) => (!latest || f.departureTime.isAfter(latest) ? f.departureTime : latest),
+                    undefined,
+                ),
             };
         } catch (error) {
             console.error('Error fetching scheduled flight options:', error);
@@ -246,6 +249,18 @@ export class NationwideApiService {
      */
     async sendAgentQuote(jobId: number, agentId: number): Promise<void> {
         await apiClient.post<void>('nationwideJob/SendAgentQuote', {jobId, agentId});
+    }
+
+    /**
+     * Forward Air booking for a linehaul leg, or null when nothing is booked yet.
+     */
+    async getForwardAirJob(legId: number): Promise<ForwardAirJob | null> {
+        try {
+            return await apiClient.get<ForwardAirJob>(`api/nationwide/${legId}/forwardair`);
+        } catch (error) {
+            if ((error as ApiError).status === 404) return null;
+            throw error;
+        }
     }
 
     /**

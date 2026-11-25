@@ -1,6 +1,7 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
-import {renderWithMantine} from '../../../test/utils';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {createTestQueryClient, renderWithMantine} from '../../../test/utils';
 import {DriversPanel} from './DriversPanel';
 import {MapControls} from './MapControls';
 import {MapZoomViewControls} from '../../../components/common/dispatch-map/MapZoomViewControls';
@@ -57,7 +58,7 @@ describe('Courier map liquid glass', () => {
     });
 
     it('frosts the drivers card and map controls, but not the driver list', () => {
-        renderWithMantine(<><DriversPanel {...panelProps}/><MapControls {...controlsProps}/></>);
+        renderWithMantine(<QueryClientProvider client={createTestQueryClient()}><DriversPanel {...panelProps}/><MapControls {...controlsProps}/></QueryClientProvider>);
 
         expect(screen.getByRole('button', {name: 'Toggle drivers panel'}).parentElement).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');
         expect(screen.getByRole('button', {name: 'Refresh data'}).closest('.mantine-Paper-root')).toHaveClass('dfrnt-glass', 'dfrnt-glass-panel');

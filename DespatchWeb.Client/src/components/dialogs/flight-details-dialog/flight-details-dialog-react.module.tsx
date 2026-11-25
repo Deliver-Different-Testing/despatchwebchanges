@@ -19,6 +19,7 @@ import {createDialogHost} from '../../../utils/reactDialogHost';
 function convertFlightViewModelToFlightData(viewModel: IFlightViewModel): FlightData {
     return {
         airline: viewModel.airline,
+        airlineCode: viewModel.airlineCode,
         flightNumber: viewModel.flightNumber,
         departureTime: viewModel.departureTime,
         arrivalTime: viewModel.arrivalTime,

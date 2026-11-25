@@ -256,7 +256,7 @@ public partial class DespatchContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.AddInterceptors(BranchJobContextInterceptor.Instance);
+        optionsBuilder.AddInterceptors(BranchJobContextInterceptor.Instance, SlowSqlCommandInterceptor.Instance);
 
 #if DEBUG
         if (Debugger.IsAttached)

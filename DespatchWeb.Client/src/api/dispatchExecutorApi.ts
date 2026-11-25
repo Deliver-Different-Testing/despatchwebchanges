@@ -99,12 +99,24 @@ export async function canAssignAgentToJob(agentJobId: number, options?: RequestO
 }
 
 /** Whether assigning an agent will email them the inbound-agent job link. */
-export type AgentInboundEmailStatus = 'Queued' | 'NoAgentEmail' | 'NoInboundUrl' | 'Failed';
+export type AgentInboundEmailStatus =
+    | 'Queued'
+    | 'NoAgentEmail'
+    | 'NoInboundUrl'
+    | 'Failed'
+    /** This agent already has this alert for this job; nothing is sent unless the dispatcher asks to send it again. */
+    | 'AlreadySent'
+    /** The tenant switched agent alerts off in Settings. */
+    | 'AlertsOff';
+
+/** Which alert the leg gets: what the agent physically does on it. */
+export type AgentAlertType = 'Pickup' | 'Delivery' | 'DoorToDoor';
 
 export interface AgentInboundEmailResult {
     status: AgentInboundEmailStatus;
     agentEmail: string | null;
     willEmail: boolean;
+    alertType?: AgentAlertType | null;
     /** Hardcoded default subject template (returned by the preview endpoint only). */
     defaultSubject?: string;
     /** Hardcoded default body template (returned by the preview endpoint only). */
@@ -124,10 +136,11 @@ export async function assignAgentToJob(
     includeStopJobs = false,
     emailSubject?: string,
     emailBody?: string,
+    resend = false,
 ): Promise<AgentInboundEmailResult> {
     return apiClient.post<AgentInboundEmailResult>(
         'nationwideJob/AssignAgentToJob',
-        {jobId, agentId, includeStopJobs, emailSubject, emailBody},
+        {jobId, agentId, includeStopJobs, emailSubject, emailBody, resend},
     );
 }
 
@@ -164,10 +177,11 @@ export async function assignAgentToJobs(
     includeStopJobs = false,
     emailSubject?: string,
     emailBody?: string,
+    resend = false,
 ): Promise<BulkAssignmentResponse> {
     return apiClient.post<BulkAssignmentResponse>(
         'nationwideJob/AssignAgentToJobs',
-        {jobIds, agentId, includeStopJobs, emailSubject, emailBody},
+        {jobIds, agentId, includeStopJobs, emailSubject, emailBody, resend},
     );
 }
 

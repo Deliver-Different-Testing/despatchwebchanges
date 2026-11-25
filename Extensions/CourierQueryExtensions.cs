@@ -14,7 +14,7 @@ public static class CourierQueryExtensions
                 EF.Functions.Like(c.UccrSurname, searchPattern) ||
                 EF.Functions.Like(c.UccrMobile, searchPattern) ||
                 EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
+                EF.Functions.Like(c.UccrReg, searchPattern) ||
                 EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
                 EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern));
     }

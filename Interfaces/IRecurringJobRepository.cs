@@ -10,6 +10,9 @@ public interface IRecurringJobRepository
     Task<JobGroupViewModel> GetRecurringJobByIdAsync(int jobId);
     Task<PaginatedResponse<PrebookListViewModel>> GetRecurringJobsListAsync(RecurringJobQueryRequest request);
     Task UpdateRecurringJobAsync(int jobId, JobProperty property, string value);
+
+    Task UpdatePackagesForBookingAsync(int bookingId, IReadOnlyList<ParcelDimensions> parcels,
+        bool? calculateDimsOncePerJob);
     Task SaveRecurringFlightAsync(int jobId, int fromAirportId, int toAirportId, string flightNumber);
     Task<IReadOnlyList<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobBookingId);
     Task SaveRecurringJobNote(TucNoteViewModel note);

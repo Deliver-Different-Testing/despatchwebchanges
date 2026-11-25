@@ -97,11 +97,11 @@ vi.mock('./components/JobFieldsSection', () => ({
 vi.mock('./components/ToggleProperties', () => ({
     ToggleProperties: () => <div data-testid="toggle-properties" />,
 }));
-let capturedPalletSectionProps: any = {};
-vi.mock('./components/PalletSection', () => ({
-    PalletSection: (props: any) => {
-        capturedPalletSectionProps = props;
-        return <div data-testid="pallet-section" data-pallet-count={props.pallets?.length ?? 0} />;
+let capturedItemLinesSectionProps: any = {};
+vi.mock('./components/ItemLinesSection', () => ({
+    ItemLinesSection: (props: any) => {
+        capturedItemLinesSectionProps = props;
+        return <div data-testid="item-lines-section" data-line-count={props.lines?.length ?? 0} />;
     },
 }));
 vi.mock('./components/TextInputDialog', () => ({
@@ -459,19 +459,19 @@ describe('JobDetails', () => {
             expect(screen.queryByTestId('agent-information')).not.toBeInTheDocument();
         });
 
-        it('renders PalletSection when palletInfo has entries', () => {
+        it('renders ItemLinesSection when palletInfo has entries', () => {
             const job = createMockJob({palletInfo: [{id: 1, quantity: 2} as any]});
             setupDefaultMocks({job});
             renderJobDetails();
 
-            expect(screen.getByTestId('pallet-section')).toBeInTheDocument();
+            expect(screen.getByTestId('item-lines-section')).toBeInTheDocument();
         });
 
-        it('does not render PalletSection when palletInfo is empty', () => {
+        it('does not render ItemLinesSection when palletInfo is empty', () => {
             setupDefaultMocks();
             renderJobDetails();
 
-            expect(screen.queryByTestId('pallet-section')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('item-lines-section')).not.toBeInTheDocument();
         });
 
         it('passes only the current job pallets when switching between jobs', async () => {
@@ -487,10 +487,10 @@ describe('JobDetails', () => {
             setupDefaultMocks({job: jobA, sortedRelatedJobs: [jobA]});
             const {rerender} = renderJobDetails({jobId: 100});
 
-            const sectionA = screen.getByTestId('pallet-section');
+            const sectionA = screen.getByTestId('item-lines-section');
             expect(sectionA).toBeInTheDocument();
-            expect(sectionA.getAttribute('data-pallet-count')).toBe('3');
-            expect(capturedPalletSectionProps.pallets).toHaveLength(3);
+            expect(sectionA.getAttribute('data-line-count')).toBe('3');
+            expect(capturedItemLinesSectionProps.lines).toHaveLength(3);
 
             // Switch to a different job with fewer pallets
             const jobB = createMockJob({
@@ -516,11 +516,11 @@ describe('JobDetails', () => {
                 </QueryClientProvider>,
             );
 
-            const sectionB = screen.getByTestId('pallet-section');
+            const sectionB = screen.getByTestId('item-lines-section');
             expect(sectionB).toBeInTheDocument();
-            expect(sectionB.getAttribute('data-pallet-count')).toBe('1');
-            expect(capturedPalletSectionProps.pallets).toHaveLength(1);
-            expect(capturedPalletSectionProps.pallets[0].notes).toBe('B1');
+            expect(sectionB.getAttribute('data-line-count')).toBe('1');
+            expect(capturedItemLinesSectionProps.lines).toHaveLength(1);
+            expect(capturedItemLinesSectionProps.lines[0].notes).toBe('B1');
         });
     });
 

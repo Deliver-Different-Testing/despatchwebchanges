@@ -1,4 +1,4 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using JetBrains.Annotations;
@@ -224,5 +224,49 @@ public class FlightAssignmentServiceTests
         Assert.Equal(0, result.Assigned);
         Assert.Equal(0, result.Unmatched);
         await _repository.DidNotReceiveWithAnyArgs().GetSavedFlightCandidatesAsync(null);
+    }
+
+    [Fact]
+    public async Task AssignFlightAsync_ForwardAirSegment_SkipsCirium_AndPassesEmptySlot()
+    {
+        var request = new AssignFlightToJobRequest
+        {
+            JobId = 100,
+            FlightNumber = "T2T",
+            DepartureDate = DateTimeOffset.Parse("2026-07-08T08:00:00Z"),
+            FlightSegments = [Segment("FWD", "T2T")]
+        };
+
+        await CreateService().AssignFlightAsync(request, TestContext.Current.CancellationToken);
+
+        await _flightService.DidNotReceiveWithAnyArgs().CreateFlightRuleByDepartureAsync(null, default, null);
+        await _repository.Received(1).AddJobNationwideAsync(
+            request,
+            Arg.Is<IReadOnlyList<string>>(ids => ids!.Count == 1 && string.IsNullOrEmpty(ids[0])),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AssignFlightAsync_ForwardAirMixedWithAirline_KeepsPositionalSlots()
+    {
+        var request = new AssignFlightToJobRequest
+        {
+            JobId = 100,
+            FlightNumber = "NZ123",
+            DepartureDate = DateTimeOffset.Parse("2026-07-08T08:00:00Z"),
+            FlightSegments = [Segment("FWD", "T2T", order: 1), Segment("NZ", "456", order: 2)]
+        };
+        _flightService.CreateFlightRuleByDepartureAsync("NZ456", Arg.Any<DateTimeOffset>(), Arg.Any<string>())
+            .Returns("wh-2");
+
+        await CreateService().AssignFlightAsync(request, TestContext.Current.CancellationToken);
+
+        await _flightService.Received(1).CreateFlightRuleByDepartureAsync("NZ456", Arg.Any<DateTimeOffset>(), "AKL");
+        await _flightService.DidNotReceive().CreateFlightRuleByDepartureAsync(
+            Arg.Is<string>(s => s.StartsWith("FWD")), Arg.Any<DateTimeOffset>(), Arg.Any<string>());
+        await _repository.Received(1).AddJobNationwideAsync(
+            request,
+            Arg.Is<IReadOnlyList<string>>(ids => ids!.SequenceEqual(new[] { "", "wh-2" })),
+            Arg.Any<CancellationToken>());
     }
 }

@@ -1,7 +1,10 @@
-﻿using DespatchWeb.Controllers;
+using DespatchWeb.Constants;
+using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Filters;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using JetBrains.Annotations;
@@ -24,6 +27,7 @@ public class NationwideJobControllerTests
     private readonly IAddAgentRecoveryJobService _recoveryJobServiceMock = Substitute.For<IAddAgentRecoveryJobService>();
 
     private readonly IScopeProvider _scopeProviderMock = Substitute.For<IScopeProvider>();
+    private readonly IForwardAirApiClient _forwardAirMock = Substitute.For<IForwardAirApiClient>();
 
     private NationwideJobController CreateController() =>
         new(
@@ -35,7 +39,8 @@ public class NationwideJobControllerTests
             _flightRateServiceMock,
             _clientRepositoryMock,
             _recoveryJobServiceMock,
-            _scopeProviderMock);
+            _scopeProviderMock,
+            _forwardAirMock);
 
     /// <summary>ClientTypeId 3 — a network-partner-scoped session.</summary>
     private void GivenNetworkPartnerSession() =>
@@ -624,6 +629,437 @@ public class NationwideJobControllerTests
             }
         ]
     };
+
+    private const int ForwardAirCarrierId = 900;
+
+    private void GivenForwardAirCarrierActive() =>
+        _repositoryMock.GetActiveFlightCarrierIdByCodeAsync(ForwardAirCarrier.Code).Returns(ForwardAirCarrierId);
+
+    private void GivenRates(decimal amount = 100m) =>
+        _flightRateServiceMock.GetCarrierFlightRateByJobIdAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<DateTime>()).Returns(amount);
+
+    private void GivenFlights(params FlightViewModel[] flights) =>
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(), Arg.Any<DateTimeOffset?>(), Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<int?>(),
+                Arg.Any<string>(), Arg.Any<IReadOnlyList<string>>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<bool>())
+            .Returns(flights.ToList());
+
+    private static ForwardAirQuoteResponseDto QuoteWith(params ForwardAirQuoteServiceDto[] services) =>
+        new() {Success = true, Services = [.. services]};
+
+    private static ForwardAirQuoteServiceDto T2T(decimal total = 999m) => new()
+    {
+        ServiceCode = "T2T",
+        ServiceName = "Terminal to Terminal",
+        OriginAirport = "BNA",
+        DestinationAirport = "EWR",
+        ShipDate = new DateTime(2026, 12, 1, 10, 0, 0),
+        OriginTimeZone = "America/Chicago",
+        EstimatedArrival = new DateTime(2026, 12, 2, 9, 0, 0),
+        DestinationTimeZone = "America/New_York",
+        QuotedTotal = total
+    };
+
+    private async Task<FlightSearchResponse> SearchAsync(int? airlineId = null)
+    {
+        var result = await CreateController().GetScheduledFlightOptions(
+            DateTimeOffset.Now.AddDays(1), 16992, airlineId, 150, 96);
+        return Assert.IsType<FlightSearchResponse>(Assert.IsType<JsonResult>(result).Value);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_QuotesForwardAirForTheSearchedDateAndAirports()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates(100m);
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(QuoteWith(T2T()));
+        var departure = new DateTimeOffset(2026, 12, 3, 0, 0, 0, TimeSpan.FromHours(-5));
+
+        await CreateController().GetScheduledFlightOptions(departure, 16992, null, 150, 96);
+
+        await _forwardAirMock.Received(1).GetLegQuoteAsync(16992,
+            Arg.Is<ForwardAirLegQuoteRequestDto>(r =>
+                r.ShipDate == new DateOnly(2026, 12, 3) && r.OriginAirportId == 150 && r.DestinationAirportId == 96),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_NoFilter_AddsForwardAirRows_MappedLikeFlights()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates(100m);
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>()).Returns(QuoteWith(T2T()));
+
+        var response = await SearchAsync();
+
+        Assert.Equal(2, response.Flights.Count);
+        var fa = Assert.Single(response.Flights, f => f.AirlineCode == "FWD");
+        Assert.Equal("Forward Air", fa.Airline);
+        Assert.Equal("T2T", fa.FlightNumber);
+        Assert.Equal("Terminal to Terminal", fa.ServiceTypeDescription);
+        Assert.Equal("BNA", fa.DepartureAirport);
+        Assert.Equal("EWR", fa.ArrivalAirport);
+        Assert.Equal("America/Chicago", fa.DepartureTimeZone);
+        Assert.Equal("America/New_York", fa.ArrivalTimeZone);
+        Assert.Equal(new DateTimeOffset(2026, 12, 1, 10, 0, 0, TimeSpan.FromHours(-6)), fa.DepartureTime);
+        Assert.Equal(new DateTimeOffset(2026, 12, 2, 9, 0, 0, TimeSpan.FromHours(-5)), fa.ArrivalTime);
+        Assert.Equal(1320, fa.ElapsedTime);
+        Assert.Equal(0, fa.Stops);
+        var segment = Assert.Single(fa.FlightSegments);
+        Assert.Equal("FWD", segment.CarrierFsCode);
+        Assert.Equal("T2T", segment.FlightNumber);
+        Assert.Equal("BNA", segment.DepartureAirportFsCode);
+        Assert.Equal("EWR", segment.ArrivalAirportFsCode);
+        Assert.Equal("America/Chicago", segment.DepartureAirportTimeZone);
+        Assert.Equal("America/New_York", segment.ArrivalAirportTimeZone);
+        Assert.Equal("Forward Air", segment.AirlineName);
+        Assert.Equal(150, segment.DepartureAirportId);
+        Assert.Equal(96, segment.ArrivalAirportId);
+        Assert.Equal(fa.DepartureTime, segment.DepartureTime);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_ForwardAirAmount_ComesFromFlightRateService_NotQuote()
+    {
+        GivenForwardAirCarrierActive();
+        GivenFlights();
+        _flightRateServiceMock.GetCarrierFlightRateByJobIdAsync(16992, "FWD", true, Arg.Any<DateTime>()).Returns(42m);
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>()).Returns(QuoteWith(T2T(999m)));
+
+        var response = await SearchAsync();
+
+        Assert.Equal(42m, Assert.Single(response.Flights).Amount);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_FlightOrderDoesNotDependOnForwardAirAnswering()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        var later = new FlightViewModel
+        {
+            AirlineCode = "NZ", FlightNumber = "1", DepartureTime = DateTimeOffset.Now.AddHours(3),
+            ArrivalTime = DateTimeOffset.Now.AddHours(9), FlightSegments = []
+        };
+        var earlier = CreateTestFlight("QF", "2", "BNA", "EWR");
+        GivenFlights(later, earlier);
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(new ForwardAirQuoteResponseDto {Success = false, Error = "Forward Air did not respond in time."});
+
+        var response = await SearchAsync();
+
+        Assert.Equal(["2", "1"], response.Flights.Select(f => f.FlightNumber));
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_LeavesOutForwardAirServicesWithNoTimeZone_AndSaysSo()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        var noZone = T2T();
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(QuoteWith(new ForwardAirQuoteServiceDto
+            {
+                ServiceCode = noZone.ServiceCode, ServiceName = noZone.ServiceName, OriginAirport = "BNA",
+                DestinationAirport = "EWR", ShipDate = noZone.ShipDate, EstimatedArrival = noZone.EstimatedArrival,
+                OriginTimeZone = null, DestinationTimeZone = "America/New_York"
+            }));
+
+        var response = await SearchAsync();
+
+        Assert.DoesNotContain(response.Flights, f => f.AirlineCode == "FWD");
+        Assert.Contains("time zone", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_FlightSearchDown_StillOffersForwardAir()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(), Arg.Any<DateTimeOffset?>(), Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<int?>(),
+                Arg.Any<string>(), Arg.Any<IReadOnlyList<string>>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<bool>())
+            .ThrowsAsync(new HttpRequestException("cirium down"));
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(QuoteWith(T2T()));
+
+        var response = await SearchAsync();
+
+        Assert.Single(response.Flights, f => f.AirlineCode == "FWD");
+        Assert.Contains("Flight search service is currently unavailable", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_LeavesOutForwardAirServicesWithNoArrival_AndSaysSo()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        var t2t = T2T();
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(QuoteWith(new ForwardAirQuoteServiceDto
+            {
+                ServiceCode = t2t.ServiceCode, ServiceName = t2t.ServiceName, OriginAirport = "BNA",
+                DestinationAirport = "EWR", ShipDate = t2t.ShipDate, EstimatedArrival = null,
+                OriginTimeZone = t2t.OriginTimeZone, DestinationTimeZone = t2t.DestinationTimeZone
+            }));
+
+        var response = await SearchAsync();
+
+        Assert.DoesNotContain(response.Flights, f => f.AirlineCode == "FWD");
+        Assert.Contains("arrival", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_MergedRows_FollowExistingArrivalOrdering()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "1", "BNA", "EWR"), CreateTestFlight("QF", "2", "BNA", "EWR"));
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>()).Returns(QuoteWith(T2T()));
+
+        var response = await SearchAsync();
+
+        Assert.Equal(response.Flights.OrderBy(f => f.ArrivalTime).ToList(), response.Flights);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_QuoteSuccessFalse_KeepsFlights_AndReportsReason()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(new ForwardAirQuoteResponseDto {Success = false, Error = "Forward Air is not connected"});
+
+        var response = await SearchAsync();
+
+        Assert.Single(response.Flights);
+        Assert.Contains("Forward Air is not connected", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_QuoteThrows_KeepsFlights_AndReportsReason()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Throws(new HttpRequestException("boom"));
+
+        var response = await SearchAsync();
+
+        Assert.Single(response.Flights);
+        Assert.Contains("Forward Air", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_QuoteFails_AndNoFlights_KeepsNoFlightsMessage_AndAppendsReason()
+    {
+        GivenForwardAirCarrierActive();
+        GivenFlights();
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(new ForwardAirQuoteResponseDto {Success = false, Error = "Forward Air is not connected"});
+
+        var response = await SearchAsync();
+
+        Assert.Empty(response.Flights);
+        Assert.Contains("No flights found", response.Message);
+        Assert.Contains("Forward Air is not connected", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_NoFlights_ButForwardAirServices_ReturnsServicesWithoutNoFlightsMessage()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights();
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>()).Returns(QuoteWith(T2T()));
+
+        var response = await SearchAsync();
+
+        Assert.Single(response.Flights);
+        Assert.Null(response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_OtherAirlineFilter_DoesNotCallForwardAir()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+
+        var response = await SearchAsync(airlineId: 5);
+
+        Assert.Single(response.Flights);
+        await _forwardAirMock.DidNotReceiveWithAnyArgs().GetLegQuoteAsync(0, null);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_ForwardAirFilter_ReturnsOnlyForwardAirRows_WithoutSearchingFlights()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>()).Returns(QuoteWith(T2T()));
+
+        var response = await SearchAsync(airlineId: ForwardAirCarrierId);
+
+        Assert.All(response.Flights, f => Assert.Equal("FWD", f.AirlineCode));
+        Assert.Single(response.Flights);
+        await _flightServiceMock.DidNotReceiveWithAnyArgs().GetFlightsAsync(0);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_ForwardAirFilter_QuoteFails_ReturnsEmptyWithReason()
+    {
+        GivenForwardAirCarrierActive();
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(new ForwardAirQuoteResponseDto {Success = false, Error = "Forward Air did not respond in time"});
+
+        var response = await SearchAsync(airlineId: ForwardAirCarrierId);
+
+        Assert.Empty(response.Flights);
+        Assert.Contains("did not respond", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_TenantWithoutForwardAirCarrier_DoesNotCallForwardAir()
+    {
+        GivenRates();
+        GivenFlights(CreateTestFlight("NZ", "123", "AKL", "SYD"));
+
+        var response = await SearchAsync();
+
+        Assert.Single(response.Flights);
+        Assert.Null(response.Message);
+        await _forwardAirMock.DidNotReceiveWithAnyArgs().GetLegQuoteAsync(0, null);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_StartsQuoteBeforeFlightSearchCompletes()
+    {
+        GivenForwardAirCarrierActive();
+        GivenRates();
+        var quoteStarted = new TaskCompletionSource();
+        _forwardAirMock.GetLegQuoteAsync(16992, Arg.Any<ForwardAirLegQuoteRequestDto>(), Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            quoteStarted.SetResult();
+            return Task.FromResult(QuoteWith(T2T()));
+        });
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(), Arg.Any<DateTimeOffset?>(), Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<int?>(),
+                Arg.Any<string>(), Arg.Any<IReadOnlyList<string>>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<bool>())
+            .Returns(async _ =>
+            {
+                await quoteStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                return (IReadOnlyList<FlightViewModel>) [];
+            });
+
+        var response = await SearchAsync();
+
+        Assert.Single(response.Flights);
+    }
+
+    [Fact]
+    public async Task RestoreJob_SkipsCiriumDelete_ForEmptyOrNullWebhookIds()
+    {
+        _repositoryMock.GetFlightWebhookIdByJobIdAsync(10).Returns(new List<string> {"", null, "RULE-1"});
+
+        var result = await CreateController().RestoreJob(new RestoreJobRequest {JobId = 10});
+
+        Assert.IsType<OkResult>(result);
+        await _flightServiceMock.Received(1).DeleteFlightRuleById("RULE-1");
+        await _flightServiceMock.DidNotReceive().DeleteFlightRuleById("");
+        await _flightServiceMock.DidNotReceive().DeleteFlightRuleById(null);
+        await _repositoryMock.Received(1).RestoreNationwideJobAsync(10);
+    }
+
+    [Fact]
+    public async Task GetForwardAirJob_ReturnsClientJobView()
+    {
+        _forwardAirMock.GetJobAsync(77, Arg.Any<CancellationToken>())
+            .Returns(new ForwardAirJobDto {JobId = 77, AirbillNumber = "123"});
+
+        var result = await CreateController().GetForwardAirJob(77, TestContext.Current.CancellationToken);
+
+        var json = Assert.IsType<JsonResult>(result);
+        Assert.Equal("123", Assert.IsType<ForwardAirJobDto>(json.Value).AirbillNumber);
+    }
+
+    [Fact]
+    public async Task GetForwardAirJob_NoLink_ReturnsNotFound()
+    {
+        _forwardAirMock.GetJobAsync(77, Arg.Any<CancellationToken>()).Returns((ForwardAirJobDto) null);
+
+        Assert.IsType<NotFoundResult>(await CreateController().GetForwardAirJob(77, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task GetForwardAirJob_UpstreamFailure_Returns502()
+    {
+        _forwardAirMock.GetJobAsync(77, Arg.Any<CancellationToken>()).Throws(new HttpRequestException("boom"));
+
+        var result = await CreateController().GetForwardAirJob(77, TestContext.Current.CancellationToken);
+
+        Assert.Equal(502, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Theory]
+    [InlineData("LABEL")]
+    [InlineData("BOL")]
+    [InlineData("DELIVER")]
+    [InlineData("bol")]
+    public async Task GetForwardAirDocument_AllowedType_StreamsPdf(string type)
+    {
+        _forwardAirMock.GetDocumentAsync(77, type.ToUpperInvariant(), Arg.Any<CancellationToken>())
+            .Returns(new ForwardAirDocument(new MemoryStream([1, 2]), "application/pdf", "bol.pdf"));
+
+        var result = await CreateController().GetForwardAirDocument(77, type, TestContext.Current.CancellationToken);
+
+        var file = Assert.IsType<FileStreamResult>(result);
+        Assert.Equal("application/pdf", file.ContentType);
+    }
+
+    [Theory]
+    [InlineData("POD")]
+    [InlineData("../x")]
+    [InlineData("")]
+    public async Task GetForwardAirDocument_OtherType_ReturnsBadRequest(string type)
+    {
+        var result = await CreateController().GetForwardAirDocument(77, type, TestContext.Current.CancellationToken);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _forwardAirMock.DidNotReceiveWithAnyArgs().GetDocumentAsync(0, null);
+    }
+
+    [Fact]
+    public async Task GetForwardAirDocument_Missing_ReturnsNotFound()
+    {
+        _forwardAirMock.GetDocumentAsync(77, "BOL", Arg.Any<CancellationToken>()).Returns((ForwardAirDocument) null);
+
+        Assert.IsType<NotFoundResult>(
+            await CreateController().GetForwardAirDocument(77, "BOL", TestContext.Current.CancellationToken));
+    }
+
+    [Theory]
+    [InlineData(nameof(NationwideJobController.GetForwardAirJob))]
+    [InlineData(nameof(NationwideJobController.GetForwardAirDocument))]
+    public void ForwardAirEndpoints_RequireJobScopeOnLegId(string name)
+    {
+        var method = typeof(NationwideJobController).GetMethod(name)!;
+
+        var scope = Assert.Single(method.GetCustomAttributes(typeof(RequireScopeAttribute), true)
+            .Cast<RequireScopeAttribute>());
+
+        Assert.Equal(ScopedRecord.Job, scope.Record);
+        Assert.Equal(["legId"], scope.IdPaths);
+    }
 
     private static FlightViewModel CreateTestFlight(string airlineCode, string flightNumber, string departure, string arrival) =>
         new()

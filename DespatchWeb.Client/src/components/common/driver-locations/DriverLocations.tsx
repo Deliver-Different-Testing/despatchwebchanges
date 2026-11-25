@@ -22,6 +22,9 @@ import type {
     TruckMode,
 } from './DriverLocations.types';
 import { shouldShowCourier } from './DriverLocations.types';
+import { formatMinimumEnd, isBehind, minutesUntilMinimumEnds, useTenantNowMs } from './driverTopUp';
+import type { DriverAlertFilter } from './driverTopUp';
+import { formatCurrency } from '../../../utils/currencyUtils';
 
 // Domain-specific board section colors imported from design tokens
 const C = driverLocationColors;
@@ -65,33 +68,49 @@ const DriverRow = React.memo(function DriverRow({
     section,
     variant,
     onCourierClick,
+    nowMs,
 }: {
     section: IClearListSection;
     variant: 'top' | 'middle' | 'bottom';
     onCourierClick?: (courier: ICourierData) => void;
+    nowMs: number;
 }) {
     const [isHovered, setIsHovered] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    // Minimum hourly top-up: red marker while behind for the pay period, orange while the daily minimum is about to
+    // end. Only the behind amount and the end time reach the client, never a rate.
+    const behind = isBehind(section.courierData);
+    const minutesLeft = minutesUntilMinimumEnds(section.courierData, nowMs);
+    const hasTopUpInfo = behind || minutesLeft !== null;
     const isActive = (section as IClearListSection & { isActive?: boolean }).isActive || false;
 
     const handleMouseEnter = useCallback(() => setIsHovered(true), []);
     const handleMouseLeave = useCallback(() => setIsHovered(false), []);
     const handleClick = useCallback(() => {
+        if (hasTopUpInfo) {
+            setIsExpanded(prev => !prev);
+        }
         if (onCourierClick && section.courierData) {
             onCourierClick(section.courierData);
         }
-    }, [onCourierClick, section.courierData]);
+    }, [onCourierClick, section.courierData, hasTopUpInfo]);
 
     return (
+        <>
         <Box
             component="tr"
             onClick={handleClick}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             data-courier={section.courierNumber}
+            data-behind={behind || undefined}
+            data-minimum-ending={minutesLeft !== null || undefined}
+            title={minutesLeft !== null ? `Minimum shift ends at ${formatMinimumEnd(section.courierData!.minimumEndsAt!)}` : behind ? 'Behind on earnings this pay period' : undefined}
             style={{
                 display: 'flex',
                 alignItems: 'center',
-                backgroundColor: getRowBackgroundColor(variant, isActive, isHovered),
+                backgroundColor: minutesLeft !== null ? (isHovered ? '#ffb347' : '#ffc870') : getRowBackgroundColor(variant, isActive, isHovered),
+                boxShadow: behind ? 'inset 5px 0 0 #e03131' : undefined,
                 color: C.text,
                 borderBottom: '1px solid',
                 borderColor: variant === 'top' ? C.top.border :
@@ -133,13 +152,38 @@ const DriverRow = React.memo(function DriverRow({
                         </Box>
                     ))}
                 </Box>
+                {minutesLeft !== null && (
+                    <Box component="span" style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0 6px', whiteSpace: 'nowrap' }}>
+                        Min ends {formatMinimumEnd(section.courierData!.minimumEndsAt!)}
+                    </Box>
+                )}
                 {section.courierData?.courierId && (
                     <ClearListDebugButton courierId={section.courierData.courierId} />
                 )}
             </Box>
         </Box>
+        {isExpanded && hasTopUpInfo && (
+            <Box
+                component="tr"
+                style={{ display: 'flex', backgroundColor: C.destination.bg, color: C.text, fontSize: '0.75rem' }}
+            >
+                <Box component="td" style={{ padding: '4px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {behind && <span>Behind {formatCurrency(section.courierData!.earningsBehindBy!)} this pay period</span>}
+                    {minutesLeft !== null && (
+                        <span>Minimum shift ends in {minutesLeft} min ({formatMinimumEnd(section.courierData!.minimumEndsAt!)})</span>
+                    )}
+                </Box>
+            </Box>
+        )}
+        </>
     );
 });
+
+function matchesAlertFilter(section: IClearListSection, filter: DriverAlertFilter, nowMs: number): boolean {
+    if (filter === 'behind') return isBehind(section.courierData);
+    if (filter === 'minimum') return minutesUntilMinimumEnds(section.courierData, nowMs) !== null;
+    return true;
+}
 
 /**
  * Area Section Component - renders a single area with its driver sections
@@ -149,11 +193,15 @@ const AreaSection = React.memo(function AreaSection({
     truckMode,
     onAreaClick,
     onCourierClick,
+    nowMs,
+    alertFilter,
 }: {
     area: IAreaClearList;
     truckMode: TruckMode;
     onAreaClick?: (area: IAreaClearList) => void;
     onCourierClick?: (courier: ICourierData) => void;
+    nowMs: number;
+    alertFilter: DriverAlertFilter;
 }) {
     const [isTitleHovered, setIsTitleHovered] = useState(false);
     const isActive = area.isActive || false;
@@ -165,16 +213,16 @@ const AreaSection = React.memo(function AreaSection({
     }, [onAreaClick, area]);
 
     const filteredTop = useMemo(
-        () => (area.top || []).filter(s => shouldShowCourier(s.courierNumber, truckMode)),
-        [area.top, truckMode]
+        () => (area.top || []).filter(s => shouldShowCourier(s.courierNumber, truckMode) && matchesAlertFilter(s, alertFilter, nowMs)),
+        [area.top, truckMode, alertFilter, nowMs]
     );
     const filteredMiddle = useMemo(
-        () => (area.middle || []).filter(s => shouldShowCourier(s.courierNumber, truckMode)),
-        [area.middle, truckMode]
+        () => (area.middle || []).filter(s => shouldShowCourier(s.courierNumber, truckMode) && matchesAlertFilter(s, alertFilter, nowMs)),
+        [area.middle, truckMode, alertFilter, nowMs]
     );
     const filteredBottom = useMemo(
-        () => (area.bottom || []).filter(s => shouldShowCourier(s.courierNumber, truckMode)),
-        [area.bottom, truckMode]
+        () => (area.bottom || []).filter(s => shouldShowCourier(s.courierNumber, truckMode) && matchesAlertFilter(s, alertFilter, nowMs)),
+        [area.bottom, truckMode, alertFilter, nowMs]
     );
 
     // Calculate title background color
@@ -240,6 +288,7 @@ const AreaSection = React.memo(function AreaSection({
                                 section={section}
                                 variant="top"
                                 onCourierClick={onCourierClick}
+                                nowMs={nowMs}
                             />
                         ))}
                         {filteredMiddle.map((section) => (
@@ -248,6 +297,7 @@ const AreaSection = React.memo(function AreaSection({
                                 section={section}
                                 variant="middle"
                                 onCourierClick={onCourierClick}
+                                nowMs={nowMs}
                             />
                         ))}
                         {filteredBottom.map((section) => (
@@ -256,6 +306,7 @@ const AreaSection = React.memo(function AreaSection({
                                 section={section}
                                 variant="bottom"
                                 onCourierClick={onCourierClick}
+                                nowMs={nowMs}
                             />
                         ))}
                     </tbody>
@@ -279,7 +330,9 @@ export const DriverLocations = React.memo(function DriverLocations({
     onAreaClick,
     onCourierClick,
     onClearFilter,
+    alertFilter = null,
 }: DriverLocationsProps) {
+    const nowMs = useTenantNowMs();
     const handleClearFilter = useCallback(() => {
         onClearFilter?.();
     }, [onClearFilter]);
@@ -366,6 +419,8 @@ export const DriverLocations = React.memo(function DriverLocations({
                                         truckMode={truckMode}
                                         onAreaClick={onAreaClick}
                                         onCourierClick={onCourierClick}
+                                        nowMs={nowMs}
+                                        alertFilter={alertFilter}
                                     />
                                 ))}
                             </Box>

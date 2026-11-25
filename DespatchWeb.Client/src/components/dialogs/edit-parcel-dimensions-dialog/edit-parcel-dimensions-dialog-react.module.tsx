@@ -22,8 +22,7 @@ const host = createDialogHost<EditParcelDimensionsDialogOptions, EditParcelDimen
         <EditParcelDimensionsDialog
             open={open}
             parcels={payload.parcels}
-            jobId={payload.jobId}
-            bulkJobId={payload.bulkJobId}
+            target={payload.target}
             jobNumber={payload.jobNumber}
             isUsCustomer={payload.isUsCustomer}
             jobWeight={payload.jobWeight}

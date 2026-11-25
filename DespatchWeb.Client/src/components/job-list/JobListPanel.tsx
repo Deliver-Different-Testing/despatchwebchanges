@@ -21,6 +21,8 @@ import {JobListTable} from './JobListTable';
 import {flattenLineFormat, formatAddressWithFields, getDeliveryAddressUs, getPickupAddressUs} from './jobAddressFormat';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
+import {JobSearchMatchBar} from './JobSearchMatchBar';
+import {matchModeLabel, searchNoticeEmptyState} from './jobSearchNotice';
 import type {AddressViewModel} from '../../types/address';
 import {
     addRestoreEvent,
@@ -245,6 +247,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               headerSlot,
                                                               topSlot,
                                                               setUpdateSearchParamsCallback,
+                                                              onWidenDates,
                                                           }) => {
     const getStorageKey = useCallback(
         (suffix: string): string => jobListStorageKey(storagePrefix, suffix),
@@ -744,7 +747,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     }, [multiSelect.selectCount, openBulkDispatch]);
 
     const handleBulkDispatchCourier = useCallback(async (
-        {type, destination, emailSubject, emailBody}: DispatchConfirmation,
+        {type, destination, emailSubject, emailBody, resend}: DispatchConfirmation,
     ) => {
         const ids = selectedLiveJobIds();
         if (ids.length === 0) {
@@ -758,7 +761,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 // Server-side batches so one job failing its flight gate reports rather
                 // than aborting the rest — and so the agent email fires once per job.
                 const result = type === 'Agent'
-                    ? await assignAgentToJobs(ids, destination.id, false, emailSubject, emailBody)
+                    ? await assignAgentToJobs(ids, destination.id, false, emailSubject, emailBody, resend ?? false)
                     : await assignNpAgentToJobs(ids, destination.id);
 
                 const noun = type === 'Agent' ? 'agent' : 'network partner';
@@ -825,6 +828,23 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             onAction: () => handleCategoryChange('all'),
         };
     }, [selectedCategory, debouncedSearchQuery, visibleJobs.length, stats.total, hookData.isLoading, handleCategoryChange]);
+
+    // A job search explains an empty grid (too broad, or matches only outside the dates) ahead of
+    // the category-filter explanation, and names how a job-number term matched.
+    // The notice carries the term it was searched with, so while a new search runs over held-over
+    // results the label still describes the rows on screen.
+    const searchNotice = hookData.searchNotice;
+    const noticeEmptyState = useMemo(
+        () => visibleJobs.length === 0 && !hookData.isFetching
+            ? searchNoticeEmptyState(searchNotice, onWidenDates)
+            : undefined,
+        [visibleJobs.length, hookData.isFetching, searchNotice, onWidenDates],
+    );
+    const matchLabel = visibleJobs.length > 0 ? matchModeLabel(searchNotice) : null;
+    const handleSearchAnywhere = useCallback(
+        () => hookDataRef.current.updateParams({job: searchNotice?.jobTerm ?? undefined, forceContains: true, page: 0}),
+        [searchNotice?.jobTerm],
+    );
 
     // ── Render ───────────────────────────────────────────────────────
 
@@ -901,6 +921,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                     onDone={handleDoneEditingColumns}
                 />
             )}
+            {matchLabel && <JobSearchMatchBar label={matchLabel} onSearchAnywhere={handleSearchAnywhere}/>}
             <JobListTable
                 jobs={visibleJobs}
                 selectedJobId={selectedJobId}
@@ -923,7 +944,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onLoadMore={hookData.fetchNextPage}
                 hasMore={hookData.hasMore}
                 isFetchingMore={hookData.isFetchingNextPage}
-                emptyState={filterEmptyState}
+                emptyState={noticeEmptyState ?? filterEmptyState}
             />
             <JobListFooter
                 displayedCount={visibleJobs.length}
@@ -931,6 +952,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 lastUpdated={lastUpdated}
                 isLoadingMore={hookData.isFetchingNextPage}
                 allJobsLoaded={!hookData.hasMore && totalCount > 0}
+                totalIsCapped={!!searchNotice?.totalIsCapped}
             />
             <JobListContextMenu
                 job={contextMenuJob}
