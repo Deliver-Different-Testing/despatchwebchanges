@@ -5,8 +5,10 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Serilog;
 
 namespace DespatchWeb.Repositories;
 
@@ -52,14 +54,21 @@ public class MessageRepository(
             Context.TucManualMessages, staffId, clock.TenantNow.AddDays(-RecentMessageDays));
 
         var stats = await ConversationStats(partnerMessages);
-        var watermarks = await Context.StaffConversationArchives
-            .Where(a => a.StaffId == staffId)
+        // Only partners inside the 90-day window can be listed, so archive rows for older conversations are never read.
+        var (statCourierIds, statStaffIds) = SplitByType(stats.Keys
+            .Select(k => new ConversationKey(k.OtherPartyId,
+                k.IsCourier ? OtherMessagePartyType.Courier : OtherMessagePartyType.Staff))
+            .ToList());
+        var watermarks = await ArchiveRowsFor(staffId, statCourierIds, statStaffIds)
             .ToDictionaryAsync(a => (a.OtherPartyId, IsCourier: a.OtherPartyType == (byte)OtherMessagePartyType.Courier),
                 a => a.ArchivedThroughMessageId);
 
+        // Stats and the latest-message query run separately, so a conversation whose first message lands between
+        // them has no stats row.
         bool IsArchived(int otherPartyId, bool isCourier) =>
             watermarks.TryGetValue((otherPartyId, isCourier), out var through)
-            && stats[(otherPartyId, isCourier)].MaxMessageId <= through;
+            && stats.TryGetValue((otherPartyId, isCourier), out var stat)
+            && stat.MaxMessageId <= through;
 
         var latest = (await LatestMessagePerPartner(partnerMessages).ToListAsync())
             .Where(m => IsArchived(m.OtherPartyId, m.IsCourier) == archived)
@@ -91,7 +100,7 @@ public class MessageRepository(
                     OtherPartyInitials = otherParty.Initials,
                     // The list has always shown staff as offline; only couriers carry a live status.
                     OtherPartyStatus = m.IsCourier ? otherParty.Status : "offline",
-                    UnreadCount = stats[(m.OtherPartyId, m.IsCourier)].UnreadCount,
+                    UnreadCount = stats.GetValueOrDefault((m.OtherPartyId, m.IsCourier))?.UnreadCount ?? 0,
                     LastMessage = m.UcmmMessage,
                     LastMessageTime = m.UcmmDate
                 };
@@ -103,9 +112,9 @@ public class MessageRepository(
     /// <summary>
     /// Hides read conversations from the current staff member's list until a newer message arrives. The watermark
     /// is the conversation's newest message id read here, never a client value, and conversations with unread
-    /// incoming messages are skipped. Returns how many were archived.
+    /// incoming messages are skipped. Returns the conversations that were archived.
     /// </summary>
-    public async Task<int> ArchiveConversationsAsync(IReadOnlyCollection<ConversationKey> conversations)
+    public async Task<IReadOnlyList<ConversationKey>> ArchiveConversationsAsync(IReadOnlyCollection<ConversationKey> conversations)
     {
         var staffId = infoService.GetStaffId();
         var (courierIds, staffIds) = SplitByType(conversations);
@@ -126,22 +135,32 @@ public class MessageRepository(
             })
             .ToList();
 
-        if (rows.Count == 0)
+        var archived = rows
+            .Select(r => new ConversationKey(r.OtherPartyId, (OtherMessagePartyType)r.OtherPartyType))
+            .ToList();
+        if (archived.Count == 0)
         {
-            return 0;
+            return archived;
         }
 
-        var (archivedCourierIds, archivedStaffIds) = SplitByType(rows
-            .Select(r => new ConversationKey(r.OtherPartyId, (OtherMessagePartyType)r.OtherPartyType))
-            .ToList());
+        var (archivedCourierIds, archivedStaffIds) = SplitByType(archived);
 
-        await using var transaction = await Context.Database.BeginTransactionAsync();
-        await ArchiveRowsFor(staffId, archivedCourierIds, archivedStaffIds).ExecuteDeleteAsync();
-        Context.StaffConversationArchives.AddRange(rows);
         try
         {
-            await Context.SaveChangesAsync();
-            await transaction.CommitAsync();
+            // The retrying execution strategy rejects user-initiated transactions unless they run inside it.
+            await Context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            {
+                await using var transaction = await Context.Database.BeginTransactionAsync();
+                await ArchiveRowsFor(staffId, archivedCourierIds, archivedStaffIds).ExecuteDeleteAsync();
+                Context.StaffConversationArchives.AddRange(rows);
+                await Context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            });
+        }
+        catch (DbUpdateException e) when (e.InnerException is SqlException { Number: 2627 or 2601 })
+        {
+            // An overlapping archive of the same conversation inserted first; the conversation is archived either way.
+            Log.Information(e, "Concurrent archive by staff {StaffId} already archived these conversations", staffId);
         }
         finally
         {
@@ -149,7 +168,7 @@ public class MessageRepository(
             rows.ForEach(r => Context.Entry(r).State = EntityState.Detached);
         }
 
-        return rows.Count;
+        return archived;
     }
 
     public async Task UnarchiveConversationsAsync(IReadOnlyCollection<ConversationKey> conversations)

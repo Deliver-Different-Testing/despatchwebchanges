@@ -106,6 +106,8 @@ export function useArchivedConversations(enabled: boolean) {
         queryKey: archivedConversationsQueryKey,
         queryFn: ({signal}) => messagingApi.getArchivedList({signal, timeout: CONVERSATIONS_TIMEOUT_MS}),
         enabled,
+        // Polled like the main list so a conversation that gets a new message leaves this view.
+        refetchInterval: enabled ? CONVERSATIONS_REFRESH_MS : false,
         staleTime: 0,
         retry: false,
     });

@@ -110,14 +110,15 @@ public class MessagesControllerTests
     };
 
     [Fact]
-    public async Task ArchiveConversations_ReturnsHowManyWereArchived()
+    public async Task ArchiveConversations_ReturnsTheConversationsThatWereArchived()
     {
         var request = ArchiveRequest(3);
-        _messageRepositoryMock.ArchiveConversationsAsync(request.Conversations).Returns(2);
+        IReadOnlyList<ConversationKey> archived = [request.Conversations[0], request.Conversations[2]];
+        _messageRepositoryMock.ArchiveConversationsAsync(request.Conversations).Returns(archived);
 
         var result = await CreateController().ArchiveConversations(request);
 
-        Assert.Equal(2, Assert.IsType<JsonResult>(result).Value);
+        Assert.Same(archived, Assert.IsType<JsonResult>(result).Value);
     }
 
     [Theory]

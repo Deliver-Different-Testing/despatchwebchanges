@@ -168,7 +168,7 @@ public sealed class MessageRepositoryRecentListTests : IAsyncDisposable
 
         var archived = await repository.ArchiveConversationsAsync([CourierConversation, StaffConversation]);
 
-        Assert.Equal(2, archived);
+        Assert.Equal([StaffConversation, CourierConversation], archived.OrderBy(k => k.OtherPartyType == OtherMessagePartyType.Courier));
         Assert.Equal([SecondCourierId], (await repository.GetRecentListAsync()).Select(c => c.OtherPartyId));
         Assert.Equal([OtherStaffId, CourierId], (await repository.GetRecentListAsync(archived: true)).Select(c => c.OtherPartyId));
     }
@@ -201,7 +201,7 @@ public sealed class MessageRepositoryRecentListTests : IAsyncDisposable
 
         var archived = await repository.ArchiveConversationsAsync([CourierConversation, StaffConversation]);
 
-        Assert.Equal(1, archived);
+        Assert.Equal([StaffConversation], archived);
         Assert.Equal([CourierId], (await repository.GetRecentListAsync()).Select(c => c.OtherPartyId));
     }
 
@@ -214,7 +214,7 @@ public sealed class MessageRepositoryRecentListTests : IAsyncDisposable
         await repository.ArchiveConversationsAsync([CourierConversation]);
         var second = await repository.ArchiveConversationsAsync([CourierConversation, CourierConversation]);
 
-        Assert.Equal(1, second);
+        Assert.Equal([CourierConversation], second);
         await using var context = _db.CreateContext();
         var row = Assert.Single(context.StaffConversationArchives);
         Assert.Equal((StaffId, (byte)OtherMessagePartyType.Courier, CourierId),

@@ -463,16 +463,16 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
 
     const handleArchive = useCallback(async (keys: ConversationKey[]) => {
         try {
-            const archivedCount = await archive(keys);
-            const skipped = keys.length - archivedCount;
-            if (archivedCount === 0) {
+            const archivedKeys = await archive(keys);
+            const skipped = keys.length - archivedKeys.length;
+            if (archivedKeys.length === 0) {
                 showToast('Nothing archived: those conversations have new messages.', 'warning');
                 return;
             }
-            const undo = {label: 'Undo', onClick: () => void handleUnarchive(keys, true)};
+            const undo = {label: 'Undo', onClick: () => void handleUnarchive(archivedKeys, true)};
             showToast(skipped === 0
-                ? `Archived ${conversationCount(archivedCount)}`
-                : `Archived ${archivedCount} of ${keys.length}: ${skipped} ${skipped === 1 ? 'has' : 'have'} new messages`,
+                ? `Archived ${conversationCount(archivedKeys.length)}`
+                : `Archived ${archivedKeys.length} of ${keys.length}: ${skipped} ${skipped === 1 ? 'has' : 'have'} new messages`,
             'success', undo);
         } catch (err) {
             showToast(errorMessageOf(err, "Couldn't archive conversations"), 'error');
@@ -534,7 +534,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                     onClose={onClose}
                 />
                 <Box component="section" style={{display: 'flex', flex: 1, overflow: 'hidden'}}>
-                    {conversationsError ? (
+                    {conversationsError && !showArchived ? (
                         <ErrorState
                             message={conversationsError}
                             onRetry={() => void refreshConversations()}
@@ -1031,12 +1031,19 @@ function ConversationsPanel({
                     icon={<Icon lucide={MessageSquare} size={EMPTY_GLYPH_SIZE}/>}
                     message="No conversations yet"
                     action={
-                        <Button
-                            leftSection={<Icon lucide={MessageCirclePlus} size={16}/>}
-                            onClick={onNewChat}
-                        >
-                            Start conversation
-                        </Button>
+                        // The filter row (and its Archived chip) is hidden while the list is empty, so this keeps
+                        // archived conversations reachable once everything has been archived.
+                        <Group gap={8} justify="center">
+                            <Button
+                                leftSection={<Icon lucide={MessageCirclePlus} size={16}/>}
+                                onClick={onNewChat}
+                            >
+                                Start conversation
+                            </Button>
+                            <Button variant="subtle" onClick={() => onShowArchivedChange(true)}>
+                                View archived
+                            </Button>
+                        </Group>
                     }
                 />
             )}

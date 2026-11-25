@@ -86,7 +86,7 @@ function setupApiDefaults(conversations: RecentConversation[] = []) {
     mockApi.sendMultiMessage.mockResolvedValue(undefined);
     mockApi.getMessageContactOptions.mockResolvedValue([]);
     mockApi.getArchivedList.mockResolvedValue([]);
-    mockApi.archiveConversations.mockResolvedValue(0);
+    mockApi.archiveConversations.mockResolvedValue([]);
     mockApi.unarchiveConversations.mockResolvedValue(undefined);
 }
 
@@ -479,7 +479,7 @@ describe('MessagingDialog', () => {
         const carl = createConversation({otherPartyId: 3, otherPartyName: 'Carl', unreadCount: 2});
         setupApiDefaults([carl]);
         mockApi.getRecentList.mockResolvedValueOnce([alice, bob, carl]);
-        mockApi.archiveConversations.mockResolvedValue(2);
+        mockApi.archiveConversations.mockImplementation(async (keys) => keys);
         renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast} />);
 
         await screen.findByText('Alice');
@@ -518,7 +518,8 @@ describe('MessagingDialog', () => {
             createConversation({otherPartyId: 1, otherPartyName: 'Alice'}),
             createConversation({otherPartyId: 2, otherPartyName: 'Bob'}),
         ]);
-        mockApi.archiveConversations.mockResolvedValue(1);
+        const bobKey = {otherPartyId: 2, otherPartyType: OtherMessagePartyType.Courier};
+        mockApi.archiveConversations.mockResolvedValue([bobKey]);
         renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast} />);
 
         await screen.findByText('Alice');
@@ -528,6 +529,10 @@ describe('MessagingDialog', () => {
 
         await waitFor(() => expect(showToast).toHaveBeenCalledWith(
             'Archived 1 of 2: 1 has new messages', 'success', expect.objectContaining({label: 'Undo'})));
+
+        // Undo only reverses what was actually archived.
+        act(() => showToast.mock.calls[0][2].onClick());
+        await waitFor(() => expect(mockApi.unarchiveConversations).toHaveBeenCalledWith([bobKey]));
     });
 
     it('select all only covers the filtered rows, and changing the filter clears the selection', async () => {
@@ -572,6 +577,17 @@ describe('MessagingDialog', () => {
             [{otherPartyId: 7, otherPartyType: OtherMessagePartyType.Staff}]));
         expect(showToast).toHaveBeenCalledWith('Moved 1 conversation back to your list', 'success');
         expect(await screen.findByText('No archived conversations')).toBeInTheDocument();
+    });
+
+    it('reaches archived conversations when everything has been archived', async () => {
+        const user = setupUser();
+        setupApiDefaults([]);
+        mockApi.getArchivedList.mockResolvedValue([createConversation({otherPartyName: 'Old Pal'})]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await user.click(await screen.findByRole('button', {name: 'View archived'}));
+
+        expect(await screen.findByText('Old Pal')).toBeInTheDocument();
     });
 
     it('opens a conversation from the keyboard', async () => {

@@ -39,11 +39,11 @@ export class MessagingApiService {
     }
 
     /**
-     * Archive conversations for the current staff member. Returns how many were archived:
+     * Archive conversations for the current staff member. Returns the ones that were archived:
      * the server skips any that have unread messages.
      */
-    async archiveConversations(conversations: ConversationKey[]): Promise<number> {
-        return apiClient.post<number>('messages/ArchiveConversations', {conversations});
+    async archiveConversations(conversations: ConversationKey[]): Promise<ConversationKey[]> {
+        return apiClient.post<ConversationKey[]>('messages/ArchiveConversations', {conversations});
     }
 
     /**
