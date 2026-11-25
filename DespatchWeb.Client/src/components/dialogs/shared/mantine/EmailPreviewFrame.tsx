@@ -21,6 +21,8 @@ export const EmailPreviewFrame: React.FC<EmailPreviewFrameProps> = ({html, title
     const fit = useCallback(() => {
         const doc = frameRef.current?.contentDocument;
         if (!frameRef.current || !doc?.body) return;
+        // Reset first: documentElement.scrollHeight never reports less than the frame's current height.
+        frameRef.current.style.height = `${minHeight}px`;
         frameRef.current.style.height = `${Math.max(minHeight, doc.documentElement.scrollHeight)}px`;
     }, [minHeight]);
 
