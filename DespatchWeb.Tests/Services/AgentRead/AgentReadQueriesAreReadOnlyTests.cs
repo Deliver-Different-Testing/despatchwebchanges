@@ -30,7 +30,7 @@ public class AgentReadQueriesAreReadOnlyTests : IAsyncDisposable
         context.TucCouriers.Add(new TucCourier
         {
             UccrId = 1, Code = "A01", UccrName = "Aroha", UccrSurname = "Ngata", Active = true, CourierFleetId = 1, UccrChannelId = 1,
-            VehiclePlateNnumber = "ABC123", Created = TestDates.Now, CreatedBy = "t", LastModified = TestDates.Now, LastModifiedBy = "t",
+            UccrReg = "ABC123", Created = TestDates.Now, CreatedBy = "t", LastModified = TestDates.Now, LastModifiedBy = "t",
             DriversLicenseExpiry = new DateTime(2024, 1, 14)
         });
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);

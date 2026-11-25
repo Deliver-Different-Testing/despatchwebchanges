@@ -84,7 +84,13 @@ describe('executeDispatchConfirmation', () => {
                 includeStopJobs: true,
             });
 
-            expect(mockAssignAgent).toHaveBeenCalledWith(42, 201, true, 'Subject', 'Body');
+            expect(mockAssignAgent).toHaveBeenCalledWith(42, 201, true, 'Subject', 'Body', false);
+        });
+
+        it('forwards Send again', async () => {
+            await executeDispatchConfirmation(job, {type: 'Agent', destination: agent, emailSubject: 'S', emailBody: 'B', resend: true});
+
+            expect(mockAssignAgent).toHaveBeenCalledWith(42, 201, false, 'S', 'B', true);
         });
 
         it('writes the AWB only after the assignment succeeds, and only when one was entered', async () => {
@@ -129,6 +135,16 @@ describe('executeDispatchConfirmation', () => {
             mockAssignAgent.mockResolvedValue({status: 'Failed', agentEmail: null, willEmail: false});
             expect(await executeDispatchConfirmation(job, {type: 'Agent', destination: agent}))
                 .toEqual({message: expect.stringContaining('could not be sent'), severity: 'warning'});
+        });
+
+        it('treats an alert the agent already had, or alerts switched off, as a clean assignment', async () => {
+            mockAssignAgent.mockResolvedValue({status: 'AlreadySent', agentEmail: 'a@b.c', willEmail: false});
+            expect(await executeDispatchConfirmation(job, {type: 'Agent', destination: agent}))
+                .toEqual({message: expect.stringContaining('already had the alert'), severity: 'success'});
+
+            mockAssignAgent.mockResolvedValue({status: 'AlertsOff', agentEmail: null, willEmail: false});
+            expect(await executeDispatchConfirmation(job, {type: 'Agent', destination: agent}))
+                .toEqual({message: expect.stringContaining('agent alerts are switched off'), severity: 'success'});
         });
     });
 

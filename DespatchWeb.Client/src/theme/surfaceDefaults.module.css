@@ -1,0 +1,13 @@
+/*
+ * Card/Paper default surface tone. Theme `styles` would render it inline and outrank every
+ * consumer class, so it is a class in a layer after `mantine` but below unlayered app CSS:
+ * Mantine's own Paper background loses to it, and any component class, `style` or `bg` beats it.
+ * The order statement fixes the layer ranking whichever stylesheet loads first.
+ */
+@layer mantine, dd-defaults;
+
+@layer dd-defaults {
+    .surface {
+        background-color: var(--dd-surface-container);
+    }
+}

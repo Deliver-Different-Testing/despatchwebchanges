@@ -426,6 +426,10 @@ describe('StickyNotes', () => {
             expect(fillOf('This is a client note')).toBe(NOTE_FILLS.client);
             expect(fillOf('note 5')).toBe(NOTE_FILLS.consignment);
             expect(fillOf('Important internal note')).toBe(NOTE_FILLS.important);
+
+            // The fill is painted by the note's class; an inline background would cover it (#1040).
+            const card = screen.getByText('This is an internal note').closest('[style*="--note-fill"]') as HTMLElement;
+            expect(card.style.backgroundColor).toBe('');
         });
     });
 

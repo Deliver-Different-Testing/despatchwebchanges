@@ -454,3 +454,48 @@ describe('jobSearchApi', () => {
         });
     });
 });
+
+describe('fetchPodJobs job-number search notice', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('maps how the search matched and what to tell the operator', async () => {
+        mockApiClient.get.mockResolvedValueOnce({
+            ...createMockDto(0),
+            matchMode: 'prefix',
+            outsideWindowCount: 4,
+            outsideWindowFrom: '2023-06-01T00:00:00',
+            outsideWindowTo: '2023-06-20T00:00:00',
+            totalIsCapped: true,
+            searchTooBroad: false,
+        });
+
+        const result = await fetchPodJobs(createBaseParams({job: ' E3739 '}));
+
+        expect(result.searchNotice).toMatchObject({
+            jobTerm: 'E3739', matchMode: 'prefix', outsideWindowCount: 4, totalIsCapped: true, searchTooBroad: false,
+        });
+        expect(result.searchNotice!.outsideWindowRange!.from.format('YYYY-MM-DD')).toBe('2023-06-01');
+        expect(result.searchNotice!.outsideWindowRange!.to.format('YYYY-MM-DD')).toBe('2023-06-20');
+    });
+
+    it('defaults the notice when the server sends none', async () => {
+        mockApiClient.get.mockResolvedValueOnce(createMockDto(0));
+
+        const result = await fetchPodJobs(createBaseParams());
+
+        expect(result.searchNotice).toEqual({
+            jobTerm: null, matchMode: null, outsideWindowCount: null, outsideWindowRange: null,
+            totalIsCapped: false, searchTooBroad: false,
+        });
+    });
+
+    it('sends forceContains only when asked', async () => {
+        mockApiClient.get.mockResolvedValue(createMockDto(0));
+
+        await fetchPodJobs(createBaseParams({job: 'E3739', forceContains: true}));
+        await fetchPodJobs(createBaseParams({job: 'E3739'}));
+
+        expect(mockApiClient.get.mock.calls[0]![1]!.forceContains).toBe(true);
+        expect(mockApiClient.get.mock.calls[1]![1]!.forceContains).toBeUndefined();
+    });
+});

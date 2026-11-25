@@ -281,7 +281,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         var parcels = new List<ParcelDimensions>
         {
-            new() { Length = 10, Depth = 20, Height = 30, Weight = 5 }
+            new() { ItemId = 7, Length = 10, Depth = 20, Height = 30, Weight = 5 }
         };
         var payload = JsonSerializer.Serialize(new { Parcels = parcels, Weight = 12.5m });
 
@@ -302,7 +302,8 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // The compound field deserialised and called the repository with the parcels +
         // weight from the payload. The change-request row's UjcrJobId carries the target.
         await _jobCommandRepository.Received(1).UpdatePackagesForJobAsync(
-            1, Arg.Is<IReadOnlyList<ParcelDimensions>>(p => p!.Count == 1 && Math.Abs(p[0].Length.GetValueOrDefault() - 10) < 1e-9));
+            1, Arg.Is<IReadOnlyList<ParcelDimensions>>(p => p!.Count == 1 && Math.Abs(p[0].Length.GetValueOrDefault() - 10) < 1e-9
+                                                            && p[0].ItemId == null));
         await _jobCommandRepository.Received(1).UpdateJobWeightAsync(1, 12.5m);
     }
 

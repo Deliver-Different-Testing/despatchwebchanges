@@ -12,9 +12,9 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Alert, Box, Paper, Stack, Text, TextInput, Textarea} from '@mantine/core';
+import {Alert, Box, Checkbox, Paper, Stack, Text, TextInput, Textarea} from '@mantine/core';
 import {useQuery} from '@tanstack/react-query';
-import {getAgentInboundEmailPreview} from '../../../../api/dispatchExecutorApi';
+import {getAgentInboundEmailPreview, type AgentAlertType} from '../../../../api/dispatchExecutorApi';
 import {sectionLabelProps, sectionPaperProps} from './styles';
 
 export interface AgentEmailState {
@@ -22,7 +22,15 @@ export interface AgentEmailState {
     willEmail: boolean;
     subject: string;
     body: string;
+    /** The agent already has this alert for this job and the dispatcher chose to send it again. */
+    resend: boolean;
 }
+
+const ALERT_LABEL: Record<AgentAlertType, string> = {
+    Pickup: 'pickup alert',
+    Delivery: 'delivery alert',
+    DoorToDoor: 'door to door alert',
+};
 
 interface AgentEmailFieldsProps {
     agentId: number;
@@ -45,8 +53,12 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
     // the parent would report upward (and could assign with).
     const [subjectEdit, setSubjectEdit] = useState<string | null>(null);
     const [bodyEdit, setBodyEdit] = useState<string | null>(null);
+    const [sendAgain, setSendAgain] = useState(false);
 
-    const willEmail = data?.willEmail ?? false;
+    const alreadySent = data?.status === 'AlreadySent';
+    const resend = alreadySent && sendAgain;
+    const willEmail = (data?.willEmail ?? false) || resend;
+    const alertLabel = data?.alertType ? ALERT_LABEL[data.alertType] : 'inbound-agent link';
     // `??` not `||` — clearing a field must stay cleared rather than snap back to the default.
     const subject = subjectEdit ?? data?.defaultSubject ?? '';
     const body = bodyEdit ?? data?.defaultBody ?? '';
@@ -54,10 +66,37 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
     // Report the current state upward whenever it changes so the parent can pass the edits
     // (or the default seed) into the assign call.
     useEffect(() => {
-        onChange({willEmail, subject, body});
-    }, [onChange, willEmail, subject, body]);
+        onChange({willEmail, subject, body, resend});
+    }, [onChange, willEmail, subject, body, resend]);
 
     if (!data) return null;
+
+    const sendAgainBox = alreadySent && (
+        <Checkbox
+            label="Send it again"
+            checked={sendAgain}
+            onChange={(e) => setSendAgain(e.currentTarget.checked)}
+        />
+    );
+
+    if (alreadySent && !sendAgain) {
+        return (
+            <Stack gap="xs">
+                <Alert color="brand" variant="outline">
+                    {data.agentEmail} already has the {alertLabel} for this job, so it won&apos;t be sent again.
+                </Alert>
+                {sendAgainBox}
+            </Stack>
+        );
+    }
+
+    if (data.status === 'AlertsOff') {
+        return (
+            <Alert color="orange" variant="outline">
+                Agent alerts are switched off in Settings — no email will be sent.
+            </Alert>
+        );
+    }
 
     if (!willEmail) {
         const message =
@@ -76,8 +115,11 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
     return (
         <Stack gap="md">
             <Alert color="brand" variant="outline">
-                An inbound-agent link will be emailed to {data.agentEmail}.
+                {resend
+                    ? `The ${alertLabel} will be sent again to ${data.agentEmail}.`
+                    : `The ${alertLabel} will be emailed to ${data.agentEmail}.`}
             </Alert>
+            {sendAgainBox}
             <Box>
                 <Text {...sectionLabelProps}>Agent email</Text>
                 <Paper {...sectionPaperProps}>

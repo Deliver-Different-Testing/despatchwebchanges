@@ -16,6 +16,9 @@ public sealed class PodSearchRequest
     public string SortColumn { get; init; }
     public string SortDirection { get; init; }
 
+    /// <summary>Skips the exact/prefix job-number tiers and matches the term anywhere in the number.</summary>
+    public bool ForceContains { get; init; }
+
     public bool ClientSet => ClientIds != null && ClientIds.Count != 0;
     public bool CourierSet => CourierIds != null && CourierIds.Count != 0;
     public bool SpeedSet => SpeedIds != null && SpeedIds.Count != 0;

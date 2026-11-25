@@ -54,7 +54,7 @@ export interface ContactInformation {
 }
 
 export interface VehicleInformation {
-    rego: string;
+    rego: string | null;
     vehicleYear?: number;
     vehicleModel: string;
     vehicleInsurance: string;
@@ -217,6 +217,25 @@ export interface CourierDailyEarnings {
     deliveries: number;
     earnings: number;
     hourlyRate: number;
+}
+
+export interface DriverPayPeriodItem {
+    courierId: number;
+    name: string;
+    code: string;
+    daysWorked: number;
+    deliveries: number;
+    /** Null when on target. Never a rate, minimum or owed amount. */
+    behindBy: number | null;
+    /** Only present when the tenant lets dispatchers see hours. */
+    hours: number | null;
+}
+
+export interface DriverPayPeriodOverview {
+    /** False when the caller lacks dw-driver-earnings-status. */
+    available: boolean;
+    showHours: boolean;
+    items: DriverPayPeriodItem[];
 }
 
 export interface CourierDailyEarningsPaginated extends PaginatedResponse<CourierDailyEarnings> {

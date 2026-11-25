@@ -64,6 +64,8 @@ export interface DriverLocationsProps {
     onCourierClick?: (courier: ICourierData) => void;
     /** Called when the clear filter button is clicked */
     onClearFilter?: () => void;
+    /** Limit the lists to drivers behind on earnings, or whose minimum shift is about to end. */
+    alertFilter?: 'behind' | 'minimum' | null;
 
     // Config
     /** Whether the current user is a US customer (affects theming) */

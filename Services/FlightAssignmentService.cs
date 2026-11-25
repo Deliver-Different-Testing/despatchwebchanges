@@ -1,3 +1,4 @@
+using DespatchWeb.Constants;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Serilog;
@@ -131,6 +132,12 @@ public sealed class FlightAssignmentService(
 
         foreach (var segment in flightSegments.OrderBy(s => s.SegmentOrder))
         {
+            if (segment.CarrierFsCode == ForwardAirCarrier.Code)
+            {
+                webhookIds.Add(string.Empty);
+                continue;
+            }
+
             var webhookId = await flightService.CreateFlightRuleByDepartureAsync(
                 $"{segment.CarrierFsCode}{segment.FlightNumber}",
                 segment.DepartureTime,

@@ -15,6 +15,8 @@ import { getDriverStatus } from '../CourierMapPage.types';
 import type { IAvailableCourierPosition } from '../../../types/interfaces/courier.interface';
 import type { MantineTheme } from '@mantine/core';
 import classes from './DriverListItem.module.css';
+import {formatMinimumEnd, isBehind, minutesUntilMinimumEnds} from '../../../components/common/driver-locations/driverTopUp';
+import {formatCurrency} from '../../../utils/currencyUtils';
 
 /**
  * Same status → colour mapping the map markers use (see `getMarkerColors`), so a
@@ -36,9 +38,12 @@ function getDriverInitials(name: string | undefined): string {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export function DriverListItem({ driver, onClick, isSelected }: DriverListItemProps) {
+export function DriverListItem({ driver, onClick, isSelected, showTopUpDetail = false, nowMs = 0 }: DriverListItemProps) {
     const theme = useMantineTheme();
-    const statusColor = getStatusColor(driver, theme);
+    // Minimum hourly top-up: orange while the daily minimum is about to end, red marker while behind for the period.
+    const behind = isBehind(driver);
+    const minutesLeft = nowMs > 0 ? minutesUntilMinimumEnds(driver, nowMs) : null;
+    const statusColor = minutesLeft !== null ? theme.colors.orange[5] : getStatusColor(driver, theme);
     const initials = getDriverInitials(driver.courierName);
     const hasOverdue = driver.overDueJobs > 0;
 
@@ -52,6 +57,8 @@ export function DriverListItem({ driver, onClick, isSelected }: DriverListItemPr
                 // Inline rather than a CSS-module modifier class: the row needs to stay tinted
                 // after the click, not just on hover, and an inline value is what Jest's
                 // toHaveStyle can actually see (CSS modules resolve to {} under Jest).
+                ...(behind && !isSelected ? {boxShadow: `inset 3px 0 0 ${theme.colors.red[6]}`} : {}),
+                ...(minutesLeft !== null ? {backgroundColor: alpha(theme.colors.orange[5], 0.14)} : {}),
                 ...(isSelected ? {
                     backgroundColor: alpha(statusColor, 0.12),
                     boxShadow: `inset 3px 0 0 ${statusColor}`,
@@ -123,7 +130,28 @@ export function DriverListItem({ driver, onClick, isSelected }: DriverListItemPr
                             {driver.courierFleetName}
                         </Text>
                     )}
+
+                    {minutesLeft !== null && driver.minimumEndsAt && (
+                        <Text component="span" fz={11} fw={700} lh={1} c={theme.colors.orange[7]}>
+                            Min ends {formatMinimumEnd(driver.minimumEndsAt)}
+                        </Text>
+                    )}
                 </Group>
+
+                {showTopUpDetail && (behind || minutesLeft !== null) && (
+                    <Box mt={4}>
+                        {behind && (
+                            <Text fz={11} fw={600} c="light-dark(var(--mantine-color-red-7), var(--mantine-color-red-4))">
+                                Behind {formatCurrency(driver.earningsBehindBy!)} this pay period
+                            </Text>
+                        )}
+                        {minutesLeft !== null && driver.minimumEndsAt && (
+                            <Text fz={11} fw={600} c={theme.colors.orange[8]}>
+                                Minimum shift ends in {minutesLeft} min ({formatMinimumEnd(driver.minimumEndsAt)})
+                            </Text>
+                        )}
+                    </Box>
+                )}
             </Box>
 
             <Icon

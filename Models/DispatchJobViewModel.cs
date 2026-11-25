@@ -12,6 +12,10 @@ public class DispatchJobViewModel
     public bool IsFlightJob { get; set; }
     public bool IsAgentJob { get; set; }
     public bool IsArchived { get; set; }
+
+    /// <summary>An exact job-number match dated outside the searched window (job search only).</summary>
+    public bool OutsideDateRange { get; set; }
+
     public bool IsBulkJob { get; set; }
 
     public bool HasBeenRead { get; set; }

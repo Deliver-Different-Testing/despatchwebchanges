@@ -275,7 +275,7 @@ public static partial class JobMappings
 
         // Parcel dimensions - 3-tier: stop child items → own items → parent items
         ParcelDimensions = j.TucJobItemsArchives.Any()
-            ? j.TucJobItemsArchives.Select(i => new ParcelDimensions
+            ? j.TucJobItemsArchives.OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId).Select(i => new ParcelDimensions
                 {
                     ItemId = i.ItemId,
                     ItemName = i.Notes,
@@ -287,7 +287,7 @@ public static partial class JobMappings
                     Barcode = i.Barcode
                 }).ToList()
             : j.TucJobItemsArchiveJobs.Any(i => i.ChildJobId == null)
-                ? j.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null).Select(i => new ParcelDimensions
+                ? j.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null).OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId).Select(i => new ParcelDimensions
                 {
                     ItemId = i.ItemId,
                     ItemName = i.Notes,
@@ -300,7 +300,7 @@ public static partial class JobMappings
                 }).ToList()
                 : j.Parent != null
                     ? j.Parent.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null)
-                        .Select(i => new ParcelDimensions
+                        .OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId).Select(i => new ParcelDimensions
                         {
                             ItemId = i.ItemId,
                             ItemName = i.Notes,

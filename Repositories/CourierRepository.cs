@@ -20,7 +20,8 @@ public partial class CourierRepository(
     ITenantInfoService infoService,
     ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
-    IMemoryCache cache)
+    IMemoryCache cache,
+    IDriverTopUpStatusService? topUpStatusService = null)
     : BaseRepository(contextFactory),
         ICourierRepository
 {
@@ -149,6 +150,36 @@ public partial class CourierRepository(
         }
     }
 
+    /// <summary>
+    /// Minimum hourly top-up standing for the map's driver panel (empty unless the caller holds
+    /// dw-driver-earnings-status). Only the behind amount and the minimum end time reach the client.
+    /// </summary>
+    private async Task ApplyTopUpStatusAsync(IReadOnlyList<AvailableCourierPosition> positions)
+    {
+        if (topUpStatusService == null || positions.Count == 0)
+        {
+            return;
+        }
+
+        var byCourier = (await topUpStatusService.GetStatusesAsync()).ToDictionary(s => s.CourierId);
+        if (byCourier.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var position in positions)
+        {
+            if (!byCourier.TryGetValue(position.CourierId, out var topUp))
+            {
+                continue;
+            }
+
+            position.EarningsBehindBy = topUp.BehindBy > 0 ? topUp.BehindBy : null;
+            position.MinimumEndsAt = topUp.MinimumEndsAt;
+            position.MinimumAlertMinutes = topUp.MinimumAlertMinutes;
+        }
+    }
+
     public async Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data,
         CancellationToken cancellationToken = default)
     {
@@ -181,6 +212,8 @@ public partial class CourierRepository(
                 : await GetNzAvailableCourierPositionsAsync(data, cancellationToken);
 
             stopwatch.Stop();
+
+            await ApplyTopUpStatusAsync(result);
 
             Log.Information(
                 "[GetAvailableCouriers] SUCCESS | CorrelationId: {CorrelationId} | CourierCount: {CourierCount} | DurationMs: {DurationMs}",
@@ -433,6 +466,26 @@ public partial class CourierRepository(
 
                 courier.DisplayOrder = order.Status;
                 courier.OrderTime = order.OrderTime;
+            }
+
+            // Minimum hourly top-up standing (empty unless the caller holds dw-driver-earnings-status).
+            if (topUpStatusService != null)
+            {
+                var topUpByCourier = (await topUpStatusService.GetStatusesAsync()).ToDictionary(s => s.CourierId);
+                if (topUpByCourier.Count > 0)
+                {
+                    foreach (var courier in allCourierData)
+                    {
+                        if (!topUpByCourier.TryGetValue(courier.UccrId, out var topUp))
+                        {
+                            continue;
+                        }
+
+                        courier.EarningsBehindBy = topUp.BehindBy > 0 ? topUp.BehindBy : null;
+                        courier.MinimumEndsAt = topUp.MinimumEndsAt;
+                        courier.MinimumAlertMinutes = topUp.MinimumAlertMinutes;
+                    }
+                }
             }
 
             // Group couriers by GPS polygon ID for area filtering
@@ -703,7 +756,7 @@ public partial class CourierRepository(
                         || EF.Functions.Like(c.UccrName, searchPattern)
                         || EF.Functions.Like(c.UccrSurname, searchPattern)
                         || EF.Functions.Like(c.UccrVehicleModel, searchPattern)
-                        || EF.Functions.Like(c.VehiclePlateNnumber, searchPattern)
+                        || EF.Functions.Like(c.UccrReg, searchPattern)
                         || EF.Functions.Like(c.UccrEmail, searchPattern)
                         || EF.Functions.Like(c.PersonalMobile, searchPattern)
                         || EF.Functions.Like(c.UccrMobile, searchPattern)
@@ -1452,7 +1505,7 @@ public partial class CourierRepository(
                         TotalJobs = jobs?.Count ?? 0,
                         OverDueJobs = jobs?.TimedJobs.Count(j =>
                             j.UcjbTime != null &&
-                            j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
+                            j.UcjbDate.CombineWithTime(j.UcjbTime).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
                         DisplayOrder = c.DisplayOrder,
                         CourierFleetId = c.CourierFleetId,
                         CourierFleetName = c.CourierFleetName,
@@ -2002,7 +2055,10 @@ public partial class CourierRepository(
             Del = result?.Deliver ?? "Unknown",
             Lrm = "Unknown",
             Eta2Lrm = "Unknown",
-            CourierId = result?.CourierId
+            CourierId = result?.CourierId,
+            EarningsBehindBy = courier?.EarningsBehindBy,
+            MinimumEndsAt = courier?.MinimumEndsAt,
+            MinimumAlertMinutes = courier?.MinimumAlertMinutes
         };
     }
 

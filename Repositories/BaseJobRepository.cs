@@ -1047,6 +1047,13 @@ public partial class BaseJobRepository(
     // Helper Methods
     protected async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
 
+    /// <summary>The internal note for a package edit, or null when the packages didn't change.</summary>
+    protected string? PackageChangeNoteText(IEnumerable<PackageChangeNote.Line> before,
+        IReadOnlyList<ParcelDimensions> parcels) =>
+        PackageChangeNote.Build(before,
+            parcels.Select(p => new PackageChangeNote.Line(p.ItemName, p.Length, p.Depth, p.Height, p.Weight, 1)),
+            infoService.IsUsTenant());
+
     /// <summary>
     /// A network partner's pay (CourierPayment + CourierFuel) for a batch of jobs, live rows
     /// first then archive for any not found live. Shared by every list/export surface that
@@ -1311,7 +1318,7 @@ public partial class BaseJobRepository(
                     Selected = j.BulkJobId == jobId,
                     IsBulkJob = true
                 })
-                .TagWith($"GetRelatedJobs - Bulk Family for Job {jobId}")
+                .TagWith("GetRelatedJobs - Bulk Family")
                 .ToListAsync();
         }
 
@@ -1335,7 +1342,7 @@ public partial class BaseJobRepository(
                     Selected = j.UcjbId == jobId,
                     IsArchived = true
                 })
-                .TagWith($"GetRelatedJobs - Archived Family for Job {jobId}")
+                .TagWith("GetRelatedJobs - Archived Family")
                 .ToListAsync();
 
             return archivedData;
@@ -1369,7 +1376,7 @@ public partial class BaseJobRepository(
                 Text = j.UcjbNumber,
                 Selected = j.UcjbId == jobId
             })
-            .TagWith($"GetRelatedJobs - Live Family {effectiveLiveJobId}")
+            .TagWith("GetRelatedJobs - Live Family")
             .ToListAsync();
 
         // A booking released from bulk can still have legs waiting in tblBulkJob; they belong to it too.
@@ -1392,7 +1399,7 @@ public partial class BaseJobRepository(
                 Text = b.JobNumber,
                 IsBulkJob = true
             })
-            .TagWith($"GetRelatedJobs - Unreleased bulk rows of {bulkFamilyRootId}")
+            .TagWith("GetRelatedJobs - Unreleased bulk rows of family")
             .ToListAsync();
 
         return [.. liveData, .. unreleasedBulkRows];
@@ -1413,7 +1420,7 @@ public partial class BaseJobRepository(
                 Text = j.UcjbNumber,
                 Selected = j.UcjbId == jobId
             })
-            .TagWith($"GetRelatedJobs - Live legs of parked booking {bulkParentId}")
+            .TagWith("GetRelatedJobs - Live legs of parked booking")
             .ToListAsync();
 
         var bulkRows = await Context.TblBulkJobs
@@ -1425,7 +1432,7 @@ public partial class BaseJobRepository(
                 Text = b.JobNumber,
                 IsBulkJob = true
             })
-            .TagWith($"GetRelatedJobs - Bulk rows of parked booking {bulkParentId}")
+            .TagWith("GetRelatedJobs - Bulk rows of parked booking")
             .ToListAsync();
 
         return [.. liveLegs, .. bulkRows];

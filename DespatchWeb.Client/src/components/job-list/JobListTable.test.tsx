@@ -76,6 +76,15 @@ describe('JobListTable', () => {
         mockedSearch.mockResolvedValue([]);
     });
 
+    it('marks an exact job-number match dated outside the searched window', () => {
+        const {unmount} = renderWithMantine(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob({outsideDateRange: true})]})}/>);
+        expect(screen.getByLabelText('Outside your dates')).toBeInTheDocument();
+        unmount();
+
+        renderWithMantine(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob()]})}/>);
+        expect(screen.queryByLabelText('Outside your dates')).not.toBeInTheDocument();
+    });
+
     it('renders "No jobs found" when jobs array is empty', () => {
         renderWithMantine(<JobListTable {...createDefaultProps({jobs: []})}/>);
         expect(screen.getByText('No jobs match the current view.')).toBeInTheDocument();

@@ -16,6 +16,7 @@ import {
     DriverEmail,
     GroupEmailData,
     CourierDailyEarningsPaginated,
+    DriverPayPeriodOverview,
 } from '../types';
 import {RequestOptions} from "./requestOptions";
 
@@ -100,6 +101,10 @@ export const driverManagementApi = {
 
     sendEmailToCouriers(emailData: GroupEmailData): Promise<void> {
         return apiClient.post<void>('courier/SendEmailToCouriers', emailData);
+    },
+
+    getPayPeriodOverview(options?: RequestOptions): Promise<DriverPayPeriodOverview> {
+        return apiClient.get<DriverPayPeriodOverview>('courier/GetDriverPayPeriodOverview', undefined, options);
     },
 
     getDriverDailyEarnings(query: PaginatedRequest, options?: RequestOptions): Promise<CourierDailyEarningsPaginated> {

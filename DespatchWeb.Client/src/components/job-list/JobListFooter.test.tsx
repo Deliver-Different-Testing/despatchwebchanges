@@ -39,4 +39,12 @@ describe('JobListFooter', () => {
 
         expect(screen.getByText('Loading more jobs…')).toBeInTheDocument();
     });
+
+    it('marks a capped total as a lower bound', () => {
+        renderWithMantine(
+            <JobListFooter displayedCount={50} totalCount={1000} lastUpdated="x" allJobsLoaded={false} totalIsCapped/>,
+        );
+
+        expect(screen.getByText('Showing 50 of 1,000+ jobs. Narrow the search to see the rest.')).toBeInTheDocument();
+    });
 });

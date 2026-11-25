@@ -4,6 +4,7 @@ using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
+using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -814,7 +815,7 @@ public partial class JobRepository(
             return;
         }
 
-        var jobDateTime = job.UcjbDate.Add(job.UcjbTime.Value.TimeOfDay);
+        var jobDateTime = job.UcjbDate.CombineWithTime(job.UcjbTime);
         var windowValue = job.UcjbLatePick ?? time;
 
         if (!windowValue.HasValue)
@@ -875,7 +876,7 @@ public partial class JobRepository(
             return;
         }
 
-        var jobDateTime = job.UcjbDate.Add(value: job.UcjbTime.Value.TimeOfDay);
+        var jobDateTime = job.UcjbDate.CombineWithTime(job.UcjbTime);
         var windowValue = job.UcjbLateDel ?? time;
 
         if (!windowValue.HasValue)
@@ -1993,7 +1994,10 @@ public partial class JobRepository(
                                 (childJobId == null || i.ChildJobId == childJobId))
                     .OrderBy(i => i.ItemId)
                     .ToListAsync();
-                var existing = scoped.Where(i => i.ChildJobId == childJobId).ToList();
+                var existing = InDisplayOrder(scoped.Where(i => i.ChildJobId == childJobId)).ToList();
+                var changeNote = PackageChangeNoteText(existing.Where(IsActiveLine)
+                    .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                    .ToList(), parcels);
 
                 var nextItemId = (await Context.TucJobItems
                     .Where(i => i.JobId == effectiveJobId)
@@ -2005,6 +2009,7 @@ public partial class JobRepository(
                     .AnyAsync(j => (j.UcjbId == jobId || j.UcjbId == effectiveJobId) && j.UcjbMobileSend);
 
                 var matched = MatchParcelsToLines(parcels, existing);
+                var submittedLines = new TucJobItem[parcels.Count];
 
                 for (var index = 0; index < parcels.Count; index++)
                 {
@@ -2012,7 +2017,7 @@ public partial class JobRepository(
                     var item = matched[index];
                     if (item == null)
                     {
-                        Context.TucJobItems.Add(new TucJobItem
+                        Context.TucJobItems.Add(submittedLines[index] = new TucJobItem
                         {
                             JobId = effectiveJobId,
                             ChildJobId = childJobId,
@@ -2029,6 +2034,7 @@ public partial class JobRepository(
                         continue;
                     }
 
+                    submittedLines[index] = item;
                     item.Height = p.Height ?? 0;
                     item.Length = p.Length ?? 0;
                     item.Depth = p.Depth ?? 0;
@@ -2044,7 +2050,22 @@ public partial class JobRepository(
                 // Lines already flagged are history and are kept either way.
                 var removedItemIds = scoped.Except(matched.Where(i => i != null)).Where(IsActiveLine)
                     .Select(i => i.ItemId).ToList();
+
+                // #1056: ItemID is the line's identity to the courier app, labels and APIs, so the
+                // on-screen order is stored in SortOrder instead.
+                var keptUnsubmitted = existing.Except(submittedLines)
+                    .Where(i => flagRemovals || !IsActiveLine(i)).ToHashSet();
+                var sortOrders = PlanSortOrder(submittedLines, existing, keptUnsubmitted);
+                var existingSet = existing.ToHashSet();
+                foreach (var (line, sortOrder) in sortOrders.Where(s => !existingSet.Contains(s.Line)))
+                    line.SortOrder = sortOrder;
+                if (changeNote != null)
+                    await SaveNoteAsync(jobId, changeNote, saveChanges: false);
                 await Context.SaveChangesAsync();
+                var existingSortOrders = sortOrders
+                    .Where(s => existingSet.Contains(s.Line) && s.Line.SortOrder != s.SortOrder).ToList();
+                await WriteSortOrderAsync(effectiveJobId,
+                    existingSortOrders.Select(s => (s.Line.ItemId, s.SortOrder)).ToList());
 
                 // One set-based statement: RemoveRange/SaveChanges issues a DELETE per row, and the totals
                 // trigger then fires per row (qty stepping 486 -> 1, a courier note + journal rows each time).
@@ -2102,6 +2123,16 @@ public partial class JobRepository(
                 }
 
                 await transaction.CommitAsync();
+
+                // The context outlives this call and tracking queries return these instances as-is. Synced only
+                // once committed, so a retried attempt still compares against the stored order.
+                foreach (var (line, sortOrder) in existingSortOrders)
+                {
+                    var property = Context.Entry(line).Property(i => i.SortOrder);
+                    property.CurrentValue = sortOrder;
+                    property.OriginalValue = sortOrder;
+                    property.IsModified = false;
+                }
             });
         }
         catch (Exception e)
@@ -2157,6 +2188,12 @@ public partial class JobRepository(
             {
                 await using var transaction = await Context.Database.BeginTransactionAsync();
 
+                var before = await Context.TblBulkJobItems
+                    .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                    .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                    .ToListAsync();
+                var changeNote = PackageChangeNoteText(before, parcels);
+
                 await Context.TblBulkJobItems
                     .Where(i => i.JobId == effectiveJobId &&
                                 (childJobId == null || i.ChildJobId == childJobId))
@@ -2188,6 +2225,9 @@ public partial class JobRepository(
                     await Context.TblBulkJobItems.AddRangeAsync(newItems);
                     await Context.SaveChangesAsync();
                 }
+
+                if (changeNote != null)
+                    await SaveMultipleBulkNotesAsync([bulkJobId], changeNote);
 
                 var parentLines = Context.TblBulkJobItems
                     .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
@@ -3034,7 +3074,7 @@ public partial class JobRepository(
             var allJobs = await Context.TblBulkJobs
                 .Where(BulkJobFamily.MemberOf(familyRootId))
                 .Select(JobMappings.BulkJobMapping)
-                .TagWith($"GetBulkJobDetail - Family {familyRootId}")
+                .TagWith("GetBulkJobDetail - Family")
                 .ToListAsync();
 
             var mainBulkJob = allJobs.FirstOrDefault(j => j.Id == bulkJobId);
@@ -4192,21 +4232,23 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobId">The job ID to retrieve.</param>
     /// <returns>Dispatch job view model with full details including addresses, courier, and status.</returns>
-    public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
+    public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId,
+        CancellationToken cancellationToken = default)
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
         var activeJob = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
-            .FirstOrDefaultAsync();
+            .TagWith("DispatchJobDetail - Live")
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (activeJob != null)
         {
             var archivedStatus = await Context.TblJobs
                 .Where(j => j.JobId == jobId)
                 .Select(j => j.Archived ?? false)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             activeJob.IsArchived = archivedStatus;
             if (Context.CurrentIsNetworkPartner)
@@ -4389,13 +4431,27 @@ public partial class JobRepository(
             .Select(j => j.ParentId.HasValue || j.BulkParentId.HasValue)
             .FirstOrDefaultAsync();
 
-    public async Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId)
+    public async Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId, int? bookingId = null)
     {
         if (bulkJobId.HasValue)
         {
             var id = bulkJobId.Value;
             return await Context.TblBulkJobItemTypes
                 .Where(jit => jit.JobId == id)
+                .Select(jit => new JobItemTypeDto
+                {
+                    ItemId = jit.ItemId,
+                    Name = jit.ItemType.Name,
+                    Quantity = jit.Quantity
+                })
+                .ToListAsync();
+        }
+
+        if (bookingId.HasValue)
+        {
+            var effectiveBookingId = await Context.GetEffectiveJobBookingIdAsync(bookingId.Value);
+            return await Context.TucJobBookingItemTypes
+                .Where(jit => jit.BookingId == effectiveBookingId)
                 .Select(jit => new JobItemTypeDto
                 {
                     ItemId = jit.ItemId,
@@ -4430,16 +4486,7 @@ public partial class JobRepository(
                 Quantity = jit.Quantity
             });
 
-        var booking = Context.TucJobBookingItemTypes
-            .Where(jit => jit.BookingId == jid)
-            .Select(jit => new JobItemTypeDto
-            {
-                ItemId = jit.ItemId,
-                Name = jit.ItemType.Name,
-                Quantity = jit.Quantity
-            });
-
-        return await active.Concat(archive).Concat(booking).ToListAsync();
+        return await active.Concat(archive).ToListAsync();
     }
 
     /// <summary>
@@ -4447,15 +4494,19 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobId">The job ID to retrieve.</param>
     /// <returns>Job group containing the job and related jobs.</returns>
-    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId)
+    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default)
     {
         try
         {
             _ = MarkJobAsReadAsync(jobId);
 
-            return await LoadJobGroupAsync(jobId);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var group = await LoadJobGroupAsync(jobId, cancellationToken);
+            Log.Information("JobDetail {JobId} (family of {FamilySize}) loaded in {ElapsedMs}ms",
+                jobId, 1 + (group?.RelatedJobs?.Count ?? 0), stopwatch.ElapsedMilliseconds);
+            return group;
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             Log.Error(e, "Error occurred getting job {JobId}. Please see exception", jobId);
             throw;
@@ -4469,9 +4520,10 @@ public partial class JobRepository(
     public async Task<JobViewModel> GetJobWithoutMarkingReadAsync(int jobId) =>
         (await LoadJobGroupAsync(jobId)).Job;
 
-    private async Task<JobGroupViewModel> LoadJobGroupAsync(int jobId)
+    private async Task<JobGroupViewModel> LoadJobGroupAsync(int jobId, CancellationToken cancellationToken = default)
     {
-        var result = await GetLiveJobByIdAsync(jobId) ?? await GetArchivedJobByIdAsync(jobId);
+        var result = await GetLiveJobByIdAsync(jobId, cancellationToken)
+                     ?? await GetArchivedJobByIdAsync(jobId, cancellationToken);
 
         // A network partner sees their pay in place of the tenant's charge, on every job in the
         // group. Done here, not in the mapping, so the tenant's figure never reaches the client.
@@ -5147,11 +5199,69 @@ public partial class JobRepository(
     private static bool IsActiveLine(TucJobItem item) => (item.ItemStatus ?? 0) == (byte)JobItemStatus.Active;
 
     /// <summary>
-    /// Pairs each submitted parcel with the line it edits. The dialog doesn't send ItemIds, so a parcel
-    /// with a barcode takes the line with that barcode (re-activating it if it was flagged); the rest
-    /// take the remaining active lines in ItemId order, as before, but a barcoded parcel never takes a
-    /// line that has a different barcode - that line was removed, and a new line is added instead.
-    /// A null entry means "insert".
+    /// Readers order lines by SortOrder (unset last), then ItemID; keep in step with the JobMappings projections.
+    /// </summary>
+    private static IOrderedEnumerable<TucJobItem> InDisplayOrder(IEnumerable<TucJobItem> lines) =>
+        lines.OrderBy(i => i.SortOrder == null).ThenBy(i => i.SortOrder).ThenBy(i => i.ItemId);
+
+    /// <summary>
+    /// The scope's order after a save: the submitted lines as sent, with each kept-but-unsubmitted (flagged)
+    /// line straight after the line it followed before (<paramref name="previousLines"/> is in display order),
+    /// or first when nothing before it survives. Empty when that matches what readers already see, so an
+    /// unchanged save writes nothing.
+    /// </summary>
+    private static List<(TucJobItem Line, int SortOrder)> PlanSortOrder(IReadOnlyList<TucJobItem> submitted,
+        IReadOnlyList<TucJobItem> previousLines, IReadOnlySet<TucJobItem> keptUnsubmitted)
+    {
+        var ordered = submitted.ToList();
+        var submittedSet = submitted.ToHashSet();
+        TucJobItem anchor = null;
+        foreach (var line in previousLines)
+        {
+            if (keptUnsubmitted.Contains(line))
+                ordered.Insert(anchor == null ? 0 : ordered.IndexOf(anchor) + 1, line);
+            else if (!submittedSet.Contains(line))
+                continue;
+            anchor = line;
+        }
+
+        return InDisplayOrder(ordered).SequenceEqual(ordered)
+            ? []
+            : ordered.Select((line, index) => (line, index + 1)).ToList();
+    }
+
+    /// <summary>
+    /// Writes SortOrder for existing lines in one statement per chunk: tucJobItems' totals trigger runs per
+    /// statement, and SaveChanges would issue one UPDATE per line. No LINQ form sets a per-row value in one UPDATE.
+    /// </summary>
+    private async Task WriteSortOrderAsync(int jobId, IReadOnlyList<(int ItemId, int SortOrder)> sortOrders)
+    {
+        foreach (var chunk in sortOrders.Chunk(500))
+        {
+            var parameters = new List<object> { jobId };
+            var cases = new List<string>();
+            foreach (var (itemId, sortOrder) in chunk)
+            {
+                cases.Add($"WHEN {{{parameters.Count}}} THEN {{{parameters.Count + 1}}}");
+                parameters.Add(itemId);
+                parameters.Add(sortOrder);
+            }
+
+            var itemIds = string.Join(", ", chunk.Select((_, i) => $"{{{1 + 2 * i}}}"));
+            await Context.Database.ExecuteSqlRawAsync(
+                $"UPDATE tucJobItems SET SortOrder = CASE ItemID {string.Join(" ", cases)} END " +
+                $"WHERE JobID = {{0}} AND ItemID IN ({itemIds})",
+                parameters);
+        }
+    }
+
+    /// <summary>
+    /// Pairs each submitted parcel with the line it edits. A parcel with an ItemId (the dialog sends one for
+    /// every parcel it loaded) takes that line. Otherwise a parcel with a barcode takes the line with that
+    /// barcode (re-activating it if it was flagged). When the caller sent ItemIds, any other parcel is new;
+    /// callers that don't send them fall back to giving the rest the remaining active lines in display order,
+    /// where a barcoded parcel never takes a line that has a different barcode - that line was removed, and
+    /// a new line is added instead. A null entry means "insert".
     /// </summary>
     private static TucJobItem[] MatchParcelsToLines(IReadOnlyList<ParcelDimensions> parcels, List<TucJobItem> lines)
     {
@@ -5160,6 +5270,17 @@ public partial class JobRepository(
 
         for (var index = 0; index < parcels.Count; index++)
         {
+            var itemId = parcels[index].ItemId;
+            if (itemId == null) continue;
+            var line = unmatched.FirstOrDefault(i => i.ItemId == itemId);
+            if (line == null) continue;
+            matched[index] = line;
+            unmatched.Remove(line);
+        }
+
+        for (var index = 0; index < parcels.Count; index++)
+        {
+            if (matched[index] != null) continue;
             var barcode = parcels[index].Barcode;
             if (string.IsNullOrEmpty(barcode)) continue;
             var line = unmatched.FirstOrDefault(i => i.Barcode == barcode);
@@ -5167,6 +5288,8 @@ public partial class JobRepository(
             matched[index] = line;
             unmatched.Remove(line);
         }
+
+        if (parcels.Any(p => p.ItemId != null)) return matched;
 
         var submittedBarcodes = parcels.Select(p => p.Barcode).Where(b => !string.IsNullOrEmpty(b)).ToHashSet();
         for (var index = 0; index < parcels.Count; index++)
@@ -5736,6 +5859,12 @@ public partial class JobRepository(
         {
             await using var transaction = await Context.Database.BeginTransactionAsync();
 
+            var before = await Context.TucJobItemsArchives
+                .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                .ToListAsync();
+            var changeNote = PackageChangeNoteText(before, parcels);
+
             await Context.TucJobItemsArchives
                 .Where(i => i.JobId == effectiveJobId &&
                             (childJobId == null || i.ChildJobId == childJobId))
@@ -5765,8 +5894,11 @@ public partial class JobRepository(
                 }).ToList();
 
                 await Context.TucJobItemsArchives.AddRangeAsync(newItems);
-                await Context.SaveChangesAsync();
             }
+
+            if (changeNote != null)
+                await SaveNoteToMultipleArchivedJobsAsync([jobId], changeNote);
+            await Context.SaveChangesAsync();
 
             var parentLines = Context.TucJobItemsArchives
                 .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
@@ -6151,7 +6283,7 @@ public partial class JobRepository(
         var childIds = await Context.TucJobs
             .Where(LiveJobFamily.ChildOf(Context, jobId))
             .Select(j => j.UcjbId)
-            .TagWith($"GetJobWithChildren - Get children for job {jobId}")
+            .TagWith("GetJobWithChildren - Get children")
             .ToListAsync();
 
         childIds.Add(jobId);
@@ -6238,7 +6370,7 @@ public partial class JobRepository(
         var childIds = await Context.TucJobArchives
             .Where(LiveJobFamily.ArchivedChildOf(Context, jobId))
             .Select(j => j.UcjbId)
-            .TagWith($"GetArchivedJobWithChildren - Get children for archived job {jobId}")
+            .TagWith("GetArchivedJobWithChildren - Get children")
             .ToListAsync();
 
         childIds.Add(jobId);
@@ -6685,14 +6817,13 @@ public partial class JobRepository(
 
             await using var markReadContext = await _contextFactory.CreateDbContextAsync();
 
-            var jobExists = await markReadContext.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-            if (!jobExists)
-            {
-                return;
-            }
-
-            var alreadyTracked = await markReadContext.TucJobReadTrackers.AnyAsync(t => t.JobId == jobId);
-            if (alreadyTracked)
+            // One round trip: null when there is no live job, true when it is already tracked.
+            var alreadyTracked = await markReadContext.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => (bool?)(j.TucJobReadTracker != null))
+                .TagWith("MarkJobAsRead - State")
+                .FirstOrDefaultAsync();
+            if (alreadyTracked != false)
             {
                 return;
             }
@@ -6713,13 +6844,13 @@ public partial class JobRepository(
         }
     }
 
-    private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId)
+    private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId, CancellationToken cancellationToken)
     {
         var mainJobInfo = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new { j.UcjbId, FamilyRootId = j.ParentId ?? j.UcjbId })
             .TagWith("GetLiveJob - Family Root Lookup")
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (mainJobInfo == null)
         {
@@ -6732,8 +6863,8 @@ public partial class JobRepository(
         var allJobsInFamily = await Context.TucJobs
             .Where(j => j.UcjbId == familyRootId || j.ParentId == familyRootId)
             .Select(JobMappings.JobMappingCore(isUsTenant))
-            .TagWith($"GetLiveJob - Complete Family {familyRootId}")
-            .ToListAsync();
+            .TagWith("GetLiveJob - Complete Family")
+            .ToListAsync(cancellationToken);
 
         var mainJob = allJobsInFamily.FirstOrDefault(j => j.Id == jobId);
         ArgumentNullException.ThrowIfNull(mainJob);
@@ -6752,13 +6883,13 @@ public partial class JobRepository(
         };
     }
 
-    private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId)
+    private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId, CancellationToken cancellationToken)
     {
         var familyRootId = await Context.TucJobArchives
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.ParentId ?? j.UcjbId)
             .TagWith("GetArchivedJob - Family Root")
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (familyRootId == 0)
         {
@@ -6768,8 +6899,8 @@ public partial class JobRepository(
         var allJobsInFamily = await Context.TucJobArchives
             .Where(j => j.UcjbId == familyRootId || j.ParentId == familyRootId)
             .Select(JobMappings.JobArchiveMapping)
-            .TagWith($"GetArchivedJob - Family {familyRootId}")
-            .ToListAsync();
+            .TagWith("GetArchivedJob - Family")
+            .ToListAsync(cancellationToken);
 
         if (allJobsInFamily.Count == 0)
         {

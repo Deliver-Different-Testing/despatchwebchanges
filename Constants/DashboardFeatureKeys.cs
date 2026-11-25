@@ -26,6 +26,15 @@ public static class DashboardFeatureKeys
     public const string CourierMap = "dw-courier-map";
     public const string DriverManagement = "dw-driver-management";
 
+    /// <summary>
+    /// Role verb (not a dashboard): see which drivers are behind on minimum hourly top-up and by how much.
+    /// Fail closed, own explicit RolePermission row only. Never exposes rates or minimum hours.
+    /// </summary>
+    public const string DriverEarningsStatus = "dw-driver-earnings-status";
+
+    /// <summary>Role verb: record that a driver finished early, disappeared or broke down. Fail closed.</summary>
+    public const string DriverEarlyFinish = "dw-driver-early-finish";
+
     /// <summary>Feature.ReleaseStatus value that lets a feature reach a tenant.</summary>
     public const string LiveReleaseStatus = "Live";
 }

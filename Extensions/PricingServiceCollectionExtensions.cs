@@ -14,6 +14,7 @@ public static class PricingServiceCollectionExtensions
         services.AddScoped<IPricingPermissionService, PricingPermissionService>();
 
         services.AddHttpClient<ICiriumApiClient, CiriumApiClient>();
+        services.AddHttpClient<IForwardAirApiClient, ForwardAirApiClient>();
 
         return services;
     }

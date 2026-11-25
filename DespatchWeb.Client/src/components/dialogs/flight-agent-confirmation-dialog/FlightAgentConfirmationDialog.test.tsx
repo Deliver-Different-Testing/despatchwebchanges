@@ -903,4 +903,64 @@ describe('FlightAgentConfirmationDialog', () => {
             expect(result.packageDeliverByTime).toBeUndefined();
         });
     });
+
+    describe('Forward Air flights', () => {
+        const forwardAirFlight = () => createFlight({
+            flightNumber: 'T2T',
+            flightSegments: [createFlightSegment({carrierFsCode: 'FWD', flightNumber: 'T2T', airlineName: 'Forward Air'})],
+        });
+
+        it('warns that confirming books a real airbill', async () => {
+            renderWithTheme(
+                <FlightAgentConfirmationDialog {...defaultProps} mode="flight" flight={forwardAirFlight()}/>
+            );
+
+            expect(await screen.findByText(
+                'This books a real Forward Air airbill. Removing it later cancels the airbill.'
+            )).toBeInTheDocument();
+        });
+
+        it('leaves the AWB empty and locked, and explains where it comes from', async () => {
+            renderWithTheme(
+                <FlightAgentConfirmationDialog {...defaultProps} mode="flight" flight={forwardAirFlight()}/>
+            );
+
+            const input = await screen.findByLabelText('AWB number');
+            expect(input).toHaveValue('');
+            expect(input).not.toBeRequired();
+            expect(input).toBeDisabled();
+            expect(screen.getByText(/airbill (number )?comes back from Forward Air/i)).toBeInTheDocument();
+        });
+
+        it('still pre-fills and locks the AWB from existingAwb', async () => {
+            renderWithTheme(
+                <FlightAgentConfirmationDialog
+                    {...defaultProps}
+                    mode="flight"
+                    flight={forwardAirFlight()}
+                    existingAwb="123-45678901"
+                />
+            );
+
+            expect(await screen.findByDisplayValue('123-45678901')).toBeDisabled();
+        });
+
+        it('does not show the booking warning for an airline flight', async () => {
+            renderWithTheme(
+                <FlightAgentConfirmationDialog {...defaultProps} mode="flight" flight={createFlight()}/>
+            );
+
+            await screen.findByLabelText('AWB number');
+            expect(screen.queryByText(/books a real Forward Air airbill/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/comes back from Forward Air/i)).not.toBeInTheDocument();
+        });
+
+        it('does not show the booking warning in agent mode', () => {
+            renderWithTheme(
+                <FlightAgentConfirmationDialog {...defaultProps} mode="agent" agent={createAgent()}/>
+            );
+
+            expect(screen.queryByText(/books a real Forward Air airbill/)).not.toBeInTheDocument();
+        });
+    });
 });

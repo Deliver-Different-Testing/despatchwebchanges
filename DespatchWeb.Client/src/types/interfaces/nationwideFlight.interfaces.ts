@@ -14,6 +14,7 @@ import type {Dayjs} from "dayjs";
 
 export interface IFlightViewModel {
     airline: string;
+    airlineCode?: string;
     flightNumber: string;
     departureTime: Dayjs;
     arrivalTime: Dayjs;

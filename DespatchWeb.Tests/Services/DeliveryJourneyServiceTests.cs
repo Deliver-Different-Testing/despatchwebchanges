@@ -1,4 +1,5 @@
-﻿using DespatchWeb.EntityClasses;
+﻿using System.Globalization;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
@@ -2498,5 +2499,82 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         var result = await CreateService().GetStatusHistoryForJobAsync(1);
 
         Assert.Equal(new DateTime(2026, 8, 11, 14, 5, 0), Assert.Single(result).ActionTime.DateTime);
+    }
+
+    private static JobDeliveryJourney BookedRow(int id, string field, string oldValue, string newValue) => new()
+    {
+        JourneyId = id,
+        JobId = 1,
+        ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+        FieldName = field,
+        OldValue = oldValue,
+        NewValue = newValue,
+        UpdatedByType = "Staff",
+        StaffId = 5,
+        UpdatedAt = new DateTime(2026, 11, 11, 16, 30, 0)
+    };
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_TimeOnlyEditOfABookingPageJob_ReadsAsATimeChange()
+    {
+        // #1023: E893BIO's journal rows, written when Despatch saved the full moment into both columns.
+        _tenantInfoServiceMock.GetCulture().Returns(new CultureInfo("en-US"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            BookedRow(1, "ucjbDate", "2026-11-11 00:00:00", "2026-11-11 15:30:00"),
+            BookedRow(2, "ucjbTime", "1899-12-30 14:30:00", "2026-11-11 15:30:00"));
+
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        Assert.Equal("Job Time Updated", entry.Title);
+        Assert.Equal(["Job Time: 14:30 → 15:30"], entry.Tags);
+        Assert.Equal("Job Time: 14:30 → 15:30", entry.Description);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_DateChange_ShowsTheDatesInTheTenantFormat()
+    {
+        _tenantInfoServiceMock.GetCulture().Returns(new CultureInfo("en-NZ"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(BookedRow(1, "ucjbDate", "2026-11-11 00:00:00", "2026-11-12 00:00:00"));
+
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        Assert.Equal("Job Date Updated", entry.Title);
+        Assert.Equal(["Job Date: 11/11/2026 → 12/11/2026"], entry.Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_BookedRowsThatChangeNothingVisible_AreLeftOut()
+    {
+        _tenantInfoServiceMock.GetCulture().Returns(new CultureInfo("en-US"));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(BookedRow(1, "ucjbDate", "2026-11-11 15:30:00", "2026-11-11 00:00:00"));
+
+        Assert.Empty(await CreateService().GetDeliveryJourneyForJobAsync(1));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedTimeOnlyEdit_ReadsAsATimeChange()
+    {
+        _tenantInfoServiceMock.GetCulture().Returns(new CultureInfo("en-US"));
+        await SeedArchivedStatusUpdatesAsync(
+            new JobDeliveryJourneyArchive
+            {
+                JourneyId = 1, JobId = 1, ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                FieldName = "ucjbDate", OldValue = "2026-11-11 00:00:00", NewValue = "2026-11-11 15:30:00",
+                UpdatedByType = "Staff", StaffId = 5, UpdatedAt = new DateTime(2026, 11, 11, 16, 30, 0)
+            },
+            new JobDeliveryJourneyArchive
+            {
+                JourneyId = 2, JobId = 1, ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                FieldName = "ucjbTime", OldValue = "1899-12-30 14:30:00", NewValue = "2026-11-11 15:30:00",
+                UpdatedByType = "Staff", StaffId = 5, UpdatedAt = new DateTime(2026, 11, 11, 16, 30, 0)
+            });
+
+        var entry = Assert.Single(await CreateService().GetDeliveryJourneyForJobAsync(1));
+
+        Assert.Equal("Job Time Updated", entry.Title);
+        Assert.Equal(["Job Time: 14:30 → 15:30"], entry.Tags);
     }
 }

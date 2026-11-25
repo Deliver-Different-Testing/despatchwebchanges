@@ -7,6 +7,8 @@ interface JobListFooterProps {
     lastUpdated: string;
     isLoadingMore?: boolean;
     allJobsLoaded?: boolean;
+    /** The search stopped at its match cap, so the total is a lower bound. */
+    totalIsCapped?: boolean;
 }
 
 const containerStyle: React.CSSProperties = {
@@ -21,6 +23,7 @@ export const JobListFooter: React.FC<JobListFooterProps> = ({
     lastUpdated,
     isLoadingMore,
     allJobsLoaded,
+    totalIsCapped,
 }) => {
     if (displayedCount === 0 && !isLoadingMore) {
         return null;
@@ -29,6 +32,8 @@ export const JobListFooter: React.FC<JobListFooterProps> = ({
     let displayText: string;
     if (isLoadingMore) {
         displayText = 'Loading more jobs…';
+    } else if (totalIsCapped) {
+        displayText = `Showing ${displayedCount} of ${totalCount.toLocaleString()}+ jobs. Narrow the search to see the rest.`;
     } else if (totalCount > 0 && !allJobsLoaded) {
         displayText = `Showing ${displayedCount} of ${totalCount} jobs`;
     } else {

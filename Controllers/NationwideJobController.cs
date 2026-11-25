@@ -1,9 +1,12 @@
 using System.Diagnostics;
+using System.Text.Json;
+using DespatchWeb.Constants;
 using DespatchWeb.Enums;
 using DespatchWeb.Filters;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +25,8 @@ public class NationwideJobController(
     IFlightRateService flightRateService,
     IClientRepository clientRepository,
     IAddAgentRecoveryJobService recoveryJobService,
-    IScopeProvider scopeProvider)
+    IScopeProvider scopeProvider,
+    IForwardAirApiClient forwardAirClient)
     : Controller
 {
     private bool CallerIsNetworkPartner => scopeProvider.Scope?.IsNetworkPartner ?? false;
@@ -108,6 +112,7 @@ public class NationwideJobController(
         }
     }
 
+    [RequireScope(ScopedRecord.Job, "jobId")]
     public async Task<IActionResult> GetScheduledFlightOptions(
         DateTimeOffset departureDate,
         int jobId,
@@ -125,26 +130,88 @@ public class NationwideJobController(
                 "Flight search requested for job {JobId} with departure {DepartureDate}, airline {AirlineId}",
                 jobId, departureDate, airlineId);
 
-            var flights = await flightService.GetFlightsAsync(
-                jobId,
-                departureDate,
-                airlineId,
-                departureAirportId,
-                arrivalAirportId,
-                codeType: "FS",
-                extendedOptions: null,
-                minimumLayoverMinutes: minimumLayoverMinutes,
-                allowNearbyDepartures: includeNearbyAirports,
-                allowNearbyArrivals: includeNearbyAirports);
+            var forwardAirCarrierId = await repository.GetActiveFlightCarrierIdByCodeAsync(ForwardAirCarrier.Code);
+            var forwardAirOnly = forwardAirCarrierId.HasValue && airlineId == forwardAirCarrierId;
+            var forwardAirTask = forwardAirCarrierId.HasValue && (airlineId is null || forwardAirOnly)
+                && departureAirportId.HasValue && arrivalAirportId.HasValue
+                ? QuoteForwardAirAsync(jobId, new ForwardAirLegQuoteRequestDto
+                {
+                    ShipDate = DateOnly.FromDateTime(departureDate.Date),
+                    OriginAirportId = departureAirportId,
+                    DestinationAirportId = arrivalAirportId
+                })
+                : null;
+
+            IReadOnlyList<FlightViewModel> flights = [];
+            string flightSearchMessage = null;
+            if (!forwardAirOnly)
+            {
+                try
+                {
+                    flights = await flightService.GetFlightsAsync(
+                        jobId,
+                        departureDate,
+                        airlineId,
+                        departureAirportId,
+                        arrivalAirportId,
+                        codeType: "FS",
+                        extendedOptions: null,
+                        minimumLayoverMinutes: minimumLayoverMinutes,
+                        allowNearbyDepartures: includeNearbyAirports,
+                        allowNearbyArrivals: includeNearbyAirports);
+                }
+                catch (HttpRequestException e) when (forwardAirTask is not null)
+                {
+                    Log.Error(e, "FlightStats API error for job {JobId}; still offering Forward Air", jobId);
+                    flightSearchMessage = "Flight search service is currently unavailable. Please try again later.";
+                }
+            }
+
+            string forwardAirMessage = null;
+            if (forwardAirTask is not null)
+            {
+                var quote = await forwardAirTask;
+                var named = quote.Success
+                    ? quote.Services.Where(s => !string.IsNullOrWhiteSpace(s.ServiceCode)).ToList()
+                    : [];
+                var bookable = named
+                    .Where(s => !string.IsNullOrWhiteSpace(s.OriginTimeZone) && !string.IsNullOrWhiteSpace(s.DestinationTimeZone)
+                                && s.EstimatedArrival.HasValue)
+                    .ToList();
+                if (bookable.Count != 0)
+                {
+                    flights = [.. (flights ?? []), .. bookable.Select(s => MapForwardAirService(s, departureAirportId, arrivalAirportId))];
+                }
+
+                if (!quote.Success)
+                {
+                    forwardAirMessage = quote.Error;
+                }
+                else if (bookable.Count < named.Count)
+                {
+                    forwardAirMessage =
+                        "Some Forward Air services were left out because Forward Air gave no arrival time or an airport on this route has no time zone set.";
+                }
+            }
+
+            if (flights is { Count: > 1 })
+            {
+                flights = [.. flights.OrderBy(f => f.ArrivalTime)];
+            }
 
             if (flights is null || flights.Count == 0)
             {
                 stopwatch.Stop();
+                var noFlightsMessage = forwardAirOnly
+                    ? forwardAirMessage ?? "Forward Air has no services for the selected route and date."
+                    : JoinMessages(
+                        flightSearchMessage
+                        ?? "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter.",
+                        forwardAirMessage);
                 return Json(new FlightSearchResponse
                 {
                     Flights = [],
-                    Message =
-                        "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter."
+                    Message = noFlightsMessage
                 });
             }
 
@@ -164,7 +231,11 @@ public class NationwideJobController(
                 "Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights",
                 stopwatch.ElapsedMilliseconds, jobId, flights.Count);
 
-            return Json(new FlightSearchResponse { Flights = [.. flights] });
+            return Json(new FlightSearchResponse
+            {
+                Flights = [.. flights],
+                Message = flightSearchMessage is null ? forwardAirMessage : JoinMessages(flightSearchMessage, forwardAirMessage)
+            });
         }
         catch (ArgumentException e)
         {
@@ -193,6 +264,125 @@ public class NationwideJobController(
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
                     nameof(GetScheduledFlightOptions)));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    private async Task<ForwardAirQuoteResponseDto> QuoteForwardAirAsync(int legId, ForwardAirLegQuoteRequestDto search)
+    {
+        try
+        {
+            return await forwardAirClient.GetLegQuoteAsync(legId, search, HttpContext?.RequestAborted ?? CancellationToken.None);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            Log.Warning(e, "Forward Air quote failed for leg {LegId}", legId);
+            return new ForwardAirQuoteResponseDto {Success = false, Error = "Forward Air quote is unavailable."};
+        }
+    }
+
+    private static string JoinMessages(params string[] messages)
+    {
+        var parts = messages.Where(m => !string.IsNullOrWhiteSpace(m)).ToArray();
+        return parts.Length == 0 ? null : string.Join(" ", parts);
+    }
+
+    private static FlightViewModel MapForwardAirService(ForwardAirQuoteServiceDto service, int? departureAirportId,
+        int? arrivalAirportId)
+    {
+        var departure = ToOffset(service.ShipDate, service.OriginTimeZone);
+        var arrival = ToOffset(service.EstimatedArrival ?? service.ShipDate, service.DestinationTimeZone);
+        var duration = arrival.UtcDateTime - departure.UtcDateTime;
+        var elapsedMinutes = (int)duration.TotalMinutes;
+
+        return new FlightViewModel
+        {
+            Airline = ForwardAirCarrier.Name,
+            AirlineCode = ForwardAirCarrier.Code,
+            FlightNumber = service.ServiceCode,
+            ServiceTypeDescription = service.ServiceName,
+            DepartureTime = departure,
+            ArrivalTime = arrival,
+            DepartureTimeZone = service.OriginTimeZone,
+            ArrivalTimeZone = service.DestinationTimeZone,
+            DepartureAirport = service.OriginAirport,
+            ArrivalAirport = service.DestinationAirport,
+            Duration = duration,
+            ElapsedTime = elapsedMinutes,
+            Stops = 0,
+            FlightSegments =
+            [
+                new FlightSegmentViewModel
+                {
+                    SegmentOrder = 0,
+                    CarrierFsCode = ForwardAirCarrier.Code,
+                    FlightNumber = service.ServiceCode,
+                    DepartureTime = departure,
+                    ArrivalTime = arrival,
+                    DepartureAirportId = departureAirportId ?? 0,
+                    ArrivalAirportId = arrivalAirportId ?? 0,
+                    DepartureAirportFsCode = service.OriginAirport,
+                    ArrivalAirportFsCode = service.DestinationAirport,
+                    DepartureAirportTimeZone = service.OriginTimeZone,
+                    ArrivalAirportTimeZone = service.DestinationTimeZone,
+                    ElapsedTime = elapsedMinutes,
+                    AirlineName = ForwardAirCarrier.Name
+                }
+            ]
+        };
+    }
+
+    private static DateTimeOffset ToOffset(DateTime local, string timeZoneId)
+    {
+        var unspecified = DateTime.SpecifyKind(local, DateTimeKind.Unspecified);
+        try
+        {
+            return TimeZoneHelper.SetDateTimeWithTimeZone(unspecified, timeZoneId);
+        }
+        catch (ArgumentException e)
+        {
+            Log.Warning(e, "Forward Air time zone {TimeZoneId} is unknown; treating {LocalTime} as UTC", timeZoneId, local);
+            return new DateTimeOffset(unspecified, TimeSpan.Zero);
+        }
+    }
+
+    [HttpGet("api/nationwide/{legId:int}/forwardair")]
+    [RequireScope(ScopedRecord.Job, "legId")]
+    public async Task<IActionResult> GetForwardAirJob(int legId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var job = await forwardAirClient.GetJobAsync(legId, cancellationToken);
+            return job is null ? NotFound() : Json(job);
+        }
+        catch (Exception e) when (e is HttpRequestException or InvalidOperationException or JsonException)
+        {
+            Log.Warning(e, "Forward Air job lookup failed for leg {LegId}", legId);
+            return StatusCode(502, "Forward Air details are unavailable right now.");
+        }
+    }
+
+    [HttpGet("api/nationwide/{legId:int}/forwardair/documents/{type}")]
+    [RequireScope(ScopedRecord.Job, "legId")]
+    public async Task<IActionResult> GetForwardAirDocument(int legId, string type,
+        CancellationToken cancellationToken = default)
+    {
+        var documentType = type?.ToUpperInvariant();
+        if (documentType is not ("LABEL" or "BOL" or "DELIVER"))
+        {
+            return BadRequest("Unknown document type.");
+        }
+
+        try
+        {
+            var document = await forwardAirClient.GetDocumentAsync(legId, documentType, cancellationToken);
+            return document is null
+                ? NotFound()
+                : File(document.Content, document.ContentType, document.FileName);
+        }
+        catch (Exception e) when (e is HttpRequestException or InvalidOperationException)
+        {
+            Log.Warning(e, "Forward Air document {Type} failed for leg {LegId}", documentType, legId);
+            return StatusCode(502, "Forward Air documents are unavailable right now.");
         }
     }
 
@@ -355,13 +545,14 @@ public class NationwideJobController(
 
             var result = await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value,
                 jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false,
-                jobRequestModel.EmailSubject, jobRequestModel.EmailBody);
+                jobRequestModel.EmailSubject, jobRequestModel.EmailBody, jobRequestModel.Resend);
 
             return Ok(new
             {
                 status = result.Status.ToString(),
                 agentEmail = result.AgentEmail,
-                willEmail = result.WillEmail
+                willEmail = result.WillEmail,
+                alertType = result.AlertType?.ToString()
             });
         }
         catch (Exception ex)
@@ -420,7 +611,7 @@ public class NationwideJobController(
             }
 
             var results = await repository.AssignAgentToJobsAsync(request.AgentId.Value, request.JobIds,
-                request.IncludeStopJobs ?? false, request.EmailSubject, request.EmailBody);
+                request.IncludeStopJobs ?? false, request.EmailSubject, request.EmailBody, request.Resend);
 
             return Ok(BulkAssignmentResponse(results));
         }
@@ -500,7 +691,8 @@ public class NationwideJobController(
                 throw new ArgumentNullException(nameof(data));
             }
 
-            await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value);
+            // An explicit send by the dispatcher, so it goes even if the agent already has this alert.
+            await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value, resend: true);
             return Ok();
         }
         catch (Exception e)
@@ -535,7 +727,7 @@ public class NationwideJobController(
         try
         {
             var webhookIds = await repository.GetFlightWebhookIdByJobIdAsync(request.JobId);
-            foreach (var webhookId in webhookIds)
+            foreach (var webhookId in webhookIds.Where(id => !string.IsNullOrEmpty(id)))
             {
                 await flightService.DeleteFlightRuleById(webhookId);
             }
@@ -746,6 +938,7 @@ public class NationwideJobController(
                 status = preview.Status.ToString(),
                 agentEmail = preview.AgentEmail,
                 willEmail = preview.WillEmail,
+                alertType = preview.AlertType?.ToString(),
                 defaultSubject = AgentEmailTemplates.DefaultSubject,
                 defaultBody = AgentEmailTemplates.DefaultBody
             });

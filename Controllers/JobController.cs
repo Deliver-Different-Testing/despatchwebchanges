@@ -701,12 +701,16 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> Detail(int jobId)
+    public async Task<IActionResult> Detail(int jobId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var job = await jobQueryRepository.GetJobByIdAsync(jobId);
+            var job = await jobQueryRepository.GetJobByIdAsync(jobId, cancellationToken);
             return Json(job);
+        }
+        catch (Exception) when (cancellationToken.IsCancellationRequested)
+        {
+            return StatusCode(499, "Request cancelled");
         }
         catch (Exception ex)
         {
@@ -716,12 +720,16 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> DispatchJobDetail(int jobId)
+    public async Task<IActionResult> DispatchJobDetail(int jobId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var job = await jobQueryRepository.GetDispatchJobDetailAsync(jobId);
+            var job = await jobQueryRepository.GetDispatchJobDetailAsync(jobId, cancellationToken);
             return Json(job);
+        }
+        catch (Exception) when (cancellationToken.IsCancellationRequested)
+        {
+            return StatusCode(499, "Request cancelled");
         }
         catch (Exception ex)
         {
@@ -788,12 +796,17 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> PodSearch([FromQuery] PodSearchRequest data)
+    public async Task<IActionResult> PodSearch([FromQuery] PodSearchRequest data,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var result = await jobQueryRepository.PodSearchAsync(data);
+            var result = await jobQueryRepository.PodSearchAsync(data, cancellationToken);
             return Json(result);
+        }
+        catch (Exception) when (cancellationToken.IsCancellationRequested)
+        {
+            return StatusCode(499, "Request cancelled");
         }
         catch (Exception e)
         {
@@ -1151,12 +1164,17 @@ public class JobController(
         return Json(result);
     }
 
-    public async Task<IActionResult> BulkSearch([FromQuery] PodSearchRequest request)
+    public async Task<IActionResult> BulkSearch([FromQuery] PodSearchRequest request,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var result = await jobQueryRepository.BulkSearchAsync(request);
+            var result = await jobQueryRepository.BulkSearchAsync(request, cancellationToken);
             return Json(result);
+        }
+        catch (Exception) when (cancellationToken.IsCancellationRequested)
+        {
+            return StatusCode(499, "Request cancelled");
         }
         catch (Exception e)
         {
@@ -2661,6 +2679,30 @@ public class JobController(
     }
 
     [HttpPost]
+    [RequireScope(ScopedRecord.Booking, "request.BookingId")]
+    public async Task<IActionResult> UpdateRecurringJobPackages([FromBody] UpdateRecurringJobPackagesRequest request)
+    {
+        try
+        {
+            await recurringJobRepository.UpdatePackagesForBookingAsync(request.BookingId, request.Parcels,
+                request.CalculateDimsOncePerJob);
+            return Ok();
+        }
+        catch (ArgumentException ex)
+        {
+            Log.Warning(ex, "Recurring booking {BookingId} not found when updating packages", request.BookingId);
+            return NotFound("Recurring booking not found. Refresh the list and try again.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(ex, nameof(JobController),
+                    nameof(UpdateRecurringJobPackages)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
     [RequireScope(ScopedRecord.BulkJob, "request.BulkJobId")]
     public async Task<IActionResult> UpdateBulkJobPackages([FromBody] UpdateBulkJobPackagesRequest request)
     {
@@ -2704,9 +2746,9 @@ public class JobController(
         return Json(isParent);
     }
 
-    public async Task<IActionResult> GetJobItemTypes(int? jobId, int? bulkJobId)
+    public async Task<IActionResult> GetJobItemTypes(int? jobId, int? bulkJobId, int? bookingId)
     {
-        var items = await jobQueryRepository.GetJobItemTypesAsync(jobId, bulkJobId);
+        var items = await jobQueryRepository.GetJobItemTypesAsync(jobId, bulkJobId, bookingId);
         return Json(items);
     }
 

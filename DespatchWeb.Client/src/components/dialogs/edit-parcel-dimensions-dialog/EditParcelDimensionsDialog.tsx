@@ -13,7 +13,7 @@ import {
 
 import {apiClient} from '../../../api/client';
 import classes from './EditParcelDimensionsDialog.module.css';
-import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions} from './types';
+import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions, ParcelDimensionsTarget} from './types';
 import {errorMessageOf} from '../../../utils/errorMessage';
 
 const MAX_NAME_LENGTH = 50;
@@ -27,7 +27,19 @@ interface ParcelItemType {
 interface ParcelBarcode {
     key: string;
     value: string;
+    /** Set for parcels the dialog loaded; unset for parcels added here. */
+    loaded?: LoadedParcel;
 }
+
+interface LoadedParcel {
+    /** Position in the job's parcel list when the dialog opened. */
+    origin: number;
+    /** The parcel's line, so the save edits that line rather than matching by barcode or position. */
+    itemId?: number;
+}
+
+/** Where a parcel goes in the saved order: beside the loaded parcel at `anchor`, before (-1), on (0) or after (1) it. */
+type SaveOrderKey = readonly [anchor: number, side: -1 | 0 | 1];
 
 interface ParcelGroup {
     id: string;
@@ -40,6 +52,8 @@ interface ParcelGroup {
     barcodes: ParcelBarcode[];
     expandedBarcodes: boolean;
     representativeItemId?: number;
+    /** Job-list position of the row's first loaded parcel; places parcels added after all of those were removed. */
+    origin?: number;
 }
 
 interface PendingRemoval {
@@ -53,8 +67,8 @@ function newKey(): string {
     return Math.random().toString(36).slice(2);
 }
 
-function newBarcode(value: string): ParcelBarcode {
-    return {key: newKey(), value};
+function newBarcode(value: string, loaded?: LoadedParcel): ParcelBarcode {
+    return {key: newKey(), value, loaded};
 }
 
 function parcelLabel({barcode, itemNumber}: Pick<PendingRemoval, 'barcode' | 'itemNumber'>): string {
@@ -94,11 +108,11 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
 
     const map = new Map<string, ParcelGroup>();
 
-    for (const p of parcels) {
+    for (const [origin, p] of parcels.entries()) {
         const key = `${p.itemName ?? ''}|${p.length ?? ''}|${p.depth ?? ''}|${p.height ?? ''}|${p.weight ?? ''}`;
         if (map.has(key)) {
             const existing = map.get(key)!;
-            existing.barcodes.push(newBarcode(p.barcode ?? ''));
+            existing.barcodes.push(newBarcode(p.barcode ?? '', {origin, itemId: p.itemId}));
             // Per Job: the stored per-parcel weight/volume were divided across barcodes when
             // saved — sum them back up so the row displays the job-total contribution again,
             // instead of the shrunken per-parcel value (which would otherwise keep dividing
@@ -121,9 +135,10 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
                 height: p.height != null ? String(p.height) : '',
                 weight: p.weight != null ? String(p.weight) : '',
                 cubic: p.cubic != null ? String(p.cubic) : '',
-                barcodes: [newBarcode(p.barcode ?? '')],
+                barcodes: [newBarcode(p.barcode ?? '', {origin, itemId: p.itemId})],
                 expandedBarcodes: false,
                 representativeItemId: p.itemId,
+                origin,
             });
         }
     }
@@ -137,6 +152,16 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
 // Volume itself is a plain editable field from then on, same as Weight.
 const CUBIC_FACTOR_US = 0.000579;
 const CUBIC_FACTOR_NZ = 0.000001;
+
+const TARGET_ID_PARAM = {job: 'jobId', bulk: 'bulkJobId', booking: 'bookingId'} as const;
+
+function targetIdOf(target: ParcelDimensionsTarget): number {
+    switch (target.kind) {
+        case 'job': return target.jobId;
+        case 'bulk': return target.bulkJobId;
+        case 'booking': return target.bookingId;
+    }
+}
 
 function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob: boolean): ParcelDimensions[] {
     return groups.flatMap(g => {
@@ -160,17 +185,44 @@ function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob:
             ? `${length} × ${depth} × ${height} ${dimensionUnit}`
             : '';
 
-        return g.barcodes.map(({value: barcode}) => ({
-            itemName: g.itemName,
-            length,
-            depth,
-            height,
-            weight,
-            cubic,
-            dimensions,
-            barcode: barcode || undefined,
+        return g.barcodes.map(({value: barcode, loaded}, index) => ({
+            parcel: {
+                itemId: loaded?.itemId,
+                itemName: g.itemName,
+                length,
+                depth,
+                height,
+                weight,
+                cubic,
+                dimensions,
+                barcode: barcode || undefined,
+            },
+            sortKey: saveOrderKey(g, index),
         }));
-    });
+    }).sort((a, b) => compareKeys(a.sortKey, b.sortKey))
+        .map(entry => entry.parcel);
+}
+
+/**
+ * Rows group identical parcels that weren't next to each other, so the save keeps the job's own order
+ * (what the server stores) rather than the row order: each loaded parcel keeps its place, and an added
+ * one goes before the next loaded parcel in its row, after the previous one, in the row's old slot when
+ * every loaded parcel in it was removed, or last in a new row.
+ */
+function saveOrderKey({barcodes, origin: rowOrigin}: ParcelGroup, index: number): SaveOrderKey {
+    const origins = barcodes.map(b => b.loaded?.origin);
+    const own = origins[index];
+    if (own != null) return [own, 0];
+    const isOrigin = (o: number | undefined): o is number => o != null;
+    const next = origins.slice(index + 1).find(isOrigin);
+    if (next != null) return [next, -1];
+    const previous = origins.slice(0, index).reverse().find(isOrigin);
+    if (previous != null) return [previous, 1];
+    return [rowOrigin ?? Number.POSITIVE_INFINITY, -1];
+}
+
+function compareKeys(a: SaveOrderKey, b: SaveOrderKey): number {
+    return a[0] === b[0] ? a[1] - b[1] : a[0] < b[0] ? -1 : 1;
 }
 
 /** One numeric cell of the dimensions grid — same field, different measurement. */
@@ -205,8 +257,7 @@ function DimensionCell({value, disabled, label, step = 0.01, onChange}: {
 export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProps> = ({
     open,
     parcels: initialParcels,
-    jobId,
-    bulkJobId,
+    target,
     jobNumber,
     isUsCustomer,
     jobWeight,
@@ -232,6 +283,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     const removeButtonRefs = useRef(new Map<string, HTMLButtonElement>());
     const barcodeInputRefs = useRef(new Map<string, HTMLInputElement>());
     const toggleButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+
+    // Primitive deps so a caller passing a fresh target object each render doesn't reset the form.
+    const targetKind = target.kind;
+    const targetId = targetIdOf(target);
 
     const dimensionUnit = isUsCustomer ? 'in' : 'cm';
     const weightUnit = isUsCustomer ? 'lbs' : 'kg';
@@ -261,29 +316,23 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         setPendingRemoval(null);
         setListStatus({message: '', id: 0});
 
-        if (jobId) {
-            apiClient.get<boolean>('job/IsJobParent', {jobId}).then(setIsParentJob).catch(() => {});
-        } else if (bulkJobId) {
-            apiClient.get<boolean>('job/IsBulkJobParent', {bulkJobId}).then(setIsParentJob).catch(() => {});
-        } else {
-            console.error('[EditParcelDimensionsDialog] No JobId or BulkJobId was provided');
-            showToast("Couldn't load this job. Refresh and try again.", 'error');
+        if (targetKind === 'job') {
+            apiClient.get<boolean>('job/IsJobParent', {jobId: targetId}).then(setIsParentJob).catch(() => {});
+        } else if (targetKind === 'bulk') {
+            apiClient.get<boolean>('job/IsBulkJobParent', {bulkJobId: targetId}).then(setIsParentJob).catch(() => {});
         }
 
-        const itemTypeParams = jobId ? {jobId} : bulkJobId ? {bulkJobId} : null;
-        if (itemTypeParams) {
-            apiClient.get<Array<{itemId: number; name: string; quantity: number}>>('job/GetJobItemTypes', itemTypeParams)
-                .then(items => {
-                    const map = new Map<number, ParcelItemType[]>();
-                    for (const item of items) {
-                        if (!map.has(item.itemId)) map.set(item.itemId, []);
-                        map.get(item.itemId)!.push({name: item.name, quantity: item.quantity});
-                    }
-                    setItemTypesByItemId(map);
-                })
-                .catch(() => {});
-        }
-    }, [open, initialParcels, jobId, bulkJobId, showToast, jobWeight, calculateDimsOncePerJob]);
+        apiClient.get<Array<{itemId: number; name: string; quantity: number}>>('job/GetJobItemTypes', {[TARGET_ID_PARAM[targetKind]]: targetId})
+            .then(items => {
+                const map = new Map<number, ParcelItemType[]>();
+                for (const item of items) {
+                    if (!map.has(item.itemId)) map.set(item.itemId, []);
+                    map.get(item.itemId)!.push({name: item.name, quantity: item.quantity});
+                }
+                setItemTypesByItemId(map);
+            })
+            .catch(() => {});
+    }, [open, initialParcels, targetKind, targetId, jobWeight, calculateDimsOncePerJob]);
 
     const updateGroup = useCallback((id: string, field: keyof Pick<ParcelGroup, 'itemName' | 'length' | 'depth' | 'height' | 'weight' | 'cubic'>, value: string) => {
         setGroups(prev => prev.map(g => {
@@ -492,17 +541,26 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                 return;
             }
 
-            if (jobId) {
-                await apiClient.post('job/UpdateJobPackages', {jobId, parcels: updatedParcels, weight: parcelTotal > 0 ? parcelTotal : undefined, calculateDimsOncePerJob: isPerJob});
-            } else if (bulkJobId) {
-                await apiClient.post('job/UpdateBulkJobPackages', {bulkJobId, parcels: updatedParcels, calculateDimsOncePerJob: isPerJob});
-            } else {
-                console.error('[EditParcelDimensionsDialog] No JobId or BulkJobId was provided');
-                showToast("Couldn't load this job. Refresh and try again.", 'error');
-                return;
+            switch (target.kind) {
+                case 'job':
+                    await apiClient.post('job/UpdateJobPackages', {jobId: target.jobId, parcels: updatedParcels, weight: parcelTotal > 0 ? parcelTotal : undefined, calculateDimsOncePerJob: isPerJob});
+                    break;
+                case 'bulk':
+                    await apiClient.post('job/UpdateBulkJobPackages', {bulkJobId: target.bulkJobId, parcels: updatedParcels, calculateDimsOncePerJob: isPerJob});
+                    break;
+                case 'booking':
+                    await apiClient.post('job/UpdateRecurringJobPackages', {bookingId: target.bookingId, parcels: updatedParcels, calculateDimsOncePerJob: isPerJob});
+                    break;
+                default: {
+                    const unhandled: never = target;
+                    throw new Error(`Unhandled parcel target ${JSON.stringify(unhandled)}`);
+                }
             }
 
-            showToast(`Updated ${totalParcels} ${totalParcels === 1 ? 'parcel' : 'parcels'}`, 'success');
+            const updated = `Updated ${totalParcels} ${totalParcels === 1 ? 'parcel' : 'parcels'}`;
+            showToast(target.kind === 'booking'
+                ? `${updated}. Applies to jobs created from now on; jobs already created keep their parcels.`
+                : updated, 'success');
             const result: EditParcelDimensionsDialogResult = {parcels: updatedParcels, totalWeight: parcelTotal, calculateDimsOncePerJob: isPerJob};
             onSubmit(result);
         } catch (error: unknown) {
@@ -510,7 +568,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         } finally {
             setIsLoading(false);
         }
-    }, [groups, dimensionUnit, jobId, bulkJobId, partnerMode, totalParcels, parcelTotal, isPerJob, showToast, onSubmit]);
+    }, [groups, dimensionUnit, target, partnerMode, totalParcels, parcelTotal, isPerJob, showToast, onSubmit]);
 
     const saveBlockedReason = hasEmptyWeights
         ? 'All parcels must have a weight greater than 0'
@@ -680,7 +738,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                 </Table.Tr>
 
                                 {g.expandedBarcodes && g.barcodes.map((barcode, i) => (
-                                    <Table.Tr key={barcode.key} bg="var(--mantine-color-gray-0)" className={classes.seamRow}>
+                                    <Table.Tr key={barcode.key} className={classes.seamRow}>
                                         <Table.Td pl={32}>
                                             <Tooltip label="Add parcel here">
                                                 <span className={classes.seam}>

@@ -505,7 +505,7 @@ public sealed class AiInsightsService(
 
         if (job.PalletInfo is { Count: > 0 } pallets)
         {
-            flags.Add($"{pallets.Count} pallet row(s)");
+            flags.Add($"{pallets.Count} item line(s)");
         }
 
         sb.AppendLine(flags.Count > 0 ? "Flags: " + string.Join(", ", flags) : "Flags: none");

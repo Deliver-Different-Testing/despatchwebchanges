@@ -42,7 +42,7 @@ import {FlightInformation} from './components/FlightInformation';
 import {AgentInformation} from './components/AgentInformation';
 import {JobFieldsSection} from './components/JobFieldsSection';
 import {ToggleProperties} from './components/ToggleProperties';
-import {PalletSection} from './components/PalletSection';
+import {ItemLinesSection} from './components/ItemLinesSection';
 import {TextInputDialog} from './components/TextInputDialog';
 import {DispatchDialog, type DispatchMode} from '../../dialogs/dispatch-dialog';
 import {useChangeCourierFlow} from '../../dialogs/change-courier-dialog';
@@ -658,9 +658,9 @@ export function JobDetails({config}: JobDetailsProps) {
                     )}
 
                     {job.palletInfo && job.palletInfo.length > 0 && (
-                        <PalletSection
+                        <ItemLinesSection
                             key={job.id}
-                            pallets={job.palletInfo}
+                            lines={job.palletInfo}
                             isUsCustomer={isUsCustomer}
                         />
                     )}
